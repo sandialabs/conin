@@ -4,11 +4,11 @@ import random
 import munch
 import copy
 import pyomo.environ as pyo
-import clio
-from clio.inference import viterbi, a_star, lp_inference, ip_inference
+import conin
+from conin.inference import viterbi, a_star, lp_inference, ip_inference
 
 
-class Knapsack(clio.HMMApplication):
+class Knapsack(conin.HMMApplication):
 
     def __init__(self):
         super().__init__(self.__class__.__name__)
@@ -119,7 +119,7 @@ class Knapsack(clio.HMMApplication):
                 emission_probs[i, o] = 1.0 if i[0] == o else 0.0
         # pprint.pprint(emission_probs)
 
-        self.hmm = clio.HMM()
+        self.hmm = conin.HMM()
         self.hmm.load_model(
             start_probs=start_probs,
             transition_probs=transition_probs,
@@ -127,11 +127,11 @@ class Knapsack(clio.HMMApplication):
         )
 
 
-class Knapsack_Oracle(Knapsack, clio.Constrained_HMM):
+class Knapsack_Oracle(Knapsack, conin.Constrained_HMM):
 
     def __init__(self):
         Knapsack.__init__(self)
-        clio.Constrained_HMM.__init__(self)
+        conin.Constrained_HMM.__init__(self)
 
     def initialize(self, *, value, weight, capacity):
         # Initialize the Knapsack base class
@@ -143,7 +143,7 @@ class Knapsack_Oracle(Knapsack, clio.Constrained_HMM):
 
         # Add an oracle constraint
         self.add_constraint(
-            clio.Constraint(
+            conin.Constraint(
                 func=lambda hidden: sum(
                     self._data.weight[h[0]] if h[1] else 0.0 for h in hidden
                 )
@@ -152,7 +152,7 @@ class Knapsack_Oracle(Knapsack, clio.Constrained_HMM):
         )
 
 
-class Knapsack_Pyomo(Knapsack, clio.PyomoHMMApplication):
+class Knapsack_Pyomo(Knapsack, conin.PyomoHMMApplication):
 
     def __init__(self):
         super().__init__()

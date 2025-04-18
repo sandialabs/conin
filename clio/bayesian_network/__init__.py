@@ -1,2 +1,0 @@
-from .inference import pyomo_BN_map_query
-from clio.markov_network import optimize_pyomo_inference_model

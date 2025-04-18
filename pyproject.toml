@@ -3,7 +3,7 @@ requires = ["setuptools >= 64"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name="clio"
+name="conin"
 version="1.0"
 dependencies = ["pyomo", "munch", "numpy", "pytest", "black", "glpk", "pytest-cov"]
 readme = {file = "README.md", content-type = "text/plain"}
