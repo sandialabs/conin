@@ -63,7 +63,7 @@ def simple1_DBN(debug=False):
     return G
 
 
-@pytest.mark.skipif(not pgmpy_available, reason="pympy not installed")
+@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_simple0_ALL():
     """
     Z_0 -> Z_1
@@ -74,7 +74,7 @@ def test_simple0_ALL():
     assert results.solutions[0].var_values == {("Z", 0): 1, ("Z", 1): 0}
 
 
-@pytest.mark.skipif(not pgmpy_available, reason="pympy not installed")
+@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_simple1_ALL():
     """
     A -> B
@@ -91,7 +91,7 @@ def test_simple1_ALL():
     }
 
 
-@pytest.mark.skipif(not pgmpy_available, reason="pympy not installed")
+@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_simple1_B():
     """
     A -> B

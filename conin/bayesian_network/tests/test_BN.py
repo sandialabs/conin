@@ -82,7 +82,7 @@ def simple1_BN(debug=False):
     return G
 
 
-@pytest.mark.skipif(not pgmpy_available, reason="pympy not installed")
+@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_simple1_ALL():
     """
     A -> B
@@ -97,7 +97,7 @@ def test_simple1_ALL():
     assert results.solutions[0].var_values == q
 
 
-@pytest.mark.skipif(not pgmpy_available, reason="pympy not installed")
+@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_simple1_B():
     """
     A -> B
@@ -115,7 +115,7 @@ def test_simple1_B():
     assert results.solutions[0].var_values == q
 
 
-@pytest.mark.skipif(not pgmpy_available, reason="pympy not installed")
+@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_cancer_ALL():
     """
     Cancer model from pgmpy examples
@@ -130,7 +130,7 @@ def test_cancer_ALL():
     assert results.solutions[0].var_values == q
 
 
-@pytest.mark.skipif(not pgmpy_available, reason="pympy not installed")
+@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_cancer_Cancer():
     """
     Cancer model from pgmpy examples
