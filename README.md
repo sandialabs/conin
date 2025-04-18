@@ -1,2 +1,3 @@
-# conin
-A python library for constrained inference with probablistic graphical models
+# clio
+
+A python library that supports the constrained analysis of latent variable stochastic models.

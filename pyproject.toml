@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools >= 64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name="clio"
+version="1.0"
+dependencies = ["pyomo", "munch", "numpy", "pytest", "black", "glpk", "pytest-cov"]
+readme = {file = "README.md", content-type = "text/plain"}
+description="Clio supports constrained analysis and learning for stochastic models with latent variables"
+classifiers=[
+        "Intended Audience :: End Users/Desktop",
+        "Intended Audience :: Science/Research",
+        #'License :: OSI Approved :: BSD License',
+        "Natural Language :: English",
+        #'Operating System :: MacOS',
+        #'Operating System :: Microsoft :: Windows',
+        "Operating System :: Unix",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
+        #"Programming Language :: Python :: 3.7",
+        #"Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Topic :: Scientific/Engineering :: Mathematics",
+        "Topic :: Software Development :: Libraries :: Python Modules",
+    ]
+
