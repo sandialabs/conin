@@ -35,15 +35,18 @@ def extract_factor_representation(pgm):
 
         # v
         for j, assignment in enumerate(assignments):
-            for key, value in assignment:
-                v[i, j, key] = value
+            if factor.get_value(**dict(assignment)) > 0:
+                for key, value in assignment:
+                    v[i, j, key] = value
 
         # w
         values = [factor.get_value(**dict(assignment)) for assignment in assignments]
         total = np.sum(factor.values)
+        # print("HERE",i,total,values)
         for j in range(size):
-            w[i, j] = log(values[j] / total)
-            j += 1
+            if values[j] > 0:
+                w[i, j] = log(values[j] / total)
+            # j += 1     WEH - Why are we skipping every other value?
     return S, J, v, w
 
 
@@ -74,12 +77,16 @@ complexity analysis would be too pessimistic.
 Similarly, the number of constraints in c4 is O(Mc), so the total number
 of constraints is O(N + M + Mcl + Mc) = O(N + Mcl).
 """
+
+
 def create_MN_map_query_model(pgm, X=None):
     S, J, v, w = extract_factor_representation(pgm)
     return create_MN_map_query_model_from_factorial_repn(S=S, J=J, v=v, w=w, X=X)
 
 
-def create_MN_map_query_model_from_factorial_repn(*, S=None, J=None, v=None, w=None, X=None):
+def create_MN_map_query_model_from_factorial_repn(
+    *, S=None, J=None, v=None, w=None, X=None
+):
     #
     # S[r]: the (finite) set of possible values of variable X_r
     #           Variable values s can be integers or strings
@@ -100,7 +107,8 @@ def create_MN_map_query_model_from_factorial_repn(*, S=None, J=None, v=None, w=N
     RS = [(r, s) for r, values in S.items() for s in values]
 
     I = list(J.keys())
-    IJ = [(i, j) for i, values in J.items() for j in values]
+    # IJ = [(i, j) for i, values in J.items() for j in values]
+    IJ = list(sorted(w.keys()))
 
     V = {(i, j): [] for i, j in IJ}
     for i, j, r in v:
@@ -146,8 +154,8 @@ def create_MN_map_query_model_from_factorial_repn(*, S=None, J=None, v=None, w=N
 
     # If factor i is not in configuration j, then at least one of its corresponding variables is not set to the values for configuration j
     def c4_(M, i, j):
-        return sum(M.x[r, v[i, j, r]] for r in V[i, j]) <= M.y[i, j] + (
-            len(V[i, j]) - 1
+        return sum(M.x[r, v[i, j, r]] for r in V.get((i, j), [])) <= M.y[i, j] + (
+            len(V.get((i, j), [])) - 1
         )
 
     model.c4 = pyo.Constraint(IJ, rule=c4_)
@@ -160,9 +168,7 @@ def create_MN_map_query_model_from_factorial_repn(*, S=None, J=None, v=None, w=N
     return model
 
 
-def optimize_map_query_model(
-    model, *, solver="glpk", tee=False, with_fixed=False
-):
+def optimize_map_query_model(model, *, solver="glpk", tee=False, with_fixed=False):
     opt = pyo.SolverFactory(solver)
     res = opt.solve(model, tee=tee)
     # TODO: check optimality conditions

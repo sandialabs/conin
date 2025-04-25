@@ -1,11 +1,11 @@
 from math import log
 import numpy as np
 import pyomo.environ as pyo
-from conin.markov_network import (
-    create_MN_map_query_model,
-    optimize_map_query_model
+from conin.markov_network import create_MN_map_query_model, optimize_map_query_model
+from conin.markov_network.inference import (
+    extract_factor_representation,
+    create_MN_map_query_model_from_factorial_repn,
 )
-from conin.markov_network.inference import extract_factor_representation, create_MN_map_query_model_from_factorial_repn
 
 try:
     from pgmpy.models import MarkovNetwork
