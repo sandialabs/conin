@@ -182,7 +182,9 @@ def optimize_map_query_model(
         fixed_variables
     ), "Some variables do not have values."
 
+    soln = munch.Munch(variable_value=var, log_factor_sum=pyo.value(model.o))
     return munch.Munch(
-        solutions=[munch.Munch(var_values=var, log_factor_sum=pyo.value(model.o))],
+        solution=soln,
+        solutions=[soln],
         termination_condition="ok",
     )

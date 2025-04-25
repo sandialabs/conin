@@ -71,7 +71,7 @@ def test_simple0_ALL():
     G = simple0_DBN(False)
     model = create_DBN_map_query_model(pgm=G)  # variables=None, evidence=None
     results = optimize_map_query_model(model)  # num=1
-    assert results.solutions[0].var_values == {("Z", 0): 1, ("Z", 1): 0}
+    assert results.solutions[0].variable_value == {("Z", 0): 1, ("Z", 1): 0}
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -83,7 +83,7 @@ def test_simple1_ALL():
     # assert q == {'A':0, 'B':1}
     model = create_DBN_map_query_model(pgm=G)  # variables=None, evidence=None
     results = optimize_map_query_model(model)  # num=1
-    assert results.solutions[0].var_values == {
+    assert results.solutions[0].variable_value == {
         ("A", 0): 0,
         ("A", 1): 1,
         ("B", 0): 1,
@@ -103,4 +103,4 @@ def test_simple1_B():
         pgm=G, evidence={("A", 0): 1}
     )  # variables=None, evidence=None
     results = optimize_map_query_model(model)  # num=1
-    assert results.solutions[0].var_values == {("A", 1): 0, ("B", 0): 0, ("B", 1): 1}
+    assert results.solutions[0].variable_value == {("A", 1): 0, ("B", 0): 0, ("B", 1): 1}

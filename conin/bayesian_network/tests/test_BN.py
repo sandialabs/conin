@@ -94,7 +94,7 @@ def test_simple1_ALL():
 
     model = create_BN_map_query_model(pgm=G)  # variables=None, evidence=None
     results = optimize_map_query_model(model)  # num=1
-    assert results.solutions[0].var_values == q
+    assert results.solutions[0].variable_value == q
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -112,7 +112,7 @@ def test_simple1_B():
     )  # variables=None, evidence=None
     # model.pprint()
     results = optimize_map_query_model(model)  # num=1
-    assert results.solutions[0].var_values == q
+    assert results.solutions[0].variable_value == q
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -127,7 +127,7 @@ def test_cancer_ALL():
 
     model = create_BN_map_query_model(pgm=G)  # variables=None, evidence=None
     results = optimize_map_query_model(model)  # num=1
-    assert results.solutions[0].var_values == q
+    assert results.solutions[0].variable_value == q
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -146,4 +146,4 @@ def test_cancer_Cancer():
         pgm=G, evidence={"Cancer": 0}
     )  # variables=None, evidence=None
     results = optimize_map_query_model(model)  # num=1
-    assert results.solutions[0].var_values == q
+    assert results.solutions[0].variable_value == q
