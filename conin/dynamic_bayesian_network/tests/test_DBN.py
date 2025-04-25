@@ -103,4 +103,8 @@ def test_simple1_B():
         pgm=G, evidence={("A", 0): 1}
     )  # variables=None, evidence=None
     results = optimize_map_query_model(model)  # num=1
-    assert results.solutions[0].variable_value == {("A", 1): 0, ("B", 0): 0, ("B", 1): 1}
+    assert results.solutions[0].variable_value == {
+        ("A", 1): 0,
+        ("B", 0): 0,
+        ("B", 1): 1,
+    }
