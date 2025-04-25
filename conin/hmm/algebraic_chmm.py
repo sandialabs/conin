@@ -109,6 +109,7 @@ def _create_index_sets(*, hmm, observations):
     index_sets.G = G
     index_sets.GG = GG
     index_sets.states = states
+    index_sets.observations_index = obs
 
     return index_sets
 
