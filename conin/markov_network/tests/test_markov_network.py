@@ -3,9 +3,9 @@ import numpy as np
 import pyomo.environ as pyo
 from conin.markov_network import (
     create_MN_map_query_model,
-    optimize_map_query_model,
-    extract_factor_representation,
+    optimize_map_query_model
 )
+from conin.markov_network.inference import extract_factor_representation, create_MN_map_query_model_from_factorial_repn
 
 try:
     from pgmpy.models import MarkovNetwork
@@ -54,7 +54,7 @@ def test_example6():
         ("A_B", 3): -log(6),
     }
 
-    model = create_MN_map_query_model(S=S, J=J, v=v, w=w)
+    model = create_MN_map_query_model_from_factorial_repn(S=S, J=J, v=v, w=w)
     results = optimize_map_query_model(model)
     assert results.solutions[0].var_values == {"A": 0, "B": 1}
 
@@ -71,7 +71,7 @@ def test_example6():
         assert J == J_
         assert v == v_
         assert w == w_
-        model = create_MN_map_query_model(pgm=G)
+        model = create_MN_map_query_model(G)
         results = optimize_map_query_model(model)
         assert results.solutions[0].var_values == {"A": 0, "B": 1}
 
@@ -201,7 +201,7 @@ def test_ABC():
         ("A_C", 8): -log(9),
     }
 
-    model = create_MN_map_query_model(S=S, J=J, v=v, w=w)
+    model = create_MN_map_query_model_from_factorial_repn(S=S, J=J, v=v, w=w)
     results = optimize_map_query_model(model)
     assert results.solutions[0].var_values == {"A": 2, "B": 2, "C": 1}
 
@@ -223,7 +223,7 @@ def test_ABC():
         assert J == J_
         assert v == v_
         assert w == w_
-        model = create_MN_map_query_model(pgm=G)
+        model = create_MN_map_query_model(G)
         results = optimize_map_query_model(model)
         assert results.solutions[0].var_values == {"A": 2, "B": 2, "C": 1}
 
@@ -353,7 +353,7 @@ def test_ABC_constrained():
         ("A_C", 8): -log(9),
     }
 
-    model = create_MN_map_query_model(S=S, J=J, v=v, w=w)
+    model = create_MN_map_query_model_from_factorial_repn(S=S, J=J, v=v, w=w)
 
     # Constrain the inference to ensure that all variables have different values
     def diff_(M, s):
@@ -382,7 +382,7 @@ def test_ABC_constrained():
         assert J == J_
         assert v == v_
         assert w == w_
-        model = create_MN_map_query_model(pgm=G)
+        model = create_MN_map_query_model(G)
 
         # Constrain the inference to ensure that all variables have different values
         def diff_(M, s):

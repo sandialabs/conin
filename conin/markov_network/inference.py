@@ -74,11 +74,12 @@ complexity analysis would be too pessimistic.
 Similarly, the number of constraints in c4 is O(Mc), so the total number
 of constraints is O(N + M + Mcl + Mc) = O(N + Mcl).
 """
+def create_MN_map_query_model(pgm, X=None):
+    S, J, v, w = extract_factor_representation(pgm)
+    return create_MN_map_query_model_from_factorial_repn(S=S, J=J, v=v, w=w, X=X)
 
 
-def create_MN_map_query_model(*, pgm=None, S=None, J=None, v=None, w=None, X=None):
-    if pgm is not None:
-        S, J, v, w = extract_factor_representation(pgm)
+def create_MN_map_query_model_from_factorial_repn(*, S=None, J=None, v=None, w=None, X=None):
     #
     # S[r]: the (finite) set of possible values of variable X_r
     #           Variable values s can be integers or strings
