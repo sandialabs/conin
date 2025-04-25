@@ -76,7 +76,7 @@ of constraints is O(N + M + Mcl + Mc) = O(N + Mcl).
 """
 
 
-def pyomo_MN_inference_formulation(*, pgm=None, S=None, J=None, v=None, w=None, X=None):
+def create_MN_map_query_model(*, pgm=None, S=None, J=None, v=None, w=None, X=None):
     if pgm is not None:
         S, J, v, w = extract_factor_representation(pgm)
     #
@@ -159,7 +159,7 @@ def pyomo_MN_inference_formulation(*, pgm=None, S=None, J=None, v=None, w=None, 
     return model
 
 
-def optimize_pyomo_inference_model(
+def optimize_map_query_model(
     model, *, solver="glpk", tee=False, with_fixed=False
 ):
     opt = pyo.SolverFactory(solver)

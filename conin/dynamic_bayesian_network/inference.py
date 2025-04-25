@@ -1,4 +1,4 @@
-from conin.bayesian_network import pyomo_BN_map_query
+from conin.bayesian_network import create_BN_map_query_model
 
 
 def create_bn_from_dbn(*, dbn, start, stop):
@@ -21,6 +21,6 @@ def create_bn_from_dbn(*, dbn, start, stop):
     return bn
 
 
-def pyomo_DBN_map_query(*, pgm, start=0, stop=1, variables=None, evidence=None):
+def create_DBN_map_query_model(*, pgm, start=0, stop=1, variables=None, evidence=None):
     bn = create_bn_from_dbn(dbn=pgm, start=start, stop=stop)
-    return pyomo_BN_map_query(pgm=bn, variables=variables, evidence=evidence)
+    return create_BN_map_query_model(pgm=bn, variables=variables, evidence=evidence)

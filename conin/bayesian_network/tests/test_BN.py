@@ -1,5 +1,5 @@
 import pytest
-from conin.bayesian_network import pyomo_BN_map_query, optimize_pyomo_inference_model
+from conin.bayesian_network import create_BN_map_query_model, optimize_map_query_model
 
 try:
     from pgmpy.models import DiscreteBayesianNetwork
@@ -92,8 +92,8 @@ def test_simple1_ALL():
     q = infer.map_query(variables=["A", "B"])
     assert q == {"A": 0, "B": 1}
 
-    model = pyomo_BN_map_query(pgm=G)  # variables=None, evidence=None
-    results = optimize_pyomo_inference_model(model)  # num=1
+    model = create_BN_map_query_model(pgm=G)  # variables=None, evidence=None
+    results = optimize_map_query_model(model)  # num=1
     assert results.solutions[0].var_values == q
 
 
@@ -107,11 +107,11 @@ def test_simple1_B():
     q = infer.map_query(variables=["B"], evidence={"A": 1})
     assert q == {"B": 0}
 
-    model = pyomo_BN_map_query(
+    model = create_BN_map_query_model(
         pgm=G, evidence={"A": 1}
     )  # variables=None, evidence=None
     # model.pprint()
-    results = optimize_pyomo_inference_model(model)  # num=1
+    results = optimize_map_query_model(model)  # num=1
     assert results.solutions[0].var_values == q
 
 
@@ -125,8 +125,8 @@ def test_cancer_ALL():
     q = infer.map_query(variables=["Cancer", "Dyspnoea", "Pollution", "Smoker", "Xray"])
     assert q == {"Cancer": 1, "Dyspnoea": 1, "Pollution": 0, "Smoker": 1, "Xray": 1}
 
-    model = pyomo_BN_map_query(pgm=G)  # variables=None, evidence=None
-    results = optimize_pyomo_inference_model(model)  # num=1
+    model = create_BN_map_query_model(pgm=G)  # variables=None, evidence=None
+    results = optimize_map_query_model(model)  # num=1
     assert results.solutions[0].var_values == q
 
 
@@ -142,8 +142,8 @@ def test_cancer_Cancer():
     )
     assert q == {"Xray": 0, "Dyspnoea": 0, "Smoker": 0, "Pollution": 0}
 
-    model = pyomo_BN_map_query(
+    model = create_BN_map_query_model(
         pgm=G, evidence={"Cancer": 0}
     )  # variables=None, evidence=None
-    results = optimize_pyomo_inference_model(model)  # num=1
+    results = optimize_map_query_model(model)  # num=1
     assert results.solutions[0].var_values == q

@@ -1,7 +1,7 @@
 import pytest
 from conin.dynamic_bayesian_network import (
-    pyomo_DBN_map_query,
-    optimize_pyomo_inference_model,
+    create_DBN_map_query_model,
+    optimize_map_query_model,
 )
 
 try:
@@ -69,8 +69,8 @@ def test_simple0_ALL():
     Z_0 -> Z_1
     """
     G = simple0_DBN(False)
-    model = pyomo_DBN_map_query(pgm=G)  # variables=None, evidence=None
-    results = optimize_pyomo_inference_model(model)  # num=1
+    model = create_DBN_map_query_model(pgm=G)  # variables=None, evidence=None
+    results = optimize_map_query_model(model)  # num=1
     assert results.solutions[0].var_values == {("Z", 0): 1, ("Z", 1): 0}
 
 
@@ -81,8 +81,8 @@ def test_simple1_ALL():
     """
     G = simple1_DBN()
     # assert q == {'A':0, 'B':1}
-    model = pyomo_DBN_map_query(pgm=G)  # variables=None, evidence=None
-    results = optimize_pyomo_inference_model(model)  # num=1
+    model = create_DBN_map_query_model(pgm=G)  # variables=None, evidence=None
+    results = optimize_map_query_model(model)  # num=1
     assert results.solutions[0].var_values == {
         ("A", 0): 0,
         ("A", 1): 1,
@@ -99,8 +99,8 @@ def test_simple1_B():
     G = simple1_DBN()
     # assert q == {'B':0}
 
-    model = pyomo_DBN_map_query(
+    model = create_DBN_map_query_model(
         pgm=G, evidence={("A", 0): 1}
     )  # variables=None, evidence=None
-    results = optimize_pyomo_inference_model(model)  # num=1
+    results = optimize_map_query_model(model)  # num=1
     assert results.solutions[0].var_values == {("A", 1): 0, ("B", 0): 0, ("B", 1): 1}

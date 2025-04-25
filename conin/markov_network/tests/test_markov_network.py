@@ -2,8 +2,8 @@ from math import log
 import numpy as np
 import pyomo.environ as pyo
 from conin.markov_network import (
-    pyomo_MN_inference_formulation,
-    optimize_pyomo_inference_model,
+    create_MN_map_query_model,
+    optimize_map_query_model,
     extract_factor_representation,
 )
 
@@ -54,8 +54,8 @@ def test_example6():
         ("A_B", 3): -log(6),
     }
 
-    model = pyomo_MN_inference_formulation(S=S, J=J, v=v, w=w)
-    results = optimize_pyomo_inference_model(model)
+    model = create_MN_map_query_model(S=S, J=J, v=v, w=w)
+    results = optimize_map_query_model(model)
     assert results.solutions[0].var_values == {"A": 0, "B": 1}
 
     if pgmpy_available:
@@ -71,8 +71,8 @@ def test_example6():
         assert J == J_
         assert v == v_
         assert w == w_
-        model = pyomo_MN_inference_formulation(pgm=G)
-        results = optimize_pyomo_inference_model(model)
+        model = create_MN_map_query_model(pgm=G)
+        results = optimize_map_query_model(model)
         assert results.solutions[0].var_values == {"A": 0, "B": 1}
 
 
@@ -201,8 +201,8 @@ def test_ABC():
         ("A_C", 8): -log(9),
     }
 
-    model = pyomo_MN_inference_formulation(S=S, J=J, v=v, w=w)
-    results = optimize_pyomo_inference_model(model)
+    model = create_MN_map_query_model(S=S, J=J, v=v, w=w)
+    results = optimize_map_query_model(model)
     assert results.solutions[0].var_values == {"A": 2, "B": 2, "C": 1}
 
     if pgmpy_available:
@@ -223,8 +223,8 @@ def test_ABC():
         assert J == J_
         assert v == v_
         assert w == w_
-        model = pyomo_MN_inference_formulation(pgm=G)
-        results = optimize_pyomo_inference_model(model)
+        model = create_MN_map_query_model(pgm=G)
+        results = optimize_map_query_model(model)
         assert results.solutions[0].var_values == {"A": 2, "B": 2, "C": 1}
 
 
@@ -353,7 +353,7 @@ def test_ABC_constrained():
         ("A_C", 8): -log(9),
     }
 
-    model = pyomo_MN_inference_formulation(S=S, J=J, v=v, w=w)
+    model = create_MN_map_query_model(S=S, J=J, v=v, w=w)
 
     # Constrain the inference to ensure that all variables have different values
     def diff_(M, s):
@@ -361,7 +361,7 @@ def test_ABC_constrained():
 
     model.diff = pyo.Constraint([0, 1, 2], rule=diff_)
 
-    results = optimize_pyomo_inference_model(model)
+    results = optimize_map_query_model(model)
     assert results.solutions[0].var_values == {"A": 0, "B": 2, "C": 1}
 
     if pgmpy_available:
@@ -382,7 +382,7 @@ def test_ABC_constrained():
         assert J == J_
         assert v == v_
         assert w == w_
-        model = pyomo_MN_inference_formulation(pgm=G)
+        model = create_MN_map_query_model(pgm=G)
 
         # Constrain the inference to ensure that all variables have different values
         def diff_(M, s):
@@ -390,5 +390,5 @@ def test_ABC_constrained():
 
         model.diff = pyo.Constraint([0, 1, 2], rule=diff_)
 
-        results = optimize_pyomo_inference_model(model)
+        results = optimize_map_query_model(model)
         assert results.solutions[0].var_values == {"A": 0, "B": 2, "C": 1}

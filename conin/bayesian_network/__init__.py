@@ -1,2 +1,2 @@
-from .inference import pyomo_BN_map_query
-from conin.markov_network import optimize_pyomo_inference_model
+from .inference import create_BN_map_query_model
+from conin.markov_network import optimize_map_query_model

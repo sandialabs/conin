@@ -1,9 +1,9 @@
-from conin.markov_network import pyomo_MN_inference_formulation
+from conin.markov_network import create_MN_map_query_model
 
 
-def pyomo_BN_map_query(*, pgm, variables=None, evidence=None):
+def create_BN_map_query_model(*, pgm, variables=None, evidence=None):
     MN = pgm.to_markov_model()
-    model = pyomo_MN_inference_formulation(
+    model = create_MN_map_query_model(
         pgm=MN, X=getattr(pgm, "_pyomo_node_index", None)
     )
     if evidence is not None:
