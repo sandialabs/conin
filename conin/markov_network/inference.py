@@ -1,8 +1,16 @@
+from dataclasses import dataclass
 import sys
 from math import log, prod
 import munch
-import pyomo.environ as pyo
+import pyomo.environ as pe
+from pyomo.common.timing import tic, toc
+import pprint
 import numpy as np
+
+
+@dataclass(order=True, frozen=True)
+class State:
+    s: tuple
 
 
 def extract_factor_representation(pgm):
@@ -20,7 +28,7 @@ def extract_factor_representation(pgm):
     # w[i,j]: the log-probability of factor i in configuration j
     #           Note that j \in J[i]
     #
-    S = pgm.states
+    S = {r:[State(s=s) for s in values] for r,values in pgm.states.items()}
     J = {}
     v = {}
     w = {}
@@ -37,7 +45,7 @@ def extract_factor_representation(pgm):
         for j, assignment in enumerate(assignments):
             if factor.get_value(**dict(assignment)) > 0:
                 for key, value in assignment:
-                    v[i, j, key] = value
+                    v[i, j, key] = State(value)
 
         # w
         values = [factor.get_value(**dict(assignment)) for assignment in assignments]
@@ -79,9 +87,16 @@ of constraints is O(N + M + Mcl + Mc) = O(N + Mcl).
 """
 
 
-def create_MN_map_query_model(pgm, X=None):
+def create_MN_map_query_model(pgm, X=None, evidence=None):
     S, J, v, w = extract_factor_representation(pgm)
-    return create_MN_map_query_model_from_factorial_repn(S=S, J=J, v=v, w=w, X=X)
+    model = create_MN_map_query_model_from_factorial_repn(S=S, J=J, v=v, w=w, X=X)
+
+    if evidence is not None:
+        for k, v in evidence.items():
+            model.X[k, State(v)].fix(1)
+
+    return model
+
 
 
 def create_MN_map_query_model_from_factorial_repn(
@@ -103,12 +118,14 @@ def create_MN_map_query_model_from_factorial_repn(
     #
     # X[hr]: a dictionary that maps hashable value hr to variable name X_r
     #
+    tic()
     R = list(S.keys())
     RS = [(r, s) for r, values in S.items() for s in values]
 
     I = list(J.keys())
     # IJ = [(i, j) for i, values in J.items() for j in values]
     IJ = list(sorted(w.keys()))
+    IJset = set(w.keys())
 
     V = {(i, j): [] for i, j in IJ}
     for i, j, r in v:
@@ -118,39 +135,48 @@ def create_MN_map_query_model_from_factorial_repn(
     # TODO: consistency checks on inputs
     #   v[i,j,r] in S[r]
     #   {(i,j) in w} == IJ
+    toc("DATA")
 
     #
     # Integer programming formulation
     #
-    model = pyo.ConcreteModel()
+    model = pe.ConcreteModel()
 
     # x[r,s] is 1 iff variable X_r = s
-    model.x = pyo.Var(RS, within=pyo.Binary)
+    model.x = pe.Var(RS, within=pe.Binary)
     # y[i,j] is 1 iff factor i is in configuration (row) j
-    model.y = pyo.Var(IJ, within=pyo.Binary)
+    model.y = pe.Var(IJ, within=pe.Binary)
 
     if X is None:
         model.X = {rs: model.x[rs] for rs in RS}
     else:
         model.X = {(r, s): model.x[X[r], s] for r in X for s in S[X[r]]}
 
+    toc("VARIABLES")
+
     # Each variable X_r only assumes one value
     def c1_(M, r):
         return sum(M.x[r, s] for s in S[r]) == 1
 
-    model.c1 = pyo.Constraint(R, rule=c1_)
+    model.c1 = pe.Constraint(R, rule=c1_)
+
+    toc("c1")
 
     # Each factor i can only be in one configration for the joint distribution
     def c2_(M, i):
-        return sum(M.y[i, j] for j in J[i]) == 1
+        return sum(M.y[i, j] for j in J[i] if (i,j) in IJset) == 1
 
-    model.c2 = pyo.Constraint(I, rule=c2_)
+    model.c2 = pe.Constraint(I, rule=c2_)
+
+    toc("c2")
 
     # Factor i cannot assume configuration j unless its corresponding variables are set to the correct values
     def c3_(M, i, j, r):
         return M.y[i, j] <= M.x[r, v[i, j, r]]
 
-    model.c3 = pyo.Constraint(IJR, rule=c3_)
+    model.c3 = pe.Constraint(IJR, rule=c3_)
+
+    toc("c3")
 
     # If factor i is not in configuration j, then at least one of its corresponding variables is not set to the values for configuration j
     def c4_(M, i, j):
@@ -158,18 +184,22 @@ def create_MN_map_query_model_from_factorial_repn(
             len(V.get((i, j), [])) - 1
         )
 
-    model.c4 = pyo.Constraint(IJ, rule=c4_)
+    model.c4 = pe.Constraint(IJ, rule=c4_)
+
+    toc("c4")
 
     # Maximize the sum of log-values of all posible factors and configurations
-    model.o = pyo.Objective(
-        expr=sum(w[i, j] * model.y[i, j] for i, j in IJ), sense=pyo.maximize
+    model.o = pe.Objective(
+        expr=sum(w[i, j] * model.y[i, j] for i, j in IJ), sense=pe.maximize
     )
+
+    toc("DONE")
 
     return model
 
 
-def optimize_map_query_model(model, *, solver="glpk", tee=False, with_fixed=False):
-    opt = pyo.SolverFactory(solver)
+def optimize_map_query_model(model, *, solver="gurobi", tee=False, with_fixed=False):
+    opt = pe.SolverFactory(solver)
     res = opt.solve(model, tee=tee)
     # TODO: check optimality conditions
 
@@ -180,15 +210,15 @@ def optimize_map_query_model(model, *, solver="glpk", tee=False, with_fixed=Fals
         variables.add(r)
         if model.X[r, s].is_fixed():
             fixed_variables.add(r)
-            if with_fixed and pyo.value(model.X[r, s]) > 0.5:
+            if with_fixed and pe.value(model.X[r, s]) > 0.5:
                 var[r] = s
-        elif pyo.value(model.X[r, s]) > 0.5:
+        elif pe.value(model.X[r, s]) > 0.5:
             var[r] = s
     assert variables == set(var.keys()).union(
         fixed_variables
     ), "Some variables do not have values."
 
-    soln = munch.Munch(variable_value=var, log_factor_sum=pyo.value(model.o))
+    soln = munch.Munch(variable_value=var, log_factor_sum=pe.value(model.o))
     return munch.Munch(
         solution=soln,
         solutions=[soln],
