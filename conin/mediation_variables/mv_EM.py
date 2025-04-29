@@ -127,8 +127,8 @@ def mv_EM(obs,hmm,cst,sat=True, conv_tol = 1e-8, max_iter = 1000, emit_opt = Non
     while (conv > conv_tol) and (it <= max_iter):
         it += 1
         new_hmm_params, dat_prob = mv_BaumWelch(old_hmm_params, emit_weights, old_cst_params)
-        if emit_opt:
-            emit_opt(*args) #args to be passed in and defined later.
+        # if emit_opt:
+        #     emit_opt(*args) #args to be passed in and defined later.
         conv = np.linalg.norm(new_hmm_params[0] - old_hmm_params[0]) #stopping criterion based on just transition matrix
         old_hmm_params = new_hmm_params
         
