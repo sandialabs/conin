@@ -38,17 +38,18 @@ def _create_index_sets(*, hmm, observations):
     F = set()
     # FF: (t,a,b) such that transition probability == 0
     FF = set()
-    # G: (t,a,b) ->  (transition probability at time t from a to b) * (emission probability for b at time t+1)
-    G = {}
+    # Gt: (t,a,b) ->  log(transition probability at time t from a to b)
+    Gt = {}
+    # Ge: (t,b) ->  log(emission probability for b at time t+1)
+    Ge = {}
     states = {}
     for t in T:
         if t == 0:
             curr = set()
             for i in A:
                 if start_probs[i] > 0 and emission_probs[i][obs[t]] > 0:
-                    G[-1, -1, i] = math.log(start_probs[i]) + math.log(
-                        emission_probs[i][obs[t]]
-                    )
+                    Gt[-1, -1, i] = math.log(start_probs[i])
+                    Ge[-1, i] = math.log(emission_probs[i][obs[t]])
                     curr.add(i)
                 else:
                     FF.add((-1, -1, i))
@@ -60,9 +61,8 @@ def _create_index_sets(*, hmm, observations):
                 for b, val in enumerate(row):
                     F.add((a, b))
                     if val > 0 and emission_probs[b][obs[t]] > 0:
-                        G[t - 1, a, b] = math.log(val) + math.log(
-                            emission_probs[b][obs[t]]
-                        )
+                        Gt[t - 1, a, b] = math.log(val)
+                        Ge[t - 1, b] = math.log(emission_probs[b][obs[t]])
                         curr.add(b)
                     else:
                         FF.add((t - 1, a, b))
@@ -84,7 +84,7 @@ def _create_index_sets(*, hmm, observations):
     # for v in GG:
     #    print("GG",v)
 
-    E = list(G.keys()) + list(GG)
+    E = list(Gt.keys()) + list(GG)
     #           (t,a,b) where
     #           (t, -1,  i) when t = -1
     #           (t,  a,  b) when t = 0..Tmax-1
@@ -106,7 +106,8 @@ def _create_index_sets(*, hmm, observations):
     index_sets.E = E
     index_sets.F = F  # Not used
     index_sets.FF = FF  # Not used
-    index_sets.G = G
+    index_sets.Gt = Gt
+    index_sets.Ge = Ge
     index_sets.GG = GG
     index_sets.states = states
     index_sets.observations_index = obs
@@ -257,7 +258,7 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
                 return m.x[t, b] == m.y[-1, -1, b]
             else:
                 return m.x[t, b] == sum(
-                    m.y[t - 1, aa, b] for aa in D.A if (t - 1, aa, b) in D.G
+                    m.y[t - 1, aa, b] for aa in D.A if (t - 1, aa, b) in D.Gt
                 )
 
         M.hmm.hidden = pyo.Constraint(D.T, D.A, rule=hidden_)
@@ -269,22 +270,22 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
                 return pyo.Constraint.Skip
             elif t == 0:
                 return m.y[-1, -1, b] == sum(
-                    m.y[t, b, a] for a in D.A if (t, b, a) in D.G
+                    m.y[t, b, a] for a in D.A if (t, b, a) in D.Gt
                 )
             elif t == D.Tmax - 1:
                 return (
-                    sum(m.y[t - 1, a, b] for a in D.A if (t - 1, a, b) in D.G)
+                    sum(m.y[t - 1, a, b] for a in D.A if (t - 1, a, b) in D.Gt)
                     == m.y[t, b, -2]
                 )
             else:
                 return sum(
-                    m.y[t - 1, a, b] for a in D.A if (t - 1, a, b) in D.G
-                ) == sum(m.y[t, b, a] for a in D.A if (t, b, a) in D.G)
+                    m.y[t - 1, a, b] for a in D.A if (t - 1, a, b) in D.Gt
+                ) == sum(m.y[t, b, a] for a in D.A if (t, b, a) in D.Gt)
 
         M.hmm.flow = pyo.Constraint(D.T, D.A, rule=flow_)
 
         def flow_start_(m):
-            return sum(m.y[-1, -1, b] for b in D.A if (-1, -1, b) in D.G) == 1
+            return sum(m.y[-1, -1, b] for b in D.A if (-1, -1, b) in D.Gt) == 1
 
         M.hmm.flow_start = pyo.Constraint(rule=flow_start_)
 
@@ -300,7 +301,7 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
 
         M.hmm.o = pyo.Objective(
             expr=sum(
-                D.G[t, a, b] * M.hmm.y[t, a, b] for t, a, b in D.G
+                (D.Gt[t, a, b] + D.Ge[t,b])* M.hmm.y[t, a, b] for t, a, b in D.Gt
             ),  # + -(10**6) * M.hmm.O,
             sense=pyo.maximize,
         )
