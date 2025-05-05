@@ -2,10 +2,8 @@ from math import log
 import numpy as np
 import pyomo.environ as pyo
 from conin.markov_network import create_MN_map_query_model, optimize_map_query_model
-from conin.markov_network.inference import (
-    extract_factor_representation,
-    create_MN_map_query_model_from_factorial_repn,
-)
+from conin.markov_network.factor_repn import extract_factor_representation, State
+from conin.markov_network.inference import create_MN_map_query_model_from_factorial_repn
 
 try:
     from pgmpy.models import MarkovNetwork
@@ -24,23 +22,23 @@ def test_example6():
     Non-uniform weights are applied to the A_B factors to remove a degeneracy w.r.t. the
     value of variable A.
     """
-    S = {"A": [0, 1], "B": [0, 1]}
+    S = {"A": [State(0), State(1)], "B": [State(0), State(1)]}
 
     J = {"A": [0, 1], "B": [0, 1], "A_B": [0, 1, 2, 3]}
 
     v = {
-        ("A", 0, "A"): 0,
-        ("A", 1, "A"): 1,
-        ("B", 0, "B"): 0,
-        ("B", 1, "B"): 1,
-        ("A_B", 0, "A"): 0,
-        ("A_B", 0, "B"): 0,
-        ("A_B", 1, "A"): 0,
-        ("A_B", 1, "B"): 1,
-        ("A_B", 2, "A"): 1,
-        ("A_B", 2, "B"): 0,
-        ("A_B", 3, "A"): 1,
-        ("A_B", 3, "B"): 1,
+        ("A", 0, "A"): State(0),
+        ("A", 1, "A"): State(1),
+        ("B", 0, "B"): State(0),
+        ("B", 1, "B"): State(1),
+        ("A_B", 0, "A"): State(0),
+        ("A_B", 0, "B"): State(0),
+        ("A_B", 1, "A"): State(0),
+        ("A_B", 1, "B"): State(1),
+        ("A_B", 2, "A"): State(1),
+        ("A_B", 2, "B"): State(0),
+        ("A_B", 3, "A"): State(1),
+        ("A_B", 3, "B"): State(1),
     }
 
     w = {
@@ -85,7 +83,7 @@ def test_ABC():
 
     The MAP solution is A:2, B:2, C:1.
     """
-    S = {"A": [0, 1, 2], "B": [0, 1, 2], "C": [0, 1, 2]}
+    S = {"A": [State(0), State(1), State(2)], "B": [State(0), State(1), State(2)], "C": [State(0), State(1), State(2)]}
 
     J = {
         "A": [0, 1, 2],
@@ -97,69 +95,69 @@ def test_ABC():
     }
 
     v = {
-        ("A", 0, "A"): 0,
-        ("A", 1, "A"): 1,
-        ("A", 2, "A"): 2,
-        ("B", 0, "B"): 0,
-        ("B", 1, "B"): 1,
-        ("B", 2, "B"): 2,
-        ("C", 0, "C"): 0,
-        ("C", 1, "C"): 1,
-        ("C", 2, "C"): 2,
-        ("A_B", 0, "A"): 0,
-        ("A_B", 0, "B"): 0,
-        ("A_B", 1, "A"): 0,
-        ("A_B", 1, "B"): 1,
-        ("A_B", 2, "A"): 0,
-        ("A_B", 2, "B"): 2,
-        ("A_B", 3, "A"): 1,
-        ("A_B", 3, "B"): 0,
-        ("A_B", 4, "A"): 1,
-        ("A_B", 4, "B"): 1,
-        ("A_B", 5, "A"): 1,
-        ("A_B", 5, "B"): 2,
-        ("A_B", 6, "A"): 2,
-        ("A_B", 6, "B"): 0,
-        ("A_B", 7, "A"): 2,
-        ("A_B", 7, "B"): 1,
-        ("A_B", 8, "A"): 2,
-        ("A_B", 8, "B"): 2,
-        ("B_C", 0, "B"): 0,
-        ("B_C", 0, "C"): 0,
-        ("B_C", 1, "B"): 0,
-        ("B_C", 1, "C"): 1,
-        ("B_C", 2, "B"): 0,
-        ("B_C", 2, "C"): 2,
-        ("B_C", 3, "B"): 1,
-        ("B_C", 3, "C"): 0,
-        ("B_C", 4, "B"): 1,
-        ("B_C", 4, "C"): 1,
-        ("B_C", 5, "B"): 1,
-        ("B_C", 5, "C"): 2,
-        ("B_C", 6, "B"): 2,
-        ("B_C", 6, "C"): 0,
-        ("B_C", 7, "B"): 2,
-        ("B_C", 7, "C"): 1,
-        ("B_C", 8, "B"): 2,
-        ("B_C", 8, "C"): 2,
-        ("A_C", 0, "A"): 0,
-        ("A_C", 0, "C"): 0,
-        ("A_C", 1, "A"): 0,
-        ("A_C", 1, "C"): 1,
-        ("A_C", 2, "A"): 0,
-        ("A_C", 2, "C"): 2,
-        ("A_C", 3, "A"): 1,
-        ("A_C", 3, "C"): 0,
-        ("A_C", 4, "A"): 1,
-        ("A_C", 4, "C"): 1,
-        ("A_C", 5, "A"): 1,
-        ("A_C", 5, "C"): 2,
-        ("A_C", 6, "A"): 2,
-        ("A_C", 6, "C"): 0,
-        ("A_C", 7, "A"): 2,
-        ("A_C", 7, "C"): 1,
-        ("A_C", 8, "A"): 2,
-        ("A_C", 8, "C"): 2,
+        ("A", 0, "A"): State(0),
+        ("A", 1, "A"): State(1),
+        ("A", 2, "A"): State(2),
+        ("B", 0, "B"): State(0),
+        ("B", 1, "B"): State(1),
+        ("B", 2, "B"): State(2),
+        ("C", 0, "C"): State(0),
+        ("C", 1, "C"): State(1),
+        ("C", 2, "C"): State(2),
+        ("A_B", 0, "A"): State(0),
+        ("A_B", 0, "B"): State(0),
+        ("A_B", 1, "A"): State(0),
+        ("A_B", 1, "B"): State(1),
+        ("A_B", 2, "A"): State(0),
+        ("A_B", 2, "B"): State(2),
+        ("A_B", 3, "A"): State(1),
+        ("A_B", 3, "B"): State(0),
+        ("A_B", 4, "A"): State(1),
+        ("A_B", 4, "B"): State(1),
+        ("A_B", 5, "A"): State(1),
+        ("A_B", 5, "B"): State(2),
+        ("A_B", 6, "A"): State(2),
+        ("A_B", 6, "B"): State(0),
+        ("A_B", 7, "A"): State(2),
+        ("A_B", 7, "B"): State(1),
+        ("A_B", 8, "A"): State(2),
+        ("A_B", 8, "B"): State(2),
+        ("B_C", 0, "B"): State(0),
+        ("B_C", 0, "C"): State(0),
+        ("B_C", 1, "B"): State(0),
+        ("B_C", 1, "C"): State(1),
+        ("B_C", 2, "B"): State(0),
+        ("B_C", 2, "C"): State(2),
+        ("B_C", 3, "B"): State(1),
+        ("B_C", 3, "C"): State(0),
+        ("B_C", 4, "B"): State(1),
+        ("B_C", 4, "C"): State(1),
+        ("B_C", 5, "B"): State(1),
+        ("B_C", 5, "C"): State(2),
+        ("B_C", 6, "B"): State(2),
+        ("B_C", 6, "C"): State(0),
+        ("B_C", 7, "B"): State(2),
+        ("B_C", 7, "C"): State(1),
+        ("B_C", 8, "B"): State(2),
+        ("B_C", 8, "C"): State(2),
+        ("A_C", 0, "A"): State(0),
+        ("A_C", 0, "C"): State(0),
+        ("A_C", 1, "A"): State(0),
+        ("A_C", 1, "C"): State(1),
+        ("A_C", 2, "A"): State(0),
+        ("A_C", 2, "C"): State(2),
+        ("A_C", 3, "A"): State(1),
+        ("A_C", 3, "C"): State(0),
+        ("A_C", 4, "A"): State(1),
+        ("A_C", 4, "C"): State(1),
+        ("A_C", 5, "A"): State(1),
+        ("A_C", 5, "C"): State(2),
+        ("A_C", 6, "A"): State(2),
+        ("A_C", 6, "C"): State(0),
+        ("A_C", 7, "A"): State(2),
+        ("A_C", 7, "C"): State(1),
+        ("A_C", 8, "A"): State(2),
+        ("A_C", 8, "C"): State(2),
     }
 
     w = {
@@ -237,7 +235,7 @@ def test_ABC_constrained():
 
     The constrained MAP solution is A:0, B:2, C:1.
     """
-    S = {"A": [0, 1, 2], "B": [0, 1, 2], "C": [0, 1, 2]}
+    S = {"A": [State(0), State(1), State(2)], "B": [State(0), State(1), State(2)], "C": [State(0), State(1), State(2)]}
 
     J = {
         "A": [0, 1, 2],
@@ -249,69 +247,69 @@ def test_ABC_constrained():
     }
 
     v = {
-        ("A", 0, "A"): 0,
-        ("A", 1, "A"): 1,
-        ("A", 2, "A"): 2,
-        ("B", 0, "B"): 0,
-        ("B", 1, "B"): 1,
-        ("B", 2, "B"): 2,
-        ("C", 0, "C"): 0,
-        ("C", 1, "C"): 1,
-        ("C", 2, "C"): 2,
-        ("A_B", 0, "A"): 0,
-        ("A_B", 0, "B"): 0,
-        ("A_B", 1, "A"): 0,
-        ("A_B", 1, "B"): 1,
-        ("A_B", 2, "A"): 0,
-        ("A_B", 2, "B"): 2,
-        ("A_B", 3, "A"): 1,
-        ("A_B", 3, "B"): 0,
-        ("A_B", 4, "A"): 1,
-        ("A_B", 4, "B"): 1,
-        ("A_B", 5, "A"): 1,
-        ("A_B", 5, "B"): 2,
-        ("A_B", 6, "A"): 2,
-        ("A_B", 6, "B"): 0,
-        ("A_B", 7, "A"): 2,
-        ("A_B", 7, "B"): 1,
-        ("A_B", 8, "A"): 2,
-        ("A_B", 8, "B"): 2,
-        ("B_C", 0, "B"): 0,
-        ("B_C", 0, "C"): 0,
-        ("B_C", 1, "B"): 0,
-        ("B_C", 1, "C"): 1,
-        ("B_C", 2, "B"): 0,
-        ("B_C", 2, "C"): 2,
-        ("B_C", 3, "B"): 1,
-        ("B_C", 3, "C"): 0,
-        ("B_C", 4, "B"): 1,
-        ("B_C", 4, "C"): 1,
-        ("B_C", 5, "B"): 1,
-        ("B_C", 5, "C"): 2,
-        ("B_C", 6, "B"): 2,
-        ("B_C", 6, "C"): 0,
-        ("B_C", 7, "B"): 2,
-        ("B_C", 7, "C"): 1,
-        ("B_C", 8, "B"): 2,
-        ("B_C", 8, "C"): 2,
-        ("A_C", 0, "A"): 0,
-        ("A_C", 0, "C"): 0,
-        ("A_C", 1, "A"): 0,
-        ("A_C", 1, "C"): 1,
-        ("A_C", 2, "A"): 0,
-        ("A_C", 2, "C"): 2,
-        ("A_C", 3, "A"): 1,
-        ("A_C", 3, "C"): 0,
-        ("A_C", 4, "A"): 1,
-        ("A_C", 4, "C"): 1,
-        ("A_C", 5, "A"): 1,
-        ("A_C", 5, "C"): 2,
-        ("A_C", 6, "A"): 2,
-        ("A_C", 6, "C"): 0,
-        ("A_C", 7, "A"): 2,
-        ("A_C", 7, "C"): 1,
-        ("A_C", 8, "A"): 2,
-        ("A_C", 8, "C"): 2,
+        ("A", 0, "A"): State(0),
+        ("A", 1, "A"): State(1),
+        ("A", 2, "A"): State(2),
+        ("B", 0, "B"): State(0),
+        ("B", 1, "B"): State(1),
+        ("B", 2, "B"): State(2),
+        ("C", 0, "C"): State(0),
+        ("C", 1, "C"): State(1),
+        ("C", 2, "C"): State(2),
+        ("A_B", 0, "A"): State(0),
+        ("A_B", 0, "B"): State(0),
+        ("A_B", 1, "A"): State(0),
+        ("A_B", 1, "B"): State(1),
+        ("A_B", 2, "A"): State(0),
+        ("A_B", 2, "B"): State(2),
+        ("A_B", 3, "A"): State(1),
+        ("A_B", 3, "B"): State(0),
+        ("A_B", 4, "A"): State(1),
+        ("A_B", 4, "B"): State(1),
+        ("A_B", 5, "A"): State(1),
+        ("A_B", 5, "B"): State(2),
+        ("A_B", 6, "A"): State(2),
+        ("A_B", 6, "B"): State(0),
+        ("A_B", 7, "A"): State(2),
+        ("A_B", 7, "B"): State(1),
+        ("A_B", 8, "A"): State(2),
+        ("A_B", 8, "B"): State(2),
+        ("B_C", 0, "B"): State(0),
+        ("B_C", 0, "C"): State(0),
+        ("B_C", 1, "B"): State(0),
+        ("B_C", 1, "C"): State(1),
+        ("B_C", 2, "B"): State(0),
+        ("B_C", 2, "C"): State(2),
+        ("B_C", 3, "B"): State(1),
+        ("B_C", 3, "C"): State(0),
+        ("B_C", 4, "B"): State(1),
+        ("B_C", 4, "C"): State(1),
+        ("B_C", 5, "B"): State(1),
+        ("B_C", 5, "C"): State(2),
+        ("B_C", 6, "B"): State(2),
+        ("B_C", 6, "C"): State(0),
+        ("B_C", 7, "B"): State(2),
+        ("B_C", 7, "C"): State(1),
+        ("B_C", 8, "B"): State(2),
+        ("B_C", 8, "C"): State(2),
+        ("A_C", 0, "A"): State(0),
+        ("A_C", 0, "C"): State(0),
+        ("A_C", 1, "A"): State(0),
+        ("A_C", 1, "C"): State(1),
+        ("A_C", 2, "A"): State(0),
+        ("A_C", 2, "C"): State(2),
+        ("A_C", 3, "A"): State(1),
+        ("A_C", 3, "C"): State(0),
+        ("A_C", 4, "A"): State(1),
+        ("A_C", 4, "C"): State(1),
+        ("A_C", 5, "A"): State(1),
+        ("A_C", 5, "C"): State(2),
+        ("A_C", 6, "A"): State(2),
+        ("A_C", 6, "C"): State(0),
+        ("A_C", 7, "A"): State(2),
+        ("A_C", 7, "C"): State(1),
+        ("A_C", 8, "A"): State(2),
+        ("A_C", 8, "C"): State(2),
     }
 
     w = {
@@ -357,6 +355,7 @@ def test_ABC_constrained():
 
     # Constrain the inference to ensure that all variables have different values
     def diff_(M, s):
+        s = State(s)
         return M.x["A", s] + M.x["B", s] + M.x["C", s] <= 1
 
     model.diff = pyo.Constraint([0, 1, 2], rule=diff_)
@@ -386,6 +385,7 @@ def test_ABC_constrained():
 
         # Constrain the inference to ensure that all variables have different values
         def diff_(M, s):
+            s = State(s)
             return M.X["A", s] + M.X["B", s] + M.X["C", s] <= 1
 
         model.diff = pyo.Constraint([0, 1, 2], rule=diff_)

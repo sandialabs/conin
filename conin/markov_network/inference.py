@@ -1,61 +1,13 @@
-from dataclasses import dataclass
-import sys
-from math import log, prod
+#from dataclasses import dataclass
+#import sys
+#from math import log, prod
 import munch
 import pyomo.environ as pe
 from pyomo.common.timing import tic, toc
-import pprint
-import numpy as np
+#import pprint
+#import numpy as np
 
-
-@dataclass(order=True, frozen=True)
-class State:
-    s: tuple
-
-
-def extract_factor_representation(pgm):
-    #
-    # S[r]: the (finite) set of possible values of variable X_r
-    #           Variable values s can be integers or strings
-    #
-    # J[i]: the (finite) set of possible configurations (rows) of factor i
-    #           J[i] contains the configuration ids for factor i
-    #
-    # v[i,j,r]: the value of variable r in row j of factor i
-    #           Note that v[i,j,r] \in S[r]
-    #           Note that j \in J[i]
-    #
-    # w[i,j]: the log-probability of factor i in configuration j
-    #           Note that j \in J[i]
-    #
-    S = {r:[State(s=s) for s in values] for r,values in pgm.states.items()}
-    J = {}
-    v = {}
-    w = {}
-    for factor in pgm.get_factors():
-        vars = factor.scope()
-        i = "_".join(vars)
-        size = prod(factor.get_cardinality(vars).values())
-        assignments = factor.assignment(list(range(size)))
-
-        # J
-        J[i] = list(range(size))
-
-        # v
-        for j, assignment in enumerate(assignments):
-            if factor.get_value(**dict(assignment)) > 0:
-                for key, value in assignment:
-                    v[i, j, key] = State(value)
-
-        # w
-        values = [factor.get_value(**dict(assignment)) for assignment in assignments]
-        total = np.sum(factor.values)
-        # print("HERE",i,total,values)
-        for j in range(size):
-            if values[j] > 0:
-                w[i, j] = log(values[j] / total)
-            # j += 1     WEH - Why are we skipping every other value?
-    return S, J, v, w
+from .factor_repn import extract_factor_representation, State
 
 
 """
@@ -211,9 +163,9 @@ def optimize_map_query_model(model, *, solver="gurobi", tee=False, with_fixed=Fa
         if model.X[r, s].is_fixed():
             fixed_variables.add(r)
             if with_fixed and pe.value(model.X[r, s]) > 0.5:
-                var[r] = s
+                var[r] = s.value
         elif pe.value(model.X[r, s]) > 0.5:
-            var[r] = s
+            var[r] = s.value
     assert variables == set(var.keys()).union(
         fixed_variables
     ), "Some variables do not have values."
