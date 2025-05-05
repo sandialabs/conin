@@ -5,9 +5,8 @@ import math
 import json
 import ast
 
-from conin import InvalidInputError
-from conin.hmm import Internal_HMM
-from conin.hmm import Statistical_Model
+from conin.exceptions import InvalidInputError
+from conin.hmm import Internal_HMM, Statistical_Model
 from conin.util import Util
 
 

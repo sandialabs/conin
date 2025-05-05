@@ -1,5 +1,5 @@
-from conin import InvalidInputError
-from conin import Constraint
+from conin.exceptions import InvalidInputError
+from conin.constraint import Constraint
 from conin.hmm import Internal_HMM
 
 

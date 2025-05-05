@@ -4,9 +4,8 @@ import math
 import numpy as np
 import munch
 
-from conin import InvalidInputError
-from conin.hmm import HMM
-from conin.hmm import Statistical_Model
+from conin.exceptions import InvalidInputError
+from conin.hmm import HMM, Statistical_Model
 from . import chmm_base
 
 try:

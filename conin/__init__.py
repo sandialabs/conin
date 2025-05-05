@@ -50,10 +50,10 @@ else:
 
 
 # File specific
-from .exceptions import *
+from .exceptions import InvalidInputError, InsufficientSolutionsError
 from .constraint import Constraint
-from .common_constraints import *
 from . import hmm
 from . import bayesian_network
 from . import dynamic_bayesian_network
 from . import markov_network
+from .common_constraints import *

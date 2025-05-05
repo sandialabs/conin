@@ -1,5 +1,5 @@
 import numpy as np
-from conin import InvalidInputError
+from conin.exceptions import InvalidInputError
 from conin.util import Util
 from conin.hmm import Internal_Statistical_Model
 

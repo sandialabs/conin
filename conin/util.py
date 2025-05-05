@@ -1,6 +1,6 @@
 import copy
 import numpy as np
-from conin import InvalidInputError
+from conin.exceptions import InvalidInputError
 
 
 class Util:

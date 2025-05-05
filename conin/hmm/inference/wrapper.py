@@ -1,4 +1,4 @@
-from conin import InvalidInputError, InsufficientSolutionsError
+from conin.exceptions import InvalidInputError, InsufficientSolutionsError
 from conin.hmm import HMM
 from conin.hmm.oracle_chmm import Oracle_CHMM
 
