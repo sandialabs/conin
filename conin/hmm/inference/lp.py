@@ -98,7 +98,7 @@ def ip_inference(
         tic("Optimizing Model - START")
     opt = pyo.SolverFactory(solver)
     res = opt.solve(M, tee=not quiet)
-    # TODO - check terminaton_condition here
+    # TODO - check termination_condition here
     if debug:
         toc("Optimizing Model - STOP")
 
