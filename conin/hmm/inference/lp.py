@@ -104,7 +104,14 @@ def ip_inference(
 
     T = len(observed)
 
-    log_likelihood = pyo.value(M.hmm.o)
+    #
+    # We cannot just use the HMM objective value, since that objective may have
+    # been disabled by the user who calls this function.  
+    # We assume the user is still maximizing a log-likelihood, so we take the upper bound
+    # returned by the Pyomo solver.
+    #
+    log_likelihood = res['Problem'][0]['Upper bound']
+
     hidden = ["__UNKNOWN__"] * T
     for t in range(T):
         for a in algebraic_hmm.data.A:
