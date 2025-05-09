@@ -114,7 +114,7 @@ def ip_inference(
             hidden[t] != "__UNKNOWN__"
         ), f"ERROR: Unexpected missing hidden state at time step {t}"
 
-    model_variables = get_model_variables(M)
+    model_variables = get_model_variables(M, include_fixed=True)
     variables = {
         str(v): pyo.value(v) for v in model_variables if math.fabs(pyo.value(v)) > 1e-3
     }
@@ -133,7 +133,8 @@ def ip_inference(
         ans.M = M
         print(f"E: {len(algebraic_hmm.data.E)}")
         print(f"F: {len(algebraic_hmm.data.F)}")
-        print(f"G: {len(algebraic_hmm.data.G)}")
+        print(f"Gt: {len(algebraic_hmm.data.Gt)}")
+        print(f"Ge: {len(algebraic_hmm.data.Ge)}")
         print(f"GG: {len(algebraic_hmm.data.GG)}")
         print(f"FF: {len(algebraic_hmm.data.FF)}")
         print(f"T: {len(algebraic_hmm.data.T)}")
