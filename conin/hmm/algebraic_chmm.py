@@ -39,7 +39,7 @@ def _create_index_sets(*, hmm, observations):
     FF = set()
     # Gt: (t,a,b) ->  log(transition probability at time t from a to b)
     Gt = {}
-    # Ge: (t,b) ->  log(emission probability for b at time t+1)
+    # Ge: (t,b) ->  log(emission probability for b at time t)
     Ge = {}
     states = {}
     for t in T:
@@ -48,7 +48,7 @@ def _create_index_sets(*, hmm, observations):
             for i in A:
                 if start_probs[i] > 0 and emission_probs[i][obs[t]] > 0:
                     Gt[-1, -1, i] = math.log(start_probs[i])
-                    Ge[-1, i] = math.log(emission_probs[i][obs[t]])
+                    Ge[0, i] = math.log(emission_probs[i][obs[t]])
                     curr.add(i)
                 else:
                     FF.add((-1, -1, i))
@@ -61,7 +61,7 @@ def _create_index_sets(*, hmm, observations):
                     F.add((a, b))
                     if val > 0 and emission_probs[b][obs[t]] > 0:
                         Gt[t - 1, a, b] = math.log(val)
-                        Ge[t - 1, b] = math.log(emission_probs[b][obs[t]])
+                        Ge[t, b] = math.log(emission_probs[b][obs[t]])
                         curr.add(b)
                     else:
                         FF.add((t - 1, a, b))
@@ -300,7 +300,7 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
 
         M.hmm.o = pyo.Objective(
             expr=sum(
-                (D.Gt[t, a, b] + D.Ge[t,b])* M.hmm.y[t, a, b] for t, a, b in D.Gt
+                (D.Gt[t, a, b] + D.Ge[t+1,b])* M.hmm.y[t, a, b] for t, a, b in D.Gt
             ),  # + -(10**6) * M.hmm.O,
             sense=pyo.maximize,
         )
