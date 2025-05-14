@@ -65,7 +65,8 @@ def viterbi(*, observed, statistical_model):
             viterbi_recursion[h, 0] = (
                 np.log(internal_hmm.start_vec[h]) + log_eprob[h, obs]
             )
-            backpointer[h, 0] = 0
+            backpointer[h, 0] = -1
+            
 
         # Recursion step
         for t in range(1, time_steps):
