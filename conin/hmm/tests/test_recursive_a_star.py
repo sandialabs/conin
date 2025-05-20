@@ -115,3 +115,69 @@ class Test_Heap_Item:
 
     def test_hash(self, heap_item):
         hash(heap_item)
+
+    def test_get_identifier(self, heap_item):
+        assert heap_item.get_identifier() == ("h0", 10, (1, 2))
+
+
+class Test_Unique_Heap:
+    def test_init(self):
+        A = Unique_Heap()
+
+    def test_add(self, heap_item):
+        x2 = Recursive_Heap_Item(
+            priority=1, last_element="h0", length=10, constraint_data=(1, 2)
+        )
+        x3 = Recursive_Heap_Item(
+            priority=2, last_element="h0", length=4, constraint_data=(1, 2)
+        )
+        x4 = Recursive_Heap_Item(
+            priority=2, last_element="h1", length=10, constraint_data=(1, 2)
+        )
+
+        A = Unique_Heap()
+        A.add(heap_item)
+        assert len(A) == 1
+        A.add(x2)
+        assert len(A) == 1
+        A.add(x3)
+        assert len(A) == 2
+        A.add(heap_item)
+        assert len(A) == 2
+        A.add(x4)
+        assert len(A) == 3
+        A.add(x2)
+        assert len(A) == 3
+        A.add(x3)
+        assert len(A) == 3
+        A.add(x4)
+        assert len(A) == 3
+        assert set(A._Unique_Heap__heap) == {x2, x3, x4}
+
+    def test_pop(self, heap_item):
+        x3 = Recursive_Heap_Item(
+            priority=2, last_element="h0", length=4, constraint_data=(1, 2)
+        )
+        x4 = Recursive_Heap_Item(
+            priority=3, last_element="h1", length=10, constraint_data=(1, 2)
+        )
+
+        A = Unique_Heap()
+        A.add(heap_item)
+        A.add(x4)
+        A.add(x3)
+        while A:
+            A.pop()
+        assert len(A) == 0
+
+        A.add(heap_item)
+        A.add(x4)
+        A.add(x3)
+
+        x = A.pop()
+        assert x == heap_item
+        x = A.pop()
+        assert x == x3
+        x = A.pop()
+        assert x == x4
+        assert len(A) == 0

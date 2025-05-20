@@ -1,3 +1,6 @@
+import heapq
+
+
 class Recursive_Heap_Item:
     __slots__ = ["_priority", "_last_element", "_length", "_constraint_data"]
 
@@ -80,3 +83,62 @@ class Recursive_Heap_Item:
         return hash(
             (self.priority, self.last_element, self.length, self.constraint_data)
         )
+
+    def get_identifier(self):
+        """
+        Returns everything but the priority in a tuple.
+        Used in Unique_Heap
+        """
+        return (self.last_element, self.length, self.constraint_data)
+
+
+class Unique_Heap:
+    """
+    This is used in our tailored A* algorithm
+    We consider to elements "equal" if their sequences end with the same
+    value and the have the same data associated with them.
+    """
+
+    def __init__(self):
+        self.__heap = []
+        self.__unique_map = {}  # Maps identifier to Recursive_Heap_Item
+
+    def add(self, item):
+        """
+        Adds an item only if it doesn't already exist
+        """
+        identifier = item.get_identifier()
+
+        # Check if the element is already in the heap
+        if identifier in self.__unique_map:
+            existing_item = self.__unique_map[identifier]
+
+            if item.priority < existing_item.priority:
+                self.__heap.remove(existing_item)
+                heapq.heapify(self.__heap)  # Re-heapify after removal
+                heapq.heappush(self.__heap, item)
+                self.__unique_map[identifier] = item
+        else:
+            # Add the identifier to the map and the item to the heap
+            self.__unique_map[identifier] = item
+            heapq.heappush(self.__heap, item)
+
+    def pop(self):
+        """
+        Pops the item with the smallest priority
+        """
+        while self.__heap:
+            item = heapq.heappop(self.__heap)
+
+            # Update our unique_map
+            identifier = item.get_identifier()
+            del self.__unique_map[identifier]
+
+            return item
+        raise IndexError("pop from an empty heap")
+
+    def __len__(self):
+        """
+        Length of the heapq
+        """
+        return len(self.__heap)
