@@ -68,30 +68,33 @@ class Num_Zeros(HMMApplication):
                 res.observed = observed
             output.append(res)
         return output
-    
+
     def generate_oracle_constraints(self):
         constraint = has_exact_number_of_occurences_constraint(
             val=0, count=self.num_zeros
         )
         self.oracle.set_constraints([constraint])
-    
+
     def initialize_constraint_data(self, hidden_state):
         if hidden_state == 0:
             return 1
         else:
             return 0
-        
+
     def constraint_data_feasible_partial(self, *, constraint_data, t):
-        return (constraint_data+(self.time-t) >= self.num_zeros) and constraint_data <= self.num_zeros
-    
+        return (
+            constraint_data + (self.time - t) >= self.num_zeros
+        ) and constraint_data <= self.num_zeros
+
     def constraint_data_feasible(self, constraint_data):
         return constraint_data == self.num_zeros
-    
+
     def update_constraint_data(self, *, hidden_state, constraint_data):
         if hidden_state == 0:
             return constraint_data + 1
         else:
             return constraint_data
+
 
 @pytest.fixture
 def app():
@@ -109,6 +112,7 @@ def app():
         time=time,
     )
     return app
+
 
 @pytest.fixture
 def heap_item():
@@ -264,10 +268,10 @@ class Test_Unique_Heap:
         assert x == x4
         assert len(A) == 0
 
+
 class Test_Inference:
     # These are copied a pasted from test_oracle_chmm.py, I should do some refactoring probably
-    
-    
+
     def test_a_star(self, app):
         observed = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         print(recursive_a_star(hmm_app=app, observed=observed))
@@ -283,8 +287,7 @@ class Test_Inference:
             0,
             0,
         ]
-        
-    
+
     """
     def test_a_star_2(self, chmm):
         inference = Inference(statistical_model=chmm)

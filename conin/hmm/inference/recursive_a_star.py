@@ -158,8 +158,8 @@ def recursive_a_star(
 ):
     """
     This is a tailored version of the A* algorithm -- copied and modified
-    from conin.hmm.inference.viterbi. 
-    
+    from conin.hmm.inference.viterbi.
+
     Paramters:
         hmm_app: HMM_Application
         observed: List of observed states
@@ -211,8 +211,8 @@ def recursive_a_star(
                     )
             V[(t, h1)] = temp
 
-    get_gScore = dict() # Maps recursive heap item to negative log-probabilities
-    get_seq = dict() # Maps recursive heap item ids to sequences
+    get_gScore = dict()  # Maps recursive heap item to negative log-probabilities
+    get_seq = dict()  # Maps recursive heap item ids to sequences
 
     openSet = Unique_Heapq()
 
@@ -228,10 +228,15 @@ def recursive_a_star(
             constraint_data = hmm_app.initialize_constraint_data(h)
 
             if hmm_app.constraint_data_feasible_partial(
-                constraint_data = constraint_data, t = 1
+                constraint_data=constraint_data, t=1
             ):
-                item = Recursive_Heap_Item(priority=gScore + V[(0,h)], last_element=h, length=1, constraint_data=constraint_data)
-                
+                item = Recursive_Heap_Item(
+                    priority=gScore + V[(0, h)],
+                    last_element=h,
+                    length=1,
+                    constraint_data=constraint_data,
+                )
+
                 get_gScore[item] = gScore
                 openSet.add(item)
                 get_seq[item] = (h,)
@@ -240,17 +245,17 @@ def recursive_a_star(
     n_infeasible = 0
     termination_condition = "unknown"
     output = []
-        
+
     while True:
         item = openSet.pop()
         val = item.priority
         constraint_data = item.constraint_data
         t = item.length
         h1 = item.last_element
-        
+
         gScore = get_gScore.pop(item)
         seq = get_seq.pop(item)
-        
+
         if t == time_steps:
             if hmm_app.constraint_data_feasible(constraint_data):
                 output.append(munch.Munch(hidden=list(seq), log_likelihood=-val))
@@ -269,19 +274,28 @@ def recursive_a_star(
                     or transition_probs.get((h1, h2), 0.0) == 0.0
                 ):
                     continue
-                new_constraint_data = hmm_app.update_constraint_data(hidden_state = h2, constraint_data = constraint_data)
-                if hmm_app.constraint_data_feasible_partial(constraint_data = constraint_data, t = t):
+                new_constraint_data = hmm_app.update_constraint_data(
+                    hidden_state=h2, constraint_data=constraint_data
+                )
+                if hmm_app.constraint_data_feasible_partial(
+                    constraint_data=constraint_data, t=t
+                ):
                     new_gScore = (
                         gScore
                         - log_transition_probs[(h1, h2)]
                         - log_emission_probs[(h2, obs)]
                     )
-                    
-                    new_item = Recursive_Heap_Item(priority=new_gScore + V[(t, h2)], last_element=h2, length=t+1, constraint_data=new_constraint_data)
-                    
+
+                    new_item = Recursive_Heap_Item(
+                        priority=new_gScore + V[(t, h2)],
+                        last_element=h2,
+                        length=t + 1,
+                        constraint_data=new_constraint_data,
+                    )
+
                     get_gScore[new_item] = new_gScore
                     openSet.add(new_item)
-                    get_seq[new_item] = seq+(h2,)
+                    get_seq[new_item] = seq + (h2,)
 
         iteration += 1
         if (max_iterations is not None) and (iteration >= max_iterations):
