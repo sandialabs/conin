@@ -228,7 +228,7 @@ def recursive_a_star(
             constraint_data = hmm_app.initialize_constraint_data(h)
 
             if hmm_app.constraint_data_feasible_partial(
-                constraint_data=constraint_data, t=1
+                constraint_data=constraint_data, t=1, time_steps=time_steps
             ):
                 item = Recursive_Heap_Item(
                     priority=gScore + V[(0, h)],
@@ -246,78 +246,82 @@ def recursive_a_star(
     termination_condition = "unknown"
     output = []
 
-    while True:
-        item = openSet.pop()
-        val = item.priority
-        constraint_data = item.constraint_data
-        t = item.length
-        h1 = item.last_element
+    if len(openSet) == 0:
+        termination_condition = "error: no feasible solutions"
 
-        gScore = get_gScore.pop(item)
-        seq = get_seq.pop(item)
+    else:
+        while True:
+            item = openSet.pop()
+            val = item.priority
+            constraint_data = item.constraint_data
+            t = item.length
+            h1 = item.last_element
 
-        if t == time_steps:
-            if hmm_app.constraint_data_feasible(constraint_data):
-                output.append(munch.Munch(hidden=list(seq), log_likelihood=-val))
-                obj_vals.append(-val)
-                if len(output) == num_solutions:
-                    termination_condition = "ok"
-                    break
-                else:
-                    n_infeasible += 1
+            gScore = get_gScore.pop(item)
+            seq = get_seq.pop(item)
 
-        else:
-            obs = observed[t]
-            for h2 in hidden_states:
-                if (
-                    emission_probs.get((h2, obs), 0.0) == 0.0
-                    or transition_probs.get((h1, h2), 0.0) == 0.0
-                ):
-                    continue
-                new_constraint_data = hmm_app.update_constraint_data(
-                    hidden_state=h2, constraint_data=constraint_data
-                )
-                if hmm_app.constraint_data_feasible_partial(
-                    constraint_data=constraint_data, t=t
-                ):
-                    new_gScore = (
-                        gScore
-                        - log_transition_probs[(h1, h2)]
-                        - log_emission_probs[(h2, obs)]
+            if t == time_steps:
+                if hmm_app.constraint_data_feasible(constraint_data):
+                    output.append(munch.Munch(hidden=list(seq), log_likelihood=-val))
+                    obj_vals.append(-val)
+                    if len(output) == num_solutions:
+                        termination_condition = "ok"
+                        break
+                    else:
+                        n_infeasible += 1
+
+            else:
+                obs = observed[t]
+                for h2 in hidden_states:
+                    if (
+                        emission_probs.get((h2, obs), 0.0) == 0.0
+                        or transition_probs.get((h1, h2), 0.0) == 0.0
+                    ):
+                        continue
+                    new_constraint_data = hmm_app.update_constraint_data(
+                        hidden_state=h2, constraint_data=constraint_data
                     )
+                    if hmm_app.constraint_data_feasible_partial(
+                        constraint_data=constraint_data, t=t, time_steps=time_steps
+                    ):
+                        new_gScore = (
+                            gScore
+                            - log_transition_probs[(h1, h2)]
+                            - log_emission_probs[(h2, obs)]
+                        )
 
-                    new_item = Recursive_Heap_Item(
-                        priority=new_gScore + V[(t, h2)],
-                        last_element=h2,
-                        length=t + 1,
-                        constraint_data=new_constraint_data,
-                    )
+                        new_item = Recursive_Heap_Item(
+                            priority=new_gScore + V[(t, h2)],
+                            last_element=h2,
+                            length=t + 1,
+                            constraint_data=new_constraint_data,
+                        )
 
-                    get_gScore[new_item] = new_gScore
-                    openSet.add(new_item)
-                    get_seq[new_item] = seq + (h2,)
+                        get_gScore[new_item] = new_gScore
+                        openSet.add(new_item)
+                        get_seq[new_item] = seq + (h2,)
 
-        iteration += 1
-        if (max_iterations is not None) and (iteration >= max_iterations):
-            termination_condition = f"max_iterations: {iteration}"
-            break
+            iteration += 1
+            if (max_iterations is not None) and (iteration >= max_iterations):
+                termination_condition = f"max_iterations: {iteration}"
+                break
 
-        curr_time = time.time()
-        if (max_time is not None) and ((curr_time - start_time) > max_time):
-            termination_condition = f"max_time: {curr_time-start_time}"
-            break
+            curr_time = time.time()
+            if (max_time is not None) and ((curr_time - start_time) > max_time):
+                termination_condition = f"max_time: {curr_time-start_time}"
+                break
 
-        if openSet == []:
-            break
+            if len(openSet) == 0:
+                break
 
-        if debug:
-            if iteration % 100 == 0:
-                print(f"  Iteration: {iteration}")
-                print(f"  # Heap:    {len(openSet)}")
-                print(f"  t:         {t}")
-                print(f"  val:       {val}")
-                print(f"  ninfeas:   {n_infeasible}")
-                print(f"  time:      {curr_time-start_time}")
+            if debug:
+                if iteration % 100 == 0:
+                    print(f"  Iteration: {iteration}")
+                    print(f"  # Heap:    {len(openSet)}")
+                    print(f"  t:         {t}")
+                    print(f"  val:       {val}")
+                    print(f"  ninfeas:   {n_infeasible}")
+                    print(f"  time:      {curr_time-start_time}")
 
     if len(output) < num_solutions:
         if num_solutions == 1:

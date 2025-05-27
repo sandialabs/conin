@@ -5,10 +5,62 @@ from conin.hmm.inference.recursive_a_star import *
 from conin.hmm import *
 from conin.hmm.inference import a_star
 from conin import *
+from conin.hmm.oracle_chmm import Oracle_CHMM
+
+
+@pytest.fixture
+def hmm():
+    start_probs = {"h0": 0.4, "h1": 0.6}
+    transition_probs = {
+        ("h0", "h0"): 0.9,
+        ("h0", "h1"): 0.1,
+        ("h1", "h0"): 0.2,
+        ("h1", "h1"): 0.8,
+    }
+    emission_probs = {
+        ("h0", "o0"): 0.7,
+        ("h0", "o1"): 0.3,
+        ("h1", "o0"): 0.4,
+        ("h1", "o1"): 0.6,
+    }
+    hmm = HMM()
+    hmm.load_model(
+        start_probs=start_probs,
+        transition_probs=transition_probs,
+        emission_probs=emission_probs,
+    )
+    hmm.set_seed(0)
+    return hmm
+
+
+@pytest.fixture
+def lb():
+    return 10
+
+
+@pytest.fixture
+def ub():
+    return 12
+
+
+@pytest.fixture
+def constraints(lb, ub):
+    num_zeros_lb = has_minimum_number_of_occurences_constraint(val="h0", count=lb)
+    num_zeros_ub = has_maximum_number_of_occurences_constraint(val="h0", count=ub)
+    return [num_zeros_lb, num_zeros_ub]
+
+
+@pytest.fixture
+def chmm(hmm, constraints):
+
+    chmm = Oracle_CHMM()
+    chmm.load_model(hmm=hmm)
+    for constraint in constraints:
+        chmm.add_constraint(constraint)
+    return chmm
 
 
 class Num_Zeros(HMMApplication):
-
     def __init__(self):
         self.num_zeros = None
         super().__init__(self.__class__.__name__)
@@ -16,51 +68,26 @@ class Num_Zeros(HMMApplication):
     def initialize(
         self,
         *,
-        hmm=None,
-        prob_stay_in_same_state=None,
-        prob_error=None,
-        zero_start_prob=0.5,
-        num_zeros,
-        time
+        hmm,
+        constraints,
+        lb,
+        ub,
     ):
-        if hmm is None:
-            start_probs = {0: zero_start_prob, 1: 1 - zero_start_prob}
-            transition_probs = {
-                (0, 0): prob_stay_in_same_state,
-                (0, 1): 1 - prob_stay_in_same_state,
-                (1, 0): 1 - prob_stay_in_same_state,
-                (1, 1): prob_stay_in_same_state,
-            }
-            emission_probs = {
-                (0, 0): 1 - prob_error,
-                (0, 1): prob_error,
-                (1, 0): prob_error,
-                (1, 1): 1 - prob_error,
-            }
-            hmm = HMM()
-            hmm.load_model(
-                start_probs=start_probs,
-                transition_probs=transition_probs,
-                emission_probs=emission_probs,
-            )
-            self.hmm = hmm
-        else:
-            self.hmm = hmm
-        self.num_zeros = num_zeros
-        self.generate_oracle_constraints()
-        self._hidden_states = {0, 1}
-        self._observable_states = {0, 1}
-        self.time = time
+        self.hmm = hmm
+        self.constraints = constraints
+        self.oracle.set_constraints(constraints)
+        self.lb = lb
+        self.ub = ub
 
     def run_simulations(
-        self, *, num=1, debug=False, seed=None, with_observations=False
+        self, *, num=1, debug=False, seed=None, with_observations=False, time_steps
     ):
         if seed is not None:
             random.seed(seed)
         output = []
         for n in range(num):
             res = munch.Munch()
-            hidden = self.oracle.generate_hidden(self.time)
+            hidden = self.oracle.generate_hidden(time_steps)
             if with_observations:
                 observed = self.oracle.generate_observed_from_hidden(hidden)
             res = munch.Munch(hidden=hidden, index=n)
@@ -69,48 +96,31 @@ class Num_Zeros(HMMApplication):
             output.append(res)
         return output
 
-    def generate_oracle_constraints(self):
-        constraint = has_exact_number_of_occurences_constraint(
-            val=0, count=self.num_zeros
-        )
-        self.oracle.set_constraints([constraint])
-
     def initialize_constraint_data(self, hidden_state):
-        if hidden_state == 0:
+        if hidden_state == "h0":
             return 1
         else:
             return 0
 
-    def constraint_data_feasible_partial(self, *, constraint_data, t):
+    def constraint_data_feasible_partial(self, *, constraint_data, t, time_steps):
         return (
-            constraint_data + (self.time - t) >= self.num_zeros
-        ) and constraint_data <= self.num_zeros
+            constraint_data + (time_steps - t) >= self.lb
+        ) and constraint_data <= self.ub
 
     def constraint_data_feasible(self, constraint_data):
-        return constraint_data == self.num_zeros
+        return constraint_data >= self.lb and constraint_data <= self.ub
 
     def update_constraint_data(self, *, hidden_state, constraint_data):
-        if hidden_state == 0:
+        if hidden_state == "h0":
             return constraint_data + 1
         else:
             return constraint_data
 
 
 @pytest.fixture
-def app():
-    prob_stay_in_same_state = 0.6  # 1/(1-prob_stay_in_same_state) = expected number of iterations of the same state
-    prob_error = (
-        0.3  # Proability that hidden state h has an observation which does not match it
-    )
-    num_zeros = 10  # Number of zeros
-    time = 20
+def recursive_app(hmm, constraints, lb, ub):
     app = Num_Zeros()
-    app.initialize(
-        prob_stay_in_same_state=prob_stay_in_same_state,
-        prob_error=prob_error,
-        num_zeros=num_zeros,
-        time=time,
-    )
+    app.initialize(hmm=hmm, constraints=constraints, lb=lb, ub=ub)
     return app
 
 
@@ -270,29 +280,49 @@ class Test_Unique_Heap:
 
 
 class Test_Inference:
-    # These are copied a pasted from test_oracle_chmm.py, I should do some refactoring probably
 
-    def test_a_star(self, app):
-        observed = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        print(recursive_a_star(hmm_app=app, observed=observed))
-        assert recursive_a_star(hmm_app=app, observed=observed).solutions[0].hidden == [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
+    def test_a_star(self, chmm, recursive_app):
+        observed = ["o1", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0"]
+
+        inference1 = Inference(statistical_model=chmm)
+        inferred1 = inference1(observed).solutions[0].hidden
+
+        inferred2 = (
+            recursive_a_star(hmm_app=recursive_app, observed=observed)
+            .solutions[0]
+            .hidden
+        )
+
+        assert inferred1 == inferred2
+
+        assert inferred2 == [
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
         ]
 
-    """
-    def test_a_star_2(self, chmm):
-        inference = Inference(statistical_model=chmm)
+    def test_a_star_2(self, chmm, recursive_app):
         observed = ["o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1"]
-        assert inference(observed).solutions[0].hidden == [
+
+        inference1 = Inference(statistical_model=chmm)
+        inferred1 = inference1(observed).solutions[0].hidden
+
+        inferred2 = (
+            recursive_a_star(hmm_app=recursive_app, observed=observed)
+            .solutions[0]
+            .hidden
+        )
+
+        assert inferred1 == inferred2
+
+        assert inferred2 == [
             "h0",
             "h0",
             "h0",
@@ -305,29 +335,51 @@ class Test_Inference:
             "h0",
         ]
 
-    def test_a_star_mult(self, chmm):
-        inference = Inference(statistical_model=chmm, num_solutions=2)
+    def test_a_star_mult(self, chmm, recursive_app):
         observed = ["o1", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0"]
-        results = inference(observed)
-        assert results.termination_condition == "ok"
-        assert [sol.hidden for sol in results.solutions] == [
+
+        inference1 = Inference(statistical_model=chmm, num_solutions=2)
+        inferred1 = inference1(observed)
+
+        inferred2 = recursive_a_star(
+            hmm_app=recursive_app, observed=observed, num_solutions=2
+        )
+
+        assert inferred1.termination_condition == "ok"
+        assert inferred2.termination_condition == "ok"
+        assert [sol.hidden for sol in inferred1.solutions] == [
+            ["h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"],
+            ["h1", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"],
+        ]
+        assert [sol.hidden for sol in inferred2.solutions] == [
             ["h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"],
             ["h1", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"],
         ]
 
-    def test_a_star_no_solution(self, chmm):
-        inference = Inference(statistical_model=chmm)
+    def test_a_star_no_solution(self, chmm, recursive_app):
         observed = ["o0"]
-        results = inference(observed)
-        assert results.termination_condition == "error: no feasible solutions"
 
-    def test_a_star_not_enough_solutions(self, chmm):
-        inference = Inference(statistical_model=chmm, num_solutions=2)
+        inference1 = Inference(statistical_model=chmm)
+        inferred1 = inference1(observed)
+
+        inferred2 = recursive_a_star(hmm_app=recursive_app, observed=observed)
+
+        assert inferred1.termination_condition == "error: no feasible solutions"
+
+        assert inferred2.termination_condition == "error: no feasible solutions"
+
+    def test_a_star_not_enough_solutions(self, chmm, recursive_app):
         observed = ["o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1"]
-        results = inference(observed)
-        assert results.termination_condition == "ok"
+        inference1 = Inference(statistical_model=chmm, num_solutions=2)
+        inferred1 = inference1(observed)
 
-    def test_a_star_deterministic_chmm(self):
+        inferred2 = recursive_a_star(
+            hmm_app=recursive_app, observed=observed, num_solutions=2
+        )
+        assert inferred1.termination_condition == "ok"
+        assert inferred2.termination_condition == "ok"
+
+    def test_a_star_deterministic_hmm(self):
         start_probs = {"h0": 1, "h1": 0}
         transition_probs = {
             ("h0", "h0"): 0,
@@ -352,4 +404,3 @@ class Test_Inference:
         observed = ["o0", "o1", "o1", "o1"]
         inference = Inference(statistical_model=hmm)
         assert inference(observed).solutions[0].hidden == ["h0", "h1", "h1", "h1"]
-    """
