@@ -7,6 +7,8 @@ from conin.hmm.inference import a_star
 from conin import *
 from conin.hmm.oracle_chmm import Oracle_CHMM
 
+#TODO IP Testing
+#TODO Viterbi/LP Testing
 
 @pytest.fixture
 def hmm():
