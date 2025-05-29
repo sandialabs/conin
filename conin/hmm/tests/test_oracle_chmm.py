@@ -4,65 +4,7 @@ from conin import *
 from conin.hmm import *
 from conin.hmm.oracle_chmm import Oracle_CHMM
 
-
-@pytest.fixture
-def hmm():
-    start_probs = {"h0": 0.4, "h1": 0.6}
-    transition_probs = {
-        ("h0", "h0"): 0.9,
-        ("h0", "h1"): 0.1,
-        ("h1", "h0"): 0.2,
-        ("h1", "h1"): 0.8,
-    }
-    emission_probs = {
-        ("h0", "o0"): 0.7,
-        ("h0", "o1"): 0.3,
-        ("h1", "o0"): 0.4,
-        ("h1", "o1"): 0.6,
-    }
-    hmm = HMM()
-    hmm.load_model(
-        start_probs=start_probs,
-        transition_probs=transition_probs,
-        emission_probs=emission_probs,
-    )
-    hmm.set_seed(0)
-    return hmm
-
-
-@pytest.fixture
-def chmm():
-    start_probs = {"h0": 0.4, "h1": 0.6}
-    transition_probs = {
-        ("h0", "h0"): 0.9,
-        ("h0", "h1"): 0.1,
-        ("h1", "h0"): 0.2,
-        ("h1", "h1"): 0.8,
-    }
-    emission_probs = {
-        ("h0", "o0"): 0.7,
-        ("h0", "o1"): 0.3,
-        ("h1", "o0"): 0.4,
-        ("h1", "o1"): 0.6,
-    }
-    num_zeros_greater_than_nine = Constraint(
-        func=lambda seq: seq.count("h0") > 9,
-        partial_func=lambda T, seq: T - seq.count("h0") >= 0,
-    )
-    num_zeros_less_than_thirteen = Constraint(
-        func=lambda seq: seq.count("h0") < 13,
-        partial_func=lambda T, seq: T - seq.count("h0") < 13,
-    )
-    chmm = Oracle_CHMM()
-    chmm.load_model(
-        start_probs=start_probs,
-        transition_probs=transition_probs,
-        emission_probs=emission_probs,
-    )
-    chmm.add_constraint(num_zeros_greater_than_nine)
-    chmm.add_constraint(num_zeros_less_than_thirteen)
-    return chmm
-
+import conin.hmm.tests.test_cases as tc
 
 @pytest.fixture
 def constraint():
@@ -103,12 +45,14 @@ class Test_Constraints:
 class Test_Oracle_CHMM:
     T = 25
 
-    def test_load_model(self, chmm):
+    def test_load_model(self):
+        chmm = tc.create_chmm1()
         assert chmm.hmm.get_start_probs() == chmm.hmm.get_start_probs()
         assert chmm.hmm.get_emission_probs() == chmm.hmm.get_emission_probs()
         assert chmm.hmm.get_transition_probs() == chmm.hmm.get_transition_probs()
 
-    def test_load_model2(self, chmm):
+    def test_load_model2(self):
+        chmm = tc.create_chmm1()
         _chmm = Oracle_CHMM()
         _hmm = HMM()
         _hmm.load_model(
@@ -137,7 +81,8 @@ class Test_Oracle_CHMM:
             )
             _chmm.load_model(start_probs={"h0": 0.4, "h1": 0.6}, hmm=_hmm)
 
-    def test_internal_is_feasible(self, chmm):
+    def test_internal_is_feasible(self):
+        chmm = tc.create_chmm1()
         fail_seq1 = [0, 0, 0, 0, 0, 0, 0, 0, 0]
         pass_seq = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         fail_seq2 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -146,7 +91,8 @@ class Test_Oracle_CHMM:
         assert chmm.internal_constrained_hmm.is_feasible(pass_seq)
         assert not chmm.internal_constrained_hmm.is_feasible(fail_seq2)
 
-    def test_is_feasible(self, chmm):
+    def test_is_feasible(self):
+        chmm = tc.create_chmm1()
         fail_seq1 = ["h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"]
         pass_seq = ["h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"]
         fail_seq2 = [
@@ -171,37 +117,46 @@ class Test_Oracle_CHMM:
         assert chmm.is_feasible(pass_seq)
         assert not chmm.is_feasible(fail_seq2)
 
-    def test_generate_hidden_length(self, chmm):
+    def test_generate_hidden_length(self):
+        chmm = tc.create_chmm1()
         assert len(chmm.generate_hidden(self.T)) == self.T
 
-    def test_generate_hidden_output(self, chmm):
+    def test_generate_hidden_output(self):
+        chmm = tc.create_chmm1()
         for h in chmm.generate_hidden(self.T):
             assert h in {"h0", "h1"}
 
-    def test_generate_hidden_constraint(self, chmm):
+    def test_generate_hidden_constraint(self):
+        chmm = tc.create_chmm1()
         assert chmm.is_feasible(chmm.generate_hidden(self.T))
 
-    def test_generate_hidden_negative_time_steps(self, chmm):
+    def test_generate_hidden_negative_time_steps(self):
+        chmm = tc.create_chmm1()
         with pytest.raises(InvalidInputError):
             chmm.generate_hidden(-1)
 
-    def test_generate_observed_from_hidden_length(self, chmm):
+    def test_generate_observed_from_hidden_length(self):
+        chmm = tc.create_chmm1()
         hidden = chmm.generate_hidden(self.T)
         assert len(chmm.generate_observed_from_hidden(hidden)) == self.T
 
-    def test_generate_observed_from_hidden_output(self, chmm):
+    def test_generate_observed_from_hidden_output(self):
+        chmm = tc.create_chmm1()
         hidden = chmm.generate_hidden(self.T)
         for o in chmm.generate_observed_from_hidden(hidden):
             assert o in {"o0", "o1"}
 
-    def test_generate_observed_length(self, chmm):
+    def test_generate_observed_length(self):
+        chmm = tc.create_chmm1()
         assert len(chmm.generate_observed(self.T)) == self.T
 
-    def test_generate_observed_output(self, chmm):
+    def test_generate_observed_output(self):
+        chmm = tc.create_chmm1()
         for h in chmm.generate_observed(self.T):
             assert h in {"o0", "o1"}
 
-    def test_generate_observed_negative_time_steps(self, chmm):
+    def test_generate_observed_negative_time_steps(self):
+        chmm = tc.create_chmm1()
         with pytest.raises(InvalidInputError):
             chmm.generate_observed(-1)
 

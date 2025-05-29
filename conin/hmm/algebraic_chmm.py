@@ -8,12 +8,7 @@ from conin.exceptions import InvalidInputError
 from conin.hmm import HMM, Statistical_Model
 from . import chmm_base
 
-try:
-    import pyomo.environ as pyo
-
-    _pyomo_available = True
-except:
-    _pyomo_available = False
+import pyomo.environ as pyo
 
 
 def _create_index_sets(*, hmm, observations):
@@ -180,12 +175,12 @@ class Algebraic_CHMM(chmm_base.CHMM_Base):
             return M
         return self._generate_application_constraints(M)
 
-    def _generate_application_constraints(self, M):
+    def _generate_application_constraints(self, M):                 #pragma: nocover
         raise NotImplementedError(
             "Algebraic_CHMM.generate_application_constraints() is not implemented"
         )
 
-    def generate_unconstrained_model(self, *, observations):
+    def generate_unconstrained_model(self, *, observations):        #pragma: nocover
         raise NotImplementedError(
             "Algebraic_CHMM.generate_unconstrained_model() is not implemented"
         )
@@ -204,9 +199,6 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
         solver_options=None,
         app=None,
     ):
-        assert (
-            _pyomo_available
-        ), "Cannot create a PyomoAlgebraic_CHMM object without installing Pyomo"
         super().__init__(hmm=hmm, cache_indices=cache_indices, app=app)
 
         # Generate models with binary y-variables
@@ -222,9 +214,6 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
 
     def generate_pyomo_constraints(self, M):
         return self._app().generate_pyomo_constraints(M=M)
-        raise NotImplementedError(
-            "Algebraic_CHMM.generate_pyomo_constraints() is not implemented"
-        )
 
     def generate_unconstrained_model(self, *, observations):
         self.observations = observations
@@ -308,9 +297,12 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
         # M.pprint()
         return M
 
-    # This should probably be called something different I think
     def generate_hidden(self, *, observations, solver=None, solver_options=None):
-        # Randomly generate hidden states using the HMM parameters
+        """
+        This should probably be called something different
+
+        Randomly generate hidden states using the HMM parameters
+        """
         hidden = self.hmm.generate_hidden_conditioned_on_observations(observations)
         T = len(observations)
 
@@ -362,6 +354,6 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
 def create_algebraic_chmm(aml, **kwds):
     if aml == "pyomo":
         return PyomoAlgebraic_CHMM(**kwds)
-    raise NotImplementedError(
+    raise NotImplementedError(                      #pragma: nocover
         f"Cannot construct an algebraic HMM with unknown AML: {aml}"
     )
