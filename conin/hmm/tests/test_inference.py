@@ -322,8 +322,8 @@ class Test_Inference_ip:
         observed = ["o1", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0"]
 
         # TODO - Compare LP solution?
-        #inference1 = Inference(statistical_model=chmm)
-        #inferred1 = inference1(observed).solutions[0].hidden
+        # inference1 = Inference(statistical_model=chmm)
+        # inferred1 = inference1(observed).solutions[0].hidden
 
         inferred2 = (
             ip_inference(statistical_model=recursive_app, observed=observed)
@@ -348,8 +348,8 @@ class Test_Inference_ip:
         observed = ["o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1"]
 
         # TODO - Compare LP solution?
-        #inference1 = Inference(statistical_model=chmm)
-        #inferred1 = inference1(observed).solutions[0].hidden
+        # inference1 = Inference(statistical_model=chmm)
+        # inferred1 = inference1(observed).solutions[0].hidden
 
         inferred2 = (
             ip_inference(statistical_model=recursive_app, observed=observed)
@@ -357,7 +357,7 @@ class Test_Inference_ip:
             .hidden
         )
 
-        #assert inferred1 == inferred2
+        # assert inferred1 == inferred2
 
         assert inferred2 == [
             "h0",
@@ -422,8 +422,6 @@ class Test_Inference_ip:
 
         observed = ["o0", "o1", "o1", "o1"]
         hidden = (
-            ip_inference(statistical_model=model, observed=observed)
-            .solutions[0]
-            .hidden
+            ip_inference(statistical_model=model, observed=observed).solutions[0].hidden
         )
         assert hidden == ["h0", "h1", "h1", "h1"]

@@ -175,12 +175,12 @@ class Algebraic_CHMM(chmm_base.CHMM_Base):
             return M
         return self._generate_application_constraints(M)
 
-    def _generate_application_constraints(self, M):                 #pragma: nocover
+    def _generate_application_constraints(self, M):  # pragma: nocover
         raise NotImplementedError(
             "Algebraic_CHMM.generate_application_constraints() is not implemented"
         )
 
-    def generate_unconstrained_model(self, *, observations):        #pragma: nocover
+    def generate_unconstrained_model(self, *, observations):  # pragma: nocover
         raise NotImplementedError(
             "Algebraic_CHMM.generate_unconstrained_model() is not implemented"
         )
@@ -286,7 +286,9 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
         M.hmm.flow_end = pyo.Constraint(rule=flow_end_)
 
         M.hmm.o = pyo.Objective(
-            expr=sum((D.Gt[t, a, b] + D.Ge[t+1,b])* M.hmm.y[t, a, b] for t, a, b in D.Gt),
+            expr=sum(
+                (D.Gt[t, a, b] + D.Ge[t + 1, b]) * M.hmm.y[t, a, b] for t, a, b in D.Gt
+            ),
             sense=pyo.maximize,
         )
 
@@ -349,6 +351,6 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
 def create_algebraic_chmm(aml, **kwds):
     if aml == "pyomo":
         return PyomoAlgebraic_CHMM(**kwds)
-    raise NotImplementedError(                      #pragma: nocover
+    raise NotImplementedError(  # pragma: nocover
         f"Cannot construct an algebraic HMM with unknown AML: {aml}"
     )

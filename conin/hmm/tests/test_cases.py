@@ -30,6 +30,7 @@ def create_hmm0():
     hmm.set_seed(0)
     return hmm
 
+
 def create_hmm1():
     start_probs = {"h0": 0.4, "h1": 0.6}
     transition_probs = {
@@ -175,9 +176,8 @@ class Num_Zeros(conin.hmm.HMMApplication):
         # Data used to construct the base HMM formulation
         D = self.algebraic.data
 
-        h0 = self.hmm.hidden_to_internal['h0']
+        h0 = self.hmm.hidden_to_internal["h0"]
         M.h0_lower = pe.Constraint(expr=sum(M.hmm.x[t, h0] for t in D.T) >= self.lb)
         M.h0_upper = pe.Constraint(expr=sum(M.hmm.x[t, h0] for t in D.T) <= self.ub)
 
         return M
-
