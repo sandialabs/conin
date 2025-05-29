@@ -39,12 +39,6 @@ class Internal_Oracle_CHMM:
         for constraint in constraints:
             self.add_constraint(constraint)
 
-    def get_internal_hmm(self):
-        """
-        Returns internal_hmm
-        """
-        return self.internal_hmm
-
     def is_feasible(self, seq):
         """
         Check if an sequence satisfies the constraints

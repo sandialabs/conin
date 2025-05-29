@@ -124,8 +124,6 @@ class Oracle_CHMM(chmm_base.CHMM_Base):
         Raises:
             InvalidInputError: If time_steps is negative.
         """
-        if time_steps < 0:
-            raise InvalidInputError("In generate_hidden, time_steps >= 0")
         internal_hidden = self.internal_constrained_hmm.generate_hidden(time_steps)
         return [self.hmm.hidden_to_external[h] for h in internal_hidden]
 

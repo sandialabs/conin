@@ -72,14 +72,15 @@ class Test_Oracle_CHMM:
             _chmm.load_model(start_probs={"h0": 0.4, "h1": 0.6})
 
     def test_load_model_failure2(self):
+        _chmm = Oracle_CHMM()
+        _hmm = HMM()
         with pytest.raises(InvalidInputError):
-            _chmm = Oracle_CHMM()
-            _hmm = HMM()
             _hmm.load_model(
                 start_probs={"h0": 0.4, "h1": 0.6},
                 emission_probs={"h0": 0.7, "h1": 0.3},
                 transition_probs={("h0", "h0"): 0.9, ("h0", "h1"): 0.1},
             )
+        with pytest.raises(InvalidInputError):
             _chmm.load_model(start_probs={"h0": 0.4, "h1": 0.6}, hmm=_hmm)
 
     def test_internal_is_feasible(self):
@@ -121,6 +122,8 @@ class Test_Oracle_CHMM:
     def test_generate_hidden_length(self):
         chmm = tc.create_chmm1()
         assert len(chmm.generate_hidden(self.T)) == self.T
+        with pytest.raises(InvalidInputError):
+            chmm.generate_hidden(-1)
 
     def test_generate_hidden_output(self):
         chmm = tc.create_chmm1()
@@ -141,6 +144,12 @@ class Test_Oracle_CHMM:
         hidden = chmm.generate_hidden(self.T)
         assert len(chmm.generate_observed_from_hidden(hidden)) == self.T
 
+    def test_generate_observed_from_hidden_failure(self):
+        chmm = tc.create_chmm1()
+        hidden = ["h0"]
+        with pytest.raises(InvalidInputError):
+            chmm.generate_observed_from_hidden(hidden)
+
     def test_generate_observed_from_hidden_output(self):
         chmm = tc.create_chmm1()
         hidden = chmm.generate_hidden(self.T)
@@ -150,6 +159,8 @@ class Test_Oracle_CHMM:
     def test_generate_observed_length(self):
         chmm = tc.create_chmm1()
         assert len(chmm.generate_observed(self.T)) == self.T
+        with pytest.raises(InvalidInputError):
+            chmm.generate_observed(-1)
 
     def test_generate_observed_output(self):
         chmm = tc.create_chmm1()

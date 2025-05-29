@@ -148,8 +148,11 @@ class Test_Application_CHMM:
 
     # CLM: This is a random test. Is that okay? -- I could also set a seed
     def test_run_simulations(self, app):
+        seed = 1
         num_simulations = 5
-        simulations = app.run_simulations(num=num_simulations, with_observations=True)
+        simulations = app.run_simulations(
+            num=num_simulations, with_observations=True, seed=seed
+        )
         assert len(simulations) == num_simulations
         for i in range(num_simulations):
             assert len(simulations[i].hidden) == app.time
