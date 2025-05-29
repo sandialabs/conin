@@ -89,3 +89,61 @@ def create_chmm1():
     chmm.add_constraint(num_zeros_greater_than_nine)
     chmm.add_constraint(num_zeros_less_than_thirteen)
     return chmm
+
+
+class Num_Zeros(conin.hmm.HMMApplication):
+    def __init__(self):
+        self.num_zeros = None
+        super().__init__(self.__class__.__name__)
+
+    def initialize(
+        self,
+        *,
+        hmm,
+        constraints,
+        lb,
+        ub,
+    ):
+        self.hmm = hmm
+        self.constraints = constraints
+        self.oracle.set_constraints(constraints)
+        self.lb = lb
+        self.ub = ub
+
+    def run_simulations(
+        self, *, num=1, debug=False, seed=None, with_observations=False, time_steps
+    ):
+        if seed is not None:
+            random.seed(seed)
+        output = []
+        for n in range(num):
+            res = munch.Munch()
+            hidden = self.oracle.generate_hidden(time_steps)
+            if with_observations:
+                observed = self.oracle.generate_observed_from_hidden(hidden)
+            res = munch.Munch(hidden=hidden, index=n)
+            if with_observations:
+                res.observed = observed
+            output.append(res)
+        return output
+
+    def initialize_constraint_data(self, hidden_state):
+        if hidden_state == "h0":
+            return 1
+        else:
+            return 0
+
+    def constraint_data_feasible_partial(self, *, constraint_data, t, time_steps):
+        return (
+            constraint_data + (time_steps - t) >= self.lb
+        ) and constraint_data <= self.ub
+
+    def constraint_data_feasible(self, constraint_data):
+        return constraint_data >= self.lb and constraint_data <= self.ub
+
+    def update_constraint_data(self, *, hidden_state, constraint_data):
+        if hidden_state == "h0":
+            return constraint_data + 1
+        else:
+            return constraint_data
+
