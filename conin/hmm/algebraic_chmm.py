@@ -285,16 +285,11 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
 
         M.hmm.flow_end = pyo.Constraint(rule=flow_end_)
 
-        # M.hmm.O = pyo.Expression(expr=sum(M.hmm.y[t, a, b] for t, a, b in D.FF))
-
         M.hmm.o = pyo.Objective(
-            expr=sum(
-                (D.Gt[t, a, b] + D.Ge[t+1,b])* M.hmm.y[t, a, b] for t, a, b in D.Gt
-            ),  # + -(10**6) * M.hmm.O,
+            expr=sum((D.Gt[t, a, b] + D.Ge[t+1,b])* M.hmm.y[t, a, b] for t, a, b in D.Gt),
             sense=pyo.maximize,
         )
 
-        # M.pprint()
         return M
 
     def generate_hidden(self, *, observations, solver=None, solver_options=None):
