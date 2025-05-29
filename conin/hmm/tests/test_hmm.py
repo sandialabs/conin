@@ -4,6 +4,7 @@ from conin import InvalidInputError
 from conin.hmm import HMM, Inference
 
 import conin.hmm.tests.test_cases as tc
+import math
 
 
 class Test_HMM1:
@@ -12,6 +13,10 @@ class Test_HMM1:
     def test_HMM(self):
         hmm = tc.create_hmm1()
         assert hmm is not None
+
+    def test_HMM_print(self):
+        hmm = tc.create_hmm1()
+        print(hmm)
 
     def test_hidden_map(self):
         hmm = tc.create_hmm1()
@@ -212,10 +217,7 @@ class Test_HMM1:
         hmm = tc.create_hmm1()
         # This should be all h0's followed by h1
         vec = hmm.generate_hidden_until_state("h1")
-        assert vec[-1] == "h1"
-        vec.pop()
-        for val in vec:
-            assert val == "h0"
+        assert all(val == "h0" for val in vec[:-1])
 
     def test_generate_observed_from_hidden_length(self):
         hmm = tc.create_hmm1()
@@ -305,6 +307,22 @@ class Test_HMM1:
             ("h1", "o0"): 0.4,
             ("h1", "o1"): 0.6,
         }
+
+    def test_log_probability(self):
+        hmm = tc.create_hmm1()
+        observation1 = ["o1"]
+        hidden1 = ["h0"]
+        observation2 = ["o0", "o0"]
+        hidden2 = ["h1", "h0"]
+
+        assert math.isclose(
+            hmm.log_probability(observations=observation1, hidden=hidden1),
+            math.log(0.4) + math.log(0.3),
+        )
+        assert math.isclose(
+            hmm.log_probability(observations=observation2, hidden=hidden2),
+            math.log(0.6) + math.log(0.4) + math.log(0.2) + math.log(0.7),
+        )
 
 
 class Test_Inference_HMM1:
