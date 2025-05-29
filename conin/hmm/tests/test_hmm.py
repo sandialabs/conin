@@ -2,6 +2,7 @@ import pytest
 
 from conin import InvalidInputError
 from conin.hmm import HMM, Inference
+import conin.hmm.hmm_util
 
 import conin.hmm.tests.test_cases as tc
 import math
@@ -378,3 +379,15 @@ class Test_Inference_HMM1:
             inference._viterbi(observed).solutions[0].hidden
             == inference._a_star(observed).solutions[0].hidden
         )
+
+
+class Test_HMM_Util:
+    def test_random_hmm(self):
+        hidden_states = {1, 2, 3, 4}
+        observed_states = ["a", "b", "c"]
+        seed = 1
+        hmm = conin.hmm.hmm_util.random_hmm(
+            hidden_states=hidden_states, observed_states=observed_states, seed=1
+        )
+        assert set(hmm.get_hidden_states()) == set(hidden_states)
+        assert set(hmm.get_observable_states()) == set(observed_states)

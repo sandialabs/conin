@@ -3,7 +3,7 @@ from conin.hmm import HMM
 from conin.util import Util
 
 
-def random_hmm(hidden_states, observed_states, seed=None):
+def random_hmm(*, hidden_states, observed_states, seed=None):
     if seed is not None:
         np.random.seed(seed)
 
