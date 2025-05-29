@@ -111,7 +111,7 @@ class HMM(Statistical_Model):
             if (h1 not in self.hidden_to_internal) or (
                 h2 not in self.hidden_to_internal
             ):
-                raise InvalidInputError("You shouldn't see this")
+                raise InvalidInputError("You shouldn't see this")  # pragma: no cover
             self.transition_mat[self.hidden_to_internal[h1]][
                 self.hidden_to_internal[h2]
             ] = prob
