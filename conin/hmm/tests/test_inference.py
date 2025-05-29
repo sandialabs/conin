@@ -6,6 +6,7 @@ from conin.hmm import *
 from conin.hmm.inference import a_star
 from conin import *
 from conin.hmm.oracle_chmm import Oracle_CHMM
+from conin.hmm.inference import ip_inference
 
 import conin.hmm.tests.test_cases as tc
 
@@ -207,7 +208,7 @@ class Test_Unique_Heap:
         assert len(A) == 0
 
 
-class Test_Inference:
+class Test_Inference_a_star:
 
     def test_a_star(self, chmm, recursive_app):
         observed = ["o1", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0"]
@@ -308,27 +309,121 @@ class Test_Inference:
         assert inferred2.termination_condition == "ok"
 
     def test_a_star_deterministic_hmm(self):
-        start_probs = {"h0": 1, "h1": 0}
-        transition_probs = {
-            ("h0", "h0"): 0,
-            ("h0", "h1"): 1,
-            ("h1", "h0"): 0,
-            ("h1", "h1"): 1,
-        }
-        emission_probs = {
-            ("h0", "o0"): 1,
-            ("h0", "o1"): 0,
-            ("h1", "o0"): 0,
-            ("h1", "o1"): 1,
-        }
-        hmm = HMM()
-        hmm.load_model(
-            start_probs=start_probs,
-            transition_probs=transition_probs,
-            emission_probs=emission_probs,
-        )
-        hmm.set_seed(0)
+        hmm = tc.create_hmm0()
 
         observed = ["o0", "o1", "o1", "o1"]
         inference = Inference(statistical_model=hmm)
         assert inference(observed).solutions[0].hidden == ["h0", "h1", "h1", "h1"]
+
+
+class Test_Inference_ip:
+
+    def test_ip(self, recursive_app):
+        observed = ["o1", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0"]
+
+        # TODO - Compare LP solution?
+        #inference1 = Inference(statistical_model=chmm)
+        #inferred1 = inference1(observed).solutions[0].hidden
+
+        inferred2 = (
+            ip_inference(statistical_model=recursive_app, observed=observed)
+            .solutions[0]
+            .hidden
+        )
+
+        assert inferred2 == [
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+        ]
+
+    def test_ip2(self, recursive_app):
+        observed = ["o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1"]
+
+        # TODO - Compare LP solution?
+        #inference1 = Inference(statistical_model=chmm)
+        #inferred1 = inference1(observed).solutions[0].hidden
+
+        inferred2 = (
+            ip_inference(statistical_model=recursive_app, observed=observed)
+            .solutions[0]
+            .hidden
+        )
+
+        #assert inferred1 == inferred2
+
+        assert inferred2 == [
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+        ]
+
+    def Xtest_a_star_mult(self, chmm, recursive_app):
+        observed = ["o1", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0"]
+
+        inference1 = Inference(statistical_model=chmm, num_solutions=2)
+        inferred1 = inference1(observed)
+
+        inferred2 = recursive_a_star(
+            hmm_app=recursive_app, observed=observed, num_solutions=2
+        )
+
+        assert inferred1.termination_condition == "ok"
+        assert inferred2.termination_condition == "ok"
+        assert [sol.hidden for sol in inferred1.solutions] == [
+            ["h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"],
+            ["h1", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"],
+        ]
+        assert [sol.hidden for sol in inferred2.solutions] == [
+            ["h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"],
+            ["h1", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"],
+        ]
+
+    def Xtest_a_star_no_solution(self, chmm, recursive_app):
+        observed = ["o0"]
+
+        inference1 = Inference(statistical_model=chmm)
+        inferred1 = inference1(observed)
+
+        inferred2 = recursive_a_star(hmm_app=recursive_app, observed=observed)
+
+        assert inferred1.termination_condition == "error: no feasible solutions"
+
+        assert inferred2.termination_condition == "error: no feasible solutions"
+
+    def Xtest_a_star_not_enough_solutions(self, chmm, recursive_app):
+        observed = ["o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1"]
+        inference1 = Inference(statistical_model=chmm, num_solutions=2)
+        inferred1 = inference1(observed)
+
+        inferred2 = recursive_a_star(
+            hmm_app=recursive_app, observed=observed, num_solutions=2
+        )
+        assert inferred1.termination_condition == "ok"
+        assert inferred2.termination_condition == "ok"
+
+    def test_ip_deterministic_hmm(self):
+        model = HMMApplication()
+        model.hmm = tc.create_hmm0()
+
+        observed = ["o0", "o1", "o1", "o1"]
+        hidden = (
+            ip_inference(statistical_model=model, observed=observed)
+            .solutions[0]
+            .hidden
+        )
+        assert hidden == ["h0", "h1", "h1", "h1"]

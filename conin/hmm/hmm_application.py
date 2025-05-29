@@ -9,7 +9,7 @@ from .oracle_chmm import Oracle_CHMM
 
 class HMMApplication:
 
-    def __init__(self, name):
+    def __init__(self, name="unknown"):
         # Application data
         self.data = munch.Munch()
         self.name = name
@@ -121,3 +121,6 @@ class HMMApplication:
 
     def generate_oracle_constraints(self):
         pass
+
+    def generate_pyomo_constraints(self, M):
+        return M

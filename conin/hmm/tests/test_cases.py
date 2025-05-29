@@ -1,3 +1,4 @@
+import pyomo.environ as pe
 import conin.hmm
 
 """
@@ -5,6 +6,29 @@ This script has a collection of HMM test cases that can be used to
 test conin capabilities.
 """
 
+
+def create_hmm0():
+    start_probs = {"h0": 1, "h1": 0}
+    transition_probs = {
+        ("h0", "h0"): 0,
+        ("h0", "h1"): 1,
+        ("h1", "h0"): 0,
+        ("h1", "h1"): 1,
+    }
+    emission_probs = {
+        ("h0", "o0"): 1,
+        ("h0", "o1"): 0,
+        ("h1", "o0"): 0,
+        ("h1", "o1"): 1,
+    }
+    hmm = conin.hmm.HMM()
+    hmm.load_model(
+        start_probs=start_probs,
+        transition_probs=transition_probs,
+        emission_probs=emission_probs,
+    )
+    hmm.set_seed(0)
+    return hmm
 
 def create_hmm1():
     start_probs = {"h0": 0.4, "h1": 0.6}
@@ -146,4 +170,14 @@ class Num_Zeros(conin.hmm.HMMApplication):
             return constraint_data + 1
         else:
             return constraint_data
+
+    def generate_pyomo_constraints(self, *, M):
+        # Data used to construct the base HMM formulation
+        D = self.algebraic.data
+
+        h0 = self.hmm.hidden_to_internal['h0']
+        M.h0_lower = pe.Constraint(expr=sum(M.hmm.x[t, h0] for t in D.T) >= self.lb)
+        M.h0_upper = pe.Constraint(expr=sum(M.hmm.x[t, h0] for t in D.T) <= self.ub)
+
+        return M
 
