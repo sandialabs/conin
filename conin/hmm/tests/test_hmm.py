@@ -289,9 +289,9 @@ class Test_HMM1:
 
     def test_read_and_write(self, tmp_path):
         hmm = tc.create_hmm1()
-        hmm.write_to_file(tmp_path/"temp.txt")
+        hmm.write_to_file(tmp_path / "temp.txt")
         _hmm = HMM()
-        _hmm.read_from_file(tmp_path/"temp.txt")
+        _hmm.read_from_file(tmp_path / "temp.txt")
         assert _hmm.get_start_probs() == {"h0": 0.4, "h1": 0.6}
         assert _hmm.get_transition_probs() == {
             ("h0", "h0"): 0.9,

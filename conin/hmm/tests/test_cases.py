@@ -5,6 +5,7 @@ This script has a collection of HMM test cases that can be used to
 test conin capabilities.
 """
 
+
 def create_hmm1():
     start_probs = {"h0": 0.4, "h1": 0.6}
     transition_probs = {
@@ -88,4 +89,3 @@ def create_chmm1():
     chmm.add_constraint(num_zeros_greater_than_nine)
     chmm.add_constraint(num_zeros_less_than_thirteen)
     return chmm
-

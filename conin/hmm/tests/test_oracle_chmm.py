@@ -6,6 +6,7 @@ from conin.hmm.oracle_chmm import Oracle_CHMM
 
 import conin.hmm.tests.test_cases as tc
 
+
 @pytest.fixture
 def constraint():
     def num_zeros_eq_five(seq):
@@ -449,6 +450,11 @@ class Test_Common_Constraints:
         assert not constraint(["h", "h"])
 
         assert constraint.partial_func(3, ["h", "h"])
+
+        constraint1 = has_maximum_number_of_occurences_constraint(val="h", count=2)
+        constraint2 = has_maximum_number_of_occurences_constraint(val="h", count=1)
+        constraint = xor_constraints([constraint1, constraint2])
+        assert not constraint.partial_func(10, ["h", "h", "h"])
 
     def test_and_constraints(self):
         constraint1 = has_minimum_number_of_occurences_constraint(val="h", count=2)

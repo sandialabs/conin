@@ -9,12 +9,14 @@ from conin.hmm.oracle_chmm import Oracle_CHMM
 
 import conin.hmm.tests.test_cases as tc
 
-#TODO IP Testing
-#TODO Viterbi/LP Testing
+# TODO IP Testing
+# TODO Viterbi/LP Testing
+
 
 @pytest.fixture
 def hmm():
     return tc.create_hmm1()
+
 
 @pytest.fixture
 def lb():
