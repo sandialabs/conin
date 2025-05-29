@@ -32,7 +32,7 @@ def _create_index_sets(*, hmm, observations):
     F = set()
     # FF: (t,a,b) such that transition probability == 0
     FF = set()
-    # Gt: (t,a,b) ->  log(transition probability at time t from a to b)
+    # Gt: (t,a,b) ->  log(transition probability from a to b at time t)
     Gt = {}
     # Ge: (t,b) ->  log(emission probability for b at time t)
     Ge = {}
@@ -42,11 +42,11 @@ def _create_index_sets(*, hmm, observations):
             curr = set()
             for i in A:
                 if start_probs[i] > 0 and emission_probs[i][obs[t]] > 0:
-                    Gt[-1, -1, i] = math.log(start_probs[i])
+                    Gt[0, -1, i] = math.log(start_probs[i])
                     Ge[0, i] = math.log(emission_probs[i][obs[t]])
                     curr.add(i)
                 else:
-                    FF.add((-1, -1, i))
+                    FF.add((0, -1, i))
         else:
             curr = set()
             for a, row in enumerate(trans_mat):
@@ -55,11 +55,11 @@ def _create_index_sets(*, hmm, observations):
                 for b, val in enumerate(row):
                     F.add((a, b))
                     if val > 0 and emission_probs[b][obs[t]] > 0:
-                        Gt[t - 1, a, b] = math.log(val)
+                        Gt[t, a, b] = math.log(val)
                         Ge[t, b] = math.log(emission_probs[b][obs[t]])
                         curr.add(b)
                     else:
-                        FF.add((t - 1, a, b))
+                        FF.add((t, a, b))
         latest = curr
         states[t] = latest
 
@@ -74,14 +74,14 @@ def _create_index_sets(*, hmm, observations):
     # for k in sorted(FF):
     #    print("FF",k)
 
-    GG = {(Tmax - 1, i, -2) for i in latest}
+    GG = {(Tmax, i, -2) for i in latest}
     # for v in GG:
     #    print("GG",v)
 
     E = list(Gt.keys()) + list(GG)
     #           (t,a,b) where
-    #           (t, -1,  i) when t = -1
-    #           (t,  a,  b) when t = 0..Tmax-1
+    #           (t, -1,  i) when t = 0
+    #           (t,  a,  b) when t = 1..Tmax
     #           (t,  i, -2) when t = Tmax
     # for i in A:
     #    E.append((-1, -1, i))
@@ -243,10 +243,10 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
             if b not in D.states[t]:
                 return m.x[t, b] == 0.0
             elif t == 0:
-                return m.x[t, b] == m.y[-1, -1, b]
+                return m.x[t, b] == m.y[t, -1, b]
             else:
                 return m.x[t, b] == sum(
-                    m.y[t - 1, aa, b] for aa in D.A if (t - 1, aa, b) in D.Gt
+                    m.y[t, aa, b] for aa in D.A if (t, aa, b) in D.Gt
                 )
 
         M.hmm.hidden = pyo.Constraint(D.T, D.A, rule=hidden_)
@@ -257,37 +257,34 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
             if b not in D.states[t]:
                 return pyo.Constraint.Skip
             elif t == 0:
-                return m.y[-1, -1, b] == sum(
-                    m.y[t, b, a] for a in D.A if (t, b, a) in D.Gt
+                return m.y[t, -1, b] == sum(
+                    m.y[t + 1, b, a] for a in D.A if (t + 1, b, a) in D.Gt
                 )
             elif t == D.Tmax - 1:
                 return (
-                    sum(m.y[t - 1, a, b] for a in D.A if (t - 1, a, b) in D.Gt)
-                    == m.y[t, b, -2]
+                    sum(m.y[t, a, b] for a in D.A if (t, a, b) in D.Gt)
+                    == m.y[t + 1, b, -2]
                 )
             else:
-                return sum(
-                    m.y[t - 1, a, b] for a in D.A if (t - 1, a, b) in D.Gt
-                ) == sum(m.y[t, b, a] for a in D.A if (t, b, a) in D.Gt)
+                return sum(m.y[t, a, b] for a in D.A if (t, a, b) in D.Gt) == sum(
+                    m.y[t + 1, b, a] for a in D.A if (t + 1, b, a) in D.Gt
+                )
 
         M.hmm.flow = pyo.Constraint(D.T, D.A, rule=flow_)
 
         def flow_start_(m):
-            return sum(m.y[-1, -1, b] for b in D.A if (-1, -1, b) in D.Gt) == 1
+            return sum(m.y[0, -1, b] for b in D.A if (0, -1, b) in D.Gt) == 1
 
         M.hmm.flow_start = pyo.Constraint(rule=flow_start_)
 
         def flow_end_(m):
-            return (
-                sum(m.y[D.Tmax - 1, a, -2] for a in D.A if (D.Tmax - 1, a, -2) in D.GG)
-                == 1
-            )
+            return sum(m.y[D.Tmax, a, -2] for a in D.A if (D.Tmax, a, -2) in D.GG) == 1
 
         M.hmm.flow_end = pyo.Constraint(rule=flow_end_)
 
         M.hmm.o = pyo.Objective(
             expr=sum(
-                (D.Gt[t, a, b] + D.Ge[t + 1, b]) * M.hmm.y[t, a, b] for t, a, b in D.Gt
+                (D.Gt[t, a, b] + D.Ge[t, b]) * M.hmm.y[t, a, b] for t, a, b in D.Gt
             ),
             sense=pyo.maximize,
         )
