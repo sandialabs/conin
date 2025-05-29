@@ -59,6 +59,18 @@ class Test_HMM1:
                 emission_probs=hmm.get_emission_probs(),
             )
 
+    def test_start_vec_new_hidden_state(self):
+        hmm = tc.create_hmm1()
+        with pytest.raises(InvalidInputError):
+            _start_probs = hmm.get_start_probs().copy()
+            _start_probs["h2"] = 0.1
+            _hmm = HMM()
+            _hmm.load_model(
+                start_probs=_start_probs,
+                transition_probs=hmm.get_transition_probs(),
+                emission_probs=hmm.get_emission_probs(),
+            )
+
     def test_start_vec_sum_to_one(self):
         hmm = tc.create_hmm1()
         with pytest.raises(InvalidInputError):
@@ -208,6 +220,8 @@ class Test_HMM1:
     def test_generate_hidden_length(self):
         hmm = tc.create_hmm1()
         assert len(hmm.generate_hidden(self.T)) == self.T
+        with pytest.raises(InvalidInputError):
+            hmm.generate_hidden(-1)
 
     def test_generate_hidden_output(self):
         hmm = tc.create_hmm1()
@@ -216,6 +230,17 @@ class Test_HMM1:
 
     def test_generate_hidden_from_state(self):
         hmm = tc.create_hmm1()
+        # Make sure that we start in state h0 so we test sequences of length at least 2
+        start_probs = hmm.get_start_probs()
+        tranisition_probs = hmm.get_transition_probs()
+        emission_probs = hmm.get_emission_probs()
+        start_probs = {"h0": 1, "h1": 0}
+        hmm = HMM()
+        hmm.load_model(
+            start_probs=start_probs,
+            emission_probs=emission_probs,
+            transition_probs=tranisition_probs,
+        )
         # This should be all h0's followed by h1
         vec = hmm.generate_hidden_until_state("h1")
         assert all(val == "h0" for val in vec[:-1])
@@ -234,6 +259,8 @@ class Test_HMM1:
     def test_generate_observed_length(self):
         hmm = tc.create_hmm1()
         assert len(hmm.generate_observed(self.T)) == self.T
+        with pytest.raises(InvalidInputError):
+            hmm.generate_observed(-1)
 
     def test_generate_observed_output(self):
         hmm = tc.create_hmm1()

@@ -53,7 +53,7 @@ class HMM(Statistical_Model):
         """
         Returns internal hmm
         """
-        return self.internal_hmm
+        return self.internal_hmm.get_internal_hmm()
 
     def load_model(self, *, start_probs, transition_probs, emission_probs):
         """
@@ -88,6 +88,9 @@ class HMM(Statistical_Model):
                 self.hidden_to_external.append(h2)
                 self.hidden_to_internal[h2] = len(self.hidden_to_external) - 1
         self.num_hidden_states = len(self.hidden_to_internal)
+
+        if not set(start_probs.keys()).issubset(set(self.hidden_to_external)):
+            raise InvalidInputError("start_prob keys match with transition keys")
 
         # Setup observed_to_internal, observed_to_external, and num_observed_states
         for h, o in emission_probs:

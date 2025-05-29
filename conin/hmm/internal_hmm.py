@@ -77,6 +77,8 @@ class Internal_HMM(Internal_Statistical_Model):
 
     def check_dimensions(self):
         """
+        TODO: do we actually need this if internal_hmm is only called by hmm?
+
         Checks that the dimensions of the input matrices are appropriately sized
 
         Raises:
@@ -85,20 +87,20 @@ class Internal_HMM(Internal_Statistical_Model):
         correct_dimension = True
 
         if len(self.start_vec) != len(self.transition_mat):
-            correct_dimension = False
+            correct_dimension = False  # pragma: no cover
         for vec in self.transition_mat:
             if len(self.start_vec) != len(vec):
-                correct_dimension = False
+                correct_dimension = False  # pragma: no cover
 
         if len(self.start_vec) != len(self.emission_mat):
-            correct_dimension = False
+            correct_dimension = False  # pragma: no cover
         for vec in self.emission_mat:
             if len(self.emission_mat[0]) != len(vec):
-                correct_dimension = False
+                correct_dimension = False  # pragma: no cover
 
         if not correct_dimension:
             raise InvalidInputError(
-                "Dimensions do not line up correctly in check_dimensions"
+                "Dimensions do not line up correctly in check_dimensions, you shouldn't see this."  # pragma: no cover
             )
 
     def load_dimensions(self):
@@ -130,7 +132,7 @@ class Internal_HMM(Internal_Statistical_Model):
             InvalidInputError: If time_steps is negative.
         """
         if time_steps < 0:
-            raise InvalidInputError("In generate_observed time_steps > 0.")
+            raise InvalidInputError("In generate_hidden time_steps > 0.")
         hidden = []
 
         # Sample the first hidden state
