@@ -57,7 +57,7 @@ def arrayConvert(obs, hmm, cst, sat):
     
     return hmm_params, cst_params 
 
-def mv_BaumWelch(hmm_params, emit_weights, cst_params):
+def mv_BaumWelch(hmm_params, emit_weights, cst_params, debug = False):
     '''
     Baum-Welch algorithm that computes the moments in the M-step and returns the optimal init,tmat.
     Optimiziation of emissions will be handled separately since it's disribution-dependent. 
@@ -115,9 +115,12 @@ def mv_BaumWelch(hmm_params, emit_weights, cst_params):
     pi_opt = gamma[0]/gamma[0].sum()
     tmat_opt = xi.sum(axis = 0)/xi.sum(axis = (0,2))[:,np.newaxis]
 
+    if debug:
+        prob_data = np.einsum('nir,nir -> n',alpha,beta)
+    
     return [tmat_opt,pi_opt], prob_data
     
-def mv_EM(obs,hmm,cst,sat=True, conv_tol = 1e-8, max_iter = 1000, emit_opt = None):
+def mv_EM(obs,hmm,cst,sat=True, conv_tol = 1e-8, max_iter = 1000, emit_opt = None, debug=False):
 
     #Convert everything into numpy arrays
     old_hmm_params, old_cst_params = arrayConvert(obs, hmm, cst, sat)
@@ -126,13 +129,13 @@ def mv_EM(obs,hmm,cst,sat=True, conv_tol = 1e-8, max_iter = 1000, emit_opt = Non
     it = 0
     while (conv > conv_tol) and (it <= max_iter):
         it += 1
-        new_hmm_params, dat_prob = mv_BaumWelch(old_hmm_params, emit_weights, old_cst_params)
+        new_hmm_params, dat_prob = mv_BaumWelch(old_hmm_params, emit_weights, old_cst_params, debug = debug)
         # if emit_opt:
         #     emit_opt(*args) #args to be passed in and defined later.
         conv = np.linalg.norm(new_hmm_params[0] - old_hmm_params[0]) #stopping criterion based on just transition matrix
         old_hmm_params = new_hmm_params
         
-    return new_hmm_params
+    return new_hmm_params, dat_prob
 
 # def mv_BaumWelch(obs, hmm, cst, sat = True, emit_opt = None):
 #     '''
