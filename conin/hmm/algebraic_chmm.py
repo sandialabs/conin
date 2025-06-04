@@ -75,10 +75,9 @@ def _create_index_sets(*, hmm, observations):
     #    print("FF",k)
 
     GG = {(Tmax, i, -2) for i in latest}
-    # for v in GG:
-    #    print("GG",v)
 
-    E = list(Gt.keys()) + list(GG)
+    # The keys in Gt are in sorted order, but not the elements of GG
+    E = list(Gt.keys()) + list(sorted(GG))
     #           (t,a,b) where
     #           (t, -1,  i) when t = 0
     #           (t,  a,  b) when t = 1..Tmax
