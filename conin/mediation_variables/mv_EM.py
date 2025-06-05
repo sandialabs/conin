@@ -1,62 +1,6 @@
 import numpy as np
 import itertools
 
-def compute_emitweights(obs,hmm):
-    '''
-    Separately handles the computation of the 
-    '''
-    T = len(obs)
-    K = len(hmm.states)
-    #Compute emissions weights for easier access
-    emit_weights = np.zeros((T,K))
-    for t in range(T):
-        emit_weights[t] = np.array([hmm.eprob[k,obs[t]] for k in hmm.states])
-
-    return emit_weights
-
-def arrayConvert(obs, hmm, cst, sat):
-    '''
-    Converts/generates relevant parameters/weights into numpy arrays for Baum-Welch.
-    By assumption, the update/emission parameters associated with the constraint are static.
-    For now, fix the emission probabilities.
-    Only the hmm paramters are being optimized.
-    '''
-    #Initialize and convert all quantities  to np.arrays
-    aux_space = list(itertools.product([True, False], repeat=cst.aux_size))
-    T = len(obs)
-    K = len(hmm.states)
-    M = len(aux_space)
-    
-    state_ix = {s: i for i, s in enumerate(hmm.states)}
-    aux_ix = {s: i for i, s in enumerate(aux_space)}
-
-    #Compute the hmm parameters
-    tmat = np.zeros((K,K))
-    init_prob = np.zeros(K)
-
-    for i in hmm.states:
-        init_prob[state_ix[i]] = hmm.initprob[i]
-        for j in hmm.states:
-            tmat[state_ix[i],state_ix[j]] = hmm.tprob[i,j]
-
-    hmm_params = [tmat, init_prob]
-    
-    #Compute the cst parameters    
-    ind = np.zeros((M,K,M))
-    init_ind = np.zeros((M,K))
-    final_ind = np.zeros(M)
-
-    for r in aux_space:
-        final_ind[aux_ix[r]] = cst.cst_fun(r,sat)
-        for i in hmm.states:
-            init_ind[aux_ix[r],state_ix[i]] = cst.init_fun(i,r)
-            for s in aux_space:
-                ind[aux_ix[r],state_ix[i],aux_ix[s]] = cst.update_fun(r,i,s)
-                
-    cst_params = [init_ind,final_ind,ind]
-    
-    return hmm_params, cst_params 
-
 def mv_BaumWelch(hmm_params, emit_weights, cst_params, debug = False):
     '''
     Baum-Welch algorithm that computes the moments in the M-step and returns the optimal init,tmat.
