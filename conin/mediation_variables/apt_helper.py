@@ -24,7 +24,12 @@ def process_load(names_list, folder_path = '', delay = None):
         if delay:
             mu = delay[it]
             it += 1
-            tprob = {eval(k): round((1-mu)*v,5) for k,v in process['transition_probs'].items()}
+            if names.startswith('apt'): #no waiting for PRE,POST.
+                tprob = {eval(k): round((1-mu)*v,5) for k,v in process['transition_probs'].items() if eval(k)[0] not in ['PRE','POST']}
+                add_prob = {eval(k): v for k,v in process['transition_probs'].items() if eval(k)[0] in ['PRE','POST']}
+                tprob.update(add_prob)
+            else:
+                tprob = {eval(k): round((1-mu)*v,5) for k,v in process['transition_probs'].items()}
         else:
             tprob = {eval(k): v for k,v in process['transition_probs'].items()}
 
@@ -52,7 +57,7 @@ def process_load(names_list, folder_path = '', delay = None):
         
         if delay:
             for k in list(states): #need to create a separate copy since we're appending to states
-                if k in ['PRE','POST']:
+                if k in ['PRE','POST']: #no waiting for PRE, POST.
                     continue
                 wait_state = f'WAIT_{k}'
                 tprob[k,wait_state] = mu
@@ -477,7 +482,7 @@ def create_tiered_apt(apt_hmm, tol = 1e-7):
         for state2 in new_states:
             h1, e1 = state1
             h2, e2 = state2
-            val = apt.tprob[h1,h2]*apt.eprob[h1,e1]*apt.eprob[h2,e2] 
+            val = apt.tprob[h1,h2]*apt.eprob[h2,e2] #P(X_t, Y_t | X_{t-1}, Y_{t-1}) = P(Y_t|X_t)P(X_t | X_{t-1})
             if abs(val) > 1e-7: #only record the non-zero transitions
                 tprob[state1,state2] = round(val,6)
     
@@ -492,7 +497,7 @@ def create_tiered_apt(apt_hmm, tol = 1e-7):
     initprob = defaultdict(int)
     for state in new_states:
         h, e = state
-        val = apt.initprob[h]*apt.eprob[e]
+        val = apt.initprob[h]*apt.eprob[h,e]
         if abs(val) > 1e-7:
             initprob[state] = round(val,6)
     
