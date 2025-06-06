@@ -1,0 +1,174 @@
+{
+    "name": "lapt",
+    "start_probs": {
+        "PRE": 1
+    },
+    "transition_probs": {
+        "('PRE', 'PRE')": 0.7,
+        "('PRE', 'IA')": 0.3,
+        "('IA', 'EX')": 1,
+        "('EX', 'EX')": 0.4,
+        "('EX', 'DI')": 0.3,
+        "('EX', 'CA')": 0.3,
+        "('DI', 'EX')": 0.05,
+        "('DI', 'DI')": 0.1,
+        "('DI', 'CA')": 0.05,
+        "('DI', 'COL')": 0.8,
+        "('CA', 'EX')": 0.5,
+        "('CA', 'DI')": 0.5,
+        "('COL', 'COL')": 0.7,
+        "('COL', 'EXF')": 0.3,
+        "('EXF', 'POST')": 1,
+        "('POST', 'POST')": 1
+    },
+    "emission_probs": {
+        "('PRE', None)": 1,
+        "('IA', ('S', 'postfix/local'))": 1,
+        "('EX', ('V', 'access/bob'))": 0.1,
+        "('EX', ('V', 'access/sally'))": 0.1,
+        "('EX', ('S', 'postfix/local'))": 0.2,
+        "('EX', ('HI', 'img/post'))": 0.2,
+        "('EX', ('HE', 'img/post'))": 0.2,
+        "('EX', ('DS', 'syslog/nano'))": 0.2,
+        "('DI', ('S', 'postfix/local'))": 0.1,
+        "('DI', ('HI', 'usr/query'))": 0.3,
+        "('DI', ('HI', 'img/query'))": 0.1,
+        "('DI', ('HE', 'img/query'))": 0.1,
+        "('DI', ('DS', 'syslog/ls'))": 0.4,
+        "('CA', ('HI', 'usr/query'))": 1,
+        "('COL', ('HI', 'img/post'))": 0.2,
+        "('COL', ('HE', 'img/post'))": 0.7,
+        "('COL', ('DS', 'syslog/nano'))": 0.1,
+        "('EXF', ('HE', 'img/query'))": 1,
+        "('POST', None)": 1
+    },
+    "mu": 0.8,
+    "implication": {
+        "know_sally_exists": {
+            "step": "DI",
+            "device": "HI",
+            "resource": "usr/query",
+            "unlocked_transitions": [
+                [
+                    "EX",
+                    "CA"
+                ],
+                [
+                    "DI",
+                    "CA"
+                ]
+            ],
+            "unlocked_emissions": [
+                [
+                    "CA",
+                    [
+                        "HI",
+                        "usr/query"
+                    ]
+                ]
+            ],
+            "requires": []
+        },
+        "have_sally_credential": {
+            "step": "CA",
+            "device": "HI",
+            "resource": "usr/query",
+            "unlocked_emissions": [
+                [
+                    "EX",
+                    [
+                        "V",
+                        "access/sally"
+                    ]
+                ],
+                [
+                    "EX",
+                    [
+                        "DS",
+                        "syslog/nano"
+                    ]
+                ],
+                [
+                    "DI",
+                    [
+                        "DS",
+                        "syslog/ls"
+                    ]
+                ]
+            ],
+            "requires": ["know_sally_exists"]
+        },
+        "learn_where_data_stored": {
+            "step": "DI",
+            "device": "DS",
+            "resource": "syslog/ls",
+            "unlocked_transitions": [
+                [
+                    "DI",
+                    "COL"
+                ]
+            ],
+            "unlocked_emissions": [
+                [
+                    "COL",
+                    [
+                        "DS",
+                        "syslog/nano"
+                    ]
+                ]
+            ],
+            "requires": ["have_sally_credential"]
+        },
+        "have_data_on_ds": {
+            "step": "COL",
+            "device": "DS",
+            "resource": "syslog/nano",
+            "unlocked_emissions": [
+                [
+                    "COL",
+                    [
+                        "HI",
+                        "img/post"
+                    ]
+                ]
+            ],
+            "requires": ["learn_where_data_stored"]
+        },
+        "have_data_on_hi": {
+            "step": "COL",
+            "device": "HI",
+            "resource": "img/post",
+            "unlocked_emissions": [
+                [
+                    "COL",
+                    [
+                        "HE",
+                        "img/post"
+                    ]
+                ]
+            ],
+            "requires": ["have_data_on_ds"]
+        },
+        "have_data_on_he": {
+            "step": "COL",
+            "device": "HE",
+            "resource": "img/post",
+            "unlocked_transitions": [
+                [
+                    "COL",
+                    "EXF"
+                ]
+            ],
+            "unlocked_emissions": [
+                [
+                    "EXF",
+                    [
+                        "HE",
+                        "img/query"
+                    ]
+                ]
+            ],
+            "requires": ["have_data_on_hi"]
+        }
+    }
+}
