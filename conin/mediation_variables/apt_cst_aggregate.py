@@ -39,6 +39,7 @@ def apt_cst_aggregate(cst_list, debug = False):
     dependency_list = []
     cst_ix = {}
     for cst in cst_list:
+        name_list.append(cst.name)
         cst_ix[cst.name] = l_ix
         r_ix = l_ix + cst.aux_size
         ix_list.append((l_ix,r_ix)) #tuple of indices of the aux stats that correspond to each state

@@ -225,3 +225,98 @@ def mv_Viterbi_time(obs, hmm, cst, sat = True):
 
     return opt_augstate, opt_state 
 
+def mv_Viterbi_numpy(hmm_params, cst_params, emit_weights):
+    '''
+    numpy version. hmm_params, cst_params are list of numpy arrays
+    '''
+    opt_augstateix_list = []
+    
+    tmat, init_prob = hmm_params
+    init_ind,final_ind,ind = cst_params
+    
+    T = emit_weights.shape[0]
+    K, M = init_ind.shape
+
+    val = np.empty((T,K,M))
+    ix_tracker = np.empty((T,K,M)) #will store flattened indices
+
+    #Forward pass
+    V = np.einsum('k,k,kr -> kr', init_prob, emit_weights[0], init_ind)
+    val[0] = V
+    for t in range(1,T):
+        print(t)
+        V = np.einsum('js,jk,krjs -> krjs',val[t-1],tmat,ind)
+        V = V.reshape((K,M,-1))
+        max_ix = np.argmax(V, axis = -1, keepdims = True)
+        ix_tracker[t-1] = max_ix.squeeze()
+        V = np.take_along_axis(V, max_ix, axis=-1).squeeze()
+        if t == T:
+            val[t] = np.einsum('k,kr,kr -> kr',emit_weights[t],final_ind,V)
+        else:
+            val[t] = np.einsum('k,kr -> kr', emit_weights[t],V)
+        
+
+    #Backward pass
+
+    #Initialize the last index
+    max_ix = int(np.argmax(val[T-1]).item())
+    max_k, max_r =divmod(max_ix, M)
+    opt_augstateix_list.append((max_k,max_r))
+
+    ix_tracker = ix_tracker.reshape(T,-1) #flatten again for easier indexing    
+    
+    for t in range(T-1):
+        max_ix =  int(ix_tracker[T-2-t,max_ix].item())
+        max_k, max_r = divmod(max_ix, M)
+        opt_augstateix_list.append((max_k,max_r))
+
+    return opt_augstateix_list
+
+def mv_Viterbi_torch(hmm_params, cst_params, emit_weights):
+    '''
+    torch, GPU-accelerated version. hmm_params, cst_params are list of torch tensors
+    '''
+    opt_augstateix_list = []
+    
+    tmat, init_prob = hmm_params
+    init_ind,final_ind,ind = cst_params
+    
+    T = emit_weights.shape[0]
+    K, M = init_ind.shape
+
+    val = torch.empty((T,K,M), device = tmat.device)
+    ix_tracker = torch.empty((T,K,M), device = tmat.device) #will store flattened indices
+
+    #Forward pass
+    V = torch.einsum('k,k,kr -> kr', init_prob, emit_weights[0], init_ind)
+    val[0] = V
+    for t in range(1,T):
+        print(t)
+        V = torch.einsum('js,jk,krjs -> krjs',val[t-1],tmat,ind)
+        V = V.reshape((K,M,-1))
+        max_ix = torch.argmax(V, axis = -1, keepdims = True)
+        ix_tracker[t-1] = max_ix.squeeze()
+        V = torch.take_along_dim(V, max_ix, axis=-1).squeeze()
+        if t == T:
+            val[t] = torch.einsum('k,kr,kr -> kr',emit_weights[t],final_ind,V)
+        else:
+            val[t] = torch.einsum('k,kr -> kr', emit_weights[t],V)
+        
+
+    #Backward pass
+
+    #Initialize the last index
+    max_ix = int(np.argmax(val[T-1]).item())
+    max_k, max_r = divmod(max_ix, M)
+    opt_augstateix_list.append((max_k,max_r))
+
+    ix_tracker = ix_tracker.reshape(T,-1) #flatten again for easier indexing    
+    
+    for t in range(T-1):
+        max_ix =  int(ix_tracker[T-2-t,max_ix].item())
+        max_k, max_r = divmod(max_ix, M)
+        opt_augstateix_list.append((max_k,max_r))
+
+    return opt_augstateix_list
+
+

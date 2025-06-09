@@ -61,6 +61,54 @@ def arrayConvert(obs, hmm, cst, sat):
     
     return hmm_params, cst_params 
 
+def arrayConvert_v2(hmm, cst, sat):
+    '''
+    version of arrayConvert adapted to full state-augmented formulation.
+    '''
+    #Initialize and convert all quantities  to np.arrays
+    aux_space = list(itertools.product([True, False], repeat=cst.aux_size))
+    K = len(hmm.states)
+    M = len(aux_space)
+    
+    state_ix = {s: i for i, s in enumerate(hmm.states)}
+    aux_ix = {s: i for i, s in enumerate(aux_space)}
+
+    #Compute the hmm parameters
+    tmat = np.zeros((K,K))
+    init_prob = np.zeros(K)
+
+    for i in hmm.states:
+        init_prob[state_ix[i]] = hmm.initprob[i]
+        for j in hmm.states:
+            tmat[state_ix[i],state_ix[j]] = hmm.tprob[i,j]
+
+    hmm_params = [tmat, init_prob]
+    
+    #Compute the cst parameters    
+    ind = np.zeros((K,M,K,M))
+    init_ind = np.zeros((K,M))
+    final_ind = np.zeros((K,M))
+
+    for r in aux_space:
+        for k in hmm.states:
+            final_ind[state_ix[k], aux_ix[r]] = cst.cst_fun(k,r,sat)
+            init_ind[state_ix[k],aux_ix[r]] = cst.init_fun(k,r)
+            for s in aux_space:
+                ind[state_ix[k],aux_ix[r],state_ix[j],aux_ix[s]] = cst.update_fun(k,r,j,s)
+                
+    cst_params = [init_ind,final_ind,ind]
+    
+    return hmm_params, cst_params 
+
+def numpy2tensor(hmm_params, cst_params, emit_weights, device):
+    '''
+    Converts all the numpy arrays to torch tensors
+    '''
+    hmm_params_torch = [torch.from_numpy(array).to(device) for array in hmm_params]
+    cst_params_torch = [torch.from_numpy(array).to(device) for array in cst_params]
+    emit_weights_torch = torch.from_numpy(emit_weights).to(device)
+
+    return hmm_params_torch, emit_weights_torch, emit_weights_torch
 
 def hmm2numpy(hmm, ix_list = None, return_ix = False):
     '''
