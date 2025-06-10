@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 import json
 from munch import Munch
 import itertools
@@ -82,6 +83,7 @@ def process_load(names_list, folder_path = '', delay = None):
 
         if delay:
             process_hmm.mu = mu
+
 
         process_list.append(process_hmm)
 
@@ -268,6 +270,55 @@ def simulation(hmm,time, ix_list = None, emit_inhom = False):
 
     return x_list, y_list
 
+def simulation_apt(hmm, ix_list = None, emit_inhom = False):
+    '''
+    for the apt, generates a run that stops whenever the "POST" state is encountered.
+    '''
+    def random_draw(p):
+        '''
+        p is a 1D np array. 
+        single random draw from probability vector p and encode as 1-hot.
+        '''
+        n = len(p)
+        p = p/p.sum()
+        draw = np.random.choice(n,p=p)
+        one_hot = np.zeros(n, dtype = int)
+        one_hot[draw] = 1
+        return one_hot
+    #Get numpy version of hmm parameters
+    hmm_params, ix_list = hmm2numpy(hmm, ix_list = ix_list, return_ix = True, emit_inhom = emit_inhom) 
+    init_prob, tmat, emat = hmm_params
+
+    #Prepare dictionary for converting one_hot back to states
+    state_ix, emit_ix = ix_list
+    state_ix = {v:k for k,v in state_ix.items()}
+    emit_ix = {v:k for k,v in emit_ix.items()}
+    
+    #Generate (X1,Y1)
+    x_prev = random_draw(init_prob)
+    x_state = state_ix[np.argmax(x_prev)] #convert one-hot back to state
+    x_list = [x_state] 
+    if emit_inhom:
+        y_curr = random_draw(x_prev @ emat[0])
+    else:
+        y_curr = random_draw(x_prev @ emat)
+    y_list = [emit_ix[np.argmax(y_curr)]]
+
+    #Generate rest
+    while x_state != 'POST':
+        x_curr = random_draw(x_prev @ tmat)
+        if emit_inhom:
+            y_curr = random_draw(x_curr @ emat[t])
+        else:
+            y_curr = random_draw(x_curr @ emat)
+        x_state = state_ix[np.argmax(x_curr)]
+        x_list.append(x_state)
+        y_list.append(emit_ix[np.argmax(y_curr)])
+        x_prev = x_curr
+
+    return x_list, y_list
+
+
 def hmm2numpy_apt(hmm, ix_list = None, return_ix = False):
     '''
     Converts/generates relevant parameters/weights into numpy arrays for Baum-Welch.
@@ -443,18 +494,18 @@ def lapt_heir(apt_hmm, user_list, length, mix_weights = None, return_ix = False)
     return apt_hmm
 
 
-def combined_simulation(apt_hmm, user_list, time):
+def combined_simulation(apt_hmm, user_list):
     '''
     assume all processes are time homogenous
     '''
-    apt_hidden, apt_emit = simulation(apt_hmm, time)
-    
+    apt_hidden, apt_emit = simulation_apt(apt_hmm)
+    T = len(apt_emit)
     total_emits = [apt_emit]
     for user in user_list:
-        total_emits.append(simulation(user, time)[1]) #only record the emission of each user 
+        total_emits.append(simulation(user, T)[1]) #only record the emission of each user 
 
     combined_emits = []
-    for t in range(time):
+    for t in range(T):
         valid_emits = [emits[t] for emits in total_emits if emits[t] is not None] #exclude the None emits at time t
         if len(valid_emits) == 0:
             random_emit = None
@@ -463,6 +514,31 @@ def combined_simulation(apt_hmm, user_list, time):
         combined_emits.append(random_emit)
     return [apt_hidden, apt_emit], combined_emits
 
+def create_noisy_apt(apt_hmm, mix_param, tol = 1e-7):
+    '''
+    Original APT: X -> Y
+
+    Tiered APT: (X,Y) -> hat{Y}
+
+    
+    '''
+    apt = copy.deepcopy(apt_hmm) #deepcopy since there's still some funkiness going on.
+    M = len(apt.emits) #number of hidden states
+    
+    #Creat noisy emissions matrix
+    eprob = defaultdict(int)
+    #For now, create a noiseless emission, where the emission of the APT is the observed emission
+    for k in apt.states:
+        for e in apt.emits:
+            eprob[k,e] = mix_param*apt.eprob[k,e] + (1- mix_param)/M 
+        
+    new_apt = Munch(name = apt.name, states = apt.states, emits = apt.emits, tprob = apt.tprob, \
+                       eprob = eprob, initprob = apt.initprob)
+    
+    if apt.mu:
+        new_apt.mu = apt.mu
+
+    return new_apt
 
 def create_tiered_apt(apt_hmm, tol = 1e-7):
     '''
@@ -508,3 +584,196 @@ def create_tiered_apt(apt_hmm, tol = 1e-7):
         new_apt.mu = apt.mu
 
     return new_apt
+
+
+def arrayConvert(hmm, cst, sat):
+    '''
+    Converts/generates relevant parameters/weights into numpy arrays for Baum-Welch.
+    By assumption, the update/emission parameters associated with the constraint are static.
+    For now, fix the emission probabilities.
+    Only the hmm paramters are being optimized.
+    '''
+    #Initialize and convert all quantities  to np.arrays
+    aux_space = list(itertools.product([True, False], repeat=cst.aux_size))
+    K = len(hmm.states)
+    M = len(aux_space)
+    
+    state_ix = {s: i for i, s in enumerate(hmm.states)}
+    aux_ix = {s: i for i, s in enumerate(aux_space)}
+
+    #Compute the hmm parameters
+    tmat = np.zeros((K,K))
+    init_prob = np.zeros(K)
+
+    for i in hmm.states:
+        init_prob[state_ix[i]] = hmm.initprob[i]
+        for j in hmm.states:
+            tmat[state_ix[i],state_ix[j]] = hmm.tprob[i,j]
+
+    hmm_params = [tmat, init_prob]
+    
+    #Compute the cst parameters    
+    ind = np.zeros((K,M,K,M))
+    init_ind = np.zeros((K,M))
+    final_ind = np.zeros((K,M))
+
+    for r in aux_space:
+        for k in hmm.states:
+            final_ind[state_ix[k], aux_ix[r]] = cst.cst_fun(k,r,sat)
+            init_ind[state_ix[k],aux_ix[r]] = cst.init_fun(k,r)
+            for s in aux_space:
+                for j in hmm.states:
+                    ind[state_ix[k],aux_ix[r],state_ix[j],aux_ix[s]] = cst.update_fun(k,r,j,s)
+                
+    cst_params = [init_ind,final_ind,ind]
+    
+    return hmm_params, cst_params 
+
+def compute_emitweights(obs,hmm, time_hom = True):
+    '''
+    Separately handles the computation of the 
+    '''
+    T = len(obs)
+    K = len(hmm.states)
+    #Compute emissions weights for easier access
+    emit_weights = np.zeros((T,K))
+    for t in range(T):
+        if time_hom:
+            emit_weights[t] = np.array([hmm.eprob[k,obs[t]] for k in hmm.states])
+        else:
+            emit_weights[t] = np.array([hmm.eprob[t,k,obs[t]] for k in hmm.states])
+    return emit_weights
+
+
+def numpy2tensor(hmm_params, cst_params, emit_weights, device):
+    '''
+    Converts all the numpy arrays to torch tensors
+    '''
+    hmm_params_torch = [torch.from_numpy(array).to(device) for array in hmm_params]
+    cst_params_torch = [torch.from_numpy(array).to(device) for array in cst_params]
+    emit_weights_torch = torch.from_numpy(emit_weights).to(device)
+
+    return hmm_params_torch, emit_weights_torch, emit_weights_torch
+
+def convertTensor_list(hmm, cst_list, sat, device):
+    '''
+    cst_list is a list of the individual csts.
+    '''
+    #Initialize and convert all quantities  to np.arrays
+    K = len(hmm.states)
+    assert len(cst_list) == len(sat)
+    
+    state_ix = {s: i for i, s in enumerate(hmm.states)}
+
+    #Compute the hmm parameters
+    tmat = torch.zeros((K,K), dtype=torch.float16 ).to(device)
+    init_prob = torch.zeros(K, dtype=torch.float16 ).to(device)
+
+    for i in hmm.states:
+        init_prob[state_ix[i]] = hmm.initprob[i]
+        for j in hmm.states:
+            tmat[state_ix[i],state_ix[j]] = hmm.tprob[i,j]
+
+    hmm_params = [tmat, init_prob]
+    
+    #Compute the cst parameters 
+    init_ind_list = []
+    final_ind_list = []
+    ind_list = []
+    dims_list = []
+    cst_ix = 0
+    C = len(cst_list)
+    for cst in cst_list:
+        aux_space = list(itertools.product([True, False], repeat=cst.aux_size))
+        aux_ix = {s: i for i, s in enumerate(aux_space)}
+        M = len(aux_space)
+        ind = torch.zeros((K,M,K,M),dtype=torch.float16 ).to(device)
+        init_ind = torch.zeros((K,M),dtype=torch.float16 ).to(device)
+        final_ind = torch.zeros((K,M),dtype=torch.float16 ).to(device)
+    
+        for r in aux_space:
+            for k in hmm.states:
+                final_ind[state_ix[k], aux_ix[r]] = cst.cst_fun(k,r,sat)
+                init_ind[state_ix[k],aux_ix[r]] = cst.init_fun(k,r)
+                for s in aux_space:
+                    for j in hmm.states:
+                        ind[state_ix[k],aux_ix[r],state_ix[j],aux_ix[s]] = cst.update_fun(k,r,j,s)
+
+        #indices are [0 = k,  (1 dim for each cst r_i = i + 1)  0 <= i <= n - 1 
+        # init_ind_list.append((init_ind,[0,cst_ix + 1]))
+        # final_ind_list.append((final_ind, [0, cst_ix + 1]))
+        # #indices are [0 = k,(1 dim for each cst r_i = i + 1), n + 1 = j, (1 dim for s_i = i+n+2)] 
+        # ind_list.append((ind, [0, cst_ix + 1, C + 1, cst_ix + C + 2]))
+        # dims_list.append(M)
+
+        init_ind_list += [init_ind,[0,cst_ix + 1]]
+        final_ind_list += [final_ind, [0, cst_ix + 1]]
+        #indices are [0 = k,(1 dim for each cst r_i = i + 1), n + 1 = j, (1 dim for s_i = i+n+2)] 
+        ind_list += [ind, [0, cst_ix + 1, C + 1, cst_ix + C + 2]]
+        dims_list.append(M)
+        cst_ix += 1
+                
+    cst_params = [dims_list, init_ind_list,final_ind_list,ind_list]
+    
+    return hmm_params, cst_params 
+
+def Viterbi_torch_list(hmm, cst_list, obs, sat, time_hom = True, device = 'cpu'):
+    '''
+    
+    '''
+    #Generate emit_weights:
+    emit_weights = compute_emitweights(obs, hmm, time_hom)
+    emit_weights = torch.from_numpy(emit_weights).type(torch.float16).to(device)
+
+    #Generate hmm,cst params:
+    hmm_params, cst_params_list = convertTensor_list(hmm,cst_list, sat, device = device)   
+    tmat, init_prob = hmm_params
+    dims_list, init_ind_list,final_ind_list,ind_list = cst_params_list
+
+    
+    #Viterbi
+    T = emit_weights.shape[0]
+    K = tmat.shape[0]
+    C = len(dims_list)
+    
+    val = torch.empty((T,K) + tuple(dims_list), device = 'cpu')
+    ix_tracker = torch.empty((T,K) + tuple(dims_list), device = 'cpu') #will store flattened indices
+    
+    kr_indices = list(range(C+1))
+    kr_shape = (K,) + tuple(dims_list)
+    #Forward pass
+    # V = torch.einsum('k,k,kr -> kr', init_prob, emit_weights[0], init_ind)
+    V = torch.einsum(emit_weights[0], [0], init_prob, [0], *init_ind_list, kr_indices)
+    V = V/V.max() #normalize for numerical stability
+    val[0] = V.cpu()
+    for t in range(1,T):
+        # V = torch.einsum('js,jk,krjs -> krjs',val[t-1],tmat,ind)
+        V = torch.einsum(val[t-1].to(device), kr_indices, tmat, [0,C+1], *ind_list, list(range(2*C + 2)))
+        V = V.reshape((K,) + tuple(dims_list) + (-1,))
+        V = V/V.max()
+        max_ix = torch.argmax(V, axis = -1, keepdims = True)
+        ix_tracker[t-1] = max_ix.squeeze()
+        V = torch.take_along_dim(V, max_ix, axis=-1).squeeze()
+        if t == T:
+            # val[t] = torch.einsum('k,kr,kr -> kr',emit_weights[t],final_ind,V)
+            val[t] = torch.einsum(emit_weights[t],[0], V, kr_indices,*final_ind_list, kr_indices).cpu()
+        else:
+            # val[t] = torch.einsum('k,kr -> kr', emit_weights[t],V)
+            val[t] = torch.einsum(emit_weights[t],[0], V, kr_indices, kr_indices).cpu()
+        
+
+    #Backward pass
+    opt_augstateix_list = []
+    max_ix = int(torch.argmax(val[T-1]).item())
+    unravel_max_ix = np.unravel_index(max_ix, kr_shape)
+    opt_augstateix_list.append(np.array(unravel_max_ix).tolist())
+    
+    ix_tracker = ix_tracker.reshape(T,-1) #flatten again for easier indexing    
+    
+    for t in range(T-1):
+        max_ix =  int(ix_tracker[T-2-t,max_ix].item())
+        unravel_max_ix = np.unravel_index(max_ix, kr_shape)
+        opt_augstateix_list.append(np.array(unravel_max_ix).tolist())
+
+    return opt_augstateix_list
+

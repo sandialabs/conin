@@ -63,7 +63,7 @@ def arrayConvert(obs, hmm, cst, sat):
 
 def arrayConvert_v2(hmm, cst, sat):
     '''
-    version of arrayConvert adapted to full state-augmented formulation.
+    formulation for version where M depends on hidden-augmented of present and past.
     '''
     #Initialize and convert all quantities  to np.arrays
     aux_space = list(itertools.product([True, False], repeat=cst.aux_size))
@@ -94,7 +94,8 @@ def arrayConvert_v2(hmm, cst, sat):
             final_ind[state_ix[k], aux_ix[r]] = cst.cst_fun(k,r,sat)
             init_ind[state_ix[k],aux_ix[r]] = cst.init_fun(k,r)
             for s in aux_space:
-                ind[state_ix[k],aux_ix[r],state_ix[j],aux_ix[s]] = cst.update_fun(k,r,j,s)
+                for j in hmm.states:
+                    ind[state_ix[k],aux_ix[r],state_ix[j],aux_ix[s]] = cst.update_fun(k,r,j,s)
                 
     cst_params = [init_ind,final_ind,ind]
     

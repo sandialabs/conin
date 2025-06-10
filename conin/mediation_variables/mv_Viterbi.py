@@ -43,6 +43,55 @@ def Viterbi(obs, hmm):
 
     return opt_state
 
+def Viterbi_time(obs, hmm):
+    '''
+    Time inhomogenous version
+    Just regular Viterbi
+    
+    obs: list of observed emissions
+    hmm: Munch object containig our hmm object    
+    '''
+    val = {} #initialize value dictionary
+
+    for k in hmm.states:
+            val[0,k] = hmm.initprob[k]*hmm.eprob[0,k,obs[0]]
+            
+    ix_tracker = {} #this is used in the backwards step to identify the optimal sequence
+    
+    #Forward: compute value function and generate index
+    for t in range(1,len(obs)):
+        global_max = 1 #for numerical stability
+        for k in hmm.states:
+            max_val = -1 # set to dummy variable. will do brute-force search for max
+            argmax = None #initialize argmax for ix_tracker
+            for j in hmm.states:
+                curr_val = val[t-1,j]*hmm.tprob[j,k]
+                if curr_val > max_val:
+                    max_val = curr_val
+                    argmax = j
+            val[t,k] = max_val*hmm.eprob[t,k,obs[t]]
+            ix_tracker[t-1,k] = argmax
+            global_max = max(global_max, max_val)
+        for k in hmm.states:
+            val[t,k] = val[t,k]/global_max
+    
+    #Backward: compute the values of the optimal sequence
+    max_val = -1
+    best_state = None
+    for k in hmm.states:
+        curr_val = val[len(obs) - 1,k]
+        if curr_val > max_val:
+            max_val = curr_val
+            best_state = k
+    opt_state = [best_state]
+    
+    for t in range(len(obs) -1):
+        best_state = ix_tracker[len(obs) - 2 -t,best_state]
+        opt_state = [best_state] + opt_state
+
+    return opt_state
+
+
 
 def mv_Viterbi(obs, hmm, cst = None, sat = True):
     '''
@@ -166,7 +215,7 @@ def mv_Viterbi_v2(obs, hmm, cst = None, sat = True):
     return opt_augstate, opt_state
 
 
-def mv_Viterbi_time(obs, hmm, cst, sat = True):
+def mv_Viterbi_time(obs, hmm, cst = None, sat = True):
     '''
     Version where the emission probabiltiies are allowed to be time-inhomgenous.
     
@@ -179,6 +228,9 @@ def mv_Viterbi_time(obs, hmm, cst, sat = True):
     sat. Boolean determining whether the constraint is ture or not
     
     '''
+    if cst is None:
+        return Viterbi_time(obs,hmm)
+
     aux_space = list(itertools.product([True, False], repeat=cst.aux_size)) #create list of auxillary state to iterate over
     val = {} #initialize value dictionary
 
@@ -285,7 +337,7 @@ def mv_Viterbi_torch(hmm_params, cst_params, emit_weights):
     K, M = init_ind.shape
 
     val = torch.empty((T,K,M), device = tmat.device)
-    ix_tracker = torch.empty((T,K,M), device = tmat.device) #will store flattened indices
+    ix_tracker = torch.empty((T,K,M), device = tmat.device)
 
     #Forward pass
     V = torch.einsum('k,k,kr -> kr', init_prob, emit_weights[0], init_ind)
@@ -320,3 +372,60 @@ def mv_Viterbi_torch(hmm_params, cst_params, emit_weights):
     return opt_augstateix_list
 
 
+def mv_Viterbi_torch_list(hmm, cst_list, obs, sat, device = 'cpu'):
+    '''
+    
+    '''
+    #Generate emit_weights:
+    emit_weights = compute_emitweights(obs, hmm)
+    emit_weights = torch.from_numpy(emit_weights).type(torch.float16).to(device)
+
+    #Generate hmm,cst params:
+    hmm_params, cst_params_list = convertTensor_list(hmm,cst_list, sat, device = device)   
+    tmat, init_prob = hmm_params
+    dims_list, init_ind_list,final_ind_list,ind_list = cst_params_list
+
+    
+    #Viterbi
+    T = emit_weights.shape[0]
+    K = tmat.shape[0]
+    C = len(dims_list)
+    
+    val = torch.empty((T,K) + tuple(dims_list), device = 'cpu')
+    ix_tracker = torch.empty((T,K) + tuple(dims_list), device = 'cpu') #will store flattened indices
+    
+    kr_indices = list(range(C+1))
+    kr_shape = (K,) + tuple(dims_list)
+    #Forward pass
+    # V = torch.einsum('k,k,kr -> kr', init_prob, emit_weights[0], init_ind)
+    V = torch.einsum(emit_weights[0], [0], init_prob, [0], *init_ind_list, kr_indices)
+    val[0] = V.cpu()
+    for t in range(1,T):
+        # V = torch.einsum('js,jk,krjs -> krjs',val[t-1],tmat,ind)
+        V = torch.einsum(val[t-1].to(device), kr_indices, tmat, [0,C+1], *ind_list, list(range(2*C + 2)))
+        V = V.reshape((K,) + tuple(dims_list) + (-1,))
+        max_ix = torch.argmax(V, axis = -1, keepdims = True)
+        ix_tracker[t-1] = max_ix.squeeze()
+        V = torch.take_along_dim(V, max_ix, axis=-1).squeeze()
+        if t == T:
+            # val[t] = torch.einsum('k,kr,kr -> kr',emit_weights[t],final_ind,V)
+            val[t] = torch.einsum(emit_weights[t],[0], V, kr_indices,*final_ind_list, kr_indices).cpu()
+        else:
+            # val[t] = torch.einsum('k,kr -> kr', emit_weights[t],V)
+            val[t] = torch.einsum(emit_weights[t],[0], V, kr_indices, kr_indices).cpu()
+        
+
+    #Backward pass
+    opt_augstateix_list = []
+    max_ix = int(torch.argmax(val[T-1]).item())
+    unravel_max_ix = np.unravel_index(max_ix, kr_shape)
+    opt_augstateix_list.append(np.array(unravel_max_ix).tolist())
+    
+    ix_tracker = ix_tracker.reshape(T,-1) #flatten again for easier indexing    
+    
+    for t in range(T-1):
+        max_ix =  int(ix_tracker[T-2-t,max_ix].item())
+        unravel_max_ix = np.unravel_index(max_ix, kr_shape)
+        opt_augstateix_list.append(np.array(unravel_max_ix).tolist())
+
+    return opt_augstateix_list

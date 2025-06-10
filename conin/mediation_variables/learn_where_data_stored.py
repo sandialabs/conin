@@ -35,3 +35,5 @@ dependency = 'have_sally_credential'
 aug_size = 2
 
 name= 'learn_where_data_stored'
+
+states = [(True, True),(False,True)] #second variables tracks \tau_A > \tau_B at every t.

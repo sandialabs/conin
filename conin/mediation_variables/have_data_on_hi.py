@@ -33,3 +33,5 @@ dependency = 'have_data_on_ds'
 aug_size = 2
 
 name = 'have_data_on_hi'
+
+states = [(True, True),(False,True)] #second variables tracks \tau_A > \tau_B at every t.

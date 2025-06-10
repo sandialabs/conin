@@ -34,3 +34,5 @@ def cst_fun(k,r, sat):
 aug_size = 2
 
 name = 'know_sally_exists'
+
+states = [(True, True),(False,True)] #second variables tracks \tau_A > \tau_B at every t.

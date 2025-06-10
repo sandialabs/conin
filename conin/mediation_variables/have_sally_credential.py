@@ -33,3 +33,5 @@ dependency = 'know_sally_exists'
 aug_size = 2
 
 name = 'have_sally_credential'
+
+states = [(True, True),(False,True)] #second variables tracks \tau_A > \tau_B at every t.

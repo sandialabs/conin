@@ -1,5 +1,7 @@
 #have_data_on_ds
 
+#Constraint is always true
+
 def update_fun(k, r, k_past, r_past):
     '''
     r^t = (m_1^t, m_2^t)
@@ -11,7 +13,7 @@ def update_fun(k, r, k_past, r_past):
     forbidden_emissions = (k == ('COL', ('HI', 'img/post')))
     m2 = (m1 or not forbidden_emissions) and r_past[1]
 
-    return int(r == (m1, m2))
+    return int(r == (m1 and m2,))
 
 def init_fun(k, r):
     '''
@@ -30,7 +32,7 @@ def cst_fun(k, r, sat):
 
 dependency = 'learn_where_data_stored'
 
-aug_size = 2
+aug_size = 1
 
 name = 'have_data_on_ds'
 
