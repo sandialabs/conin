@@ -11,9 +11,9 @@ def update_fun(k, r, k_past, r_past):
     m1 = (k == ('DI', ('DS', 'syslog/ls'))) or r_past[0]  # tracks if the data storage state has occurred yet
     forbidden_transitions = (k_past[0] == 'DI' and k[0] == 'COL')
     forbidden_emissions = (k == ('COL', ('DS', 'syslog/nano')))
-    m2 = (m1 or (not (forbidden_transitions and forbidden_emissions))) and r_past[1]
+    m2 = (m1 or (not (forbidden_transitions and forbidden_emissions))) 
 
-    return int(r == (m1, m2))
+    return int(r == (m1, ) and m2)
 
 def init_fun(k, r):
     '''
@@ -22,13 +22,13 @@ def init_fun(k, r):
     m1 = k == ('DI', ('DS', 'syslog/ls'))
     m2 = not (k == ('COL', ('DS', 'syslog/nano')))  # at first time, can only violate the emission constraint.
 
-    return int(r == (m1, m2))
+    return int(r == (m1, ) and m2)
 
 def cst_fun(k, r, sat):
     '''
     Constraint is a boolean emissions of the final auxiliary state. In this case, is just m1^T: ie. tau_a >= tau_b for all time.
     '''
-    return int(r[1] == sat)
+    return 1
 
 dependency = 'have_sally_credential'
 
@@ -38,7 +38,7 @@ forbidden_transitions = [('DI','COL'), ('WAIT_DI','COL')]
 
 knowledge_state = ('DI', ('DS', 'syslog/ls'))
 
-aug_size = 2
+aug_size = 1
 
 name= 'learn_where_data_stored'
 

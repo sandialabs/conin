@@ -222,23 +222,26 @@ def forward_marginals(hmm_params, length):
         
     return emit_marginal
 
+def random_draw(p):
+    '''
+    p is a 1D np array. 
+    single random draw from probability vector p and encode as 1-hot.
+    '''
+    n = len(p)
+    p = p/p.sum()
+    draw = np.random.choice(n,p=p)
+    one_hot = np.zeros(n, dtype = int)
+    one_hot[draw] = 1
+    
+    return one_hot
+
+
 def simulation(hmm,time, ix_list = None, emit_inhom = False):
     '''
     generates a full run for specified time.
     homogenous is True if the emission probs are time-homogenous.
     transition matrix aways assumed to be homogenous
     '''
-    def random_draw(p):
-        '''
-        p is a 1D np array. 
-        single random draw from probability vector p and encode as 1-hot.
-        '''
-        n = len(p)
-        p = p/p.sum()
-        draw = np.random.choice(n,p=p)
-        one_hot = np.zeros(n, dtype = int)
-        one_hot[draw] = 1
-        return one_hot
     #Get numpy version of hmm parameters
     hmm_params, ix_list = hmm2numpy(hmm, ix_list = ix_list, return_ix = True, emit_inhom = emit_inhom) 
     init_prob, tmat, emat = hmm_params
@@ -270,21 +273,75 @@ def simulation(hmm,time, ix_list = None, emit_inhom = False):
 
     return x_list, y_list
 
+def simulation_knowledge(hmm, cst_list, ix_list = None, emit_inhom = False):
+    '''
+    for the apt, generates a run that stops whenever the "POST" state is encountered.
+    '''
+    #Get numpy version of hmm parameters
+    hmm_params, ix_list = hmm2numpy(hmm, ix_list = ix_list, return_ix = True, emit_inhom = emit_inhom) 
+    init_prob, tmat, emat = hmm_params
+    
+    #Create dictionaries for generating mask for transitions/emissions
+    state_ix, emit_ix = ix_list
+    K, M = len(state_ix), len(emit_ix)
+    
+    tmat_mask_dict = {}
+    eprob_mask_dict = {}
+    for cst in cst_list:
+        t_mask = np.ones((K,K))
+        e_mask = np.ones((K,M))
+        for ft in cst.forbidden_transitions:
+            t_mask[state_ix[ft[0]],state_ix[ft[1]]] = 0
+        for fe in cst.forbidden_emissions:
+            e_mask[state_ix[fe[0]],emit_ix[fe[1]]] = 0
+        tmat_mask_dict[cst.knowledge_state] = t_mask
+        eprob_mask_dict[cst.knowledge_state] = e_mask
+    
+    state_ix = {v:k for k,v in state_ix.items()}
+    emit_ix = {v:k for k,v in emit_ix.items()}
+    
+    notyet_knowledge = list(tmat_mask_dict.keys())  
+    
+    tmat_curr = tmat * np.prod(list(tmat_mask_dict.values()), axis = 0)
+    emat_curr = emat * np.prod(list(eprob_mask_dict.values()), axis = 0)
+    
+    x_prev = random_draw(init_prob)
+    x_state = state_ix[np.argmax(x_prev)] #convert one-hot back to state
+    x_list = [x_state] 
+    if emit_inhom:
+        y_curr = random_draw(x_prev @ emat_curr[0])
+    else:
+        y_curr = random_draw(x_prev @ emat_curr)
+    y_state = emit_ix[np.argmax(y_curr)]
+    y_list = [y_state]
+
+    #Generate rest
+    while x_state != 'POST':
+        x_curr = random_draw(x_prev @ tmat_curr)
+        if emit_inhom:
+            y_curr = random_draw(x_curr @ emat_curr[t])
+        else:
+            y_curr = random_draw(x_curr @ emat_curr)
+        x_state = state_ix[np.argmax(x_curr)]
+        y_state = emit_ix[np.argmax(y_curr)]
+        hid_emit = (x_state,y_state) 
+        if hid_emit in notyet_knowledge: #if knowledge state, gets rid of it from the mask
+            tmat_mask_dict.pop(hid_emit)
+            eprob_mask_dict.pop(hid_emit)
+            tmat_curr = tmat * np.prod(list(tmat_mask_dict.values()), axis = 0)
+            emat_curr = emat * np.prod(list(eprob_mask_dict.values()), axis = 0)
+            notyet_knowledge = list(tmat_mask_dict.keys())
+            
+        x_list.append(x_state)
+        y_list.append(y_state)
+        x_prev = x_curr
+
+    return x_list, y_list
+
 def simulation_apt(hmm, ix_list = None, emit_inhom = False):
     '''
     for the apt, generates a run that stops whenever the "POST" state is encountered.
     '''
-    def random_draw(p):
-        '''
-        p is a 1D np array. 
-        single random draw from probability vector p and encode as 1-hot.
-        '''
-        n = len(p)
-        p = p/p.sum()
-        draw = np.random.choice(n,p=p)
-        one_hot = np.zeros(n, dtype = int)
-        one_hot[draw] = 1
-        return one_hot
     #Get numpy version of hmm parameters
     hmm_params, ix_list = hmm2numpy(hmm, ix_list = ix_list, return_ix = True, emit_inhom = emit_inhom) 
     init_prob, tmat, emat = hmm_params
@@ -318,6 +375,62 @@ def simulation_apt(hmm, ix_list = None, emit_inhom = False):
 
     return x_list, y_list
 
+def combined_simulation(apt_hmm, user_list, cst_list = None):
+    '''
+    assume all processes are time homogenous
+    '''
+    if cst_list:
+        apt_hidden, apt_emit = simulation_knowledge(apt_hmm,cst_list)
+    else:
+        apt_hidden, apt_emit = simulation_apt(apt_hmm)
+    T = len(apt_emit)
+    total_emits = [apt_emit]
+    for user in user_list:
+        total_emits.append(simulation(user, T)[1]) #only record the emission of each user 
+
+    combined_emits = []
+    for t in range(T):
+        valid_emits = [emits[t] for emits in total_emits if emits[t] is not None] #exclude the None emits at time t
+        if len(valid_emits) == 0:
+            random_emit = None
+        else:
+            random_emit = random.choice(valid_emits)
+        combined_emits.append(random_emit)
+    return [apt_hidden, apt_emit], combined_emits
+
+def check_valid(x_list, y_list, cst_list):
+    '''
+    Checks if the sequence of hidden-emits satisfy the constraints
+    Simulation is assumed to be a list of tuples.
+    '''
+    ft_dict = {c.knowledge_state:c.forbidden_transitions for c in cst_list}
+    fe_dict = {c.knowledge_state:c.forbidden_emissions for c in cst_list}
+    notyet_knowledge = list(ft_dict.keys())
+
+    ft = sum(list(ft_dict.values()),[])
+    fe = sum(list(fe_dict.values()),[])
+
+    T = len(x_list) #Will always be Pre:None.
+    x_prev = x_list[0]
+    
+    for t in range(1,T):
+        x_curr = x_list[t]
+        y_curr = y_list[t]
+        hid_emit = (x_curr,y_curr)
+        if hid_emit in fe:
+            return False
+        if (x_prev,x_curr) in ft:
+            return False
+
+        if  hid_emit in notyet_knowledge:
+            ft_dict.pop(hid_emit)
+            fe_dict.pop(hid_emit)
+            notyet_knowledge = list(ft_dict.keys())
+            ft = sum(list(ft_dict.values()),[])
+            fe = sum(list(fe_dict.values()),[])
+            
+        x_prev = x_curr
+    return True
 
 def hmm2numpy_apt(hmm, ix_list = None, return_ix = False):
     '''
@@ -494,25 +607,6 @@ def lapt_heir(apt_hmm, user_list, length, mix_weights = None, return_ix = False)
     return apt_hmm
 
 
-def combined_simulation(apt_hmm, user_list):
-    '''
-    assume all processes are time homogenous
-    '''
-    apt_hidden, apt_emit = simulation_apt(apt_hmm)
-    T = len(apt_emit)
-    total_emits = [apt_emit]
-    for user in user_list:
-        total_emits.append(simulation(user, T)[1]) #only record the emission of each user 
-
-    combined_emits = []
-    for t in range(T):
-        valid_emits = [emits[t] for emits in total_emits if emits[t] is not None] #exclude the None emits at time t
-        if len(valid_emits) == 0:
-            random_emit = None
-        else:
-            random_emit = random.choice(valid_emits)
-        combined_emits.append(random_emit)
-    return [apt_hidden, apt_emit], combined_emits
 
 def create_noisy_apt(apt_hmm, mix_param, tol = 1e-7):
     '''
@@ -633,6 +727,7 @@ def compute_emitweights(obs,hmm, time_hom = True):
     '''
     Separately handles the computation of the 
     '''
+    hmm = copy.deepcopy(hmm) #protect again in place modification
     T = len(obs)
     K = len(hmm.states)
     #Compute emissions weights for easier access
@@ -655,19 +750,20 @@ def numpy2tensor(hmm_params, cst_params, emit_weights, device):
 
     return hmm_params_torch, emit_weights_torch, emit_weights_torch
 
-def convertTensor_list(hmm, cst_list, sat, device):
+def convertTensor_list(hmm, cst_list, sat, dtype = torch.float16, device = 'cpu', return_ix = False):
     '''
     cst_list is a list of the individual csts.
     '''
     #Initialize and convert all quantities  to np.arrays
+    hmm = copy.deepcopy(hmm)
     K = len(hmm.states)
     assert len(cst_list) == len(sat)
     
     state_ix = {s: i for i, s in enumerate(hmm.states)}
 
     #Compute the hmm parameters
-    tmat = torch.zeros((K,K), dtype=torch.float16 ).to(device)
-    init_prob = torch.zeros(K, dtype=torch.float16 ).to(device)
+    tmat = torch.zeros((K,K), dtype=dtype ).to(device)
+    init_prob = torch.zeros(K, dtype=dtype ).to(device)
 
     for i in hmm.states:
         init_prob[state_ix[i]] = hmm.initprob[i]
@@ -687,9 +783,9 @@ def convertTensor_list(hmm, cst_list, sat, device):
         aux_space = list(itertools.product([True, False], repeat=cst.aux_size))
         aux_ix = {s: i for i, s in enumerate(aux_space)}
         M = len(aux_space)
-        ind = torch.zeros((K,M,K,M),dtype=torch.float16 ).to(device)
-        init_ind = torch.zeros((K,M),dtype=torch.float16 ).to(device)
-        final_ind = torch.zeros((K,M),dtype=torch.float16 ).to(device)
+        ind = torch.zeros((K,M,K,M),dtype=dtype ).to(device)
+        init_ind = torch.zeros((K,M),dtype=dtype ).to(device)
+        final_ind = torch.zeros((K,M),dtype=dtype ).to(device)
     
         for r in aux_space:
             for k in hmm.states:
@@ -714,19 +810,23 @@ def convertTensor_list(hmm, cst_list, sat, device):
         cst_ix += 1
                 
     cst_params = [dims_list, init_ind_list,final_ind_list,ind_list]
-    
+
+    if return_ix:
+        return hmm_params, cst_params, state_ix
     return hmm_params, cst_params 
 
-def Viterbi_torch_list(hmm, cst_list, obs, sat, time_hom = True, device = 'cpu'):
+def Viterbi_torch_list(hmm, cst_list, obs, sat,  time_hom = True, dtype = torch.float16,  device = 'cpu'):
     '''
     
     '''
+    hmm = copy.deepcopy(hmm) #protect again in place modification
     #Generate emit_weights:
     emit_weights = compute_emitweights(obs, hmm, time_hom)
     emit_weights = torch.from_numpy(emit_weights).type(torch.float16).to(device)
 
     #Generate hmm,cst params:
-    hmm_params, cst_params_list = convertTensor_list(hmm,cst_list, sat, device = device)   
+    hmm_params, cst_params_list, state_ix = convertTensor_list(hmm,cst_list, sat, dtype = dtype, \
+                                                               device = device, return_ix = True)   
     tmat, init_prob = hmm_params
     dims_list, init_ind_list,final_ind_list,ind_list = cst_params_list
 
@@ -741,6 +841,8 @@ def Viterbi_torch_list(hmm, cst_list, obs, sat, time_hom = True, device = 'cpu')
     
     kr_indices = list(range(C+1))
     kr_shape = (K,) + tuple(dims_list)
+    js_indices = [k + C + 1 for k in kr_indices]
+
     #Forward pass
     # V = torch.einsum('k,k,kr -> kr', init_prob, emit_weights[0], init_ind)
     V = torch.einsum(emit_weights[0], [0], init_prob, [0], *init_ind_list, kr_indices)
@@ -748,9 +850,9 @@ def Viterbi_torch_list(hmm, cst_list, obs, sat, time_hom = True, device = 'cpu')
     val[0] = V.cpu()
     for t in range(1,T):
         # V = torch.einsum('js,jk,krjs -> krjs',val[t-1],tmat,ind)
-        V = torch.einsum(val[t-1].to(device), kr_indices, tmat, [0,C+1], *ind_list, list(range(2*C + 2)))
-        V = V.reshape((K,) + tuple(dims_list) + (-1,))
-        V = V/V.max()
+        V = torch.einsum(val[t-1].to(device), js_indices, tmat, [C+1,0], *ind_list, list(range(2*C + 2)))
+        V = V.reshape(tuple(kr_shape) + (-1,))
+        # V = V/V.max()
         max_ix = torch.argmax(V, axis = -1, keepdims = True)
         ix_tracker[t-1] = max_ix.squeeze()
         V = torch.take_along_dim(V, max_ix, axis=-1).squeeze()
@@ -761,19 +863,20 @@ def Viterbi_torch_list(hmm, cst_list, obs, sat, time_hom = True, device = 'cpu')
             # val[t] = torch.einsum('k,kr -> kr', emit_weights[t],V)
             val[t] = torch.einsum(emit_weights[t],[0], V, kr_indices, kr_indices).cpu()
         
-
+    state_ix = {v:k for k,v in state_ix.items()}
     #Backward pass
     opt_augstateix_list = []
     max_ix = int(torch.argmax(val[T-1]).item())
     unravel_max_ix = np.unravel_index(max_ix, kr_shape)
-    opt_augstateix_list.append(np.array(unravel_max_ix).tolist())
+    opt_augstateix_list =  [np.array(unravel_max_ix).tolist()] + opt_augstateix_list
     
     ix_tracker = ix_tracker.reshape(T,-1) #flatten again for easier indexing    
     
     for t in range(T-1):
         max_ix =  int(ix_tracker[T-2-t,max_ix].item())
         unravel_max_ix = np.unravel_index(max_ix, kr_shape)
-        opt_augstateix_list.append(np.array(unravel_max_ix).tolist())
+        opt_augstateix_list =  [np.array(unravel_max_ix).tolist()] + opt_augstateix_list
 
-    return opt_augstateix_list
+    opt_state_list = [state_ix[k[0]] for k in opt_augstateix_list]
+    return opt_state_list, opt_augstateix_list
 

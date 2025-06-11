@@ -32,6 +32,12 @@ def cst_fun(k, r, sat):
 
 dependency = 'have_data_on_hi'
 
+forbidden_emissions = [ ('EXF', ('HE', 'img/query'))]
+
+forbidden_transitions = [('COL','EXF'), ('WAIT_COL','EXF')]
+
+knowledge_state = ('COL', ('HE', 'img/post'))
+
 aug_size = 2
 
 name = 'have_data_on_he'

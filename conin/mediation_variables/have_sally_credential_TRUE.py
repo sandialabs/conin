@@ -9,9 +9,9 @@ def update_fun(k, r, k_past, r_past):
     '''
     m1 = (k == ('CA', ('HI', 'usr/query'))) or r_past[0]  # tracks if the credential state has occurred yet
     forbidden_emissions = (k == ('EX', ('V', 'access/sally'))) or (k == ('EX', ('DS', 'syslog/nano'))) or (k == ('DI', ('DS', 'syslog/ls')))
-    m2 = (m1 or not forbidden_emissions) and r_past[1]
+    m2 = (m1 or not forbidden_emissions)
 
-    return int(r == (m1, m2))
+    return int(r == (m1, ) and m2)
 
 def init_fun(k, r):
     '''
@@ -20,17 +20,17 @@ def init_fun(k, r):
     m1 = k == ('CA', ('HI', 'usr/query'))
     m2 = not ((k == ('EX', ('V', 'access/sally'))) or (k == ('EX', ('DS', 'syslog/nano'))) or (k == ('DI', ('DS', 'syslog/ls'))))  # at first time, can only violate the emission constraint.
 
-    return int(r == (m1, m2))
+    return int(r == (m1, ) and m2)
 
 def cst_fun(k, r, sat):
     '''
     Constraint is a boolean emissions of the final auxiliary state. In this case, is just m1^T: ie. tau_a >= tau_b for all time.
     '''
-    return int(r[1] == sat)
+    return 1
 
 dependency = 'know_sally_exists'
 
-aug_size = 2
+aug_size = 1
 
 forbidden_emissions = [ ('EX', ('V', 'access/sally')), ('EX', ('DS', 'syslog/nano')), ('DI', ('DS', 'syslog/ls'))]
 

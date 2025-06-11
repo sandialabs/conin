@@ -9,11 +9,11 @@ def update_fun(k,r ,k_past, r_past):
     m1 = (k == ('DI',('HI','usr/query'))) or r_past[0] #tracks if knowledge state has occured yet
     forbidden_transitions = (k_past[0] == 'EX' and k[0] == 'CA') or (k_past[0] == 'DI' and k[0] == 'CA')
     forbidden_emissions = (k == ('CA',('HI','usr/query')))
-    m2 = (m1 or (not (forbidden_transitions and forbidden_emissions))) and r_past[1] 
+    m2 = (m1 or (not (forbidden_transitions and forbidden_emissions)))
           
     #at the time of first hit, all forbidden transitions/emissions are impossible. current logical formulation ok.
 
-    return int(r == (m1,m2))
+    return int(r == (m1,) and m2)
 
 def init_fun(k, r):
     '''
@@ -23,15 +23,15 @@ def init_fun(k, r):
     m2 = not (k == ('CA',('HI','usr/query'))) #at first time, can only violate the emission constraint.
 
 
-    return int(r == (m1,m2))
+    return int(r == (m1,) and m2)
     
 def cst_fun(k,r, sat):
     '''
     Constraint is a boolean emissions of the final auxillary state. In this case, is just m1^T: ie. tau_a >= tau_b for all time.
     '''
-    return int(r[1] == sat) 
+    return 1
 
-aug_size = 2
+aug_size = 1
 
 name = 'know_sally_exists'
 

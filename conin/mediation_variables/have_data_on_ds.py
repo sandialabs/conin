@@ -30,6 +30,12 @@ def cst_fun(k, r, sat):
 
 dependency = 'learn_where_data_stored'
 
+forbidden_emissions = [ ('COL', ('HI', 'img/post'))]
+
+forbidden_transitions = []
+
+knowledge_state = ('COL', ('DS', 'syslog/nano'))
+
 aug_size = 2
 
 name = 'have_data_on_ds'
