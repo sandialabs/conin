@@ -53,7 +53,7 @@ def test_example6():
     }
 
     model = create_MN_map_query_model_from_factorial_repn(S=S, J=J, v=v, w=w)
-    results = optimize_map_query_model(model)
+    results = optimize_map_query_model(model, solver='glpk')
     assert results.solution.variable_value == {"A": 0, "B": 1}
 
     if pgmpy_available:
@@ -70,7 +70,7 @@ def test_example6():
         assert v == v_
         assert w == w_
         model = create_MN_map_query_model(G)
-        results = optimize_map_query_model(model)
+        results = optimize_map_query_model(model, solver='glpk')
         assert results.solution.variable_value == {"A": 0, "B": 1}
 
 
@@ -200,7 +200,7 @@ def test_ABC():
     }
 
     model = create_MN_map_query_model_from_factorial_repn(S=S, J=J, v=v, w=w)
-    results = optimize_map_query_model(model)
+    results = optimize_map_query_model(model, solver='glpk')
     assert results.solution.variable_value == {"A": 2, "B": 2, "C": 1}
 
     if pgmpy_available:
@@ -222,7 +222,7 @@ def test_ABC():
         assert v == v_
         assert w == w_
         model = create_MN_map_query_model(G)
-        results = optimize_map_query_model(model)
+        results = optimize_map_query_model(model, solver='glpk')
         assert results.solution.variable_value == {"A": 2, "B": 2, "C": 1}
 
 
@@ -360,7 +360,7 @@ def test_ABC_constrained():
 
     model.diff = pyo.Constraint([0, 1, 2], rule=diff_)
 
-    results = optimize_map_query_model(model)
+    results = optimize_map_query_model(model, solver='glpk')
     assert results.solution.variable_value == {"A": 0, "B": 2, "C": 1}
 
     if pgmpy_available:
@@ -385,10 +385,9 @@ def test_ABC_constrained():
 
         # Constrain the inference to ensure that all variables have different values
         def diff_(M, s):
-            s = State(s)
             return M.X["A", s] + M.X["B", s] + M.X["C", s] <= 1
 
         model.diff = pyo.Constraint([0, 1, 2], rule=diff_)
 
-        results = optimize_map_query_model(model)
+        results = optimize_map_query_model(model, solver='glpk')
         assert results.solution.variable_value == {"A": 0, "B": 2, "C": 1}

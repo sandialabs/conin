@@ -1,11 +1,6 @@
-#from dataclasses import dataclass
-#import sys
-#from math import log, prod
 import munch
 import pyomo.environ as pe
 from pyomo.common.timing import tic, toc
-#import pprint
-#import numpy as np
 
 from .factor_repn import extract_factor_representation, State
 
@@ -37,6 +32,17 @@ complexity analysis would be too pessimistic.
 Similarly, the number of constraints in c4 is O(Mc), so the total number
 of constraints is O(N + M + Mcl + Mc) = O(N + Mcl).
 """
+
+
+class VarWrapper(dict):
+    def __init__(self, *arg, **kw):
+        super(VarWrapper, self).__init__(*arg, **kw)
+
+    def __getitem__(self, index):
+        r,s = index
+        if type(s) is not State:
+            s = State(s)
+        return dict.__getitem__(self, (r, s))
 
 
 def create_MN_map_query_model(pgm, X=None, evidence=None):
@@ -100,9 +106,9 @@ def create_MN_map_query_model_from_factorial_repn(
     model.y = pe.Var(IJ, within=pe.Binary)
 
     if X is None:
-        model.X = {rs: model.x[rs] for rs in RS}
+        model.X = VarWrapper({rs: model.x[rs] for rs in RS})
     else:
-        model.X = {(r, s): model.x[X[r], s] for r in X for s in S[X[r]]}
+        model.X = VarWrapper({(r, s): model.x[X[r], s] for r in X for s in S[X[r]]})
 
     toc("VARIABLES")
 

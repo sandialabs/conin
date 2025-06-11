@@ -1,9 +1,5 @@
 import pytest
-from conin.dynamic_bayesian_network import (
-    create_DBN_map_query_model,
-    optimize_map_query_model,
-)
-
+import pyomo.environ as pyo
 try:
     from pgmpy.models import DynamicBayesianNetwork as DBN
     from pgmpy.factors.discrete import TabularCPD
@@ -13,6 +9,11 @@ try:
 except Exception as e:
     print(f"pgmpy not available: {e}")
     pgmpy_available = False
+
+from conin.dynamic_bayesian_network import (
+    create_DBN_map_query_model,
+    optimize_map_query_model,
+)
 
 
 def simple0_DBN(debug=False):
@@ -66,45 +67,78 @@ def simple1_DBN(debug=False):
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_simple0_ALL():
     """
-    Z_0 -> Z_1
+    Z
     """
-    G = simple0_DBN(False)
+    G = simple0_DBN()
+    q = {("Z", 0): 1, ("Z", 1): 0}
+
     model = create_DBN_map_query_model(pgm=G)  # variables=None, evidence=None
-    results = optimize_map_query_model(model)  # num=1
-    assert results.solutions[0].variable_value == {("Z", 0): 1, ("Z", 1): 0}
+    results = optimize_map_query_model(model, solver='glpk')
+    assert q == results.solution.variable_value
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_simple1_ALL():
     """
     A -> B
+
+    No evidence
     """
     G = simple1_DBN()
-    # assert q == {'A':0, 'B':1}
-    model = create_DBN_map_query_model(pgm=G)  # variables=None, evidence=None
-    results = optimize_map_query_model(model)  # num=1
-    assert results.solutions[0].variable_value == {
+    q = {
         ("A", 0): 0,
         ("A", 1): 1,
         ("B", 0): 1,
         ("B", 1): 0,
     }
 
+    model = create_DBN_map_query_model(pgm=G)  # variables=None, evidence=None
+    results = optimize_map_query_model(model, solver='glpk')
+    assert q == results.solution.variable_value
+
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_simple1_B():
     """
     A -> B
+
+    Evidence: A_0 = 1
     """
     G = simple1_DBN()
-    # assert q == {'B':0}
-
-    model = create_DBN_map_query_model(
-        pgm=G, evidence={("A", 0): 1}
-    )  # variables=None, evidence=None
-    results = optimize_map_query_model(model)  # num=1
-    assert results.solutions[0].variable_value == {
+    q = {
         ("A", 1): 0,
         ("B", 0): 0,
         ("B", 1): 1,
     }
+
+    model = create_DBN_map_query_model(
+        pgm=G, evidence={("A", 0): 1}
+    )  # variables=None, evidence=None
+    results = optimize_map_query_model(model, solver='glpk')
+    assert q == results.solution.variable_value
+
+
+@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+def test_simple1_ALL_constrained():
+    """
+    A -> B
+
+    No evidence
+    """
+    G = simple1_DBN()
+    q = {
+        ("A", 0): 0,
+        ("A", 1): 0,
+        ("B", 0): 1,
+        ("B", 1): 1,
+    }
+
+    model = create_DBN_map_query_model(pgm=G)  # variables=None, evidence=None
+    model.c = pyo.ConstraintList()
+    model.c.add( model.X[("A",0), 0] == model.X[("A",1), 0] )
+    model.c.add( model.X[("B",0), 0] == model.X[("B",1), 0] )
+    
+    results = optimize_map_query_model(model, solver='glpk')
+    assert q == results.solution.variable_value
+
+
