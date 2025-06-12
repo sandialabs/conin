@@ -7,7 +7,7 @@ def update_fun(k,r ,k_past, r_past):
     m2^t = [1- (1 - tau^t_a) AND c)] AND m2^{t-1} = [tau^t_a or (1 - c)] AND m2^{t-1} #tracks if the arrival time of a is before c
     '''
     m1 = (k == ('DI',('HI','usr/query'))) or r_past[0] #tracks if knowledge state has occured yet
-    forbidden_transitions = (k_past[0] == 'EX' and k[0] == 'CA') or (k_past[0] == 'DI' and k[0] == 'CA')
+    forbidden_transitions = ((k_past[0] == 'EX' or k_past[0] == 'WAIT_EX') and (k[0] == 'CA' or k[0] == 'WAIT_CA')) or ((k_past[0] == 'DI' or k_past[0] == 'WAIT_DI') and (k[0] == 'CA' or k[0] == 'WAIT_CA'))
     forbidden_emissions = (k == ('CA',('HI','usr/query')))
     m2 = (m1 or (not (forbidden_transitions and forbidden_emissions))) and r_past[1] 
           

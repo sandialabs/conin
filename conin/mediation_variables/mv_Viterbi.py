@@ -204,8 +204,9 @@ def mv_Viterbi_v2(obs, hmm, cst = None, sat = True):
     sat. Boolean determining whether the constraint is ture or not
     
     '''
+    
     hmm = copy.deepcopy(hmm)
-
+    cst = copy.deepcopy(cst)
     if cst is None:
         return Viterbi(obs,hmm)
         

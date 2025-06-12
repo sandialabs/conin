@@ -780,6 +780,7 @@ def convertTensor_list(hmm, cst_list, sat, dtype = torch.float16, device = 'cpu'
     cst_ix = 0
     C = len(cst_list)
     for cst in cst_list:
+        cst = copy.deepcopy(cst)
         aux_space = list(itertools.product([True, False], repeat=cst.aux_size))
         aux_ix = {s: i for i, s in enumerate(aux_space)}
         M = len(aux_space)
@@ -789,7 +790,7 @@ def convertTensor_list(hmm, cst_list, sat, dtype = torch.float16, device = 'cpu'
     
         for r in aux_space:
             for k in hmm.states:
-                final_ind[state_ix[k], aux_ix[r]] = cst.cst_fun(k,r,sat)
+                final_ind[state_ix[k], aux_ix[r]] = cst.cst_fun(k,r,sat[cst_ix])
                 init_ind[state_ix[k],aux_ix[r]] = cst.init_fun(k,r)
                 for s in aux_space:
                     for j in hmm.states:
@@ -815,9 +816,10 @@ def convertTensor_list(hmm, cst_list, sat, dtype = torch.float16, device = 'cpu'
         return hmm_params, cst_params, state_ix
     return hmm_params, cst_params 
 
-def Viterbi_torch_list(hmm, cst_list, obs, sat,  time_hom = True, dtype = torch.float16,  device = 'cpu', debug = False):
+def Viterbi_torch_list(hmm, cst_list, obs, sat,  time_hom = True, dtype = torch.float16,  device = 'cpu', debug = False, num_cst = 0):
     '''
-    
+    more optimized torch implementation of Viterbi. The constraint all evolve independently (ie. factorial), so no need to create a big U_krjs matrix. Instead, just multiply along given dim. Still require computing V_{krjs}, but this should help.
+    For numerica underflow, we normalize the value at each time. Also, we add a small constant num_cst when normalizing.
     '''
     hmm = copy.deepcopy(hmm) #protect again in place modification
     #Generate emit_weights:
@@ -846,13 +848,13 @@ def Viterbi_torch_list(hmm, cst_list, obs, sat,  time_hom = True, dtype = torch.
     #Forward pass
     # V = torch.einsum('k,k,kr -> kr', init_prob, emit_weights[0], init_ind)
     V = torch.einsum(emit_weights[0], [0], init_prob, [0], *init_ind_list, kr_indices)
-    V = V/V.max() #normalize for numerical stability
+    V = V/(V.max() + num_cst) #normalize for numerical stability
     val[0] = V.cpu()
     for t in range(1,T):
         # V = torch.einsum('js,jk,krjs -> krjs',val[t-1],tmat,ind)
         V = torch.einsum(val[t-1].to(device), js_indices, tmat, [C+1,0], *ind_list, list(range(2*C + 2)))
         V = V.reshape(tuple(kr_shape) + (-1,))
-        V = V/V.max()
+        V = V/(V.max() + num_cst)
         max_ix = torch.argmax(V, axis = -1, keepdims = True)
         ix_tracker[t-1] = max_ix.squeeze()
         V = torch.take_along_dim(V, max_ix, axis=-1).squeeze()

@@ -9,7 +9,7 @@ def update_fun(k, r, k_past, r_past):
     m2 = (m1 or (not (forbidden_transitions and forbidden_emissions))) and r_past[1]
     '''
     m1 = (k == ('COL', ('HE', 'img/post'))) or r_past[0]  # tracks if the data state has occurred yet
-    forbidden_transitions = (k_past[0] == 'COL' and k[0] == 'EXF')
+    forbidden_transitions = ((k_past[0] == 'COL' or k_past[0] == 'WAIT_COL') and (k[0] == 'EXF' or k[0] == 'WAIT_EXF'))
     forbidden_emissions = (k == ('EXF', ('HE', 'img/query')))
     m2 = (m1 or (not (forbidden_transitions and forbidden_emissions)))
 

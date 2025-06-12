@@ -9,7 +9,7 @@ def update_fun(k, r, k_past, r_past):
     m2 = (m1 or (not (forbidden_transitions and forbidden_emissions))) and r_past[1]
     '''
     m1 = (k == ('DI', ('DS', 'syslog/ls'))) or r_past[0]  # tracks if the data storage state has occurred yet
-    forbidden_transitions = (k_past[0] == 'DI' and k[0] == 'COL')
+    forbidden_transitions = ((k_past[0] == 'DI' or k_past[0] == 'WAIT_DI') and (k[0] == 'COL' or k[0] == 'WAIT_COL'))
     forbidden_emissions = (k == ('COL', ('DS', 'syslog/nano')))
     m2 = (m1 or (not (forbidden_transitions and forbidden_emissions))) and r_past[1]
 
