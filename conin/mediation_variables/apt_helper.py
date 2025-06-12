@@ -552,7 +552,7 @@ def lapt_mixture(apt_hmm, user_list, length, mix_weights = None, return_ix = Fal
         return apt, [apt_state_ix, emit_ix]
     return apt
 
-def lapt_heir(apt_hmm, user_list, length, mix_weights = None, return_ix = False):
+def tier_mixture(apt_hmm, user_list, length, mix_weights = None, return_ix = False):
     '''
     IN 
     apt_hmm: Munch object of the apt
