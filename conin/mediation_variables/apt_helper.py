@@ -815,7 +815,7 @@ def convertTensor_list(hmm, cst_list, sat, dtype = torch.float16, device = 'cpu'
         return hmm_params, cst_params, state_ix
     return hmm_params, cst_params 
 
-def Viterbi_torch_list(hmm, cst_list, obs, sat,  time_hom = True, dtype = torch.float16,  device = 'cpu'):
+def Viterbi_torch_list(hmm, cst_list, obs, sat,  time_hom = True, dtype = torch.float16,  device = 'cpu', debug = False):
     '''
     
     '''
@@ -852,7 +852,7 @@ def Viterbi_torch_list(hmm, cst_list, obs, sat,  time_hom = True, dtype = torch.
         # V = torch.einsum('js,jk,krjs -> krjs',val[t-1],tmat,ind)
         V = torch.einsum(val[t-1].to(device), js_indices, tmat, [C+1,0], *ind_list, list(range(2*C + 2)))
         V = V.reshape(tuple(kr_shape) + (-1,))
-        # V = V/V.max()
+        V = V/V.max()
         max_ix = torch.argmax(V, axis = -1, keepdims = True)
         ix_tracker[t-1] = max_ix.squeeze()
         V = torch.take_along_dim(V, max_ix, axis=-1).squeeze()
@@ -878,5 +878,7 @@ def Viterbi_torch_list(hmm, cst_list, obs, sat,  time_hom = True, dtype = torch.
         opt_augstateix_list =  [np.array(unravel_max_ix).tolist()] + opt_augstateix_list
 
     opt_state_list = [state_ix[k[0]] for k in opt_augstateix_list]
+    if debug:
+        return opt_state_list, opt_augstateix_list, val, ix_tracker
     return opt_state_list, opt_augstateix_list
 
