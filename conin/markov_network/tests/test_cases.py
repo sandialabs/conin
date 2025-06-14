@@ -62,17 +62,16 @@ def ABC_constrained():
     The constrained MAP solution is A:0, B:2, C:1.
     """
     pgm = ABC()
+    cpgm = ConstrainedMarkovNetwork(pgm)
 
     def constraint_fn(model):
-        # @model.Constraint
-        def diff_(M, s):
+        @model.Constraint([0, 1, 2])
+        def diff(M, s):
             return M.X["A", s] + M.X["B", s] + M.X["C", s] <= 1
-
-        model.diff = pyo.Constraint([0, 1, 2], rule=diff_)
 
         return model
 
-    cpgm = ConstrainedMarkovNetwork(pgm)
     cpgm.add_constraints(constraint_fn)
 
     return cpgm
+
