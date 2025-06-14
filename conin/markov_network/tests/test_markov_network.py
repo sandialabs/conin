@@ -10,6 +10,7 @@ from . import test_cases
 
 try:
     import pgmpy
+
     pgmpy_available = True
 except Exception as e:
     print(f"pgmpy not available: {e}")
@@ -367,6 +368,7 @@ def test_ABC_constrained():
         # Constrain the inference to ensure that all variables have different values
         pgm = test_cases.ABC()
         model = create_MN_map_query_model(pgm=pgm)
+
         def diff_(M, s):
             s = State(s)
             return M.x["A", s] + M.x["B", s] + M.x["C", s] <= 1

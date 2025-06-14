@@ -71,4 +71,3 @@ def ABC_constrained():
         return model
 
     return ConstrainedMarkovNetwork(pgm, constraints=constraint_fn)
-
