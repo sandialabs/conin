@@ -31,14 +31,14 @@ class OptimizationInference:
 
         Examples
         --------
-        >>> from pgmpy.inference import VariableElimination
+        >>> from conin.inference import OptimizationInference
         >>> from pgmpy.models import DiscreteBayesianNetwork
         >>> import numpy as np
         >>> import pandas as pd
         >>> values = pd.DataFrame(np.random.randint(low=0, high=2, size=(1000, 5)),
         ...                       columns=['A', 'B', 'C', 'D', 'E'])
         >>> model = DiscreteBayesianNetwork([('A', 'B'), ('C', 'B'), ('C', 'D'), ('B', 'E')])
-        >>> model.fit(values)
+        >>> model = model.fit(values)
         >>> inference = OptimizationInference(model)
         >>> phi_query = inference.map_query(['A', 'B'])
         """
