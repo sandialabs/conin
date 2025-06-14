@@ -35,7 +35,7 @@ def simple2_DBN(debug=False):
         variable=("Z", 1), evidence=[("Z", 0)], values={0: [0.7, 0.3], 1: [0.8, 0.2]}
     )
 
-    G.add_cpds(z_start_cpd.cpd, z_trans_cpd.cpd)
+    G.add_cpds(z_start_cpd, z_trans_cpd)
     G.initialize_initial_state()
     G.check_model()
 
@@ -103,7 +103,7 @@ def simple3_DBN(debug=False):
         evidence=[("A", 0)],
         values={0: [0.2, 0.8], 1: [0.9, 0.1]},
     )
-    G.add_cpds(cpd_start_A.cpd, cpd_start_B.cpd, cpd_trans_A.cpd)
+    G.add_cpds(cpd_start_A, cpd_start_B, cpd_trans_A)
     G.initialize_initial_state()
     G.check_model()
 
@@ -366,9 +366,7 @@ def pgmpy_weather2(debug=False):
     )
 
     # Add CPDs to the DBN
-    dbn.add_cpds(
-        cpd_w_0.cpd, cpd_w_1.cpd, cpd_t_0.cpd, cpd_t_1.cpd, cpd_o.cpd, cpd_h.cpd
-    )
+    dbn.add_cpds(cpd_w_0, cpd_w_1, cpd_t_0, cpd_t_1, cpd_o, cpd_h)
 
     if debug:
         for cpd in dbn.get_cpds():

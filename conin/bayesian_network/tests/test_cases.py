@@ -118,9 +118,7 @@ def cancer2_BN(debug=False):
         print(cpd_cancer)
         print(cpd_xray)
         print(cpd_dysp)
-    cancer_model.add_cpds(
-        cpd_poll.cpd, cpd_smoke.cpd, cpd_cancer.cpd, cpd_xray.cpd, cpd_dysp.cpd
-    )
+    cancer_model.add_cpds(cpd_poll, cpd_smoke, cpd_cancer, cpd_xray, cpd_dysp)
 
     # Step 4: Check if the model is correctly defined.
     cancer_model.check_model()
@@ -172,6 +170,6 @@ def simple2_BN(debug=False):
     if debug:
         print(cpd_A)
         print(cpd_B)
-    G.add_cpds(cpd_A.cpd, cpd_B.cpd)
+    G.add_cpds(cpd_A, cpd_B)
     G.check_model()
     return G

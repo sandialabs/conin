@@ -11,7 +11,13 @@ except Exception as e:
     pgmpy_available = False
 
 
-class MapCPD:
+def MapCPD(
+    *,
+    variable: Hashable,
+    values: Dict,
+    evidence: [List | Tuple] = None,
+    state_names: Optional[dict] = None,
+):
     """
     Defines the conditional probability distribution table (CPD table)
 
@@ -70,6 +76,9 @@ class MapCPD:
     ...                             'diff': ['easy','hard'],
     ...                             'intel': ['low','mid','high']})
 
+    >>> import os
+    >>> os.environ['COLUMNS'] = "100"   # Make sure we print all columns in the table
+    >>>
     >>> print(cpd)
     +----------+------------+------------+-------------+------------+------------+-------------+
     | diff     | diff(easy) | diff(easy) | diff(easy)  | diff(hard) | diff(hard) | diff(hard)  |
@@ -141,124 +150,68 @@ class MapCPD:
     >>> cpd.variable_card
     2
     """
-
-    def __init__(
-        self,
-        *,
-        variable: Hashable,
-        values: Dict,
-        evidence: [List | Tuple] = None,
-        state_names: Optional[dict] = None,
-    ):
-
-        if evidence is None:
-            if type(values) is list:
-                assert (
-                    state_names is None
-                ), f"Cannot specify state names when 'values' is a list"
-                variable_card = len(values)
-                state_names = {variable: list(range(len(values)))}
-                evidence_card = []
-                vlist = [[val] for val in values]
-            else:
-                variable_card = len(values)
-                if state_names is None:
-                    state_names = {variable: list(sorted(values.keys()))}
-                evidence_card = []
-                vlist = [[values[s]] for s in state_names[variable]]
-        else:
+    if evidence is None:
+        if type(values) is list:
             assert (
-                type(values) is dict
-            ), f"The 'evidence' is specified, but 'values' is not a dict"
-            first = next(iter(values.values()))
-            variable_card = len(first)
-
+                state_names is None
+            ), f"Cannot specify state names when 'values' is a list"
+            variable_card = len(values)
+            state_names = {variable: list(range(len(values)))}
+            evidence_card = []
+            vlist = [[val] for val in values]
+        else:
+            variable_card = len(values)
             if state_names is None:
-                if type(first) is list:
-                    state_names_ = {variable: list(range(len(first)))}
-                else:
-                    state_names_ = {variable: list(sorted(first.keys()))}
-            if type(evidence) not in (list, tuple):
-                evidence = list(evidence)
-            if len(evidence) == 1:
-                evidence_card = [len(values)]
-                if state_names is None:
-                    state_names_[evidence[0]] = list(sorted(values.keys()))
-            else:
-                evidence_states = []
-                for i in range(len(evidence)):
-                    evidence_states.append(set())
-                for k in values:
-                    for i, s in enumerate(k):
-                        evidence_states[i].add(s)
-                evidence_card = [len(s) for s in evidence_states]
-                if state_names is None:
-                    for i, s in enumerate(evidence_states):
-                        state_names_[evidence[i]] = list(sorted(s))
+                state_names = {variable: list(sorted(values.keys()))}
+            evidence_card = []
+            vlist = [[values[s]] for s in state_names[variable]]
+    else:
+        assert (
+            type(values) is dict
+        ), f"The 'evidence' is specified, but 'values' is not a dict"
+        first = next(iter(values.values()))
+        variable_card = len(first)
 
+        if state_names is None:
+            if type(first) is list:
+                state_names_ = {variable: list(range(len(first)))}
+            else:
+                state_names_ = {variable: list(sorted(first.keys()))}
+        if type(evidence) not in (list, tuple):
+            evidence = list(evidence)
+        if len(evidence) == 1:
+            evidence_card = [len(values)]
             if state_names is None:
-                state_names = state_names_
+                state_names_[evidence[0]] = list(sorted(values.keys()))
+        else:
+            evidence_states = []
+            for i in range(len(evidence)):
+                evidence_states.append(set())
+            for k in values:
+                for i, s in enumerate(k):
+                    evidence_states[i].add(s)
+            evidence_card = [len(s) for s in evidence_states]
+            if state_names is None:
+                for i, s in enumerate(evidence_states):
+                    state_names_[evidence[i]] = list(sorted(s))
 
-            vlist = []
-            if len(evidence) == 1:
-                for v in state_names[variable]:
-                    vlist.append([values[prod][v] for prod in state_names[evidence[0]]])
-            else:
-                for v in state_names[variable]:
-                    snames = [state_names[e] for e in evidence]
-                    vlist.append(
-                        [values[prod][v] for prod in itertools.product(*snames)]
-                    )
+        if state_names is None:
+            state_names = state_names_
 
-        self.cpd = TabularCPD(
-            variable=variable,
-            evidence=evidence,
-            variable_card=variable_card,
-            evidence_card=evidence_card,
-            state_names=state_names,
-            values=vlist,
-        )
+        vlist = []
+        if len(evidence) == 1:
+            for v in state_names[variable]:
+                vlist.append([values[prod][v] for prod in state_names[evidence[0]]])
+        else:
+            for v in state_names[variable]:
+                snames = [state_names[e] for e in evidence]
+                vlist.append([values[prod][v] for prod in itertools.product(*snames)])
 
-    @property
-    def values(self):
-        return self.cpd.values
-
-    @property
-    def variables(self):
-        return self.cpd.variables
-
-    @property
-    def cardinality(self):
-        return self.cpd.cardinality
-
-    @property
-    def variable(self):
-        return self.cpd.variable
-
-    @property
-    def variable_card(self):
-        return self.cpd.variable_card
-
-    def __repr__(self):
-        return self.cpd.__repr__()
-
-    def get_values(self):
-        return self.cpd.get_values()
-
-    def __str__(self):
-        return self.cpd.__str__()
-
-    def to_csv(self, filename: str | os.PathLike):
-        """
-        Exports the CPD to a CSV file.
-        """
-        self.cpd.to_csv(filename)
-
-    def to_dataframe(self):
-        return self.cpd.to_dataframe()
-
-    def copy(self):
-        pass
-
-    def get_evidence(self):
-        return self.cpd.get_evidence()
+    return TabularCPD(
+        variable=variable,
+        evidence=evidence,
+        variable_card=variable_card,
+        evidence_card=evidence_card,
+        state_names=state_names,
+        values=vlist,
+    )
