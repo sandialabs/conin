@@ -39,22 +39,23 @@ class VarWrapper(dict):
         super(VarWrapper, self).__init__(*arg, **kw)
 
     def __getitem__(self, index):
-        r,s = index
+        r, s = index
         if type(s) is not State:
             s = State(s)
         return dict.__getitem__(self, (r, s))
 
 
-def create_MN_map_query_model(pgm, X=None, evidence=None):
+def create_MN_map_query_model(*, pgm, variables=None, evidence=None):
     S, J, v, w = extract_factor_representation(pgm)
-    model = create_MN_map_query_model_from_factorial_repn(S=S, J=J, v=v, w=w, X=X)
+    model = create_MN_map_query_model_from_factorial_repn(
+        S=S, J=J, v=v, w=w, X=variables
+    )
 
     if evidence is not None:
         for k, v in evidence.items():
             model.X[k, State(v)].fix(1)
 
     return model
-
 
 
 def create_MN_map_query_model_from_factorial_repn(
@@ -122,7 +123,7 @@ def create_MN_map_query_model_from_factorial_repn(
 
     # Each factor i can only be in one configration for the joint distribution
     def c2_(M, i):
-        return sum(M.y[i, j] for j in J[i] if (i,j) in IJset) == 1
+        return sum(M.y[i, j] for j in J[i] if (i, j) in IJset) == 1
 
     model.c2 = pe.Constraint(I, rule=c2_)
 

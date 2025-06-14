@@ -1,7 +1,11 @@
 from math import log
 import numpy as np
 import pyomo.environ as pyo
-from conin.markov_network import create_MN_map_query_model, optimize_map_query_model
+from conin.markov_network import (
+    create_MN_map_query_model,
+    optimize_map_query_model,
+    ConstrainedMarkovNetwork,
+)
 from conin.markov_network.factor_repn import extract_factor_representation, State
 from conin.markov_network.inference import create_MN_map_query_model_from_factorial_repn
 
@@ -53,7 +57,7 @@ def test_example6():
     }
 
     model = create_MN_map_query_model_from_factorial_repn(S=S, J=J, v=v, w=w)
-    results = optimize_map_query_model(model, solver='glpk')
+    results = optimize_map_query_model(model, solver="glpk")
     assert results.solution.variable_value == {"A": 0, "B": 1}
 
     if pgmpy_available:
@@ -69,8 +73,8 @@ def test_example6():
         assert J == J_
         assert v == v_
         assert w == w_
-        model = create_MN_map_query_model(G)
-        results = optimize_map_query_model(model, solver='glpk')
+        model = create_MN_map_query_model(pgm=G)
+        results = optimize_map_query_model(model, solver="glpk")
         assert results.solution.variable_value == {"A": 0, "B": 1}
 
 
@@ -83,7 +87,11 @@ def test_ABC():
 
     The MAP solution is A:2, B:2, C:1.
     """
-    S = {"A": [State(0), State(1), State(2)], "B": [State(0), State(1), State(2)], "C": [State(0), State(1), State(2)]}
+    S = {
+        "A": [State(0), State(1), State(2)],
+        "B": [State(0), State(1), State(2)],
+        "C": [State(0), State(1), State(2)],
+    }
 
     J = {
         "A": [0, 1, 2],
@@ -200,7 +208,7 @@ def test_ABC():
     }
 
     model = create_MN_map_query_model_from_factorial_repn(S=S, J=J, v=v, w=w)
-    results = optimize_map_query_model(model, solver='glpk')
+    results = optimize_map_query_model(model, solver="glpk")
     assert results.solution.variable_value == {"A": 2, "B": 2, "C": 1}
 
     if pgmpy_available:
@@ -221,8 +229,8 @@ def test_ABC():
         assert J == J_
         assert v == v_
         assert w == w_
-        model = create_MN_map_query_model(G)
-        results = optimize_map_query_model(model, solver='glpk')
+        model = create_MN_map_query_model(pgm=G)
+        results = optimize_map_query_model(model, solver="glpk")
         assert results.solution.variable_value == {"A": 2, "B": 2, "C": 1}
 
 
@@ -235,7 +243,11 @@ def test_ABC_constrained():
 
     The constrained MAP solution is A:0, B:2, C:1.
     """
-    S = {"A": [State(0), State(1), State(2)], "B": [State(0), State(1), State(2)], "C": [State(0), State(1), State(2)]}
+    S = {
+        "A": [State(0), State(1), State(2)],
+        "B": [State(0), State(1), State(2)],
+        "C": [State(0), State(1), State(2)],
+    }
 
     J = {
         "A": [0, 1, 2],
@@ -360,7 +372,7 @@ def test_ABC_constrained():
 
     model.diff = pyo.Constraint([0, 1, 2], rule=diff_)
 
-    results = optimize_map_query_model(model, solver='glpk')
+    results = optimize_map_query_model(model, solver="glpk")
     assert results.solution.variable_value == {"A": 0, "B": 2, "C": 1}
 
     if pgmpy_available:
@@ -381,7 +393,7 @@ def test_ABC_constrained():
         assert J == J_
         assert v == v_
         assert w == w_
-        model = create_MN_map_query_model(G)
+        model = create_MN_map_query_model(pgm=G)
 
         # Constrain the inference to ensure that all variables have different values
         def diff_(M, s):
@@ -389,5 +401,19 @@ def test_ABC_constrained():
 
         model.diff = pyo.Constraint([0, 1, 2], rule=diff_)
 
-        results = optimize_map_query_model(model, solver='glpk')
+        results = optimize_map_query_model(model, solver="glpk")
+        assert results.solution.variable_value == {"A": 0, "B": 2, "C": 1}
+
+        # Constrain the inference to ensure that all variables have different values
+        def constraint_fn(model):
+            def diff_(M, s):
+                return M.X["A", s] + M.X["B", s] + M.X["C", s] <= 1
+
+            model.diff = pyo.Constraint([0, 1, 2], rule=diff_)
+
+            return model
+
+        mn = ConstrainedMarkovNetwork(G)
+        mn.add_constraints(constraint_fn)
+        results = optimize_map_query_model(mn.create_map_query_model(), solver="glpk")
         assert results.solution.variable_value == {"A": 0, "B": 2, "C": 1}
