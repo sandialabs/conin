@@ -152,16 +152,20 @@ class MapCPD:
     ):
 
         if evidence is None:
-            assert (
-                type(values) is list
-            ), f"The 'evidence' is missing, but 'values' is not a list"
-            assert (
-                state_names is None
-            ), f"Cannot specify state names when 'values' is a list"
-            variable_card = len(values)
-            state_names = {variable: list(range(len(values)))}
-            evidence_card = []
-            vlist = [[val] for val in values]
+            if type(values) is list:
+                assert (
+                    state_names is None
+                ), f"Cannot specify state names when 'values' is a list"
+                variable_card = len(values)
+                state_names = {variable: list(range(len(values)))}
+                evidence_card = []
+                vlist = [[val] for val in values]
+            else:
+                variable_card = len(values)
+                if state_names is None:
+                    state_names = {variable: list(sorted(values.keys()))}
+                evidence_card = []
+                vlist = [[values[s]] for s in state_names[variable]]
         else:
             assert (
                 type(values) is dict
