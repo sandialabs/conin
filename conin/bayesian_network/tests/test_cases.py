@@ -64,13 +64,13 @@ def cancer1_BN(debug=False):
 def cancer1_BN_constrained(debug=False):
     pgm = cancer1_BN(debug=debug)
 
-    def constraint_fn(model):
+    def constraints(model, data):
         model.c = pyo.ConstraintList()
         model.c.add(model.X["Dyspnoea", 1] + model.X["Xray", 1] <= 1)
         model.c.add(model.X["Dyspnoea", 0] + model.X["Xray", 0] <= 1)
         return model
 
-    return ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint_fn)
+    return ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraints)
 
 
 def cancer2_BN(debug=False):
@@ -128,13 +128,13 @@ def cancer2_BN(debug=False):
 def cancer2_BN_constrained(debug=False):
     pgm = cancer2_BN(debug=debug)
 
-    def constraint_fn(model):
+    def constraints(model, data):
         model.c = pyo.ConstraintList()
         model.c.add(model.X["Dyspnoea", 1] + model.X["Xray", 1] <= 1)
         model.c.add(model.X["Dyspnoea", 0] + model.X["Xray", 0] <= 1)
         return model
 
-    return ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint_fn)
+    return ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraints)
 
 
 def simple1_BN(debug=False):

@@ -1,3 +1,5 @@
+import munch
+
 try:
     from pgmpy.models import DiscreteBayesianNetwork
 
@@ -22,11 +24,15 @@ class ConstrainedDiscreteBayesianNetwork:
     def constraints(self, constraint_functor):
         self.constraint_functor = constraint_functor
 
-    def create_constraints(self, model):
+    def create_constraints(self, model, data):
         if self.constraint_functor is not None:
-            model = self.constraint_functor(model)
+            model = self.constraint_functor(model, data)
         return model
 
-    def create_map_query_model(self):
+    def create_map_query_model(self, variables=None, evidence=None):
         model = create_BN_map_query_model(pgm=self.pgm)
-        return self.create_constraints(model)
+        self.data = munch.Munch(
+            variables=variables,
+            evidence=evidence,
+        )
+        return self.create_constraints(model, self.data)
