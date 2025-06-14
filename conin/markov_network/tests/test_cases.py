@@ -62,7 +62,6 @@ def ABC_constrained():
     The constrained MAP solution is A:0, B:2, C:1.
     """
     pgm = ABC()
-    cpgm = ConstrainedMarkovNetwork(pgm)
 
     def constraint_fn(model):
         @model.Constraint([0, 1, 2])
@@ -71,7 +70,5 @@ def ABC_constrained():
 
         return model
 
-    cpgm.add_constraints(constraint_fn)
-
-    return cpgm
+    return ConstrainedMarkovNetwork(pgm, constraints=constraint_fn)
 

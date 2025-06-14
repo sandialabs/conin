@@ -181,7 +181,6 @@ class MapCPD:
                 if state_names is None:
                     state_names_[evidence[0]] = list(sorted(values.keys()))
             else:
-                num_evidence = len(evidence)
                 evidence_states = []
                 for i in range(len(evidence)):
                     evidence_states.append(set())

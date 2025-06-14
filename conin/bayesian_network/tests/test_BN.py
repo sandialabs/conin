@@ -3,13 +3,10 @@ import pyomo.environ as pyo
 from conin.bayesian_network import (
     create_BN_map_query_model,
     optimize_map_query_model,
-    ConstrainedDiscreteBayesianNetwork,
-    MapCPD,
 )
+from . import test_cases
 
 try:
-    from pgmpy.models import DiscreteBayesianNetwork
-    from pgmpy.factors.discrete import TabularCPD
     from pgmpy.inference import VariableElimination
 
     pgmpy_available = True
@@ -18,160 +15,18 @@ except Exception as e:
     pgmpy_available = False
 
 
-def cancer1_BN(debug=False):
-    # Step 1: Define the network structure.
-    cancer_model = DiscreteBayesianNetwork(
-        [
-            ("Pollution", "Cancer"),
-            ("Smoker", "Cancer"),
-            ("Cancer", "Xray"),
-            ("Cancer", "Dyspnoea"),
-        ]
-    )
-
-    # Step 2: Define the CPDs.
-    cpd_poll = TabularCPD(variable="Pollution", variable_card=2, values=[[0.9], [0.1]])
-    cpd_smoke = TabularCPD(variable="Smoker", variable_card=2, values=[[0.3], [0.7]])
-    cpd_cancer = TabularCPD(
-        variable="Cancer",
-        variable_card=2,
-        values=[[0.03, 0.05, 0.001, 0.02], [0.97, 0.95, 0.999, 0.98]],
-        evidence=["Smoker", "Pollution"],
-        evidence_card=[2, 2],
-    )
-    cpd_xray = TabularCPD(
-        variable="Xray",
-        variable_card=2,
-        values=[[0.9, 0.2], [0.1, 0.8]],
-        evidence=["Cancer"],
-        evidence_card=[2],
-    )
-    cpd_dysp = TabularCPD(
-        variable="Dyspnoea",
-        variable_card=2,
-        values=[[0.65, 0.3], [0.35, 0.7]],
-        evidence=["Cancer"],
-        evidence_card=[2],
-    )
-
-    # Step 3: Add the CPDs to the model.
-    if debug:
-        print(cpd_poll)
-        print(cpd_smoke)
-        print(cpd_cancer)
-        print(cpd_xray)
-        print(cpd_dysp)
-    cancer_model.add_cpds(cpd_poll, cpd_smoke, cpd_cancer, cpd_xray, cpd_dysp)
-
-    # Step 4: Check if the model is correctly defined.
-    cancer_model.check_model()
-    return cancer_model
-
-
-def cancer2_BN(debug=False):
-    # Step 1: Define the network structure.
-    cancer_model = DiscreteBayesianNetwork(
-        [
-            ("Pollution", "Cancer"),
-            ("Smoker", "Cancer"),
-            ("Cancer", "Xray"),
-            ("Cancer", "Dyspnoea"),
-        ]
-    )
-
-    # Step 2: Define the CPDs.
-    cpd_poll = MapCPD(variable="Pollution", values=[0.9, 0.1])
-    cpd_smoke = MapCPD(variable="Smoker", values=[0.3, 0.7])
-    cpd_cancer = MapCPD(
-        variable="Cancer",
-        evidence=["Smoker", "Pollution"],
-        values={
-            (0, 0): [0.03, 0.97],
-            (0, 1): [0.05, 0.95],
-            (1, 0): [0.001, 0.999],
-            (1, 1): [0.02, 0.98],
-        },
-        # values=[[0.03, 0.05, 0.001, 0.02], [0.97, 0.95, 0.999, 0.98]],
-    )
-    cpd_xray = MapCPD(
-        variable="Xray",
-        evidence=["Cancer"],
-        values={0: [0.9, 0.1], 1: [0.2, 0.8]},
-        # values=[[0.9, 0.2], [0.1, 0.8]],
-    )
-    cpd_dysp = MapCPD(
-        variable="Dyspnoea",
-        evidence=["Cancer"],
-        values={0: [0.65, 0.35], 1: [0.3, 0.7]},
-        # values=[[0.65, 0.3], [0.35, 0.7]],
-    )
-
-    # Step 3: Add the CPDs to the model.
-    if debug:
-        print(cpd_poll)
-        print(cpd_smoke)
-        print(cpd_cancer)
-        print(cpd_xray)
-        print(cpd_dysp)
-    cancer_model.add_cpds(
-        cpd_poll.cpd, cpd_smoke.cpd, cpd_cancer.cpd, cpd_xray.cpd, cpd_dysp.cpd
-    )
-
-    # Step 4: Check if the model is correctly defined.
-    cancer_model.check_model()
-    return cancer_model
-
-
-def simple1_BN(debug=False):
-    G = DiscreteBayesianNetwork()
-    G.add_nodes_from(["A", "B"])
-    G.add_edge("A", "B")
-    cpd_A = TabularCPD(variable="A", variable_card=2, values=[[0.9], [0.1]])
-    cpd_B = TabularCPD(
-        variable="B",
-        variable_card=2,
-        values=[[0.2, 0.9], [0.8, 0.1]],
-        evidence=["A"],
-        evidence_card=[2],
-    )
-    if debug:
-        print(cpd_A)
-        print(cpd_B)
-    G.add_cpds(cpd_A, cpd_B)
-    G.check_model()
-    return G
-
-
-def simple2_BN(debug=False):
-    G = DiscreteBayesianNetwork()
-    G.add_nodes_from(["A", "B"])
-    G.add_edge("A", "B")
-    cpd_A = MapCPD(variable="A", values=[0.9, 0.1])
-    cpd_B = MapCPD(
-        variable="B",
-        evidence=["A"],
-        values={0: [0.2, 0.8], 1: [0.9, 0.1]},
-    )
-    if debug:
-        print(cpd_A)
-        print(cpd_B)
-    G.add_cpds(cpd_A.cpd, cpd_B.cpd)
-    G.check_model()
-    return G
-
-
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_simple1_ALL():
     """
     A -> B
     """
-    G = simple1_BN()
+    pgm = test_cases.simple1_BN()
     q = {"A": 0, "B": 1}
 
-    infer = VariableElimination(G)
+    infer = VariableElimination(pgm)
     assert q == infer.map_query(variables=["A", "B"])
 
-    model = create_BN_map_query_model(pgm=G)  # variables=None, evidence=None
+    model = create_BN_map_query_model(pgm=pgm)  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver="glpk")
     assert q == results.solution.variable_value
 
@@ -181,14 +36,14 @@ def test_simple1_B():
     """
     A -> B, with evidence for A
     """
-    G = simple1_BN()
+    pgm = test_cases.simple1_BN()
     q = {"B": 0}
 
-    infer = VariableElimination(G)
+    infer = VariableElimination(pgm)
     assert q == infer.map_query(variables=["B"], evidence={"A": 1})
 
     model = create_BN_map_query_model(
-        pgm=G, evidence={"A": 1}
+        pgm=pgm, evidence={"A": 1}
     )  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver="glpk")
     assert q == results.solution.variable_value
@@ -199,13 +54,13 @@ def test_simple2_ALL():
     """
     A -> B
     """
-    G = simple2_BN()
+    pgm = test_cases.simple2_BN()
     q = {"A": 0, "B": 1}
 
-    infer = VariableElimination(G)
+    infer = VariableElimination(pgm)
     assert q == infer.map_query(variables=["A", "B"])
 
-    model = create_BN_map_query_model(pgm=G)  # variables=None, evidence=None
+    model = create_BN_map_query_model(pgm=pgm)  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver="glpk")
     assert q == results.solution.variable_value
 
@@ -215,14 +70,14 @@ def test_simple2_B():
     """
     A -> B, with evidence for A
     """
-    G = simple2_BN()
+    pgm = test_cases.simple2_BN()
     q = {"B": 0}
 
-    infer = VariableElimination(G)
+    infer = VariableElimination(pgm)
     assert q == infer.map_query(variables=["B"], evidence={"A": 1})
 
     model = create_BN_map_query_model(
-        pgm=G, evidence={"A": 1}
+        pgm=pgm, evidence={"A": 1}
     )  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver="glpk")
     assert q == results.solution.variable_value
@@ -235,15 +90,15 @@ def test_cancer1_ALL():
 
     No evidence
     """
-    G = cancer1_BN()
+    pgm = test_cases.cancer1_BN()
     q = {"Cancer": 1, "Dyspnoea": 1, "Pollution": 0, "Smoker": 1, "Xray": 1}
 
-    infer = VariableElimination(G)
+    infer = VariableElimination(pgm)
     assert q == infer.map_query(
         variables=["Cancer", "Dyspnoea", "Pollution", "Smoker", "Xray"]
     )
 
-    model = create_BN_map_query_model(pgm=G)  # variables=None, evidence=None
+    model = create_BN_map_query_model(pgm=pgm)  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver="glpk")
     assert q == results.solution.variable_value
 
@@ -255,16 +110,16 @@ def test_cancer1_Cancer():
 
     Evidence for Cancer
     """
-    G = cancer1_BN()
+    pgm = test_cases.cancer1_BN()
     q = {"Xray": 0, "Dyspnoea": 0, "Smoker": 0, "Pollution": 0}
 
-    infer = VariableElimination(G)
+    infer = VariableElimination(pgm)
     assert q == infer.map_query(
         variables=["Dyspnoea", "Pollution", "Smoker", "Xray"], evidence={"Cancer": 0}
     )
 
     model = create_BN_map_query_model(
-        pgm=G, evidence={"Cancer": 0}
+        pgm=pgm, evidence={"Cancer": 0}
     )  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver="glpk")
     assert q == results.solution.variable_value
@@ -278,10 +133,10 @@ def test_cancer1_ALL_constrained1():
     No evidence
     Constrained inference of Xray and Dyspnoea so they are different
     """
-    G = cancer1_BN()
+    pgm = test_cases.cancer1_BN()
     q = {"Cancer": 1, "Dyspnoea": 0, "Pollution": 0, "Smoker": 1, "Xray": 1}
 
-    model = create_BN_map_query_model(pgm=G)  # variables=None, evidence=None
+    model = create_BN_map_query_model(pgm=pgm)  # variables=None, evidence=None
     model.c = pyo.ConstraintList()
     model.c.add(model.X["Dyspnoea", 1] + model.X["Xray", 1] <= 1)
     model.c.add(model.X["Dyspnoea", 0] + model.X["Xray", 0] <= 1)
@@ -298,19 +153,10 @@ def test_cancer1_ALL_constrained2():
     No evidence
     Constrained inference of Xray and Dyspnoea so they are different
     """
-    G = cancer1_BN()
+    cpgm = test_cases.cancer1_BN_constrained()
     q = {"Cancer": 1, "Dyspnoea": 0, "Pollution": 0, "Smoker": 1, "Xray": 1}
 
-    def constraint_fn(model):
-        model.c = pyo.ConstraintList()
-        model.c.add(model.X["Dyspnoea", 1] + model.X["Xray", 1] <= 1)
-        model.c.add(model.X["Dyspnoea", 0] + model.X["Xray", 0] <= 1)
-        return model
-
-    mn = ConstrainedDiscreteBayesianNetwork(G)
-    mn.add_constraints(constraint_fn)
-
-    results = optimize_map_query_model(mn.create_map_query_model(), solver="glpk")
+    results = optimize_map_query_model(cpgm.create_map_query_model(), solver="glpk")
     assert q == results.solution.variable_value
 
 
@@ -321,15 +167,15 @@ def test_cancer2_ALL():
 
     No evidence
     """
-    G = cancer2_BN()
+    pgm = test_cases.cancer2_BN()
     q = {"Cancer": 1, "Dyspnoea": 1, "Pollution": 0, "Smoker": 1, "Xray": 1}
 
-    infer = VariableElimination(G)
+    infer = VariableElimination(pgm)
     assert q == infer.map_query(
         variables=["Cancer", "Dyspnoea", "Pollution", "Smoker", "Xray"]
     )
 
-    model = create_BN_map_query_model(pgm=G)  # variables=None, evidence=None
+    model = create_BN_map_query_model(pgm=pgm)  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver="glpk")
     assert q == results.solution.variable_value
 
@@ -341,16 +187,16 @@ def test_cancer2_Cancer():
 
     Evidence for Cancer
     """
-    G = cancer2_BN()
+    pgm = test_cases.cancer2_BN()
     q = {"Xray": 0, "Dyspnoea": 0, "Smoker": 0, "Pollution": 0}
 
-    infer = VariableElimination(G)
+    infer = VariableElimination(pgm)
     assert q == infer.map_query(
         variables=["Dyspnoea", "Pollution", "Smoker", "Xray"], evidence={"Cancer": 0}
     )
 
     model = create_BN_map_query_model(
-        pgm=G, evidence={"Cancer": 0}
+        pgm=pgm, evidence={"Cancer": 0}
     )  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver="glpk")
     assert q == results.solution.variable_value
@@ -364,10 +210,10 @@ def test_cancer2_ALL_constrained1():
     No evidence
     Constrained inference of Xray and Dyspnoea so they are different
     """
-    G = cancer2_BN()
+    pgm = test_cases.cancer2_BN()
     q = {"Cancer": 1, "Dyspnoea": 0, "Pollution": 0, "Smoker": 1, "Xray": 1}
 
-    model = create_BN_map_query_model(pgm=G)  # variables=None, evidence=None
+    model = create_BN_map_query_model(pgm=pgm)  # variables=None, evidence=None
     model.c = pyo.ConstraintList()
     model.c.add(model.X["Dyspnoea", 1] + model.X["Xray", 1] <= 1)
     model.c.add(model.X["Dyspnoea", 0] + model.X["Xray", 0] <= 1)
@@ -384,17 +230,8 @@ def test_cancer2_ALL_constrained2():
     No evidence
     Constrained inference of Xray and Dyspnoea so they are different
     """
-    G = cancer2_BN()
+    cpgm = test_cases.cancer2_BN_constrained()
     q = {"Cancer": 1, "Dyspnoea": 0, "Pollution": 0, "Smoker": 1, "Xray": 1}
 
-    def constraint_fn(model):
-        model.c = pyo.ConstraintList()
-        model.c.add(model.X["Dyspnoea", 1] + model.X["Xray", 1] <= 1)
-        model.c.add(model.X["Dyspnoea", 0] + model.X["Xray", 0] <= 1)
-        return model
-
-    mn = ConstrainedDiscreteBayesianNetwork(G)
-    mn.add_constraints(constraint_fn)
-
-    results = optimize_map_query_model(mn.create_map_query_model(), solver="glpk")
+    results = optimize_map_query_model(cpgm.create_map_query_model(), solver="glpk")
     assert q == results.solution.variable_value

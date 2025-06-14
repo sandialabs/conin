@@ -11,14 +11,15 @@ from conin.bayesian_network.inference import create_BN_map_query_model
 
 class ConstrainedDiscreteBayesianNetwork:
 
-    def __init__(self, pgm):
+    def __init__(self, pgm, constraints=None):
         assert pgmpy_available and isinstance(
             pgm, DiscreteBayesianNetwork
         ), "Argument must be a pgmpy DiscreteBayesianNetwork"
         self.pgm = pgm
-        self.constraint_functor = None
+        self.constraint_functor = constraints
 
-    def add_constraints(self, constraint_functor):
+    @property
+    def constraints(self, constraint_functor):
         self.constraint_functor = constraint_functor
 
     def create_constraints(self, model):

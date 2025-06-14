@@ -11,14 +11,15 @@ from conin.markov_network.inference import create_MN_map_query_model
 
 class ConstrainedMarkovNetwork:
 
-    def __init__(self, pgm):
+    def __init__(self, pgm, constraints=None):
         assert pgmpy_available and isinstance(
             pgm, MarkovNetwork
         ), "Argument must be a pgmpy MarkovNetwork"
         self.pgm = pgm
-        self.constraint_functor = None
+        self.constraint_functor = constraints
 
-    def add_constraints(self, constraint_functor):
+    @property
+    def constraints(self, constraint_functor):
         self.constraint_functor = constraint_functor
 
     def create_constraints(self, model):

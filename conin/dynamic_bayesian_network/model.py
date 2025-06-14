@@ -11,14 +11,15 @@ from conin.dynamic_bayesian_network.inference import create_DBN_map_query_model
 
 class ConstrainedDynamicBayesianNetwork:
 
-    def __init__(self, pgm):
+    def __init__(self, pgm, constraints=None):
         assert pgmpy_available and isinstance(
             pgm, DynamicBayesianNetwork
         ), "Argument must be a pgmpy DynamicBayesianNetwork"
         self.pgm = pgm
-        self.constraint_functor = None
+        self.constraint_functor = constraints
 
-    def add_constraints(self, constraint_functor):
+    @property
+    def constraints(self, constraint_functor):
         self.constraint_functor = constraint_functor
 
     def create_constraints(self, model):
