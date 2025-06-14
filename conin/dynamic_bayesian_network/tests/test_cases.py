@@ -78,13 +78,13 @@ def simple1_DBN(debug=False):
 def simple1_DBN_constrained(debug=False):
     pgm = simple1_DBN(debug=debug)
 
-    def constraint_fn(model):
+    def constraints(model, data):
         model.c = pyo.ConstraintList()
         model.c.add(model.X[("A", 0), 0] == model.X[("A", 1), 0])
         model.c.add(model.X[("B", 0), 0] == model.X[("B", 1), 0])
         return model
 
-    return ConstrainedDynamicBayesianNetwork(pgm, constraints=constraint_fn)
+    return ConstrainedDynamicBayesianNetwork(pgm, constraints=constraints)
 
 
 def simple3_DBN(debug=False):
@@ -116,13 +116,13 @@ def simple3_DBN(debug=False):
 def simple3_DBN_constrained(debug=False):
     pgm = simple3_DBN(debug=debug)
 
-    def constraint_fn(model):
+    def constraints(model, data):
         model.c = pyo.ConstraintList()
         model.c.add(model.X[("A", 0), 0] == model.X[("A", 1), 0])
         model.c.add(model.X[("B", 0), 0] == model.X[("B", 1), 0])
         return model
 
-    return ConstrainedDynamicBayesianNetwork(pgm, constraints=constraint_fn)
+    return ConstrainedDynamicBayesianNetwork(pgm, constraints=constraints)
 
 
 def pgmpy_weather1(debug=False):
@@ -372,3 +372,16 @@ def pgmpy_weather2(debug=False):
         for cpd in dbn.get_cpds():
             print(cpd)
     return dbn
+
+
+def pgmpy_weather_constrained1(debug=False):
+    pgm = pgmpy_weather2(debug)
+
+    def constraints(model, data):
+        """2 rainy days"""
+        model.c = pyo.Constraint(
+            expr=sum(model.X[("W", t), "Rainy"] for t in data.T) == 2
+        )
+        return model
+
+    return ConstrainedDynamicBayesianNetwork(pgm, constraints=constraints)
