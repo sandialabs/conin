@@ -137,6 +137,11 @@ def pgmpy_weather1(debug=False):
     # connecting the first time slice to the second time slice.
     # pgmpy assumes that this structure remains constant for further time slices, i.e., it is a 2-TBN.
 
+    W_states = ["Sunny", "Cloudy", "Rainy"]
+    T_states = ["Hot", "Mild", "Cold"]
+    O_states = ["Dry", "Wet"]
+    H_states = ["Low", "Medium", "High"]
+
     # Add intra-slice edges for both time slices
     dbn.add_edges_from(
         [
@@ -163,7 +168,7 @@ def pgmpy_weather1(debug=False):
         variable=("W", 0),
         variable_card=3,  # Sunny, Cloudy, Rainy
         values=[[0.6], [0.3], [0.1]],  # Initial probabilities
-        state_names={("W", 0): ["Sunny", "Cloudy", "Rainy"]},
+        state_names={("W", 0): W_states},
     )
 
     cpd_w_1 = TabularCPD(
@@ -177,8 +182,8 @@ def pgmpy_weather1(debug=False):
             [0.1, 0.3, 0.5],  # P(Rainy | W_0)
         ],
         state_names={
-            ("W", 0): ["Sunny", "Cloudy", "Rainy"],
-            ("W", 1): ["Sunny", "Cloudy", "Rainy"],
+            ("W", 0): W_states,
+            ("W", 1): W_states,
         },
     )
 
@@ -187,7 +192,7 @@ def pgmpy_weather1(debug=False):
         variable=("T", 0),
         variable_card=3,  # Hot, Mild, Cold
         values=[[0.5], [0.4], [0.1]],  # Initial probabilities
-        state_names={("T", 0): ["Hot", "Mild", "Cold"]},
+        state_names={("T", 0): T_states},
     )
 
     cpd_t_1 = TabularCPD(
@@ -201,9 +206,9 @@ def pgmpy_weather1(debug=False):
             [0.0, 0.1, 0.2, 0.1, 0.1, 0.5, 0.1, 0.3, 0.6],  # P(Cold | T_0, W_0)
         ],
         state_names={
-            ("T", 1): ["Hot", "Mild", "Cold"],
-            ("T", 0): ["Hot", "Mild", "Cold"],
-            ("W", 0): ["Sunny", "Cloudy", "Rainy"],
+            ("T", 1): T_states,
+            ("T", 0): T_states,
+            ("W", 0): W_states,
         },
     )
 
@@ -217,7 +222,7 @@ def pgmpy_weather1(debug=False):
             [0.9, 0.6, 0.2],  # P(Dry | Sunny, Cloudy, Rainy)
             [0.1, 0.4, 0.8],  # P(Wet | Sunny, Cloudy, Rainy)
         ],
-        state_names={("O", 0): ["Dry", "Wet"], ("W", 0): ["Sunny", "Cloudy", "Rainy"]},
+        state_names={("O", 0): O_states, ("W", 0): W_states},
     )
 
     # CPD for H (Humidity observation)
@@ -232,9 +237,9 @@ def pgmpy_weather1(debug=False):
             [0.1, 0.1, 0.6, 0.1, 0.2, 0.5, 0.3, 0.5, 0.7],  # P(High | T_0, W_0)
         ],
         state_names={
-            ("H", 0): ["Low", "Medium", "High"],
-            ("T", 0): ["Hot", "Mild", "Cold"],
-            ("W", 0): ["Sunny", "Cloudy", "Rainy"],
+            ("H", 0): H_states,
+            ("T", 0): T_states,
+            ("W", 0): W_states,
         },
     )
 
@@ -261,6 +266,11 @@ def pgmpy_weather2(debug=False):
     # connecting the first time slice to the second time slice.
     # pgmpy assumes that this structure remains constant for further time slices, i.e., it is a 2-TBN.
 
+    W_states = ["Sunny", "Cloudy", "Rainy"]
+    T_states = ["Hot", "Mild", "Cold"]
+    O_states = ["Dry", "Wet"]
+    H_states = ["Low", "Medium", "High"]
+
     # Add intra-slice edges for both time slices
     dbn.add_edges_from(
         [
@@ -286,7 +296,7 @@ def pgmpy_weather2(debug=False):
     cpd_w_0 = MapCPD(
         variable=("W", 0),
         values={"Sunny": 0.6, "Cloudy": 0.3, "Rainy": 0.1},
-        state_names={("W", 0): ["Sunny", "Cloudy", "Rainy"]},
+        state_names={("W", 0): W_states},
     )
 
     cpd_w_1 = MapCPD(
@@ -298,8 +308,8 @@ def pgmpy_weather2(debug=False):
             "Rainy": {"Sunny": 0.2, "Cloudy": 0.3, "Rainy": 0.5},
         },
         state_names={
-            ("W", 0): ["Sunny", "Cloudy", "Rainy"],
-            ("W", 1): ["Sunny", "Cloudy", "Rainy"],
+            ("W", 0): W_states,
+            ("W", 1): W_states,
         },
     )
 
@@ -307,7 +317,7 @@ def pgmpy_weather2(debug=False):
     cpd_t_0 = MapCPD(
         variable=("T", 0),
         values={"Hot": 0.5, "Mild": 0.4, "Cold": 0.1},
-        state_names={("T", 0): ["Hot", "Mild", "Cold"]},
+        state_names={("T", 0): T_states},
     )
 
     cpd_t_1 = MapCPD(
@@ -325,9 +335,9 @@ def pgmpy_weather2(debug=False):
             ("Cold", "Rainy"): {"Hot": 0.1, "Mild": 0.3, "Cold": 0.6},
         },
         state_names={
-            ("T", 1): ["Hot", "Mild", "Cold"],
-            ("T", 0): ["Hot", "Mild", "Cold"],
-            ("W", 0): ["Sunny", "Cloudy", "Rainy"],
+            ("T", 1): T_states,
+            ("T", 0): T_states,
+            ("W", 0): W_states,
         },
     )
 
@@ -340,7 +350,7 @@ def pgmpy_weather2(debug=False):
             "Cloudy": {"Dry": 0.6, "Wet": 0.4},
             "Rainy": {"Dry": 0.2, "Wet": 0.8},
         },
-        state_names={("O", 0): ["Dry", "Wet"], ("W", 0): ["Sunny", "Cloudy", "Rainy"]},
+        state_names={("O", 0): O_states, ("W", 0): W_states},
     )
 
     # CPD for H (Humidity observation)
@@ -359,9 +369,9 @@ def pgmpy_weather2(debug=False):
             ("Cold", "Rainy"): {"Low": 0.1, "Medium": 0.2, "High": 0.7},
         },
         state_names={
-            ("H", 0): ["Low", "Medium", "High"],
-            ("T", 0): ["Hot", "Mild", "Cold"],
-            ("W", 0): ["Sunny", "Cloudy", "Rainy"],
+            ("H", 0): H_states,
+            ("T", 0): T_states,
+            ("W", 0): W_states,
         },
     )
 
