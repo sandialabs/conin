@@ -19,7 +19,7 @@ def create_bn_from_dbn(*, dbn, start, stop):
                 if cpd is not None:
                     bn.add_cpds(bni.get_cpds(node))
 
-    bn._pyomo_node_index = {
+    bn._pyomo_index_names = {
         (name, t): f"{name}_{t}"
         for t_slice in range(start, stop + 1)
         for name, t in dbn.get_slice_nodes(t_slice)
@@ -30,4 +30,9 @@ def create_bn_from_dbn(*, dbn, start, stop):
 
 def create_DBN_map_query_model(*, pgm, start=0, stop=1, variables=None, evidence=None):
     bn = create_bn_from_dbn(dbn=pgm, start=start, stop=stop)
-    return create_BN_map_query_model(pgm=bn, variables=variables, evidence=evidence)
+    return create_BN_map_query_model(
+        pgm=bn,
+        variables=variables,
+        evidence=evidence,
+        var_index_map=bn._pyomo_index_names,
+    )

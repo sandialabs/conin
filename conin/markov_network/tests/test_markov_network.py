@@ -13,7 +13,6 @@ try:
 
     pgmpy_available = True
 except Exception as e:
-    print(f"pgmpy not available: {e}")
     pgmpy_available = False
 
 

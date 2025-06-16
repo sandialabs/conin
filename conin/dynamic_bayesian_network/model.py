@@ -20,6 +20,12 @@ class ConstrainedDynamicBayesianNetwork:
         self.pgm = pgm
         self.constraint_functor = constraints
 
+    def check_model(self):
+        self.pgm.check_model()
+
+    def nodes(self):
+        return self.pgm.nodes()
+
     @property
     def constraints(self, constraint_functor):
         self.constraint_functor = constraint_functor

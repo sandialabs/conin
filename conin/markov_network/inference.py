@@ -1,3 +1,4 @@
+import pprint
 import munch
 import pyomo.environ as pe
 from pyomo.common.timing import tic, toc
@@ -38,6 +39,9 @@ class VarWrapper(dict):
     def __init__(self, *arg, **kw):
         super(VarWrapper, self).__init__(*arg, **kw)
 
+    def pprint(self):
+        pprint.pprint(self)
+
     def __getitem__(self, index):
         r, s = index
         if type(s) is not State:
@@ -45,10 +49,12 @@ class VarWrapper(dict):
         return dict.__getitem__(self, (r, s))
 
 
-def create_MN_map_query_model(*, pgm, variables=None, evidence=None):
+def create_MN_map_query_model(
+    *, pgm, variables=None, evidence=None, var_index_map=None
+):
     S, J, v, w = extract_factor_representation(pgm)
     model = create_MN_map_query_model_from_factorial_repn(
-        S=S, J=J, v=v, w=w, X=variables
+        S=S, J=J, v=v, w=w, var_index_map=var_index_map, variables=variables
     )
 
     if evidence is not None:
@@ -59,7 +65,13 @@ def create_MN_map_query_model(*, pgm, variables=None, evidence=None):
 
 
 def create_MN_map_query_model_from_factorial_repn(
-    *, S=None, J=None, v=None, w=None, X=None
+    *,
+    S=None,
+    J=None,
+    v=None,
+    w=None,
+    var_index_map=None,
+    variables=None,
 ):
     #
     # S[r]: the (finite) set of possible values of variable X_r
@@ -75,7 +87,7 @@ def create_MN_map_query_model_from_factorial_repn(
     # w[i,j]: the log-probability of factor i in configuration j
     #           Note that j \in J[i]
     #
-    # X[hr]: a dictionary that maps hashable value hr to variable name X_r
+    # var_index_map[hr]: a dictionary that maps hashable value hr to variable name X_r
     #
     tic()
     R = list(S.keys())
@@ -90,6 +102,9 @@ def create_MN_map_query_model_from_factorial_repn(
     for i, j, r in v:
         V[i, j].append(r)
     IJR = list(v.keys())
+
+    # TODO: Figure out how to marginalize everything except the specified
+    #           variables
 
     # TODO: consistency checks on inputs
     #   v[i,j,r] in S[r]
@@ -106,10 +121,16 @@ def create_MN_map_query_model_from_factorial_repn(
     # y[i,j] is 1 iff factor i is in configuration (row) j
     model.y = pe.Var(IJ, within=pe.Binary)
 
-    if X is None:
+    if var_index_map is None:
         model.X = VarWrapper({rs: model.x[rs] for rs in RS})
     else:
-        model.X = VarWrapper({(r, s): model.x[X[r], s] for r in X for s in S[X[r]]})
+        model.X = VarWrapper(
+            {
+                (r, s): model.x[index, s]
+                for r, index in var_index_map.items()
+                for s in S[index]
+            }
+        )
 
     toc("VARIABLES")
 

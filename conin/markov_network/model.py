@@ -18,6 +18,12 @@ class ConstrainedMarkovNetwork:
         self.pgm = pgm
         self.constraint_functor = constraints
 
+    def check_model(self):
+        self.pgm.check_model()
+
+    def nodes(self):
+        return self.pgm.nodes()
+
     @property
     def constraints(self, constraint_functor):
         self.constraint_functor = constraint_functor
@@ -27,6 +33,8 @@ class ConstrainedMarkovNetwork:
             model = self.constraint_functor(model)
         return model
 
-    def create_map_query_model(self):
-        model = create_MN_map_query_model(pgm=self.pgm)
+    def create_map_query_model(self, variables=None, evidence=None):
+        model = create_MN_map_query_model(
+            pgm=self.pgm, variables=variables, evidence=evidence
+        )
         return self.create_constraints(model)

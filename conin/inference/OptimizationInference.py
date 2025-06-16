@@ -1,17 +1,38 @@
-from conin.markov_network import ConstrainedMarkovNetwork, optimize_map_query_model
-from conin.bayesian_network import ConstrainedDiscreteBayesianNetwork
-from conin.dynamic_bayesian_network import ConstrainedDynamicBayesianNetwork
+from conin.markov_network import (
+    ConstrainedMarkovNetwork,
+    optimize_map_query_model,
+    create_MN_map_query_model,
+)
+from conin.bayesian_network import (
+    ConstrainedDiscreteBayesianNetwork,
+    create_BN_map_query_model,
+)
+from conin.dynamic_bayesian_network import (
+    ConstrainedDynamicBayesianNetwork,
+    create_DBN_map_query_model,
+)
+
+try:
+    from pgmpy.models import (
+        MarkovNetwork,
+        DiscreteBayesianNetwork,
+        DynamicBayesianNetwork,
+    )
+
+    pgmpy_available = True
+except Exception as e:
+    pgmpy_available = False
 
 
 class OptimizationInference:
 
-    def __init__(self, model):
-        self.model = model
-        model.check_model()
-        self.variables = self.model.nodes()
+    def __init__(self, pgm):
+        pgm.check_model()
+        self.pgm = pgm
+        self.variables = self.pgm.nodes()
 
     def map_query(
-        self, variables=None, evidence=None, show_progress=False, **solver_options
+        self, *, variables=None, evidence=None, show_progress=False, **solver_options
     ):
         """
         Computes the MAP Query over the variables given the evidence. Returns the
@@ -40,19 +61,37 @@ class OptimizationInference:
         >>> model = DiscreteBayesianNetwork([('A', 'B'), ('C', 'B'), ('C', 'D'), ('B', 'E')])
         >>> model = model.fit(values)
         >>> inference = OptimizationInference(model)
-        >>> phi_query = inference.map_query(['A', 'B'])
+        >>> phi_query = inference.map_query(variables=['A', 'B'])
         """
 
-        if isinstance(self.model, ConstrainedMarkovNetwork) or isinstance(
-            self.model, ConstrainedDiscreteBayesianNetwork
+        if isinstance(self.pgm, ConstrainedMarkovNetwork) or isinstance(
+            self.pgm, ConstrainedDiscreteBayesianNetwork
         ):
-            opt_model = self.model.create_map_query_model(
-                X=variables, evidence=evidence
-            )
-            return optimize_map_query_model(opt_model, **solver_options)
-
-        elif isinstance(self.model, ConstrainedDynamicBayesianNetwork):
-            opt_model = self.model.create_map_query_model(
+            model = self.pgm.create_map_query_model(
                 variables=variables, evidence=evidence
             )
-            return optimize_map_query_model(opt_model, **solver_options)
+            return optimize_map_query_model(model, **solver_options)
+
+        elif isinstance(self.pgm, ConstrainedDynamicBayesianNetwork):
+            model = self.pgm.create_map_query_model(
+                variables=variables, evidence=evidence
+            )
+            return optimize_map_query_model(model, **solver_options)
+
+        elif isinstance(self.pgm, MarkovNetwork):
+            model = create_MN_map_query_model(
+                pgm=self.pgm, variables=variables, evidence=evidence
+            )
+            return optimize_map_query_model(model, **solver_options)
+
+        elif isinstance(self.pgm, DiscreteBayesianNetwork):
+            model = create_BN_map_query_model(
+                pgm=self.pgm, variables=variables, evidence=evidence
+            )
+            return optimize_map_query_model(model, **solver_options)
+
+        elif isinstance(self.pgm, DynamicBayesianNetwork):
+            model = create_DBN_map_query_model(
+                pgm=self.pgm, variables=variables, evidence=evidence
+            )
+            return optimize_map_query_model(model, **solver_options)
