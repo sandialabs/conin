@@ -1,6 +1,9 @@
 import pytest
 
-from conin.inference.OptimizationInference import OptimizationInference
+from conin.inference.OptimizationInference import (
+    IntegerProgrammingInference,
+    DBN_IntegerProgrammingInference,
+)
 import conin.markov_network.tests.test_cases
 import conin.bayesian_network.tests.test_cases
 import conin.dynamic_bayesian_network.tests.test_cases
@@ -10,9 +13,9 @@ import conin.dynamic_bayesian_network.tests.test_cases
 #
 
 
-def test_OptimizationInference_ABC():
+def test_IntegerProgrammingInference_ABC():
     pgm = conin.markov_network.tests.test_cases.ABC()
-    inf = OptimizationInference(pgm)
+    inf = IntegerProgrammingInference(pgm)
     results = inf.map_query(solver="glpk")
     assert results.solution.variable_value == {"A": 2, "B": 2, "C": 1}
 
@@ -22,9 +25,9 @@ def test_OptimizationInference_ABC():
 #
 
 
-def test_OptimizationInference_ABC_constrained():
+def test_IntegerProgrammingInference_ABC_constrained():
     pgm = conin.markov_network.tests.test_cases.ABC_constrained()
-    inf = OptimizationInference(pgm)
+    inf = IntegerProgrammingInference(pgm)
     results = inf.map_query(solver="glpk")
 
 
@@ -33,9 +36,9 @@ def test_OptimizationInference_ABC_constrained():
 #
 
 
-def test_OptimizationInference_cancer2_ALL():
+def test_IntegerProgrammingInference_cancer2_ALL():
     pgm = conin.bayesian_network.tests.test_cases.cancer2_BN()
-    inf = OptimizationInference(pgm)
+    inf = IntegerProgrammingInference(pgm)
 
     results = inf.map_query(
         variables=["Cancer", "Dyspnoea", "Pollution", "Smoker", "Xray"], solver="glpk"
@@ -76,13 +79,15 @@ def test_OptimizationInference_cancer2_ALL():
         "Xray": 0,
     }
 
+
 #
 # ConstrainedBayesianNetwork tests
 #
 
-def test_OptimizationInference_cancer2_constrained():
+
+def test_IntegerProgrammingInference_cancer2_constrained():
     pgm = conin.bayesian_network.tests.test_cases.cancer2_BN_constrained()
-    inf = OptimizationInference(pgm)
+    inf = IntegerProgrammingInference(pgm)
 
     results = inf.map_query(
         variables=["Cancer", "Dyspnoea", "Pollution", "Smoker", "Xray"], solver="glpk"
@@ -109,15 +114,17 @@ def test_OptimizationInference_cancer2_constrained():
         "Xray": 0,
     }
 
+
 #
 # DynamicBayesianNetwork tests
 #
 
-def test_OptimizationInference_weather():
-    pgm = conin.dynamic_bayesian_network.tests.test_cases.pgmpy_weather2()
-    inf = OptimizationInference(pgm)
 
-    results = inf.map_query(solver='glpk')
+def test_DBN_IntegerProgrammingInference_weather():
+    pgm = conin.dynamic_bayesian_network.tests.test_cases.pgmpy_weather2()
+    inf = DBN_IntegerProgrammingInference(pgm)
+
+    results = inf.map_query(stop=4, solver="glpk")
     assert results.solution.variable_value == {
         ("H", 0): "Low",
         ("H", 1): "Low",
@@ -153,7 +160,7 @@ def test_OptimizationInference_weather():
         ("H", 3): "Medium",
         ("H", 4): "Medium",
     }
-    results = inf.map_query(evidence=evidence, solver='glpk')
+    results = inf.map_query(stop=4, evidence=evidence, solver="glpk")
     assert results.solution.variable_value == {
         ("T", 0): "Hot",
         ("T", 1): "Hot",
@@ -167,15 +174,36 @@ def test_OptimizationInference_weather():
         ("W", 4): "Sunny",
     }
 
+
 #
 # ConstrainedDynamicBayesianNetwork tests
 #
-def test_OptimizationInference_weather_constrained():
+def test_DBN_IntegerProgrammingInference_weather_constrained():
     pgm = conin.dynamic_bayesian_network.tests.test_cases.pgmpy_weather_constrained1()
-    inf = OptimizationInference(pgm)
+    inf = DBN_IntegerProgrammingInference(pgm)
 
-    results = inf.map_query(solver='glpk')
+    results = inf.map_query(stop=4, solver="glpk")
     assert results.solution.variable_value == {
+        ("H", 0): "Low",
+        ("H", 1): "Low",
+        ("H", 2): "Low",
+        ("H", 3): "High",
+        ("H", 4): "High",
+        ("O", 0): "Dry",
+        ("O", 1): "Dry",
+        ("O", 2): "Dry",
+        ("O", 3): "Wet",
+        ("O", 4): "Wet",
+        ("T", 0): "Hot",
+        ("T", 1): "Hot",
+        ("T", 2): "Hot",
+        ("T", 3): "Hot",
+        ("T", 4): "Mild",
+        ("W", 0): "Sunny",
+        ("W", 1): "Sunny",
+        ("W", 2): "Sunny",
+        ("W", 3): "Rainy",
+        ("W", 4): "Rainy",
     }
 
     evidence = {
@@ -190,7 +218,7 @@ def test_OptimizationInference_weather_constrained():
         ("H", 3): "Medium",
         ("H", 4): "Medium",
     }
-    results = inf.map_query(evidence=evidence, solver='glpk')
+    results = inf.map_query(stop=4, evidence=evidence, solver="glpk")
     assert results.solution.variable_value == {
         ("T", 0): "Hot",
         ("T", 1): "Mild",
@@ -203,4 +231,3 @@ def test_OptimizationInference_weather_constrained():
         ("W", 3): "Sunny",
         ("W", 4): "Sunny",
     }
-

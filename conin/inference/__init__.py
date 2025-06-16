@@ -1,1 +1,4 @@
-from .OptimizationInference import OptimizationInference
+from .OptimizationInference import (
+    IntegerProgrammingInference,
+    DBN_IntegerProgrammingInference,
+)

@@ -24,7 +24,7 @@ except Exception as e:
     pgmpy_available = False
 
 
-class OptimizationInference:
+class IntegerProgrammingInference:
 
     def __init__(self, pgm):
         pgm.check_model()
@@ -72,12 +72,6 @@ class OptimizationInference:
             )
             return optimize_map_query_model(model, **solver_options)
 
-        elif isinstance(self.pgm, ConstrainedDynamicBayesianNetwork):
-            model = self.pgm.create_map_query_model(
-                variables=variables, evidence=evidence
-            )
-            return optimize_map_query_model(model, **solver_options)
-
         elif isinstance(self.pgm, MarkovNetwork):
             model = create_MN_map_query_model(
                 pgm=self.pgm, variables=variables, evidence=evidence
@@ -90,8 +84,66 @@ class OptimizationInference:
             )
             return optimize_map_query_model(model, **solver_options)
 
+
+class DBN_IntegerProgrammingInference:
+
+    def __init__(self, pgm):
+        pgm.check_model()
+        self.pgm = pgm
+        self.variables = self.pgm.nodes()
+
+    def map_query(
+        self,
+        *,
+        start=0,
+        stop=1,
+        variables=None,
+        evidence=None,
+        show_progress=False,
+        **solver_options
+    ):
+        """
+        Computes the MAP Query over the variables given the evidence. Returns the
+        highest probable state in the joint distribution of `variables`.
+
+        Parameters
+        ----------
+        variables: list
+            list of variables over which we want to compute the max-marginal.
+
+        evidence: dict
+            a dict key, value pair as {var: state_of_var_observed}
+            None if no evidence
+
+        show_progress: boolean
+            If True, shows a progress bar.
+
+        Examples
+        --------
+        >>> from conin.inference import OptimizationInference
+        >>> from pgmpy.models import DiscreteBayesianNetwork
+        >>> import numpy as np
+        >>> import pandas as pd
+        >>> values = pd.DataFrame(np.random.randint(low=0, high=2, size=(1000, 5)),
+        ...                       columns=['A', 'B', 'C', 'D', 'E'])
+        >>> model = DiscreteBayesianNetwork([('A', 'B'), ('C', 'B'), ('C', 'D'), ('B', 'E')])
+        >>> model = model.fit(values)
+        >>> inference = OptimizationInference(model)
+        >>> phi_query = inference.map_query(variables=['A', 'B'])
+        """
+
+        if isinstance(self.pgm, ConstrainedDynamicBayesianNetwork):
+            model = self.pgm.create_map_query_model(
+                start=start, stop=stop, variables=variables, evidence=evidence
+            )
+            return optimize_map_query_model(model, **solver_options)
+
         elif isinstance(self.pgm, DynamicBayesianNetwork):
             model = create_DBN_map_query_model(
-                pgm=self.pgm, variables=variables, evidence=evidence
+                start=start,
+                stop=stop,
+                pgm=self.pgm,
+                variables=variables,
+                evidence=evidence,
             )
             return optimize_map_query_model(model, **solver_options)
