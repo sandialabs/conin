@@ -5,7 +5,8 @@ from conin.hmm import hmm_application
 
 import pyomo.environ as pyo
 from pyomo.common.timing import tic, toc
-from pyomo.contrib.alternative_solutions.aos_utils import get_model_variables
+from pyomo.contrib.alternative_solutions.aos_utils import get_model_variables, get_active_objective
+
 
 
 def lp_inference(
@@ -105,12 +106,10 @@ def ip_inference(
     T = len(observed)
 
     #
-    # We cannot just use the HMM objective value, since that objective may have
-    # been disabled by the user who calls this function.
-    # We assume the user is still maximizing a log-likelihood, so we take the upper bound
-    # returned by the Pyomo solver.
+    # We are maximizing, so the lower bound is the best incumbent found by the solver.
+    # We assume that the active objective is a log-likelihood score.
     #
-    log_likelihood = res["Problem"][0]["Upper bound"]
+    log_likelihood = res["Problem"][0]["Lower bound"]
 
     hidden = ["__UNKNOWN__"] * T
     for t in range(T):
