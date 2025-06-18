@@ -22,7 +22,8 @@ jobs:
       run: |
         conda install -c conda-forge glpk
         conda install conda-build
-        conda devlop .
+        conda activate base
+        pip install -e .
     - name: Lint with flake8
       run: |
         # conda install flake8
