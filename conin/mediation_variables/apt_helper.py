@@ -157,9 +157,9 @@ def numpy2hmm(hmm_params, ix_list, tol = 1e-7, emit_inhom = False):
     '''
     state_ix, emit_ix = ix_list
     init_prob, tmat, emat = hmm_params
-    initprob = {}
-    tprob = {}
-    eprob = {}
+    initprob = defaultdict(int)
+    tprob = defaultdict(int)
+    eprob = defaultdict(int)
     K, M = len(state_ix), len(emit_ix)
 
     #reverse the dicts, so indices map to states
@@ -193,9 +193,9 @@ def numpy2hmm(hmm_params, ix_list, tol = 1e-7, emit_inhom = False):
                     eprob[state_ix[i],emit_ix[j]] = val
 
     #Convert everything to defaultdict, where referencing a non-existent key returns a 0.
-    tprob = defaultdict(int, tprob)
-    eprob = defaultdict(int, eprob)
-    initprob = defaultdict(int, initprob)
+    # tprob = defaultdict(int, tprob)
+    # eprob = defaultdict(int, eprob)
+    # initprob = defaultdict(int, initprob)
                 
     return initprob, tprob, eprob
 
@@ -398,7 +398,7 @@ def combined_simulation(apt_hmm, user_list, cst_list = None):
         combined_emits.append(random_emit)
     return [apt_hidden, apt_emit], combined_emits
 
-def check_valid(x_list, y_list, cst_list):
+def check_valid(x_list, y_list, cst_list, return_knowledge = False):
     '''
     Checks if the sequence of hidden-emits satisfy the constraints
     Simulation is assumed to be a list of tuples.
@@ -406,30 +406,39 @@ def check_valid(x_list, y_list, cst_list):
     ft_dict = {c.knowledge_state:c.forbidden_transitions for c in cst_list}
     fe_dict = {c.knowledge_state:c.forbidden_emissions for c in cst_list}
     notyet_knowledge = list(ft_dict.keys())
-
+    attained_states = set()
+    
     ft = sum(list(ft_dict.values()),[])
     fe = sum(list(fe_dict.values()),[])
 
     T = len(x_list) #Will always be Pre:None.
     x_prev = x_list[0]
-    
+    valid = True
     for t in range(1,T):
         x_curr = x_list[t]
         y_curr = y_list[t]
         hid_emit = (x_curr,y_curr)
         if hid_emit in fe:
-            return False
+            if not return_knowledge:
+                return False
+            valid = False
+            
         if (x_prev,x_curr) in ft:
-            return False
+            if not return_knowledge:
+                return False
+            valid = False
 
         if  hid_emit in notyet_knowledge:
             ft_dict.pop(hid_emit)
             fe_dict.pop(hid_emit)
+            attained_states.add(hid_emit)
             notyet_knowledge = list(ft_dict.keys())
             ft = sum(list(ft_dict.values()),[])
             fe = sum(list(fe_dict.values()),[])
             
         x_prev = x_curr
+    if return_knowledge:
+        return valid, attained_states
     return True
 
 def hmm2numpy_apt(hmm, ix_list = None, return_ix = False):
@@ -598,9 +607,12 @@ def tier_mixture(apt_hmm, user_list, length, mix_weights = None, return_ix = Fal
         
         mix_emat.append(curr_emat)
 
-    initprob, tprob, eprob = numpy2hmm([init_prob, tmat, mix_emat], [apt_state_ix, emit_ix], tol = 1e-7, emit_inhom = True)
+    _, _, eprob = numpy2hmm([init_prob, tmat, mix_emat], [apt_state_ix, emit_ix], tol = 1e-7, emit_inhom = True)
 
-    apt_hmm.eprob = eprob
+    #Make sure everything is default dict.
+    apt_hmm.eprob = defaultdict(int,eprob)
+    apt_hmm.tprob = defaultdict(int,apt_hmm.tprob)
+    apt_hmm.initprob = defaultdict(int,apt_hmm.tprob)
     apt_hmm.eprob_time = length
     if return_ix:
         return apt_hmm, [apt_state_ix, emit_ix]
