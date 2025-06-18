@@ -1,6 +1,8 @@
 import pyomo.environ as pe
 import conin.hmm
 
+import munch
+
 """
 This script has a collection of HMM test cases that can be used to
 test conin capabilities.
@@ -136,7 +138,13 @@ class Num_Zeros(conin.hmm.HMMApplication):
         self.ub = ub
 
     def run_simulations(
-        self, *, num=1, debug=False, seed=None, with_observations=False, time_steps
+        self,
+        *,
+        num=1,
+        debug=False,
+        seed=None,
+        with_observations=False,
+        time_steps,
     ):
         if seed is not None:
             random.seed(seed)
@@ -158,7 +166,9 @@ class Num_Zeros(conin.hmm.HMMApplication):
         else:
             return 0
 
-    def constraint_data_feasible_partial(self, *, constraint_data, t, time_steps):
+    def constraint_data_feasible_partial(
+        self, *, constraint_data, t, time_steps
+    ):
         return (
             constraint_data + (time_steps - t) >= self.lb
         ) and constraint_data <= self.ub
@@ -177,7 +187,11 @@ class Num_Zeros(conin.hmm.HMMApplication):
         D = self.algebraic.data
 
         h0 = self.hmm.hidden_to_internal["h0"]
-        M.h0_lower = pe.Constraint(expr=sum(M.hmm.x[t, h0] for t in D.T) >= self.lb)
-        M.h0_upper = pe.Constraint(expr=sum(M.hmm.x[t, h0] for t in D.T) <= self.ub)
+        M.h0_lower = pe.Constraint(
+            expr=sum(M.hmm.x[t, h0] for t in D.T) >= self.lb
+        )
+        M.h0_upper = pe.Constraint(
+            expr=sum(M.hmm.x[t, h0] for t in D.T) <= self.ub
+        )
 
         return M
