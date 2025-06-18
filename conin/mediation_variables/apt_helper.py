@@ -405,6 +405,7 @@ def check_valid(x_list, y_list, cst_list, return_knowledge = False):
     '''
     ft_dict = {c.knowledge_state:c.forbidden_transitions for c in cst_list}
     fe_dict = {c.knowledge_state:c.forbidden_emissions for c in cst_list}
+    state_times = {c.knowledge_state:1e10 for c in cst_list} #initialize to some large time
     notyet_knowledge = list(ft_dict.keys())
     attained_states = set()
     
@@ -431,6 +432,7 @@ def check_valid(x_list, y_list, cst_list, return_knowledge = False):
         if  hid_emit in notyet_knowledge:
             ft_dict.pop(hid_emit)
             fe_dict.pop(hid_emit)
+            state_times[hid_emit] = t
             attained_states.add(hid_emit)
             notyet_knowledge = list(ft_dict.keys())
             ft = sum(list(ft_dict.values()),[])
@@ -438,8 +440,19 @@ def check_valid(x_list, y_list, cst_list, return_knowledge = False):
             
         x_prev = x_curr
     if return_knowledge:
-        return valid, attained_states
+        return valid, attained_states, list(state_times.values()) #should be in same order as in cst_list
     return True
+
+def check_within_distance(x, y, d):
+    # Ensure both lists are of equal length
+    if len(x) != len(y):
+        raise ValueError("Both lists must be of equal length.")
+    
+    # Create a list of boolean values based on the condition
+    result = [abs(x_i - y_i) <= d for x_i, y_i in zip(x, y)]
+    
+    return result
+
 
 def hmm2numpy_apt(hmm, ix_list = None, return_ix = False):
     '''
