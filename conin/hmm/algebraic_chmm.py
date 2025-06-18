@@ -37,6 +37,7 @@ def _create_index_sets(*, hmm, observations):
     # Ge: (t,b) ->  log(emission probability for b at time t)
     Ge = {}
     states = {}
+    latest = None
     for t in T:
         if t == 0:
             curr = set()
@@ -63,7 +64,9 @@ def _create_index_sets(*, hmm, observations):
         latest = curr
         states[t] = latest
 
-        assert len(latest) > 0, f"No feasible transitions to hidden states at time {t}"
+        assert (
+            len(latest) > 0
+        ), f"No feasible transitions to hidden states at time {t}"
 
     # print("XXX", [len(s) for _,s in states.items()])
     # print("XXX", statistics.mean([len(s) for _,s in states.items()]))
@@ -127,7 +130,12 @@ class Algebraic_CHMM(chmm_base.CHMM_Base):
         self._app = None if app is None else weakref.ref(app)
 
     def load_model(
-        self, *, start_probs=None, transition_probs=None, emission_probs=None, hmm=None
+        self,
+        *,
+        start_probs=None,
+        transition_probs=None,
+        emission_probs=None,
+        hmm=None,
     ):
         """
         Loads the HMM model with the given parameters.
@@ -265,7 +273,9 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
                     == m.y[t + 1, b, -2]
                 )
             else:
-                return sum(m.y[t, a, b] for a in D.A if (t, a, b) in D.Gt) == sum(
+                return sum(
+                    m.y[t, a, b] for a in D.A if (t, a, b) in D.Gt
+                ) == sum(
                     m.y[t + 1, b, a] for a in D.A if (t + 1, b, a) in D.Gt
                 )
 
@@ -277,26 +287,39 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
         M.hmm.flow_start = pyo.Constraint(rule=flow_start_)
 
         def flow_end_(m):
-            return sum(m.y[D.Tmax, a, -2] for a in D.A if (D.Tmax, a, -2) in D.GG) == 1
+            return (
+                sum(m.y[D.Tmax, a, -2] for a in D.A if (D.Tmax, a, -2) in D.GG)
+                == 1
+            )
 
         M.hmm.flow_end = pyo.Constraint(rule=flow_end_)
 
         M.hmm.o = pyo.Objective(
             expr=sum(
-                (D.Gt[t, a, b] + D.Ge[t, b]) * M.hmm.y[t, a, b] for t, a, b in D.Gt
+                (D.Gt[t, a, b] + D.Ge[t, b]) * M.hmm.y[t, a, b]
+                for t, a, b in D.Gt
             ),
             sense=pyo.maximize,
         )
 
         return M
 
-    def generate_hidden(self, *, observations, solver=None, solver_options=None):
+    def generate_hidden(
+        self, *, observations, solver=None, solver_options=None
+    ):
         """
         This should probably be called something different
 
         Randomly generate hidden states using the HMM parameters
         """
-        hidden = self.hmm.generate_hidden_conditioned_on_observations(observations)
+        # TODO is this right?
+        if "quiet" in solver_options:
+            quiet = solver_options["quiet"]
+        else:
+            quiet = True
+        hidden = self.hmm.generate_hidden_conditioned_on_observations(
+            observations
+        )
         T = len(observations)
 
         # Find the closest feasible point
@@ -313,7 +336,11 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
 
         M.closest_point = pyo.Objective(
             expr=sum(
-                M.hmm.x[t, self.hmm.external_to_hidden[hidden[i]]] for t in range(T)
+                M.hmm.x[t, self.hmm.external_to_hidden[hidden[i]]]
+                for t in range(T)
+                for i in range(
+                    len(hidden)
+                )  # CLM: I have no idea if this is right, but i wasn't defined before this
             ),
             sense=pyo.maximize,
         )

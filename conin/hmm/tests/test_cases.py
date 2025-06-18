@@ -2,6 +2,8 @@ import pyomo.environ as pe
 import conin.hmm
 
 import munch
+import random
+import math
 
 """
 This script has a collection of HMM test cases that can be used to
