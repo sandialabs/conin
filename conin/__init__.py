@@ -4,6 +4,7 @@ import os.path
 from . import config
 import importlib
 import inspect
+import sys
 
 
 imports = ["conin_pybind11"]
@@ -38,7 +39,10 @@ from . import __about__
 
 if __using_pybind11__:
     __doc__ = "pybind11"
-    print("<conin %s using conin_lib built with pybind11>" % __about__.__version__)
+    print(
+        "<conin %s using conin_lib built with pybind11>"
+        % __about__.__version__
+    )
     # TODO - Add pybind11 specific logic in a module
     # from conin.conin_pybind11 import *
 

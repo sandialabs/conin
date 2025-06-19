@@ -2,6 +2,7 @@ from collections import deque
 import munch
 from conin.hmm import HMM
 from .supervised import supervised_learning
+import math
 
 nan = float("nan")
 
@@ -51,11 +52,14 @@ def mcem(
         simulations = []
         log_prob = 0.0
         for _ in range(samples_per_iteration):
-            feasible_hidden = apps.generate_hidden(observations)
-            log_prob = log_prob + app.hmm.log_probability(observations, feasible_hidden)
+            feasible_hidden = app.generate_hidden(observations)
+            log_prob = log_prob + app.hmm.log_probability(
+                observations, feasible_hidden
+            )
             simulations.append(
                 munch.Munch(
-                    observations=observations, hidden=apps.generate_hidden(observations)
+                    observations=observations,
+                    hidden=app.generate_hidden(observations),
                 )
             )
 
@@ -71,11 +75,11 @@ def mcem(
             emission_tolerance=emission_tolerance,
         )
 
-        if iterations >= max_iterations:
+        if iteration >= max_iterations:
             break
         if prev_log_prob != nan:
             assert (
-                log_prob < prev_log_prob + tol
+                log_prob < prev_log_prob + convergence_tolerance
             ), f"Expecting decreasing log-probabilities: curr={log_prob} prev={prev_log_prob}"
             if math.abs(log_prob - prev_log_prob) < convergence_tolerance:
                 break
