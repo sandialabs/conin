@@ -2,7 +2,7 @@ name: Auto Format Python Code
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, edited]
+    types: [opened, synchronize, reopened]
 
 jobs:
   format:
@@ -10,6 +10,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}  # Checkout the branch of the PR
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -19,12 +21,12 @@ jobs:
       - name: Install formatting tools
         run: |
           python -m pip install --upgrade pip
-          pip install black autopep8
+          pip install black
 
       - name: Run Black
         run: |
           black .
-          
+
       - name: Commit and push formatting changes
         run: |
           # Check if any files have been modified
@@ -32,10 +34,8 @@ jobs:
             git config --global user.name "github-actions"
             git config --global user.email "github-actions@github.com"
             git add .
-            git commit -m "Autorun black [skip ci]"
-            # Pull the latest changes before pushing
-            git pull --rebase origin ${{ github.head_ref }}
-            git push origin HEAD:${{ github.head_ref }}
+            git commit -m "Auto apply black [skip ci]"
+            git push origin ${{ github.head_ref }}  # Push changes to the same PR branch
           else
             echo "No formatting changes detected."
           fi
