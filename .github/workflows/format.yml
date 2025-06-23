@@ -1,10 +1,12 @@
 name: Auto Format Python Code
 
 on:
-  pull_request_review:
-    types: [submitted, edited]
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
+  format:
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -40,7 +42,7 @@ jobs:
             git config --global user.email "github-actions@github.com"
             git add .
             git commit -m "Apply aggressive auto-formatting [skip ci]"
-            git push
+            git push origin HEAD:${{ github.head_ref }}
           else
             echo "No formatting changes detected."
           fi
