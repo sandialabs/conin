@@ -32,10 +32,8 @@ jobs:
             git config --global user.name "github-actions"
             git config --global user.email "github-actions@github.com"
             git add .
-            git commit -m "Autorun black [skip ci]"
-            # Pull the latest changes before pushing
-            git pull --rebase origin ${{ github.head_ref }}
-            git push origin HEAD:${{ github.head_ref }}
+            git commit -m "Autoapply black [skip ci]"
+            git push origin ${{ github.head_ref }}  # Push changes to the same PR branch
           else
             echo "No formatting changes detected."
           fi
