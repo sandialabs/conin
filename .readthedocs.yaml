@@ -9,5 +9,6 @@ build:
     tools:
         python: "3.13"
     commands:
+        - pip install sphinx sphinx-rtd-theme
         - mkdir -p $READTHEDOCS_OUTPUT/html/
         - sphinx-build -n -b text doc $READTHEDOCS_OUTPUT/html/ 
