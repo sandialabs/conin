@@ -8,11 +8,20 @@ import conin.markov_network.tests.test_cases
 import conin.bayesian_network.tests.test_cases
 import conin.dynamic_bayesian_network.tests.test_cases
 
+try:
+    import pgmpy
+
+    pgmpy_available = True
+except Exception as e:
+    pgmpy_available = False
+
+
 #
 # MarkovNetwork tests
 #
 
 
+@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_IntegerProgrammingInference_ABC():
     pgm = conin.markov_network.tests.test_cases.ABC()
     inf = IntegerProgrammingInference(pgm)
@@ -25,6 +34,7 @@ def test_IntegerProgrammingInference_ABC():
 #
 
 
+@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_IntegerProgrammingInference_ABC_constrained():
     pgm = conin.markov_network.tests.test_cases.ABC_constrained()
     inf = IntegerProgrammingInference(pgm)
@@ -36,6 +46,7 @@ def test_IntegerProgrammingInference_ABC_constrained():
 #
 
 
+@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_IntegerProgrammingInference_cancer2_ALL():
     pgm = conin.bayesian_network.tests.test_cases.cancer2_BN()
     inf = IntegerProgrammingInference(pgm)
@@ -85,6 +96,7 @@ def test_IntegerProgrammingInference_cancer2_ALL():
 #
 
 
+@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_IntegerProgrammingInference_cancer2_constrained():
     pgm = conin.bayesian_network.tests.test_cases.cancer2_BN_constrained()
     inf = IntegerProgrammingInference(pgm)
@@ -120,6 +132,7 @@ def test_IntegerProgrammingInference_cancer2_constrained():
 #
 
 
+@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_DBN_IntegerProgrammingInference_weather():
     pgm = conin.dynamic_bayesian_network.tests.test_cases.pgmpy_weather2()
     inf = DBN_IntegerProgrammingInference(pgm)
@@ -178,6 +191,9 @@ def test_DBN_IntegerProgrammingInference_weather():
 #
 # ConstrainedDynamicBayesianNetwork tests
 #
+
+
+@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_DBN_IntegerProgrammingInference_weather_constrained():
     pgm = conin.dynamic_bayesian_network.tests.test_cases.pgmpy_weather_constrained1()
     inf = DBN_IntegerProgrammingInference(pgm)

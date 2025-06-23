@@ -1,11 +1,10 @@
 import munch
 
 try:
-    from pgmpy.models import DiscreteBayesianNetwork
+    import pgmpy.models
 
     pgmpy_available = True
 except Exception as e:
-    print(f"pgmpy not available: {e}")
     pgmpy_available = False
 
 from conin.bayesian_network.inference import create_BN_map_query_model
@@ -15,7 +14,7 @@ class ConstrainedDiscreteBayesianNetwork:
 
     def __init__(self, pgm, constraints=None):
         assert pgmpy_available and isinstance(
-            pgm, DiscreteBayesianNetwork
+            pgm, pgmpy.models.DiscreteBayesianNetwork
         ), "Argument must be a pgmpy DiscreteBayesianNetwork"
         self.pgm = pgm
         self.constraint_functor = constraints

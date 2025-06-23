@@ -1,9 +1,8 @@
 try:
-    from pgmpy.models import MarkovNetwork
+    import pgmpy.models
 
     pgmpy_available = True
 except Exception as e:
-    print(f"pgmpy not available: {e}")
     pgmpy_available = False
 
 from conin.markov_network.inference import create_MN_map_query_model
@@ -13,7 +12,7 @@ class ConstrainedMarkovNetwork:
 
     def __init__(self, pgm, constraints=None):
         assert pgmpy_available and isinstance(
-            pgm, MarkovNetwork
+            pgm, pgmpy.models.MarkovNetwork
         ), "Argument must be a pgmpy MarkovNetwork"
         self.pgm = pgm
         self.constraint_functor = constraints

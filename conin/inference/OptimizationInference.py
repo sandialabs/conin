@@ -1,3 +1,7 @@
+try:
+    import pgmpy.models
+except Exception as e:
+    pass
 from conin.markov_network import (
     ConstrainedMarkovNetwork,
     optimize_map_query_model,
@@ -11,17 +15,6 @@ from conin.dynamic_bayesian_network import (
     ConstrainedDynamicBayesianNetwork,
     create_DBN_map_query_model,
 )
-
-try:
-    from pgmpy.models import (
-        MarkovNetwork,
-        DiscreteBayesianNetwork,
-        DynamicBayesianNetwork,
-    )
-
-    pgmpy_available = True
-except Exception as e:
-    pgmpy_available = False
 
 
 class IntegerProgrammingInference:
@@ -72,13 +65,13 @@ class IntegerProgrammingInference:
             )
             return optimize_map_query_model(model, **solver_options)
 
-        elif isinstance(self.pgm, MarkovNetwork):
+        elif isinstance(self.pgm, pgmpy.models.MarkovNetwork):
             model = create_MN_map_query_model(
                 pgm=self.pgm, variables=variables, evidence=evidence
             )
             return optimize_map_query_model(model, **solver_options)
 
-        elif isinstance(self.pgm, DiscreteBayesianNetwork):
+        elif isinstance(self.pgm, pgmpy.models.DiscreteBayesianNetwork):
             model = create_BN_map_query_model(
                 pgm=self.pgm, variables=variables, evidence=evidence
             )
@@ -138,7 +131,7 @@ class DBN_IntegerProgrammingInference:
             )
             return optimize_map_query_model(model, **solver_options)
 
-        elif isinstance(self.pgm, DynamicBayesianNetwork):
+        elif isinstance(self.pgm, pgmpy.models.DynamicBayesianNetwork):
             model = create_DBN_map_query_model(
                 start=start,
                 stop=stop,

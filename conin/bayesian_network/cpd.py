@@ -3,12 +3,9 @@ import os
 from typing import Hashable, Optional, Dict, List, Tuple
 
 try:
-    from pgmpy.factors.discrete import TabularCPD
-
-    pgmpy_available = True
+    import pgmpy.factors.discrete
 except Exception as e:
-    print(f"pgmpy not available: {e}")
-    pgmpy_available = False
+    pass
 
 
 def MapCPD(
@@ -207,7 +204,7 @@ def MapCPD(
                 snames = [state_names[e] for e in evidence]
                 vlist.append([values[prod][v] for prod in itertools.product(*snames)])
 
-    return TabularCPD(
+    return pgmpy.factors.discrete.TabularCPD(
         variable=variable,
         evidence=evidence,
         variable_card=variable_card,
