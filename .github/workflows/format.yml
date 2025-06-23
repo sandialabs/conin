@@ -32,7 +32,7 @@ jobs:
             git config --global user.name "github-actions"
             git config --global user.email "github-actions@github.com"
             git add .
-            git commit -m "Apply aggressive auto-formatting [skip ci]"
+            git commit -m "Autorun black [skip ci]"
             # Pull the latest changes before pushing
             git pull --rebase origin ${{ github.head_ref }}
             git push origin HEAD:${{ github.head_ref }}
