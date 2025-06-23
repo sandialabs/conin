@@ -9,4 +9,5 @@ build:
     tools:
         python: "3.13"
     commands:
-        - ./doc/build_doc.sh ${SPHINX_PROJECT}
+        - mkdir -p $READTHEDOCS_OUTPUT/html/
+        - sphinx-build -n -b text doc $READTHEDOCS_OUTPUT/html/ 
