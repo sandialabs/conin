@@ -7,7 +7,7 @@ class Util:
     @staticmethod
     def sample_from_vec(probabilities):
         val = np.random.uniform()
-        temp =  0
+        temp = 0
         for i in range(len(probabilities)):
             temp += probabilities[i]
             if temp >= val:
