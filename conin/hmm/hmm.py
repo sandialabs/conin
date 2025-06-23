@@ -93,7 +93,8 @@ class HMM(Statistical_Model):
             raise InvalidInputError(
                 "start_prob keys match with transition keys")
 
-        # Setup observed_to_internal, observed_to_external, and num_observed_states
+        # Setup observed_to_internal, observed_to_external, and
+        # num_observed_states
         for h, o in emission_probs:
             if o not in self.observed_to_internal:
                 self.observed_to_external.append(o)

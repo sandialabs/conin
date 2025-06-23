@@ -29,8 +29,12 @@ class CHMM_Base(Statistical_Model):
         return self.hmm.internal_hmm
 
     def load_model(
-        self, *, start_probs=None, transition_probs=None, emission_probs=None, hmm=None
-    ):
+            self,
+            *,
+            start_probs=None,
+            transition_probs=None,
+            emission_probs=None,
+            hmm=None):
         """
         Loads the HMM model with the given parameters.
         Either give all three dictionaries or hmm, but not both

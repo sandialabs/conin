@@ -15,7 +15,8 @@ def _create_index_sets(*, hmm, observations):
     # N - Number of hidden states
     # start_probs[i] - map from i=1..N to a probability value in 0..1
     # emission_probes[i][k] - probability that output k is generated when in hidden state i
-    # trans_mat[i][j] - probability of transitioning from hidden state i to hidden state j
+    # trans_mat[i][j] - probability of transitioning from hidden state i to
+    # hidden state j
 
     N = hmm.num_hidden_states
     obs = [hmm.observed_to_internal[o] for o in observations]
@@ -273,8 +274,7 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
                 )
             else:
                 return sum(m.y[t, a, b] for a in D.A if (t, a, b) in D.Gt) == sum(
-                    m.y[t + 1, b, a] for a in D.A if (t + 1, b, a) in D.Gt
-                )
+                    m.y[t + 1, b, a] for a in D.A if (t + 1, b, a) in D.Gt)
 
         M.hmm.flow = pyo.Constraint(D.T, D.A, rule=flow_)
 
@@ -284,7 +284,8 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
         M.hmm.flow_start = pyo.Constraint(rule=flow_start_)
 
         def flow_end_(m):
-            return sum(m.y[D.Tmax, a, -2] for a in D.A if (D.Tmax, a, -2) in D.GG) == 1
+            return sum(m.y[D.Tmax, a, -2]
+                       for a in D.A if (D.Tmax, a, -2) in D.GG) == 1
 
         M.hmm.flow_end = pyo.Constraint(rule=flow_end_)
 
@@ -297,7 +298,12 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
 
         return M
 
-    def generate_hidden(self, *, observations, solver=None, solver_options=None):
+    def generate_hidden(
+            self,
+            *,
+            observations,
+            solver=None,
+            solver_options=None):
         """
         This should probably be called something different
 

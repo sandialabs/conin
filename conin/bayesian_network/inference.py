@@ -6,6 +6,8 @@ def create_BN_map_query_model(
 ):
     MN = pgm.to_markov_model()
     model = create_MN_map_query_model(
-        pgm=MN, variables=variables, evidence=evidence, var_index_map=var_index_map
-    )
+        pgm=MN,
+        variables=variables,
+        evidence=evidence,
+        var_index_map=var_index_map)
     return model

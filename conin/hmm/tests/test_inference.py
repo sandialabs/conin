@@ -68,20 +68,32 @@ class Test_Heap_Item:
         # Priority is a float
         with pytest.raises(TypeError):
             x = Recursive_Heap_Item(
-                priority="a", last_element="h0", length=10, constraint_data=(1, 2)
-            )
+                priority="a",
+                last_element="h0",
+                length=10,
+                constraint_data=(
+                    1,
+                    2))
 
         # Last element is hashable
         with pytest.raises(TypeError):
             x = Recursive_Heap_Item(
-                priority=1, last_element=["h0"], length=10, constraint_data=(1, 2)
-            )
+                priority=1,
+                last_element=["h0"],
+                length=10,
+                constraint_data=(
+                    1,
+                    2))
 
         # Length > 0
         with pytest.raises(TypeError):
             x = Recursive_Heap_Item(
-                priority=1, last_element="h0", length=-10, constraint_data=(1, 2)
-            )
+                priority=1,
+                last_element="h0",
+                length=-10,
+                constraint_data=(
+                    1,
+                    2))
         with pytest.raises(TypeError):
             x = Recursive_Heap_Item(
                 priority=1, last_element="h0", length=0, constraint_data=(1, 2)
@@ -90,8 +102,12 @@ class Test_Heap_Item:
         # constraint_data is hashable
         with pytest.raises(TypeError):
             x = Recursive_Heap_Item(
-                priority=1, last_element="h0", length=10, constraint_data=[1, 2]
-            )
+                priority=1,
+                last_element="h0",
+                length=10,
+                constraint_data=[
+                    1,
+                    2])
 
     def test_getters(self, heap_item):
         assert heap_item.priority == 1
@@ -331,11 +347,9 @@ class Test_Inference_ip:
 
         inferred2 = (
             ip_inference(
-                statistical_model=recursive_app, observed=observed, solver="glpk"
-            )
-            .solutions[0]
-            .hidden
-        )
+                statistical_model=recursive_app,
+                observed=observed,
+                solver="glpk") .solutions[0] .hidden)
 
         assert inferred2 == [
             "h0",
@@ -359,11 +373,9 @@ class Test_Inference_ip:
 
         inferred2 = (
             ip_inference(
-                statistical_model=recursive_app, observed=observed, solver="glpk"
-            )
-            .solutions[0]
-            .hidden
-        )
+                statistical_model=recursive_app,
+                observed=observed,
+                solver="glpk") .solutions[0] .hidden)
 
         # assert inferred1 == inferred2
 

@@ -143,7 +143,7 @@ def a_star(
 
     try:
         chmm = statistical_model.get_constrained_hmm()
-    except:
+    except BaseException:
         chmm = None
 
     # Precompute log probabilities for emission and transmission matrices
@@ -182,7 +182,8 @@ def a_star(
     # gScore - tuple hidden sequence -> negative log-probability
     #   Maps sequence of states already visited to negative log-probabilities
     gScore = dict()
-    # openSet - heap of [value, seq] pairs, where 'value' is the negative log-probability of sequence 'seq'
+    # openSet - heap of [value, seq] pairs, where 'value' is the negative
+    # log-probability of sequence 'seq'
     openSet = []
 
     # Initialize the heap with the starting states
@@ -254,7 +255,7 @@ def a_star(
 
         curr_time = time.time()
         if (max_time is not None) and ((curr_time - start_time) > max_time):
-            termination_condition = f"max_time: {curr_time-start_time}"
+            termination_condition = f"max_time: {curr_time - start_time}"
             break
 
         if openSet == []:
@@ -267,7 +268,7 @@ def a_star(
                 print(f"  t:         {t}")
                 print(f"  val:       {val}")
                 print(f"  ninfeas:   {n_infeasible}")
-                print(f"  time:      {curr_time-start_time}")
+                print(f"  time:      {curr_time - start_time}")
 
     if len(output) < num_solutions:
         if num_solutions == 1:

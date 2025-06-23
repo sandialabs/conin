@@ -168,7 +168,8 @@ class Num_Zeros(conin.hmm.HMMApplication):
         else:
             return 0
 
-    def constraint_data_feasible_partial(self, *, constraint_data, t, time_steps):
+    def constraint_data_feasible_partial(
+            self, *, constraint_data, t, time_steps):
         return (
             constraint_data + (time_steps - t) >= self.lb
         ) and constraint_data <= self.ub

@@ -97,9 +97,12 @@ def mv_BaumWelch(hmm_params, emit_weights, cst_params, debug=False):
     # Compute the forward pass
     for t in range(1, T):
         if t == (T - 1):
-            alpha[t] = np.einsum(
-                "i,ji,ris,js,r->ir", emit_weights[t], tmat, ind, alpha[t - 1], final_ind
-            )
+            alpha[t] = np.einsum("i,ji,ris,js,r->ir",
+                                 emit_weights[t],
+                                 tmat,
+                                 ind,
+                                 alpha[t - 1],
+                                 final_ind)
         else:
             alpha[t] = np.einsum(
                 "i,ji,ris,js->ir", emit_weights[t], tmat, ind, alpha[t - 1]
@@ -121,7 +124,8 @@ def mv_BaumWelch(hmm_params, emit_weights, cst_params, debug=False):
                 "js,j,ij,sjr->ir", beta[T - t], emit_weights[T - t], tmat, ind
             )
 
-    # Compute P(Y,C=c), probability of observing emissions AND the constraint in the specified truth configuration
+    # Compute P(Y,C=c), probability of observing emissions AND the constraint
+    # in the specified truth configuration
     prob_data = np.einsum(
         "ir,ir->", alpha[0], beta[0]
     )  # doesn't matter which time index. all give same
@@ -152,8 +156,14 @@ def mv_BaumWelch(hmm_params, emit_weights, cst_params, debug=False):
 
 
 def mv_EM(
-    obs, hmm, cst, sat=True, conv_tol=1e-8, max_iter=1000, emit_opt=None, debug=False
-):
+        obs,
+        hmm,
+        cst,
+        sat=True,
+        conv_tol=1e-8,
+        max_iter=1000,
+        emit_opt=None,
+        debug=False):
 
     # Convert everything into numpy arrays
     old_hmm_params, old_cst_params = arrayConvert(obs, hmm, cst, sat)
@@ -237,7 +247,8 @@ def mv_EM(
 #             beta[T-1-t] = np.einsum('js,j,ij,sjr->ir', beta[T-t],emit_weights[T-t],tmat,ind)
 
 #     #Compute P(Y,C=c), probability of observing emissions AND the constraint in the specified truth configuration
-#     prob_data  = np.einsum('ir,ir->',alpha[0],beta[0]) #doesn't matter which time index. all give same
+# prob_data  = np.einsum('ir,ir->',alpha[0],beta[0]) #doesn't matter which
+# time index. all give same
 
 #     #Compute first/second moments in M step
 #     gamma = 1/prob_data*np.einsum('tir,tir->ti',alpha,beta)

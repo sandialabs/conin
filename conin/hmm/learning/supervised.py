@@ -71,7 +71,8 @@ def supervised_learning(
                 for j in hidden_states:
                     transition_probs[i, j] = transition_prior.get((i, j), 0.0)
             else:
-                # Uniform transition probabilities if we saw no transitions from state i
+                # Uniform transition probabilities if we saw no transitions
+                # from state i
                 for j in hidden_states:
                     transition_probs[i, j] = 1.0 / len(hidden_states)
         else:
@@ -98,7 +99,8 @@ def supervised_learning(
                 for o in observable_states:
                     emission_probs[i, o] = emission_prior.get((i, o), 0.0)
             else:
-                # Uniform emission probabilities if we saw no emissions from state i
+                # Uniform emission probabilities if we saw no emissions from
+                # state i
                 for o in observable_states:
                     emission_probs[i, o] = 1.0 / len(observable_states)
         else:

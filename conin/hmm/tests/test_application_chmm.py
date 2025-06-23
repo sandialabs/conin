@@ -95,7 +95,8 @@ class Num_Zeros(HMMApplication):
 
 @pytest.fixture
 def app():
-    # 1/(1-prob_stay_in_same_state) = expected number of iterations of the same state
+    # 1/(1-prob_stay_in_same_state) = expected number of iterations of the
+    # same state
     prob_stay_in_same_state = 0.6
     prob_error = (
         0.3  # Proability that hidden state h has an observation which does not match it
@@ -122,10 +123,10 @@ class Test_Application_CHMM:
         assert app.time == 20
 
     def test_oracle_type(self, app):
-        assert type(app.oracle) == type(Oracle_CHMM())
+        assert isinstance(app.oracle, type(Oracle_CHMM()))
 
     def test_algebraic_type(self, app):
-        assert type(app.algebraic) == type(PyomoAlgebraic_CHMM())
+        assert isinstance(app.algebraic, type(PyomoAlgebraic_CHMM()))
 
     def test_hmm_equality(self, app):
         assert app.hmm == app.oracle.hmm
@@ -171,7 +172,8 @@ class Test_Application_CHMM:
         assert app.oracle.is_feasible(seq2)
         assert not app.oracle.is_feasible(seq3)
 
-    # This assumes that the internal logic is correct, and is really just testing the wrapper
+    # This assumes that the internal logic is correct, and is really just
+    # testing the wrapper
     def test_initalize_hmm_from_simulations(self, app):
         app.initialize_hmm_from_simulations(num=7)
         assert app.hmm == app.oracle.hmm
