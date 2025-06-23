@@ -53,7 +53,8 @@ def arrayConvert(obs, hmm, cst, sat):
         for i in hmm.states:
             init_ind[aux_ix[r], state_ix[i]] = cst.init_fun(i, r)
             for s in aux_space:
-                ind[aux_ix[r], state_ix[i], aux_ix[s]] = cst.update_fun(r, i, s)
+                ind[aux_ix[r], state_ix[i], aux_ix[s]
+                    ] = cst.update_fun(r, i, s)
 
     cst_params = [init_ind, final_ind, ind]
 

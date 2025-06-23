@@ -95,7 +95,8 @@ class Num_Zeros(HMMApplication):
 
 @pytest.fixture
 def app():
-    prob_stay_in_same_state = 0.6  # 1/(1-prob_stay_in_same_state) = expected number of iterations of the same state
+    # 1/(1-prob_stay_in_same_state) = expected number of iterations of the same state
+    prob_stay_in_same_state = 0.6
     prob_error = (
         0.3  # Proability that hidden state h has an observation which does not match it
     )
@@ -133,16 +134,19 @@ class Test_Application_CHMM:
     def test_hmm_equality_setter(self, app):
         hmm = HMM()
         hmm.load_model(
-            emission_probs={(0, 0): 0.6, (0, 1): 0.4, (1, 0): 0.4, (1, 1): 0.6},
+            emission_probs={(0, 0): 0.6, (0, 1): 0.4,
+                            (1, 0): 0.4, (1, 1): 0.6},
             start_probs={0: 0.5, 1: 0.5},
-            transition_probs={(0, 0): 0.6, (0, 1): 0.4, (1, 0): 0.4, (1, 1): 0.6},
+            transition_probs={(0, 0): 0.6, (0, 1): 0.4,
+                              (1, 0): 0.4, (1, 1): 0.6},
         )
         app.hmm = hmm
         assert app.hmm == app.oracle.hmm
         assert app.hmm == app.algebraic.hmm
 
     def test_get_internal_hmm(self, app):
-        assert app.get_internal_hmm().transition_mat == [[0.6, 0.4], [0.4, 0.6]]
+        assert app.get_internal_hmm().transition_mat == [
+            [0.6, 0.4], [0.4, 0.6]]
         assert app.get_internal_hmm().emission_mat == [[0.7, 0.3], [0.3, 0.7]]
         assert app.get_internal_hmm().start_vec == [0.5, 0.5]
 

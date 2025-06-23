@@ -19,7 +19,8 @@ def mv_Viterbi(obs, hmm, cst, sat=True):
 
     for k in hmm.states:
         for r in aux_space:
-            val[0, k, r] = cst.init_fun(k, r) * hmm.initprob[k] * hmm.eprob[k, obs[0]]
+            val[0, k, r] = cst.init_fun(
+                k, r) * hmm.initprob[k] * hmm.eprob[k, obs[0]]
 
     ix_tracker = (
         {}
@@ -36,13 +37,15 @@ def mv_Viterbi(obs, hmm, cst, sat=True):
                 for j in hmm.states:
                     for s in aux_space:
                         curr_val = (
-                            val[t - 1, j, s] * hmm.tprob[j, k] * cst.update_fun(r, j, s)
+                            val[t - 1, j, s] * hmm.tprob[j, k] *
+                            cst.update_fun(r, j, s)
                         )
                         if curr_val > max_val:
                             max_val = curr_val
                             argmax = (j, s)
                 if t == (len(obs) - 1):  # ie. at the last time we add in the constraint
-                    val[t, k, r] = max_val * hmm.eprob[k, obs[t]] * cst.cst_fun(r, sat)
+                    val[t, k, r] = max_val * \
+                        hmm.eprob[k, obs[t]] * cst.cst_fun(r, sat)
                 else:
                     val[t, k, r] = max_val * hmm.eprob[k, obs[t]]
                 ix_tracker[t - 1, k, r] = argmax

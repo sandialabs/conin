@@ -154,7 +154,8 @@ class CHMM_Base(Statistical_Model):
         Raises:
             InvalidInputError: If time_steps is negative.
         """
-        raise NotImplementedError("CHMM_Base.generate_hidden() is not implemented")
+        raise NotImplementedError(
+            "CHMM_Base.generate_hidden() is not implemented")
 
     def generate_observed_from_hidden(self, hidden):
         """
@@ -187,7 +188,8 @@ class CHMM_Base(Statistical_Model):
             InvalidInputError: If time_steps is negative.
         """
         if time_steps < 0:
-            raise InvalidInputError("In generate_observed, time_steps must be >= 0.")
+            raise InvalidInputError(
+                "In generate_observed, time_steps must be >= 0.")
 
         hidden = self.generate_hidden(time_steps)
         return self.generate_observed_from_hidden(hidden)
@@ -196,7 +198,8 @@ class CHMM_Base(Statistical_Model):
         """
         Compute the log-probability of the observations given the hidden state.
         """
-        raise NotImplementedError("CHMM_Base.log_probability() is not implemented")
+        raise NotImplementedError(
+            "CHMM_Base.log_probability() is not implemented")
 
     def is_feasible(self, seq):
         """

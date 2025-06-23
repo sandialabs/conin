@@ -1,5 +1,14 @@
 # conin.__init__.py
 
+from .inference import *
+from .common_constraints import *
+from . import markov_network
+from . import dynamic_bayesian_network
+from . import bayesian_network
+from . import hmm
+from .constraint import Constraint
+from .exceptions import InvalidInputError, InsufficientSolutionsError
+from . import __about__
 import os.path
 from . import config
 import importlib
@@ -31,7 +40,6 @@ for import_ in imports:
         if __using_pybind11__:
             break
 
-from . import __about__
 
 #
 # Import conin symbols
@@ -39,7 +47,8 @@ from . import __about__
 
 if __using_pybind11__:
     __doc__ = "pybind11"
-    print("<conin %s using conin_lib built with pybind11>" % __about__.__version__)
+    print("<conin %s using conin_lib built with pybind11>" %
+          __about__.__version__)
     # TODO - Add pybind11 specific logic in a module
     # from conin.conin_pybind11 import *
 
@@ -51,11 +60,3 @@ else:
 
 
 # File specific
-from .exceptions import InvalidInputError, InsufficientSolutionsError
-from .constraint import Constraint
-from . import hmm
-from . import bayesian_network
-from . import dynamic_bayesian_network
-from . import markov_network
-from .common_constraints import *
-from .inference import *

@@ -19,13 +19,15 @@ class Recursive_Heap_Item:
         """
         # Priority is a number
         if not isinstance(priority, (int, float)):
-            raise TypeError(f"priority in Recursive_Heap_item must be a float.")
+            raise TypeError(
+                f"priority in Recursive_Heap_item must be a float.")
 
         # last_element is hashable
         try:
             hash(last_element)
         except:
-            raise TypeError(f"last_element in Recursive_Heap_Item must be hashable.")
+            raise TypeError(
+                f"last_element in Recursive_Heap_Item must be hashable.")
 
         # length is a positive integer
         if not isinstance(length, int):
@@ -224,7 +226,8 @@ def recursive_a_star(
             and ((h, observed[0]) in emission_probs.keys())
             and (emission_probs[(h, observed[0])] > 0)
         ):
-            gScore = -np.log(start_probs[h]) - log_emission_probs[(h, observed[0])]
+            gScore = -np.log(start_probs[h]) - \
+                log_emission_probs[(h, observed[0])]
             constraint_data = hmm_app.initialize_constraint_data(h)
 
             if hmm_app.constraint_data_feasible_partial(
@@ -262,7 +265,8 @@ def recursive_a_star(
 
             if t == time_steps:
                 if hmm_app.constraint_data_feasible(constraint_data):
-                    output.append(munch.Munch(hidden=list(seq), log_likelihood=-val))
+                    output.append(munch.Munch(
+                        hidden=list(seq), log_likelihood=-val))
                     obj_vals.append(-val)
                     if len(output) == num_solutions:
                         termination_condition = "ok"

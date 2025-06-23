@@ -64,7 +64,8 @@ def _create_index_sets(*, hmm, observations):
         latest = curr
         states[t] = latest
 
-        assert len(latest) > 0, f"No feasible transitions to hidden states at time {t}"
+        assert len(
+            latest) > 0, f"No feasible transitions to hidden states at time {t}"
 
     # print("XXX", [len(s) for _,s in states.items()])
     # print("XXX", statistics.mean([len(s) for _,s in states.items()]))
@@ -307,7 +308,8 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
             quiet = solver_options["quiet"]
         else:
             quiet = True
-        hidden = self.hmm.generate_hidden_conditioned_on_observations(observations)
+        hidden = self.hmm.generate_hidden_conditioned_on_observations(
+            observations)
         T = len(observations)
 
         # Find the closest feasible point
