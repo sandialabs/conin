@@ -9,6 +9,8 @@ build:
     tools:
         python: "3.13"
     commands:
+        - ls -l ./
+        - ls -l ./doc/
         - mkdir -p $READTHEDOCS_OUTPUT/html/
         - sphinx-build -n -b html doc $READTHEDOCS_OUTPUT/html/ 
         - ls $READTHEDOCS_OUTPUT/html/
