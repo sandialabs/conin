@@ -5,8 +5,10 @@ from conin.hmm import hmm_application
 
 import pyomo.environ as pyo
 from pyomo.common.timing import tic, toc
-from pyomo.contrib.alternative_solutions.aos_utils import get_model_variables, get_active_objective
-
+from pyomo.contrib.alternative_solutions.aos_utils import (
+    get_model_variables,
+    get_active_objective,
+)
 
 
 def lp_inference(

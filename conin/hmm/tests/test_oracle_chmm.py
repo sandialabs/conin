@@ -37,7 +37,7 @@ class Test_Constraints:
 
     def test_name_automate(self):
         def num_zeros_eq_five(seq):
-            return seq.count(0) == 5 # pragma no cover
+            return seq.count(0) == 5  # pragma no cover
 
         _constraint = Constraint(func=num_zeros_eq_five)
         assert _constraint.name == "num_zeros_eq_five"
