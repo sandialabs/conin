@@ -345,7 +345,8 @@ def test_ABC_constrained():
 
     model = create_MN_map_query_model_from_factorial_repn(S=S, J=J, v=v, w=w)
 
-    # Constrain the inference to ensure that all variables have different values
+    # Constrain the inference to ensure that all variables have different
+    # values
     def diff_(M, s):
         s = State(s)
         return M.x["A", s] + M.x["B", s] + M.x["C", s] <= 1
@@ -364,7 +365,8 @@ def test_ABC_constrained():
         assert v == v_
         assert w == w_
 
-        # Constrain the inference to ensure that all variables have different values
+        # Constrain the inference to ensure that all variables have different
+        # values
         pgm = test_cases.ABC()
         model = create_MN_map_query_model(pgm=pgm)
 
@@ -377,7 +379,8 @@ def test_ABC_constrained():
         results = optimize_map_query_model(model, solver="glpk")
         assert results.solution.variable_value == {"A": 0, "B": 2, "C": 1}
 
-        # Constrain the inference to ensure that all variables have different values
+        # Constrain the inference to ensure that all variables have different
+        # values
         cpgm = test_cases.ABC_constrained()
         results = optimize_map_query_model(
             cpgm.create_map_query_model(), solver="glpk")

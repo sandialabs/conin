@@ -25,7 +25,7 @@ class Recursive_Heap_Item:
         # last_element is hashable
         try:
             hash(last_element)
-        except:
+        except BaseException:
             raise TypeError(
                 f"last_element in Recursive_Heap_Item must be hashable.")
 
@@ -39,7 +39,7 @@ class Recursive_Heap_Item:
         # constraint_data is hashable
         try:
             hash(constraint_data)
-        except:
+        except BaseException:
             raise TypeError(f"constraint_data must be hashable.")
 
         self._priority = priority
@@ -86,8 +86,10 @@ class Recursive_Heap_Item:
         Just put everything in a tuple and take the hash of that
         """
         return hash(
-            (self.priority, self.last_element, self.length, self.constraint_data)
-        )
+            (self.priority,
+             self.last_element,
+             self.length,
+             self.constraint_data))
 
     def get_identifier(self):
         """
@@ -204,7 +206,8 @@ def recursive_a_star(
         for h1 in hidden_states:
             temp = np.inf
             for h2 in hidden_states:
-                if (transition_probs[(h1, h2)] != 0) and (emission_probs[(h2, o)] != 0):
+                if (transition_probs[(h1, h2)] != 0) and (
+                        emission_probs[(h2, o)] != 0):
                     temp = min(
                         temp,
                         V[(t + 1, h2)]
@@ -286,8 +289,7 @@ def recursive_a_star(
                         hidden_state=h2, constraint_data=constraint_data
                     )
                     if hmm_app.constraint_data_feasible_partial(
-                        constraint_data=constraint_data, t=t, time_steps=time_steps
-                    ):
+                            constraint_data=constraint_data, t=t, time_steps=time_steps):
                         new_gScore = (
                             gScore
                             - log_transition_probs[(h1, h2)]
@@ -311,8 +313,9 @@ def recursive_a_star(
                 break
 
             curr_time = time.time()
-            if (max_time is not None) and ((curr_time - start_time) > max_time):
-                termination_condition = f"max_time: {curr_time-start_time}"
+            if (max_time is not None) and (
+                    (curr_time - start_time) > max_time):
+                termination_condition = f"max_time: {curr_time - start_time}"
                 break
 
             if len(openSet) == 0:
@@ -325,7 +328,7 @@ def recursive_a_star(
                     print(f"  t:         {t}")
                     print(f"  val:       {val}")
                     print(f"  ninfeas:   {n_infeasible}")
-                    print(f"  time:      {curr_time-start_time}")
+                    print(f"  time:      {curr_time - start_time}")
 
     if len(output) < num_solutions:
         if num_solutions == 1:

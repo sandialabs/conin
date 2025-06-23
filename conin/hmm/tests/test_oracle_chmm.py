@@ -361,21 +361,20 @@ class Test_Common_Constraints:
         assert occurs_only_in_time_frame_constraint(7).partial_func(
             8, seq
         )  # 1 occurs before the range
-        assert not occurs_only_in_time_frame_constraint(5, upper_t=6).partial_func(
-            8, seq
-        )  # 5 is at the end
-        assert not occurs_only_in_time_frame_constraint(1, lower_t=1).partial_func(
-            8, seq
-        )  # 1 is at the start
+        assert not occurs_only_in_time_frame_constraint(
+            5, upper_t=6).partial_func(
+            8, seq)  # 5 is at the end
+        assert not occurs_only_in_time_frame_constraint(
+            1, lower_t=1).partial_func(
+            8, seq)  # 1 is at the start
         assert occurs_only_in_time_frame_constraint(1).partial_func(
             2, []
         )  # No occurrences in an empty sequence
 
     def test_occurs_at_least_once_in_time_frame(self):
         seq = [1, 2, 3, 4, 5, 5, 5]
-        assert occurs_at_least_once_in_time_frame_constraint(3, lower_t=2, upper_t=4)(
-            seq
-        )
+        assert occurs_at_least_once_in_time_frame_constraint(
+            3, lower_t=2, upper_t=4)(seq)
         assert not occurs_at_least_once_in_time_frame_constraint(
             2, lower_t=2, upper_t=4
         )(seq)
@@ -404,20 +403,17 @@ class Test_Common_Constraints:
         assert occurs_at_least_once_in_time_frame_constraint(
             6, lower_t=0, upper_t=10
         ).partial_func(8, seq)
-        assert not occurs_at_least_once_in_time_frame_constraint(7).partial_func(
-            8, seq
-        )  # 1 occurs before the range
-        assert occurs_at_least_once_in_time_frame_constraint(5, upper_t=6).partial_func(
-            8, seq
-        )  # 5 is at the end
+        assert not occurs_at_least_once_in_time_frame_constraint(
+            7).partial_func(8, seq)  # 1 occurs before the range
+        assert occurs_at_least_once_in_time_frame_constraint(
+            5, upper_t=6).partial_func(8, seq)  # 5 is at the end
         assert not occurs_at_least_once_in_time_frame_constraint(
             1, lower_t=1
         ).partial_func(
             8, seq
         )  # 1 is at the start
-        assert not occurs_at_least_once_in_time_frame_constraint(1).partial_func(
-            2, []
-        )  # No occurrences in an empty sequence
+        assert not occurs_at_least_once_in_time_frame_constraint(
+            1).partial_func(2, [])  # No occurrences in an empty sequence
 
     def test_or_constraints(self):
         constraint1 = has_minimum_number_of_occurences_constraint(

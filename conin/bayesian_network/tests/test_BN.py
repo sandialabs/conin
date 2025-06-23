@@ -114,8 +114,13 @@ def test_cancer1_Cancer():
 
     infer = VariableElimination(pgm)
     assert q == infer.map_query(
-        variables=["Dyspnoea", "Pollution", "Smoker", "Xray"], evidence={"Cancer": 0}
-    )
+        variables=[
+            "Dyspnoea",
+            "Pollution",
+            "Smoker",
+            "Xray"],
+        evidence={
+            "Cancer": 0})
 
     model = create_BN_map_query_model(
         pgm=pgm, evidence={"Cancer": 0}
@@ -192,8 +197,13 @@ def test_cancer2_Cancer():
 
     infer = VariableElimination(pgm)
     assert q == infer.map_query(
-        variables=["Dyspnoea", "Pollution", "Smoker", "Xray"], evidence={"Cancer": 0}
-    )
+        variables=[
+            "Dyspnoea",
+            "Pollution",
+            "Smoker",
+            "Xray"],
+        evidence={
+            "Cancer": 0})
 
     model = create_BN_map_query_model(
         pgm=pgm, evidence={"Cancer": 0}

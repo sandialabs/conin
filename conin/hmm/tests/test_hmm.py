@@ -230,7 +230,8 @@ class Test_HMM1:
 
     def test_generate_hidden_from_state(self):
         hmm = tc.create_hmm1()
-        # Make sure that we start in state h0 so we test sequences of length at least 2
+        # Make sure that we start in state h0 so we test sequences of length at
+        # least 2
         start_probs = hmm.get_start_probs()
         tranisition_probs = hmm.get_transition_probs()
         emission_probs = hmm.get_emission_probs()
@@ -416,7 +417,8 @@ class Test_HMM_Util:
         observed_states = ["a", "b", "c"]
         seed = 1
         hmm = conin.hmm.hmm_util.random_hmm(
-            hidden_states=hidden_states, observed_states=observed_states, seed=1
-        )
+            hidden_states=hidden_states,
+            observed_states=observed_states,
+            seed=1)
         assert set(hmm.get_hidden_states()) == set(hidden_states)
         assert set(hmm.get_observable_states()) == set(observed_states)

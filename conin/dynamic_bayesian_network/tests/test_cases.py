@@ -13,9 +13,8 @@ def simple0_DBN(debug=False):
     G = DBN()
     G.add_edges_from([(("Z", 0), ("Z", 1))])
     z_start_cpd = TabularCPD(("Z", 0), 2, [[0.5], [0.5]])
-    z_trans_cpd = TabularCPD(
-        ("Z", 1), 2, [[0.7, 0.8], [0.3, 0.2]], evidence=[("Z", 0)], evidence_card=[2]
-    )
+    z_trans_cpd = TabularCPD(("Z", 1), 2, [[0.7, 0.8], [0.3, 0.2]], evidence=[
+        ("Z", 0)], evidence_card=[2])
 
     G.add_cpds(z_start_cpd, z_trans_cpd)
     G.initialize_initial_state()
@@ -31,9 +30,8 @@ def simple2_DBN(debug=False):
     G = DBN()
     G.add_edges_from([(("Z", 0), ("Z", 1))])
     z_start_cpd = MapCPD(variable=("Z", 0), values=[0.5, 0.5])
-    z_trans_cpd = MapCPD(
-        variable=("Z", 1), evidence=[("Z", 0)], values={0: [0.7, 0.3], 1: [0.8, 0.2]}
-    )
+    z_trans_cpd = MapCPD(variable=("Z", 1), evidence=[("Z", 0)], values={
+        0: [0.7, 0.3], 1: [0.8, 0.2]})
 
     G.add_cpds(z_start_cpd, z_trans_cpd)
     G.initialize_initial_state()
@@ -130,13 +128,15 @@ def pgmpy_weather1(debug=False):
     """
     A DBN example adapted from pgmpy documentation.
     """
-    # Initialize a simple DBN model modeling the Weather (W), Rain (O), Temperature (T), and Humidity (H).
+    # Initialize a simple DBN model modeling the Weather (W), Rain (O),
+    # Temperature (T), and Humidity (H).
 
     dbn = DBN()
 
     # pgmpy requires the user to define the structure of the first time slice and the edges
     # connecting the first time slice to the second time slice.
-    # pgmpy assumes that this structure remains constant for further time slices, i.e., it is a 2-TBN.
+    # pgmpy assumes that this structure remains constant for further time
+    # slices, i.e., it is a 2-TBN.
 
     W_states = ["Sunny", "Cloudy", "Rainy"]
     T_states = ["Hot", "Mild", "Cold"]
@@ -161,7 +161,8 @@ def pgmpy_weather1(debug=False):
         ]
     )
 
-    # Define the parameters of the model. Again pgmpy assumes that these CPDs remain the same for future time slices.
+    # Define the parameters of the model. Again pgmpy assumes that these CPDs
+    # remain the same for future time slices.
 
     # Define CPDs
     # CPD for W (Weather transition)
@@ -263,13 +264,15 @@ def pgmpy_weather2(debug=False):
 
     Using explicit state names, and MapCPD declarations.
     """
-    # Initialize a simple DBN model modeling the Weather (W), Rain (O), Temperature (T), and Humidity (H).
+    # Initialize a simple DBN model modeling the Weather (W), Rain (O),
+    # Temperature (T), and Humidity (H).
 
     dbn = DBN()
 
     # pgmpy requires the user to define the structure of the first time slice and the edges
     # connecting the first time slice to the second time slice.
-    # pgmpy assumes that this structure remains constant for further time slices, i.e., it is a 2-TBN.
+    # pgmpy assumes that this structure remains constant for further time
+    # slices, i.e., it is a 2-TBN.
 
     W_states = ["Sunny", "Cloudy", "Rainy"]
     T_states = ["Hot", "Mild", "Cold"]
@@ -294,7 +297,8 @@ def pgmpy_weather2(debug=False):
         ]
     )
 
-    # Define the parameters of the model. Again pgmpy assumes that these CPDs remain the same for future time slices.
+    # Define the parameters of the model. Again pgmpy assumes that these CPDs
+    # remain the same for future time slices.
 
     # Define CPDs
     # CPD for W (Weather transition)

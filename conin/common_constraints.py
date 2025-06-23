@@ -1,6 +1,7 @@
 from conin.constraint import Constraint
 
-# TODO Python deals with lambda functions slightly differently than how I thought. I need to double check we are doing things correctly here.
+# TODO Python deals with lambda functions slightly differently than how I
+# thought. I need to double check we are doing things correctly here.
 
 
 def all_diff(seq):
@@ -120,7 +121,9 @@ def appears_at_least_once_after(seq, val1, val2):
 
 def appears_at_least_once_after_constraint(val1, val2):
     # No partial here because val2 could appear at the very last time step
-    return Constraint(func=lambda seq: appears_at_least_once_after(seq, val1, val2))
+    return Constraint(
+        func=lambda seq: appears_at_least_once_after(
+            seq, val1, val2))
 
 
 def citation(seq):
@@ -312,7 +315,8 @@ def occurs_only_in_time_frame_constraint(val, *, lower_t=None, upper_t=None):
     )
 
 
-def occurs_at_least_once_in_time_frame(seq, val, *, lower_t=None, upper_t=None):
+def occurs_at_least_once_in_time_frame(
+        seq, val, *, lower_t=None, upper_t=None):
     """
     Requires that val only occurs at least once in seq[lower_t, upper_t]
 
@@ -335,7 +339,8 @@ def occurs_at_least_once_in_time_frame(seq, val, *, lower_t=None, upper_t=None):
     return seq[lower_t:upper_t].count(val) >= 1
 
 
-def occurs_at_least_once_in_time_frame_constraint(val, *, lower_t=None, upper_t=None):
+def occurs_at_least_once_in_time_frame_constraint(
+        val, *, lower_t=None, upper_t=None):
     def partial_func(seq, val, lower_t, upper_t):
         if lower_t is None:
             lower_t = 0

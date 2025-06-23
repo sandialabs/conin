@@ -43,7 +43,9 @@ def mv_Viterbi(obs, hmm, cst, sat=True):
                         if curr_val > max_val:
                             max_val = curr_val
                             argmax = (j, s)
-                if t == (len(obs) - 1):  # ie. at the last time we add in the constraint
+                if t == (
+                        len(obs) -
+                        1):  # ie. at the last time we add in the constraint
                     val[t, k, r] = max_val * \
                         hmm.eprob[k, obs[t]] * cst.cst_fun(r, sat)
                 else:
