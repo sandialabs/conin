@@ -52,7 +52,8 @@ def test_IntegerProgrammingInference_cancer2_ALL():
     inf = IntegerProgrammingInference(pgm)
 
     results = inf.map_query(
-        variables=["Cancer", "Dyspnoea", "Pollution", "Smoker", "Xray"], solver="glpk"
+        variables=["Cancer", "Dyspnoea", "Pollution", "Smoker", "Xray"],
+        solver="glpk",
     )
     assert results.solution.variable_value == {
         "Cancer": 1,
@@ -102,7 +103,8 @@ def test_IntegerProgrammingInference_cancer2_constrained():
     inf = IntegerProgrammingInference(pgm)
 
     results = inf.map_query(
-        variables=["Cancer", "Dyspnoea", "Pollution", "Smoker", "Xray"], solver="glpk"
+        variables=["Cancer", "Dyspnoea", "Pollution", "Smoker", "Xray"],
+        solver="glpk",
     )
     assert results.solution.variable_value == {
         "Cancer": 1,
@@ -195,7 +197,9 @@ def test_DBN_IntegerProgrammingInference_weather():
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_DBN_IntegerProgrammingInference_weather_constrained():
-    pgm = conin.dynamic_bayesian_network.tests.test_cases.pgmpy_weather_constrained1()
+    pgm = (
+        conin.dynamic_bayesian_network.tests.test_cases.pgmpy_weather_constrained1()
+    )
     inf = DBN_IntegerProgrammingInference(pgm)
 
     results = inf.map_query(stop=4, solver="glpk")

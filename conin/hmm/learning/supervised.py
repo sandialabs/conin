@@ -53,9 +53,13 @@ def supervised_learning(
     # Estimate transition probabilities
     #
     transition_probs = {
-        (i, j): transition_tolerance for i in hidden_states for j in hidden_states
+        (i, j): transition_tolerance
+        for i in hidden_states
+        for j in hidden_states
     }
-    rowsum = {i: transition_tolerance * len(hidden_states) for i in hidden_states}
+    rowsum = {
+        i: transition_tolerance * len(hidden_states) for i in hidden_states
+    }
     for sim in simulations:
         for i, curr in enumerate(sim.hidden):
             if i == 0:
@@ -83,9 +87,13 @@ def supervised_learning(
     # Estimate emission probabilities
     #
     emission_probs = {
-        (i, o): emission_tolerance for i in hidden_states for o in observable_states
+        (i, o): emission_tolerance
+        for i in hidden_states
+        for o in observable_states
     }
-    rowsum = {i: emission_tolerance * len(observable_states) for i in hidden_states}
+    rowsum = {
+        i: emission_tolerance * len(observable_states) for i in hidden_states
+    }
     for sim in simulations:
         for i, curr in enumerate(sim.hidden):
             emission_probs[curr, sim.observed[i]] += 1

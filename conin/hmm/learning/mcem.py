@@ -53,7 +53,9 @@ def mcem(
         log_prob = 0.0
         for _ in range(samples_per_iteration):
             feasible_hidden = app.generate_hidden(observations)
-            log_prob = log_prob + app.hmm.log_probability(observations, feasible_hidden)
+            log_prob = log_prob + app.hmm.log_probability(
+                observations, feasible_hidden
+            )
             simulations.append(
                 munch.Munch(
                     observations=observations,

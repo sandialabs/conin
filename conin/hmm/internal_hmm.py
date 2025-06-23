@@ -25,7 +25,9 @@ class Internal_HMM(Internal_Statistical_Model):
         for prob in start_vec:
             # Non-negative
             if not prob >= 0:
-                raise InvalidInputError("start_probs values must be positive floats.")
+                raise InvalidInputError(
+                    "start_probs values must be positive floats."
+                )
         # Sums to 1
         if not np.isclose(sum(start_vec), 1):
             raise InvalidInputError("start_prob values must sum to 1.")
@@ -45,7 +47,9 @@ class Internal_HMM(Internal_Statistical_Model):
         for h1 in range(len(transition_mat)):
             for h2 in range(len(transition_mat[h1])):
                 if not transition_mat[h1][h2] >= 0:
-                    raise InvalidInputError("Transition_mat must be positive floats.")
+                    raise InvalidInputError(
+                        "Transition_mat must be positive floats."
+                    )
         # Rows sum to 1
         for vec in transition_mat:
             if not np.isclose(sum(vec), 1):
@@ -66,7 +70,9 @@ class Internal_HMM(Internal_Statistical_Model):
         for h1 in range(len(emission_mat)):
             for h2 in range(len(emission_mat[h1])):
                 if not emission_mat[h1][h2] >= 0:
-                    raise InvalidInputError("Emission_mat must be positive floats.")
+                    raise InvalidInputError(
+                        "Emission_mat must be positive floats."
+                    )
         # Rows sum to 1
         for vec in emission_mat:
             if not np.isclose(sum(vec), 1):
@@ -161,7 +167,9 @@ class Internal_HMM(Internal_Statistical_Model):
 
         # Sample until the last hidden state is h
         while hidden[-1] != h:
-            hidden.append(Util.sample_from_vec(self.transition_mat[hidden[-1]]))
+            hidden.append(
+                Util.sample_from_vec(self.transition_mat[hidden[-1]])
+            )
 
         return hidden
 

@@ -124,14 +124,18 @@ def ip_inference(
 
     model_variables = get_model_variables(M, include_fixed=True)
     variables = {
-        str(v): pyo.value(v) for v in model_variables if math.fabs(pyo.value(v)) > 1e-3
+        str(v): pyo.value(v)
+        for v in model_variables
+        if math.fabs(pyo.value(v)) > 1e-3
     }
 
     ans = munch.Munch(
         observations=observed,
         solutions=[
             munch.Munch(
-                hidden=hidden, log_likelihood=log_likelihood, variables=variables
+                hidden=hidden,
+                log_likelihood=log_likelihood,
+                variables=variables,
             )
         ],
         termination_condition="ok",

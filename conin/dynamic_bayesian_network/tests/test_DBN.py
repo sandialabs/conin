@@ -109,7 +109,9 @@ def test_simple1_ALL_constrained():
         ("B", 1): 1,
     }
 
-    results = optimize_map_query_model(cpgm.create_map_query_model(), solver="glpk")
+    results = optimize_map_query_model(
+        cpgm.create_map_query_model(), solver="glpk"
+    )
     assert q == results.solution.variable_value
 
 
@@ -169,7 +171,9 @@ def test_simple3_ALL_constrained():
         ("B", 1): 1,
     }
 
-    results = optimize_map_query_model(cpgm.create_map_query_model(), solver="glpk")
+    results = optimize_map_query_model(
+        cpgm.create_map_query_model(), solver="glpk"
+    )
     assert q == results.solution.variable_value
 
 
@@ -202,7 +206,9 @@ def test_weather1_A():
         ("W", 4): "Sunny",
     }
 
-    model = create_DBN_map_query_model(pgm=pgm, stop=4)  # variables=None, evidence=None
+    model = create_DBN_map_query_model(
+        pgm=pgm, stop=4
+    )  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver="glpk")
     assert q == results.solution.variable_value
 
@@ -272,7 +278,9 @@ def test_weather2_A():
         ("W", 4): "Sunny",
     }
 
-    model = create_DBN_map_query_model(pgm=pgm, stop=4)  # variables=None, evidence=None
+    model = create_DBN_map_query_model(
+        pgm=pgm, stop=4
+    )  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver="glpk")
     assert q == results.solution.variable_value
 
