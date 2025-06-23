@@ -125,7 +125,9 @@ class Internal_Oracle_CHMM:
             InvalidInputError: If time_steps is negative.
         """
         if time_steps < 0:
-            raise InvalidInputError("In generate_observed, time_steps must be >= 0.")
+            raise InvalidInputError(
+                "In generate_observed, time_steps must be >= 0."
+            )
 
         hidden = self.generate_hidden(time_steps)
         return self.internal_hmm.generate_observed_from_hidden(hidden)

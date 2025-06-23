@@ -3,7 +3,9 @@ class Statistical_Model:
         pass
 
     def get_hmm(self):
-        raise NotImplementedError("This Stastical_Model has not implemented get_hmm")
+        raise NotImplementedError(
+            "This Stastical_Model has not implemented get_hmm"
+        )
 
     def get_internal_hmm(self):
         raise NotImplementedError(

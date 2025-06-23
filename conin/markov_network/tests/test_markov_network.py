@@ -4,8 +4,13 @@ from conin.markov_network import (
     create_MN_map_query_model,
     optimize_map_query_model,
 )
-from conin.markov_network.factor_repn import extract_factor_representation, State
-from conin.markov_network.inference import create_MN_map_query_model_from_factorial_repn
+from conin.markov_network.factor_repn import (
+    extract_factor_representation,
+    State,
+)
+from conin.markov_network.inference import (
+    create_MN_map_query_model_from_factorial_repn,
+)
 from . import test_cases
 
 try:
@@ -382,5 +387,7 @@ def test_ABC_constrained():
         # Constrain the inference to ensure that all variables have different
         # values
         cpgm = test_cases.ABC_constrained()
-        results = optimize_map_query_model(cpgm.create_map_query_model(), solver="glpk")
+        results = optimize_map_query_model(
+            cpgm.create_map_query_model(), solver="glpk"
+        )
         assert results.solution.variable_value == {"A": 0, "B": 2, "C": 1}

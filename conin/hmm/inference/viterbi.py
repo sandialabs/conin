@@ -39,14 +39,20 @@ def viterbi(*, observed, statistical_model):
     Returns:
         list: The most likely sequence of hidden states.
     """
-    with np.errstate(divide="ignore"):  # TODO Is this the best way to deal with this?
+    with np.errstate(
+        divide="ignore"
+    ):  # TODO Is this the best way to deal with this?
         # Initalize variables
         hmm = statistical_model.get_hmm()
         internal_hmm = statistical_model.get_internal_hmm()
         time_steps = len(observed)
         internal_observed = [hmm.observed_to_internal[o] for o in observed]
-        viterbi_recursion = np.zeros((internal_hmm.num_hidden_states, time_steps))
-        backpointer = np.zeros((internal_hmm.num_hidden_states, time_steps), dtype=int)
+        viterbi_recursion = np.zeros(
+            (internal_hmm.num_hidden_states, time_steps)
+        )
+        backpointer = np.zeros(
+            (internal_hmm.num_hidden_states, time_steps), dtype=int
+        )
 
         log_eprob = {
             (h1, o): np.log(internal_hmm.emission_mat[h1][o])
@@ -75,7 +81,11 @@ def viterbi(*, observed, statistical_model):
                 max_state = -1
                 e_prob = log_eprob[h1, obs]
                 for h2 in internal_hmm.hidden_states:
-                    prob = viterbi_recursion[h2, t - 1] + log_tprob[h2, h1] + e_prob
+                    prob = (
+                        viterbi_recursion[h2, t - 1]
+                        + log_tprob[h2, h1]
+                        + e_prob
+                    )
                     if prob > max_prob:
                         max_prob = prob
                         max_state = h2
@@ -190,7 +200,8 @@ def a_star(
             internal_hmm.emission_mat[h][internal_observed[0]] > 0
         ):
             tempGScore = (
-                -np.log(hmm.start_vec[h]) - log_emission_mat[h, internal_observed[0]]
+                -np.log(hmm.start_vec[h])
+                - log_emission_mat[h, internal_observed[0]]
             )
             # Use tuple here b/c Python doesn't hash a list
             gScore[(h,)] = tempGScore
@@ -208,7 +219,9 @@ def a_star(
         if t == time_steps:
             if chmm is None or chmm.internal_constrained_hmm.is_feasible(seq):
                 external_seq = [hmm.hidden_to_external[h] for h in seq]
-                output.append(munch.Munch(hidden=external_seq, log_likelihood=-val))
+                output.append(
+                    munch.Munch(hidden=external_seq, log_likelihood=-val)
+                )
                 if len(output) == num_solutions:
                     termination_condition = "ok"
                     break
@@ -239,7 +252,8 @@ def a_star(
                     newSeq = seq + (h2,)
                     gScore[newSeq] = tempGScore
                     heapq.heappush(
-                        openSet, HeapItem(priority=tempGScore + V[t][h2], seq=newSeq)
+                        openSet,
+                        HeapItem(priority=tempGScore + V[t][h2], seq=newSeq),
                     )
 
         iteration += 1
