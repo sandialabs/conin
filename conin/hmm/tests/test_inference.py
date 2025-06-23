@@ -31,10 +31,8 @@ def ub():
 
 @pytest.fixture
 def constraints(lb, ub):
-    num_zeros_lb = has_minimum_number_of_occurences_constraint(
-        val="h0", count=lb)
-    num_zeros_ub = has_maximum_number_of_occurences_constraint(
-        val="h0", count=ub)
+    num_zeros_lb = has_minimum_number_of_occurences_constraint(val="h0", count=lb)
+    num_zeros_ub = has_maximum_number_of_occurences_constraint(val="h0", count=ub)
     return [num_zeros_lb, num_zeros_ub]
 
 
@@ -68,32 +66,20 @@ class Test_Heap_Item:
         # Priority is a float
         with pytest.raises(TypeError):
             x = Recursive_Heap_Item(
-                priority="a",
-                last_element="h0",
-                length=10,
-                constraint_data=(
-                    1,
-                    2))
+                priority="a", last_element="h0", length=10, constraint_data=(1, 2)
+            )
 
         # Last element is hashable
         with pytest.raises(TypeError):
             x = Recursive_Heap_Item(
-                priority=1,
-                last_element=["h0"],
-                length=10,
-                constraint_data=(
-                    1,
-                    2))
+                priority=1, last_element=["h0"], length=10, constraint_data=(1, 2)
+            )
 
         # Length > 0
         with pytest.raises(TypeError):
             x = Recursive_Heap_Item(
-                priority=1,
-                last_element="h0",
-                length=-10,
-                constraint_data=(
-                    1,
-                    2))
+                priority=1, last_element="h0", length=-10, constraint_data=(1, 2)
+            )
         with pytest.raises(TypeError):
             x = Recursive_Heap_Item(
                 priority=1, last_element="h0", length=0, constraint_data=(1, 2)
@@ -102,12 +88,8 @@ class Test_Heap_Item:
         # constraint_data is hashable
         with pytest.raises(TypeError):
             x = Recursive_Heap_Item(
-                priority=1,
-                last_element="h0",
-                length=10,
-                constraint_data=[
-                    1,
-                    2])
+                priority=1, last_element="h0", length=10, constraint_data=[1, 2]
+            )
 
     def test_getters(self, heap_item):
         assert heap_item.priority == 1
@@ -283,8 +265,7 @@ class Test_Inference_a_star:
         ]
 
     def test_a_star_mult(self, chmm, recursive_app):
-        observed = ["o1", "o0", "o0", "o0", "o0",
-                    "o0", "o0", "o0", "o0", "o0", "o0"]
+        observed = ["o1", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0"]
 
         inference1 = Inference(statistical_model=chmm, num_solutions=2)
         inferred1 = inference1(observed)
@@ -332,8 +313,7 @@ class Test_Inference_a_star:
 
         observed = ["o0", "o1", "o1", "o1"]
         inference = Inference(statistical_model=hmm)
-        assert inference(observed).solutions[0].hidden == [
-            "h0", "h1", "h1", "h1"]
+        assert inference(observed).solutions[0].hidden == ["h0", "h1", "h1", "h1"]
 
 
 class Test_Inference_ip:
@@ -347,9 +327,11 @@ class Test_Inference_ip:
 
         inferred2 = (
             ip_inference(
-                statistical_model=recursive_app,
-                observed=observed,
-                solver="glpk") .solutions[0] .hidden)
+                statistical_model=recursive_app, observed=observed, solver="glpk"
+            )
+            .solutions[0]
+            .hidden
+        )
 
         assert inferred2 == [
             "h0",
@@ -373,9 +355,11 @@ class Test_Inference_ip:
 
         inferred2 = (
             ip_inference(
-                statistical_model=recursive_app,
-                observed=observed,
-                solver="glpk") .solutions[0] .hidden)
+                statistical_model=recursive_app, observed=observed, solver="glpk"
+            )
+            .solutions[0]
+            .hidden
+        )
 
         # assert inferred1 == inferred2
 
@@ -393,8 +377,7 @@ class Test_Inference_ip:
         ]
 
     def Xtest_a_star_mult(self, chmm, recursive_app):
-        observed = ["o1", "o0", "o0", "o0", "o0",
-                    "o0", "o0", "o0", "o0", "o0", "o0"]
+        observed = ["o1", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0"]
 
         inference1 = Inference(statistical_model=chmm, num_solutions=2)
         inferred1 = inference1(observed)
@@ -443,8 +426,7 @@ class Test_Inference_ip:
 
         observed = ["o0", "o1", "o1", "o1"]
         hidden = (
-            ip_inference(statistical_model=model,
-                         observed=observed, solver="glpk")
+            ip_inference(statistical_model=model, observed=observed, solver="glpk")
             .solutions[0]
             .hidden
         )

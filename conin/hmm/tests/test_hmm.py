@@ -384,15 +384,13 @@ class Test_Inference_HMM1:
         hmm = tc.create_hmm1()
         inference = Inference(statistical_model=hmm)
         observed = ["o0", "o0", "o1", "o0", "o0"]
-        assert inference(observed).solutions[0].hidden == [
-            "h0", "h0", "h0", "h0", "h0"]
+        assert inference(observed).solutions[0].hidden == ["h0", "h0", "h0", "h0", "h0"]
 
     def test_viterbi_2(self):
         hmm = tc.create_hmm1()
         inference = Inference(statistical_model=hmm)
         observed = ["o0", "o1", "o1", "o1", "o1"]
-        assert inference(observed).solutions[0].hidden == [
-            "h1", "h1", "h1", "h1", "h1"]
+        assert inference(observed).solutions[0].hidden == ["h1", "h1", "h1", "h1", "h1"]
 
     def test_inference_invalid_observation(self):
         hmm = tc.create_hmm1()
@@ -417,8 +415,7 @@ class Test_HMM_Util:
         observed_states = ["a", "b", "c"]
         seed = 1
         hmm = conin.hmm.hmm_util.random_hmm(
-            hidden_states=hidden_states,
-            observed_states=observed_states,
-            seed=1)
+            hidden_states=hidden_states, observed_states=observed_states, seed=1
+        )
         assert set(hmm.get_hidden_states()) == set(hidden_states)
         assert set(hmm.get_observable_states()) == set(observed_states)

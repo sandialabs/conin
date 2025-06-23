@@ -6,12 +6,7 @@ from .viterbi import viterbi, a_star
 
 
 class Inference:
-    def __init__(
-            self,
-            *,
-            statistical_model,
-            num_solutions=1,
-            oracle_based=True):
+    def __init__(self, *, statistical_model, num_solutions=1, oracle_based=True):
         """
         Initializes the Inference class with the specified parameters.
 
@@ -43,7 +38,8 @@ class Inference:
         else:
             raise InvalidInputError(
                 "In inference load_statisical_model, statistical_model should be either an "
-                "HMM or Constrained HMM.")
+                "HMM or Constrained HMM."
+            )
 
     def set_num_solutions(self, num_solutions):
         """
@@ -120,9 +116,7 @@ class Inference:
             )
 
     def _viterbi(self, observed):
-        return viterbi(
-            observed=observed,
-            statistical_model=self.statistical_model)
+        return viterbi(observed=observed, statistical_model=self.statistical_model)
 
     def _a_star(self, observed):
         return a_star(
