@@ -25,12 +25,7 @@ class IntegerProgrammingInference:
         self.variables = self.pgm.nodes()
 
     def map_query(
-        self,
-        *,
-        variables=None,
-        evidence=None,
-        show_progress=False,
-        **solver_options
+        self, *, variables=None, evidence=None, show_progress=False, **solver_options
     ):
         """
         Computes the MAP Query over the variables given the evidence. Returns the

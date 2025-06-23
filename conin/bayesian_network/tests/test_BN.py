@@ -156,9 +156,7 @@ def test_cancer1_ALL_constrained2():
     cpgm = test_cases.cancer1_BN_constrained()
     q = {"Cancer": 1, "Dyspnoea": 0, "Pollution": 0, "Smoker": 1, "Xray": 1}
 
-    results = optimize_map_query_model(
-        cpgm.create_map_query_model(), solver="glpk"
-    )
+    results = optimize_map_query_model(cpgm.create_map_query_model(), solver="glpk")
     assert q == results.solution.variable_value
 
 
@@ -236,7 +234,5 @@ def test_cancer2_ALL_constrained2():
     cpgm = test_cases.cancer2_BN_constrained()
     q = {"Cancer": 1, "Dyspnoea": 0, "Pollution": 0, "Smoker": 1, "Xray": 1}
 
-    results = optimize_map_query_model(
-        cpgm.create_map_query_model(), solver="glpk"
-    )
+    results = optimize_map_query_model(cpgm.create_map_query_model(), solver="glpk")
     assert q == results.solution.variable_value

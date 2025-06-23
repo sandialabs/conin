@@ -90,18 +90,14 @@ class HMM(Statistical_Model):
         self.num_hidden_states = len(self.hidden_to_internal)
 
         if not set(start_probs.keys()).issubset(set(self.hidden_to_external)):
-            raise InvalidInputError(
-                "start_prob keys match with transition keys"
-            )
+            raise InvalidInputError("start_prob keys match with transition keys")
 
         # Setup observed_to_internal, observed_to_external, and
         # num_observed_states
         for h, o in emission_probs:
             if o not in self.observed_to_internal:
                 self.observed_to_external.append(o)
-                self.observed_to_internal[o] = (
-                    len(self.observed_to_external) - 1
-                )
+                self.observed_to_internal[o] = len(self.observed_to_external) - 1
         self.num_observed_states = len(self.observed_to_internal)
 
         # Setup start_vec
@@ -119,9 +115,7 @@ class HMM(Statistical_Model):
             if (h1 not in self.hidden_to_internal) or (
                 h2 not in self.hidden_to_internal
             ):
-                raise InvalidInputError(
-                    "You shouldn't see this"
-                )  # pragma: no cover
+                raise InvalidInputError("You shouldn't see this")  # pragma: no cover
             self.transition_mat[self.hidden_to_internal[h1]][
                 self.hidden_to_internal[h2]
             ] = prob
@@ -348,9 +342,7 @@ class HMM(Statistical_Model):
         h = [self.hidden_to_internal[hval] for hval in hidden]
         o = [self.observed_to_internal[oval] for oval in observations]
 
-        ans = math.log(self.start_vec[h[0]]) + math.log(
-            self.emission_mat[h[0]][o[0]]
-        )
+        ans = math.log(self.start_vec[h[0]]) + math.log(self.emission_mat[h[0]][o[0]])
         for t in range(1, len(observations)):
             ans += math.log(self.transition_mat[h[t - 1]][h[t]]) + math.log(
                 self.emission_mat[h[t]][o[t]]
@@ -401,12 +393,8 @@ class HMM(Statistical_Model):
         emission_probs = self.get_emission_probs()
 
         # Convert tuples to strings for JSON serialization
-        transition_probs_serializable = {
-            str(k): v for k, v in transition_probs.items()
-        }
-        emission_probs_serializable = {
-            str(k): v for k, v in emission_probs.items()
-        }
+        transition_probs_serializable = {str(k): v for k, v in transition_probs.items()}
+        emission_probs_serializable = {str(k): v for k, v in emission_probs.items()}
 
         # Create a dictionary to hold all the data
         data = {

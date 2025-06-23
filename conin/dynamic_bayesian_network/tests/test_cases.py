@@ -59,9 +59,7 @@ def simple1_DBN(debug=False):
     G.add_nodes_from(["A", "B"])
     G.add_edge(("A", 0), ("B", 0))
     G.add_edge(("A", 0), ("A", 1))
-    cpd_start_A = TabularCPD(
-        variable=("A", 0), variable_card=2, values=[[0.9], [0.1]]
-    )
+    cpd_start_A = TabularCPD(variable=("A", 0), variable_card=2, values=[[0.9], [0.1]])
     cpd_start_B = TabularCPD(
         variable=("B", 0),
         variable_card=2,

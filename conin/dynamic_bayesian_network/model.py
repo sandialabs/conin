@@ -34,9 +34,7 @@ class ConstrainedDynamicBayesianNetwork:
             model = self.constraint_functor(model, data)
         return model
 
-    def create_map_query_model(
-        self, *, start=0, stop=1, variables=None, evidence=None
-    ):
+    def create_map_query_model(self, *, start=0, stop=1, variables=None, evidence=None):
         model = create_DBN_map_query_model(
             pgm=self.pgm,
             start=start,

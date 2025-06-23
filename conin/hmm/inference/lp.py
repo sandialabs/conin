@@ -124,9 +124,7 @@ def ip_inference(
 
     model_variables = get_model_variables(M, include_fixed=True)
     variables = {
-        str(v): pyo.value(v)
-        for v in model_variables
-        if math.fabs(pyo.value(v)) > 1e-3
+        str(v): pyo.value(v) for v in model_variables if math.fabs(pyo.value(v)) > 1e-3
     }
 
     ans = munch.Munch(
