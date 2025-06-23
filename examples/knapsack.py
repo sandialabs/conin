@@ -24,9 +24,7 @@ class Knapsack(conin.HMMApplication):
         # Hidden states
         #   (i,flag):       see item i and pickup if flag==True
         #
-        hidden_states = [(i, True) for i in items] + [
-            (i, False) for i in items
-        ]
+        hidden_states = [(i, True) for i in items] + [(i, False) for i in items]
         self._hidden_states = hidden_states
         #
         # Observable states
@@ -58,9 +56,9 @@ class Knapsack(conin.HMMApplication):
                 # WEH - Should we consider modifying the probability of picking up an item?
                 # prob = 1.0 / (1.0 + math.exp(-value[item] / weight[item]))
                 prob = 1.0
-                if (
-                    weight + self._data.weight[item] < self._data.capacity
-                ) and (random.random() < prob):
+                if (weight + self._data.weight[item] < self._data.capacity) and (
+                    random.random() < prob
+                ):
                     hidden.append((item, True))
                     weight += self._data.weight[item]
                 else:
@@ -110,9 +108,7 @@ class Knapsack(conin.HMMApplication):
                 transition_probs[(i, True), (j, True)] = logistic / N_
                 transition_probs[(i, True), (j, False)] = (1.0 - logistic) / N_
                 transition_probs[(i, False), (j, True)] = logistic / N_
-                transition_probs[(i, False), (j, False)] = (
-                    1.0 - logistic
-                ) / N_
+                transition_probs[(i, False), (j, False)] = (1.0 - logistic) / N_
         # pprint.pprint(transition_probs)
 
         # We always observe the item that is picked up, but we do not
@@ -161,12 +157,8 @@ class Knapsack_Pyomo(Knapsack, conin.PyomoHMMApplication):
     def __init__(self):
         super().__init__()
 
-    def generate_algebraic_constraints(
-        self, *, observations, constrained=True
-    ):
-        M = super().generate_algebraic_lp_constraints(
-            observations=observations
-        )
+    def generate_algebraic_constraints(self, *, observations, constrained=True):
+        M = super().generate_algebraic_lp_constraints(observations=observations)
         if not constrained:
             return M
 
@@ -184,9 +176,7 @@ class Knapsack_Pyomo(Knapsack, conin.PyomoHMMApplication):
 
         def hmm_c_(m, i):
             i_ = self.hmm.hidden_to_internal[i, True]
-            return M.x[i] == sum(
-                M.hmm.x[t, i_] for t in range(len(observations))
-            )
+            return M.x[i] == sum(M.hmm.x[t, i_] for t in range(len(observations)))
 
         M.hmm_c = pyo.Constraint(ITEMS, rule=hmm_c_)
 
@@ -209,9 +199,7 @@ if app.is_feasible(hidden):
 else:
     print(f"Infeasible hidden states: {hidden}")
 
-app.initialize_hmm_from_simulations(
-    seed=123456789, emission_tolerance=0.0, num=1000
-)
+app.initialize_hmm_from_simulations(seed=123456789, emission_tolerance=0.0, num=1000)
 print()
 print("-" * 60)
 print("HMM Parameters")

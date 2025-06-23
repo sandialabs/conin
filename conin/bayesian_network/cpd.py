@@ -198,15 +198,11 @@ def MapCPD(
         vlist = []
         if len(evidence) == 1:
             for v in state_names[variable]:
-                vlist.append(
-                    [values[prod][v] for prod in state_names[evidence[0]]]
-                )
+                vlist.append([values[prod][v] for prod in state_names[evidence[0]]])
         else:
             for v in state_names[variable]:
                 snames = [state_names[e] for e in evidence]
-                vlist.append(
-                    [values[prod][v] for prod in itertools.product(*snames)]
-                )
+                vlist.append([values[prod][v] for prod in itertools.product(*snames)])
 
     return pgmpy.factors.discrete.TabularCPD(
         variable=variable,

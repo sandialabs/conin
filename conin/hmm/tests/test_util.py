@@ -9,9 +9,7 @@ class Test_Util:
             "0": 0.5,
             "1": 0.5,
         }
-        assert Util.normalize_dictionary(
-            {"0": 1, "1": 1, "2": 1, "3": -3}
-        ) == {
+        assert Util.normalize_dictionary({"0": 1, "1": 1, "2": 1, "3": -3}) == {
             "0": 0.25,
             "1": 0.25,
             "2": 0.25,

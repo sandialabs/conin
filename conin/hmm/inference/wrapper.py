@@ -6,9 +6,7 @@ from .viterbi import viterbi, a_star
 
 
 class Inference:
-    def __init__(
-        self, *, statistical_model, num_solutions=1, oracle_based=True
-    ):
+    def __init__(self, *, statistical_model, num_solutions=1, oracle_based=True):
         """
         Initializes the Inference class with the specified parameters.
 
@@ -102,9 +100,7 @@ class Inference:
             return self._viterbi(observed)
 
         # a_star
-        elif self.oracle_based and isinstance(
-            self.statistical_model, Oracle_CHMM
-        ):
+        elif self.oracle_based and isinstance(self.statistical_model, Oracle_CHMM):
             return self._a_star(observed)
 
         elif (
@@ -120,9 +116,7 @@ class Inference:
             )
 
     def _viterbi(self, observed):
-        return viterbi(
-            observed=observed, statistical_model=self.statistical_model
-        )
+        return viterbi(observed=observed, statistical_model=self.statistical_model)
 
     def _a_star(self, observed):
         return a_star(

@@ -65,9 +65,7 @@ def _create_index_sets(*, hmm, observations):
         latest = curr
         states[t] = latest
 
-        assert (
-            len(latest) > 0
-        ), f"No feasible transitions to hidden states at time {t}"
+        assert len(latest) > 0, f"No feasible transitions to hidden states at time {t}"
 
     # print("XXX", [len(s) for _,s in states.items()])
     # print("XXX", statistics.mean([len(s) for _,s in states.items()]))
@@ -274,9 +272,7 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
                     == m.y[t + 1, b, -2]
                 )
             else:
-                return sum(
-                    m.y[t, a, b] for a in D.A if (t, a, b) in D.Gt
-                ) == sum(
+                return sum(m.y[t, a, b] for a in D.A if (t, a, b) in D.Gt) == sum(
                     m.y[t + 1, b, a] for a in D.A if (t + 1, b, a) in D.Gt
                 )
 
@@ -288,26 +284,20 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
         M.hmm.flow_start = pyo.Constraint(rule=flow_start_)
 
         def flow_end_(m):
-            return (
-                sum(m.y[D.Tmax, a, -2] for a in D.A if (D.Tmax, a, -2) in D.GG)
-                == 1
-            )
+            return sum(m.y[D.Tmax, a, -2] for a in D.A if (D.Tmax, a, -2) in D.GG) == 1
 
         M.hmm.flow_end = pyo.Constraint(rule=flow_end_)
 
         M.hmm.o = pyo.Objective(
             expr=sum(
-                (D.Gt[t, a, b] + D.Ge[t, b]) * M.hmm.y[t, a, b]
-                for t, a, b in D.Gt
+                (D.Gt[t, a, b] + D.Ge[t, b]) * M.hmm.y[t, a, b] for t, a, b in D.Gt
             ),
             sense=pyo.maximize,
         )
 
         return M
 
-    def generate_hidden(
-        self, *, observations, solver=None, solver_options=None
-    ):
+    def generate_hidden(self, *, observations, solver=None, solver_options=None):
         """
         This should probably be called something different
 
@@ -318,9 +308,7 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
             quiet = solver_options["quiet"]
         else:
             quiet = True
-        hidden = self.hmm.generate_hidden_conditioned_on_observations(
-            observations
-        )
+        hidden = self.hmm.generate_hidden_conditioned_on_observations(observations)
         T = len(observations)
 
         # Find the closest feasible point
