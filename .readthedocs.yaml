@@ -12,3 +12,4 @@ build:
         - pip install sphinx sphinx-rtd-theme
         - mkdir -p $READTHEDOCS_OUTPUT/html/
         - sphinx-build -n -b html doc $READTHEDOCS_OUTPUT/html/ 
+        - ls $READTHEDOCS_OUTPUT/html/
