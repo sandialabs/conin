@@ -1,3 +1,9 @@
+[![GitHub Actions Status](https://github.com/sandialabs/conin/actions/workflows/conda.yml/badge.svg?branch=main&event=push)](https://github.com/sandialabs/conin/actions/workflows/conda.yml?query=branch%3Amain+event%3Apush)
+[![codecov](https://codecov.io/gh/sandialabs/conin/branch/main/graph/badge.svg)](https://codecov.io/gh/sandialabs/conin)
+[![Documentation Status](https://readthedocs.org/projects/conin/badge/?version=latest)](http://conin.readthedocs.org/en/latest/)
+[![GitHub contributors](https://img.shields.io/github/contributors/sandialabs/conin.svg)](https://github.com/sandialabs/conin/graphs/contributors)
+[![Merged PRs](https://img.shields.io/github/issues-pr-closed-raw/sandialabs/conin.svg?label=merged+PRs)](https://github.com/sandialabs/conin/pulls?q=is:pr+is:merged)
+
 # conin
 
 A python library that supports the constrained analysis of probabilistic graphical models
