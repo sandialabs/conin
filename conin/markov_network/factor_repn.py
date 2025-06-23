@@ -23,7 +23,7 @@ def extract_factor_representation(pgm):
     # w[i,j]: the log-probability of factor i in configuration j
     #           Note that j \in J[i]
     #
-    S = {r:[State(value=s) for s in values] for r,values in pgm.states.items()}
+    S = {r: [State(value=s) for s in values] for r, values in pgm.states.items()}
     J = {}
     v = {}
     w = {}
@@ -51,4 +51,3 @@ def extract_factor_representation(pgm):
                 w[i, j] = log(values[j] / total)
             # j += 1     WEH - Why are we skipping every other value?
     return S, J, v, w
-

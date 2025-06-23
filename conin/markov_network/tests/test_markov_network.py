@@ -1,17 +1,18 @@
 from math import log
-import numpy as np
 import pyomo.environ as pyo
-from conin.markov_network import create_MN_map_query_model, optimize_map_query_model
+from conin.markov_network import (
+    create_MN_map_query_model,
+    optimize_map_query_model,
+)
 from conin.markov_network.factor_repn import extract_factor_representation, State
 from conin.markov_network.inference import create_MN_map_query_model_from_factorial_repn
+from . import test_cases
 
 try:
-    from pgmpy.models import MarkovNetwork
-    from pgmpy.factors.discrete import DiscreteFactor
+    import pgmpy
 
     pgmpy_available = True
 except Exception as e:
-    print(f"pgmpy not available: {e}")
     pgmpy_available = False
 
 
@@ -53,24 +54,18 @@ def test_example6():
     }
 
     model = create_MN_map_query_model_from_factorial_repn(S=S, J=J, v=v, w=w)
-    results = optimize_map_query_model(model, solver='glpk')
+    results = optimize_map_query_model(model, solver="glpk")
     assert results.solution.variable_value == {"A": 0, "B": 1}
 
     if pgmpy_available:
-        G = MarkovNetwork()
-        G.add_nodes_from(["A", "B"])
-        G.add_edge("A", "B")
-        f1 = DiscreteFactor(["A"], [2], [1, 1])
-        f2 = DiscreteFactor(["B"], [2], [1, 2])
-        f3 = DiscreteFactor(["A", "B"], [2, 2], [1, 3, 1, 1])
-        G.add_factors(f1, f2, f3)
-        S_, J_, v_, w_ = extract_factor_representation(G)
+        pgm = test_cases.example6()
+        S_, J_, v_, w_ = extract_factor_representation(pgm)
         assert S == S_
         assert J == J_
         assert v == v_
         assert w == w_
-        model = create_MN_map_query_model(G)
-        results = optimize_map_query_model(model, solver='glpk')
+        model = create_MN_map_query_model(pgm=pgm)
+        results = optimize_map_query_model(model, solver="glpk")
         assert results.solution.variable_value == {"A": 0, "B": 1}
 
 
@@ -83,7 +78,11 @@ def test_ABC():
 
     The MAP solution is A:2, B:2, C:1.
     """
-    S = {"A": [State(0), State(1), State(2)], "B": [State(0), State(1), State(2)], "C": [State(0), State(1), State(2)]}
+    S = {
+        "A": [State(0), State(1), State(2)],
+        "B": [State(0), State(1), State(2)],
+        "C": [State(0), State(1), State(2)],
+    }
 
     J = {
         "A": [0, 1, 2],
@@ -200,29 +199,18 @@ def test_ABC():
     }
 
     model = create_MN_map_query_model_from_factorial_repn(S=S, J=J, v=v, w=w)
-    results = optimize_map_query_model(model, solver='glpk')
+    results = optimize_map_query_model(model, solver="glpk")
     assert results.solution.variable_value == {"A": 2, "B": 2, "C": 1}
 
     if pgmpy_available:
-        G = MarkovNetwork()
-        G.add_nodes_from(["A", "B", "C"])
-        G.add_edge("A", "B")
-        G.add_edge("B", "C")
-        G.add_edge("A", "C")
-        f1 = DiscreteFactor(["A"], [3], [1, 1, 2])
-        f2 = DiscreteFactor(["B"], [3], [1, 1, 3])
-        f3 = DiscreteFactor(["C"], [3], [1, 2, 1])
-        f4 = DiscreteFactor(["A", "B"], [3, 3], np.ones(9))
-        f5 = DiscreteFactor(["B", "C"], [3, 3], np.ones(9))
-        f6 = DiscreteFactor(["A", "C"], [3, 3], np.ones(9))
-        G.add_factors(f1, f2, f3, f4, f5, f6)
-        S_, J_, v_, w_ = extract_factor_representation(G)
+        pgm = test_cases.ABC()
+        S_, J_, v_, w_ = extract_factor_representation(pgm)
         assert S == S_
         assert J == J_
         assert v == v_
         assert w == w_
-        model = create_MN_map_query_model(G)
-        results = optimize_map_query_model(model, solver='glpk')
+        model = create_MN_map_query_model(pgm=pgm)
+        results = optimize_map_query_model(model, solver="glpk")
         assert results.solution.variable_value == {"A": 2, "B": 2, "C": 1}
 
 
@@ -235,7 +223,11 @@ def test_ABC_constrained():
 
     The constrained MAP solution is A:0, B:2, C:1.
     """
-    S = {"A": [State(0), State(1), State(2)], "B": [State(0), State(1), State(2)], "C": [State(0), State(1), State(2)]}
+    S = {
+        "A": [State(0), State(1), State(2)],
+        "B": [State(0), State(1), State(2)],
+        "C": [State(0), State(1), State(2)],
+    }
 
     J = {
         "A": [0, 1, 2],
@@ -360,34 +352,32 @@ def test_ABC_constrained():
 
     model.diff = pyo.Constraint([0, 1, 2], rule=diff_)
 
-    results = optimize_map_query_model(model, solver='glpk')
+    results = optimize_map_query_model(model, solver="glpk")
     assert results.solution.variable_value == {"A": 0, "B": 2, "C": 1}
 
     if pgmpy_available:
-        G = MarkovNetwork()
-        G.add_nodes_from(["A", "B", "C"])
-        G.add_edge("A", "B")
-        G.add_edge("B", "C")
-        G.add_edge("A", "C")
-        f1 = DiscreteFactor(["A"], [3], [1, 1, 2])
-        f2 = DiscreteFactor(["B"], [3], [1, 1, 3])
-        f3 = DiscreteFactor(["C"], [3], [1, 2, 1])
-        f4 = DiscreteFactor(["A", "B"], [3, 3], np.ones(9))
-        f5 = DiscreteFactor(["B", "C"], [3, 3], np.ones(9))
-        f6 = DiscreteFactor(["A", "C"], [3, 3], np.ones(9))
-        G.add_factors(f1, f2, f3, f4, f5, f6)
-        S_, J_, v_, w_ = extract_factor_representation(G)
+        # Double-check that we can extract the right factor representation
+        cpgm = test_cases.ABC_constrained()
+        S_, J_, v_, w_ = extract_factor_representation(cpgm.pgm)
         assert S == S_
         assert J == J_
         assert v == v_
         assert w == w_
-        model = create_MN_map_query_model(G)
 
         # Constrain the inference to ensure that all variables have different values
+        pgm = test_cases.ABC()
+        model = create_MN_map_query_model(pgm=pgm)
+
         def diff_(M, s):
-            return M.X["A", s] + M.X["B", s] + M.X["C", s] <= 1
+            s = State(s)
+            return M.x["A", s] + M.x["B", s] + M.x["C", s] <= 1
 
         model.diff = pyo.Constraint([0, 1, 2], rule=diff_)
 
-        results = optimize_map_query_model(model, solver='glpk')
+        results = optimize_map_query_model(model, solver="glpk")
+        assert results.solution.variable_value == {"A": 0, "B": 2, "C": 1}
+
+        # Constrain the inference to ensure that all variables have different values
+        cpgm = test_cases.ABC_constrained()
+        results = optimize_map_query_model(cpgm.create_map_query_model(), solver="glpk")
         assert results.solution.variable_value == {"A": 0, "B": 2, "C": 1}
