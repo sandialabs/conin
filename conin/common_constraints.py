@@ -165,7 +165,8 @@ def has_minimum_number_of_occurences(seq, *, val, count):
 
 def has_minimum_number_of_occurences_constraint(*, val, count):
     return Constraint(
-        func=lambda seq: has_minimum_number_of_occurences(seq, val=val, count=count),
+        func=lambda seq: has_minimum_number_of_occurences(
+            seq, val=val, count=count),
         partial_func=lambda T, seq: seq.count(val) + T - len(seq) >= count,
     )
 
@@ -186,7 +187,8 @@ def has_maximum_number_of_occurences(seq, *, val, count):
 
 
 def has_maximum_number_of_occurences_constraint(*, val, count):
-    temp_func = lambda seq: has_maximum_number_of_occurences(seq, val=val, count=count)
+    def temp_func(seq): return has_maximum_number_of_occurences(
+        seq, val=val, count=count)
     return Constraint(func=temp_func, same_partial_as_func=True)
 
 
@@ -207,7 +209,8 @@ def has_exact_number_of_occurences(seq, *, val, count):
 
 def has_exact_number_of_occurences_constraint(*, val, count):
     return Constraint(
-        func=lambda seq: has_exact_number_of_occurences(seq, val=val, count=count),
+        func=lambda seq: has_exact_number_of_occurences(
+            seq, val=val, count=count),
         partial_func=lambda T, seq: seq.count(val) <= count
         and seq.count(val) + T - len(seq) >= count,
     )
@@ -296,7 +299,7 @@ def occurs_only_in_time_frame(seq, val, *, lower_t=None, upper_t=None):
         upper_t = len(seq)
 
     return (seq[0:lower_t].count(val) == 0) and (
-        seq[upper_t - 1 : len(seq)].count(val) == 0
+        seq[upper_t - 1: len(seq)].count(val) == 0
     )
 
 

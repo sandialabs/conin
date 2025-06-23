@@ -24,7 +24,8 @@ class Knapsack(conin.HMMApplication):
         # Hidden states
         #   (i,flag):       see item i and pickup if flag==True
         #
-        hidden_states = [(i, True) for i in items] + [(i, False) for i in items]
+        hidden_states = [(i, True) for i in items] + \
+            [(i, False) for i in items]
         self._hidden_states = hidden_states
         #
         # Observable states
@@ -108,7 +109,8 @@ class Knapsack(conin.HMMApplication):
                 transition_probs[(i, True), (j, True)] = logistic / N_
                 transition_probs[(i, True), (j, False)] = (1.0 - logistic) / N_
                 transition_probs[(i, False), (j, True)] = logistic / N_
-                transition_probs[(i, False), (j, False)] = (1.0 - logistic) / N_
+                transition_probs[(i, False), (j, False)] = (
+                    1.0 - logistic) / N_
         # pprint.pprint(transition_probs)
 
         # We always observe the item that is picked up, but we do not
@@ -199,7 +201,8 @@ if app.is_feasible(hidden):
 else:
     print(f"Infeasible hidden states: {hidden}")
 
-app.initialize_hmm_from_simulations(seed=123456789, emission_tolerance=0.0, num=1000)
+app.initialize_hmm_from_simulations(
+    seed=123456789, emission_tolerance=0.0, num=1000)
 print()
 print("-" * 60)
 print("HMM Parameters")

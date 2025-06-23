@@ -383,13 +383,15 @@ class Test_Inference_HMM1:
         hmm = tc.create_hmm1()
         inference = Inference(statistical_model=hmm)
         observed = ["o0", "o0", "o1", "o0", "o0"]
-        assert inference(observed).solutions[0].hidden == ["h0", "h0", "h0", "h0", "h0"]
+        assert inference(observed).solutions[0].hidden == [
+            "h0", "h0", "h0", "h0", "h0"]
 
     def test_viterbi_2(self):
         hmm = tc.create_hmm1()
         inference = Inference(statistical_model=hmm)
         observed = ["o0", "o1", "o1", "o1", "o1"]
-        assert inference(observed).solutions[0].hidden == ["h1", "h1", "h1", "h1", "h1"]
+        assert inference(observed).solutions[0].hidden == [
+            "h1", "h1", "h1", "h1", "h1"]
 
     def test_inference_invalid_observation(self):
         hmm = tc.create_hmm1()

@@ -96,7 +96,8 @@ class Test_Oracle_CHMM:
     def test_is_feasible(self):
         chmm = tc.create_chmm1()
         fail_seq1 = ["h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"]
-        pass_seq = ["h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"]
+        pass_seq = ["h0", "h0", "h0", "h0", "h0",
+                    "h0", "h0", "h0", "h0", "h0", "h0"]
         fail_seq2 = [
             "h0",
             "h0",
@@ -252,7 +253,8 @@ class Test_Common_Constraints:
         assert not constraint.partial_func(10, [1, 2, 2, 7, 7, 7, 7, 1])
 
     def test_has_minimum_number_of_occurences(self):
-        constraint = has_minimum_number_of_occurences_constraint(val="h", count=2)
+        constraint = has_minimum_number_of_occurences_constraint(
+            val="h", count=2)
         assert not constraint([])
         assert not constraint([1, 2, "h", 1, 2])
         assert constraint(["h", "h"])
@@ -264,7 +266,8 @@ class Test_Common_Constraints:
         assert constraint.partial_func(12, [1, 2, 1, 2, "h", "h", "h"])
 
     def test_has_maximum_number_of_occurences(self):
-        constraint = has_maximum_number_of_occurences_constraint(val="h", count=2)
+        constraint = has_maximum_number_of_occurences_constraint(
+            val="h", count=2)
         assert constraint([])
         assert constraint([1, 2, "h", 1, 2])
         assert constraint(["h", "h"])
@@ -276,7 +279,8 @@ class Test_Common_Constraints:
         assert not constraint.partial_func(9, [1, 2, 1, 2, "h", "h", "h"])
 
     def test_has_exact_number_of_occurences(self):
-        constraint = has_exact_number_of_occurences_constraint(val="h", count=2)
+        constraint = has_exact_number_of_occurences_constraint(
+            val="h", count=2)
         assert not constraint([])
         assert not constraint([1, 2, "h", 1, 2])
         assert constraint(["h", "h"])
@@ -327,10 +331,14 @@ class Test_Common_Constraints:
 
     def test_occurs_only_in_time_frame(self):
         seq = [1, 2, 3, 4, 5, 5, 5]
-        assert occurs_only_in_time_frame_constraint(3, lower_t=2, upper_t=4)(seq)
-        assert not occurs_only_in_time_frame_constraint(2, lower_t=2, upper_t=4)(seq)
-        assert occurs_only_in_time_frame_constraint(6, lower_t=0, upper_t=5)(seq)
-        assert occurs_only_in_time_frame_constraint(7)(seq)  # 1 occurs before the range
+        assert occurs_only_in_time_frame_constraint(
+            3, lower_t=2, upper_t=4)(seq)
+        assert not occurs_only_in_time_frame_constraint(
+            2, lower_t=2, upper_t=4)(seq)
+        assert occurs_only_in_time_frame_constraint(
+            6, lower_t=0, upper_t=5)(seq)
+        assert occurs_only_in_time_frame_constraint(
+            7)(seq)  # 1 occurs before the range
         assert not occurs_only_in_time_frame_constraint(5, upper_t=6)(
             seq
         )  # 5 is at the end
@@ -412,8 +420,10 @@ class Test_Common_Constraints:
         )  # No occurrences in an empty sequence
 
     def test_or_constraints(self):
-        constraint1 = has_minimum_number_of_occurences_constraint(val="h", count=3)
-        constraint2 = has_maximum_number_of_occurences_constraint(val="h", count=1)
+        constraint1 = has_minimum_number_of_occurences_constraint(
+            val="h", count=3)
+        constraint2 = has_maximum_number_of_occurences_constraint(
+            val="h", count=1)
         constraint = or_constraints([constraint1, constraint2])
         assert constraint([])
         assert constraint([1, 2, "h", 1, 2])
@@ -427,7 +437,8 @@ class Test_Common_Constraints:
         assert constraint.partial_func(8, [1, 2, 1, 2, "h", "h", "h"])
 
     def test_not_constraint(self):
-        constraint = has_exact_number_of_occurences_constraint(val="h", count=2)
+        constraint = has_exact_number_of_occurences_constraint(
+            val="h", count=2)
         constraint = not_constraint(constraint)
         assert constraint([])
         assert constraint([1, 2, "h", 1, 2])
@@ -441,8 +452,10 @@ class Test_Common_Constraints:
         assert constraint.partial_func(10, [1, 2, 1, 2, "h", "h", "h"])
 
     def test_xor_constraints(self):
-        constraint1 = has_minimum_number_of_occurences_constraint(val="h", count=2)
-        constraint2 = has_maximum_number_of_occurences_constraint(val="h", count=2)
+        constraint1 = has_minimum_number_of_occurences_constraint(
+            val="h", count=2)
+        constraint2 = has_maximum_number_of_occurences_constraint(
+            val="h", count=2)
         constraint = xor_constraints([constraint1, constraint2])
         assert constraint([])
         assert constraint([1, 2, "h", 1, 2])
@@ -455,21 +468,27 @@ class Test_Common_Constraints:
         assert constraint.partial_func(3, ["h", "h"])
         assert constraint.partial_func(17, [1, 2, 1, 2, "h", "h", "h"])
 
-        constraint1 = has_minimum_number_of_occurences_constraint(val="h", count=3)
-        constraint2 = has_maximum_number_of_occurences_constraint(val="h", count=1)
+        constraint1 = has_minimum_number_of_occurences_constraint(
+            val="h", count=3)
+        constraint2 = has_maximum_number_of_occurences_constraint(
+            val="h", count=1)
         constraint = xor_constraints([constraint1, constraint2])
         assert not constraint(["h", "h"])
 
         assert constraint.partial_func(3, ["h", "h"])
 
-        constraint1 = has_maximum_number_of_occurences_constraint(val="h", count=2)
-        constraint2 = has_maximum_number_of_occurences_constraint(val="h", count=1)
+        constraint1 = has_maximum_number_of_occurences_constraint(
+            val="h", count=2)
+        constraint2 = has_maximum_number_of_occurences_constraint(
+            val="h", count=1)
         constraint = xor_constraints([constraint1, constraint2])
         assert not constraint.partial_func(10, ["h", "h", "h"])
 
     def test_and_constraints(self):
-        constraint1 = has_minimum_number_of_occurences_constraint(val="h", count=2)
-        constraint2 = has_maximum_number_of_occurences_constraint(val="h", count=2)
+        constraint1 = has_minimum_number_of_occurences_constraint(
+            val="h", count=2)
+        constraint2 = has_maximum_number_of_occurences_constraint(
+            val="h", count=2)
         constraint = and_constraints([constraint1, constraint2])
         assert not constraint([])
         assert not constraint([1, 2, "h", 1, 2])

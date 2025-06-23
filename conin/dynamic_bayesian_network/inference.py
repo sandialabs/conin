@@ -10,7 +10,8 @@ def create_bn_from_dbn(*, dbn, start, stop):
     for i in range(start + 1, stop):
         bni = dbn.get_constant_bn(i)
 
-        bn.add_nodes_from([node for node in bni.nodes() if node.endswith(f"_{i+1}")])
+        bn.add_nodes_from([node for node in bni.nodes()
+                          if node.endswith(f"_{i+1}")])
         bn.add_edges_from(bni.edges())
 
         for node in bni.nodes():

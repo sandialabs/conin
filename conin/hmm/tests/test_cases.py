@@ -187,7 +187,9 @@ class Num_Zeros(conin.hmm.HMMApplication):
         D = self.algebraic.data
 
         h0 = self.hmm.hidden_to_internal["h0"]
-        M.h0_lower = pe.Constraint(expr=sum(M.hmm.x[t, h0] for t in D.T) >= self.lb)
-        M.h0_upper = pe.Constraint(expr=sum(M.hmm.x[t, h0] for t in D.T) <= self.ub)
+        M.h0_lower = pe.Constraint(
+            expr=sum(M.hmm.x[t, h0] for t in D.T) >= self.lb)
+        M.h0_upper = pe.Constraint(
+            expr=sum(M.hmm.x[t, h0] for t in D.T) <= self.ub)
 
         return M
