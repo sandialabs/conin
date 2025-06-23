@@ -162,8 +162,9 @@ def create_MN_map_query_model_from_factorial_repn(
     # If factor i is not in configuration j, then at least one of its
     # corresponding variables is not set to the values for configuration j
     def c4_(M, i, j):
-        return sum(M.x[r, v[i, j, r]] for r in V.get((i, j), [])
-                   ) <= M.y[i, j] + (len(V.get((i, j), [])) - 1)
+        return sum(M.x[r, v[i, j, r]] for r in V.get((i, j), [])) <= M.y[i, j] + (
+            len(V.get((i, j), [])) - 1
+        )
 
     model.c4 = pe.Constraint(IJ, rule=c4_)
 
@@ -179,12 +180,7 @@ def create_MN_map_query_model_from_factorial_repn(
     return model
 
 
-def optimize_map_query_model(
-        model,
-        *,
-        solver="gurobi",
-        tee=False,
-        with_fixed=False):
+def optimize_map_query_model(model, *, solver="gurobi", tee=False, with_fixed=False):
     opt = pe.SolverFactory(solver)
     res = opt.solve(model, tee=tee)
     # TODO: check optimality conditions

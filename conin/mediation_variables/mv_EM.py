@@ -53,8 +53,7 @@ def arrayConvert(obs, hmm, cst, sat):
         for i in hmm.states:
             init_ind[aux_ix[r], state_ix[i]] = cst.init_fun(i, r)
             for s in aux_space:
-                ind[aux_ix[r], state_ix[i], aux_ix[s]
-                    ] = cst.update_fun(r, i, s)
+                ind[aux_ix[r], state_ix[i], aux_ix[s]] = cst.update_fun(r, i, s)
 
     cst_params = [init_ind, final_ind, ind]
 
@@ -97,12 +96,9 @@ def mv_BaumWelch(hmm_params, emit_weights, cst_params, debug=False):
     # Compute the forward pass
     for t in range(1, T):
         if t == (T - 1):
-            alpha[t] = np.einsum("i,ji,ris,js,r->ir",
-                                 emit_weights[t],
-                                 tmat,
-                                 ind,
-                                 alpha[t - 1],
-                                 final_ind)
+            alpha[t] = np.einsum(
+                "i,ji,ris,js,r->ir", emit_weights[t], tmat, ind, alpha[t - 1], final_ind
+            )
         else:
             alpha[t] = np.einsum(
                 "i,ji,ris,js->ir", emit_weights[t], tmat, ind, alpha[t - 1]
@@ -156,14 +152,8 @@ def mv_BaumWelch(hmm_params, emit_weights, cst_params, debug=False):
 
 
 def mv_EM(
-        obs,
-        hmm,
-        cst,
-        sat=True,
-        conv_tol=1e-8,
-        max_iter=1000,
-        emit_opt=None,
-        debug=False):
+    obs, hmm, cst, sat=True, conv_tol=1e-8, max_iter=1000, emit_opt=None, debug=False
+):
 
     # Convert everything into numpy arrays
     old_hmm_params, old_cst_params = arrayConvert(obs, hmm, cst, sat)

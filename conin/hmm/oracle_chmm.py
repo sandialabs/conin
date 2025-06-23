@@ -34,12 +34,8 @@ class Oracle_CHMM(chmm_base.CHMM_Base):
         return self
 
     def load_model(
-            self,
-            *,
-            start_probs=None,
-            transition_probs=None,
-            emission_probs=None,
-            hmm=None):
+        self, *, start_probs=None, transition_probs=None, emission_probs=None, hmm=None
+    ):
         super().load_model(
             start_probs=start_probs,
             transition_probs=transition_probs,
@@ -55,11 +51,11 @@ class Oracle_CHMM(chmm_base.CHMM_Base):
         # Make internal constraints
         internal_constraints = []
         for constraint in self.constraints:
-            internal_constraints.append(
-                self.make_internal_constraint(constraint))
+            internal_constraints.append(self.make_internal_constraint(constraint))
 
         self.internal_constrained_hmm = internal_constrained_hmm.Internal_Oracle_CHMM(
-            internal_hmm=self.hmm.internal_hmm, constraints=internal_constraints)
+            internal_hmm=self.hmm.internal_hmm, constraints=internal_constraints
+        )
 
     def make_internal_constraint(self, constraint):
         """
@@ -74,13 +70,11 @@ class Oracle_CHMM(chmm_base.CHMM_Base):
         if self.hmm is not None:
 
             def internal_func(internal_seq):
-                external_seq = [self.hmm.hidden_to_external[h]
-                                for h in internal_seq]
+                external_seq = [self.hmm.hidden_to_external[h] for h in internal_seq]
                 return constraint(external_seq)
 
             def internal_partial_func(T, internal_seq):
-                external_seq = [self.hmm.hidden_to_external[h]
-                                for h in internal_seq]
+                external_seq = [self.hmm.hidden_to_external[h] for h in internal_seq]
                 return constraint.partial_func(T, external_seq)
 
             internal_constraint = Constraint(
@@ -130,8 +124,7 @@ class Oracle_CHMM(chmm_base.CHMM_Base):
         Raises:
             InvalidInputError: If time_steps is negative.
         """
-        internal_hidden = self.internal_constrained_hmm.generate_hidden(
-            time_steps)
+        internal_hidden = self.internal_constrained_hmm.generate_hidden(time_steps)
         return [self.hmm.hidden_to_external[h] for h in internal_hidden]
 
     def generate_observed_from_hidden(self, hidden):
@@ -146,7 +139,8 @@ class Oracle_CHMM(chmm_base.CHMM_Base):
         """
         internal_hidden = [self.hmm.hidden_to_internal[h] for h in hidden]
         internal_observed = self.internal_constrained_hmm.generate_observed_from_hidden(
-            internal_hidden)
+            internal_hidden
+        )
         return [self.hmm.observed_to_external[o] for o in internal_observed]
 
     def generate_observed(self, time_steps):
@@ -164,8 +158,7 @@ class Oracle_CHMM(chmm_base.CHMM_Base):
         """
         if time_steps < 0:
             raise InvalidInputError("In generate_observed time_steps > 0.")
-        internal_observed = self.internal_constrained_hmm.generate_observed(
-            time_steps)
+        internal_observed = self.internal_constrained_hmm.generate_observed(time_steps)
         return [self.hmm.observed_to_external[o] for o in internal_observed]
 
     def is_feasible(self, seq):

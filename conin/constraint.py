@@ -7,12 +7,8 @@ from conin.exceptions import InvalidInputError
 
 class Constraint:
     def __init__(
-            self,
-            *,
-            func=None,
-            name=None,
-            partial_func=None,
-            same_partial_as_func=None):
+        self, *, func=None, name=None, partial_func=None, same_partial_as_func=None
+    ):
         """
         Initialize a Constraint object.
 
@@ -60,5 +56,6 @@ class Constraint:
         if self.func is None:
             raise InvalidInputError(
                 f"In constraint {
-                    self.name}, the actual constraint function is not defined.")
+                    self.name}, the actual constraint function is not defined."
+            )
         return self.func(seq)

@@ -23,10 +23,8 @@ def cancer1_BN(debug=False):
     )
 
     # Step 2: Define the CPDs.
-    cpd_poll = TabularCPD(variable="Pollution",
-                          variable_card=2, values=[[0.9], [0.1]])
-    cpd_smoke = TabularCPD(
-        variable="Smoker", variable_card=2, values=[[0.3], [0.7]])
+    cpd_poll = TabularCPD(variable="Pollution", variable_card=2, values=[[0.9], [0.1]])
+    cpd_smoke = TabularCPD(variable="Smoker", variable_card=2, values=[[0.3], [0.7]])
     cpd_cancer = TabularCPD(
         variable="Cancer",
         variable_card=2,

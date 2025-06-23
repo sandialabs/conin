@@ -52,13 +52,8 @@ def test_IntegerProgrammingInference_cancer2_ALL():
     inf = IntegerProgrammingInference(pgm)
 
     results = inf.map_query(
-        variables=[
-            "Cancer",
-            "Dyspnoea",
-            "Pollution",
-            "Smoker",
-            "Xray"],
-        solver="glpk")
+        variables=["Cancer", "Dyspnoea", "Pollution", "Smoker", "Xray"], solver="glpk"
+    )
     assert results.solution.variable_value == {
         "Cancer": 1,
         "Dyspnoea": 1,
@@ -107,13 +102,8 @@ def test_IntegerProgrammingInference_cancer2_constrained():
     inf = IntegerProgrammingInference(pgm)
 
     results = inf.map_query(
-        variables=[
-            "Cancer",
-            "Dyspnoea",
-            "Pollution",
-            "Smoker",
-            "Xray"],
-        solver="glpk")
+        variables=["Cancer", "Dyspnoea", "Pollution", "Smoker", "Xray"], solver="glpk"
+    )
     assert results.solution.variable_value == {
         "Cancer": 1,
         "Dyspnoea": 0,

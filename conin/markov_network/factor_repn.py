@@ -23,8 +23,7 @@ def extract_factor_representation(pgm):
     # w[i,j]: the log-probability of factor i in configuration j
     #           Note that j \in J[i]
     #
-    S = {r: [State(value=s) for s in values]
-         for r, values in pgm.states.items()}
+    S = {r: [State(value=s) for s in values] for r, values in pgm.states.items()}
     J = {}
     v = {}
     w = {}
@@ -44,8 +43,7 @@ def extract_factor_representation(pgm):
                     v[i, j, key] = State(value)
 
         # w
-        values = [factor.get_value(**dict(assignment))
-                  for assignment in assignments]
+        values = [factor.get_value(**dict(assignment)) for assignment in assignments]
         total = np.sum(factor.values)
         # print("HERE",i,total,values)
         for j in range(size):
