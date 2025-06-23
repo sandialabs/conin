@@ -1,0 +1,48 @@
+name: Auto Format Python Code
+
+on: 
+  push:
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.13"
+
+      - name: Install formatting tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install black autopep8
+
+      - name: Run Black
+        run: |
+          black .
+
+      - name: Run autopep8 aggressively
+        run: |
+          # Run autopep8 with aggressive mode (two passes)
+          autopep8 --in-place --aggressive --aggressive --recursive .
+
+      - name: Re-run Black to ensure consistency
+        run: |
+          black .
+
+      - name: Commit and push formatting changes
+        run: |
+          # Check if any files have been modified
+          if [ -n "$(git status --porcelain)" ]; then
+            git config --global user.name "github-actions"
+            git config --global user.email "github-actions@github.com"
+            git add .
+            git commit -m "Apply aggressive auto-formatting [skip ci]"
+            git push
+          else
+            echo "No formatting changes detected."
+          fi
