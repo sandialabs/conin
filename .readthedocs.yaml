@@ -1,9 +1,5 @@
 version: 2
 
-python:
-    install:
-      - requirements: doc/requirements.txt
-
 build:
     os: ubuntu-24.04
     tools:
@@ -12,3 +8,7 @@ build:
         - mkdir -p $READTHEDOCS_OUTPUT/html/
         - sphinx-build -n -b html doc $READTHEDOCS_OUTPUT/html/ 
         - ls $READTHEDOCS_OUTPUT/html/
+
+python:
+    install:
+      - requirements: doc/requirements.txt
