@@ -326,7 +326,9 @@ class Test_Inference_ip:
         # inferred1 = inference1(observed).solutions[0].hidden
 
         inferred2 = (
-            ip_inference(statistical_model=recursive_app, observed=observed, solver='glpk')
+            ip_inference(
+                statistical_model=recursive_app, observed=observed, solver="glpk"
+            )
             .solutions[0]
             .hidden
         )
@@ -352,7 +354,9 @@ class Test_Inference_ip:
         # inferred1 = inference1(observed).solutions[0].hidden
 
         inferred2 = (
-            ip_inference(statistical_model=recursive_app, observed=observed, solver='glpk')
+            ip_inference(
+                statistical_model=recursive_app, observed=observed, solver="glpk"
+            )
             .solutions[0]
             .hidden
         )
@@ -422,6 +426,8 @@ class Test_Inference_ip:
 
         observed = ["o0", "o1", "o1", "o1"]
         hidden = (
-            ip_inference(statistical_model=model, observed=observed, solver='glpk').solutions[0].hidden
+            ip_inference(statistical_model=model, observed=observed, solver="glpk")
+            .solutions[0]
+            .hidden
         )
         assert hidden == ["h0", "h1", "h1", "h1"]

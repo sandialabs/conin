@@ -89,7 +89,7 @@ def create_MN_map_query_model_from_factorial_repn(
     #
     # var_index_map[hr]: a dictionary that maps hashable value hr to variable name X_r
     #
-    #tic()
+    # tic()
     R = list(S.keys())
     RS = [(r, s) for r, values in S.items() for s in values]
 
@@ -109,7 +109,7 @@ def create_MN_map_query_model_from_factorial_repn(
     # TODO: consistency checks on inputs
     #   v[i,j,r] in S[r]
     #   {(i,j) in w} == IJ
-    #toc("DATA")
+    # toc("DATA")
 
     #
     # Integer programming formulation
@@ -132,7 +132,7 @@ def create_MN_map_query_model_from_factorial_repn(
             }
         )
 
-    #toc("VARIABLES")
+    # toc("VARIABLES")
 
     # Each variable X_r only assumes one value
     def c1_(M, r):
@@ -140,7 +140,7 @@ def create_MN_map_query_model_from_factorial_repn(
 
     model.c1 = pe.Constraint(R, rule=c1_)
 
-    #toc("c1")
+    # toc("c1")
 
     # Each factor i can only be in one configration for the joint distribution
     def c2_(M, i):
@@ -148,7 +148,7 @@ def create_MN_map_query_model_from_factorial_repn(
 
     model.c2 = pe.Constraint(I, rule=c2_)
 
-    #toc("c2")
+    # toc("c2")
 
     # Factor i cannot assume configuration j unless its corresponding variables are set to the correct values
     def c3_(M, i, j, r):
@@ -156,7 +156,7 @@ def create_MN_map_query_model_from_factorial_repn(
 
     model.c3 = pe.Constraint(IJR, rule=c3_)
 
-    #toc("c3")
+    # toc("c3")
 
     # If factor i is not in configuration j, then at least one of its corresponding variables is not set to the values for configuration j
     def c4_(M, i, j):
@@ -166,14 +166,14 @@ def create_MN_map_query_model_from_factorial_repn(
 
     model.c4 = pe.Constraint(IJ, rule=c4_)
 
-    #toc("c4")
+    # toc("c4")
 
     # Maximize the sum of log-values of all posible factors and configurations
     model.o = pe.Objective(
         expr=sum(w[i, j] * model.y[i, j] for i, j in IJ), sense=pe.maximize
     )
 
-    #toc("DONE")
+    # toc("DONE")
 
     return model
 
