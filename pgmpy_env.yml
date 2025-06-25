@@ -36,7 +36,7 @@ dependencies:
   - flake8=7.1.1
   - fmt=9.1.0
   - frozendict=2.4.2
-  - glpk=0.4.8
+  - glpk=5.0
   - gmp=6.2.1
   - h2=4.2.0
   - hpack=4.1.0
