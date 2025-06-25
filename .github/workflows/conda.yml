@@ -19,9 +19,10 @@ jobs:
     - name: Create and activate conda environment
       run: |
         # Assuming $CONDA is set to your miniconda root; otherwise, use $(conda info --base)
-        source "$CONDA/etc/profile.d/conda.sh"
-        conda create -n -f pgmpy_env.yml
+        conda create -n myenv -f pgmpy_env.yml
+        conda activate myenv
         pip install -e .
+        
       shell: bash
     - name: Lint with flake8
       run: |
