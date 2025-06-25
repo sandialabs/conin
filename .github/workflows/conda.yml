@@ -16,11 +16,15 @@ jobs:
       run: |
         # $CONDA is an environment variable pointing to the root of the miniconda directory
         echo $CONDA/bin >> $GITHUB_PATH
-    - name: Create conda environment
+    - name: Create and activate conda environment
       run: |
+        # Assuming $CONDA is set to your miniconda root; otherwise, use $(conda info --base)
+        source "$CONDA/etc/profile.d/conda.sh"
         conda create -n myenv python=3.10 -y
         conda activate myenv
-        conda install -c conda-forge glpk pgmpy
+        conda install -c conda-forge glpk pgmpy conda-build
+        pip install -e .
+      shell: bash
     - name: Lint with flake8
       run: |
         conda install flake8
