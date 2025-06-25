@@ -36,6 +36,7 @@ dependencies:
   - flake8=7.1.1
   - fmt=9.1.0
   - frozendict=2.4.2
+  - glpk=0.4.8
   - gmp=6.2.1
   - h2=4.2.0
   - hpack=4.1.0
@@ -138,7 +139,6 @@ dependencies:
       - black==25.1.0
       - coverage==7.9.1
       - fsspec==2025.5.1
-      - glpk==0.4.8
       - iniconfig==2.1.0
       - joblib==1.5.1
       - mpmath==1.3.0
