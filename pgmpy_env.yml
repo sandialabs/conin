@@ -112,7 +112,6 @@ dependencies:
   - rpds-py=0.22.3
   - ruamel.yaml=0.18.10
   - ruamel.yaml.clib=0.2.12
-  - scikit-learn=1.7.0
   - scipy=1.14.1
   - setuptools=78.1.1
   - simdjson=3.10.1
