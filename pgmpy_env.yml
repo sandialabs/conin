@@ -1,8 +1,6 @@
 name: pgmpy_env
 channels:
   - conda-forge
-  - https://nexus.web.sandia.gov/repository/conda-proxy/r
-  - https://nexus.web.sandia.gov/repository/conda-proxy/main
   - https://repo.anaconda.com/pkgs/main
   - https://repo.anaconda.com/pkgs/r
 dependencies:
@@ -169,4 +167,3 @@ dependencies:
       - threadpoolctl==3.6.0
       - torch==2.7.1
       - tzdata==2025.2
-prefix: /opt/conda/envs/pgmpy_env
