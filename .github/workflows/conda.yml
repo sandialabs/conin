@@ -19,7 +19,7 @@ jobs:
     - name: Create and activate conda environment
       run: |
         # Assuming $CONDA is set to your miniconda root; otherwise, use $(conda info --base)
-        conda create -n myenv -f pgmpy_env.yml
+        conda env create -f pgmpy_env.yml
         conda activate myenv
         pip install -e .
         
