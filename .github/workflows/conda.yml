@@ -22,7 +22,8 @@ jobs:
         source "$CONDA/etc/profile.d/conda.sh"
         conda create -n myenv python=3.10 -y
         conda activate myenv
-        conda install -c conda-forge glpk pgmpy conda-build munch
+        conda install -c conda-forge glpk pgmpy conda-build
+        conda install munch
         pip install -e .
       shell: bash
     - name: Lint with flake8
