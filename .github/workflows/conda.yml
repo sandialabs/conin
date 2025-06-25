@@ -32,8 +32,8 @@ jobs:
     - name: Test with pytest & coverage
       run: |
         conda install pytest pytest-cov
-        pytest --cov --cov-branch --cov-report=xml
-        pytest --cov --junitxml=junit.xml -o junit_family=legacy
+        conda run -n pgmpy_env pytest --cov --cov-branch --cov-report=xml
+        conda run -n pgmpy_env pytest --cov --junitxml=junit.xml -o junit_family=legacy
     - name: Upload test results to Codecov
       if: ${{ !cancelled() }}
       uses: codecov/test-results-action@v1
