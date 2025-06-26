@@ -60,7 +60,6 @@ class Constraint:
         """
         if self.func is None:
             raise InvalidInputError(
-                f"In constraint {
-                    self.name}, the actual constraint function is not defined."
+                f"In constraint {self.name}, the actual constraint function is not defined."
             )
         return self.func(seq)
