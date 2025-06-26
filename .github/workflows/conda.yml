@@ -22,7 +22,6 @@ jobs:
         source "$(conda info --base)/etc/profile.d/conda.sh"
         conda env create -f pgmpy_env.yml
         conda activate pgmpy_env
-        pip install -e .
       shell: bash
     - name: Lint with flake8
       run: |
