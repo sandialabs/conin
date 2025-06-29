@@ -4,7 +4,7 @@ from conin.bayesian_network import (
     create_BN_map_query_model,
     optimize_map_query_model,
 )
-from . import test_cases
+from . import examples
 
 try:
     from pgmpy.inference import VariableElimination
@@ -19,7 +19,7 @@ def test_simple1_ALL():
     """
     A -> B
     """
-    pgm = test_cases.simple1_BN()
+    pgm = examples.simple1_BN()
     q = {"A": 0, "B": 1}
 
     infer = VariableElimination(pgm)
@@ -35,7 +35,7 @@ def test_simple1_B():
     """
     A -> B, with evidence for A
     """
-    pgm = test_cases.simple1_BN()
+    pgm = examples.simple1_BN()
     q = {"B": 0}
 
     infer = VariableElimination(pgm)
@@ -53,7 +53,7 @@ def test_simple2_ALL():
     """
     A -> B
     """
-    pgm = test_cases.simple2_BN()
+    pgm = examples.simple2_BN()
     q = {"A": 0, "B": 1}
 
     infer = VariableElimination(pgm)
@@ -69,7 +69,7 @@ def test_simple2_B():
     """
     A -> B, with evidence for A
     """
-    pgm = test_cases.simple2_BN()
+    pgm = examples.simple2_BN()
     q = {"B": 0}
 
     infer = VariableElimination(pgm)
@@ -89,7 +89,7 @@ def test_cancer1_ALL():
 
     No evidence
     """
-    pgm = test_cases.cancer1_BN()
+    pgm = examples.cancer1_BN()
     q = {"Cancer": 1, "Dyspnoea": 1, "Pollution": 0, "Smoker": 1, "Xray": 1}
 
     infer = VariableElimination(pgm)
@@ -109,7 +109,7 @@ def test_cancer1_Cancer():
 
     Evidence for Cancer
     """
-    pgm = test_cases.cancer1_BN()
+    pgm = examples.cancer1_BN()
     q = {"Xray": 0, "Dyspnoea": 0, "Smoker": 0, "Pollution": 0}
 
     infer = VariableElimination(pgm)
@@ -133,7 +133,7 @@ def test_cancer1_ALL_constrained1():
     No evidence
     Constrained inference of Xray and Dyspnoea so they are different
     """
-    pgm = test_cases.cancer1_BN()
+    pgm = examples.cancer1_BN()
     q = {"Cancer": 1, "Dyspnoea": 0, "Pollution": 0, "Smoker": 1, "Xray": 1}
 
     model = create_BN_map_query_model(pgm=pgm)  # variables=None, evidence=None
@@ -153,7 +153,7 @@ def test_cancer1_ALL_constrained2():
     No evidence
     Constrained inference of Xray and Dyspnoea so they are different
     """
-    cpgm = test_cases.cancer1_BN_constrained()
+    cpgm = examples.cancer1_BN_constrained()
     q = {"Cancer": 1, "Dyspnoea": 0, "Pollution": 0, "Smoker": 1, "Xray": 1}
 
     results = optimize_map_query_model(cpgm.create_map_query_model(), solver="glpk")
@@ -167,7 +167,7 @@ def test_cancer2_ALL():
 
     No evidence
     """
-    pgm = test_cases.cancer2_BN()
+    pgm = examples.cancer2_BN()
     q = {"Cancer": 1, "Dyspnoea": 1, "Pollution": 0, "Smoker": 1, "Xray": 1}
 
     infer = VariableElimination(pgm)
@@ -187,7 +187,7 @@ def test_cancer2_Cancer():
 
     Evidence for Cancer
     """
-    pgm = test_cases.cancer2_BN()
+    pgm = examples.cancer2_BN()
     q = {"Xray": 0, "Dyspnoea": 0, "Smoker": 0, "Pollution": 0}
 
     infer = VariableElimination(pgm)
@@ -211,7 +211,7 @@ def test_cancer2_ALL_constrained1():
     No evidence
     Constrained inference of Xray and Dyspnoea so they are different
     """
-    pgm = test_cases.cancer2_BN()
+    pgm = examples.cancer2_BN()
     q = {"Cancer": 1, "Dyspnoea": 0, "Pollution": 0, "Smoker": 1, "Xray": 1}
 
     model = create_BN_map_query_model(pgm=pgm)  # variables=None, evidence=None
@@ -231,7 +231,7 @@ def test_cancer2_ALL_constrained2():
     No evidence
     Constrained inference of Xray and Dyspnoea so they are different
     """
-    cpgm = test_cases.cancer2_BN_constrained()
+    cpgm = examples.cancer2_BN_constrained()
     q = {"Cancer": 1, "Dyspnoea": 0, "Pollution": 0, "Smoker": 1, "Xray": 1}
 
     results = optimize_map_query_model(cpgm.create_map_query_model(), solver="glpk")
