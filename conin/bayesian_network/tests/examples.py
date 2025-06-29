@@ -12,6 +12,9 @@ except Exception as e:
 
 
 def cancer1_BN(debug=False):
+    """
+    Cancer example using TabularCPD
+    """
     # Step 1: Define the network structure.
     cancer_model = DiscreteBayesianNetwork(
         [
@@ -74,6 +77,9 @@ def cancer1_BN_constrained(debug=False):
 
 
 def cancer2_BN(debug=False):
+    """
+    Cancer example using MapCPD
+    """
     # Step 1: Define the network structure.
     cancer_model = DiscreteBayesianNetwork(
         [
@@ -173,3 +179,68 @@ def simple2_BN(debug=False):
     G.add_cpds(cpd_A, cpd_B)
     G.check_model()
     return G
+
+
+def DBDA_5_1(debug=False):
+    """
+    Model used in exercise 5.1 from "Doing Bayesian Data Analysis" by John K. Kruschke:
+    https://sites.google.com/site/doingbayesiandataanalysis/exercises
+    """
+    p_disease_present = 0.001
+    p_test_positive_given_disease_present = 0.99
+    p_test_positive_given_disease_absent = 0.05
+
+    model = DiscreteBayesianNetwork()
+    model.add_nodes_from(["disease-state", "test-result1", "test-result2"])
+    model.add_edge("disease-state", "test-result1")
+    model.add_edge("disease-state", "test-result2")
+
+    disease_state_CPD = TabularCPD(
+        variable="disease-state",
+        variable_card=2,
+        values=[[p_disease_present], [1.0 - p_disease_present]],
+    )
+
+    test_result_CPD_1 = TabularCPD(
+        variable="test-result1",
+        variable_card=2,
+        values=[
+            [
+                p_test_positive_given_disease_present,
+                p_test_positive_given_disease_absent,
+            ],
+            [
+                (1 - p_test_positive_given_disease_present),
+                (1 - p_test_positive_given_disease_absent),
+            ],
+        ],
+        evidence=["disease-state"],
+        evidence_card=[2],
+    )
+
+    test_result_CPD_2 = TabularCPD(
+        variable="test-result2",
+        variable_card=2,
+        values=[
+            [
+                p_test_positive_given_disease_present,
+                p_test_positive_given_disease_absent,
+            ],
+            [
+                (1 - p_test_positive_given_disease_present),
+                (1 - p_test_positive_given_disease_absent),
+            ],
+        ],
+        evidence=["disease-state"],
+        evidence_card=[2],
+    )
+
+    model.add_cpds(disease_state_CPD, test_result_CPD_1, test_result_CPD_2)
+    model.check_model()
+
+    if debug:
+        print(disease_state_CPD)
+        print(test_result_CPD_1)
+        print(test_result_CPD_2)
+
+    return model
