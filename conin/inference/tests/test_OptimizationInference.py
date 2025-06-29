@@ -4,9 +4,9 @@ from conin.inference.OptimizationInference import (
     IntegerProgrammingInference,
     DBN_IntegerProgrammingInference,
 )
-import conin.markov_network.tests.test_cases
-import conin.bayesian_network.tests.test_cases
-import conin.dynamic_bayesian_network.tests.test_cases
+import conin.markov_network.tests.examples
+import conin.bayesian_network.tests.examples
+import conin.dynamic_bayesian_network.tests.examples
 
 try:
     import pgmpy
@@ -23,7 +23,7 @@ except Exception as e:
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_IntegerProgrammingInference_ABC():
-    pgm = conin.markov_network.tests.test_cases.ABC()
+    pgm = conin.markov_network.tests.examples.ABC()
     inf = IntegerProgrammingInference(pgm)
     results = inf.map_query(solver="glpk")
     assert results.solution.variable_value == {"A": 2, "B": 2, "C": 1}
@@ -36,7 +36,7 @@ def test_IntegerProgrammingInference_ABC():
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_IntegerProgrammingInference_ABC_constrained():
-    pgm = conin.markov_network.tests.test_cases.ABC_constrained()
+    pgm = conin.markov_network.tests.examples.ABC_constrained()
     inf = IntegerProgrammingInference(pgm)
     results = inf.map_query(solver="glpk")
 
@@ -48,7 +48,7 @@ def test_IntegerProgrammingInference_ABC_constrained():
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_IntegerProgrammingInference_cancer2_ALL():
-    pgm = conin.bayesian_network.tests.test_cases.cancer2_BN()
+    pgm = conin.bayesian_network.tests.examples.cancer2_BN()
     inf = IntegerProgrammingInference(pgm)
 
     results = inf.map_query(
@@ -99,7 +99,7 @@ def test_IntegerProgrammingInference_cancer2_ALL():
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_IntegerProgrammingInference_cancer2_constrained():
-    pgm = conin.bayesian_network.tests.test_cases.cancer2_BN_constrained()
+    pgm = conin.bayesian_network.tests.examples.cancer2_BN_constrained()
     inf = IntegerProgrammingInference(pgm)
 
     results = inf.map_query(
@@ -136,7 +136,7 @@ def test_IntegerProgrammingInference_cancer2_constrained():
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_DBN_IntegerProgrammingInference_weather():
-    pgm = conin.dynamic_bayesian_network.tests.test_cases.pgmpy_weather2()
+    pgm = conin.dynamic_bayesian_network.tests.examples.pgmpy_weather2()
     inf = DBN_IntegerProgrammingInference(pgm)
 
     results = inf.map_query(stop=4, solver="glpk")
@@ -197,7 +197,7 @@ def test_DBN_IntegerProgrammingInference_weather():
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_DBN_IntegerProgrammingInference_weather_constrained():
-    pgm = conin.dynamic_bayesian_network.tests.test_cases.pgmpy_weather_constrained1()
+    pgm = conin.dynamic_bayesian_network.tests.examples.pgmpy_weather_constrained1()
     inf = DBN_IntegerProgrammingInference(pgm)
 
     results = inf.map_query(stop=4, solver="glpk")
