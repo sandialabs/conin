@@ -80,4 +80,3 @@ def test_simple2_B():
     )  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver="glpk")
     assert q == results.solution.variable_value
-
