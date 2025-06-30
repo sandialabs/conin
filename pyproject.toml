@@ -27,3 +27,13 @@ classifiers=[
         "Topic :: Software Development :: Libraries :: Python Modules",
     ]
 
+[tool.coverage.report]
+exclude_also = [
+    'if self.debug:',
+    'if debug:',
+    'raise AssertionError',
+    'raise NotImplementedError',
+    '@(abc\.)?abstractmethod',
+    'if noisy:'
+    'if self.noisy:'
+]
