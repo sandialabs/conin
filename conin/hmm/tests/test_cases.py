@@ -103,11 +103,11 @@ def create_chmm1():
     }
     num_zeros_greater_than_nine = conin.hmm.Constraint(
         func=lambda seq: seq.count("h0") > 9,
-        partial_func=lambda T, seq: T - seq.count("h0") >= 0,
+        partial_func=lambda T, seq: T - len(seq) + seq.count("h0") >= 10,
     )
     num_zeros_less_than_thirteen = conin.hmm.Constraint(
         func=lambda seq: seq.count("h0") < 13,
-        partial_func=lambda T, seq: T - seq.count("h0") < 13,
+        partial_func=lambda T, seq: seq.count("h0") < 13,
     )
     chmm = conin.hmm.Oracle_CHMM()
     chmm.load_model(

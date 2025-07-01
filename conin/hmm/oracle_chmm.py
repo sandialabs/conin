@@ -138,11 +138,7 @@ class Oracle_CHMM(chmm_base.CHMM_Base):
         Returns:
             list: Observations generated from hidden
         """
-        internal_hidden = [self.hmm.hidden_to_internal[h] for h in hidden]
-        internal_observed = self.internal_constrained_hmm.generate_observed_from_hidden(
-            internal_hidden
-        )
-        return [self.hmm.observed_to_external[o] for o in internal_observed]
+        return super().generate_observed_from_hidden(hidden)
 
     def generate_observed(self, time_steps):
         """
@@ -157,10 +153,7 @@ class Oracle_CHMM(chmm_base.CHMM_Base):
         Raises:
             InvalidInputError: If time_steps is negative.
         """
-        if time_steps < 0:
-            raise InvalidInputError("In generate_observed time_steps > 0.")
-        internal_observed = self.internal_constrained_hmm.generate_observed(time_steps)
-        return [self.hmm.observed_to_external[o] for o in internal_observed]
+        return super().generate_observed(time_steps)
 
     def is_feasible(self, seq):
         """

@@ -103,6 +103,7 @@ class CHMM_Base(Statistical_Model):
         Parameters:
             seed (int): The seed value to set for the random number generator.
         """
+        self._seed = 1
         self.hmm.set_seed(seed)
 
     def get_start_probs(self):
@@ -130,7 +131,7 @@ class CHMM_Base(Statistical_Model):
         Returns:
             dict: A dictionary mapping pairs of hidden states and observed states to their emission probabilities.
         """
-        self.hmm.get_emission_probs()
+        return self.hmm.get_emission_probs()
 
     def to_dict(self):
         """
@@ -139,7 +140,9 @@ class CHMM_Base(Statistical_Model):
         Returns:
             dict: A dictionary representaiton of this statistical model.
         """
-        return self.hmm.to_dict()
+        raise NotImplementedError(
+            "We could return the hmm dict, but that doesn't capture constraint info."
+        )
 
     def generate_hidden(self, time_steps):
         """
@@ -171,7 +174,10 @@ class CHMM_Base(Statistical_Model):
                 "CHMM_Base.generate_observed_from_hidden() - The sequence of hidden states is not feasible."
             )
         internal_hidden = [self.hmm.hidden_to_internal[h] for h in hidden]
-        return self.hmm.internal_hmm.generate_observed_from_hidden(hidden)
+        internal_observed = self.hmm.internal_hmm.generate_observed_from_hidden(
+            internal_hidden
+        )
+        return [self.hmm.observed_to_external[o] for o in internal_observed]
 
     def generate_observed(self, time_steps):
         """
