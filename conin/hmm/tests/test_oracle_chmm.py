@@ -22,9 +22,7 @@ class Test_Oracle_CHMM:
         chmm = tc.create_chmm1()
         assert chmm.hmm.get_start_probs() == chmm.hmm.get_start_probs()
         assert chmm.hmm.get_emission_probs() == chmm.hmm.get_emission_probs()
-        assert (
-            chmm.hmm.get_transition_probs() == chmm.hmm.get_transition_probs()
-        )
+        assert chmm.hmm.get_transition_probs() == chmm.hmm.get_transition_probs()
 
     def test_load_model2(self):
         chmm = tc.create_chmm1()
@@ -38,9 +36,7 @@ class Test_Oracle_CHMM:
         _chmm.load_model(hmm=_hmm)
         assert chmm.hmm.get_start_probs() == chmm.hmm.get_start_probs()
         assert chmm.hmm.get_emission_probs() == chmm.hmm.get_emission_probs()
-        assert (
-            chmm.hmm.get_transition_probs() == chmm.hmm.get_transition_probs()
-        )
+        assert chmm.hmm.get_transition_probs() == chmm.hmm.get_transition_probs()
 
     def test_load_model_failure(self):
         with pytest.raises(InvalidInputError):
