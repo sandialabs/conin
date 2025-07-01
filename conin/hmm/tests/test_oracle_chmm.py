@@ -5,14 +5,7 @@ from conin.hmm import *
 from conin.hmm.oracle_chmm import Oracle_CHMM
 
 import conin.hmm.tests.test_cases as tc
-
-
-@pytest.fixture
-def constraint():
-    def num_zeros_eq_five(seq):
-        return seq.count(0) == 5
-
-    return Constraint(func=num_zeros_eq_five, name="Test")
+import conin.common_constraints as cc
 
 
 class Test_Oracle_CHMM:
@@ -20,11 +13,9 @@ class Test_Oracle_CHMM:
 
     def test_load_model(self):
         chmm = tc.create_chmm1()
-        assert chmm.hmm.get_start_probs() == chmm.hmm.get_start_probs()
-        assert chmm.hmm.get_emission_probs() == chmm.hmm.get_emission_probs()
-        assert (
-            chmm.hmm.get_transition_probs() == chmm.hmm.get_transition_probs()
-        )
+        assert chmm.get_start_probs() == chmm.hmm.get_start_probs()
+        assert chmm.get_emission_probs() == chmm.hmm.get_emission_probs()
+        assert chmm.get_transition_probs() == chmm.hmm.get_transition_probs()
 
     def test_load_model2(self):
         chmm = tc.create_chmm1()
@@ -41,6 +32,17 @@ class Test_Oracle_CHMM:
         assert (
             chmm.hmm.get_transition_probs() == chmm.hmm.get_transition_probs()
         )
+
+    def test_load_model3(self):
+        hmm = tc.create_hmm0()
+        constraints = [cc.all_diff_constraint]
+        chmm = Oracle_CHMM(hmm=hmm, constraints=constraints)
+        assert chmm.hmm == hmm
+        assert len(chmm.constraints) == 1
+
+    def test_load_model_empty(self):
+        chmm = Oracle_CHMM()
+        assert chmm.constraints == []
 
     def test_load_model_failure(self):
         with pytest.raises(InvalidInputError):
@@ -68,6 +70,44 @@ class Test_Oracle_CHMM:
         assert not chmm.internal_constrained_hmm.is_feasible(fail_seq1)
         assert chmm.internal_constrained_hmm.is_feasible(pass_seq)
         assert not chmm.internal_constrained_hmm.is_feasible(fail_seq2)
+
+    def test_is_valid_hidden_state(self):
+        chmm = tc.create_chmm1()
+        assert chmm.is_valid_hidden_state("h0")
+        assert not chmm.is_valid_hidden_state("invalid")
+
+    def test_set_seed(self):
+        chmm = tc.create_chmm1()
+        chmm.set_seed(1)
+        assert chmm._seed == 1
+
+    def test_generate(self):
+        chmm = tc.create_chmm1()
+        observed = chmm.generate_observed_from_hidden(
+            [
+                "h0",
+                "h0",
+                "h0",
+                "h0",
+                "h0",
+                "h0",
+                "h0",
+                "h0",
+                "h0",
+                "h0",
+                "h0",
+            ]
+        )
+        assert len(observed) == 11
+        T = 25
+        observed2 = chmm.generate_observed(T)
+        assert len(observed2) == T
+
+        with pytest.raises(InvalidInputError):
+            chmm.generate_observed(-1)
+
+        with pytest.raises(InvalidInputError):
+            chmm.generate_observed_from_hidden(["h0"])
 
     def test_is_feasible(self):
         chmm = tc.create_chmm1()
@@ -106,6 +146,47 @@ class Test_Oracle_CHMM:
         assert not chmm.is_feasible(fail_seq1)
         assert chmm.is_feasible(pass_seq)
         assert not chmm.is_feasible(fail_seq2)
+
+    def test_partial_is_feasible(self):
+        chmm = tc.create_chmm1()
+        fail_seq1 = ["h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"]
+        pass_seq = [
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+        ]
+        fail_seq2 = [
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+        ]
+
+        assert not chmm.partial_is_feasible(T=len(fail_seq1), seq=fail_seq1)
+        assert chmm.partial_is_feasible(T=100, seq=fail_seq1)
+        assert chmm.partial_is_feasible(T=len(pass_seq), seq=pass_seq)
+        assert chmm.partial_is_feasible(T=100, seq=pass_seq)
+        assert not chmm.partial_is_feasible(T=len(fail_seq2), seq=fail_seq2)
+        assert not chmm.partial_is_feasible(T=100, seq=fail_seq2)
 
     def test_generate_hidden_length(self):
         chmm = tc.create_chmm1()

@@ -103,11 +103,11 @@ def create_chmm1():
     }
     num_zeros_greater_than_nine = conin.hmm.Constraint(
         func=lambda seq: seq.count("h0") > 9,
-        partial_func=lambda T, seq: T - seq.count("h0") >= 0,
+        partial_func=lambda T, seq: T - len(seq) + seq.count("h0") >= 10,
     )
     num_zeros_less_than_thirteen = conin.hmm.Constraint(
         func=lambda seq: seq.count("h0") < 13,
-        partial_func=lambda T, seq: T - seq.count("h0") < 13,
+        partial_func=lambda T, seq: seq.count("h0") < 13,
     )
     chmm = conin.hmm.Oracle_CHMM()
     chmm.load_model(
@@ -168,7 +168,9 @@ class Num_Zeros(conin.hmm.HMMApplication):
         else:
             return 0
 
-    def constraint_data_feasible_partial(self, *, constraint_data, t, time_steps):
+    def constraint_data_feasible_partial(
+        self, *, constraint_data, t, time_steps
+    ):
         return (
             constraint_data + (time_steps - t) >= self.lb
         ) and constraint_data <= self.ub
@@ -187,7 +189,11 @@ class Num_Zeros(conin.hmm.HMMApplication):
         D = self.algebraic.data
 
         h0 = self.hmm.hidden_to_internal["h0"]
-        M.h0_lower = pe.Constraint(expr=sum(M.hmm.x[t, h0] for t in D.T) >= self.lb)
-        M.h0_upper = pe.Constraint(expr=sum(M.hmm.x[t, h0] for t in D.T) <= self.ub)
+        M.h0_lower = pe.Constraint(
+            expr=sum(M.hmm.x[t, h0] for t in D.T) >= self.lb
+        )
+        M.h0_upper = pe.Constraint(
+            expr=sum(M.hmm.x[t, h0] for t in D.T) <= self.ub
+        )
 
         return M
