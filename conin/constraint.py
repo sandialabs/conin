@@ -43,7 +43,7 @@ class Constraint:
             self.name = func.__name__
 
         else:
-            self.name = "Unnamed constraint."  # Could also be none
+            self.name = "Unnamed constraint"  # Could also be none
 
     def __call__(self, seq):
         """
