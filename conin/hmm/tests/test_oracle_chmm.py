@@ -18,7 +18,6 @@ class Test_Oracle_CHMM:
         assert chmm.get_emission_probs() == chmm.hmm.get_emission_probs()
         assert chmm.get_transition_probs() == chmm.hmm.get_transition_probs()
 
-
     def test_load_model2(self):
         chmm = tc.create_chmm1()
         _chmm = Oracle_CHMM()
