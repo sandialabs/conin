@@ -1,6 +1,31 @@
-import pprint
-from pgmpy.factors import factor_product
-from pgmpy.inference.ExactInference import VariableElimination
+"""
+The MIT License (MIT)
+
+Copyright (c) 2013-2024 pgmpy
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+"""
+
+try:
+    from pgmpy.factors import factor_product
+    from pgmpy.inference.ExactInference import VariableElimination
+except:
+    pass
 
 
 def _variable_elimination(
@@ -59,9 +84,6 @@ def _variable_elimination(
 
         # Step 3: Run variable elimination
         for var in elimination_order:
-            # print("="*60)
-            # print(f"ELIMINATION_VAR: {var}")
-            # print("HERE")
             # Removing all the factors containing the variables which are
             # eliminated (as all the factors should be considered only once)
             factors = [
@@ -69,29 +91,14 @@ def _variable_elimination(
                 for factor, _ in working_factors[var]
                 if not set(factor.variables).intersection(eliminated_variables)
             ]
-            # for f in factors:
-            #    print(f)
             phi = factor_product(*factors)
-            # print("RESULTS")
-            # print(phi)
             phi = getattr(phi, operation)([var], inplace=False)
-            # print(phi)
             del working_factors[var]
             for variable in phi.variables:
                 working_factors[variable].add((phi, var))
             eliminated_variables.add(var)
 
-        # print("="*60)
-        # print(f"ELIMINATION_VAR: {var}")
-        # print("HERE")
-        # for k,v in working_factors.items():
-        #    print(f"WORKING KEY: {k}")
-        #    for kk,vv in v:
-        #        print(kk)
-        #        print(f"ORIGIN: {vv}")
-        #    print("")
-
-    # Step 4: Prepare variables to be returned.
+    # Step 4: Prepare factors to be returned.
     final_distribution = {}
     for node in working_factors:
         for factor, origin in working_factors[node]:
