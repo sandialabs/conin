@@ -3,7 +3,8 @@ import munch
 import pyomo.environ as pe
 from pyomo.common.timing import tic, toc
 
-from .factor_repn import extract_factor_representation, State
+from .factor_repn import extract_factor_representation_, State
+from .variable_elimination import _variable_elimination
 
 
 """
@@ -52,14 +53,32 @@ class VarWrapper(dict):
 def create_MN_map_query_model(
     *, pgm, variables=None, evidence=None, var_index_map=None
 ):
-    S, J, v, w = extract_factor_representation(pgm)
+
+    if variables or evidence:
+        variables_ = [] if variables is None else variables
+        evidence_ = {} if evidence is None else evidence
+        factors = _variable_elimination(
+            pgm=pgm, variables=variables_, evidence=evidence_
+        )
+        if variables_:
+            states = {var: pgm.states[var] for var in variables_}
+        else:
+            states = {
+                var: pgm.states[var] for var in pgm.nodes() if var not in evidence_
+            }
+    else:
+        states = pgm.states
+        factors = pgm.get_factors()
+
+    S, J, v, w = extract_factor_representation_(states, factors)
+
     model = create_MN_map_query_model_from_factorial_repn(
         S=S, J=J, v=v, w=w, var_index_map=var_index_map, variables=variables
     )
 
-    if evidence is not None:
-        for k, v in evidence.items():
-            model.X[k, State(v)].fix(1)
+    # if evidence:
+    #    for k, v in evidence.items():
+    #        model.X[k, State(v)].fix(1)
 
     return model
 

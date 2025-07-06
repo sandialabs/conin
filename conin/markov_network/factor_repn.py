@@ -9,6 +9,10 @@ class State:
 
 
 def extract_factor_representation(pgm):
+    return extract_factor_representation_(pgm.states, list(pgm.get_factors()))
+
+
+def extract_factor_representation_(pgm_states, pgm_factors):
     #
     # S[r]: the (finite) set of possible values of variable X_r
     #           Variable values s can be integers or strings
@@ -23,11 +27,11 @@ def extract_factor_representation(pgm):
     # w[i,j]: the log-probability of factor i in configuration j
     #           Note that j \in J[i]
     #
-    S = {r: [State(value=s) for s in values] for r, values in pgm.states.items()}
+    S = {r: [State(value=s) for s in values] for r, values in pgm_states.items()}
     J = {}
     v = {}
     w = {}
-    for factor in pgm.get_factors():
+    for factor in pgm_factors:
         vars = factor.scope()
         i = "_".join(vars)
         size = prod(factor.get_cardinality(vars).values())
