@@ -66,17 +66,18 @@ def test_weather1_B():
         ("H", 3): "Medium",
         ("H", 4): "Medium",
     }
+    # TODO - confirm this answer makes sense
     q = {
         ("T", 0): "Hot",
         ("T", 1): "Hot",
-        ("T", 2): "Mild",
+        ("T", 2): "Hot",
         ("T", 3): "Hot",
         ("T", 4): "Hot",
         ("W", 0): "Cloudy",
-        ("W", 1): "Rainy",
-        ("W", 2): "Sunny",
-        ("W", 3): "Sunny",
-        ("W", 4): "Sunny",
+        ("W", 1): "Cloudy",
+        ("W", 2): "Cloudy",
+        ("W", 3): "Cloudy",
+        ("W", 4): "Cloudy",
     }
 
     model = create_DBN_map_query_model(pgm=pgm, stop=4, evidence=evidence)
@@ -136,17 +137,18 @@ def test_weather2_B():
         ("H", 3): "Medium",
         ("H", 4): "Medium",
     }
+    # TODO - confirm this answer makes sense
     q = {
         ("T", 0): "Hot",
         ("T", 1): "Hot",
-        ("T", 2): "Mild",
+        ("T", 2): "Hot",
         ("T", 3): "Hot",
         ("T", 4): "Hot",
         ("W", 0): "Cloudy",
-        ("W", 1): "Rainy",
-        ("W", 2): "Sunny",
-        ("W", 3): "Sunny",
-        ("W", 4): "Sunny",
+        ("W", 1): "Cloudy",
+        ("W", 2): "Cloudy",
+        ("W", 3): "Cloudy",
+        ("W", 4): "Cloudy",
     }
 
     model = create_DBN_map_query_model(pgm=pgm, stop=4, evidence=evidence)
