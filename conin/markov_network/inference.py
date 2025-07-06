@@ -51,7 +51,12 @@ class VarWrapper(dict):
 
 
 def create_MN_map_query_model(
-    *, pgm, variables=None, evidence=None, var_index_map=None
+    *,
+    pgm,
+    variables=None,
+    evidence=None,
+    var_index_map=None,
+    **options,
 ):
 
     if variables or evidence:
@@ -70,7 +75,7 @@ def create_MN_map_query_model(
         states = pgm.states
         factors = pgm.get_factors()
 
-    S, J, v, w = extract_factor_representation_(states, factors)
+    S, J, v, w = extract_factor_representation_(states, factors, var_index_map)
 
     model = create_MN_map_query_model_from_factorial_repn(
         S=S, J=J, v=v, w=w, var_index_map=var_index_map, variables=variables
@@ -147,7 +152,7 @@ def create_MN_map_query_model_from_factorial_repn(
             {
                 (r, s): model.x[index, s]
                 for r, index in var_index_map.items()
-                for s in S[index]
+                for s in S.get(index, [])
             }
         )
 
