@@ -25,7 +25,7 @@ class IntegerProgrammingInference:
         self.variables = self.pgm.nodes()
 
     def map_query(
-        self, *, variables=None, evidence=None, show_progress=False, **solver_options
+        self, *, variables=None, evidence=None, show_progress=False, **options
     ):
         """
         Computes the MAP Query over the variables given the evidence. Returns the
@@ -57,25 +57,41 @@ class IntegerProgrammingInference:
         >>> phi_query = inference.map_query(variables=['A', 'B'])
         """
 
-        if isinstance(self.pgm, ConstrainedMarkovNetwork) or isinstance(
-            self.pgm, ConstrainedDiscreteBayesianNetwork
-        ):
+        if isinstance(self.pgm, ConstrainedMarkovNetwork):
             model = self.pgm.create_map_query_model(
-                variables=variables, evidence=evidence
+                variables=variables,
+                evidence=evidence,
+                **options,
             )
-            return optimize_map_query_model(model, **solver_options)
+            return optimize_map_query_model(model, **options)
+
+        elif isinstance(self.pgm, ConstrainedDiscreteBayesianNetwork):
+            prune_network = options.pop("prune_network", True)
+            model = self.pgm.create_map_query_model(
+                variables=variables,
+                evidence=evidence,
+                prune_network=prune_network,
+                **options,
+            )
+            return optimize_map_query_model(model, **options)
 
         elif isinstance(self.pgm, pgmpy.models.MarkovNetwork):
             model = create_MN_map_query_model(
-                pgm=self.pgm, variables=variables, evidence=evidence
+                pgm=self.pgm,
+                variables=variables,
+                evidence=evidence,
+                **options,
             )
-            return optimize_map_query_model(model, **solver_options)
+            return optimize_map_query_model(model, **options)
 
         elif isinstance(self.pgm, pgmpy.models.DiscreteBayesianNetwork):
             model = create_BN_map_query_model(
-                pgm=self.pgm, variables=variables, evidence=evidence
+                pgm=self.pgm,
+                variables=variables,
+                evidence=evidence,
+                **options,
             )
-            return optimize_map_query_model(model, **solver_options)
+            return optimize_map_query_model(model, **options)
 
 
 class DBN_IntegerProgrammingInference:
@@ -93,7 +109,7 @@ class DBN_IntegerProgrammingInference:
         variables=None,
         evidence=None,
         show_progress=False,
-        **solver_options
+        **options
     ):
         """
         Computes the MAP Query over the variables given the evidence. Returns the
@@ -129,7 +145,7 @@ class DBN_IntegerProgrammingInference:
             model = self.pgm.create_map_query_model(
                 start=start, stop=stop, variables=variables, evidence=evidence
             )
-            return optimize_map_query_model(model, **solver_options)
+            return optimize_map_query_model(model, **options)
 
         elif isinstance(self.pgm, pgmpy.models.DynamicBayesianNetwork):
             model = create_DBN_map_query_model(
@@ -139,4 +155,4 @@ class DBN_IntegerProgrammingInference:
                 variables=variables,
                 evidence=evidence,
             )
-            return optimize_map_query_model(model, **solver_options)
+            return optimize_map_query_model(model, **options)
