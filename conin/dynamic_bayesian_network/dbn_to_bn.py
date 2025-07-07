@@ -5,31 +5,28 @@ except:
     pass
 
 
-def Xcreate_bn_from_dbn(*, dbn, start, stop):
-    assert start < stop
-    # Initialize the DBN to copy relationships from step 0 to subsequent steps
-    dbn.initialize_initial_state()
+"""
+The MIT License (MIT)
 
-    bn = dbn.get_constant_bn(start)
-    for i in range(start + 1, stop):
-        bni = dbn.get_constant_bn(i)
+Copyright (c) 2013-2024 pgmpy
 
-        bn.add_nodes_from([node for node in bni.nodes() if node.endswith(f"_{i + 1}")])
-        bn.add_edges_from(bni.edges())
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
 
-        for node in bni.nodes():
-            if node.endswith(f"_{i + 1}"):
-                cpd = bni.get_cpds(node)
-                if cpd is not None:
-                    bn.add_cpds(bni.get_cpds(node))
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-    bn._pyomo_index_names = {
-        (name, t): f"{name}_{t}"
-        for t_slice in range(start, stop + 1)
-        for name, t in dbn.get_slice_nodes(t_slice)
-    }
-
-    return bn
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+"""
 
 
 def get_constant_bn(dbn, t_slice=0):
