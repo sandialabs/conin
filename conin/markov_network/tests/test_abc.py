@@ -21,7 +21,7 @@ except Exception as e:
     pgmpy_available = False
 
 
-def test_ABC():
+def test_ABC1():
     """
     Three variables with pair-wise interactions.
 
@@ -161,12 +161,44 @@ def test_ABC():
         assert J == J_
         assert v == v_
         assert w == w_
-        model = create_MN_map_query_model(pgm=pgm)
-        results = optimize_map_query_model(model, solver="glpk")
-        assert results.solution.variable_value == {"A": 2, "B": 2, "C": 1}
 
 
-def test_ABC_constrained():
+def test_ABC2():
+    pgm = examples.ABC()
+    model = create_MN_map_query_model(pgm=pgm)
+    results = optimize_map_query_model(model, solver="glpk")
+    assert results.solution.variable_value == {"A": 2, "B": 2, "C": 1}
+
+
+def test_ABC3():
+    pgm = examples.ABC()
+    model = create_MN_map_query_model(pgm=pgm, variables=["A"])
+    results = optimize_map_query_model(model, solver="glpk")
+    assert results.solution.variable_value == {"A": 2}
+
+
+def test_ABC4():
+    pgm = examples.ABC()
+    model = create_MN_map_query_model(pgm=pgm, variables=["B"])
+    results = optimize_map_query_model(model, solver="glpk")
+    assert results.solution.variable_value == {"B": 2}
+
+
+def test_ABC5():
+    pgm = examples.ABC()
+    model = create_MN_map_query_model(pgm=pgm, variables=["C"])
+    results = optimize_map_query_model(model, solver="glpk")
+    assert results.solution.variable_value == {"C": 1}
+
+
+def test_ABC6():
+    pgm = examples.ABC()
+    model = create_MN_map_query_model(pgm=pgm, variables=["C"], evidence={"B": 0})
+    results = optimize_map_query_model(model, solver="glpk")
+    assert results.solution.variable_value == {"C": 1}
+
+
+def test_ABC_constrained1():
     """
     Three variables with pair-wise interactions.
 
@@ -317,22 +349,32 @@ def test_ABC_constrained():
         assert v == v_
         assert w == w_
 
-        # Constrain the inference to ensure that all variables have different
-        # values
-        pgm = examples.ABC()
-        model = create_MN_map_query_model(pgm=pgm)
 
-        def diff_(M, s):
-            s = State(s)
-            return M.x["A", s] + M.x["B", s] + M.x["C", s] <= 1
+def test_ABC_constrained2():
+    """
+    Three variables with pair-wise interactions.
 
-        model.diff = pyo.Constraint([0, 1, 2], rule=diff_)
+    The interactions have equal weights.  The unconstrained MAP solution is A:2, B:2, C:1.
+    However, we include a constraint that excludes variable assignments to values that are equal.
 
-        results = optimize_map_query_model(model, solver="glpk")
-        assert results.solution.variable_value == {"A": 0, "B": 2, "C": 1}
+    The constrained MAP solution is A:0, B:2, C:1.
+    """
+    # Constrain the inference to ensure that all variables have different
+    # values
+    pgm = examples.ABC()
+    model = create_MN_map_query_model(pgm=pgm)
 
-        # Constrain the inference to ensure that all variables have different
-        # values
-        cpgm = examples.ABC_constrained()
-        results = optimize_map_query_model(cpgm.create_map_query_model(), solver="glpk")
-        assert results.solution.variable_value == {"A": 0, "B": 2, "C": 1}
+    def diff_(M, s):
+        s = State(s)
+        return M.x["A", s] + M.x["B", s] + M.x["C", s] <= 1
+
+    model.diff = pyo.Constraint([0, 1, 2], rule=diff_)
+
+    results = optimize_map_query_model(model, solver="glpk")
+    assert results.solution.variable_value == {"A": 0, "B": 2, "C": 1}
+
+    # Constrain the inference to ensure that all variables have different
+    # values
+    cpgm = examples.ABC_constrained()
+    results = optimize_map_query_model(cpgm.create_map_query_model(), solver="glpk")
+    assert results.solution.variable_value == {"A": 0, "B": 2, "C": 1}

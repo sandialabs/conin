@@ -3,12 +3,24 @@ from math import log, prod
 import numpy as np
 
 
+def get_factor_value(f, values):
+    """
+    This is a wrapper for the DiscreteFactor.get_value() method.  This allows for
+    the specification of node names that are non-strings.
+    """
+    return f.values[tuple(f.name_to_no[var][values[var]] for var in f.variables)]
+
+
 @dataclass(order=True, frozen=True)
 class State:
     value: tuple
 
 
 def extract_factor_representation(pgm):
+    return extract_factor_representation_(pgm.states, list(pgm.get_factors()))
+
+
+def extract_factor_representation_(pgm_states, pgm_factors, var_index_map=None):
     #
     # S[r]: the (finite) set of possible values of variable X_r
     #           Variable values s can be integers or strings
@@ -23,31 +35,46 @@ def extract_factor_representation(pgm):
     # w[i,j]: the log-probability of factor i in configuration j
     #           Note that j \in J[i]
     #
-    S = {r: [State(value=s) for s in values] for r, values in pgm.states.items()}
+    if var_index_map:
+        S = {
+            var_index_map[r]: [State(value=s) for s in values]
+            for r, values in pgm_states.items()
+        }
+    else:
+        S = {r: [State(value=s) for s in values] for r, values in pgm_states.items()}
     J = {}
     v = {}
     w = {}
-    for factor in pgm.get_factors():
+    for factor in pgm_factors:
         vars = factor.scope()
-        i = "_".join(vars)
         size = prod(factor.get_cardinality(vars).values())
         assignments = factor.assignment(list(range(size)))
+
+        # Create a string name for this factor
+        if var_index_map:
+            i = "_".join(var_index_map[v] for v in vars)
+        else:
+            i = "_".join(vars)
 
         # J
         J[i] = list(range(size))
 
         # v
         for j, assignment in enumerate(assignments):
-            if factor.get_value(**dict(assignment)) > 0:
+            if get_factor_value(factor, dict(assignment)) > 0:
                 for key, value in assignment:
-                    v[i, j, key] = State(value)
+                    if var_index_map:
+                        v[i, j, var_index_map[key]] = State(value)
+                    else:
+                        v[i, j, key] = State(value)
 
         # w
-        values = [factor.get_value(**dict(assignment)) for assignment in assignments]
+        values = [
+            get_factor_value(factor, dict(assignment)) for assignment in assignments
+        ]
         total = np.sum(factor.values)
-        # print("HERE",i,total,values)
         for j in range(size):
             if values[j] > 0:
                 w[i, j] = log(values[j] / total)
-            # j += 1     WEH - Why are we skipping every other value?
+
     return S, J, v, w

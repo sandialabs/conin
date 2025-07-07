@@ -1,3 +1,5 @@
+import pandas as pd
+import numpy as np
 import pyomo.environ as pyo
 from conin.bayesian_network import (
     ConstrainedDiscreteBayesianNetwork,
@@ -6,6 +8,7 @@ from conin.bayesian_network import (
 
 try:
     from pgmpy.models import DiscreteBayesianNetwork
+    from pgmpy.estimators.MLE import MaximumLikelihoodEstimator
     from pgmpy.factors.discrete import TabularCPD
 except Exception as e:
     pass
@@ -243,4 +246,115 @@ def DBDA_5_1(debug=False):
         print(test_result_CPD_1)
         print(test_result_CPD_2)
 
+    return model
+
+
+def holmes(debug=False):
+    """
+    Adapted from Lecture Notes by Alice Gao.
+
+    W - Does Watson call Holmes?
+    G - Does Gibbon call Holmes?
+    A - Does Alarm go off?
+    B - Does a burglary happen?
+    E - Does an earthquake happen?
+    R - Does he hear about an earthquake on the radio?
+
+    A. Gao. "Lecture 13: Variable Elimination Algorithm", 2021.
+    https://cs.uwaterloo.ca/~a23gao/cs486686_f18/schedule.shtml
+    """
+    G = DiscreteBayesianNetwork()
+    G.add_nodes_from(["E", "B", "R", "A", "W", "G"])
+    G.add_edge("E", "R")
+    G.add_edge("E", "A")
+    G.add_edge("B", "A")
+    G.add_edge("A", "W")
+    G.add_edge("A", "G")
+    cpd_E = MapCPD(variable="E", values={"e": 0.0003, "-e": "0.9997"})
+    cpd_B = MapCPD(variable="B", values={"b": 0.0001, "-b": "0.9999"})
+    cpd_R = MapCPD(
+        variable="R",
+        evidence=["E"],
+        values={"e": {"r": 0.0002, "-r": 0.9998}, "-e": {"r": 0.9, "-r": 0.1}},
+    )
+    cpd_A = MapCPD(
+        variable="A",
+        evidence=["E", "B"],
+        values={
+            ("-e", "-b"): {"a": 0.01, "-a": 0.99},
+            ("e", "-b"): {"a": 0.2, "-a": 0.8},
+            ("-e", "b"): {"a": 0.95, "-a": 0.05},
+            ("e", "b"): {"a": 0.96, "-a": 0.04},
+        },
+    )
+    cpd_W = MapCPD(
+        variable="W",
+        evidence=["A"],
+        values={"-a": {"w": 0.4, "-w": 0.6}, "a": {"w": 0.8, "-w": 0.2}},
+    )
+    cpd_G = MapCPD(
+        variable="G",
+        evidence=["A"],
+        values={"-a": {"g": 0.04, "-g": 0.96}, "a": {"g": 0.4, "-g": 0.6}},
+    )
+    if debug:
+        print(cpd_E)
+        print(cpd_B)
+        print(cpd_R)
+        print(cpd_A)
+        print(cpd_W)
+        print(cpd_G)
+    G.add_cpds(cpd_E, cpd_B, cpd_R, cpd_A, cpd_W, cpd_G)
+    G.check_model()
+    return G
+
+
+def pgmpy_issue_1177(debug=False):
+    model = DiscreteBayesianNetwork(
+        [
+            ("A", "SD"),
+            ("DW", "SD"),
+            ("A", "ES"),
+            ("DW", "ES"),
+            ("SD", "ES"),
+            ("IW", "IE"),
+            ("DNR", "IE"),
+            ("G", "IE"),
+            ("DRW", "LC"),
+            ("DT", "LC"),
+            ("DRD", "LC"),
+            ("DW", "C"),
+            ("LC", "C"),
+            ("ES", "ELP"),
+            ("IE", "ELP"),
+            ("C", "ELP"),
+            ("ELP", "STKJ"),
+            ("ELP", "SCKJ"),
+            ("ELP", "SHKJ"),
+        ]
+    )
+    np.random.seed(837498373)
+    data = pd.DataFrame(
+        np.random.randint(0, 2, size=(1000, 17)),
+        columns=[
+            "A",
+            "SD",
+            "DW",
+            "ES",
+            "IW",
+            "IE",
+            "DNR",
+            "G",
+            "DRW",
+            "LC",
+            "DT",
+            "DRD",
+            "C",
+            "ELP",
+            "STKJ",
+            "SCKJ",
+            "SHKJ",
+        ],
+    )
+    model.fit(data, estimator=MaximumLikelihoodEstimator)
     return model
