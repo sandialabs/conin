@@ -1,3 +1,5 @@
+import pandas as pd
+import numpy as np
 import pyomo.environ as pyo
 from conin.bayesian_network import (
     ConstrainedDiscreteBayesianNetwork,
@@ -6,6 +8,7 @@ from conin.bayesian_network import (
 
 try:
     from pgmpy.models import DiscreteBayesianNetwork
+    from pgmpy.estimators.MLE import MaximumLikelihoodEstimator
     from pgmpy.factors.discrete import TabularCPD
 except Exception as e:
     pass
@@ -304,3 +307,54 @@ def holmes(debug=False):
     G.add_cpds(cpd_E, cpd_B, cpd_R, cpd_A, cpd_W, cpd_G)
     G.check_model()
     return G
+
+
+def pgmpy_issue_1177(debug=False):
+    model = DiscreteBayesianNetwork(
+        [
+            ("A", "SD"),
+            ("DW", "SD"),
+            ("A", "ES"),
+            ("DW", "ES"),
+            ("SD", "ES"),
+            ("IW", "IE"),
+            ("DNR", "IE"),
+            ("G", "IE"),
+            ("DRW", "LC"),
+            ("DT", "LC"),
+            ("DRD", "LC"),
+            ("DW", "C"),
+            ("LC", "C"),
+            ("ES", "ELP"),
+            ("IE", "ELP"),
+            ("C", "ELP"),
+            ("ELP", "STKJ"),
+            ("ELP", "SCKJ"),
+            ("ELP", "SHKJ"),
+        ]
+    )
+    np.random.seed(837498373)
+    data = pd.DataFrame(
+        np.random.randint(0, 2, size=(1000, 17)),
+        columns=[
+            "A",
+            "SD",
+            "DW",
+            "ES",
+            "IW",
+            "IE",
+            "DNR",
+            "G",
+            "DRW",
+            "LC",
+            "DT",
+            "DRD",
+            "C",
+            "ELP",
+            "STKJ",
+            "SCKJ",
+            "SHKJ",
+        ],
+    )
+    model.fit(data, estimator=MaximumLikelihoodEstimator)
+    return model
