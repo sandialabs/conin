@@ -244,3 +244,51 @@ def DBDA_5_1(debug=False):
         print(test_result_CPD_2)
 
     return model
+
+
+def holmes(debug=False):
+    """
+    Adapted from Lecture Notes by Alice Gao.
+
+    W - Does Watson call Holmes?
+    G - Does Gibbon call Holmes?
+    A - Does Alarm go off?
+    B - Does a burglary happen?
+    E - Does an earthquake happen?
+    R - Does he hear about an earthquake on the radio?
+
+    A. Gao. "Lecture 13: Variable Elimination Algorithm", 2021.
+    https://cs.uwaterloo.ca/~a23gao/cs486686_f18/schedule.shtml
+    """
+    G = DiscreteBayesianNetwork()
+    G.add_nodes_from(["E", "B", "R", "A", "W", "G"])
+    G.add_edge("E", "R")
+    G.add_edge("E", "A")
+    G.add_edge("B", "A")
+    G.add_edge("A", "W")
+    G.add_edge("A", "G")
+    cpd_E = MapCPD(variable="E", values={"e":0.0003, "-e":"0.9997"})
+    cpd_B = MapCPD(variable="B", values={"b":0.0001, "-b":"0.9999"})
+    cpd_R = MapCPD(variable="R", evidence=["E"],
+            values={"e":{"r":0.0002, "-r":0.9998}, "-e":{"r":0.9, "-r":0.1}})
+    cpd_A = MapCPD(variable="A", evidence=["E","B"],
+            values={
+                    ("-e","-b"):{"a":0.01, "-a":0.99},
+                    ("e","-b"):{"a":0.2, "-a":0.8},
+                    ("-e","b"):{"a":0.95, "-a":0.05},
+                    ("e","b"):{"a":0.96, "-a":0.04},})
+    cpd_W = MapCPD(variable="W", evidence=["A"],
+            values={"-a":{"w":0.4, "-w":0.6}, "a":{"w":0.8, "-w":0.2}})
+    cpd_G = MapCPD(variable="G", evidence=["A"],
+            values={"-a":{"g":0.04, "-g":0.96}, "a":{"g":0.4, "-g":0.6}})
+    if debug:
+        print(cpd_E)
+        print(cpd_B)
+        print(cpd_R)
+        print(cpd_A)
+        print(cpd_W)
+        print(cpd_G)
+    G.add_cpds(cpd_E, cpd_B, cpd_R, cpd_A, cpd_W, cpd_G)
+    G.check_model()
+    return G
+
