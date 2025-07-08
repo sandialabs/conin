@@ -18,9 +18,7 @@ def test_add_unknowns():
         [0, "__UNKNOWN__", "__UNKNOWN__"],
         ["__UNKNOWN__"],
     ]
-    assert learning.add_unknowns(
-        [[0, 0, 1], [2], [0, 1, 3], [4]], token="test"
-    ) == [
+    assert learning.add_unknowns([[0, 0, 1], [2], [0, 1, 3], [4]], token="test") == [
         [0, 0, 1],
         ["test"],
         [0, 1, "test"],
@@ -50,9 +48,7 @@ def test_supervised_learning():
     hidden = [["h0", "h0", "h1"], ["h1", "h1", "h1", "h0"]]
     observed = [["o0", "o0", "o0"], ["o1", "o1", "o1", "o1"]]
 
-    sim = learning.convert_to_simulations(
-        hidden_list=hidden, observed_list=observed
-    )
+    sim = learning.convert_to_simulations(hidden_list=hidden, observed_list=observed)
 
     hmm = learning.supervised_learning(
         simulations=sim,
@@ -87,9 +83,7 @@ def test_supervised_learning_non_zero_tolerance():
     hidden = [["h0", "h0", "h1"], ["h1", "h1", "h1", "h0"]]
     observed = [["o0", "o0", "o0"], ["o1", "o1", "o1", "o1"]]
 
-    sim = learning.convert_to_simulations(
-        hidden_list=hidden, observed_list=observed
-    )
+    sim = learning.convert_to_simulations(hidden_list=hidden, observed_list=observed)
 
     hmm = learning.supervised_learning(
         simulations=sim,
@@ -108,24 +102,12 @@ def test_supervised_learning_non_zero_tolerance():
     assert math.isclose(start_probs["h1"], 0.5)
     assert math.isclose(transition_probs[("h0", "h0")], 0.5)
     assert math.isclose(transition_probs[("h0", "h1")], 0.5)
-    assert math.isclose(
-        transition_probs[("h1", "h0")], (1 + eps) / (3 + 2 * eps)
-    )
-    assert math.isclose(
-        transition_probs[("h1", "h1")], (2 + eps) / (3 + 2 * eps)
-    )
-    assert math.isclose(
-        emission_probs[("h0", "o0")], (2 + eps) / (3 + 2 * eps)
-    )
-    assert math.isclose(
-        emission_probs[("h0", "o1")], (1 + eps) / (3 + 2 * eps)
-    )
-    assert math.isclose(
-        emission_probs[("h1", "o0")], (1 + eps) / (4 + 2 * eps)
-    )
-    assert math.isclose(
-        emission_probs[("h1", "o1")], (3 + eps) / (4 + 2 * eps)
-    )
+    assert math.isclose(transition_probs[("h1", "h0")], (1 + eps) / (3 + 2 * eps))
+    assert math.isclose(transition_probs[("h1", "h1")], (2 + eps) / (3 + 2 * eps))
+    assert math.isclose(emission_probs[("h0", "o0")], (2 + eps) / (3 + 2 * eps))
+    assert math.isclose(emission_probs[("h0", "o1")], (1 + eps) / (3 + 2 * eps))
+    assert math.isclose(emission_probs[("h1", "o0")], (1 + eps) / (4 + 2 * eps))
+    assert math.isclose(emission_probs[("h1", "o1")], (3 + eps) / (4 + 2 * eps))
 
 
 def test_supervised_learning_extra_hidden_observed():
@@ -136,9 +118,7 @@ def test_supervised_learning_extra_hidden_observed():
     hidden = [["h0", "h0", "h1"], ["h1", "h1", "h1", "h0"]]
     observed = [["o0", "o0", "o0"], ["o1", "o1", "o1", "o1"]]
 
-    sim = learning.convert_to_simulations(
-        hidden_list=hidden, observed_list=observed
-    )
+    sim = learning.convert_to_simulations(hidden_list=hidden, observed_list=observed)
 
     hmm = learning.supervised_learning(
         simulations=sim,
@@ -184,9 +164,7 @@ def test_supervised_learning_priors():
     hidden = [["h0", "h0", "h1"], ["h1", "h1", "h1", "h0"]]
     observed = [["o0", "o0", "o0"], ["o1", "o1", "o1", "o1"]]
 
-    sim = learning.convert_to_simulations(
-        hidden_list=hidden, observed_list=observed
-    )
+    sim = learning.convert_to_simulations(hidden_list=hidden, observed_list=observed)
 
     transition_prior = {("h2", "h2"): 1}
     emission_prior = {("h2", "o2"): 1 / 2, ("h2", "o0"): 1 / 2}
