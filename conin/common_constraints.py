@@ -60,12 +60,14 @@ def appears_at_least_once_before(seq, val1, val2):
     Returns:
         bool: True iff satisfied
     """
-    for index1, x1 in enumerate(seq):
-        if x1 == val2:
-            for index2 in range(0, index1):
-                if seq[index2] == val1:
-                    return True
-            return False
+    found_val1 = False
+
+    for x in seq:
+        if x == val1:
+            found_val1 = True
+        elif x == val2:
+            return found_val1
+
     return True
 
 
@@ -428,7 +430,7 @@ def xor_constraints(constraints):
         for constraint in constraints:
             if constraint.partial_func(T, seq):
                 return True
-            return False
+        return False
 
     return Constraint(func=xor_func, partial_func=xor_partial_func, name=name)
 

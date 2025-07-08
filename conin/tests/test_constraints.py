@@ -76,10 +76,11 @@ class Test_Common_Constraints:
     def test_appears_at_least_once_before(self):
         constraint = appears_at_least_once_before_constraint(1, 2)
         assert appears_at_least_once_before_constraint(1, 2)([1, 2])
-        assert constraint([0, 1])
+        assert constraint([0, 0, 1])
         assert not constraint([2, 2])
         assert not constraint([2, 1])
-        assert constraint([1, 0, 2, 1])
+        assert constraint([0, 1, 2, 1])
+        assert constraint([0, 0, 0])
 
         assert constraint.partial_func(3, [1, 2])
         assert constraint.partial_func(3, [0, 1])
