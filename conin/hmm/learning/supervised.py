@@ -13,10 +13,17 @@ def supervised_learning(
     start_tolerance=None,
     transition_tolerance=None,
     emission_tolerance=None,
-    start_prior=None,  # Nonzero values
     transition_prior=None,  # Nonzero values
     emission_prior=None  # Nonzero values
 ):
+    """
+    Inputs:
+        - simulations: Generated using helper.convert_to_simulations
+        - hidden_states: Hidden states that you could possibly have (you don't need to see all of them in the simulations)
+        - observable_states: Same as hidden states but for observations
+        - X_tolerance: If in a simulation we have a zero in our calculation we replace it with this tolerance
+        - X_priors: These are only used for transitions or emissions which are not observed and for which we want some default values
+    """
     assert (
         hidden_states is not None and len(hidden_states) != 0
     ), "No hidden states specified"
@@ -37,14 +44,8 @@ def supervised_learning(
         start_probs[sim.hidden[0]] += 1
 
     total = sum(start_probs.values())
-    if total == 0.0:
-        # WEH - Can we ever see no start transitions???
-        if start_prior:
-            for i in start_probs:
-                start_probs[i] = start_prior.get(i, 0.0)
-        else:
-            for i in start_probs:
-                start_probs[i] = 1.0 / len(hidden_states)
+    if total == 0.0:  # pragma: no cover
+        raise ValueError("YOU SHOULD NOT SEE THIS.")
     else:
         for i in start_probs:
             start_probs[i] /= total
