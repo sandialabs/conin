@@ -25,7 +25,6 @@ class HMMApplication:
         self.initialize_algebraic_hmm("pyomo")
 
         # Applicaton data used to initialize the HMM from simulations
-        self._start_prior = (None,)  # Nonzero values
         self._transition_prior = (None,)  # Nonzero values
         self._emission_prior = None  # Nonzero values
         self._hidden_states = None
@@ -113,7 +112,6 @@ class HMMApplication:
             start_tolerance=start_tolerance,
             transition_tolerance=transition_tolerance,
             emission_tolerance=emission_tolerance,
-            start_prior=self._start_prior,
             transition_prior=self._transition_prior,
             emission_prior=self._emission_prior,
         )
