@@ -123,9 +123,7 @@ def appears_at_least_once_after(seq, val1, val2):
 
 def appears_at_least_once_after_constraint(val1, val2):
     # No partial here because val2 could appear at the very last time step
-    return Constraint(
-        func=lambda seq: appears_at_least_once_after(seq, val1, val2)
-    )
+    return Constraint(func=lambda seq: appears_at_least_once_after(seq, val1, val2))
 
 
 def citation(seq):
@@ -170,9 +168,7 @@ def has_minimum_number_of_occurences(seq, *, val, count):
 
 def has_minimum_number_of_occurences_constraint(*, val, count):
     return Constraint(
-        func=lambda seq: has_minimum_number_of_occurences(
-            seq, val=val, count=count
-        ),
+        func=lambda seq: has_minimum_number_of_occurences(seq, val=val, count=count),
         partial_func=lambda T, seq: seq.count(val) + T - len(seq) >= count,
     )
 
@@ -216,9 +212,7 @@ def has_exact_number_of_occurences(seq, *, val, count):
 
 def has_exact_number_of_occurences_constraint(*, val, count):
     return Constraint(
-        func=lambda seq: has_exact_number_of_occurences(
-            seq, val=val, count=count
-        ),
+        func=lambda seq: has_exact_number_of_occurences(seq, val=val, count=count),
         partial_func=lambda T, seq: seq.count(val) <= count
         and seq.count(val) + T - len(seq) >= count,
     )
@@ -320,9 +314,7 @@ def occurs_only_in_time_frame_constraint(val, *, lower_t=None, upper_t=None):
     )
 
 
-def occurs_at_least_once_in_time_frame(
-    seq, val, *, lower_t=None, upper_t=None
-):
+def occurs_at_least_once_in_time_frame(seq, val, *, lower_t=None, upper_t=None):
     """
     Requires that val only occurs at least once in seq[lower_t, upper_t]
 
@@ -345,9 +337,7 @@ def occurs_at_least_once_in_time_frame(
     return seq[lower_t:upper_t].count(val) >= 1
 
 
-def occurs_at_least_once_in_time_frame_constraint(
-    val, *, lower_t=None, upper_t=None
-):
+def occurs_at_least_once_in_time_frame_constraint(val, *, lower_t=None, upper_t=None):
     def partial_func(seq, val, lower_t, upper_t):
         if lower_t is None:
             lower_t = 0
