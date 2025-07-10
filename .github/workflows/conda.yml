@@ -21,18 +21,16 @@ jobs:
           auto-update-conda: true
           python-version: 3.11
           channels: conda-forge,defaults,https://repo.anaconda.com/pkgs/main,https://repo.anaconda.com/pkgs/r
-          environment-file: pgmpy_env.yml
-          activate-environment: pgmpy_env
+          environment-file: pgmpy_dev_env.yml
+          activate-environment: pgmpy_dev_env
 
       - name: Lint with flake8
         run: |
-          conda install -y flake8
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
       - name: Test with pytest & coverage
         run: |
-          conda install -y pytest pytest-cov
           pytest --cov --cov-branch --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
 
       - name: Upload test results to Codecov
