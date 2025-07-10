@@ -11,47 +11,27 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v3
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v2
         with:
-          python-version: '3.10'
-
-      - name: Set up Conda Environment
-        # Using bash on all platforms; note that Windows runners include Git Bash.
-        shell: bash
-        run: |
-          # Get the base directory for conda
-          CONDA_BASE=$(conda info --base)
-          # Add the proper conda executable directory to the system PATH
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            # On Windows, use the "Scripts" subdirectory
-            echo "$CONDA_BASE/Scripts" >> $GITHUB_PATH
-          else
-            echo "$CONDA_BASE/bin" >> $GITHUB_PATH
-          fi
-
-          # Source conda.sh to enable conda commands in this shell session
-          source "$CONDA_BASE/etc/profile.d/conda.sh"
-          # Create and activate the environment using your YAML specification
-          conda env create -f pgmpy_env.yml
-          conda activate pgmpy_env
+          auto-update-conda: true
+          python-version: 3.10
+          environment-file: pgmpy_env.yml
+          activate-environment: pgmpy_env
 
       - name: Lint with flake8
-        shell: bash
         run: |
           conda install -y flake8
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
       - name: Test with pytest & coverage
-        shell: bash
         run: |
           conda install -y pytest pytest-cov
-          conda run -n pgmpy_env pytest --cov --cov-branch --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
+          pytest --cov --cov-branch --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
 
       - name: Upload test results to Codecov
         if: ${{ !cancelled() }}
