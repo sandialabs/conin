@@ -1,4 +1,5 @@
 from munch import Munch
+import copy
 
 def create_updatefun(zip_list):
     def update_fun_agg(k,r,k_past,r_past):
@@ -39,7 +40,7 @@ def apt_cst_aggregate(cst_list):
     # dependency_list = []
     # cst_ix = {}
     for cst in cst_list:
-        cst = copy.deecopy(cst)
+        cst = copy.deepcopy(cst)
         name_list.append(cst.name)
         # cst_ix[cst.name] = l_ix
         r_ix = l_ix + cst.aux_size
