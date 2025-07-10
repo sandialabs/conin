@@ -20,6 +20,7 @@ jobs:
           miniconda-version: "latest"
           auto-update-conda: true
           python-version: 3.11
+          channels: conda-forge,defaults
           environment-file: pgmpy_env.yml
           activate-environment: pgmpy_env
 
