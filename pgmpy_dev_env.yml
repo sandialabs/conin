@@ -1,4 +1,4 @@
-name: pgmpy_env
+name: pgmpy_dev_env
 channels:
   - conda-forge
   - https://repo.anaconda.com/pkgs/main
@@ -9,3 +9,6 @@ dependencies:
   - numpy
   - glpk
   - pgmpy
+  - flake8
+  - pytest
+  - pytest-cov
