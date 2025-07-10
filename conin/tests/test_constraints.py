@@ -21,6 +21,9 @@ class Test_Constraints:
     false_seq2 = [1, 1, 2, 3, 0, 0, 0]
     false_seq3 = []
 
+    def test_broken(self):
+        assert 0 == 1
+
     def test_call_no_func(self):
         with pytest.raises(InvalidInputError):
             _constraint = Constraint(name="No function")
