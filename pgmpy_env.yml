@@ -48,7 +48,6 @@ dependencies:
   - pyomo=6.9.2
   - pytest=8.4.1
   - pytest-cov=6.0.0
-  - python=3.11.0
   - python_abi=3.11
   - readline=8.2
   - setuptools=78.1.1
