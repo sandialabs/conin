@@ -23,13 +23,14 @@ jobs:
           channels: conda-forge,defaults,https://repo.anaconda.com/pkgs/main,https://repo.anaconda.com/pkgs/r
           environment-file: pgmpy_dev_env.yml
           activate-environment: pgmpy_dev_env
-
-      - name: Lint with flake8
+      - name: Debug Conda Environment
         run: |
           which python
           python --version
           which flake8
           conda info --envs
+      - name: Lint with flake8
+        run: |
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
