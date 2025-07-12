@@ -84,15 +84,23 @@ def _variable_elimination(
 
         # Step 3: Run variable elimination
         for var in elimination_order:
-            # Removing all the factors containing the variables which are
-            # eliminated (as all the factors should be considered only once)
+            #
+            # Collect all factors containing 'var', ignoring all the
+            # factors that contain eliminated variables.
+            #
             factors = [
                 factor
                 for factor, _ in working_factors[var]
                 if not set(factor.variables).intersection(eliminated_variables)
             ]
+            #
+            # Create the factor product of 'factors', and marginalize over 'var'
+            #
             phi = factor_product(*factors)
             phi = getattr(phi, operation)([var], inplace=False)
+            #
+            # Update 'working_factors' and 'eliminated_variables'
+            #
             del working_factors[var]
             for variable in phi.variables:
                 working_factors[variable].add((phi, var))
