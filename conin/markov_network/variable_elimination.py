@@ -84,8 +84,8 @@ def _variable_elimination(
 
         # Step 3: Run variable elimination
         for var in elimination_order:
-            # 
-            # Collect all factors containing 'var', ignoring all the 
+            #
+            # Collect all factors containing 'var', ignoring all the
             # factors that contain eliminated variables.
             #
             factors = [
