@@ -9,7 +9,6 @@ dependencies:
   - numpy
   - glpk
   - flake8
-  #- opt_einsum # This is a requirement of pgmpy that isn't being resolved properly
   - pytest
   - pytest-cov
   - pip 
