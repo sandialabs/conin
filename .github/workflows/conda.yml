@@ -26,9 +26,15 @@ jobs:
           channels: conda-forge,defaults,https://repo.anaconda.com/pkgs/main,https://repo.anaconda.com/pkgs/r
           environment-file: dev_environment.yml
           activate-environment: conin_dev
-      - name: Install package in editable mode
+      - name: Install package and debug
         run: |
+          echo "=== Installing package ==="
           pip install -e .
+          echo "=== Verifying installation ==="
+          pip show conin || echo "Package not found in pip"
+          python -c "import conin; print(f'conin imported from {conin.__file__}')" || echo "Import failed"
+          echo "=== Package contents ==="
+          python -c "import conin; print(dir(conin))" || echo "Cannot inspect package"
       - name: Debug Conda Environment
         run: |
           conda info
@@ -40,7 +46,7 @@ jobs:
 
       - name: Test with pytest & coverage
         run: |
-          pytest --cov --cov-branch --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
+          python -m pytest --cov --cov-branch --cov-report=xml --junitxml=junit.xml -o junit_family=legacy -v
 
       - name: Upload test results to Codecov
         if: ${{ !cancelled() }}
