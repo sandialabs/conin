@@ -26,6 +26,9 @@ jobs:
           channels: conda-forge,defaults,https://repo.anaconda.com/pkgs/main,https://repo.anaconda.com/pkgs/r
           environment-file: dev_environment.yml
           activate-environment: conin_dev
+      - name: Install package in editable mode
+        run: |
+          pip install -e .
       - name: Debug Conda Environment
         run: |
           conda info
