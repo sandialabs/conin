@@ -1,0 +1,13 @@
+name: conin
+channels:
+  - conda-forge
+  - https://repo.anaconda.com/pkgs/main
+  - https://repo.anaconda.com/pkgs/r
+dependencies:
+  - pyomo
+  - munch
+  - numpy
+  - glpk
+  - pip
+  - pip:
+    - pgmpy
