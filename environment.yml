@@ -8,4 +8,6 @@ dependencies:
   - munch
   - numpy
   - glpk
-  - pgmpy
+  - pip
+  - pip:
+    - pgmpy
