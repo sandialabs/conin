@@ -1,4 +1,4 @@
-name: pgmpy_dev_env
+name: conin_dev
 channels:
   - conda-forge
   - https://repo.anaconda.com/pkgs/main
