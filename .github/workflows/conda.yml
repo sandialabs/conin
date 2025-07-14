@@ -1,4 +1,4 @@
-oname: Github CI
+name: Github CI
 
 on:
   push:
