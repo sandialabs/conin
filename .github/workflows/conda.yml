@@ -26,15 +26,17 @@ jobs:
           channels: conda-forge,defaults,https://repo.anaconda.com/pkgs/main,https://repo.anaconda.com/pkgs/r
           environment-file: dev_environment.yml
           activate-environment: conin_dev
-      - name: Install package and debug
+      - name: Install package
         run: |
-          echo "=== Installing package ==="
           conda run -n conin_dev pip install -e .
-          echo "=== Verifying installation ==="
-          pip show conin || echo "Package not found in pip"
-          python -c "import conin; print(f'conin imported from {conin.__file__}')" || echo "Import failed"
-          echo "=== Package contents ==="
-          python -c "import conin; print(dir(conin))" || echo "Cannot inspect package"
+      - name: Debug pgmpy installation
+        run: |
+          source "$(conda info --base)/etc/profile.d/conda.sh"
+          conda activate pgmpy_env
+          python -c "import pgmpy; print(f'pgmpy version: {pgmpy.__version__}')"
+          python -c "from pgmpy.models import BayesianNetwork; print('BayesianNetwork imported successfully')"
+          conda list | grep pgmpy
+        shell: bash
       - name: Debug Conda Environment
         run: |
           conda info
