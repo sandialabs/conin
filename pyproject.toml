@@ -27,6 +27,10 @@ classifiers=[
         "Topic :: Software Development :: Libraries :: Python Modules",
     ]
 
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["conin*"]
+
 [tool.coverage.report]
 exclude_also = [
   'if self.debug:',
