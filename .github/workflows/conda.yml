@@ -10,7 +10,7 @@ jobs:
       run:
         shell: bash -el {0}
     strategy:
-      fail-fast: false # If something fails, we let everything else run
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
         python-version: ["3.10", "3.11", "3.12", "3.13"]
@@ -18,19 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      # Cache conda environment
-      - name: Cache conda environment
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/conda_pkgs_dir
-            ~/.conda
-            ~/miniconda3/envs
-          key: conda-${{ matrix.os }}-${{ matrix.python-version }}-${{ hashFiles('dev_environment.yml') }}
-          restore-keys: |
-            conda-${{ matrix.os }}-${{ matrix.python-version }}-
-            conda-${{ matrix.os }}-
-      
+      # Set up Miniconda first
       - name: Set up Miniconda
         uses: conda-incubator/setup-miniconda@v3
         with:
@@ -38,9 +26,27 @@ jobs:
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
           channels: conda-forge,defaults
-          environment-file: dev_environment.yml
           activate-environment: conin_dev
-          use-mamba: true  # Faster package resolution
+          use-mamba: true
+
+      # Cache conda packages
+      - name: Cache conda packages
+        uses: actions/cache@v4
+        with:
+          path: ~/conda_pkgs_dir
+          key: conda-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('dev_environment.yml') }}
+          restore-keys: |
+            conda-${{ runner.os }}-${{ matrix.python-version }}-
+            conda-${{ runner.os }}-
+        env:
+          CONDA_PKGS_DIRS: ~/conda_pkgs_dir
+
+      # Create environment from file
+      - name: Create conda environment
+        run: |
+          conda env create -f dev_environment.yml -n conin_dev
+        env:
+          CONDA_PKGS_DIRS: ~/conda_pkgs_dir
       
       # Cache pip dependencies
       - name: Cache pip dependencies
@@ -56,7 +62,7 @@ jobs:
         run: pip install -e .
       
       - name: Lint with flake8
-        run: | # Things that will actually break code, and then just warnings
+        run: |
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics 
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
       
