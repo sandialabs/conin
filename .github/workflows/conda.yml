@@ -32,7 +32,7 @@ jobs:
       - name: Debug pgmpy installation
         run: |
           source "$(conda info --base)/etc/profile.d/conda.sh"
-          conda activate pgmpy_env
+          conda activate conin_dev
           python -c "import pgmpy; print(f'pgmpy version: {pgmpy.__version__}')"
           python -c "from pgmpy.models import BayesianNetwork; print('BayesianNetwork imported successfully')"
           conda list | grep pgmpy
