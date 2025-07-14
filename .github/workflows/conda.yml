@@ -1,3 +1,5 @@
+oname: Github CI
+
 on:
   push:
     branches:
@@ -6,50 +8,37 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  build:
-    defaults:
-      run:
-        shell: bash -el {0}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+  build-linux:
+    runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Miniconda
-        uses: conda-incubator/setup-miniconda@v3
-        with:
-          miniconda-version: "latest"
-          auto-update-conda: true
-          python-version: 3.11
-          channels: conda-forge,defaults,https://repo.anaconda.com/pkgs/main,https://repo.anaconda.com/pkgs/r
-          environment-file: dev_environment.yml
-          activate-environment: conin_dev
-      - name: Install package and debug
-        run: |
-          echo "=== Installing package ==="
-          conda run -n conin_dev pip install -e .
-          echo "=== Verifying installation ==="
-          pip show conin || echo "Package not found in pip"
-          python -c "import conin; print(f'conin imported from {conin.__file__}')" || echo "Import failed"
-          echo "=== Package contents ==="
-          python -c "import conin; print(dir(conin))" || echo "Cannot inspect package"
-      - name: Debug Conda Environment
-        run: |
-          conda info
-          conda list
-      - name: Lint with flake8
-        run: |
-          conda run -n conin_dev flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          conda run -n conin_dev flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-
-      - name: Test with pytest & coverage
-        run: |
-          conda run -n conin_dev pytest --cov --cov-branch --cov-report=xml --junitxml=junit.xml -o junit_family=legacy -v
-
-      - name: Upload test results to Codecov
-        if: ${{ !cancelled() }}
-        uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+    - uses: actions/checkout@v4
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.10'
+    - name: Add conda to system path
+      run: |
+        # $CONDA is an environment variable pointing to the root of the miniconda directory
+        echo $CONDA/bin >> $GITHUB_PATH
+    - name: Create and activate conda environment
+      run: |
+        # Assuming $CONDA is set to your miniconda root; otherwise, use $(conda info --base)
+        source "$(conda info --base)/etc/profile.d/conda.sh"
+        conda env create -f dev_environment.yml
+        conda activate conin_dev
+      shell: bash
+    - name: Lint with flake8
+      run: |
+        conda install flake8
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    - name: Test with pytest & coverage
+      run: |
+        conda install pytest pytest-cov
+        conda run -n conin_dev pytest --cov --cov-branch --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
+    - name: Upload test results to Codecov
+      if: ${{ !cancelled() }}
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
