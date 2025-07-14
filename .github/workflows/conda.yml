@@ -27,16 +27,23 @@ jobs:
         source "$(conda info --base)/etc/profile.d/conda.sh"
         conda env create -f pgmpy_env.yml
         conda activate pgmpy_env
+        pip install -e .
       shell: bash
     - name: Lint with flake8
       run: |
-        conda install flake8
+        source "$(conda info --base)/etc/profile.d/conda.sh"
+        conda activate pgmpy_env
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      shell: bash
+    
     - name: Test with pytest & coverage
       run: |
-        conda install pytest pytest-cov
-        conda run -n pgmpy_env pytest --cov --cov-branch --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
+        source "$(conda info --base)/etc/profile.d/conda.sh"
+        conda activate pgmpy_env
+        pip install -e .  # Install your package
+        pytest --cov --cov-branch --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
+      shell: bash
     - name: Upload test results to Codecov
       if: ${{ !cancelled() }}
       uses: codecov/codecov-action@v3
