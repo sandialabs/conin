@@ -46,7 +46,9 @@ jobs:
 
       - name: Test with pytest & coverage
         run: |
-          python -m pytest --cov --cov-branch --cov-report=xml --junitxml=junit.xml -o junit_family=legacy -v
+          conda info
+          conda list
+          conda run -n conin_dev pytest --cov --cov-branch --cov-report=xml --junitxml=junit.xml -o junit_family=legacy -v
 
       - name: Upload test results to Codecov
         if: ${{ !cancelled() }}
