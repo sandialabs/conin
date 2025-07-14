@@ -38,20 +38,10 @@ jobs:
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
           channels: conda-forge,defaults
-          environment-file: dev_environment.yml
           activate-environment: conin_dev
-          use-mamba: true  # Faster package resolution
-      
-      # Cache pip dependencies
-      - name: Cache pip dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: pip-${{ matrix.os }}-${{ matrix.python-version }}-${{ hashFiles('setup.py', 'pyproject.toml', 'requirements*.txt') }}
-          restore-keys: |
-            pip-${{ matrix.os }}-${{ matrix.python-version }}-
-            pip-${{ matrix.os }}-
-      
+          environment-file: dev_environment.yml
+          use-mamba: true
+
       - name: Install package
         run: pip install -e .
       
