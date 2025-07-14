@@ -29,7 +29,7 @@ jobs:
       - name: Install package and debug
         run: |
           echo "=== Installing package ==="
-          pip install -e .
+          conda run -n conin_dev pip install -e .
           echo "=== Verifying installation ==="
           pip show conin || echo "Package not found in pip"
           python -c "import conin; print(f'conin imported from {conin.__file__}')" || echo "Import failed"
@@ -41,13 +41,11 @@ jobs:
           conda list
       - name: Lint with flake8
         run: |
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+          conda run -n conin_dev flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          conda run -n conin_dev flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
       - name: Test with pytest & coverage
         run: |
-          conda info
-          conda list
           conda run -n conin_dev pytest --cov --cov-branch --cov-report=xml --junitxml=junit.xml -o junit_family=legacy -v
 
       - name: Upload test results to Codecov
