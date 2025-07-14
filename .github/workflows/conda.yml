@@ -41,8 +41,6 @@ jobs:
           activate-environment: conin_dev
           environment-file: dev_environment.yml
           use-mamba: true
-          cache-environment: true  # This enables built-in caching
-          cache-environment-key: ${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('dev_environment.yml') }}
 
       - name: Install package
         run: pip install -e .
