@@ -20,6 +20,7 @@ try:
 except Exception as e:
     pgmpy_available = False
 
+
 def test_ABC1():
     """
     Three variables with pair-wise interactions.
@@ -161,12 +162,14 @@ def test_ABC1():
         assert v == v_
         assert w == w_
 
+
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_ABC2():
     pgm = examples.ABC()
     model = create_MN_map_query_model(pgm=pgm)
     results = optimize_map_query_model(model, solver="glpk")
     assert results.solution.variable_value == {"A": 2, "B": 2, "C": 1}
+
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_ABC3():
@@ -175,6 +178,7 @@ def test_ABC3():
     results = optimize_map_query_model(model, solver="glpk")
     assert results.solution.variable_value == {"A": 2}
 
+
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_ABC4():
     pgm = examples.ABC()
@@ -182,12 +186,14 @@ def test_ABC4():
     results = optimize_map_query_model(model, solver="glpk")
     assert results.solution.variable_value == {"B": 2}
 
+
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_ABC5():
     pgm = examples.ABC()
     model = create_MN_map_query_model(pgm=pgm, variables=["C"])
     results = optimize_map_query_model(model, solver="glpk")
     assert results.solution.variable_value == {"C": 1}
+
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_ABC6():
@@ -347,6 +353,7 @@ def test_ABC_constrained1():
         assert J == J_
         assert v == v_
         assert w == w_
+
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_ABC_constrained2():
