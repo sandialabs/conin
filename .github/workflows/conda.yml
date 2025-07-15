@@ -46,12 +46,12 @@ jobs:
         run: pip install -e .
       
       - name: Lint with flake8
-        run: | # Things that will actually break code, and then just warnings
+        run: | # First, things that will actually break code, and then just warnings
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics 
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
       
       - name: Test with pytest & coverage
-        run: |
+        run: | # From Codecov
           pytest --cov --cov-branch --cov-report=xml --junitxml=junit.xml -v
       
       - name: Upload test results to Codecov
@@ -60,3 +60,10 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml
+
+      - name: Run pytest withough pgmpy
+        run: | # You might not need to copy the environment, but I don't want to mess up the caching 
+          conda create --name conin_dev_no_pgmpy --clone conin_dev
+          conda activate conin_dev_no_pgmpy
+          pip uninstall -y pgmpy
+          pytest . 

@@ -1,3 +1,5 @@
+import pytest
+
 from math import log
 import pyomo.environ as pyo
 from conin.markov_network import (
@@ -163,6 +165,7 @@ def test_ABC1():
         assert w == w_
 
 
+@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_ABC2():
     pgm = examples.ABC()
     model = create_MN_map_query_model(pgm=pgm)
@@ -170,6 +173,7 @@ def test_ABC2():
     assert results.solution.variable_value == {"A": 2, "B": 2, "C": 1}
 
 
+@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_ABC3():
     pgm = examples.ABC()
     model = create_MN_map_query_model(pgm=pgm, variables=["A"])
@@ -177,6 +181,7 @@ def test_ABC3():
     assert results.solution.variable_value == {"A": 2}
 
 
+@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_ABC4():
     pgm = examples.ABC()
     model = create_MN_map_query_model(pgm=pgm, variables=["B"])
@@ -184,6 +189,7 @@ def test_ABC4():
     assert results.solution.variable_value == {"B": 2}
 
 
+@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_ABC5():
     pgm = examples.ABC()
     model = create_MN_map_query_model(pgm=pgm, variables=["C"])
@@ -191,6 +197,7 @@ def test_ABC5():
     assert results.solution.variable_value == {"C": 1}
 
 
+@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_ABC6():
     pgm = examples.ABC()
     model = create_MN_map_query_model(pgm=pgm, variables=["C"], evidence={"B": 0})
@@ -350,6 +357,7 @@ def test_ABC_constrained1():
         assert w == w_
 
 
+@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_ABC_constrained2():
     """
     Three variables with pair-wise interactions.
