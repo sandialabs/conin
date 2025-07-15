@@ -65,5 +65,5 @@ jobs:
         run: | # You might not need to copy the environment, but I don't want to mess up the caching 
           conda create --name conin_dev_no_pgmpy --clone conin_dev
           conda activate conin_dev_no_pgmpy
-          conda remove -n conin_dev_no_pgmpy pgmpy
+          pip uninstall pgmpy
           pytest . 
