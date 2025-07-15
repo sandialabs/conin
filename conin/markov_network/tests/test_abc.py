@@ -1,3 +1,5 @@
+import pytest
+
 from math import log
 import pyomo.environ as pyo
 from conin.markov_network import (
