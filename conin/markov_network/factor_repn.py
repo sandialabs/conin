@@ -65,7 +65,7 @@ def extract_factor_representation_(pgm_states, pgm_factors, var_index_map=None):
         ]
         total = np.sum(factor.values)
         if total == 0.0:
-            values = [1/len(values)]*size
+            values = [1 / len(values)] * size
             total = 1.0
 
         #
