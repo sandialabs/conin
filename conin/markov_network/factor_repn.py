@@ -59,9 +59,18 @@ def extract_factor_representation_(pgm_states, pgm_factors, var_index_map=None):
         # J
         J[i] = list(range(size))
 
-        # v
+        # Compute values of assignments, normalizing if all values are zero
+        values = [
+            get_factor_value(factor, dict(assignment)) for assignment in assignments
+        ]
+        total = np.sum(factor.values)
+        if total == 0.0:
+            values = [1/len(values)]*size
+            total = 1.0
+
+        #
         for j, assignment in enumerate(assignments):
-            if get_factor_value(factor, dict(assignment)) > 0:
+            if values[j] > 0:
                 for key, value in assignment:
                     if var_index_map:
                         v[i, j, var_index_map[key]] = State(value)
@@ -69,10 +78,6 @@ def extract_factor_representation_(pgm_states, pgm_factors, var_index_map=None):
                         v[i, j, key] = State(value)
 
         # w
-        values = [
-            get_factor_value(factor, dict(assignment)) for assignment in assignments
-        ]
-        total = np.sum(factor.values)
         for j in range(size):
             if values[j] > 0:
                 w[i, j] = log(values[j] / total)
