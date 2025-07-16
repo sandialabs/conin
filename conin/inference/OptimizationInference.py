@@ -1,7 +1,12 @@
+import warnings
+
 try:
     import pgmpy.models
 except Exception as e:
-    pass
+    warnings.warn(
+        f"Warning: pgmpy not installed, so OptimizationInference.py will not work. Exception: {e}"
+    )
+
 from conin.markov_network import (
     ConstrainedMarkovNetwork,
     optimize_map_query_model,
@@ -109,7 +114,7 @@ class DBN_IntegerProgrammingInference:
         variables=None,
         evidence=None,
         show_progress=False,
-        **options
+        **options,
     ):
         """
         Computes the MAP Query over the variables given the evidence. Returns the

@@ -1,11 +1,14 @@
 import itertools
 import os
 from typing import Hashable, Optional, Dict, List, Tuple
+import warnings
 
 try:
     import pgmpy.factors.discrete
 except Exception as e:
-    pass
+    warnings.warn(
+        f"Warning: pgmpy not installed, so cpd.py will not work. Exception: {e}"
+    )
 
 
 def MapCPD(
@@ -198,11 +201,15 @@ def MapCPD(
         vlist = []
         if len(evidence) == 1:
             for v in state_names[variable]:
-                vlist.append([values[prod][v] for prod in state_names[evidence[0]]])
+                vlist.append(
+                    [values[prod][v] for prod in state_names[evidence[0]]]
+                )
         else:
             for v in state_names[variable]:
                 snames = [state_names[e] for e in evidence]
-                vlist.append([values[prod][v] for prod in itertools.product(*snames)])
+                vlist.append(
+                    [values[prod][v] for prod in itertools.product(*snames)]
+                )
 
     return pgmpy.factors.discrete.TabularCPD(
         variable=variable,

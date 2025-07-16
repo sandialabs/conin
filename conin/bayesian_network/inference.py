@@ -1,8 +1,12 @@
+import warnings
+
 try:
     import pgmpy.models
     import pgmpy.inference
-except:
-    pass
+except Exception as e:
+    warnings.warn(
+        f"Warning: pgmpy not installed, so inference.py will not work. Exception: {e}"
+    )
 from conin.markov_network import create_MN_map_query_model
 
 
