@@ -207,7 +207,7 @@ def create_MN_map_query_model_from_factorial_repn(
 def optimize_map_query_model(model, *, solver="gurobi", tee=False, with_fixed=False):
     opt = pe.SolverFactory(solver)
     res = opt.solve(model, tee=tee)
-    # TODO: check optimality conditions
+    pe.assert_optimal_termination(res)
 
     var = {}
     variables = set()
