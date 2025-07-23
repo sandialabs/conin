@@ -1,0 +1,58 @@
+name: Pytest Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  tests:
+    strategy:
+      fail-fast: false  # If one job fails, the rest will still run
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v4
+      
+      # Cache the conda environment
+      - name: Cache conda environment
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/conda_pkgs_dir
+            ~/.conda
+            ~/miniconda3/envs
+          key: conda-${{ matrix.os }}-${{ matrix.python-version }}-${{ hashFiles('dev_environment.yml') }}
+          restore-keys: |
+            conda-${{ matrix.os }}-${{ matrix.python-version }}-
+            conda-${{ matrix.os }}-
+      
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniconda-version: "latest"
+          auto-update-conda: true
+          python-version: ${{ matrix.python-version }}
+          channels: conda-forge,defaults
+          activate-environment: conin_dev
+          environment-file: dev_environment.yml
+          use-mamba: true
+
+      - name: Install package
+        run: pip install -e .
+
+      - name: Lint with flake8
+        run: |
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics 
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      
+      - name: Test with pytest
+        run: pytest -v
