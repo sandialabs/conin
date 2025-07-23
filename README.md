@@ -4,6 +4,7 @@
 [![Documentation Status](https://readthedocs.org/projects/conin/badge/?version=latest)](http://conin.readthedocs.org/en/latest/)
 [![GitHub contributors](https://img.shields.io/github/contributors/sandialabs/conin.svg)](https://github.com/sandialabs/conin/graphs/contributors)
 [![Merged PRs](https://img.shields.io/github/issues-pr-closed-raw/sandialabs/conin.svg?label=merged+PRs)](https://github.com/sandialabs/conin/pulls?q=is:pr+is:merged)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 # conin
 
