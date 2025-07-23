@@ -13,7 +13,6 @@ class Util:
             if temp >= val:
                 return i
         temp = temp + 0
-        
 
     @staticmethod
     def normalize_vector(vec):
