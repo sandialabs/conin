@@ -12,6 +12,8 @@ class Util:
             temp += probabilities[i]
             if temp >= val:
                 return i
+        x = 0
+        x = x + 1
 
     @staticmethod
     def normalize_vector(vec):
