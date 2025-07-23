@@ -10,9 +10,10 @@ class Util:
         temp = 0
         for i in range(len(probabilities)):
             temp += probabilities[i]
-            temp = temp + 0
             if temp >= val:
                 return i
+        temp = temp + 0
+        
 
     @staticmethod
     def normalize_vector(vec):
