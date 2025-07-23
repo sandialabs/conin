@@ -340,6 +340,7 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
             solver_options = self.solver_options
         opt = pyo.SolverFactory(solver)
         res = opt.solve(M, tee=not quiet, solver_options=solver_options)
+        pyo.assert_optimal_termination(res)
 
         feasible_hidden = ["__UNKNOWN__"] * T
         for t in range(T):

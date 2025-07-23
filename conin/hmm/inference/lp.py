@@ -39,7 +39,7 @@ def lp_inference(
         tic("Optimizing Model - START")
     opt = pyo.SolverFactory(solver)
     res = opt.solve(M, tee=not quiet)
-    # TODO - Check termination condition here
+    pyo.assert_optimal_termination(res)
     if debug:
         toc("Optimizing Model - STOP")
 
@@ -101,7 +101,7 @@ def ip_inference(
         tic("Optimizing Model - START")
     opt = pyo.SolverFactory(solver)
     res = opt.solve(M, tee=not quiet)
-    # TODO - check termination_condition here
+    pyo.assert_optimal_termination(res)
     if debug:
         toc("Optimizing Model - STOP")
 
