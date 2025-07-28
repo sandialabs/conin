@@ -1,24 +1,28 @@
+name: Pytest Tests
+
 on:
   push:
     branches:
       - main
   pull_request:
-    types: [opened, synchronize, reopened]
+    branches:
+      - main
+
 jobs:
-  build:
-    defaults:
-      run:
-        shell: bash -el {0}
+  tests:
     strategy:
-      fail-fast: false # If something fails, we let everything else run
+      fail-fast: false  # If one job fails, the rest will still run
       matrix:
         os: [ubuntu-latest, macos-latest]
         python-version: ["3.10", "3.11", "3.12", "3.13"]
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash -el {0}
     steps:
       - uses: actions/checkout@v4
       
-      # Cache conda environment
+      # Cache the conda environment
       - name: Cache conda environment
         uses: actions/cache@v4
         with:
@@ -44,26 +48,18 @@ jobs:
 
       - name: Install package
         run: pip install -e .
-      
+
       - name: Lint with flake8
-        run: | # First, things that will actually break code, and then just warnings
+        run: |
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics 
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
       
-      - name: Test with pytest & coverage
-        run: | # From Codecov
-          pytest --cov --cov-branch --cov-report=xml --junitxml=junit.xml -v
-      
-      - name: Upload test results to Codecov
-        if: ${{ !cancelled() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11' }}
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.xml
+      - name: Test with pytest
+        run: pytest -v
 
       - name: Run pytest withough pgmpy
         run: | # You might not need to copy the environment, but I don't want to mess up the caching 
           conda create --name conin_dev_no_pgmpy --clone conin_dev
           conda activate conin_dev_no_pgmpy
           pip uninstall -y pgmpy
-          pytest . 
+          pytest .
