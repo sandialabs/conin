@@ -1,13 +1,17 @@
 import numpy as np
 import pandas as pd
 
-from pgmpy import config
-from pgmpy.inference import VariableElimination
-from pgmpy.models import DiscreteBayesianNetwork, MarkovNetwork  # DiscreteMarkovNetwork
+try:
+    from pgmpy import config
+    from pgmpy.inference import VariableElimination
+    from pgmpy.models import DiscreteBayesianNetwork, MarkovNetwork  # DiscreteMarkovNetwork
+    import pgmpy.metrics
+    pgmpy_available=True
+except:
+    pgmpy_available=False
 
-from custom_VE import logprob_VE
+from .custom_VE import logprob_VE
 
-import pgmpy.metrics
 
 
 def set_backend_(torch_bool):
