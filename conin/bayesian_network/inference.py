@@ -63,7 +63,7 @@ def create_BN_map_query_model(
         MN.add_nodes_from(pgm.nodes())
         # This for-loop avoids calling the add_factors() method because it does unnecessary error checking
         for cpd in pgm.cpds:
-            MN.factors.append( cpd.to_factor() )
+            MN.factors.append(cpd.to_factor())
         if timing:
             timer.toc("Created skeleton Markov network")
 

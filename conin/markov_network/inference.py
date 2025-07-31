@@ -89,7 +89,13 @@ def create_MN_map_query_model(
         timer.toc("Created factor repn")
 
     model = create_MN_map_query_model_from_factorial_repn(
-        S=S, J=J, v=v, w=w, var_index_map=var_index_map, variables=variables, timing=timing
+        S=S,
+        J=J,
+        v=v,
+        w=w,
+        var_index_map=var_index_map,
+        variables=variables,
+        timing=timing,
     )
 
     # if evidence:
@@ -228,7 +234,13 @@ def create_MN_map_query_model_from_factorial_repn(
 
 
 def optimize_map_query_model(
-    model, *, solver="gurobi", tee=False, with_fixed=False, timing=False, solver_options=None
+    model,
+    *,
+    solver="gurobi",
+    tee=False,
+    with_fixed=False,
+    timing=False,
+    solver_options=None,
 ):
     if timing:
         timer = TicTocTimer()
