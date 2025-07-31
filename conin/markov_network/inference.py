@@ -241,7 +241,7 @@ def optimize_map_query_model(
     timer = TicTocTimer()
     timer.tic(None)
     res = opt.solve(model, tee=tee)
-    solvetime = timer.toc()
+    solvetime = timer.toc(None)
     pe.assert_optimal_termination(res)
     if timing:
         timer.toc("Completed optimization")
