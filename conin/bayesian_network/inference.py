@@ -1,4 +1,5 @@
 import warnings
+from pyomo.common.timing import TicTocTimer
 
 try:
     import pgmpy.models
@@ -16,9 +17,13 @@ def create_BN_map_query_model(
     variables=None,
     evidence=None,
     var_index_map=None,
+    timing=False,
     **options,
 ):
-    prune_network = options.pop("prune_network", True)
+    if timing:
+        timer = TicTocTimer()
+        timer.tic("create_BN_map_query_model - START")
+    prune_network = options.pop("prune_network", False)
     create_MN = options.pop("create_MN", False)
 
     if prune_network:
@@ -29,11 +34,16 @@ def create_BN_map_query_model(
         In Proc. of the Sixth Annual Conf. on Uncertainty in Artificial Intelligence (UAI '90).
         Elsevier Science Inc., USA, 225–232.
         https://arxiv.org/abs/1304.1112
+
+        Note: prune_network defaults to False because the implementation of this method in pgmpy is
+        slow for large models.
         """
         inf = pgmpy.inference.Inference(pgm)
         pgm, evidence = inf._prune_bayesian_model(
             [] if variables is None else variables, evidence
         )
+        if timing:
+            timer.toc("Created pruned model")
 
     if variables or evidence or create_MN:
         #
@@ -42,6 +52,8 @@ def create_BN_map_query_model(
         # eliminate unspecified variables.
         #
         MN = pgm.to_markov_model()
+        if timing:
+            timer.toc("Created Markov network from Bayesian network")
     else:
         #
         # By default, we avoid creating a complete Markov model.  Rather, we
@@ -49,12 +61,19 @@ def create_BN_map_query_model(
         #
         MN = pgmpy.models.MarkovNetwork()
         MN.add_nodes_from(pgm.nodes())
-        MN.add_factors(*[cpd.to_factor() for cpd in pgm.cpds])
+        # This for-loop avoids calling the add_factors() method because it does unnecessary error checking
+        for cpd in pgm.cpds:
+            MN.factors.append(cpd.to_factor())
+        if timing:
+            timer.toc("Created skeleton Markov network")
 
     model = create_MN_map_query_model(
         pgm=MN,
         variables=variables,
         evidence=evidence,
         var_index_map=var_index_map,
+        timing=timing,
     )
+    if timing:
+        timer.toc("create_BN_map_query_model - STOP")
     return model
