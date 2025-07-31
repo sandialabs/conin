@@ -1,7 +1,7 @@
 import pprint
 import munch
 import pyomo.environ as pe
-from pyomo.common.timing import tic, toc
+from pyomo.common.timing import TicTocTimer
 
 from .factor_repn import extract_factor_representation_, State
 from .variable_elimination import _variable_elimination
@@ -56,9 +56,13 @@ def create_MN_map_query_model(
     variables=None,
     evidence=None,
     var_index_map=None,
+    timing=False,
     **options,
 ):
 
+    if timing:
+        timer = TicTocTimer()
+        timer.tic("create_MN_map_query_model - START")
     if variables or evidence:
         variables_ = [] if variables is None else variables
         evidence_ = {} if evidence is None else evidence
@@ -74,17 +78,23 @@ def create_MN_map_query_model(
     else:
         states = pgm.states
         factors = pgm.get_factors()
+    if timing:
+        timer.toc("Setup states and factors")
 
     S, J, v, w = extract_factor_representation_(states, factors, var_index_map)
+    if timing:
+        timer.toc("Created factor repn")
 
     model = create_MN_map_query_model_from_factorial_repn(
-        S=S, J=J, v=v, w=w, var_index_map=var_index_map, variables=variables
+        S=S, J=J, v=v, w=w, var_index_map=var_index_map, variables=variables, timing=timing
     )
 
     # if evidence:
     #    for k, v in evidence.items():
     #        model.X[k, State(v)].fix(1)
 
+    if timing:
+        timer.toc("create_MN_map_query_model - STOP")
     return model
 
 
@@ -96,6 +106,7 @@ def create_MN_map_query_model_from_factorial_repn(
     w=None,
     var_index_map=None,
     variables=None,
+    timing=False,
 ):
     #
     # S[r]: the (finite) set of possible values of variable X_r
@@ -113,13 +124,15 @@ def create_MN_map_query_model_from_factorial_repn(
     #
     # var_index_map[hr]: a dictionary that maps hashable value hr to variable name X_r
     #
-    # tic()
+    if timing:
+        timer = TicTocTimer()
+        timer.tic("create_MN_map_query_model_from_factorial - START")
     R = list(S.keys())
     RS = [(r, s) for r, values in S.items() for s in values]
 
     I = list(J.keys())
     # IJ = [(i, j) for i, values in J.items() for j in values]
-    IJ = list(sorted(w.keys()))
+    IJ = sorted(w.keys())
     IJset = set(w.keys())
 
     V = {(i, j): [] for i, j in IJ}
@@ -133,7 +146,8 @@ def create_MN_map_query_model_from_factorial_repn(
     # TODO: consistency checks on inputs
     #   v[i,j,r] in S[r]
     #   {(i,j) in w} == IJ
-    # toc("DATA")
+    if timing:
+        timer.toc("DATA")
 
     #
     # Integer programming formulation
@@ -156,7 +170,8 @@ def create_MN_map_query_model_from_factorial_repn(
             }
         )
 
-    # toc("VARIABLES")
+    if timing:
+        timer.toc("VARIABLES")
 
     # Each variable X_r only assumes one value
     def c1_(M, r):
@@ -164,7 +179,8 @@ def create_MN_map_query_model_from_factorial_repn(
 
     model.c1 = pe.Constraint(R, rule=c1_)
 
-    # toc("c1")
+    if timing:
+        timer.toc("c1")
 
     # Each factor i can only be in one configration for the joint distribution
     def c2_(M, i):
@@ -172,7 +188,8 @@ def create_MN_map_query_model_from_factorial_repn(
 
     model.c2 = pe.Constraint(I, rule=c2_)
 
-    # toc("c2")
+    if timing:
+        timer.toc("c2")
 
     # Factor i cannot assume configuration j unless its corresponding
     # variables are set to the correct values
@@ -181,7 +198,8 @@ def create_MN_map_query_model_from_factorial_repn(
 
     model.c3 = pe.Constraint(IJR, rule=c3_)
 
-    # toc("c3")
+    if timing:
+        timer.toc("c3")
 
     # If factor i is not in configuration j, then at least one of its
     # corresponding variables is not set to the values for configuration j
@@ -192,26 +210,35 @@ def create_MN_map_query_model_from_factorial_repn(
 
     model.c4 = pe.Constraint(IJ, rule=c4_)
 
-    # toc("c4")
+    if timing:
+        timer.toc("c4")
 
     # Maximize the sum of log-values of all posible factors and configurations
     model.o = pe.Objective(
         expr=sum(w[i, j] * model.y[i, j] for i, j in IJ), sense=pe.maximize
     )
 
-    # toc("DONE")
+    if timing:
+        timer.toc("create_MN_map_query_model_from_factorial - STOP")
 
     return model
 
 
 def optimize_map_query_model(
-    model, *, solver="gurobi", tee=False, with_fixed=False, solver_options=None
+    model, *, solver="gurobi", tee=False, with_fixed=False, timing=False, solver_options=None
 ):
+    if timing:
+        timer = TicTocTimer()
+        timer.tic("optimize_map_query_model - START")
     opt = pe.SolverFactory(solver)
     if solver_options:
         opt.options = solver_options
+    if timing:
+        timer.toc("Initialize solver")
     res = opt.solve(model, tee=tee)
     pe.assert_optimal_termination(res)
+    if timing:
+        timer.toc("Completed optimization")
 
     var = {}
     variables = set()
@@ -229,6 +256,8 @@ def optimize_map_query_model(
     ), "Some variables do not have values."
 
     soln = munch.Munch(variable_value=var, log_factor_sum=pe.value(model.o))
+    if timing:
+        timer.toc("optimize_map_query_model - STOP")
     return munch.Munch(
         solution=soln,
         solutions=[soln],

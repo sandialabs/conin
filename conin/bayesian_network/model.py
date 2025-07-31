@@ -34,11 +34,12 @@ class ConstrainedDiscreteBayesianNetwork:
             model = self.constraint_functor(model, data)
         return model
 
-    def create_map_query_model(self, variables=None, evidence=None, **options):
+    def create_map_query_model(self, variables=None, evidence=None, timing=False, **options):
         model = create_BN_map_query_model(
             pgm=self.pgm,
             variables=variables,
             evidence=evidence,
+            timing=timing,
             **options,
         )
         self.data = munch.Munch(
