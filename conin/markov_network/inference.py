@@ -66,9 +66,12 @@ def create_MN_map_query_model(
     if variables or evidence:
         variables_ = [] if variables is None else variables
         evidence_ = {} if evidence is None else evidence
-        factors = _variable_elimination(
-            pgm=pgm, variables=variables_, evidence=evidence_
-        )
+        if not evidence_ and len(variables_) == len(pgm.nodes()):
+            factors = pgm.get_factors()
+        else:
+            factors = _variable_elimination(
+                pgm=pgm, variables=variables_, evidence=evidence_
+            )
         if variables_:
             states = {var: pgm.states[var] for var in variables_}
         else:
