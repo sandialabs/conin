@@ -238,7 +238,10 @@ def optimize_map_query_model(
         opt.options = solver_options
     if timing:
         timer.toc("Initialize solver")
+    timer = TicTocTimer()
+    timer.tic(None)
     res = opt.solve(model, tee=tee)
+    solvetime = timer.toc()
     pe.assert_optimal_termination(res)
     if timing:
         timer.toc("Completed optimization")
@@ -265,4 +268,5 @@ def optimize_map_query_model(
         solution=soln,
         solutions=[soln],
         termination_condition="ok",
+        solvetime=solvetime,
     )
