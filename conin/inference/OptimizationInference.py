@@ -25,12 +25,18 @@ from conin.dynamic_bayesian_network import (
 class IntegerProgrammingInference:
 
     def __init__(self, pgm):
-        #pgm.check_model()
+        # pgm.check_model()
         self.pgm = pgm
         self.variables = self.pgm.nodes()
 
     def map_query(
-        self, *, variables=None, evidence=None, show_progress=False, timing=False, **options
+        self,
+        *,
+        variables=None,
+        evidence=None,
+        show_progress=False,
+        timing=False,
+        **options,
     ):
         """
         Computes the MAP Query over the variables given the evidence. Returns the

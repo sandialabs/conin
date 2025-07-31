@@ -32,8 +32,14 @@ class ConstrainedMarkovNetwork:
             model = self.constraint_functor(model)
         return model
 
-    def create_map_query_model(self, variables=None, evidence=None, timing=False, **options):
+    def create_map_query_model(
+        self, variables=None, evidence=None, timing=False, **options
+    ):
         model = create_MN_map_query_model(
-            pgm=self.pgm, variables=variables, evidence=evidence, timing=timing, **options
+            pgm=self.pgm,
+            variables=variables,
+            evidence=evidence,
+            timing=timing,
+            **options
         )
         return self.create_constraints(model)
