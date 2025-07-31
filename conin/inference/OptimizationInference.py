@@ -25,12 +25,12 @@ from conin.dynamic_bayesian_network import (
 class IntegerProgrammingInference:
 
     def __init__(self, pgm):
-        pgm.check_model()
+        #pgm.check_model()
         self.pgm = pgm
         self.variables = self.pgm.nodes()
 
     def map_query(
-        self, *, variables=None, evidence=None, show_progress=False, **options
+        self, *, variables=None, evidence=None, show_progress=False, timing=False, **options
     ):
         """
         Computes the MAP Query over the variables given the evidence. Returns the
@@ -61,14 +61,14 @@ class IntegerProgrammingInference:
         >>> inference = OptimizationInference(model)
         >>> phi_query = inference.map_query(variables=['A', 'B'])
         """
-
         if isinstance(self.pgm, ConstrainedMarkovNetwork):
             model = self.pgm.create_map_query_model(
                 variables=variables,
                 evidence=evidence,
+                timing=timing,
                 **options,
             )
-            return optimize_map_query_model(model, **options)
+            return optimize_map_query_model(model, timing=timing, **options)
 
         elif isinstance(self.pgm, ConstrainedDiscreteBayesianNetwork):
             prune_network = options.pop("prune_network", True)
@@ -76,33 +76,35 @@ class IntegerProgrammingInference:
                 variables=variables,
                 evidence=evidence,
                 prune_network=prune_network,
+                timing=timing,
                 **options,
             )
-            return optimize_map_query_model(model, **options)
+            return optimize_map_query_model(model, timing=timing, **options)
 
         elif isinstance(self.pgm, pgmpy.models.MarkovNetwork):
             model = create_MN_map_query_model(
                 pgm=self.pgm,
                 variables=variables,
                 evidence=evidence,
+                timing=timing,
                 **options,
             )
-            return optimize_map_query_model(model, **options)
+            return optimize_map_query_model(model, timing=timing, **options)
 
         elif isinstance(self.pgm, pgmpy.models.DiscreteBayesianNetwork):
             model = create_BN_map_query_model(
                 pgm=self.pgm,
                 variables=variables,
                 evidence=evidence,
+                timing=timing,
                 **options,
             )
-            return optimize_map_query_model(model, **options)
+            return optimize_map_query_model(model, timing=timing, **options)
 
 
 class DBN_IntegerProgrammingInference:
 
     def __init__(self, pgm):
-        pgm.check_model()
         self.pgm = pgm
         self.variables = self.pgm.nodes()
 
