@@ -1,3 +1,4 @@
+from collections import defaultdict
 import pprint
 import munch
 import pyomo.environ as pe
@@ -144,10 +145,19 @@ def create_MN_map_query_model_from_factorial_repn(
     IJ = sorted(w.keys())
     IJset = set(w.keys())
 
-    V = {(i, j): [] for i, j in IJ}
-    for i, j, r in v:
-        V[i, j].append(r)
-    IJR = list(v.keys())
+    tuple_repn = True
+
+    if tuple_repn:
+        IRS = defaultdict(set)
+        for i,j,r in v:
+            if not (i,j) in IJset:
+                continue
+            IRS[i,r,v[i,j,r]].add(j)
+    else:
+        V = {(i, j): [] for i, j in IJ}
+        for i, j, r in v:
+            V[i, j].append(r)
+        IJR = list(v.keys())
 
     # TODO: Figure out how to marginalize everything except the specified
     #           variables
@@ -200,27 +210,36 @@ def create_MN_map_query_model_from_factorial_repn(
     if timing:
         timer.toc("c2")
 
-    # Factor i cannot assume configuration j unless its corresponding
-    # variables are set to the correct values
-    def c3_(M, i, j, r):
-        return M.y[i, j] <= M.x[r, v[i, j, r]]
+    if tuple_repn:
+        def c5_(M, i, r, s):
+            return sum(M.y[i,j] for j in IRS[i,r,s]) == M.x[r,s]
+        model.c5 = pe.Constraint(sorted(IRS.keys()), rule=c5_)
 
-    model.c3 = pe.Constraint(IJR, rule=c3_)
+        if timing:
+            timer.toc("c5")
 
-    if timing:
-        timer.toc("c3")
+    else:
+        # Factor i cannot assume configuration j unless its corresponding
+        # variables are set to the correct values
+        def c3_(M, i, j, r):
+            return M.y[i, j] <= M.x[r, v[i, j, r]]
 
-    # If factor i is not in configuration j, then at least one of its
-    # corresponding variables is not set to the values for configuration j
-    def c4_(M, i, j):
-        return sum(M.x[r, v[i, j, r]] for r in V.get((i, j), [])) <= M.y[i, j] + (
-            len(V.get((i, j), [])) - 1
-        )
+        model.c3 = pe.Constraint(IJR, rule=c3_)
 
-    model.c4 = pe.Constraint(IJ, rule=c4_)
+        if timing:
+            timer.toc("c3")
 
-    if timing:
-        timer.toc("c4")
+        # If factor i is not in configuration j, then at least one of its
+        # corresponding variables is not set to the values for configuration j
+        def c4_(M, i, j):
+            return sum(M.x[r, v[i, j, r]] for r in V.get((i, j), [])) <= M.y[i, j] + (
+                len(V.get((i, j), [])) - 1
+            )
+
+        model.c4 = pe.Constraint(IJ, rule=c4_)
+
+        if timing:
+            timer.toc("c4")
 
     # Maximize the sum of log-values of all posible factors and configurations
     model.o = pe.Objective(
