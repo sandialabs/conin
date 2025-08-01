@@ -149,10 +149,10 @@ def create_MN_map_query_model_from_factorial_repn(
 
     if tuple_repn:
         IRS = defaultdict(set)
-        for i,j,r in v:
-            if not (i,j) in IJset:
+        for i, j, r in v:
+            if not (i, j) in IJset:
                 continue
-            IRS[i,r,v[i,j,r]].add(j)
+            IRS[i, r, v[i, j, r]].add(j)
     else:
         V = {(i, j): [] for i, j in IJ}
         for i, j, r in v:
@@ -211,8 +211,10 @@ def create_MN_map_query_model_from_factorial_repn(
         timer.toc("c2")
 
     if tuple_repn:
+
         def c5_(M, i, r, s):
-            return sum(M.y[i,j] for j in IRS[i,r,s]) == M.x[r,s]
+            return sum(M.y[i, j] for j in IRS[i, r, s]) == M.x[r, s]
+
         model.c5 = pe.Constraint(sorted(IRS.keys()), rule=c5_)
 
         if timing:
