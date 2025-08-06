@@ -31,8 +31,12 @@ def ub():
 
 @pytest.fixture
 def constraints(lb, ub):
-    num_zeros_lb = has_minimum_number_of_occurences_constraint(val="h0", count=lb)
-    num_zeros_ub = has_maximum_number_of_occurences_constraint(val="h0", count=ub)
+    num_zeros_lb = has_minimum_number_of_occurences_constraint(
+        val="h0", count=lb
+    )
+    num_zeros_ub = has_maximum_number_of_occurences_constraint(
+        val="h0", count=ub
+    )
     return [num_zeros_lb, num_zeros_ub]
 
 
@@ -88,10 +92,6 @@ class Test_Heap_Item:
                 last_element="h0",
                 length=-10,
                 constraint_data=(1, 2),
-            )
-        with pytest.raises(TypeError):
-            x = Recursive_Heap_Item(
-                priority=1, last_element="h0", length=0, constraint_data=(1, 2)
             )
 
         # constraint_data is hashable
@@ -317,9 +317,13 @@ class Test_Inference_a_star:
 
         inferred2 = recursive_a_star(hmm_app=recursive_app, observed=observed)
 
-        assert inferred1.termination_condition == "error: no feasible solutions"
+        assert (
+            inferred1.termination_condition == "error: no feasible solutions"
+        )
 
-        assert inferred2.termination_condition == "error: no feasible solutions"
+        assert (
+            inferred2.termination_condition == "error: no feasible solutions"
+        )
 
     def test_a_star_not_enough_solutions(self, chmm, recursive_app):
         observed = ["o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1"]
@@ -450,9 +454,13 @@ class Test_Inference_ip:
 
         inferred2 = recursive_a_star(hmm_app=recursive_app, observed=observed)
 
-        assert inferred1.termination_condition == "error: no feasible solutions"
+        assert (
+            inferred1.termination_condition == "error: no feasible solutions"
+        )
 
-        assert inferred2.termination_condition == "error: no feasible solutions"
+        assert (
+            inferred2.termination_condition == "error: no feasible solutions"
+        )
 
     def Xtest_a_star_not_enough_solutions(self, chmm, recursive_app):
         observed = ["o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1"]
@@ -471,7 +479,9 @@ class Test_Inference_ip:
 
         observed = ["o0", "o1", "o1", "o1"]
         hidden = (
-            ip_inference(statistical_model=model, observed=observed, solver="glpk")
+            ip_inference(
+                statistical_model=model, observed=observed, solver="glpk"
+            )
             .solutions[0]
             .hidden
         )

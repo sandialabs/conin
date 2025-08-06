@@ -5,7 +5,14 @@ import munch
 
 
 class Recursive_Heap_Item:
-    __slots__ = ["_priority", "_last_element", "_length", "_constraint_data"]
+    __slots__ = [
+        "_priority",
+        "_last_element",
+        "_length",
+        "_constraint_data",
+        "_valid",
+        "_identifier",
+    ]
 
     def __init__(self, *, priority, last_element, length, constraint_data):
         """
@@ -17,35 +24,23 @@ class Recursive_Heap_Item:
         length (int): Length of sequence (>= 0)
         constraint_data (any): Data needed to check constraint feasibility (must be hashable)
         """
-        # Priority is a number
         if not isinstance(priority, (int, float)):
-            raise TypeError(f"priority in Recursive_Heap_item must be a float.")
+            raise TypeError("priority must be a number")
+        if not isinstance(length, int) or length < 0:
+            raise TypeError("length must be a non-negative integer")
 
-        # last_element is hashable
-        try:
-            hash(last_element)
-        except BaseException:
-            raise TypeError(f"last_element in Recursive_Heap_Item must be hashable.")
-
-        # length is a positive integer
-        if not isinstance(length, int):
-            raise TypeError(f"length in Recursive_Heap_Item must be a int.")
-        else:
-            if length <= 0:
-                raise TypeError(f"length in Recursive_Heap_Item must be >= 0.")
-
-        # constraint_data is hashable
-        try:
-            hash(constraint_data)
-        except BaseException:
-            raise TypeError(f"constraint_data must be hashable.")
+        # Hash validation (only if needed - consider removing for performance)
+        hash(last_element)
+        hash(constraint_data)
 
         self._priority = priority
         self._last_element = last_element
         self._length = length
         self._constraint_data = constraint_data
+        self._valid = True  # For lazy deletion
+        self._identifier = None  # Cached identifier tuple
 
-    # Getters
+    # Properties using __slots__ are already optimized
     @property
     def priority(self):
         return self._priority
@@ -62,94 +57,85 @@ class Recursive_Heap_Item:
     def constraint_data(self):
         return self._constraint_data
 
-    def __lt__(self, y):
-        """
-        Only depends on priority
-        """
-        return self.priority < y.priority
+    def __lt__(self, other):
+        return self._priority < other._priority
 
-    def __eq__(self, y):
-        """
-        Depends on all elements (not just priority)
-        """
+    def __eq__(self, other):
         return (
-            (self.priority == y.priority)
-            and (self.last_element == y.last_element)
-            and (self.length == y.length)
-            and (self.constraint_data == y.constraint_data)
+            self._priority == other._priority
+            and self._last_element == other._last_element
+            and self._length == other._length
+            and self._constraint_data == other._constraint_data
         )
 
     def __hash__(self):
-        """
-        Just put everything in a tuple and take the hash of that
-        """
         return hash(
             (
-                self.priority,
-                self.last_element,
-                self.length,
-                self.constraint_data,
+                self._priority,
+                self._last_element,
+                self._length,
+                self._constraint_data,
             )
         )
 
     def get_identifier(self):
-        """
-        Returns everything but the priority in a tuple.
-        Used in Unique_Heap
-        """
-        return (self.last_element, self.length, self.constraint_data)
+        """Returns cached identifier tuple (computed once)"""
+        if self._identifier is None:
+            self._identifier = (
+                self._last_element,
+                self._length,
+                self._constraint_data,
+            )
+        return self._identifier
+
+    def invalidate(self):
+        """Mark this item as invalid for lazy deletion"""
+        self._valid = False
+
+    def is_valid(self):
+        """Check if this item is still valid"""
+        return self._valid
 
 
 class Unique_Heapq:
     """
-    This is used in our tailored A* algorithm
-    We consider to elements "equal" if their sequences end with the same
-    value and the have the same data associated with them.
+    Optimized version using lazy deletion to avoid expensive heap operations
     """
 
     def __init__(self):
         self.__heap = []
-        self.__unique_map = {}  # Maps identifier to Recursive_Heap_Item
+        self.__unique_map = {}  # Maps identifier to current best item
 
     def add(self, item):
-        """
-        Adds an item only if it doesn't already exist
-        """
+        """Adds an item, replacing existing items with worse priority"""
         identifier = item.get_identifier()
 
-        # Check if the element is already in the heap
         if identifier in self.__unique_map:
             existing_item = self.__unique_map[identifier]
-
             if item.priority < existing_item.priority:
-                self.__heap.remove(existing_item)
-                heapq.heapify(self.__heap)  # Re-heapify after removal
-                heapq.heappush(self.__heap, item)
+                # Invalidate the old item instead of removing it
+                existing_item.invalidate()
                 self.__unique_map[identifier] = item
+                heapq.heappush(self.__heap, item)
+            # If new item has worse priority, ignore it
         else:
-            # Add the identifier to the map and the item to the heap
             self.__unique_map[identifier] = item
             heapq.heappush(self.__heap, item)
 
     def pop(self):
-        """
-        Pops the item with the smallest priority
-        """
+        """Pops the item with smallest priority, skipping invalidated items"""
         while self.__heap:
             item = heapq.heappop(self.__heap)
-
-            # Update our unique_map
-            identifier = item.get_identifier()
-            del self.__unique_map[identifier]
-
-            return item
+            if item.is_valid():
+                identifier = item.get_identifier()
+                del self.__unique_map[identifier]
+                return item
+            # Skip invalidated items
         raise IndexError("pop from an empty heap")
 
     def __len__(self):
-        """
-        Length of the heapq
-        """
-        return len(self.__heap)
+        """Returns number of unique valid items"""
+        return len(self.__unique_map)
 
 
 def recursive_a_star(
@@ -207,7 +193,9 @@ def recursive_a_star(
         for h1 in hidden_states:
             temp = np.inf
             for h2 in hidden_states:
-                if (transition_probs[(h1, h2)] != 0) and (emission_probs[(h2, o)] != 0):
+                if (transition_probs[(h1, h2)] != 0) and (
+                    emission_probs[(h2, o)] != 0
+                ):
                     temp = min(
                         temp,
                         V[(t + 1, h2)]
@@ -216,7 +204,9 @@ def recursive_a_star(
                     )
             V[(t, h1)] = temp
 
-    get_gScore = dict()  # Maps recursive heap item to negative log-probabilities
+    get_gScore = (
+        dict()
+    )  # Maps recursive heap item to negative log-probabilities
     get_seq = dict()  # Maps recursive heap item ids to sequences
 
     openSet = Unique_Heapq()
@@ -229,7 +219,9 @@ def recursive_a_star(
             and ((h, observed[0]) in emission_probs.keys())
             and (emission_probs[(h, observed[0])] > 0)
         ):
-            gScore = -np.log(start_probs[h]) - log_emission_probs[(h, observed[0])]
+            gScore = (
+                -np.log(start_probs[h]) - log_emission_probs[(h, observed[0])]
+            )
             constraint_data = hmm_app.initialize_constraint_data(h)
 
             if hmm_app.constraint_data_feasible_partial(
@@ -267,7 +259,9 @@ def recursive_a_star(
 
             if t == time_steps:
                 if hmm_app.constraint_data_feasible(constraint_data):
-                    output.append(munch.Munch(hidden=list(seq), log_likelihood=-val))
+                    output.append(
+                        munch.Munch(hidden=list(seq), log_likelihood=-val)
+                    )
                     obj_vals.append(-val)
                     if len(output) == num_solutions:
                         termination_condition = "ok"
@@ -314,7 +308,9 @@ def recursive_a_star(
                 break
 
             curr_time = time.time()
-            if (max_time is not None) and ((curr_time - start_time) > max_time):
+            if (max_time is not None) and (
+                (curr_time - start_time) > max_time
+            ):
                 termination_condition = f"max_time: {curr_time - start_time}"
                 break
 
