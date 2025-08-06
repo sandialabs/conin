@@ -193,9 +193,7 @@ def recursive_a_star(
         for h1 in hidden_states:
             temp = np.inf
             for h2 in hidden_states:
-                if (transition_probs[(h1, h2)] != 0) and (
-                    emission_probs[(h2, o)] != 0
-                ):
+                if (transition_probs[(h1, h2)] != 0) and (emission_probs[(h2, o)] != 0):
                     temp = min(
                         temp,
                         V[(t + 1, h2)]
@@ -204,9 +202,7 @@ def recursive_a_star(
                     )
             V[(t, h1)] = temp
 
-    get_gScore = (
-        dict()
-    )  # Maps recursive heap item to negative log-probabilities
+    get_gScore = dict()  # Maps recursive heap item to negative log-probabilities
     get_seq = dict()  # Maps recursive heap item ids to sequences
 
     openSet = Unique_Heapq()
@@ -219,9 +215,7 @@ def recursive_a_star(
             and ((h, observed[0]) in emission_probs.keys())
             and (emission_probs[(h, observed[0])] > 0)
         ):
-            gScore = (
-                -np.log(start_probs[h]) - log_emission_probs[(h, observed[0])]
-            )
+            gScore = -np.log(start_probs[h]) - log_emission_probs[(h, observed[0])]
             constraint_data = hmm_app.initialize_constraint_data(h)
 
             if hmm_app.constraint_data_feasible_partial(
@@ -259,9 +253,7 @@ def recursive_a_star(
 
             if t == time_steps:
                 if hmm_app.constraint_data_feasible(constraint_data):
-                    output.append(
-                        munch.Munch(hidden=list(seq), log_likelihood=-val)
-                    )
+                    output.append(munch.Munch(hidden=list(seq), log_likelihood=-val))
                     obj_vals.append(-val)
                     if len(output) == num_solutions:
                         termination_condition = "ok"
@@ -308,9 +300,7 @@ def recursive_a_star(
                 break
 
             curr_time = time.time()
-            if (max_time is not None) and (
-                (curr_time - start_time) > max_time
-            ):
+            if (max_time is not None) and ((curr_time - start_time) > max_time):
                 termination_condition = f"max_time: {curr_time - start_time}"
                 break
 
