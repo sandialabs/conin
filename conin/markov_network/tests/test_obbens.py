@@ -1,5 +1,7 @@
 from math import log
 import pyomo.environ as pyo
+
+from conin.util import try_import
 from conin.markov_network import (
     create_MN_map_query_model,
     optimize_map_query_model,
@@ -11,14 +13,12 @@ from conin.markov_network.factor_repn import (
 from conin.markov_network.inference import (
     create_MN_map_query_model_from_factorial_repn,
 )
+from conin.markov_network.model import convert_to_DiscreteMarkovNetwork
+
 from . import examples
 
-try:
+with try_import() as pgmpy_available:
     import pgmpy
-
-    pgmpy_available = True
-except Exception as e:
-    pgmpy_available = False
 
 
 def test_example6():
@@ -62,8 +62,21 @@ def test_example6():
     results = optimize_map_query_model(model, solver="glpk")
     assert results.solution.variable_value == {"A": 0, "B": 1}
 
+    if True:
+        pgm = examples.example6_conin()
+        pgm.check_model()
+        S_, J_, v_, w_ = extract_factor_representation(pgm)
+        assert S == S_
+        assert J == J_
+        assert v == v_
+        assert w == w_
+        model = create_MN_map_query_model(pgm=pgm)
+        results = optimize_map_query_model(model, solver="glpk")
+        assert results.solution.variable_value == {"A": 0, "B": 1}
+
     if pgmpy_available:
-        pgm = examples.example6()
+        pgm = examples.example6_pgmpy()
+        pgm = convert_to_DiscreteMarkovNetwork(pgm)
         S_, J_, v_, w_ = extract_factor_representation(pgm)
         assert S == S_
         assert J == J_

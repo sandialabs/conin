@@ -67,12 +67,13 @@ def create_MN_map_query_model(
     if variables or evidence:
         variables_ = [] if variables is None else variables
         evidence_ = {} if evidence is None else evidence
-        if not evidence_ and len(variables_) == len(pgm.nodes()):
-            factors = pgm.get_factors()
+        if not evidence_ and len(variables_) == len(pgm.nodes):
+            factors = pgm.factors
         else:
-            factors = _variable_elimination(
-                pgm=pgm, variables=variables_, evidence=evidence_
-            )
+            raise RuntimeError("VariableElimination is not supported for CONIN models")
+            # factors = _variable_elimination(
+            # pgm=pgm, variables=variables_, evidence=evidence_
+            # )
         if variables_:
             states = {var: pgm.states[var] for var in variables_}
         else:
@@ -81,7 +82,7 @@ def create_MN_map_query_model(
             }
     else:
         states = pgm.states
-        factors = pgm.get_factors()
+        factors = pgm.factors
     if timing:
         timer.toc("Setup states and factors")
 

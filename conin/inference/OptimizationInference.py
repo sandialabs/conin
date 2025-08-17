@@ -8,7 +8,7 @@ except Exception as e:
     )
 
 from conin.markov_network import (
-    ConstrainedMarkovNetwork,
+    ConstrainedDiscreteMarkovNetwork,
     optimize_map_query_model,
     create_MN_map_query_model,
 )
