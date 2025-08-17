@@ -87,7 +87,7 @@ def extract_factor_representation_(pgm_states, pgm_factors, var_index_map=None):
                             key = var_index_map.get(key, key)
                             v[i, j, key] = State(value)
         else:
-            for j, assignment in enumerate(factor.assignments()):
+            for j, assignment in enumerate(factor.assignments(pgm_states)):
                 if values[j] > 0:
                     for key, value in assignment:
                         key = var_index_map.get(key, key)

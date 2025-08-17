@@ -9,25 +9,26 @@ with try_import() as pgmpy_available:
     import pgmpy.models
 
 
+#
+# NOTE: The states dictionary is needed to generate assignments, but not for other
+# factor operations.  We leaves this off the factor object for now, until we know that we
+# need a per-factor states dictionary.
+#
 @dataclass(slots=True)
 class DiscreteFactor:
     nodes: list
     values: list | dict
-    states: dict = None
-    default_value = 0
+    default_value: str | int = 0
 
-    def assignments(self):
+    def assignments(self, states):
         """
         Each assignment is a list of (node,value) pairs, in the same order as self.nodes.
         """
-        assert (
-            self.states
-        ), "The 'states' attribute must be specified to generate assignments"
         if len(self.nodes) == 1:
-            for node_value in self.states[self.nodes[0]]:
+            for node_value in states[self.nodes[0]]:
                 yield [(self.nodes[0], node_value)]
         else:
-            slist = [self.states[node] for node in self.nodes]
+            slist = [states[node] for node in self.nodes]
             for assignment in itertools.product(*slist):
                 yield [(node, assignment[i]) for i, node in enumerate(self.nodes)]
 
@@ -114,10 +115,10 @@ class DiscreteMarkovNetwork:
             self._states = values
 
         else:
-            raise TypeError(f"Unexpected type for node_values: {type(values)}")
+            raise TypeError(f"Unexpected type for states: {type(values)}")
 
     def card(self, node):
-        return len(self._node_values[node])
+        return len(self._states[node])
 
     #
     # Edges
@@ -131,7 +132,7 @@ class DiscreteMarkovNetwork:
     def edges(self, edges):
         """
         DMN = DiscreteMarkovNetwork()
-        DMN.node_values = [4, 3]  # Cardinality of nodes
+        DMN.states = [4, 3]  # Cardinality of nodes
         DMN.edges = [ (0,1), (1,2) ]
         """
         self._edges = list(edges)
@@ -148,7 +149,7 @@ class DiscreteMarkovNetwork:
     def factors(self, factor_list):
         """
         DMN = DiscreteMarkovNetwork()
-        DMN.node_values = [4, 3]  # Cardinality of nodes
+        DMN.states = [4, 3]  # Cardinality of nodes
         f1 = DiscreteFactor(nodes=[0,1], values={(0,0):1, (0,1):2, (0,2):3})
         f2 = DiscreteFactor(nodes=[0], values={0:0, 1:1, 2:2, 3:3})
         DMN.factors = [f1, f2]
@@ -237,3 +238,4 @@ def convert_to_DiscreteMarkovNetwork(pgm):
 
     else:
         raise TypeError(f"Unexpected markov network type: {type(pgm)}")
+
