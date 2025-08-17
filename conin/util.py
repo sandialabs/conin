@@ -74,7 +74,6 @@ class try_import:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        print("HERE", exc_type, print(type(exc_type)), exc_value)
         if exc_type is ImportError or exc_type is ModuleNotFoundError:
             # Catch import errors
             return True
