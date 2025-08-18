@@ -228,6 +228,17 @@ class DiscreteBayesianNetwork:
         """
         self._cpds = cpd_list
 
+    def create_map_query_model(
+        self, variables=None, evidence=None, timing=False, **options
+    ):
+        return create_BN_map_query_model(
+            pgm=self,
+            variables=variables,
+            evidence=evidence,
+            timing=timing,
+            **options,
+        )
+
 
 class ConstrainedDiscreteBayesianNetwork:
 
@@ -282,9 +293,6 @@ class PgmpyWrapperDiscreteBayesianNetwork(DiscreteBayesianNetwork):
 
             else:
                 values = cpd.get_values()
-                import pprint
-
-                pprint.pprint(values)
                 values = [
                     values[i][j]
                     for j in range(len(values[0]))

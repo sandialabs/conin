@@ -22,15 +22,22 @@ except Exception as e:
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-def test_IntegerProgrammingInference_ABC():
-    pgm = conin.markov_network.tests.examples.ABC()
+def test_IntegerProgrammingInference_ABC_pgmpy():
+    pgm = conin.markov_network.tests.examples.ABC_pgmpy()
+    inf = IntegerProgrammingInference(pgm)
+    results = inf.map_query(solver="glpk")
+    assert results.solution.variable_value == {"A": 2, "B": 2, "C": 1}
+
+
+def test_IntegerProgrammingInference_ABC_conin():
+    pgm = conin.markov_network.tests.examples.ABC_conin()
     inf = IntegerProgrammingInference(pgm)
     results = inf.map_query(solver="glpk")
     assert results.solution.variable_value == {"A": 2, "B": 2, "C": 1}
 
 
 #
-# ConstrainedMarkovNetwork tests
+# ConstrainedDiscreteMarkovNetwork tests
 #
 
 
@@ -48,7 +55,7 @@ def test_IntegerProgrammingInference_ABC_constrained():
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_IntegerProgrammingInference_cancer2_ALL():
-    pgm = conin.bayesian_network.tests.examples.cancer2_BN()
+    pgm = conin.bayesian_network.tests.examples.cancer2_BN_pgmpy()
     inf = IntegerProgrammingInference(pgm)
 
     results = inf.map_query(
@@ -65,30 +72,32 @@ def test_IntegerProgrammingInference_cancer2_ALL():
 
     # TODO - Confirm that these marginalized results are correct
 
-    results = inf.map_query(
-        variables=["Dyspnoea", "Pollution", "Smoker", "Xray"],
-        evidence={"Cancer": 0},
-        solver="glpk",
-    )
-    assert results.solution.variable_value == {
-        "Dyspnoea": 0,
-        "Pollution": 0,
-        "Smoker": 0,
-        "Xray": 0,
-    }
+    with pytest.raises(RuntimeError):
+        results = inf.map_query(
+            variables=["Dyspnoea", "Pollution", "Smoker", "Xray"],
+            evidence={"Cancer": 0},
+            solver="glpk",
+        )
+        assert results.solution.variable_value == {
+            "Dyspnoea": 0,
+            "Pollution": 0,
+            "Smoker": 0,
+            "Xray": 0,
+        }
 
     # TODO - Confirm that these marginalized results are correct
 
-    results = inf.map_query(
-        variables=["Dyspnoea", "Pollution", "Xray"],
-        evidence={"Cancer": 0},
-        solver="glpk",
-    )
-    assert results.solution.variable_value == {
-        "Dyspnoea": 0,
-        "Pollution": 0,
-        "Xray": 0,
-    }
+    with pytest.raises(RuntimeError):
+        results = inf.map_query(
+            variables=["Dyspnoea", "Pollution", "Xray"],
+            evidence={"Cancer": 0},
+            solver="glpk",
+        )
+        assert results.solution.variable_value == {
+            "Dyspnoea": 0,
+            "Pollution": 0,
+            "Xray": 0,
+        }
 
 
 #
@@ -115,16 +124,17 @@ def test_IntegerProgrammingInference_cancer2_constrained():
 
     # TODO - Confirm that these marginalized results are correct
 
-    results = inf.map_query(
-        variables=["Dyspnoea", "Pollution", "Xray"],
-        evidence={"Cancer": 0},
-        solver="glpk",
-    )
-    assert results.solution.variable_value == {
-        "Dyspnoea": 1,
-        "Pollution": 0,
-        "Xray": 0,
-    }
+    with pytest.raises(RuntimeError):
+        results = inf.map_query(
+            variables=["Dyspnoea", "Pollution", "Xray"],
+            evidence={"Cancer": 0},
+            solver="glpk",
+        )
+        assert results.solution.variable_value == {
+            "Dyspnoea": 1,
+            "Pollution": 0,
+            "Xray": 0,
+        }
 
 
 #

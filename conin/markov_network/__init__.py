@@ -6,4 +6,5 @@ from .model import (
     DiscreteMarkovNetwork,
     ConstrainedDiscreteMarkovNetwork,
     DiscreteFactor,
+    convert_to_DiscreteMarkovNetwork,
 )

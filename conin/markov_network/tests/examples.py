@@ -61,12 +61,12 @@ def ABC_conin():
     pgm = DiscreteMarkovNetwork()
     pgm.states = {"A": [0, 1, 2], "B": [0, 1, 2], "C": [0, 1, 2]}
     pgm.edges = [("A", "B"), ("B", "C"), ("A", "C")]
-    f1 = DiscreteFactor(nodes=["A"], values=[1, 1, 2], states=pgm.states)
-    f2 = DiscreteFactor(nodes=["B"], values=[1, 1, 3], states=pgm.states)
-    f3 = DiscreteFactor(nodes=["C"], values=[1, 2, 1], states=pgm.states)
-    f4 = DiscreteFactor(nodes=["A", "B"], values=np.ones(9), states=pgm.states)
-    f5 = DiscreteFactor(nodes=["B", "C"], values=np.ones(9), states=pgm.states)
-    f6 = DiscreteFactor(nodes=["A", "C"], values=np.ones(9), states=pgm.states)
+    f1 = DiscreteFactor(nodes=["A"], values=[1, 1, 2])
+    f2 = DiscreteFactor(nodes=["B"], values=[1, 1, 3])
+    f3 = DiscreteFactor(nodes=["C"], values=[1, 2, 1])
+    f4 = DiscreteFactor(nodes=["A", "B"], values=np.ones(9))
+    f5 = DiscreteFactor(nodes=["B", "C"], values=np.ones(9))
+    f6 = DiscreteFactor(nodes=["A", "C"], values=np.ones(9))
     pgm.factors = [f1, f2, f3, f4, f5, f6]
 
     return pgm

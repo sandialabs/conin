@@ -156,6 +156,17 @@ class DiscreteMarkovNetwork:
         """
         self._factors = factor_list
 
+    def create_map_query_model(
+        self, variables=None, evidence=None, timing=False, **options
+    ):
+        return create_MN_map_query_model(
+            pgm=self,
+            variables=variables,
+            evidence=evidence,
+            timing=timing,
+            **options,
+        )
+
 
 class ConstrainedDiscreteMarkovNetwork:
 
@@ -238,4 +249,3 @@ def convert_to_DiscreteMarkovNetwork(pgm):
 
     else:
         raise TypeError(f"Unexpected markov network type: {type(pgm)}")
-

@@ -45,6 +45,13 @@ def create_BN_map_query_model(
         if timing:
             timer.toc("Created pruned model")
 
+    if variables and len(variables) == len(pgm.nodes):
+        assert set(variables) == set(
+            pgm.nodes
+        ), "Mismatch in the specified variables and the nodes in the model"
+        # We continue with 'variables' set to None, which is a special case recognized below
+        variables = None
+
     if variables or evidence or create_MN:
         #
         # We need to create a Markov network if (1) the user asks us to, or (2) we have 'variables' or
