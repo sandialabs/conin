@@ -17,6 +17,7 @@ with try_import() as pgmpy_available:
 # example6
 #
 
+
 def example6_conin():
     """
     See Obbens, p.18
@@ -56,6 +57,7 @@ def example6_pgmpy():
 #
 # ABC
 #
+
 
 def ABC_conin():
     """

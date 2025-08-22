@@ -238,7 +238,6 @@ def test_ABC():
         assert w == w_
 
 
-
 def test_ABC_constrained():
     """
     Three variables with pair-wise interactions.

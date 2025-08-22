@@ -33,7 +33,6 @@ def test_ABC_pgmpy():
     assert results.solution.variable_value == {"A": 2, "B": 2, "C": 1}
 
 
-
 def Xtest_ABC3_conin():
     pgm = examples.ABC_conin()
     pgm = convert_to_DiscreteMarkovNetwork(pgm)
@@ -96,4 +95,3 @@ def test_ABC_constrained():
     cpgm = examples.ABC_constrained_conin()
     results = optimize_map_query_model(cpgm.create_map_query_model(), solver="glpk")
     assert results.solution.variable_value == {"A": 0, "B": 2, "C": 1}
-
