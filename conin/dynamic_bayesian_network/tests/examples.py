@@ -1,19 +1,18 @@
 import pyomo.environ as pyo
 
-try:
-    from pgmpy.models import DynamicBayesianNetwork as DBN
-    from pgmpy.factors.discrete import TabularCPD
-except Exception as e:
-    pass
-
+from conin.util import try_import
 from conin.dynamic_bayesian_network import (
     MapCPD,
-    ConstrainedDynamicBayesianNetwork,
+    ConstrainedDynamicDiscreteBayesianNetwork,
 )
 
+with try_import() as pgmpy_available:
+    from pgmpy.models import DynamicBayesianNetwork as DDBN
+    from pgmpy.factors.discrete import TabularCPD
 
-def simple0_DBN(debug=False):
-    G = DBN()
+
+def simple0_DDBN(debug=False):
+    G = DDBN()
     G.add_edges_from([(("Z", 0), ("Z", 1))])
     z_start_cpd = TabularCPD(("Z", 0), 2, [[0.5], [0.5]])
     z_trans_cpd = TabularCPD(
@@ -34,8 +33,8 @@ def simple0_DBN(debug=False):
     return G
 
 
-def simple2_DBN(debug=False):
-    G = DBN()
+def simple2_DDBN(debug=False):
+    G = DDBN()
     G.add_edges_from([(("Z", 0), ("Z", 1))])
     z_start_cpd = MapCPD(variable=("Z", 0), values=[0.5, 0.5])
     z_trans_cpd = MapCPD(
@@ -54,8 +53,8 @@ def simple2_DBN(debug=False):
     return G
 
 
-def simple1_DBN(debug=False):
-    G = DBN()
+def simple1_DDBN(debug=False):
+    G = DDBN()
     G.add_nodes_from(["A", "B"])
     G.add_edge(("A", 0), ("B", 0))
     G.add_edge(("A", 0), ("A", 1))
@@ -84,8 +83,8 @@ def simple1_DBN(debug=False):
     return G
 
 
-def simple1_DBN_constrained(debug=False):
-    pgm = simple1_DBN(debug=debug)
+def simple1_DDBN_constrained(debug=False):
+    pgm = simple1_DDBN(debug=debug)
 
     def constraints(model, data):
         model.c = pyo.ConstraintList()
@@ -93,11 +92,11 @@ def simple1_DBN_constrained(debug=False):
         model.c.add(model.X[("B", 0), 0] == model.X[("B", 1), 0])
         return model
 
-    return ConstrainedDynamicBayesianNetwork(pgm, constraints=constraints)
+    return ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=constraints)
 
 
-def simple3_DBN(debug=False):
-    G = DBN()
+def simple3_DDBN(debug=False):
+    G = DDBN()
     G.add_nodes_from(["A", "B"])
     G.add_edge(("A", 0), ("B", 0))
     G.add_edge(("A", 0), ("A", 1))
@@ -122,8 +121,8 @@ def simple3_DBN(debug=False):
     return G
 
 
-def simple3_DBN_constrained(debug=False):
-    pgm = simple3_DBN(debug=debug)
+def simple3_DDBN_constrained(debug=False):
+    pgm = simple3_DDBN(debug=debug)
 
     def constraints(model, data):
         model.c = pyo.ConstraintList()
@@ -131,17 +130,17 @@ def simple3_DBN_constrained(debug=False):
         model.c.add(model.X[("B", 0), 0] == model.X[("B", 1), 0])
         return model
 
-    return ConstrainedDynamicBayesianNetwork(pgm, constraints=constraints)
+    return ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=constraints)
 
 
 def pgmpy_weather1(debug=False):
     """
-    A DBN example adapted from pgmpy documentation.
+    A DDBN example adapted from pgmpy documentation.
     """
-    # Initialize a simple DBN model modeling the Weather (W), Rain (O),
+    # Initialize a simple DDBN model modeling the Weather (W), Rain (O),
     # Temperature (T), and Humidity (H).
 
-    dbn = DBN()
+    dbn = DDBN()
 
     # pgmpy requires the user to define the structure of the first time slice and the edges
     # connecting the first time slice to the second time slice.
@@ -295,7 +294,7 @@ def pgmpy_weather1(debug=False):
         },
     )
 
-    # Add CPDs to the DBN
+    # Add CPDs to the DDBN
     dbn.add_cpds(cpd_w_0, cpd_w_1, cpd_t_0, cpd_t_1, cpd_o, cpd_h)
 
     if debug:
@@ -306,14 +305,14 @@ def pgmpy_weather1(debug=False):
 
 def pgmpy_weather2(debug=False):
     """
-    A DBN example adapted from pgmpy documentation.
+    A DDBN example adapted from pgmpy documentation.
 
     Using explicit state names, and MapCPD declarations.
     """
-    # Initialize a simple DBN model modeling the Weather (W), Rain (O),
+    # Initialize a simple DDBN model modeling the Weather (W), Rain (O),
     # Temperature (T), and Humidity (H).
 
-    dbn = DBN()
+    dbn = DDBN()
 
     # pgmpy requires the user to define the structure of the first time slice and the edges
     # connecting the first time slice to the second time slice.
@@ -430,7 +429,7 @@ def pgmpy_weather2(debug=False):
         },
     )
 
-    # Add CPDs to the DBN
+    # Add CPDs to the DDBN
     dbn.add_cpds(cpd_w_0, cpd_w_1, cpd_t_0, cpd_t_1, cpd_o, cpd_h)
 
     if debug:
@@ -449,4 +448,4 @@ def pgmpy_weather_constrained1(debug=False):
         )
         return model
 
-    return ConstrainedDynamicBayesianNetwork(pgm, constraints=constraints)
+    return ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=constraints)

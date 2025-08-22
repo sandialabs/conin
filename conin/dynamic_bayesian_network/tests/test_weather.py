@@ -1,17 +1,15 @@
 import pytest
-from . import examples
 
-try:
-    import pgmpy
-
-    pgmpy_available = True
-except Exception as e:
-    pgmpy_available = False
-
+from conin.util import try_import
 from conin.dynamic_bayesian_network import (
-    create_DBN_map_query_model,
+    create_DDBN_map_query_model,
     optimize_map_query_model,
 )
+
+from . import examples
+
+with try_import() as pgmpy_available:
+    import pgmpy
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -43,7 +41,7 @@ def test_weather1_A():
         ("W", 4): "Sunny",
     }
 
-    model = create_DBN_map_query_model(pgm=pgm, stop=4)  # variables=None, evidence=None
+    model = create_DDBN_map_query_model(pgm=pgm, stop=4)  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver="glpk")
     assert q == results.solution.variable_value
 
@@ -80,7 +78,7 @@ def test_weather1_B():
         ("W", 4): "Cloudy",
     }
 
-    model = create_DBN_map_query_model(pgm=pgm, stop=4, evidence=evidence)
+    model = create_DDBN_map_query_model(pgm=pgm, stop=4, evidence=evidence)
     results = optimize_map_query_model(model, solver="glpk")
     assert q == results.solution.variable_value
 
@@ -114,7 +112,7 @@ def test_weather2_A():
         ("W", 4): "Sunny",
     }
 
-    model = create_DBN_map_query_model(pgm=pgm, stop=4)  # variables=None, evidence=None
+    model = create_DDBN_map_query_model(pgm=pgm, stop=4)  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver="glpk")
     assert q == results.solution.variable_value
 
@@ -151,7 +149,7 @@ def test_weather2_B():
         ("W", 4): "Cloudy",
     }
 
-    model = create_DBN_map_query_model(pgm=pgm, stop=4, evidence=evidence)
+    model = create_DDBN_map_query_model(pgm=pgm, stop=4, evidence=evidence)
     results = optimize_map_query_model(model, solver="glpk")
     assert q == results.solution.variable_value
 

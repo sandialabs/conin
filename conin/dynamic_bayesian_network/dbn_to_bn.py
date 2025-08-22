@@ -1,8 +1,8 @@
-try:
+from conin.util import try_import
+
+with try_import() as pgmpy_available:
     from pgmpy.factors.discrete import TabularCPD
     from pgmpy.models import DiscreteBayesianNetwork
-except:
-    pass
 
 
 """
@@ -44,53 +44,64 @@ def get_constant_bn(dbn, t_slice=0):
             (u[0], u[1] + t_slice),
             (v[0], v[1] + t_slice),
         )
-        for u, v in dbn.edges()
+        for u, v in dbn.edges
     ]
+
     new_cpds = []
+    new_states = {}
+
     for cpd in dbn.cpds:
         new_vars = [(var, time + t_slice) for var, time in cpd.variables]
-        new_state_names = dict(
-            zip(new_vars, [cpd.state_names[var] for var in cpd.variables])
-        )
+
+        new_states.update( dict(
+            zip(new_vars, [dbn.state_names[var] for var in cpd.variables])
+        ) )
+
         new_cpds.append(
-            TabularCPD(
+            DiscreteCPD(
                 variable=new_vars[0],
-                variable_card=cpd.cardinality[0],
-                values=cpd.get_values(),
                 evidence=new_vars[1:],
-                evidence_card=cpd.cardinality[1:],
-                state_names=new_state_names,
+                values=cpd.values,
             )
         )
 
-    bn = DiscreteBayesianNetwork(edges)
-    bn.add_cpds(*new_cpds)
+    bn = DiscreteBayesianNetwork()
+    bn.edges = edges
+    bn.states = new_states
+    bn.cpds = new_cpds
+
     return bn
 
 
 def create_bn_from_dbn(*, dbn, start, stop):
     assert start < stop
     # Initialize the DBN to copy relationships from step 0 to subsequent steps
-    dbn.initialize_initial_state()
+    #dbn.initialize_initial_state()
 
     bn = get_constant_bn(dbn, start)
+    states = bn.states
+    edges = bn.edges
+    cpds = {cpd.variable : cpd for cpd in bn.cpds}
+    _pyomo_index_names = {(name, t): f"{name}_{t}" for name,t in bn.nodes}
+
     for i in range(start + 1, stop):
         bni = get_constant_bn(dbn, i)
 
-        bn.add_nodes_from([(name, t) for name, t in bni.nodes() if t == i + 1])
-        bn.add_edges_from(bni.edges())
+        states.update( bni.states )
+        edges.extend( bni.edges )
+        _pyomo_index_names = {(name, t): f"{name}_{t}" for name,t in bn.nodes}
 
-        for name, t in bni.nodes():
+        for name, t in bni.nodes:
             node = (name, t)
             if t == i + 1:
-                cpd = bni.get_cpds(node)
+                cpd = cpds.get(node, None)
                 if cpd is not None:
-                    bn.add_cpds(bni.get_cpds(node))
+                    cpds[cpd.variable] = cpd
 
-    bn._pyomo_index_names = {
-        (name, t): f"{name}_{t}"
-        for t_slice in range(start, stop + 1)
-        for name, t in dbn.get_slice_nodes(t_slice)
-    }
+    bn = DiscreteBayesianNetwork()
+    bn.states = states
+    bn.edges = edges
+    bn.cpds = cpds
+    bn._pyomo_index_names = _pyomo_index_names
 
     return bn
