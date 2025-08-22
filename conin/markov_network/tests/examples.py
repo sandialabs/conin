@@ -13,6 +13,10 @@ with try_import() as pgmpy_available:
     from pgmpy.factors.discrete import DiscreteFactor as pgmpy_DiscreteFactor
 
 
+#
+# example6
+#
+
 def example6_conin():
     """
     See Obbens, p.18
@@ -48,6 +52,10 @@ def example6_pgmpy():
 
     return pgm
 
+
+#
+# ABC
+#
 
 def ABC_conin():
     """
@@ -97,7 +105,7 @@ def ABC_pgmpy():
     return pgm
 
 
-def ABC_constrained():
+def ABC_constrained_pgmpy():
     """
     Three variables with pair-wise interactions.
 
@@ -107,6 +115,27 @@ def ABC_constrained():
     The constrained MAP solution is A:0, B:2, C:1.
     """
     pgm = ABC_pgmpy()
+
+    def constraint_fn(model):
+        @model.Constraint([0, 1, 2])
+        def diff(M, s):
+            return M.X["A", s] + M.X["B", s] + M.X["C", s] <= 1
+
+        return model
+
+    return ConstrainedDiscreteMarkovNetwork(pgm, constraints=constraint_fn)
+
+
+def ABC_constrained_conin():
+    """
+    Three variables with pair-wise interactions.
+
+    The interactions have equal weights.  The unconstrained MAP solution is A:2, B:2, C:1.
+    However, we include a constraint that excludes variable assignments to values that are equal.
+
+    The constrained MAP solution is A:0, B:2, C:1.
+    """
+    pgm = ABC_conin()
 
     def constraint_fn(model):
         @model.Constraint([0, 1, 2])
