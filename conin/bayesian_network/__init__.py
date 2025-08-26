@@ -4,6 +4,5 @@ from .model import (
     DiscreteCPD,
     DiscreteBayesianNetwork,
     ConstrainedDiscreteBayesianNetwork,
-    convert_to_DiscreteBayesianNetwork,
 )
-from .cpd import MapCPD
+from .model_pgmpy import convert_to_DiscreteBayesianNetwork, MapCPD

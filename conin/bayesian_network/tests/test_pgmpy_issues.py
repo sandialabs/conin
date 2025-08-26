@@ -7,11 +7,11 @@ from conin.bayesian_network import (
     create_BN_map_query_model,
     optimize_map_query_model,
 )
-from conin.bayesian_network.model import convert_to_DiscreteBayesianNetwork
 from . import examples
 
 with try_import() as pgmpy_available:
     from pgmpy.inference import VariableElimination
+    from conin.bayesian_network.model_pgmpy import convert_to_DiscreteBayesianNetwork
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")

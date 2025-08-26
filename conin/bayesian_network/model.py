@@ -1,12 +1,8 @@
 import munch
 from dataclasses import dataclass
 
-from conin.util import try_import
 from conin.bayesian_network.inference import create_BN_map_query_model
 from conin.markov_network import DiscreteFactor
-
-with try_import() as pgmpy_available:
-    import pgmpy.models
 
 
 #
@@ -331,6 +327,7 @@ class DiscreteBayesianNetwork:
 class ConstrainedDiscreteBayesianNetwork:
 
     def __init__(self, pgm, constraints=None):
+        from conin.bayesian_network import convert_to_DiscreteBayesianNetwork
         self.pgm = convert_to_DiscreteBayesianNetwork(pgm)
         self.constraint_functor = constraints
 
@@ -364,48 +361,3 @@ class ConstrainedDiscreteBayesianNetwork:
             evidence=evidence,
         )
         return self.create_constraints(model, self.data)
-
-
-class PgmpyWrapperDiscreteBayesianNetwork(DiscreteBayesianNetwork):
-
-    def __init__(self, pgmpy_pgm):
-        super().__init__()
-        self._pgmpy_pgm = pgmpy_pgm
-        self.states = pgmpy_pgm.states
-
-        cpds = []
-        for cpd in pgmpy_pgm.get_cpds():
-
-            if len(cpd.variables) == 1:  # evidence == []
-                values = [v[0] for v in cpd.get_values()]
-
-            else:
-                values = cpd.get_values()
-                values = [
-                    values[i][j]
-                    for j in range(len(values[0]))
-                    for i in range(len(values))
-                ]
-
-            cpds.append(
-                DiscreteCPD(
-                    variable=cpd.variable,
-                    evidence=[] if len(cpd.variables) == 1 else cpd.variables[1:],
-                    values=values,
-                )
-            )
-        self.cpds = cpds
-
-
-def convert_to_DiscreteBayesianNetwork(pgm):
-    if (
-        type(pgm) is DiscreteBayesianNetwork
-        or type(pgm) is PgmpyWrapperDiscreteBayesianNetwork
-    ):
-        return pgm
-
-    elif type(pgm) is pgmpy.models.DiscreteBayesianNetwork:
-        return PgmpyWrapperDiscreteBayesianNetwork(pgm)
-
-    else:
-        raise TypeError(f"Unexpected Bayesian network type: {type(pgm)}")
