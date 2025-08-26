@@ -15,8 +15,8 @@ with try_import() as pgmpy_available:
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-def test_pgmpy_issue_1177():
-    pgm = examples.pgmpy_issue_1177()
+def test_pgmpy_issue_1177_pgmpy():
+    pgm = examples.pgmpy_issue_1177_pgmpy()
     q = {
         "SCKJ": np.int64(1),
         "SHKJ": np.int64(0),

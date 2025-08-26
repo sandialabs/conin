@@ -16,9 +16,9 @@ with try_import() as pgmpy_available:
 @dataclass(slots=True)
 class DiscreteCPD:
     variable: str | int
-    evidence: list
     values: list | dict
-    default_value = 0  # NOTE: Note used yet
+    evidence: list = None
+    default_value: float = 0  # NOTE: Note used yet
 
     """
     Defines a conditional probability distribution table (CPD table)
@@ -129,17 +129,49 @@ class DiscreteCPD:
     2
     """
 
-    def to_factor(self):
+    def normalize(self, states):
+        """
+        Convert a CPD specified with list values into a CPD with dictionary values.
+
+        Note that this requires the state information, which is passed-in.
+        """
         if type(self.values) is dict:
-            values = {
-                key + (variable_value,): value
-                for key, values in self.values.items()
-                for variable_value, value in values.items()
-            }
-        else:
+            tmp = next(iter(self.values.values()))
+            if type(tmp) is list:
+                return DiscreteCPD(
+                    variable=self.variable,
+                    default_value=self.default_value,
+                    evidence=self.evidence,
+                    values={
+                        key: {
+                            states[self.variable][i]: value
+                            for i, value in enumerate(val)
+                        }
+                        for key, val in self.values.items()
+                    },
+                )
+        return self
+
+    def to_factor(self):
+        if type(self.values) is list:
             values = self.values
+        else:
+            tmp = next(iter(self.values.values()))
+            if type(tmp) is dict:
+                values = {
+                    (key if type(key) is tuple else (key,)) + (variable_value,): value
+                    for key, values in self.values.items()
+                    for variable_value, value in values.items()
+                }
+            else:
+                values = self.values
+
         return DiscreteFactor(
-            nodes=self.evidence + [self.variable],
+            nodes=(
+                [self.variable]
+                if self.evidence is None
+                else self.evidence + [self.variable]
+            ),
             values=values,
             default_value=self.default_value,
         )
@@ -152,6 +184,73 @@ class DiscreteBayesianNetwork:
         self._states = states
         self._edges = edges if edges else []
         self._cpds = cpds
+
+    def check_model(self):
+        model_nodes = set(self._states.keys())
+
+        enodes = set()
+        for v, w in self._edges:
+            enodes.add(v)
+            enodes.add(w)
+
+        # Note: We assert equality to ensure that all nodes are used in the model
+        assert model_nodes == enodes, f"{model_nodes=} {enodes=}"
+
+        cnodes = set()
+        for f in self._cpds:
+            assert (
+                f.variable in self._states
+            ), f"Unexpected variable {f.variable} in cpd"
+            vnodes = set(self._states[f.variable])
+            cnodes.add(f.variable)
+            if f.evidence is not None:
+                for node in f.evidence:
+                    cnodes.add(node)
+
+            if type(f.values) is dict:
+                for k, v in f.values.items():
+                    vkey = False
+                    if type(v) is list:
+                        for val in v:
+                            assert val >= 0 and val <= 1, f"Unexpected cpd value {val}"
+                    elif type(v) is dict:
+                        for key, val in v.items():
+                            assert key in vnodes, f"Unexpected cpd state {key}"
+                            assert val >= 0 and val <= 1, f"Unexpected cpd value {val}"
+                    else:
+                        assert v >= 0 and v <= 1, f"Unexpected cpd value {v}"
+                        vkey = True
+
+                    if vkey:
+                        # The key is for the variable
+                        assert (
+                            not f.evidence and k in vnodes
+                        ), f"Unexpected cpd state {key}"
+                    else:
+                        # The key is for the evidence
+                        if type(k) is tuple:
+                            for i, iv in enumerate(k):
+                                assert (
+                                    iv in self._states[f.evidence[i]]
+                                ), f"Unexpected value {iv} in the {i}-th node value of {k}"
+                        else:
+                            assert (
+                                k in self._states[f.evidence[0]]
+                            ), f"Unexpected node value {k} for evidence {self._nodes[0]}. Factor values {f.values}"
+            else:
+                for v in f.values:
+                    assert v >= 0 and v <= 1
+                # We assert equality to ensure the list of values covers all combinations of
+                # node states
+                if f.evidence:
+                    assert len(f.values) == prod(
+                        len(self._states[v]) for v in f.evidence
+                    ) * len(self._states[f.variable])
+                else:
+                    assert len(f.values) == len(self._states[f.variable])
+
+        # Note: We assert equality to ensure that all nodes are used in the model
+        assert model_nodes == cnodes
 
     #
     # Nodes
@@ -222,11 +321,15 @@ class DiscreteBayesianNetwork:
         """
         DBN = DiscreteBayesianNetwork()
         DBN.states = [4, 3]  # Cardinality of nodes
-        c1 = TabularCPD(nodes=[0,1], values={(0,0):1, (0,1):2, (0,2):3})
-        c2 = TabularCPD(nodes=[0], values={0:0, 1:1, 2:2, 3:3})
+        c1 = DiscreteCPD(variable=1, evidence=[0],
+                values={0: dict(0=0.2, 1=0.2, 2=0.6),
+                        1: dict(0=0.3, 1=0.3, 2=0.4),
+                        2: dict(0=0.4, 1=0.4, 2=0.2),
+                        3: dict(0=0.1, 1=0.1, 2=0.8)})
+        c2 = DiscreteCPD(variable=0, values={0:0.25, 1:0.25, 2:0.05, 3:0.45})
         DMN.cpds = [c1, c2]
         """
-        self._cpds = cpd_list
+        self._cpds = [cpd.normalize(self._states) for cpd in cpd_list]
 
     def create_map_query_model(
         self, variables=None, evidence=None, timing=False, **options

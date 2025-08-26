@@ -12,6 +12,27 @@ with try_import() as pgmpy_available:
     from pgmpy.inference import VariableElimination, BeliefPropagation
 
 
+#
+# conin DBDA_51 tests
+#
+# TODO: replicate pgmpy tests with evidence here
+#
+
+
+def test_DBDA_51_conin():
+    pgm = examples.DBDA_5_1_conin()
+    q = {"disease-state": 1, "test-result1": 1, "test-result2": 1}
+
+    model = create_BN_map_query_model(pgm=pgm)  # variables=None, evidence=None
+    results = optimize_map_query_model(model, solver="glpk")
+    assert q == results.solution.variable_value
+
+
+#
+# pgmpy BP tests
+#
+
+
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_DBDA_51_belief_propagation_one_positive():
     pgm = examples.DBDA_5_1_pgmpy()
@@ -46,6 +67,11 @@ def test_DBDA_51_belief_propagation_two_positive():
     results = infr1.map_query(variables=query_vars, evidence=evidence)
 
     assert results == {"disease-state": 1}
+
+
+#
+# pgmpy VE tests
+#
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
