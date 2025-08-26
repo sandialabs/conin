@@ -13,12 +13,12 @@ from conin.markov_network.factor_repn import (
 from conin.markov_network.inference import (
     create_MN_map_query_model_from_factorial_repn,
 )
-from conin.markov_network.model import convert_to_DiscreteMarkovNetwork
 
 from . import examples
 
 with try_import() as pgmpy_available:
     import pgmpy
+    from conin.markov_network.model_pgmpy import convert_to_DiscreteMarkovNetwork
 
 
 def test_example6():

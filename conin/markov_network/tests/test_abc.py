@@ -9,11 +9,11 @@ from conin.markov_network import (
     optimize_map_query_model,
 )
 from conin.markov_network.factor_repn import State
-from conin.markov_network.model import convert_to_DiscreteMarkovNetwork
 from . import examples
 
 with try_import() as pgmpy_available:
     pgmpy_available = True
+    from conin.markov_network.model_pgmpy import convert_to_DiscreteMarkovNetwork
 
 
 def test_ABC_conin():

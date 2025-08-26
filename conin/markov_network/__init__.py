@@ -6,5 +6,5 @@ from .model import (
     DiscreteMarkovNetwork,
     ConstrainedDiscreteMarkovNetwork,
     DiscreteFactor,
-    convert_to_DiscreteMarkovNetwork,
 )
+from .model_pgmpy import convert_to_DiscreteMarkovNetwork
