@@ -38,13 +38,6 @@ def cancer1_BN_conin(debug=False):
         "Xray": [0, 1],
     }
 
-    cancer_model.edges = [
-        ("Pollution", "Cancer"),
-        ("Smoker", "Cancer"),
-        ("Cancer", "Xray"),
-        ("Cancer", "Dyspnoea"),
-    ]
-
     # Step 2: Define the CPDs.
     cpd_poll = DiscreteCPD(variable="Pollution", values=[0.9, 0.1])
     cpd_smoke = DiscreteCPD(variable="Smoker", values=[0.3, 0.7])
@@ -247,7 +240,6 @@ def cancer2_BN_constrained_pgmpy(debug=False):
 def simple1_BN_conin(debug=False):
     G = DiscreteBayesianNetwork()
     G.states = {"A": [0, 1], "B": [0, 1]}
-    G.edges = [("A", "B")]
     cpd_A = DiscreteCPD(variable="A", values=[0.9, 0.1])
     cpd_B = DiscreteCPD(
         variable="B",
@@ -321,8 +313,6 @@ def DBDA_5_1_conin(debug=False):
         "test-result1": [0, 1],
         "test-result2": [0, 1],
     }
-
-    model.edges = [("disease-state", "test-result1"), ("disease-state", "test-result2")]
 
     disease_state_CPD = DiscreteCPD(
         variable="disease-state",
@@ -463,14 +453,6 @@ def holmes_conin(debug=False):
         "E": ["e", "-e"],
         "R": ["r", "-r"],
     }
-
-    G.edges = [
-        ("E", "R"),
-        ("E", "A"),
-        ("B", "A"),
-        ("A", "W"),
-        ("A", "G"),
-    ]
 
     cpd_E = DiscreteCPD(variable="E", values={"e": 0.0003, "-e": 0.9997})
     cpd_B = DiscreteCPD(variable="B", values={"b": 0.0001, "-b": 0.9999})

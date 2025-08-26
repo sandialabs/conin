@@ -179,22 +179,14 @@ class DiscreteCPD:
 
 class DiscreteBayesianNetwork:
 
-    def __init__(self, *, states={}, edges=None, cpds=[]):
+    def __init__(self, *, states={}, cpds=[]):
         self._nodes = []
+        self._edges = []
         self._states = states
-        self._edges = edges if edges else []
         self._cpds = cpds
 
     def check_model(self):
         model_nodes = set(self._states.keys())
-
-        enodes = set()
-        for v, w in self._edges:
-            enodes.add(v)
-            enodes.add(w)
-
-        # Note: We assert equality to ensure that all nodes are used in the model
-        assert model_nodes == enodes, f"{model_nodes=} {enodes=}"
 
         cnodes = set()
         for f in self._cpds:
@@ -299,15 +291,6 @@ class DiscreteBayesianNetwork:
     def edges(self):
         return self._edges
 
-    @edges.setter
-    def edges(self, edges):
-        """
-        DBN = DiscreteBayesianNetwork()
-        DBN.states = [4, 3]  # Cardinality of nodes
-        DBN.edges = [ (0,1), (1,2) ]
-        """
-        self._edges = list(edges)
-
     #
     # CPDs
     #
@@ -330,6 +313,8 @@ class DiscreteBayesianNetwork:
         DMN.cpds = [c1, c2]
         """
         self._cpds = [cpd.normalize(self._states) for cpd in cpd_list]
+
+        self._edges = sorted({(e, cpd.variable) for cpd in self._cpds for e in (cpd.evidence if cpd.evidence else [])})
 
     def create_map_query_model(
         self, variables=None, evidence=None, timing=False, **options
