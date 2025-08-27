@@ -9,13 +9,13 @@ with try_import() as pgmpy_available:
 def load_model(name, model_type="conin", quiet=True):
 
     if model_type == "conin":
-        conin.common.conin.load_model(name, quiet=quiet)
+        return conin.common.conin.load_model(name, quiet=quiet)
 
     elif model_type == "pgmpy":
         if not pgmpy_available:
             raise ImportError(
                 f"Missing import pgmpy, which is required to load a pgmpy model."
             )
-        conin.common.pgmpy.load_model(name, quiet=quiet)
+        return conin.common.pgmpy.load_model(name, quiet=quiet)
 
     raise RuntimeError(f"Unexpected model type: {model_type}")

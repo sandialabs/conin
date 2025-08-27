@@ -1,7 +1,7 @@
 import pytest
 
 from conin.util import try_import
-from conin.common.pgmpy.log_potential import log_potential
+from conin.common.log_potential import log_potential
 
 import conin.markov_network.tests.examples
 import conin.bayesian_network.tests.examples
@@ -13,9 +13,13 @@ with try_import() as pgmpy_available:
 # MarkovNetwork tests
 #
 
+def Xtest_log_potential_ABC_conin():
+    pgm = conin.markov_network.tests.examples.ABC_conin()
+    variables = {"A": 2, "B": 2, "C": 1}
+    assert log_potential(pgm, variables) == pytest.approx(2.4849066497880004)
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-def test_log_potential_ABC():
+def test_log_potential_ABC_pgmpy():
     pgm = conin.markov_network.tests.examples.ABC_pgmpy()
     variables = {"A": 2, "B": 2, "C": 1}
     assert log_potential(pgm, variables) == pytest.approx(2.4849066497880004)

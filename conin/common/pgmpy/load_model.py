@@ -6,6 +6,7 @@ from conin.util import try_import
 
 with try_import() as pgmpy_available:
     import pgmpy.utils
+    from pgmpy.readwrite import BIFReader, UAIReader
 
 
 def load_model(name, quiet=True):
@@ -31,10 +32,10 @@ def load_model(name, quiet=True):
 
         elif name.endswith(".bif"):
             reader = BIFReader(name)
-            pgm = reader.get_model()
+            return reader.get_model()
 
         elif name.endswith(".uai"):
-            pgm = load_pgmpy_model_from_uai(filename=name)
+            return load_pgmpy_model_from_uai(filename=name)
 
     if not quiet:
         print(f"  Loading model pgmpy examples: {name}")
