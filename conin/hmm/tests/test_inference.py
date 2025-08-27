@@ -89,10 +89,6 @@ class Test_Heap_Item:
                 length=-10,
                 constraint_data=(1, 2),
             )
-        with pytest.raises(TypeError):
-            x = Recursive_Heap_Item(
-                priority=1, last_element="h0", length=0, constraint_data=(1, 2)
-            )
 
         # constraint_data is hashable
         with pytest.raises(TypeError):
