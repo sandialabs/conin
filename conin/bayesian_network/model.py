@@ -125,7 +125,7 @@ class DiscreteCPD:
     2
     """
 
-    def normalize(self, states):
+    def normalize(self, pgm):
         """
         Convert a CPD specified with list values into a CPD with dictionary values.
 
@@ -134,13 +134,14 @@ class DiscreteCPD:
         if type(self.values) is dict:
             tmp = next(iter(self.values.values()))
             if type(tmp) is list:
+                states = pgm.states_of(self.variable)
                 return DiscreteCPD(
                     variable=self.variable,
                     default_value=self.default_value,
                     evidence=self.evidence,
                     values={
                         key: {
-                            states[self.variable][i]: value
+                            states[i]: value
                             for i, value in enumerate(val)
                         }
                         for key, val in self.values.items()
@@ -248,6 +249,18 @@ class DiscreteBayesianNetwork:
     def nodes(self):
         return self._nodes
 
+    #
+    # Edges
+    #
+
+    @property
+    def edges(self):
+        return self._edges
+
+    #
+    # States
+    #
+
     @property
     def states(self):
         return self._states
@@ -276,16 +289,11 @@ class DiscreteBayesianNetwork:
         else:
             raise TypeError(f"Unexpected type for states: {type(values)}")
 
+    def states_of(self, node):
+        return self._states[node]
+
     def card(self, node):
         return len(self._states[node])
-
-    #
-    # Edges
-    #
-
-    @property
-    def edges(self):
-        return self._edges
 
     #
     # CPDs
@@ -308,7 +316,7 @@ class DiscreteBayesianNetwork:
         c2 = DiscreteCPD(variable=0, values={0:0.25, 1:0.25, 2:0.05, 3:0.45})
         DMN.cpds = [c1, c2]
         """
-        self._cpds = [cpd.normalize(self._states) for cpd in cpd_list]
+        self._cpds = [cpd.normalize(self) for cpd in cpd_list]
 
         self._edges = sorted({(e, cpd.variable) for cpd in self._cpds for e in (cpd.evidence if cpd.evidence else [])})
 
