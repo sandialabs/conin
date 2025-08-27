@@ -1,14 +1,13 @@
 import numpy as np
 import pandas as pd
 
-try:
+from conin.util import try_import
+
+with try_import() as pgmpy_available:
     from pgmpy import config
     from pgmpy.inference import VariableElimination
     from pgmpy.models import DiscreteBayesianNetwork, MarkovNetwork  # DiscreteMarkovNetwork
     import pgmpy.metrics
-    pgmpy_available=True
-except:
-    pgmpy_available=False
 
 from .custom_VE import logprob_VE
 

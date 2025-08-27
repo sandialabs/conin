@@ -3,7 +3,7 @@ import gzip
 from .load_uai import load_pgmpy_model_from_uai
 
 
-def load_pgmpy(name, quiet=True):
+def load_model(name, quiet=True):
 
     if os.path.exists(name):
         if name.endswith(".gz"):
