@@ -6,11 +6,13 @@ from conin.util import try_import
 with try_import() as pgmpy_available:
     from pgmpy import config
     from pgmpy.inference import VariableElimination
-    from pgmpy.models import DiscreteBayesianNetwork, MarkovNetwork  # DiscreteMarkovNetwork
+    from pgmpy.models import (
+        DiscreteBayesianNetwork,
+        MarkovNetwork,
+    )  # DiscreteMarkovNetwork
     import pgmpy.metrics
 
 from .custom_VE import logprob_VE
-
 
 
 def set_backend_(torch_bool):

@@ -7,6 +7,7 @@ from conin.util import try_import
 with try_import() as pgmpy_available:
     import pgmpy.utils
 
+
 def load_model(name, quiet=True):
 
     if os.path.exists(name):
@@ -27,7 +28,6 @@ def load_model(name, quiet=True):
                     return reader.get_model()
                 elif name.endswith(".uai.gz"):
                     return load_pgmpy_model_from_uai(string=content.decode("utf-8"))
-
 
         elif name.endswith(".bif"):
             reader = BIFReader(name)
