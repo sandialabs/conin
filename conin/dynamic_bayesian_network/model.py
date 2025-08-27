@@ -153,7 +153,7 @@ class DynamicDiscreteBayesianNetwork:
 
     def create_map_query_model(self, *, start=0, stop=1, variables=None, evidence=None):
         return create_DDBN_map_query_model(
-            pgm=self.pgm,
+            pgm=self,
             start=start,
             stop=stop,
             variables=variables,
@@ -167,7 +167,10 @@ class ConstrainedDynamicDiscreteBayesianNetwork:
         if isinstance(pgm, DynamicDiscreteBayesianNetwork):
             self.pgm = pgm
         else:
-            from conin.dynamic_bayesian_network.model_pgmpy import convert_to_DynamicDiscreteBayesianNetwork
+            from conin.dynamic_bayesian_network.model_pgmpy import (
+                convert_to_DynamicDiscreteBayesianNetwork,
+            )
+
             self.pgm = convert_to_DynamicDiscreteBayesianNetwork(pgm)
         self.constraint_functor = constraints
 

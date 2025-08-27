@@ -141,10 +141,7 @@ class DiscreteCPD:
                     default_value=self.default_value,
                     evidence=self.evidence,
                     values={
-                        key: {
-                            states[i]: value
-                            for i, value in enumerate(val)
-                        }
+                        key: {states[i]: value for i, value in enumerate(val)}
                         for key, val in self.values.items()
                     },
                 )
@@ -319,7 +316,13 @@ class DiscreteBayesianNetwork:
         """
         self._cpds = [cpd.normalize(self) for cpd in cpd_list]
 
-        self._edges = sorted({(e, cpd.variable) for cpd in self._cpds for e in (cpd.evidence if cpd.evidence else [])})
+        self._edges = sorted(
+            {
+                (e, cpd.variable)
+                for cpd in self._cpds
+                for e in (cpd.evidence if cpd.evidence else [])
+            }
+        )
 
     def create_map_query_model(
         self, variables=None, evidence=None, timing=False, **options
@@ -340,6 +343,7 @@ class ConstrainedDiscreteBayesianNetwork:
             self.pgm = pgm
         else:
             from conin.bayesian_network import convert_to_DiscreteBayesianNetwork
+
             self.pgm = convert_to_DiscreteBayesianNetwork(pgm)
         self.constraint_functor = constraints
 

@@ -383,7 +383,7 @@ def test_weather_B_constrained_pgmpy():
         ("W", 4): "Sunny",
     }
 
-    #cpgm = convert_to_DynamicDiscreteBayesianNetwork(cpgm)
+    # cpgm = convert_to_DynamicDiscreteBayesianNetwork(cpgm)
     with pytest.raises(RuntimeError):
         model = cpgm.create_map_query_model(stop=4, evidence=evidence)
         results = optimize_map_query_model(model, solver="glpk")

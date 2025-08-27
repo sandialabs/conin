@@ -1,5 +1,5 @@
 from conin.util import try_import
-from conin.dynamic_bayesian_network.model import DynamicDiscreteBayesianNetwork 
+from conin.dynamic_bayesian_network.model import DynamicDiscreteBayesianNetwork
 from conin.bayesian_network import DiscreteCPD
 
 with try_import() as pgmpy_available:
@@ -9,8 +9,8 @@ with try_import() as pgmpy_available:
 
 def _as_tuple(var, t, offset):
     if type(var):
-        return (var[0], t+(var[1]-offset))
-    return (var.node, t+(var.time_slice-offset))
+        return (var[0], t + (var[1] - offset))
+    return (var.node, t + (var.time_slice - offset))
 
 
 class PgmpyWrapperDynamicDiscreteBayesianNetwork(DynamicDiscreteBayesianNetwork):
@@ -20,7 +20,7 @@ class PgmpyWrapperDynamicDiscreteBayesianNetwork(DynamicDiscreteBayesianNetwork)
         self._pgmpy_pgm = pgmpy_pgm
 
         tmp = {}
-        for k,v in pgmpy_pgm.states.items():
+        for k, v in pgmpy_pgm.states.items():
             if type(k) is tuple:
                 tmp[k[0]] = v
             elif type(k) is pgmpy_DynamicNode:
@@ -39,7 +39,9 @@ class PgmpyWrapperDynamicDiscreteBayesianNetwork(DynamicDiscreteBayesianNetwork)
                     DiscreteCPD(
                         variable=_as_tuple(cpd.variable, 0, 0),
                         evidence=[],
-                        values=values))
+                        values=values,
+                    )
+                )
             else:
                 values = cpd.get_values()
                 values = [
@@ -56,10 +58,12 @@ class PgmpyWrapperDynamicDiscreteBayesianNetwork(DynamicDiscreteBayesianNetwork)
                 cpds.append(
                     DiscreteCPD(
                         variable=_as_tuple(cpd.variable, self.t, offset),
-                        evidence=[_as_tuple(var, self.t, offset) for var in cpd.variables[1:]],
+                        evidence=[
+                            _as_tuple(var, self.t, offset) for var in cpd.variables[1:]
+                        ],
                         values=values,
                     )
-            )
+                )
         self.cpds = cpds
 
 

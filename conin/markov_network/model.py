@@ -175,6 +175,7 @@ class ConstrainedDiscreteMarkovNetwork:
             self.pgm = pgm
         else:
             from conin.markov_network import convert_to_DiscreteMarkovNetwork
+
             self.pgm = convert_to_DiscreteMarkovNetwork(pgm)
         self.constraint_functor = constraints
 

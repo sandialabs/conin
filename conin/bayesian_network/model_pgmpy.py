@@ -217,7 +217,6 @@ def MapCPD(
     )
 
 
-
 class PgmpyWrapperDiscreteBayesianNetwork(DiscreteBayesianNetwork):
 
     def __init__(self, pgmpy_pgm):
@@ -261,4 +260,3 @@ def convert_to_DiscreteBayesianNetwork(pgm):
 
     else:
         raise TypeError(f"Unexpected Bayesian network type: {type(pgm)}")
-

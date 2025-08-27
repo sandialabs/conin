@@ -151,7 +151,9 @@ class DDBN_IntegerProgrammingInference:
         >>> phi_query = inference.map_query(variables=['A', 'B'])
         """
 
-        if isinstance(self.pgm, DynamicDiscreteBayesianNetwork) or isinstance(self.pgm, ConstrainedDynamicDiscreteBayesianNetwork):
+        if isinstance(self.pgm, DynamicDiscreteBayesianNetwork) or isinstance(
+            self.pgm, ConstrainedDynamicDiscreteBayesianNetwork
+        ):
             model = self.pgm.create_map_query_model(
                 start=start, stop=stop, variables=variables, evidence=evidence
             )
