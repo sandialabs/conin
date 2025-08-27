@@ -38,11 +38,11 @@ def create_BN_map_query_model(
         """
         raise RuntimeError("Pruning is not currently supported with CONIN models.")
 
-        #inf = pgmpy.inference.Inference(pgm)
-        #pgm, evidence = inf._prune_bayesian_model(
+        # inf = pgmpy.inference.Inference(pgm)
+        # pgm, evidence = inf._prune_bayesian_model(
         #    [] if variables is None else variables, evidence
-        #)
-        #if timing:
+        # )
+        # if timing:
         #    timer.toc("Created pruned model")
 
     if variables and len(variables) == len(pgm.nodes):
