@@ -101,7 +101,7 @@ class DynamicDiscreteBayesianNetwork:
             return self._dynamic_states[node]
         elif type(node) is tuple and node[0] in self._dynamic_states:
             return self._dynamic_states[node[0]]
-        raise ValueErrro(f"Unexpected node value: {node}")
+        raise ValueError(f"Unexpected node value: {node}")
 
     def card(self, node):
         if node in self._states:
@@ -110,7 +110,7 @@ class DynamicDiscreteBayesianNetwork:
             return len(self._dynamic_states[node])
         elif type(node) is tuple and node[0] in self._dynamic_states:
             return len(self._dynamic_states[node[0]])
-        raise ValueErrro(f"Unexpected node value: {node}")
+        raise ValueError(f"Unexpected node value: {node}")
 
     #
     # CPDs
