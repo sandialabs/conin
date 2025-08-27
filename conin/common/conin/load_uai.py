@@ -61,6 +61,7 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
     # Add states
     pgm.states = {vname[i]: list(range(vcard[i])) for i in range(nvars)}
     import pprint
+
     pprint.pprint(pgm.states)
 
     # Add nodes to PGM
@@ -146,7 +147,7 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
             factors.append(
                 DiscreteFactor(
                     nodes=[vname[v] for v in f],
-                    #cardinality=[vcard[v] for v in f],
+                    # cardinality=[vcard[v] for v in f],
                     values=values,
                 )
             )
