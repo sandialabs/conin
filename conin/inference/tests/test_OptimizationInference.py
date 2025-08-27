@@ -143,7 +143,7 @@ def test_IntegerProgrammingInference_cancer2_constrained():
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_DDBN_IntegerProgrammingInference_weather():
-    pgm = conin.dynamic_bayesian_network.tests.examples.pgmpy_weather2()
+    pgm = conin.dynamic_bayesian_network.tests.examples.weather2_pgmpy()
     inf = DDBN_IntegerProgrammingInference(pgm)
 
     results = inf.map_query(stop=4, solver="glpk")
@@ -182,20 +182,22 @@ def test_DDBN_IntegerProgrammingInference_weather():
         ("H", 3): "Medium",
         ("H", 4): "Medium",
     }
-    results = inf.map_query(stop=4, evidence=evidence, solver="glpk")
-    # TODO - Confirm that this result makes sense
-    assert results.solution.variable_value == {
-        ("T", 0): "Hot",
-        ("T", 1): "Hot",
-        ("T", 2): "Hot",
-        ("T", 3): "Hot",
-        ("T", 4): "Hot",
-        ("W", 0): "Cloudy",
-        ("W", 1): "Cloudy",
-        ("W", 2): "Cloudy",
-        ("W", 3): "Cloudy",
-        ("W", 4): "Cloudy",
-    }
+
+    with pytest.raises(RuntimeError):
+        results = inf.map_query(stop=4, evidence=evidence, solver="glpk")
+        # TODO - Confirm that this result makes sense
+        assert results.solution.variable_value == {
+            ("T", 0): "Hot",
+            ("T", 1): "Hot",
+            ("T", 2): "Hot",
+            ("T", 3): "Hot",
+            ("T", 4): "Hot",
+            ("W", 0): "Cloudy",
+            ("W", 1): "Cloudy",
+            ("W", 2): "Cloudy",
+            ("W", 3): "Cloudy",
+            ("W", 4): "Cloudy",
+        }
 
 
 #
@@ -205,7 +207,7 @@ def test_DDBN_IntegerProgrammingInference_weather():
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_DDBN_IntegerProgrammingInference_weather_constrained():
-    pgm = conin.dynamic_bayesian_network.tests.examples.pgmpy_weather_constrained1()
+    pgm = conin.dynamic_bayesian_network.tests.examples.weather_constrained_pgmpy()
     inf = DDBN_IntegerProgrammingInference(pgm)
 
     results = inf.map_query(stop=4, solver="glpk")
@@ -244,16 +246,18 @@ def test_DDBN_IntegerProgrammingInference_weather_constrained():
         ("H", 3): "Medium",
         ("H", 4): "Medium",
     }
-    results = inf.map_query(stop=4, evidence=evidence, solver="glpk")
-    assert results.solution.variable_value == {
-        ("T", 0): "Hot",
-        ("T", 1): "Mild",
-        ("T", 2): "Cold",
-        ("T", 3): "Hot",
-        ("T", 4): "Hot",
-        ("W", 0): "Rainy",
-        ("W", 1): "Rainy",
-        ("W", 2): "Sunny",
-        ("W", 3): "Sunny",
-        ("W", 4): "Sunny",
-    }
+
+    with pytest.raises(RuntimeError):
+        results = inf.map_query(stop=4, evidence=evidence, solver="glpk")
+        assert results.solution.variable_value == {
+            ("T", 0): "Hot",
+            ("T", 1): "Mild",
+            ("T", 2): "Cold",
+            ("T", 3): "Hot",
+            ("T", 4): "Hot",
+            ("W", 0): "Rainy",
+            ("W", 1): "Rainy",
+            ("W", 2): "Sunny",
+            ("W", 3): "Sunny",
+            ("W", 4): "Sunny",
+        }

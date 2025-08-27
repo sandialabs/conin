@@ -15,8 +15,10 @@ from conin.bayesian_network import (
     convert_to_DiscreteBayesianNetwork,
 )
 from conin.dynamic_bayesian_network import (
+    DynamicDiscreteBayesianNetwork,
     ConstrainedDynamicDiscreteBayesianNetwork,
     create_DDBN_map_query_model,
+    convert_to_DynamicDiscreteBayesianNetwork,
 )
 
 with try_import() as pgmpy_available:
@@ -107,7 +109,7 @@ class DDBN_IntegerProgrammingInference:
 
     def __init__(self, pgm):
         self.pgm = pgm
-        self.variables = self.pgm.nodes()
+        self.variables = self.pgm.nodes
 
     def map_query(
         self,
@@ -149,17 +151,17 @@ class DDBN_IntegerProgrammingInference:
         >>> phi_query = inference.map_query(variables=['A', 'B'])
         """
 
-        if isinstance(self.pgm, ConstrainedDynamicDiscreteBayesianNetwork):
+        if isinstance(self.pgm, DynamicDiscreteBayesianNetwork) or isinstance(self.pgm, ConstrainedDynamicDiscreteBayesianNetwork):
             model = self.pgm.create_map_query_model(
                 start=start, stop=stop, variables=variables, evidence=evidence
             )
             return optimize_map_query_model(model, **options)
 
-        elif isinstance(self.pgm, pgmpy.models.DynamicDiscreteBayesianNetwork):
+        elif isinstance(self.pgm, pgmpy.models.DynamicBayesianNetwork):
             model = create_DDBN_map_query_model(
+                pgm=convert_to_DynamicDiscreteBayesianNetwork(self.pgm),
                 start=start,
                 stop=stop,
-                pgm=self.pgm,
                 variables=variables,
                 evidence=evidence,
             )
