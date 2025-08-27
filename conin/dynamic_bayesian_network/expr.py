@@ -4,16 +4,34 @@ import dataclasses
 class ExpressionNode:
 
     def __add__(self, other):
-        return AddNode(self, other)
+        if isinstance(other, ExpressionNode):
+            return AddNode(self, other)
+        else:
+            if other == 0:
+                return self
+            return AddNode(self, ExpressionConstant(other))
 
     def __radd__(self, other):
-        return AddNode(other, self)
+        if isinstance(other, ExpressionNode):
+            return AddNode(other, self)
+        else:
+            if other == 0:
+                return self
+            return AddNode(ExpressionConstant(other), self)
 
     def __sub__(self, other):
-        return MinusNode(self, other)
+        if isinstance(other, ExpressionNode):
+            return MinusNode(self, other)
+        else:
+            if other == 0:
+                return self
+            return MinusNode(self, ExpressionConstant(other))
 
     def __rsub__(self, other):
-        return MinusNode(other, self)
+        if isinstance(other, ExpressionNode):
+            return MinusNode(other, self)
+        else:
+            return MinusNode(ExpressionConstant(other), self)
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -50,10 +68,8 @@ class ExpressionVariable(ExpressionNode):
     def __init__(self):
         self._value = None
 
-    @property
     def value(self):
         return self._value
 
-    @value.setter
-    def value(self, value):
+    def set_value(self, value):
         self._value = value
