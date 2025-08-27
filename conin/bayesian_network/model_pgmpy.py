@@ -251,7 +251,7 @@ class PgmpyWrapperDiscreteBayesianNetwork(DiscreteBayesianNetwork):
 
 def convert_to_DiscreteBayesianNetwork(pgm):
     if (
-        type(pgm) is DiscreteBayesianNetwork
+        isinstance(pgm, DiscreteBayesianNetwork)
         or type(pgm) is PgmpyWrapperDiscreteBayesianNetwork
     ):
         return pgm

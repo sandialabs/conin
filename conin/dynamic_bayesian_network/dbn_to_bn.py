@@ -19,13 +19,10 @@ def create_bn_from_dbn(*, dbn, start, stop):
     #
     # Copy dynamic states to all time steps
     #
-    print("{start=} {stop=}")
-    for t in range(start, stop):
+    for t in range(start, stop+1):
         for v,s in dbn.dynamic_states.items():
-            print(f"Y {v=} {s=} {t=}")
             states[(v,t)] = s
             _pyomo_index_names[(v,t)] = f"{v}_{t}"
-    print(f"{states=}")
 
     #
     # Copy cpds
@@ -38,18 +35,16 @@ def create_bn_from_dbn(*, dbn, start, stop):
     for cpd in dbn.cpds:
         dynamic=False
         for v in all_cpds([cpd.variable], cpd.evidence):
-            print(f"X {v=} {type(v)} {v[0] in dbn.dynamic_states} {type(v[1])}")
             if type(v) is tuple and v[0] in dbn.dynamic_states and not (type(v[1]) is int):
                 dynamic=True
                 break
 
         if not dynamic:
-            print(f"NOT DYNAMIC: {cpd=}")
             cpds.append(cpd)
             continue
 
-        for t in range(start,stop):
-            dbn.t.value = t
+        for t in range(start,stop+1):
+            dbn.t.set_value(t)
             
             if type(cpd.variable) is tuple:
                 curr = cpd.variable[1].value()
@@ -78,8 +73,7 @@ def create_bn_from_dbn(*, dbn, start, stop):
     pgm = DiscreteBayesianNetwork()
     pgm.states = states
     pgm.cpds = cpds
-    print(f"{states=}")
     pgm.check_model()
-    pgm._pyomo_index_names = _pyoomo_index_names
+    pgm._pyomo_index_names = _pyomo_index_names
 
     return pgm

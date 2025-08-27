@@ -79,7 +79,7 @@ class DynamicDiscreteBayesianNetwork:
     def dynamic_states(self):
         return self._dynamic_states
 
-    @states.setter
+    @dynamic_states.setter
     def dynamic_states(self, values):
         """
         DDBN = DynamicDiscreteBayesianNetwork()
@@ -164,7 +164,11 @@ class DynamicDiscreteBayesianNetwork:
 class ConstrainedDynamicDiscreteBayesianNetwork:
 
     def __init__(self, pgm, constraints=None):
-        self.pgm = convert_to_DynamicDiscreteBayesianNetwork(pgm)
+        if isinstance(pgm, DynamicDiscreteBayesianNetwork):
+            self.pgm = pgm
+        else:
+            from conin.dynamic_bayesian_network.model_pgmpy import convert_to_DynamicDiscreteBayesianNetwork
+            self.pgm = convert_to_DynamicDiscreteBayesianNetwork(pgm)
         self.constraint_functor = constraints
 
     def check_model(self):
@@ -198,7 +202,3 @@ class ConstrainedDynamicDiscreteBayesianNetwork:
             T=list(range(start, stop + 1)),
         )
         return self.create_constraints(model, self.data)
-
-
-def convert_to_DynamicDiscreteBayesianNetwork(pgm):
-    return pgm

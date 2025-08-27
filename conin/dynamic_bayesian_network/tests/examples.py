@@ -109,7 +109,7 @@ def simple1_DDBN_conin(debug=False):
 
 
 def simple1_DDBN_pgmpy(debug=False):
-    G = pgymp_DynamicBayesianNetwork()
+    G = pgmpy_DynamicBayesianNetwork()
     G.add_nodes_from(["A", "B"])
     G.add_edge(("A", 0), ("B", 0))
     G.add_edge(("A", 0), ("A", 1))
@@ -671,7 +671,7 @@ def weather2_pgmpy(debug=False):
     return dbn
 
 
-def pgmpy_weather_constrained_conin(debug=False):
+def weather_constrained_conin(debug=False):
     pgm = weather_conin(debug)
 
     def constraints(model, data):
@@ -684,7 +684,7 @@ def pgmpy_weather_constrained_conin(debug=False):
     return ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=constraints)
 
 
-def pgmpy_weather_constrained_pgmpy(debug=False):
+def weather_constrained_pgmpy(debug=False):
     pgm = weather2_pgmpy(debug)
 
     def constraints(model, data):

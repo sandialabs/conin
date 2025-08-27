@@ -1,4 +1,5 @@
 import munch
+from math import prod
 from dataclasses import dataclass
 
 from conin.bayesian_network.inference import create_BN_map_query_model
