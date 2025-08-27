@@ -2,7 +2,7 @@ import pytest
 
 from conin.inference.OptimizationInference import (
     IntegerProgrammingInference,
-    DBN_IntegerProgrammingInference,
+    DDBN_IntegerProgrammingInference,
 )
 import conin.markov_network.tests.examples
 import conin.bayesian_network.tests.examples
@@ -41,9 +41,8 @@ def test_IntegerProgrammingInference_ABC_conin():
 #
 
 
-@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_IntegerProgrammingInference_ABC_constrained():
-    pgm = conin.markov_network.tests.examples.ABC_constrained()
+    pgm = conin.markov_network.tests.examples.ABC_constrained_conin()
     inf = IntegerProgrammingInference(pgm)
     results = inf.map_query(solver="glpk")
 
@@ -107,7 +106,7 @@ def test_IntegerProgrammingInference_cancer2_ALL():
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_IntegerProgrammingInference_cancer2_constrained():
-    pgm = conin.bayesian_network.tests.examples.cancer2_BN_constrained()
+    pgm = conin.bayesian_network.tests.examples.cancer2_BN_constrained_pgmpy()
     inf = IntegerProgrammingInference(pgm)
 
     results = inf.map_query(
@@ -143,9 +142,9 @@ def test_IntegerProgrammingInference_cancer2_constrained():
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-def test_DBN_IntegerProgrammingInference_weather():
+def test_DDBN_IntegerProgrammingInference_weather():
     pgm = conin.dynamic_bayesian_network.tests.examples.pgmpy_weather2()
-    inf = DBN_IntegerProgrammingInference(pgm)
+    inf = DDBN_IntegerProgrammingInference(pgm)
 
     results = inf.map_query(stop=4, solver="glpk")
     assert results.solution.variable_value == {
@@ -205,9 +204,9 @@ def test_DBN_IntegerProgrammingInference_weather():
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-def test_DBN_IntegerProgrammingInference_weather_constrained():
+def test_DDBN_IntegerProgrammingInference_weather_constrained():
     pgm = conin.dynamic_bayesian_network.tests.examples.pgmpy_weather_constrained1()
-    inf = DBN_IntegerProgrammingInference(pgm)
+    inf = DDBN_IntegerProgrammingInference(pgm)
 
     results = inf.map_query(stop=4, solver="glpk")
     assert results.solution.variable_value == {
