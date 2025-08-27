@@ -81,6 +81,6 @@ class try_import:
             # Propogate other exceptions
             return False
 
-        # No import errors, so return 
+        # No import errors, so return
         self.success = True
         return True

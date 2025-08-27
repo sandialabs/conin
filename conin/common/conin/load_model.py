@@ -23,7 +23,6 @@ def load_model(name, quiet=True):
             if name.endswith(".uai.gz"):
                 return load_conin_model_from_uai(string=content.decode("utf-8"))
 
-
     elif name.endswith(".uai"):
         return load_conin_model_from_uai(filename=name)
 
