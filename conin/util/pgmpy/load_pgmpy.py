@@ -22,7 +22,7 @@ def load_pgmpy(name, quiet=True):
                     reader = BIFReader(string=content.decode("utf-8"))
                     return reader.get_model()
                 elif name.endswith(".uai.gz"):
-                    return read_uai(string=content.decode("utf-8"))
+                    return load_pgmpy_model_from_uai(string=content.decode("utf-8"))
 
 
         elif name.endswith(".bif"):
@@ -30,7 +30,7 @@ def load_pgmpy(name, quiet=True):
             pgm = reader.get_model()
 
         elif name.endswith(".uai"):
-            pgm = read_uai(filename=name)
+            pgm = load_pgmpy_model_from_uai(filename=name)
 
     if not quiet:
         print(f"  Loading model pgmpy examples: {name}")
