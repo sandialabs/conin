@@ -12,7 +12,7 @@ from conin.markov_network.factor_repn import State
 from . import examples
 
 with try_import() as pgmpy_available:
-    pgmpy_available = True
+    import pgmpy
     from conin.markov_network.model_pgmpy import convert_to_DiscreteMarkovNetwork
 
 

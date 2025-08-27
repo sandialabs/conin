@@ -1,7 +1,7 @@
 import pytest
 
 from conin.util import try_import
-from conin.util.pgmpy.log_potential import log_potential
+from conin.common.pgmpy.log_potential import log_potential
 
 import conin.markov_network.tests.examples
 import conin.bayesian_network.tests.examples

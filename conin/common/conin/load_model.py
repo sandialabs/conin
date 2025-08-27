@@ -1,6 +1,6 @@
 import os
 import gzip
-from .load_uai import load_pgmpy_model_from_uai
+from .load_uai import load_conin_model_from_uai
 
 
 def load_model(name, quiet=True):

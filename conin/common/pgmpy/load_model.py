@@ -2,6 +2,10 @@ import os
 import gzip
 from .load_uai import load_pgmpy_model_from_uai
 
+from conin.util import try_import
+
+with try_import() as pgmpy_available:
+    import pgmpy.utils
 
 def load_model(name, quiet=True):
 
@@ -13,7 +17,7 @@ def load_model(name, quiet=True):
                 try:
                     content = INPUT.read()
                 except Exception as e:
-                    if not quiet
+                    if not quiet:
                         print(f"Error reading file {name}: {e}")
                     content = None
                 assert content is not None, f"Error loading model with pgmpy: {name}"
@@ -34,4 +38,4 @@ def load_model(name, quiet=True):
 
     if not quiet:
         print(f"  Loading model pgmpy examples: {name}")
-    return = get_example_model(name)
+    return pgmpy.utils.get_example_model(name)
