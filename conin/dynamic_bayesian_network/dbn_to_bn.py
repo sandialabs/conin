@@ -1,107 +1,85 @@
-from conin.util import try_import
+import copy
+from conin.bayesian_network import DiscreteCPD, DiscreteBayesianNetwork
 
-with try_import() as pgmpy_available:
-    from pgmpy.factors.discrete import TabularCPD
-    from pgmpy.models import DiscreteBayesianNetwork
-
-
-"""
-The MIT License (MIT)
-
-Copyright (c) 2013-2024 pgmpy
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of
-this software and associated documentation files (the "Software"), to deal in
-the Software without restriction, including without limitation the rights to
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software is furnished to do so,
-subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-"""
-
-
-def get_constant_bn(dbn, t_slice=0):
-    """
-    Returns a normal Bayesian Network object which has nodes from the first two
-    time slices and all the edges in the first time slice and edges going from
-    first to second time slice. The returned Bayesian Network basically represents
-    the part of the DBN which remains constant.
-
-    This is adapted from the pgmpy DynamicBayesianNetwork.get_constant_bn() method.
-    The node namers are *not* changed to strings here.
-    """
-    edges = [
-        (
-            (u[0], u[1] + t_slice),
-            (v[0], v[1] + t_slice),
-        )
-        for u, v in dbn.edges
-    ]
-
-    new_cpds = []
-    new_states = {}
-
-    for cpd in dbn.cpds:
-        new_vars = [(var, time + t_slice) for var, time in cpd.variables]
-
-        new_states.update( dict(
-            zip(new_vars, [dbn.state_names[var] for var in cpd.variables])
-        ) )
-
-        new_cpds.append(
-            DiscreteCPD(
-                variable=new_vars[0],
-                evidence=new_vars[1:],
-                values=cpd.values,
-            )
-        )
-
-    bn = DiscreteBayesianNetwork()
-    bn.edges = edges
-    bn.states = new_states
-    bn.cpds = new_cpds
-
-    return bn
-
+def all_cpds(*args):
+    for arg in args:
+        if arg:
+            for v in arg:
+                yield v
 
 def create_bn_from_dbn(*, dbn, start, stop):
     assert start < stop
-    # Initialize the DBN to copy relationships from step 0 to subsequent steps
-    #dbn.initialize_initial_state()
 
-    bn = get_constant_bn(dbn, start)
-    states = bn.states
-    edges = bn.edges
-    cpds = {cpd.variable : cpd for cpd in bn.cpds}
-    _pyomo_index_names = {(name, t): f"{name}_{t}" for name,t in bn.nodes}
+    #
+    # Copy non-dynamic states
+    #
+    states = copy.copy(dbn.states)
+    _pyomo_index_names = {key:key for key in states}
 
-    for i in range(start + 1, stop):
-        bni = get_constant_bn(dbn, i)
+    #
+    # Copy dynamic states to all time steps
+    #
+    print("{start=} {stop=}")
+    for t in range(start, stop):
+        for v,s in dbn.dynamic_states.items():
+            print(f"Y {v=} {s=} {t=}")
+            states[(v,t)] = s
+            _pyomo_index_names[(v,t)] = f"{v}_{t}"
+    print(f"{states=}")
 
-        states.update( bni.states )
-        edges.extend( bni.edges )
-        _pyomo_index_names = {(name, t): f"{name}_{t}" for name,t in bn.nodes}
+    #
+    # Copy cpds
+    #
+    # If the variable or evidence are dynamic tuples, then we treat the 
+    # cpd as a dynamic map and add it if the time steps for all dynamic variaables
+    # are feasible.
+    #
+    cpds = []
+    for cpd in dbn.cpds:
+        dynamic=False
+        for v in all_cpds([cpd.variable], cpd.evidence):
+            print(f"X {v=} {type(v)} {v[0] in dbn.dynamic_states} {type(v[1])}")
+            if type(v) is tuple and v[0] in dbn.dynamic_states and not (type(v[1]) is int):
+                dynamic=True
+                break
 
-        for name, t in bni.nodes:
-            node = (name, t)
-            if t == i + 1:
-                cpd = cpds.get(node, None)
-                if cpd is not None:
-                    cpds[cpd.variable] = cpd
+        if not dynamic:
+            print(f"NOT DYNAMIC: {cpd=}")
+            cpds.append(cpd)
+            continue
 
-    bn = DiscreteBayesianNetwork()
-    bn.states = states
-    bn.edges = edges
-    bn.cpds = cpds
-    bn._pyomo_index_names = _pyomo_index_names
+        for t in range(start,stop):
+            dbn.t.value = t
+            
+            if type(cpd.variable) is tuple:
+                curr = cpd.variable[1].value()
+                if curr < start:
+                    continue
+                variable = (cpd.variable[0], curr)
+            else:
+                variable = cpd.variable
 
-    return bn
+            skip=False
+            evidence = []
+            for v in all_cpds(cpd.evidence):
+                if type(v) is tuple:
+                    curr = v[1].value()
+                    if curr < start:
+                        skip = True
+                        break
+                    evidence.append( (v[0], curr) )
+                else:
+                    evidence.append( v )
+
+            if skip:
+                continue
+            cpds.append( DiscreteCPD(variable=variable, evidence=evidence, values=cpd.values) )
+
+    pgm = DiscreteBayesianNetwork()
+    pgm.states = states
+    pgm.cpds = cpds
+    print(f"{states=}")
+    pgm.check_model()
+    pgm._pyomo_index_names = _pyoomo_index_names
+
+    return pgm
