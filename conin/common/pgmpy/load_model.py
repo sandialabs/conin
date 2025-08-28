@@ -13,7 +13,7 @@ def load_model(name, quiet=True):
     if os.path.exists(name):
         if name.endswith(".gz"):
             with gzip.open(name) as INPUT:
-                if not quiet:   # pragma:nocover
+                if not quiet:  # pragma:nocover
                     print(f"  Loading model from {name}")
                 try:
                     content = INPUT.read()
@@ -38,6 +38,6 @@ def load_model(name, quiet=True):
             reader = UAIReader(name)
             return reader.get_model()
 
-    if not quiet:   # pragma:nocover
+    if not quiet:  # pragma:nocover
         print(f"  Loading model pgmpy examples: {name}")
     return pgmpy.utils.get_example_model(name)
