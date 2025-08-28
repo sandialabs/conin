@@ -84,3 +84,6 @@ class try_import:
         # No import errors, so return
         self.success = True
         return True
+
+    def __str__(self):
+        return(str(self.success))
