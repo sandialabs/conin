@@ -77,7 +77,9 @@ class DiscreteMarkovNetwork:
                 # We assert equality to ensure the list of values covers all combinations of
                 # node states
                 nodeset = set(f.nodes)
-                assert len(f.values) == prod(len(v) if k in nodeset else 1 for k, v in self.states.items())
+                assert len(f.values) == prod(
+                    len(v) if k in nodeset else 1 for k, v in self.states.items()
+                )
 
         # Note: We assert equality to ensure that all nodes are used in the model
         assert model_nodes == fnodes
