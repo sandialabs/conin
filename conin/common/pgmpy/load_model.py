@@ -5,12 +5,11 @@ from conin.util import try_import
 
 with try_import() as pgmpy_available:
     import pgmpy
-
-    # import pgmpy.utils
+    import pgmpy.utils
 
 with try_import() as UAIReader_available:
-    from pgmpy.readwrite import BIFReader
-    from pgmpy.readwrite import UAIReader
+    from pgmpy.readwrite.BIF import BIFReader
+    from pgmpy.readwrite.UAI import UAIReader
 
 
 def load_model(name, quiet=True):
