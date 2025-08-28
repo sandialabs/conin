@@ -43,7 +43,7 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
     tokens = tokenize(filename, string)
 
     pgmtype = next(tokens)
-    if verbose:     # pragma:nocover
+    if verbose:  # pragma:nocover
         print(f"TYPE {pgmtype}")
     is_bayes = pgmtype == "BAYES"
 
@@ -54,7 +54,7 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
 
     # Parse vars
     nvars = int(next(tokens))
-    if verbose:     # pragma:nocover
+    if verbose:  # pragma:nocover
         print(f"NVars {nvars}")
     vcard = [int(next(tokens)) for i in range(nvars)]
     vname = [f"var{i}" for i in range(nvars)]
@@ -73,7 +73,7 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
 
     # Parse factor/cpd definitions
     nfun = int(next(tokens))
-    if verbose:     # pragma:nocover
+    if verbose:  # pragma:nocover
         print(f"NFun {nfun}")
     fun = []
     for i in range(nfun):
@@ -103,7 +103,7 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
         ), f"Inconsistent function definition at line {lineno}: read {n} but expected {N} from function definition"
 
         if is_bayes:
-            if verbose:     # pragma:nocover
+            if verbose:  # pragma:nocover
                 print("")
                 print(f[-1])
             if len(f) == 1:
@@ -126,7 +126,7 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
                 }
                 evidence = [vname[v] for v in f[:-1]]
 
-            if verbose:     # pragma:nocover
+            if verbose:  # pragma:nocover
                 pprint.pprint(map_values)
                 print("")
             factors.append(
