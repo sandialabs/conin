@@ -7,6 +7,9 @@ from conin.common import load_model
 with try_import() as pgmpy_available:
     import pgmpy
 
+with try_import() as pgmpy_readwrite_available:
+    import pgmpy.readwrite
+
 cwd = os.path.dirname(__file__)
 
 #
@@ -46,7 +49,7 @@ def test_load_model_asia1_conin():
     pgm = load_model(os.path.join(cwd, "asia.uai"))
 
 
-@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+@pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy.readwrite not installed")
 def test_load_model_asia1_pgmpy():
     pgm = load_model(os.path.join(cwd, "asia.uai"), model_type="pgmpy")
 
@@ -55,7 +58,7 @@ def test_load_model_asia2_conin():
     pgm = load_model(os.path.join(cwd, "asia_compressed.uai.gz"))
 
 
-@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+@pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy.readwrite not installed")
 def test_load_model_asia2_pgmpy():
     pgm = load_model(os.path.join(cwd, "asia_compressed.uai.gz"), model_type="pgmpy")
 

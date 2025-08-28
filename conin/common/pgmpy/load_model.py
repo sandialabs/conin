@@ -4,30 +4,20 @@ import gzip
 from conin.util import try_import
 
 with try_import() as pgmpy_available:
-    import pgmpy
     import pgmpy.utils
 
-with try_import() as BIFReader_available:
+with try_import() as pgmpy_readwrite_available:
     from pgmpy.readwrite.BIF import BIFReader
-
-with try_import() as UAIReader_available:
     from pgmpy.readwrite.UAI import UAIReader
 
 
 def load_model(name, quiet=True):
 
-    print(
-        f"{str(BIFReader_available)=} {str(UAIReader_available)=} {str(pgmpy_available)=}"
-    )
-    print(pgmpy.__version__)
-    print(dir(pgmpy))
-    print(dir(pgmpy.readwrite))
-
-    assert (
-        pgmpy_available
-    ), "Only call conin.common.pgmpy.load_model() if pgmpy is installed."
-
     if os.path.exists(name):
+        assert (
+            pgmpy_readwrite_available
+        ), "Only call conin.common.pgmpy.load_model() if pgmpy.readwrite is available."
+
         if name.endswith(".gz"):
             with gzip.open(name) as INPUT:
                 if not quiet:  # pragma:nocover
@@ -54,6 +44,8 @@ def load_model(name, quiet=True):
         elif name.endswith(".uai"):
             reader = UAIReader(name)
             return reader.get_model()
+
+        raise RuntimeError("Unexpected model type: {name}")
 
     if not quiet:  # pragma:nocover
         print(f"  Loading model pgmpy examples: {name}")

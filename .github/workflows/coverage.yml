@@ -50,8 +50,7 @@ jobs:
       - name: Install package
         run: |
             pip install -e .
-            pip uninstall -y pgmpy
-            pip install -U pgmpy
+            pip install pgmpy
 
       - name: Test with pytest & coverage
         run: pytest --cov --cov-branch --cov-report=xml --junitxml=junit.xml -vv
