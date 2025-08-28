@@ -15,7 +15,7 @@ with try_import() as UAIReader_available:
 
 def load_model(name, quiet=True):
 
-    print(f"{UAIReader_available=}")
+    print(f"{UAIReader_available=} {pgmpy_available=}")
     assert (
         pgmpy_available
     ), "Only call conin.common.pgmpy.load_model() if pgmpy is installed."
