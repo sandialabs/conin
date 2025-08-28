@@ -129,7 +129,7 @@ class DiscreteMarkovNetwork:
             edges = set()
             for factor in self._factors:
                 for edge in itertools.combinations(sorted(factor.nodes), 2):
-                    edges.add( edge )
+                    edges.add(edge)
             self._edges = list(edges)
         return self._edges
 
