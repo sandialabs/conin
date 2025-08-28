@@ -1,14 +1,15 @@
-#import itertools
-#import os
-#from typing import Hashable, Optional, Dict, List, Tuple
-#import warnings
+# import itertools
+# import os
+# from typing import Hashable, Optional, Dict, List, Tuple
+# import warnings
 
 from conin.util import try_import
 from conin.bayesian_network.model import DiscreteBayesianNetwork, DiscreteCPD
 
 with try_import() as pgmpy_available:
     import pgmpy.models
-    #import pgmpy.factors.discrete
+
+    # import pgmpy.factors.discrete
 
 
 class PgmpyWrapperDiscreteBayesianNetwork(DiscreteBayesianNetwork):

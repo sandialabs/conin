@@ -28,7 +28,9 @@ def convert_pgmpy_to_pomegranate(pgm):
         from pomegranate.bayesian_network import BayesianNetwork
 
     if not pomegranate_available:
-        raise ImportError("Cannot convert to a pomegranatepgmax model without importing pomegranate")
+        raise ImportError(
+            "Cannot convert to a pomegranatepgmax model without importing pomegranate"
+        )
 
     distributions = []
     name_to_distribution = {}
@@ -102,4 +104,3 @@ def convert_pgmpy_to_pomegranate(pgm):
     output.extra_data = extra_data
 
     return output
-
