@@ -1,6 +1,12 @@
 name: Pytest Tests
 
 on:
+  workflow_run:
+    workflows: ["Code Coverage"]
+    types:
+      - completed
+    branches:
+      - main
   push:
     branches:
       - main

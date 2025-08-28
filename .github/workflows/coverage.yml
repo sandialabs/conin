@@ -1,6 +1,12 @@
 name: Code Coverage
 
 on:
+  workflow_run:
+    workflows: ["Auto Format Python Code"]
+    types:
+      - completed
+    branches:
+      - main
   push:
     branches:
       - main
