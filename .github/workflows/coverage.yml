@@ -42,7 +42,9 @@ jobs:
           use-mamba: true
 
       - name: Install package
-        run: pip install -e .
+        run: |
+            pip install -e .
+            pip install -y pgmpy
 
       - name: Test with pytest & coverage
         run: pytest --cov --cov-branch --cov-report=xml --junitxml=junit.xml -v
