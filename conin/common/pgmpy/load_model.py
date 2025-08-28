@@ -7,14 +7,16 @@ with try_import() as pgmpy_available:
     import pgmpy
     import pgmpy.utils
 
-with try_import() as UAIReader_available:
+with try_import() as BIFReader_available:
     from pgmpy.readwrite.BIF import BIFReader
+
+with try_import() as UAIReader_available:
     from pgmpy.readwrite.UAI import UAIReader
 
 
 def load_model(name, quiet=True):
 
-    print(f"{str(UAIReader_available)=} {str(pgmpy_available)=}")
+    print(f"{str(BIFReader_available)=} {str(UAIReader_available)=} {str(pgmpy_available)=}")
     assert (
         pgmpy_available
     ), "Only call conin.common.pgmpy.load_model() if pgmpy is installed."
