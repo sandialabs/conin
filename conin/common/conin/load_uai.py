@@ -25,8 +25,8 @@ def get_lines(filename, string):
 
 def tokenize(filename, string):
     global lineno
-
     lineno = -1
+
     for line in get_lines(filename, string):
         lineno += 1
         tmp = line.strip()
@@ -38,6 +38,7 @@ def tokenize(filename, string):
 
 def load_conin_model_from_uai(filename=None, string=None, verbose=False):
     global lineno
+    lineno = -1
 
     tokens = tokenize(filename, string)
 
