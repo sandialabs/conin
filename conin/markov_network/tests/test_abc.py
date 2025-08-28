@@ -18,7 +18,7 @@ with try_import() as pgmpy_available:
 
 def test_ABC_conin():
     pgm = examples.ABC_conin()
-    pgm = convert_to_DiscreteMarkovNetwork(pgm)
+    #pgm = convert_to_DiscreteMarkovNetwork(pgm)
     model = create_MN_map_query_model(pgm=pgm)
     results = optimize_map_query_model(model, solver="glpk")
     assert results.solution.variable_value == {"A": 2, "B": 2, "C": 1}
@@ -35,7 +35,7 @@ def test_ABC_pgmpy():
 
 def Xtest_ABC3_conin():
     pgm = examples.ABC_conin()
-    pgm = convert_to_DiscreteMarkovNetwork(pgm)
+    #pgm = convert_to_DiscreteMarkovNetwork(pgm)
     model = create_MN_map_query_model(pgm=pgm, variables=["A"])
     results = optimize_map_query_model(model, solver="glpk")
     assert results.solution.variable_value == {"A": 2}
@@ -43,7 +43,7 @@ def Xtest_ABC3_conin():
 
 def Xtest_ABC4_conin():
     pgm = examples.ABC_conin()
-    pgm = convert_to_DiscreteMarkovNetwork(pgm)
+    #pgm = convert_to_DiscreteMarkovNetwork(pgm)
     model = create_MN_map_query_model(pgm=pgm, variables=["B"])
     results = optimize_map_query_model(model, solver="glpk")
     assert results.solution.variable_value == {"B": 2}
@@ -51,7 +51,7 @@ def Xtest_ABC4_conin():
 
 def Xtest_ABC5_conin():
     pgm = examples.ABC_conin()
-    pgm = convert_to_DiscreteMarkovNetwork(pgm)
+    #pgm = convert_to_DiscreteMarkovNetwork(pgm)
     model = create_MN_map_query_model(pgm=pgm, variables=["C"])
     results = optimize_map_query_model(model, solver="glpk")
     assert results.solution.variable_value == {"C": 1}
@@ -59,7 +59,7 @@ def Xtest_ABC5_conin():
 
 def Xtest_ABC6_conin():
     pgm = examples.ABC_conin()
-    pgm = convert_to_DiscreteMarkovNetwork(pgm)
+    #pgm = convert_to_DiscreteMarkovNetwork(pgm)
     model = create_MN_map_query_model(pgm=pgm, variables=["C"], evidence={"B": 0})
     results = optimize_map_query_model(model, solver="glpk")
     assert results.solution.variable_value == {"C": 1}
@@ -79,7 +79,6 @@ def test_ABC_constrained():
 
     # Explicit setup of constraints, which requires indexing using State() objects
     pgm = examples.ABC_conin()
-    pgm = convert_to_DiscreteMarkovNetwork(pgm)
     model = create_MN_map_query_model(pgm=pgm)
 
     def diff_(M, s):
