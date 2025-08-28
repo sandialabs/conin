@@ -9,11 +9,6 @@ with try_import() as pgmpy_available:
     import pgmpy.models
 
 
-#
-# NOTE: The states dictionary is needed to generate assignments, but not for other
-# factor operations.  We leaves this off the factor object for now, until we know that we
-# need a per-factor states dictionary.
-#
 @dataclass(slots=True)
 class DiscreteFactor:
     nodes: list
@@ -37,20 +32,21 @@ class DiscreteMarkovNetwork:
 
     def __init__(self, *, states={}, edges=None, factors=[]):
         self._nodes = []
-        self._states = states
-        self._edges = edges if edges else []
+        self._edges = edges
         self._factors = factors
+        self.states = states
 
     def check_model(self):
         model_nodes = set(self._states.keys())
 
-        enodes = set()
-        for v, w in self._edges:
-            enodes.add(v)
-            enodes.add(w)
+        if self._edges:
+            enodes = set()
+            for v, w in self._edges:
+                enodes.add(v)
+                enodes.add(w)
 
-        # Note: We assert equality to ensure that all nodes are used in the model
-        assert model_nodes == enodes
+            # Note: We assert equality to ensure that all nodes are used in the model
+            assert model_nodes == enodes
 
         fnodes = set()
         for f in self._factors:
@@ -129,6 +125,12 @@ class DiscreteMarkovNetwork:
 
     @property
     def edges(self):
+        if not self._edges:
+            edges = set()
+            for factor in self._factors:
+                for edge in itertools.combinations(sorted(factor.nodes), 2):
+                    edges.add( edge )
+            self._edges = list(edges)
         return self._edges
 
     @edges.setter

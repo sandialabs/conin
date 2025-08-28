@@ -176,7 +176,7 @@ class DiscreteBayesianNetwork:
 
     def __init__(self, *, states={}, cpds=[]):
         self._nodes = []
-        self._edges = []
+        self._edges = None
         self._states = states
         self._cpds = cpds
 
@@ -253,6 +253,14 @@ class DiscreteBayesianNetwork:
 
     @property
     def edges(self):
+        if not self._edges:
+            self._edges = sorted(
+                {
+                    (e, cpd.variable)
+                    for cpd in self._cpds
+                    for e in (cpd.evidence if cpd.evidence else [])
+                }
+            )
         return self._edges
 
     #
@@ -315,14 +323,6 @@ class DiscreteBayesianNetwork:
         DMN.cpds = [c1, c2]
         """
         self._cpds = [cpd.normalize(self) for cpd in cpd_list]
-
-        self._edges = sorted(
-            {
-                (e, cpd.variable)
-                for cpd in self._cpds
-                for e in (cpd.evidence if cpd.evidence else [])
-            }
-        )
 
     def create_map_query_model(
         self, variables=None, evidence=None, timing=False, **options
