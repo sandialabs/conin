@@ -10,7 +10,7 @@ from conin.bayesian_network import DiscreteCPD
 with try_import() as pgmpy_available:
     from pgmpy.models import DynamicBayesianNetwork as pgmpy_DynamicBayesianNetwork
     from pgmpy.factors.discrete import TabularCPD
-    from conin.bayesian_network import MapCPD
+    from conin.common.pgmpy import MapCPD
 
 
 #

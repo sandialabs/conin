@@ -1,2 +1,2 @@
-from .load_model import load_model
-from .log_potential import log_potential
+from .unified.load_model import load_model
+from .unified.log_potential import log_potential

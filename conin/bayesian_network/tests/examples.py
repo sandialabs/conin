@@ -15,7 +15,7 @@ with try_import() as pgmpy_available:
         MaximumLikelihoodEstimator as pgmpy_MaximumLikelihoodEstimator,
     )
     from pgmpy.factors.discrete import TabularCPD as pgmpy_TabularCPD
-    from conin.bayesian_network import MapCPD
+    from conin.common.pgmpy import MapCPD
 
 
 #
