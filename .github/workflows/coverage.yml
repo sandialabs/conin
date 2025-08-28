@@ -53,7 +53,7 @@ jobs:
             pip install pgmpy
 
       - name: Test with pytest & coverage
-        run: pytest --cov --cov-branch --cov-report=xml --junitxml=junit.xml -v
+        run: pytest --cov --cov-branch --cov-report=xml --junitxml=junit.xml -vv
       
       - name: Upload test results to Codecov
         uses: codecov/codecov-action@v4
