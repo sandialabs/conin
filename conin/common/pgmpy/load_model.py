@@ -168,9 +168,6 @@ def read_uai(filename=None, string=None, verbose=False):
 def load_model(name, quiet=True):
 
     if os.path.exists(name):
-        assert (
-            pgmpy_readwrite_available
-        ), "Only call conin.common.pgmpy.load_model() if pgmpy.readwrite is available."
 
         if name.endswith(".gz"):
             with gzip.open(name) as INPUT:
