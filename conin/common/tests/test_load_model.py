@@ -13,22 +13,29 @@ cwd = os.path.dirname(__file__)
 # errors
 #
 
+
 def test_load_model_error1():
     with pytest.raises(RuntimeError):
         pgm = load_model(os.path.join(cwd, "unknown.uai"))
+
 
 def test_load_model_error2():
     with pytest.raises(RuntimeError):
         pgm = load_model(os.path.join(cwd, "test_load_model.py"))
 
+
 def test_load_model_error3():
     with pytest.raises(RuntimeError):
         pgm = load_model(os.path.join(cwd, "asia.uai"), model_type="unknown")
 
-@pytest.mark.skipif(pgmpy_available, reason="Testing an error when pgmpy is not installed")
+
+@pytest.mark.skipif(
+    pgmpy_available, reason="Testing an error when pgmpy is not installed"
+)
 def test_load_model_error4():
     with pytest.raises(RuntimeError):
         pgm = load_model(os.path.join(cwd, "asia.uai"), model_type="pgmpy")
+
 
 #
 # asia
@@ -62,18 +69,8 @@ def test_load_model_barley1_conin():
     pgm = load_model(os.path.join(cwd, "barley.uai"))
 
 
-@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-def test_load_model_barley1_pgmpy():
-    pgm = load_model(os.path.join(cwd, "barley.uai"), model_type="pgmpy")
-
-
 def test_load_model_barley2_conin():
     pgm = load_model(os.path.join(cwd, "barley_compressed.uai.gz"))
-
-
-@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-def test_load_model_barley2_pgmpy():
-    pgm = load_model(os.path.join(cwd, "barley_compressed.uai.gz"), model_type="pgmpy")
 
 
 #
@@ -85,15 +82,5 @@ def test_load_model_deer1_conin():
     pgm = load_model(os.path.join(cwd, "deer.uai"))
 
 
-@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-def test_load_model_deer1_pgmpy():
-    pgm = load_model(os.path.join(cwd, "deer.uai"), model_type="pgmpy")
-
-
 def test_load_model_deer2_conin():
     pgm = load_model(os.path.join(cwd, "deer_compressed.uai.gz"))
-
-
-@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-def test_load_model_deer2_pgmpy():
-    pgm = load_model(os.path.join(cwd, "deer_compressed.uai.gz"), model_type="pgmpy")

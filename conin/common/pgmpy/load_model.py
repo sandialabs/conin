@@ -1,6 +1,5 @@
 import os
 import gzip
-from .load_uai import load_pgmpy_model_from_uai
 
 from conin.util import try_import
 
@@ -14,11 +13,11 @@ def load_model(name, quiet=True):
     if os.path.exists(name):
         if name.endswith(".gz"):
             with gzip.open(name) as INPUT:
-                if not quiet:
+                if not quiet:   # pragma:nocover
                     print(f"  Loading model from {name}")
                 try:
                     content = INPUT.read()
-                except Exception as e:
+                except Exception as e:  # pragma:nocover
                     if not quiet:
                         print(f"Error reading file {name}: {e}")
                     content = None
@@ -28,15 +27,17 @@ def load_model(name, quiet=True):
                     reader = BIFReader(string=content.decode("utf-8"))
                     return reader.get_model()
                 elif name.endswith(".uai.gz"):
-                    return load_pgmpy_model_from_uai(string=content.decode("utf-8"))
+                    reader = UAIReader(string=content.decode("utf-8"))
+                    return reader.get_model()
 
         elif name.endswith(".bif"):
             reader = BIFReader(name)
             return reader.get_model()
 
         elif name.endswith(".uai"):
-            return load_pgmpy_model_from_uai(filename=name)
+            reader = UAIReader(name)
+            return reader.get_model()
 
-    if not quiet:
+    if not quiet:   # pragma:nocover
         print(f"  Loading model pgmpy examples: {name}")
     return pgmpy.utils.get_example_model(name)
