@@ -10,6 +10,8 @@ with try_import() as pgmpy_available:
 
 def load_model(name, quiet=True):
 
+    assert pgmpy_available, "Only call conin.common.pgmpy.load_model() if pgmpy is installed.")
+
     if os.path.exists(name):
         if name.endswith(".gz"):
             with gzip.open(name) as INPUT:
