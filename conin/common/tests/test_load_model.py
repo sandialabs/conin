@@ -10,6 +10,27 @@ with try_import() as pgmpy_available:
 cwd = os.path.dirname(__file__)
 
 #
+# errors
+#
+
+def test_load_model_error1():
+    with pytest.raises(RuntimeError):
+        pgm = load_model(os.path.join(cwd, "unknown.uai"))
+
+def test_load_model_error2():
+    with pytest.raises(RuntimeError):
+        pgm = load_model(os.path.join(cwd, "test_load_model.py"))
+
+def test_load_model_error3():
+    with pytest.raises(RuntimeError):
+        pgm = load_model(os.path.join(cwd, "asia.uai"), model_type="unknown")
+
+@pytest.mark.skipif(pgmpy_available, reason="Testing an error when pgmpy is not installed")
+def test_load_model_error4():
+    with pytest.raises(RuntimeError):
+        pgm = load_model(os.path.join(cwd, "asia.uai"), model_type="pgmpy")
+
+#
 # asia
 #
 

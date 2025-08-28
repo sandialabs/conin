@@ -10,11 +10,11 @@ def load_model(name, quiet=True):
 
     if name.endswith(".gz"):
         with gzip.open(name) as INPUT:
-            if not quiet:
+            if not quiet:   # pragma:nocover
                 print(f"  Loading model from {name}")
             try:
                 content = INPUT.read()
-            except Exception as e:
+            except Exception as e: # pragma:nocover
                 if not quiet:
                     print(f"Error reading file {name}: {e}")
                 content = None
