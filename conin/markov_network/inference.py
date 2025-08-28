@@ -118,6 +118,7 @@ def create_MN_map_query_model_from_factorial_repn(
     var_index_map=None,
     variables=None,
     timing=False,
+    tuple_repn = True,
 ):
     #
     # S[r]: the (finite) set of possible values of variable X_r
@@ -145,8 +146,6 @@ def create_MN_map_query_model_from_factorial_repn(
     # IJ = [(i, j) for i, values in J.items() for j in values]
     IJ = sorted(w.keys())
     IJset = set(w.keys())
-
-    tuple_repn = True
 
     if tuple_repn:
         IRS = defaultdict(set)
