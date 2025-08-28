@@ -11,6 +11,7 @@ with try_import() as UAIReader_available:
     from pgmpy.readwrite import BIFReader
     from pgmpy.readwrite import UAIReader
 
+
 def load_model(name, quiet=True):
 
     print(f"{UAIReader_available=}")
