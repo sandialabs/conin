@@ -4,18 +4,19 @@ import gzip
 from conin.util import try_import
 
 with try_import() as pgmpy_available:
-    import pgmpy.utils
-    from pgmpy.readwrite import BIFReader
+    import pgmpy
+    #import pgmpy.utils
 
 with try_import() as UAIReader_available:
+    from pgmpy.readwrite import BIFReader
     from pgmpy.readwrite import UAIReader
 
 def load_model(name, quiet=True):
 
+    print(f"{UAIReader_available=}")
     assert (
         pgmpy_available
     ), "Only call conin.common.pgmpy.load_model() if pgmpy is installed."
-    print(f"{UAIReader_available=}")
 
     if os.path.exists(name):
         if name.endswith(".gz"):
