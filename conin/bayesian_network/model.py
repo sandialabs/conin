@@ -1,4 +1,6 @@
+import itertools
 import munch
+from collections import defaultdict, deque
 from math import prod
 from dataclasses import dataclass
 
@@ -128,13 +130,16 @@ class DiscreteCPD:
 
     def normalize(self, pgm):
         """
-        Convert a CPD specified with list values into a CPD with dictionary values.
+        Convert a CPD into a standard dict-of-dicts format
 
         Note that this requires the state information, which is passed-in.
         """
         if type(self.values) is dict:
             tmp = next(iter(self.values.values()))
             if type(tmp) is list:
+                #
+                # Convert a CPD specified with list values into a CPD with dictionary values.
+                #
                 states = pgm.states_of(self.variable)
                 return DiscreteCPD(
                     variable=self.variable,
@@ -145,7 +150,27 @@ class DiscreteCPD:
                         for key, val in self.values.items()
                     },
                 )
-        return self
+            else:
+                return self
+
+        else:
+            #
+            # Convert a CPD specified with a dict of list values into a CPD with dictionary values.
+            #
+            var_states = pgm.states_of(self.variable)
+            if self.evidence:
+                slist = [pgm.states_of(node) for node in self.evidence]
+                node_values = [dict(zip(var_states,vals)) for vals in itertools.batched(self.values, len(var_states))]
+                values = dict( zip(itertools.product(*slist), node_values) )
+            else:
+                values = dict(zip(var_states,self.values))
+
+            return DiscreteCPD(
+                variable=self.variable,
+                default_value=self.default_value,
+                evidence=self.evidence,
+                values=values
+            )
 
     def to_factor(self):
         if type(self.values) is list:
