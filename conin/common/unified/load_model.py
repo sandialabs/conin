@@ -9,6 +9,13 @@ with try_import() as pgmpy_available:
 def load_model(name, model_type="conin", quiet=True):
 
     if model_type == "conin":
+        #
+        # For now, we load BIF files using pgmpy and convert the model to conin
+        #
+        if (name.endswith('.bif') or name.endswith('bif.gz')) and pgmpy_available:
+            pgm = conin.common.pgmpy.load_model(name, quiet=quiet)
+            return conin.common.pgmpy.convert_pgmpy_to_conin(pgm)
+
         return conin.common.conin.load_model(name, quiet=quiet)
 
     elif model_type == "pgmpy":
