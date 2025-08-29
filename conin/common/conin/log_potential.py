@@ -1,21 +1,16 @@
 import numpy as np
-import pandas as pd
+
+# import pandas as pd
 
 import conin.markov_network
 import conin.bayesian_network
 
 
-def Log(x):
-    if x == 0.0:
-        return -np.inf
-    return np.log(x)
-
-
 def log_potential(pgm, variables, evidence=None):
 
-    data = {k: [v] for k, v in variables.items()}
+    data = {k: v for k, v in variables.items()}
     if evidence:
-        data.update({k: [v] for k, v in evidence.items()})
+        data.update({k: v for k, v in evidence.items()})
 
     assert len(pgm.nodes) <= len(
         data
@@ -29,29 +24,28 @@ def log_potential(pgm, variables, evidence=None):
         data
     ), f"ERROR: cannot yet compute log_probability value with latent variables, which need to be marginalized."
 
+    log_potential = 0.0
     if type(pgm) is conin.bayesian_network.DiscreteBayesianNetwork:
-        assert len(pgm.nodes) == len(
-            data
-        ), f"ERROR: cannot yet compute log_potential value with latent variables, which need to be marginalized."
+        for cpd in pgm.cpds:
+            if cpd.evidence:
+                x = cpd.values[tuple(data[node] for node in cpd.evidence)][
+                    data[cpd.variable]
+                ]
+            else:
+                x = cpd.values[data[cpd.variable]]
+            if x == 0.0:
+                return -np.inf
+            if x != 1.0:
+                log_potential += np.log(x)
 
-        df = pd.DataFrame.from_dict(data)
-
-        return None
-        # return pgmpy.metrics.log_likelihood_score(pgm, df)
+        return log_potential
 
     elif type(pgm) is conin.markov_network.DiscreteMarkovNetwork:
-        return None
-
-        log_potential = 0.0
         for factor in pgm.factors:
-            scope_vars = factor.nodes
-            values = [(var, val[0]) for var, val in data.items() if var in scope_vars]
-            reduced_factor = factor.reduce(values, inplace=False)
-            assert (
-                len(reduced_factor.variables) == 0
-            ), f"Expecting evidence for all variables in factor {factor}"
-
-            x = reduced_factor.values
+            if len(factor.nodes) == 1:
+                x = factor.values[data[factor.nodes[0]]]
+            else:
+                x = factor.values[tuple(data[node] for node in factor.nodes)]
             if x == 0.0:
                 return -np.inf
             if x != 1.0:

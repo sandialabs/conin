@@ -16,9 +16,12 @@ with try_import() as pgmpy_available:
 #
 
 
-def Xtest_log_potential_ABC_conin():
+def test_log_potential_ABC_conin():
     pgm = conin.markov_network.tests.examples.ABC_conin()
     variables = {"A": 2, "B": 2, "C": 1}
+    assert conin.common.conin.log_potential(pgm, variables) == pytest.approx(
+        2.4849066497880004
+    )
     assert log_potential(pgm, variables) == pytest.approx(2.4849066497880004)
 
 
