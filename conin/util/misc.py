@@ -90,6 +90,7 @@ class try_import:
 
 
 try:
+    # Python >= 3.12
     from itertools import batched
 except ImportError:
     #
