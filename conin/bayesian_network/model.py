@@ -4,6 +4,7 @@ from collections import defaultdict, deque
 from math import prod
 from dataclasses import dataclass
 
+from conin.util import batched
 from conin.bayesian_network.inference import create_BN_map_query_model
 from conin.markov_network import DiscreteFactor
 
@@ -160,16 +161,19 @@ class DiscreteCPD:
             var_states = pgm.states_of(self.variable)
             if self.evidence:
                 slist = [pgm.states_of(node) for node in self.evidence]
-                node_values = [dict(zip(var_states,vals)) for vals in itertools.batched(self.values, len(var_states))]
-                values = dict( zip(itertools.product(*slist), node_values) )
+                node_values = [
+                    dict(zip(var_states, vals))
+                    for vals in batched(self.values, len(var_states))
+                ]
+                values = dict(zip(itertools.product(*slist), node_values))
             else:
-                values = dict(zip(var_states,self.values))
+                values = dict(zip(var_states, self.values))
 
             return DiscreteCPD(
                 variable=self.variable,
                 default_value=self.default_value,
                 evidence=self.evidence,
-                values=values
+                values=values,
             )
 
     def to_factor(self):

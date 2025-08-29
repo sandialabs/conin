@@ -87,3 +87,17 @@ class try_import:
 
     def __str__(self):
         return str(self.success)
+
+
+try:
+    from itertools import batched
+except ImportError:
+    #
+    # See  https://stackoverflow.com/questions/8290397/how-to-split-an-iterable-in-constant-size-chunks
+    #
+    # This implementation is fast, but it assumes the iterable has a len() method.
+    #
+    def batched(iterable, n=1):
+        l = len(iterable)
+        for ndx in range(0, l, n):
+            yield iterable[ndx : min(ndx + n, l)]
