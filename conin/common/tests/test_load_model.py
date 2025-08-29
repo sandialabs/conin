@@ -7,6 +7,9 @@ from conin.common import load_model
 with try_import() as pgmpy_available:
     import pgmpy
 
+with try_import() as pgmpy_readwrite_available:
+    import pgmpy.readwrite
+
 cwd = os.path.dirname(__file__)
 
 #
@@ -65,23 +68,26 @@ def test_load_model_asia_uai2_pgmpy():
 #
 # Note that pgmpy is needed to read BIF files by conin.
 #
+# These tests check if pgmpy.readwrite is available, which isn't true of all
+# installations.
+#
 
-@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+@pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
 def test_load_model_asia_bif1_conin():
     pgm = load_model(os.path.join(cwd, "asia.bif"))
 
 
-@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+@pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
 def test_load_model_asia_bif1_pgmpy():
     pgm = load_model(os.path.join(cwd, "asia.bif"), model_type="pgmpy")
 
 
-@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+@pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
 def test_load_model_asia_bif2_conin():
     pgm = load_model(os.path.join(cwd, "asia_compressed.bif.gz"))
 
 
-@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+@pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
 def test_load_model_asia_bif2_pgmpy():
     pgm = load_model(os.path.join(cwd, "asia_compressed.bif.gz"), model_type="pgmpy")
 
