@@ -12,7 +12,7 @@ def load_model(name, model_type="conin", quiet=True):
         #
         # For now, we load BIF files using pgmpy and convert the model to conin
         #
-        if (name.endswith('.bif') or name.endswith('bif.gz')) and pgmpy_available:
+        if (name.endswith(".bif") or name.endswith("bif.gz")) and pgmpy_available:
             pgm = conin.common.pgmpy.load_model(name, quiet=quiet)
             return conin.common.pgmpy.convert_pgmpy_to_conin(pgm)
 

@@ -66,6 +66,7 @@ def test_load_model_asia_uai2_pgmpy():
 # Note that pgmpy is needed to read BIF files by conin.
 #
 
+
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_load_model_asia_bif1_conin():
     pgm = load_model(os.path.join(cwd, "asia.bif"))
