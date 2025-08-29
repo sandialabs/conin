@@ -27,6 +27,19 @@ class DiscreteFactor:
             for assignment in itertools.product(*slist):
                 yield [(node, assignment[i]) for i, node in enumerate(self.nodes)]
 
+    def normalize(self, pgm):
+        if type(self.values) is dict:
+            return self
+        else:
+            slist = [pgm.states_of(node) for node in self.nodes]
+            if len(slist) == 1:
+                values = dict(zip(slist[0], self.values))
+            else:
+                values = dict(zip(itertools.product(*slist), self.values))
+            return DiscreteFactor(
+                nodes=self.nodes, values=values, default_value=self.default_value
+            )
+
 
 class DiscreteMarkovNetwork:
 
@@ -116,6 +129,9 @@ class DiscreteMarkovNetwork:
         else:
             raise TypeError(f"Unexpected type for states: {type(values)}")
 
+    def states_of(self, node):
+        return self._states[node]
+
     def card(self, node):
         return len(self._states[node])
 
@@ -159,7 +175,7 @@ class DiscreteMarkovNetwork:
         f2 = DiscreteFactor(nodes=[0], values={0:0, 1:1, 2:2, 3:3})
         DMN.factors = [f1, f2]
         """
-        self._factors = factor_list
+        self._factors = [factor.normalize(self) for factor in factor_list]
 
     def create_map_query_model(
         self, variables=None, evidence=None, timing=False, **options
