@@ -72,6 +72,7 @@ def test_load_model_asia_uai2_pgmpy():
 # installations.
 #
 
+
 @pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
 def test_load_model_asia_bif1_conin():
     pgm = load_model(os.path.join(cwd, "asia.bif"))
