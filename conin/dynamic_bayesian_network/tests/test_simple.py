@@ -10,10 +10,7 @@ from . import examples
 
 with try_import() as pgmpy_available:
     import pgmpy
-    from conin.dynamic_bayesian_network.model_pgmpy import (
-        convert_to_DynamicDiscreteBayesianNetwork,
-    )
-
+    from conin.common.pgmpy import convert_pgmpy_to_conin
 
 #
 # simple0
@@ -40,7 +37,7 @@ def test_simple0_DDBN1_ALL_pgmpy():
     G = examples.simple0_DDBN1_pgmpy()
     q = {("Z", 0): 1, ("Z", 1): 0}
 
-    G = convert_to_DynamicDiscreteBayesianNetwork(G)
+    G = convert_pgmpy_to_conin(G)
     model = create_DDBN_map_query_model(pgm=G)  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver="glpk")
     assert q == results.solution.variable_value
@@ -54,7 +51,7 @@ def test_simple0_DDBN2_ALL_pgmpy():
     G = examples.simple0_DDBN2_pgmpy()
     q = {("Z", 0): 1, ("Z", 1): 0}
 
-    G = convert_to_DynamicDiscreteBayesianNetwork(G)
+    G = convert_pgmpy_to_conin(G)
     model = create_DDBN_map_query_model(pgm=G)  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver="glpk")
     assert q == results.solution.variable_value
@@ -99,7 +96,7 @@ def test_simple1_ALL_pgmpy():
         ("B", 1): 0,
     }
 
-    G = convert_to_DynamicDiscreteBayesianNetwork(G)
+    G = convert_pgmpy_to_conin(G)
     model = create_DDBN_map_query_model(pgm=G)  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver="glpk")
     assert q == results.solution.variable_value
@@ -140,7 +137,7 @@ def test_simple1_B_pgmpy():
         ("B", 1): 1,
     }
 
-    G = convert_to_DynamicDiscreteBayesianNetwork(G)
+    G = convert_pgmpy_to_conin(G)
     with pytest.raises(RuntimeError):
         model = create_DDBN_map_query_model(
             pgm=G, evidence={("A", 0): 1}
@@ -182,7 +179,7 @@ def test_simple1_ALL_constrained_pgmpy():
         ("B", 1): 1,
     }
 
-    # cpgm = convert_to_DynamicDiscreteBayesianNetwork(cpgm)
+    # cpgm = convert_pgmpy_to_conin(cpgm)
     results = optimize_map_query_model(cpgm.create_map_query_model(), solver="glpk")
     assert q == results.solution.variable_value
 
@@ -226,7 +223,7 @@ def test_simple2_ALL_pgmpy():
         ("B", 1): 0,
     }
 
-    G = convert_to_DynamicDiscreteBayesianNetwork(G)
+    G = convert_pgmpy_to_conin(G)
     model = create_DDBN_map_query_model(pgm=G)  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver="glpk")
     assert q == results.solution.variable_value
@@ -267,7 +264,7 @@ def test_simple2_B_pgmpy():
         ("B", 1): 1,
     }
 
-    G = convert_to_DynamicDiscreteBayesianNetwork(G)
+    G = convert_pgmpy_to_conin(G)
     with pytest.raises(RuntimeError):
         model = create_DDBN_map_query_model(
             pgm=G, evidence={("A", 0): 1}
@@ -309,6 +306,6 @@ def test_simple2_ALL_constrained_pgmpy():
         ("B", 1): 1,
     }
 
-    # cpgm = convert_to_DynamicDiscreteBayesianNetwork(cpgm)
+    # cpgm = convert_pgmpy_to_conin(cpgm)
     results = optimize_map_query_model(cpgm.create_map_query_model(), solver="glpk")
     assert q == results.solution.variable_value

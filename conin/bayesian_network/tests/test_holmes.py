@@ -11,7 +11,7 @@ from . import examples
 
 with try_import() as pgmpy_available:
     from pgmpy.inference import VariableElimination
-    from conin.bayesian_network.model_pgmpy import convert_to_DiscreteBayesianNetwork
+    from conin.common.pgmpy import convert_pgmpy_to_conin
 
 
 #
@@ -47,7 +47,7 @@ def test_holmes0_pgmpy():
     infer = VariableElimination(pgm)
     assert q == infer.map_query(variables=variables, evidence=evidence)
 
-    pgm = convert_to_DiscreteBayesianNetwork(pgm)
+    pgm = convert_pgmpy_to_conin(pgm)
     model = create_BN_map_query_model(pgm=pgm, variables=variables, evidence=evidence)
     results = optimize_map_query_model(model, solver="glpk")
     assert q == results.solution.variable_value
@@ -63,7 +63,7 @@ def test_holmes1():
     infer = VariableElimination(pgm)
     assert q == infer.map_query(variables=variables, evidence=evidence)
 
-    pgm = convert_to_DiscreteBayesianNetwork(pgm)
+    pgm = convert_pgmpy_to_conin(pgm)
     with pytest.raises(RuntimeError):
         model = create_BN_map_query_model(
             pgm=pgm, variables=variables, evidence=evidence
@@ -82,7 +82,7 @@ def test_holmes2():
     infer = VariableElimination(pgm)
     assert q == infer.map_query(variables=variables, evidence=evidence)
 
-    pgm = convert_to_DiscreteBayesianNetwork(pgm)
+    pgm = convert_pgmpy_to_conin(pgm)
     with pytest.raises(RuntimeError):
         model = create_BN_map_query_model(
             pgm=pgm, variables=variables, evidence=evidence
@@ -101,7 +101,7 @@ def test_holmes3():
     infer = VariableElimination(pgm)
     assert q == infer.map_query(variables=variables, evidence=evidence)
 
-    pgm = convert_to_DiscreteBayesianNetwork(pgm)
+    pgm = convert_pgmpy_to_conin(pgm)
     with pytest.raises(RuntimeError):
         model = create_BN_map_query_model(
             pgm=pgm, variables=variables, evidence=evidence
@@ -120,7 +120,7 @@ def test_holmes4():
     infer = VariableElimination(pgm)
     assert q == infer.map_query(variables=variables, evidence=evidence)
 
-    pgm = convert_to_DiscreteBayesianNetwork(pgm)
+    pgm = convert_pgmpy_to_conin(pgm)
     with pytest.raises(RuntimeError):
         model = create_BN_map_query_model(
             pgm=pgm, variables=variables, evidence=evidence
@@ -139,7 +139,7 @@ def test_holmes5():
     infer = VariableElimination(pgm)
     assert q == infer.map_query(variables=variables, evidence=evidence)
 
-    pgm = convert_to_DiscreteBayesianNetwork(pgm)
+    pgm = convert_pgmpy_to_conin(pgm)
     with pytest.raises(RuntimeError):
         model = create_BN_map_query_model(
             pgm=pgm, variables=variables, evidence=evidence

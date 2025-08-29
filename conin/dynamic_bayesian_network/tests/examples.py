@@ -11,6 +11,7 @@ with try_import() as pgmpy_available:
     from pgmpy.models import DynamicBayesianNetwork as pgmpy_DynamicBayesianNetwork
     from pgmpy.factors.discrete import TabularCPD
     from conin.common.pgmpy import MapCPD
+    from conin.common.pgmpy import convert_pgmpy_to_conin
 
 
 #
@@ -159,6 +160,7 @@ def simple1_DDBN_constrained_pgmpy(debug=False):
         model.c.add(model.X[("B", 0), 0] == model.X[("B", 1), 0])
         return model
 
+    pgm = convert_pgmpy_to_conin(pgm)
     return ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=constraints)
 
 
@@ -238,6 +240,7 @@ def simple2_DDBN_constrained_pgmpy(debug=False):
         model.c.add(model.X[("B", 0), 0] == model.X[("B", 1), 0])
         return model
 
+    pgm = convert_pgmpy_to_conin(pgm)
     return ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=constraints)
 
 
@@ -694,4 +697,5 @@ def weather_constrained_pgmpy(debug=False):
         )
         return model
 
+    pgm = convert_pgmpy_to_conin(pgm)
     return ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=constraints)

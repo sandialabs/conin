@@ -6,20 +6,18 @@ from conin.markov_network import (
     ConstrainedDiscreteMarkovNetwork,
     optimize_map_query_model,
     create_MN_map_query_model,
-    convert_to_DiscreteMarkovNetwork,
 )
 from conin.bayesian_network import (
     DiscreteBayesianNetwork,
     ConstrainedDiscreteBayesianNetwork,
     create_BN_map_query_model,
-    convert_to_DiscreteBayesianNetwork,
 )
 from conin.dynamic_bayesian_network import (
     DynamicDiscreteBayesianNetwork,
     ConstrainedDynamicDiscreteBayesianNetwork,
     create_DDBN_map_query_model,
-    convert_to_DynamicDiscreteBayesianNetwork,
 )
+from conin.common.pgmpy import convert_pgmpy_to_conin
 
 with try_import() as pgmpy_available:
     import pgmpy.models
@@ -86,7 +84,7 @@ class IntegerProgrammingInference:
 
         elif isinstance(self.pgm, pgmpy.models.MarkovNetwork):
             model = create_MN_map_query_model(
-                pgm=convert_to_DiscreteMarkovNetwork(self.pgm),
+                pgm=convert_pgmpy_to_conin(self.pgm),
                 variables=variables,
                 evidence=evidence,
                 timing=timing,
@@ -96,7 +94,7 @@ class IntegerProgrammingInference:
 
         elif isinstance(self.pgm, pgmpy.models.DiscreteBayesianNetwork):
             model = create_BN_map_query_model(
-                pgm=convert_to_DiscreteBayesianNetwork(self.pgm),
+                pgm=convert_pgmpy_to_conin(self.pgm),
                 variables=variables,
                 evidence=evidence,
                 timing=timing,
@@ -161,7 +159,7 @@ class DDBN_IntegerProgrammingInference:
 
         elif isinstance(self.pgm, pgmpy.models.DynamicBayesianNetwork):
             model = create_DDBN_map_query_model(
-                pgm=convert_to_DynamicDiscreteBayesianNetwork(self.pgm),
+                pgm=convert_pgmpy_to_conin(self.pgm),
                 start=start,
                 stop=stop,
                 variables=variables,

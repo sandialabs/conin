@@ -176,12 +176,7 @@ class DiscreteMarkovNetwork:
 class ConstrainedDiscreteMarkovNetwork:
 
     def __init__(self, pgm, constraints=None):
-        if isinstance(pgm, DiscreteMarkovNetwork):
-            self.pgm = pgm
-        else:
-            from conin.markov_network import convert_to_DiscreteMarkovNetwork
-
-            self.pgm = convert_to_DiscreteMarkovNetwork(pgm)
+        self.pgm = pgm
         self.constraint_functor = constraints
 
     def check_model(self):

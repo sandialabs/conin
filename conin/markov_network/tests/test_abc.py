@@ -13,12 +13,11 @@ from . import examples
 
 with try_import() as pgmpy_available:
     import pgmpy
-    from conin.markov_network.model_pgmpy import convert_to_DiscreteMarkovNetwork
+    from conin.common.pgmpy import convert_pgmpy_to_conin
 
 
 def test_ABC_conin():
     pgm = examples.ABC_conin()
-    # pgm = convert_to_DiscreteMarkovNetwork(pgm)
     model = create_MN_map_query_model(pgm=pgm)
     results = optimize_map_query_model(model, solver="glpk")
     assert results.solution.variable_value == {"A": 2, "B": 2, "C": 1}
@@ -27,7 +26,7 @@ def test_ABC_conin():
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_ABC_pgmpy():
     pgm = examples.ABC_pgmpy()
-    pgm = convert_to_DiscreteMarkovNetwork(pgm)
+    pgm = convert_pgmpy_to_conin(pgm)
     model = create_MN_map_query_model(pgm=pgm)
     results = optimize_map_query_model(model, solver="glpk")
     assert results.solution.variable_value == {"A": 2, "B": 2, "C": 1}
@@ -35,7 +34,7 @@ def test_ABC_pgmpy():
 
 def Xtest_ABC3_conin():
     pgm = examples.ABC_conin()
-    # pgm = convert_to_DiscreteMarkovNetwork(pgm)
+    # pgm = convert_pgmpy_to_conin(pgm)
     model = create_MN_map_query_model(pgm=pgm, variables=["A"])
     results = optimize_map_query_model(model, solver="glpk")
     assert results.solution.variable_value == {"A": 2}
@@ -43,7 +42,7 @@ def Xtest_ABC3_conin():
 
 def Xtest_ABC4_conin():
     pgm = examples.ABC_conin()
-    # pgm = convert_to_DiscreteMarkovNetwork(pgm)
+    # pgm = convert_pgmpy_to_conin(pgm)
     model = create_MN_map_query_model(pgm=pgm, variables=["B"])
     results = optimize_map_query_model(model, solver="glpk")
     assert results.solution.variable_value == {"B": 2}
@@ -51,7 +50,7 @@ def Xtest_ABC4_conin():
 
 def Xtest_ABC5_conin():
     pgm = examples.ABC_conin()
-    # pgm = convert_to_DiscreteMarkovNetwork(pgm)
+    # pgm = convert_pgmpy_to_conin(pgm)
     model = create_MN_map_query_model(pgm=pgm, variables=["C"])
     results = optimize_map_query_model(model, solver="glpk")
     assert results.solution.variable_value == {"C": 1}
@@ -59,7 +58,7 @@ def Xtest_ABC5_conin():
 
 def Xtest_ABC6_conin():
     pgm = examples.ABC_conin()
-    # pgm = convert_to_DiscreteMarkovNetwork(pgm)
+    # pgm = convert_pgmpy_to_conin(pgm)
     model = create_MN_map_query_model(pgm=pgm, variables=["C"], evidence={"B": 0})
     results = optimize_map_query_model(model, solver="glpk")
     assert results.solution.variable_value == {"C": 1}

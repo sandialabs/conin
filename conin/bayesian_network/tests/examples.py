@@ -16,6 +16,7 @@ with try_import() as pgmpy_available:
     )
     from pgmpy.factors.discrete import TabularCPD as pgmpy_TabularCPD
     from conin.common.pgmpy import MapCPD
+    from conin.common.pgmpy import convert_pgmpy_to_conin
 
 
 #
@@ -217,6 +218,7 @@ def cancer1_BN_constrained_pgmpy(debug=False):
         model.c.add(model.X["Dyspnoea", 0] + model.X["Xray", 0] <= 1)
         return model
 
+    pgm = convert_pgmpy_to_conin(pgm)
     return ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraints)
 
 
@@ -229,6 +231,7 @@ def cancer2_BN_constrained_pgmpy(debug=False):
         model.c.add(model.X["Dyspnoea", 0] + model.X["Xray", 0] <= 1)
         return model
 
+    pgm = convert_pgmpy_to_conin(pgm)
     return ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraints)
 
 

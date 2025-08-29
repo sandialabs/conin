@@ -5,4 +5,3 @@ from .model import (
     DynamicDiscreteBayesianNetwork,
     ConstrainedDynamicDiscreteBayesianNetwork,
 )
-from .model_pgmpy import convert_to_DynamicDiscreteBayesianNetwork

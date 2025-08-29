@@ -11,7 +11,7 @@ from . import examples
 
 with try_import() as pgmpy_available:
     from pgmpy.inference import VariableElimination
-    from conin.bayesian_network.model_pgmpy import convert_to_DiscreteBayesianNetwork
+    from conin.common.pgmpy import convert_pgmpy_to_conin
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -28,7 +28,7 @@ def test_pgmpy_issue_1177_pgmpy():
     infer = VariableElimination(pgm)
     assert q == infer.map_query(variables=variables, evidence=evidence)
 
-    pgm = convert_to_DiscreteBayesianNetwork(pgm)
+    pgm = convert_pgmpy_to_conin(pgm)
     with pytest.raises(RuntimeError):
         model = create_BN_map_query_model(
             pgm=pgm, variables=variables, evidence=evidence

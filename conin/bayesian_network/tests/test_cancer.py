@@ -10,7 +10,7 @@ from . import examples
 
 with try_import() as pgmpy_available:
     from pgmpy.inference import VariableElimination
-    from conin.bayesian_network.model_pgmpy import convert_to_DiscreteBayesianNetwork
+    from conin.common.pgmpy import convert_pgmpy_to_conin
 
 
 def test_cancer1_conin_ALL():
@@ -42,7 +42,7 @@ def test_cancer1_pgmpy_ALL():
         variables=["Cancer", "Dyspnoea", "Pollution", "Smoker", "Xray"]
     )
 
-    pgm = convert_to_DiscreteBayesianNetwork(pgm)
+    pgm = convert_pgmpy_to_conin(pgm)
     model = create_BN_map_query_model(pgm=pgm)  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver="glpk")
     assert q == results.solution.variable_value
@@ -81,7 +81,7 @@ def test_cancer1_pgmpy_Cancer():
         evidence={"Cancer": 0},
     )
 
-    pgm = convert_to_DiscreteBayesianNetwork(pgm)
+    pgm = convert_pgmpy_to_conin(pgm)
     with pytest.raises(RuntimeError):
         model = create_BN_map_query_model(
             pgm=pgm, evidence={"Cancer": 0}
@@ -138,7 +138,7 @@ def test_cancer2_pgmpy_ALL():
         variables=["Cancer", "Dyspnoea", "Pollution", "Smoker", "Xray"]
     )
 
-    pgm = convert_to_DiscreteBayesianNetwork(pgm)
+    pgm = convert_pgmpy_to_conin(pgm)
     model = create_BN_map_query_model(pgm=pgm)  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver="glpk")
     assert q == results.solution.variable_value
@@ -160,7 +160,7 @@ def test_cancer2_pgmpy_Cancer():
         evidence={"Cancer": 0},
     )
 
-    pgm = convert_to_DiscreteBayesianNetwork(pgm)
+    pgm = convert_pgmpy_to_conin(pgm)
     with pytest.raises(RuntimeError):
         model = create_BN_map_query_model(
             pgm=pgm, evidence={"Cancer": 0}
@@ -180,7 +180,7 @@ def test_cancer2_pgmpy_ALL_constrained1():
     pgm = examples.cancer2_BN_pgmpy()
     q = {"Cancer": 1, "Dyspnoea": 0, "Pollution": 0, "Smoker": 1, "Xray": 1}
 
-    pgm = convert_to_DiscreteBayesianNetwork(pgm)
+    pgm = convert_pgmpy_to_conin(pgm)
     model = create_BN_map_query_model(pgm=pgm)  # variables=None, evidence=None
     model.c = pyo.ConstraintList()
     model.c.add(model.X["Dyspnoea", 1] + model.X["Xray", 1] <= 1)

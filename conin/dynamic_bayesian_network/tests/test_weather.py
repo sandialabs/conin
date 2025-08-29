@@ -10,9 +10,7 @@ from . import examples
 
 with try_import() as pgmpy_available:
     import pgmpy
-    from conin.dynamic_bayesian_network.model_pgmpy import (
-        convert_to_DynamicDiscreteBayesianNetwork,
-    )
+    from conin.common.pgmpy import convert_pgmpy_to_conin
 
 
 def test_weather_A_conin():
@@ -79,7 +77,7 @@ def test_weather1_A_pgmpy():
         ("W", 4): "Sunny",
     }
 
-    pgm = convert_to_DynamicDiscreteBayesianNetwork(pgm)
+    pgm = convert_pgmpy_to_conin(pgm)
     model = create_DDBN_map_query_model(
         pgm=pgm, stop=4
     )  # variables=None, evidence=None
@@ -116,7 +114,7 @@ def test_weather2_A_pgmpy():
         ("W", 4): "Sunny",
     }
 
-    pgm = convert_to_DynamicDiscreteBayesianNetwork(pgm)
+    pgm = convert_pgmpy_to_conin(pgm)
     model = create_DDBN_map_query_model(
         pgm=pgm, stop=4
     )  # variables=None, evidence=None
@@ -197,7 +195,7 @@ def test_weather1_B_pgmpy():
         ("W", 4): "Cloudy",
     }
 
-    pgm = convert_to_DynamicDiscreteBayesianNetwork(pgm)
+    pgm = convert_pgmpy_to_conin(pgm)
     with pytest.raises(RuntimeError):
         model = create_DDBN_map_query_model(pgm=pgm, stop=4, evidence=evidence)
         results = optimize_map_query_model(model, solver="glpk")
@@ -238,7 +236,7 @@ def test_weather2_B_pgmpy():
         ("W", 4): "Cloudy",
     }
 
-    pgm = convert_to_DynamicDiscreteBayesianNetwork(pgm)
+    pgm = convert_pgmpy_to_conin(pgm)
     with pytest.raises(RuntimeError):
         model = create_DDBN_map_query_model(pgm=pgm, stop=4, evidence=evidence)
         results = optimize_map_query_model(model, solver="glpk")
@@ -383,7 +381,7 @@ def test_weather_B_constrained_pgmpy():
         ("W", 4): "Sunny",
     }
 
-    # cpgm = convert_to_DynamicDiscreteBayesianNetwork(cpgm)
+    # cpgm = convert_pgmpy_to_conin(cpgm)
     with pytest.raises(RuntimeError):
         model = cpgm.create_map_query_model(stop=4, evidence=evidence)
         results = optimize_map_query_model(model, solver="glpk")

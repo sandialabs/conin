@@ -11,7 +11,7 @@ from . import examples
 
 with try_import() as pgmpy_available:
     from pgmpy.inference import VariableElimination
-    from conin.bayesian_network.model_pgmpy import convert_to_DiscreteBayesianNetwork
+    from conin.common.pgmpy import convert_pgmpy_to_conin
 
 
 def test_simple1_ALL_conin():
@@ -52,7 +52,7 @@ def test_simple1_ALL_pgmpy():
     infer = VariableElimination(pgm)
     assert q == infer.map_query(variables=["A", "B"])
 
-    pgm = convert_to_DiscreteBayesianNetwork(pgm)
+    pgm = convert_pgmpy_to_conin(pgm)
     model = create_BN_map_query_model(pgm=pgm)  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver="glpk")
     assert q == results.solution.variable_value
@@ -69,7 +69,7 @@ def test_simple1_B_pgmpy():
     infer = VariableElimination(pgm)
     assert q == infer.map_query(variables=["B"], evidence={"A": 1})
 
-    pgm = convert_to_DiscreteBayesianNetwork(pgm)
+    pgm = convert_pgmpy_to_conin(pgm)
     with pytest.raises(RuntimeError):
         model = create_BN_map_query_model(
             pgm=pgm, evidence={"A": 1}
@@ -89,7 +89,7 @@ def test_simple2_ALL_pgmpy():
     infer = VariableElimination(pgm)
     assert q == infer.map_query(variables=["A", "B"])
 
-    pgm = convert_to_DiscreteBayesianNetwork(pgm)
+    pgm = convert_pgmpy_to_conin(pgm)
     model = create_BN_map_query_model(pgm=pgm)  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver="glpk")
     assert q == results.solution.variable_value
@@ -106,7 +106,7 @@ def test_simple2_B_pgmpy():
     infer = VariableElimination(pgm)
     assert q == infer.map_query(variables=["B"], evidence={"A": 1})
 
-    pgm = convert_to_DiscreteBayesianNetwork(pgm)
+    pgm = convert_pgmpy_to_conin(pgm)
     with pytest.raises(RuntimeError):
         model = create_BN_map_query_model(
             pgm=pgm, evidence={"A": 1}

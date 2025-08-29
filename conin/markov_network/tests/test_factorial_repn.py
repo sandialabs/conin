@@ -18,7 +18,7 @@ from . import examples
 
 with try_import() as pgmpy_available:
     import pgmpy
-    from conin.markov_network.model_pgmpy import convert_to_DiscreteMarkovNetwork
+    from conin.common.pgmpy import convert_pgmpy_to_conin
 
 
 def test_example6():
@@ -76,7 +76,7 @@ def test_example6():
 
     if pgmpy_available:
         pgm = examples.example6_pgmpy()
-        pgm = convert_to_DiscreteMarkovNetwork(pgm)
+        pgm = convert_pgmpy_to_conin(pgm)
         S_, J_, v_, w_ = extract_factor_representation(pgm)
         assert S == S_
         assert J == J_
@@ -230,7 +230,7 @@ def test_ABC():
 
     if pgmpy_available:
         pgm = examples.ABC_pgmpy()
-        pgm = convert_to_DiscreteMarkovNetwork(pgm)
+        pgm = convert_pgmpy_to_conin(pgm)
         S_, J_, v_, w_ = extract_factor_representation(pgm)
         assert S == S_
         assert J == J_

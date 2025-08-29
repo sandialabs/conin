@@ -11,6 +11,7 @@ from conin.markov_network import (
 with try_import() as pgmpy_available:
     from pgmpy.models import MarkovNetwork as pgmpy_MarkovNetwork
     from pgmpy.factors.discrete import DiscreteFactor as pgmpy_DiscreteFactor
+    from conin.common.pgmpy import convert_pgmpy_to_conin
 
 
 #
@@ -125,6 +126,7 @@ def ABC_constrained_pgmpy():
 
         return model
 
+    pgm = convert_pgmpy_to_conin(pgm)
     return ConstrainedDiscreteMarkovNetwork(pgm, constraints=constraint_fn)
 
 

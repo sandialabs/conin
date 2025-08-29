@@ -7,4 +7,3 @@ from .model import (
     ConstrainedDiscreteMarkovNetwork,
     DiscreteFactor,
 )
-from .model_pgmpy import convert_to_DiscreteMarkovNetwork

@@ -339,12 +339,7 @@ class DiscreteBayesianNetwork:
 class ConstrainedDiscreteBayesianNetwork:
 
     def __init__(self, pgm, constraints=None):
-        if isinstance(pgm, DiscreteBayesianNetwork):
-            self.pgm = pgm
-        else:
-            from conin.bayesian_network import convert_to_DiscreteBayesianNetwork
-
-            self.pgm = convert_to_DiscreteBayesianNetwork(pgm)
+        self.pgm = pgm
         self.constraint_functor = constraints
 
     def check_model(self):
