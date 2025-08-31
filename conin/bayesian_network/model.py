@@ -15,7 +15,7 @@ from conin.markov_network import DiscreteFactor
 #
 @dataclass(slots=True)
 class DiscreteCPD:
-    variable: str | int
+    node: str | int
     values: list | dict
     parents: list = None
     default_value: float = 0  # NOTE: Note used yet
@@ -25,8 +25,8 @@ class DiscreteCPD:
 
     Parameters
     ----------
-    variable: int, string (any hashable python object)
-        The variable whose CPD is defined.
+    node: int, string (any hashable python object)
+        The node (variable) whose CPD is defined.
 
     parents: array-like
         List of parent variables (if any) w.r.t. which CPD is defined.
@@ -61,7 +61,7 @@ class DiscreteCPD:
         ('hard','medium'): dict(A=0.2, B=0.2, C=0.6),
         ('hard','high'): dict(A=0.3, B=0.3, C=0.4)}
 
-    >>> cpd = DiscreteCPD(variable='grade',
+    >>> cpd = DiscreteCPD(node='grade',
     ...              parents=['diff', 'intel'],
     ...              values={('easy','low'): dict(A=0.2, B=0.2, C=0.6),
     ...                      ('easy','mid'): dict(A=0.3, B=0.3, C=0.4),
@@ -97,16 +97,16 @@ class DiscreteCPD:
     ['grade', 'diff', 'intel']
     >>> cpd.cardinality
     array([3, 2, 3])
-    >>> cpd.variable
+    >>> cpd.node
     'grade'
     >>> cpd.cardinality
     array([2])
-    >>> cpd.variable
+    >>> cpd.node
     'A'
     >>> cpd.variable_card
     2
 
-    >>> cpd = DiscreteCPD(variable='B', parents=['A'],
+    >>> cpd = DiscreteCPD(node='B', parents=['A'],
     ...              values={0:[0.2, 0.8], 1:[0.9, 0.1]})
     >>> print(cpd)
     +------+------+------+
@@ -123,7 +123,7 @@ class DiscreteCPD:
     ['B', 'A']
     >>> cpd.cardinality
     array([2, 2])
-    >>> cpd.variable
+    >>> cpd.node
     'B'
     >>> cpd.variable_card
     2
@@ -141,9 +141,9 @@ class DiscreteCPD:
                 #
                 # Convert a CPD specified with list values into a CPD with dictionary values.
                 #
-                states = pgm.states_of(self.variable)
+                states = pgm.states_of(self.node)
                 return DiscreteCPD(
-                    variable=self.variable,
+                    node=self.node,
                     default_value=self.default_value,
                     parents=self.parents,
                     values={
@@ -158,7 +158,7 @@ class DiscreteCPD:
             #
             # Convert a CPD specified with a dict of list values into a CPD with dictionary values.
             #
-            var_states = pgm.states_of(self.variable)
+            var_states = pgm.states_of(self.node)
             if self.parents:
                 slist = [pgm.states_of(node) for node in self.parents]
                 node_values = [
@@ -170,7 +170,7 @@ class DiscreteCPD:
                 values = dict(zip(var_states, self.values))
 
             return DiscreteCPD(
-                variable=self.variable,
+                node=self.node,
                 default_value=self.default_value,
                 parents=self.parents,
                 values=values,
@@ -183,18 +183,18 @@ class DiscreteCPD:
             tmp = next(iter(self.values.values()))
             if type(tmp) is dict:
                 values = {
-                    (key if type(key) is tuple else (key,)) + (variable_value,): value
+                    (key if type(key) is tuple else (key,)) + (node_value,): value
                     for key, values in self.values.items()
-                    for variable_value, value in values.items()
+                    for node_value, value in values.items()
                 }
             else:
                 values = self.values
 
         return DiscreteFactor(
             nodes=(
-                [self.variable]
+                [self.node]
                 if self.parents is None
-                else self.parents + [self.variable]
+                else self.parents + [self.node]
             ),
             values=values,
             default_value=self.default_value,
@@ -215,10 +215,10 @@ class DiscreteBayesianNetwork:
         cnodes = set()
         for f in self._cpds:
             assert (
-                f.variable in self._states
-            ), f"Unexpected variable {f.variable} in cpd"
-            vnodes = set(self._states[f.variable])
-            cnodes.add(f.variable)
+                f.node in self._states
+            ), f"Unexpected node {f.node} in cpd"
+            vnodes = set(self._states[f.node])
+            cnodes.add(f.node)
             if f.parents is not None:
                 for node in f.parents:
                     cnodes.add(node)
@@ -238,7 +238,7 @@ class DiscreteBayesianNetwork:
                         vkey = True
 
                     if vkey:
-                        # The key is for the variable
+                        # The key is for the node
                         assert (
                             not f.parents and k in vnodes
                         ), f"Unexpected cpd state {key}"
@@ -261,9 +261,9 @@ class DiscreteBayesianNetwork:
                 if f.parents:
                     assert len(f.values) == prod(
                         len(self._states[v]) for v in f.parents
-                    ) * len(self._states[f.variable])
+                    ) * len(self._states[f.node])
                 else:
-                    assert len(f.values) == len(self._states[f.variable])
+                    assert len(f.values) == len(self._states[f.node])
 
         # Note: We assert equality to ensure that all nodes are used in the model
         assert model_nodes == cnodes
@@ -285,7 +285,7 @@ class DiscreteBayesianNetwork:
         if not self._edges:
             self._edges = sorted(
                 {
-                    (e, cpd.variable)
+                    (e, cpd.node)
                     for cpd in self._cpds
                     for e in (cpd.parents if cpd.parents else [])
                 }
@@ -343,12 +343,12 @@ class DiscreteBayesianNetwork:
         """
         DBN = DiscreteBayesianNetwork()
         DBN.states = [4, 3]  # Cardinality of nodes
-        c1 = DiscreteCPD(variable=1, parents=[0],
+        c1 = DiscreteCPD(node=1, parents=[0],
                 values={0: dict(0=0.2, 1=0.2, 2=0.6),
                         1: dict(0=0.3, 1=0.3, 2=0.4),
                         2: dict(0=0.4, 1=0.4, 2=0.2),
                         3: dict(0=0.1, 1=0.1, 2=0.8)})
-        c2 = DiscreteCPD(variable=0, values={0:0.25, 1:0.25, 2:0.05, 3:0.45})
+        c2 = DiscreteCPD(node=0, values={0:0.25, 1:0.25, 2:0.05, 3:0.45})
         DMN.cpds = [c1, c2]
         """
         self._cpds = [cpd.normalize(self) for cpd in cpd_list]

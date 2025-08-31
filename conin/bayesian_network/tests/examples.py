@@ -40,10 +40,10 @@ def cancer1_BN_conin(debug=False):
     }
 
     # Step 2: Define the CPDs.
-    cpd_poll = DiscreteCPD(variable="Pollution", values=[0.9, 0.1])
-    cpd_smoke = DiscreteCPD(variable="Smoker", values=[0.3, 0.7])
+    cpd_poll = DiscreteCPD(node="Pollution", values=[0.9, 0.1])
+    cpd_smoke = DiscreteCPD(node="Smoker", values=[0.3, 0.7])
     cpd_cancer = DiscreteCPD(
-        variable="Cancer",
+        node="Cancer",
         parents=["Smoker", "Pollution"],
         values={
             (0, 0): [0.03, 0.97],
@@ -54,13 +54,13 @@ def cancer1_BN_conin(debug=False):
         # values=[[0.03, 0.05, 0.001, 0.02], [0.97, 0.95, 0.999, 0.98]],
     )
     cpd_xray = DiscreteCPD(
-        variable="Xray",
+        node="Xray",
         parents=["Cancer"],
         values={0: [0.9, 0.1], 1: [0.2, 0.8]},
         # values=[[0.9, 0.2], [0.1, 0.8]],
     )
     cpd_dysp = DiscreteCPD(
-        variable="Dyspnoea",
+        node="Dyspnoea",
         parents=["Cancer"],
         values={0: [0.65, 0.35], 1: [0.3, 0.7]},
         # values=[[0.65, 0.3], [0.35, 0.7]],
@@ -243,9 +243,9 @@ def cancer2_BN_constrained_pgmpy(debug=False):
 def simple1_BN_conin(debug=False):
     G = DiscreteBayesianNetwork()
     G.states = {"A": [0, 1], "B": [0, 1]}
-    cpd_A = DiscreteCPD(variable="A", values=[0.9, 0.1])
+    cpd_A = DiscreteCPD(node="A", values=[0.9, 0.1])
     cpd_B = DiscreteCPD(
-        variable="B",
+        node="B",
         parents=["A"],
         values={0: [0.2, 0.8], 1: [0.9, 0.1]},
     )
@@ -318,12 +318,12 @@ def DBDA_5_1_conin(debug=False):
     }
 
     disease_state_CPD = DiscreteCPD(
-        variable="disease-state",
+        node="disease-state",
         values=[p_disease_present, 1.0 - p_disease_present],
     )
 
     test_result_CPD_1 = DiscreteCPD(
-        variable="test-result1",
+        node="test-result1",
         parents=["disease-state"],
         values={
             0: [
@@ -338,7 +338,7 @@ def DBDA_5_1_conin(debug=False):
     )
 
     test_result_CPD_2 = DiscreteCPD(
-        variable="test-result2",
+        node="test-result2",
         parents=["disease-state"],
         values={
             0: [
@@ -457,15 +457,15 @@ def holmes_conin(debug=False):
         "R": ["r", "-r"],
     }
 
-    cpd_E = DiscreteCPD(variable="E", values={"e": 0.0003, "-e": 0.9997})
-    cpd_B = DiscreteCPD(variable="B", values={"b": 0.0001, "-b": 0.9999})
+    cpd_E = DiscreteCPD(node="E", values={"e": 0.0003, "-e": 0.9997})
+    cpd_B = DiscreteCPD(node="B", values={"b": 0.0001, "-b": 0.9999})
     cpd_R = DiscreteCPD(
-        variable="R",
+        node="R",
         parents=["E"],
         values={"e": {"r": 0.0002, "-r": 0.9998}, "-e": {"r": 0.9, "-r": 0.1}},
     )
     cpd_A = DiscreteCPD(
-        variable="A",
+        node="A",
         parents=["E", "B"],
         values={
             ("-e", "-b"): {"a": 0.01, "-a": 0.99},
@@ -475,12 +475,12 @@ def holmes_conin(debug=False):
         },
     )
     cpd_W = DiscreteCPD(
-        variable="W",
+        node="W",
         parents=["A"],
         values={"-a": {"w": 0.4, "-w": 0.6}, "a": {"w": 0.8, "-w": 0.2}},
     )
     cpd_G = DiscreteCPD(
-        variable="G",
+        node="G",
         parents=["A"],
         values={"-a": {"g": 0.04, "-g": 0.96}, "a": {"g": 0.4, "-g": 0.6}},
     )

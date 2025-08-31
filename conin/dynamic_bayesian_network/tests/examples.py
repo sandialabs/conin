@@ -22,9 +22,9 @@ with try_import() as pgmpy_available:
 def simple0_DDBN_conin(debug=False):
     G = DynamicDiscreteBayesianNetwork()
     G.dynamic_states = {"Z": [0, 1]}
-    z_start_cpd = DiscreteCPD(variable=("Z", 0), values=[0.5, 0.5])
+    z_start_cpd = DiscreteCPD(node=("Z", 0), values=[0.5, 0.5])
     z_trans_cpd = DiscreteCPD(
-        variable=("Z", G.t),
+        node=("Z", G.t),
         parents=[("Z", G.t - 1)],
         values={0: [0.7, 0.3], 1: [0.8, 0.2]},
     )
@@ -89,14 +89,14 @@ def simple1_DDBN_conin(debug=False):
     G = DynamicDiscreteBayesianNetwork()
     G.dynamic_states = {"A": [0, 1], "B": [0, 1]}
 
-    cpd_start_A = DiscreteCPD(variable=("A", 0), values=[0.9, 0.1])
+    cpd_start_A = DiscreteCPD(node=("A", 0), values=[0.9, 0.1])
     cpd_start_B = DiscreteCPD(
-        variable=("B", G.t),
+        node=("B", G.t),
         parents=[("A", G.t)],
         values={0: [0.2, 0.8], 1: [0.9, 0.1]},
     )
     cpd_trans_A = DiscreteCPD(
-        variable=("A", G.t),
+        node=("A", G.t),
         parents=[("A", G.t - 1)],
         values={0: [0.2, 0.8], 1: [0.9, 0.1]},
     )
@@ -173,14 +173,14 @@ def simple2_DDBN_conin(debug=False):
     G = DynamicDiscreteBayesianNetwork()
     G.dynamic_states = {"A": [0, 1], "B": [0, 1]}
 
-    cpd_start_A = DiscreteCPD(variable=("A", 0), values=[0.9, 0.1])
+    cpd_start_A = DiscreteCPD(node=("A", 0), values=[0.9, 0.1])
     cpd_start_B = DiscreteCPD(
-        variable=("B", G.t),
+        node=("B", G.t),
         parents=[("A", G.t)],
         values={0: [0.2, 0.8], 1: [0.9, 0.1]},
     )
     cpd_trans_A = DiscreteCPD(
-        variable=("A", G.t),
+        node=("A", G.t),
         parents=[("A", G.t - 1)],
         values={0: [0.2, 0.8], 1: [0.9, 0.1]},
     )
@@ -296,12 +296,12 @@ def weather_conin(debug=False):
     # Define CPDs
     # CPD for W (Weather transition)
     cpd_w_0 = DiscreteCPD(
-        variable=("W", 0),
+        node=("W", 0),
         values={"Sunny": 0.6, "Cloudy": 0.3, "Rainy": 0.1},
     )
 
     cpd_w_1 = DiscreteCPD(
-        variable=("W", dbn.t),
+        node=("W", dbn.t),
         parents=[("W", dbn.t - 1)],
         values={
             "Sunny": {"Sunny": 0.7, "Cloudy": 0.2, "Rainy": 0.1},
@@ -312,12 +312,12 @@ def weather_conin(debug=False):
 
     # CPD for T (Temperature transition)
     cpd_t_0 = DiscreteCPD(
-        variable=("T", 0),
+        node=("T", 0),
         values={"Hot": 0.5, "Mild": 0.4, "Cold": 0.1},
     )
 
     cpd_t_1 = DiscreteCPD(
-        variable=("T", dbn.t),
+        node=("T", dbn.t),
         parents=[("T", dbn.t - 1), ("W", dbn.t - 1)],
         values={
             ("Hot", "Sunny"): {"Hot": 0.8, "Mild": 0.2, "Cold": 0.0},
@@ -334,7 +334,7 @@ def weather_conin(debug=False):
 
     # CPD for O (Ground observation)
     cpd_o = DiscreteCPD(
-        variable=("O", dbn.t),
+        node=("O", dbn.t),
         parents=[("W", dbn.t)],
         values={
             "Sunny": {"Dry": 0.9, "Wet": 0.1},
@@ -345,7 +345,7 @@ def weather_conin(debug=False):
 
     # CPD for H (Humidity observation)
     cpd_h = DiscreteCPD(
-        variable=("H", dbn.t),
+        node=("H", dbn.t),
         parents=[("T", dbn.t), ("W", dbn.t)],
         values={
             ("Hot", "Sunny"): {"Low": 0.7, "Medium": 0.2, "High": 0.1},

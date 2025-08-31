@@ -29,14 +29,14 @@ def create_bn_from_dbn(*, dbn, start, stop):
     #
     # Copy cpds
     #
-    # If the variable or parents are dynamic tuples, then we treat the
+    # If the node or parents are dynamic tuples, then we treat the
     # cpd as a dynamic map and add it if the time steps for all dynamic variaables
     # are feasible.
     #
     cpds = []
     for cpd in dbn.cpds:
         dynamic = False
-        for v in all_cpds([cpd.variable], cpd.parents):
+        for v in all_cpds([cpd.node], cpd.parents):
             if (
                 type(v) is tuple
                 and v[0] in dbn.dynamic_states
@@ -52,13 +52,13 @@ def create_bn_from_dbn(*, dbn, start, stop):
         for t in range(start, stop + 1):
             dbn.t.set_value(t)
 
-            if type(cpd.variable) is tuple:
-                curr = cpd.variable[1].value()
+            if type(cpd.node) is tuple:
+                curr = cpd.node[1].value()
                 if curr < start:
                     continue
-                variable = (cpd.variable[0], curr)
+                node = (cpd.node[0], curr)
             else:
-                variable = cpd.variable
+                node = cpd.node
 
             skip = False
             parents = []
@@ -75,7 +75,7 @@ def create_bn_from_dbn(*, dbn, start, stop):
             if skip:
                 continue
             cpds.append(
-                DiscreteCPD(variable=variable, parents=parents, values=cpd.values)
+                DiscreteCPD(node=node, parents=parents, values=cpd.values)
             )
 
     pgm = DiscreteBayesianNetwork()

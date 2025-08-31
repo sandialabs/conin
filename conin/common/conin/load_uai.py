@@ -127,7 +127,7 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
                 pprint.pprint(map_values)
                 print("")
             factors.append(
-                DiscreteCPD(variable=vname[f[-1]], parents=parents, values=map_values)
+                DiscreteCPD(node=vname[f[-1]], parents=parents, values=map_values)
             )
         else:
             if len(f) == 1:

@@ -68,7 +68,7 @@ def convert_pgmpy_to_DiscreteBayesianNetwork(pgmpy_pgm):
 
         cpds.append(
             DiscreteCPD(
-                variable=cpd.variable,
+                node=cpd.variable,
                 parents=[] if len(cpd.variables) == 1 else cpd.variables[1:],
                 values=values,
             )
@@ -107,7 +107,7 @@ def convert_pgmpy_to_DynamicDiscreteBayesianNetwork(pgmpy_pgm):
 
             cpds.append(
                 DiscreteCPD(
-                    variable=_as_tuple(cpd.variable, 0, 0),
+                    node=_as_tuple(cpd.variable, 0, 0),
                     parents=[],
                     values=values,
                 )
@@ -125,7 +125,7 @@ def convert_pgmpy_to_DynamicDiscreteBayesianNetwork(pgmpy_pgm):
 
             cpds.append(
                 DiscreteCPD(
-                    variable=_as_tuple(cpd.variable, pgm.t, offset),
+                    node=_as_tuple(cpd.variable, pgm.t, offset),
                     parents=[
                         _as_tuple(var, pgm.t, offset) for var in cpd.variables[1:]
                     ],
