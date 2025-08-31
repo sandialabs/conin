@@ -10,6 +10,9 @@ with try_import() as pgmpy_available:
 with try_import() as pgmpy_readwrite_available:
     import pgmpy.readwrite
 
+with try_import() as pomegranate_available:
+    import pomegranate
+
 cwd = os.path.dirname(__file__)
 
 #
@@ -54,6 +57,11 @@ def test_load_model_asia_uai1_pgmpy():
     pgm = load_model(os.path.join(cwd, "asia.uai"), model_type="pgmpy")
 
 
+@pytest.mark.skipif(not pomegranate_available, reason="pomegranate not installed")
+def test_load_model_asia_uai1_pomegranate():
+    pgm = load_model(os.path.join(cwd, "asia.uai"), model_type="pomegranate")
+
+
 def test_load_model_asia_uai2_conin():
     pgm = load_model(os.path.join(cwd, "asia_compressed.uai.gz"))
 
@@ -61,6 +69,13 @@ def test_load_model_asia_uai2_conin():
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 def test_load_model_asia_uai2_pgmpy():
     pgm = load_model(os.path.join(cwd, "asia_compressed.uai.gz"), model_type="pgmpy")
+
+
+@pytest.mark.skipif(not pomegranate_available, reason="pomegranate not installed")
+def test_load_model_asia_uai2_pomegranate():
+    pgm = load_model(
+        os.path.join(cwd, "asia_compressed.uai.gz"), model_type="pomegranate"
+    )
 
 
 #

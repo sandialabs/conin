@@ -5,6 +5,10 @@ with try_import() as pgmpy_available:
     import pgmpy
     import conin.common.pgmpy
 
+with try_import() as pomegranate_available:
+    import pomegranate
+    import conin.common.pomegranate
+
 
 def load_model(name, model_type="conin", quiet=True):
 
@@ -24,5 +28,12 @@ def load_model(name, model_type="conin", quiet=True):
                 f"Missing import pgmpy, which is required to load a pgmpy model."
             )
         return conin.common.pgmpy.load_model(name, quiet=quiet)
+
+    elif model_type == "pomegranate":
+        if not pomegranate_available:
+            raise ImportError(
+                f"Missing import pomegranate, which is required to load a pomegranate model."
+            )
+        return conin.common.pomegranate.load_model(name, quiet=quiet)
 
     raise RuntimeError(f"Unexpected model type: {model_type}")
