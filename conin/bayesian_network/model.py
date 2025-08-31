@@ -191,11 +191,7 @@ class DiscreteCPD:
                 values = self.values
 
         return DiscreteFactor(
-            nodes=(
-                [self.node]
-                if self.parents is None
-                else self.parents + [self.node]
-            ),
+            nodes=([self.node] if self.parents is None else self.parents + [self.node]),
             values=values,
             default_value=self.default_value,
         )
@@ -214,9 +210,7 @@ class DiscreteBayesianNetwork:
 
         cnodes = set()
         for f in self._cpds:
-            assert (
-                f.node in self._states
-            ), f"Unexpected node {f.node} in cpd"
+            assert f.node in self._states, f"Unexpected node {f.node} in cpd"
             vnodes = set(self._states[f.node])
             cnodes.add(f.node)
             if f.parents is not None:

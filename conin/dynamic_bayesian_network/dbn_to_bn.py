@@ -74,9 +74,7 @@ def create_bn_from_dbn(*, dbn, start, stop):
 
             if skip:
                 continue
-            cpds.append(
-                DiscreteCPD(node=node, parents=parents, values=cpd.values)
-            )
+            cpds.append(DiscreteCPD(node=node, parents=parents, values=cpd.values))
 
     pgm = DiscreteBayesianNetwork()
     pgm.states = states
