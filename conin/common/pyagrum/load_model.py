@@ -11,11 +11,11 @@ with try_import() as pyagrum_available:
 
 def load_model(name, quiet=True):
 
-    if name.endswith('.gz'):
-        suffix = name.split('.')[-2]
+    if name.endswith(".gz"):
+        suffix = name.split(".")[-2]
 
-        with tempfile.NamedTemporaryFile(suffix="."+suffix) as tmp_file:
-            with gzip.open(name, 'rt') as f:
+        with tempfile.NamedTemporaryFile(suffix="." + suffix) as tmp_file:
+            with gzip.open(name, "rt") as f:
                 tmp_file.write(
                     f.read().encode("utf-8")
                 )  # Write the decompressed content to the temp file
@@ -29,4 +29,3 @@ def load_model(name, quiet=True):
         pgm._pgmpy = conin.common.pgmpy.load_model(name)
 
     return pgm
-
