@@ -27,12 +27,12 @@ def log_potential(pgm, variables, evidence=None):
     log_potential = 0.0
     if type(pgm) is conin.bayesian_network.DiscreteBayesianNetwork:
         for cpd in pgm.cpds:
-            if cpd.evidence:
-                x = cpd.values[tuple(data[node] for node in cpd.evidence)][
-                    data[cpd.variable]
+            if cpd.parents:
+                x = cpd.values[tuple(data[node] for node in cpd.parents)][
+                    data[cpd.node]
                 ]
             else:
-                x = cpd.values[data[cpd.variable]]
+                x = cpd.values[data[cpd.node]]
             if x == 0.0:
                 return -np.inf
             if x != 1.0:

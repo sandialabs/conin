@@ -9,6 +9,14 @@ with try_import() as pomegranate_available:
     import pomegranate
     import conin.common.pomegranate
 
+with try_import() as pgmax_available:
+    import pgmax
+    import conin.common.pgmax
+
+with try_import() as pyagrum_available:
+    import pyagrum
+    import conin.common.pyagrum
+
 
 def load_model(name, model_type="conin", quiet=True):
 
@@ -35,5 +43,19 @@ def load_model(name, model_type="conin", quiet=True):
                 f"Missing import pomegranate, which is required to load a pomegranate model."
             )
         return conin.common.pomegranate.load_model(name, quiet=quiet)
+
+    elif model_type == "pgmax":
+        if not pgmax_available:
+            raise ImportError(
+                f"Missing import pgmax, which is required to load a pgmax model."
+            )
+        return conin.common.pgmax.load_model(name, quiet=quiet)
+
+    elif model_type == "pyagrum":
+        if not pyagrum_available:
+            raise ImportError(
+                f"Missing import pyagrum, which is required to load a pyagrum model."
+            )
+        return conin.common.pyagrum.load_model(name, quiet=quiet)
 
     raise RuntimeError(f"Unexpected model type: {model_type}")
