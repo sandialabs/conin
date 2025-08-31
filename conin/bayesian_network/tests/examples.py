@@ -44,7 +44,7 @@ def cancer1_BN_conin(debug=False):
     cpd_smoke = DiscreteCPD(variable="Smoker", values=[0.3, 0.7])
     cpd_cancer = DiscreteCPD(
         variable="Cancer",
-        evidence=["Smoker", "Pollution"],
+        parents=["Smoker", "Pollution"],
         values={
             (0, 0): [0.03, 0.97],
             (0, 1): [0.05, 0.95],
@@ -55,13 +55,13 @@ def cancer1_BN_conin(debug=False):
     )
     cpd_xray = DiscreteCPD(
         variable="Xray",
-        evidence=["Cancer"],
+        parents=["Cancer"],
         values={0: [0.9, 0.1], 1: [0.2, 0.8]},
         # values=[[0.9, 0.2], [0.1, 0.8]],
     )
     cpd_dysp = DiscreteCPD(
         variable="Dyspnoea",
-        evidence=["Cancer"],
+        parents=["Cancer"],
         values={0: [0.65, 0.35], 1: [0.3, 0.7]},
         # values=[[0.65, 0.3], [0.35, 0.7]],
     )
@@ -246,7 +246,7 @@ def simple1_BN_conin(debug=False):
     cpd_A = DiscreteCPD(variable="A", values=[0.9, 0.1])
     cpd_B = DiscreteCPD(
         variable="B",
-        evidence=["A"],
+        parents=["A"],
         values={0: [0.2, 0.8], 1: [0.9, 0.1]},
     )
     if debug:
@@ -324,7 +324,7 @@ def DBDA_5_1_conin(debug=False):
 
     test_result_CPD_1 = DiscreteCPD(
         variable="test-result1",
-        evidence=["disease-state"],
+        parents=["disease-state"],
         values={
             0: [
                 p_test_positive_given_disease_present,
@@ -339,7 +339,7 @@ def DBDA_5_1_conin(debug=False):
 
     test_result_CPD_2 = DiscreteCPD(
         variable="test-result2",
-        evidence=["disease-state"],
+        parents=["disease-state"],
         values={
             0: [
                 p_test_positive_given_disease_present,
@@ -461,12 +461,12 @@ def holmes_conin(debug=False):
     cpd_B = DiscreteCPD(variable="B", values={"b": 0.0001, "-b": 0.9999})
     cpd_R = DiscreteCPD(
         variable="R",
-        evidence=["E"],
+        parents=["E"],
         values={"e": {"r": 0.0002, "-r": 0.9998}, "-e": {"r": 0.9, "-r": 0.1}},
     )
     cpd_A = DiscreteCPD(
         variable="A",
-        evidence=["E", "B"],
+        parents=["E", "B"],
         values={
             ("-e", "-b"): {"a": 0.01, "-a": 0.99},
             ("e", "-b"): {"a": 0.2, "-a": 0.8},
@@ -476,12 +476,12 @@ def holmes_conin(debug=False):
     )
     cpd_W = DiscreteCPD(
         variable="W",
-        evidence=["A"],
+        parents=["A"],
         values={"-a": {"w": 0.4, "-w": 0.6}, "a": {"w": 0.8, "-w": 0.2}},
     )
     cpd_G = DiscreteCPD(
         variable="G",
-        evidence=["A"],
+        parents=["A"],
         values={"-a": {"g": 0.04, "-g": 0.96}, "a": {"g": 0.4, "-g": 0.6}},
     )
 

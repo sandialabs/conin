@@ -17,7 +17,7 @@ from conin.markov_network import DiscreteFactor
 class DiscreteCPD:
     variable: str | int
     values: list | dict
-    evidence: list = None
+    parents: list = None
     default_value: float = 0  # NOTE: Note used yet
 
     """
@@ -28,11 +28,11 @@ class DiscreteCPD:
     variable: int, string (any hashable python object)
         The variable whose CPD is defined.
 
-    evidence: array-like
-        List of variables in evidences (if any) w.r.t. which CPD is defined.
+    parents: array-like
+        List of parent variables (if any) w.r.t. which CPD is defined.
 
     values: dict, list
-        Values for the CPD table. If a list is specified and no evidence is
+        Values for the CPD table. If a list is specified and no parents are
         supplied, then the CPD is indexed by integers from 0 to N-1.
         See the example for the format needed for a dictionary.
 
@@ -62,7 +62,7 @@ class DiscreteCPD:
         ('hard','high'): dict(A=0.3, B=0.3, C=0.4)}
 
     >>> cpd = DiscreteCPD(variable='grade',
-    ...              evidence=['diff', 'intel'],
+    ...              parents=['diff', 'intel'],
     ...              values={('easy','low'): dict(A=0.2, B=0.2, C=0.6),
     ...                      ('easy','mid'): dict(A=0.3, B=0.3, C=0.4),
     ...                      ('easy','high'): dict(A=0.4, B=0.4, C=0.2),
@@ -106,7 +106,7 @@ class DiscreteCPD:
     >>> cpd.variable_card
     2
 
-    >>> cpd = DiscreteCPD(variable='B', evidence=['A'],
+    >>> cpd = DiscreteCPD(variable='B', parents=['A'],
     ...              values={0:[0.2, 0.8], 1:[0.9, 0.1]})
     >>> print(cpd)
     +------+------+------+
@@ -145,7 +145,7 @@ class DiscreteCPD:
                 return DiscreteCPD(
                     variable=self.variable,
                     default_value=self.default_value,
-                    evidence=self.evidence,
+                    parents=self.parents,
                     values={
                         key: {states[i]: value for i, value in enumerate(val)}
                         for key, val in self.values.items()
@@ -159,8 +159,8 @@ class DiscreteCPD:
             # Convert a CPD specified with a dict of list values into a CPD with dictionary values.
             #
             var_states = pgm.states_of(self.variable)
-            if self.evidence:
-                slist = [pgm.states_of(node) for node in self.evidence]
+            if self.parents:
+                slist = [pgm.states_of(node) for node in self.parents]
                 node_values = [
                     dict(zip(var_states, vals))
                     for vals in batched(self.values, len(var_states))
@@ -172,7 +172,7 @@ class DiscreteCPD:
             return DiscreteCPD(
                 variable=self.variable,
                 default_value=self.default_value,
-                evidence=self.evidence,
+                parents=self.parents,
                 values=values,
             )
 
@@ -193,8 +193,8 @@ class DiscreteCPD:
         return DiscreteFactor(
             nodes=(
                 [self.variable]
-                if self.evidence is None
-                else self.evidence + [self.variable]
+                if self.parents is None
+                else self.parents + [self.variable]
             ),
             values=values,
             default_value=self.default_value,
@@ -219,8 +219,8 @@ class DiscreteBayesianNetwork:
             ), f"Unexpected variable {f.variable} in cpd"
             vnodes = set(self._states[f.variable])
             cnodes.add(f.variable)
-            if f.evidence is not None:
-                for node in f.evidence:
+            if f.parents is not None:
+                for node in f.parents:
                     cnodes.add(node)
 
             if type(f.values) is dict:
@@ -240,27 +240,27 @@ class DiscreteBayesianNetwork:
                     if vkey:
                         # The key is for the variable
                         assert (
-                            not f.evidence and k in vnodes
+                            not f.parents and k in vnodes
                         ), f"Unexpected cpd state {key}"
                     else:
-                        # The key is for the evidence
+                        # The key is for the parents
                         if type(k) is tuple:
                             for i, iv in enumerate(k):
                                 assert (
-                                    iv in self._states[f.evidence[i]]
+                                    iv in self._states[f.parents[i]]
                                 ), f"Unexpected value {iv} in the {i}-th node value of {k}"
                         else:
                             assert (
-                                k in self._states[f.evidence[0]]
-                            ), f"Unexpected node value {k} for evidence {self._nodes[0]}. Factor values {f.values}"
+                                k in self._states[f.parents[0]]
+                            ), f"Unexpected node value {k} for parents {self._nodes[0]}. Factor values {f.values}"
             else:
                 for v in f.values:
                     assert v >= 0 and v <= 1
                 # We assert equality to ensure the list of values covers all combinations of
                 # node states
-                if f.evidence:
+                if f.parents:
                     assert len(f.values) == prod(
-                        len(self._states[v]) for v in f.evidence
+                        len(self._states[v]) for v in f.parents
                     ) * len(self._states[f.variable])
                 else:
                     assert len(f.values) == len(self._states[f.variable])
@@ -287,7 +287,7 @@ class DiscreteBayesianNetwork:
                 {
                     (e, cpd.variable)
                     for cpd in self._cpds
-                    for e in (cpd.evidence if cpd.evidence else [])
+                    for e in (cpd.parents if cpd.parents else [])
                 }
             )
         return self._edges
@@ -343,7 +343,7 @@ class DiscreteBayesianNetwork:
         """
         DBN = DiscreteBayesianNetwork()
         DBN.states = [4, 3]  # Cardinality of nodes
-        c1 = DiscreteCPD(variable=1, evidence=[0],
+        c1 = DiscreteCPD(variable=1, parents=[0],
                 values={0: dict(0=0.2, 1=0.2, 2=0.6),
                         1: dict(0=0.3, 1=0.3, 2=0.4),
                         2: dict(0=0.4, 1=0.4, 2=0.2),

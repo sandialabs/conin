@@ -106,13 +106,13 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
             if len(f) == 1:
                 # map_values = [float(next(tokens)) for i in range(vcard[f[0]])]
                 map_values = {i: float(next(tokens)) for i in range(vcard[f[0]])}
-                evidence = None
+                parents = None
             elif len(f) == 2:
                 map_values = {
                     index: {i: float(next(tokens)) for i in range(vcard[f[-1]])}
                     for index in range(vcard[f[0]])
                 }
-                evidence = [vname[v] for v in f[:-1]]
+                parents = [vname[v] for v in f[:-1]]
             else:
                 vlist = [list(range(vcard[v])) for v in f[:-1]]
                 map_values = {
@@ -121,13 +121,13 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
                     }
                     for index in itertools.product(*list(reversed(vlist)))
                 }
-                evidence = [vname[v] for v in f[:-1]]
+                parents = [vname[v] for v in f[:-1]]
 
             if verbose:  # pragma:nocover
                 pprint.pprint(map_values)
                 print("")
             factors.append(
-                DiscreteCPD(variable=vname[f[-1]], evidence=evidence, values=map_values)
+                DiscreteCPD(variable=vname[f[-1]], parents=parents, values=map_values)
             )
         else:
             if len(f) == 1:

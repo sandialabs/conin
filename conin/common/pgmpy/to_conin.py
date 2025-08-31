@@ -57,7 +57,7 @@ def convert_pgmpy_to_DiscreteBayesianNetwork(pgmpy_pgm):
     cpds = []
     for cpd in pgmpy_pgm.get_cpds():
 
-        if len(cpd.variables) == 1:  # evidence == []
+        if len(cpd.variables) == 1:  # parents == []
             values = [v[0] for v in cpd.get_values()]
 
         else:
@@ -69,7 +69,7 @@ def convert_pgmpy_to_DiscreteBayesianNetwork(pgmpy_pgm):
         cpds.append(
             DiscreteCPD(
                 variable=cpd.variable,
-                evidence=[] if len(cpd.variables) == 1 else cpd.variables[1:],
+                parents=[] if len(cpd.variables) == 1 else cpd.variables[1:],
                 values=values,
             )
         )
@@ -102,13 +102,13 @@ def convert_pgmpy_to_DynamicDiscreteBayesianNetwork(pgmpy_pgm):
     cpds = []
     for cpd in pgmpy_pgm.get_cpds():
 
-        if len(cpd.variables) == 1:  # evidence == []
+        if len(cpd.variables) == 1:  # parents == []
             values = [v[0] for v in cpd.get_values()]
 
             cpds.append(
                 DiscreteCPD(
                     variable=_as_tuple(cpd.variable, 0, 0),
-                    evidence=[],
+                    parents=[],
                     values=values,
                 )
             )
@@ -126,7 +126,7 @@ def convert_pgmpy_to_DynamicDiscreteBayesianNetwork(pgmpy_pgm):
             cpds.append(
                 DiscreteCPD(
                     variable=_as_tuple(cpd.variable, pgm.t, offset),
-                    evidence=[
+                    parents=[
                         _as_tuple(var, pgm.t, offset) for var in cpd.variables[1:]
                     ],
                     values=values,

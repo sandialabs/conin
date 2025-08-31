@@ -128,22 +128,22 @@ class DynamicDiscreteBayesianNetwork:
         DDBN.dynamic_states = {"A": ["t", "f"], "B": [2, 3]}
 
         # A CPD for ("A",t) depending on "X", for all t
-        c1 = DiscreteCPD(variable=("A",None), evidence=["X"],
+        c1 = DiscreteCPD(variable=("A",None), parents=["X"],
                 values={"T": dict("t": 0.3, "f": 0.7),
                         "F": dict("t": 0.4, "f": 0.6)})
 
         # A CPD for ("B",0) depending on "X", for t==0
-        c2 = DiscreteCPD(variable=("B",0), evidence=["Y"],
+        c2 = DiscreteCPD(variable=("B",0), parents=["Y"],
                 values={"T": dict(2: 0.3, 3: 0.7},
                         "F": dict(2: 0.4, 3: 0.6)})
 
         # A CPD for ("B",t) depending on ("A",t), for all t
-        c3 = DiscreteCPD(variable=("B",None), evidence=[("A",0)],
+        c3 = DiscreteCPD(variable=("B",None), parents=[("A",0)],
                 values={"t": dict(2: 0.3, 3: 0.7},
                         "f": dict(2: 0.4, 3: 0.6)})
 
         # A CPD for ("A",t) depending on ("A",t-1), for all t
-        c4 = DiscreteCPD(variable=("A",None), evidence=[("A",-1)],
+        c4 = DiscreteCPD(variable=("A",None), parents=[("A",-1)],
                 values={"t": dict("t": 0.3, "f": 0.7},
                         "f": dict("t": 0.4, "f": 0.6)})
 

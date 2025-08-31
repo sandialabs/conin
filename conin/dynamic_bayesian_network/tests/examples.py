@@ -25,7 +25,7 @@ def simple0_DDBN_conin(debug=False):
     z_start_cpd = DiscreteCPD(variable=("Z", 0), values=[0.5, 0.5])
     z_trans_cpd = DiscreteCPD(
         variable=("Z", G.t),
-        evidence=[("Z", G.t - 1)],
+        parents=[("Z", G.t - 1)],
         values={0: [0.7, 0.3], 1: [0.8, 0.2]},
     )
 
@@ -92,12 +92,12 @@ def simple1_DDBN_conin(debug=False):
     cpd_start_A = DiscreteCPD(variable=("A", 0), values=[0.9, 0.1])
     cpd_start_B = DiscreteCPD(
         variable=("B", G.t),
-        evidence=[("A", G.t)],
+        parents=[("A", G.t)],
         values={0: [0.2, 0.8], 1: [0.9, 0.1]},
     )
     cpd_trans_A = DiscreteCPD(
         variable=("A", G.t),
-        evidence=[("A", G.t - 1)],
+        parents=[("A", G.t - 1)],
         values={0: [0.2, 0.8], 1: [0.9, 0.1]},
     )
     G.cpds = [cpd_start_A, cpd_start_B, cpd_trans_A]
@@ -176,12 +176,12 @@ def simple2_DDBN_conin(debug=False):
     cpd_start_A = DiscreteCPD(variable=("A", 0), values=[0.9, 0.1])
     cpd_start_B = DiscreteCPD(
         variable=("B", G.t),
-        evidence=[("A", G.t)],
+        parents=[("A", G.t)],
         values={0: [0.2, 0.8], 1: [0.9, 0.1]},
     )
     cpd_trans_A = DiscreteCPD(
         variable=("A", G.t),
-        evidence=[("A", G.t - 1)],
+        parents=[("A", G.t - 1)],
         values={0: [0.2, 0.8], 1: [0.9, 0.1]},
     )
     G.cpds = [cpd_start_A, cpd_start_B, cpd_trans_A]
@@ -302,7 +302,7 @@ def weather_conin(debug=False):
 
     cpd_w_1 = DiscreteCPD(
         variable=("W", dbn.t),
-        evidence=[("W", dbn.t - 1)],
+        parents=[("W", dbn.t - 1)],
         values={
             "Sunny": {"Sunny": 0.7, "Cloudy": 0.2, "Rainy": 0.1},
             "Cloudy": {"Sunny": 0.3, "Cloudy": 0.4, "Rainy": 0.3},
@@ -318,7 +318,7 @@ def weather_conin(debug=False):
 
     cpd_t_1 = DiscreteCPD(
         variable=("T", dbn.t),
-        evidence=[("T", dbn.t - 1), ("W", dbn.t - 1)],
+        parents=[("T", dbn.t - 1), ("W", dbn.t - 1)],
         values={
             ("Hot", "Sunny"): {"Hot": 0.8, "Mild": 0.2, "Cold": 0.0},
             ("Hot", "Cloudy"): {"Hot": 0.6, "Mild": 0.3, "Cold": 0.1},
@@ -335,7 +335,7 @@ def weather_conin(debug=False):
     # CPD for O (Ground observation)
     cpd_o = DiscreteCPD(
         variable=("O", dbn.t),
-        evidence=[("W", dbn.t)],
+        parents=[("W", dbn.t)],
         values={
             "Sunny": {"Dry": 0.9, "Wet": 0.1},
             "Cloudy": {"Dry": 0.6, "Wet": 0.4},
@@ -346,7 +346,7 @@ def weather_conin(debug=False):
     # CPD for H (Humidity observation)
     cpd_h = DiscreteCPD(
         variable=("H", dbn.t),
-        evidence=[("T", dbn.t), ("W", dbn.t)],
+        parents=[("T", dbn.t), ("W", dbn.t)],
         values={
             ("Hot", "Sunny"): {"Low": 0.7, "Medium": 0.2, "High": 0.1},
             ("Hot", "Cloudy"): {"Low": 0.4, "Medium": 0.5, "High": 0.1},
