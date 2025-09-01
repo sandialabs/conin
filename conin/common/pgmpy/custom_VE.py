@@ -6,27 +6,30 @@ from typing import Hashable, Optional
 #import networkx as nx
 import numpy as np
 #from opt_einsum import contract
-from tqdm.auto import tqdm
+#from tqdm.auto import tqdm
 
-from pgmpy import config
-from pgmpy.factors import factor_product
-from pgmpy.factors.discrete import DiscreteFactor
-from pgmpy.inference import Inference, VariableElimination
-from pgmpy.inference.EliminationOrder import (
-    MinFill,
-    MinNeighbors,
-    MinWeight,
-    WeightedMinFill,
-)
-from pgmpy.models import (
-    DiscreteBayesianNetwork,
-    DynamicBayesianNetwork,
-    #FactorGraph,
-    FunctionalBayesianNetwork,
-    #JunctionTree,
-    LinearGaussianBayesianNetwork,
-)
-from pgmpy.utils import compat_fns
+from conin.util import try_import
+
+with try_import() as pgmpy_available:
+    from pgmpy import config
+    from pgmpy.factors import factor_product
+    from pgmpy.factors.discrete import DiscreteFactor
+    from pgmpy.inference import Inference, VariableElimination
+    from pgmpy.inference.EliminationOrder import (
+        MinFill,
+        MinNeighbors,
+        MinWeight,
+        WeightedMinFill,
+    )
+    from pgmpy.models import (
+        DiscreteBayesianNetwork,
+        DynamicBayesianNetwork,
+        #FactorGraph,
+        FunctionalBayesianNetwork,
+        #JunctionTree,
+        LinearGaussianBayesianNetwork,
+    )
+    from pgmpy.utils import compat_fns
 
 
 class logprob_VE(VariableElimination):
