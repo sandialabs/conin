@@ -6,7 +6,6 @@ from typing import Hashable, Optional
 #import networkx as nx
 import numpy as np
 #from opt_einsum import contract
-#from tqdm.auto import tqdm
 
 from conin.util import try_import
 
@@ -30,6 +29,7 @@ with try_import() as pgmpy_available:
         LinearGaussianBayesianNetwork,
     )
     from pgmpy.utils import compat_fns
+    from tqdm.auto import tqdm
 
 
 class logprob_VE(VariableElimination):
