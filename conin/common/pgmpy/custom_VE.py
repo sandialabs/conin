@@ -1,11 +1,11 @@
 import copy
 import itertools
-#from functools import reduce
+
+# from functools import reduce
 from typing import Hashable, Optional
 
-#import networkx as nx
+# import networkx as nx
 import numpy as np
-#from opt_einsum import contract
 
 from conin.util import try_import
 
@@ -23,9 +23,9 @@ with try_import() as pgmpy_available:
     from pgmpy.models import (
         DiscreteBayesianNetwork,
         DynamicBayesianNetwork,
-        #FactorGraph,
+        # FactorGraph,
         FunctionalBayesianNetwork,
-        #JunctionTree,
+        # JunctionTree,
         LinearGaussianBayesianNetwork,
     )
     from pgmpy.utils import compat_fns
