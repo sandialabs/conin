@@ -1,4 +1,4 @@
 from .OptimizationInference import (
     IntegerProgrammingInference,
-    DBN_IntegerProgrammingInference,
+    DDBN_IntegerProgrammingInference,
 )

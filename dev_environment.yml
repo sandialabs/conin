@@ -4,14 +4,12 @@ channels:
   - https://repo.anaconda.com/pkgs/main
   - https://repo.anaconda.com/pkgs/r
 dependencies:
-  - pyomo
+  - flake8
+  - glpk
   - munch
   - numpy
-  - glpk
-  - flake8
+  - pandas
+  - pip 
+  - pyomo
   - pytest
   - pytest-cov
-  - pip 
-  - pip:
-    - pgmpy
-

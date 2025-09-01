@@ -1,21 +1,367 @@
+import itertools
 import munch
+from collections import defaultdict, deque
+from math import prod
+from dataclasses import dataclass
 
-try:
-    import pgmpy.models
-
-    pgmpy_available = True
-except Exception as e:
-    pgmpy_available = False
-
+from conin.util import batched
 from conin.bayesian_network.inference import create_BN_map_query_model
+from conin.markov_network import DiscreteFactor
+
+
+#
+# NOTE: We leave the states dictionary off of the CPD object for now.  This is not
+# currently used for CPD operations.
+#
+@dataclass(slots=True)
+class DiscreteCPD:
+    node: str | int
+    values: list | dict
+    parents: list = None
+    default_value: float = 0  # NOTE: Note used yet
+
+    """
+    Defines a conditional probability distribution table (CPD table)
+
+    Parameters
+    ----------
+    node: int, string (any hashable python object)
+        The node (variable) whose CPD is defined.
+
+    parents: array-like
+        List of parent variables (if any) w.r.t. which CPD is defined.
+
+    values: dict, list
+        Values for the CPD table. If a list is specified and no parents are
+        supplied, then the CPD is indexed by integers from 0 to N-1.
+        See the example for the format needed for a dictionary.
+
+    Examples
+    --------
+    For a distribution of P(grade|diff, intel)
+
+    +---------+-------------------------+------------------------+
+    |diff     |          easy           |         hard           |
+    +---------+------+--------+---------+------+--------+--------+
+    |intel    | low  | medium |  high   | low  | medium |  high  |
+    +---------+------+--------+---------+------+--------+--------+
+    |gradeA   | 0.2  | 0.3    |   0.4   |  0.1 |  0.2   |   0.3  |
+    +---------+------+--------+---------+------+--------+--------+
+    |gradeB   | 0.2  | 0.3    |   0.4   |  0.1 |  0.2   |   0.3  |
+    +---------+------+--------+---------+------+--------+--------+
+    |gradeC   | 0.6  | 0.4    |   0.2   |  0.8 |  0.6   |   0.4  |
+    +---------+------+--------+---------+------+--------+--------+
+
+    the values dictionary should be
+
+       {('easy','low'): dict(A=0.2, B=0.2, C=0.6),
+        ('easy','medium'): dict(A=0.3, B=0.3, C=0.4),
+        ('easy','high'): dict(A=0.4, B=0.4, C=0.2),
+        ('hard','low'): dict(A=0.1, B=0.1, C=0.8),
+        ('hard','medium'): dict(A=0.2, B=0.2, C=0.6),
+        ('hard','high'): dict(A=0.3, B=0.3, C=0.4)}
+
+    >>> cpd = DiscreteCPD(node='grade',
+    ...              parents=['diff', 'intel'],
+    ...              values={('easy','low'): dict(A=0.2, B=0.2, C=0.6),
+    ...                      ('easy','mid'): dict(A=0.3, B=0.3, C=0.4),
+    ...                      ('easy','high'): dict(A=0.4, B=0.4, C=0.2),
+    ...                      ('hard','low'): dict(A=0.1, B=0.1, C=0.8),
+    ...                      ('hard','mid'): dict(A=0.2, B=0.2, C=0.6),
+    ...                      ('hard','high'): dict(A=0.3, B=0.3, C=0.4)})
+    >>> import os
+    >>> os.environ['COLUMNS'] = "100"   # Make sure we print all columns in the table
+    >>>
+    >>> print(cpd)
+    +----------+------------+------------+-------------+------------+------------+-------------+
+    | diff     | diff(easy) | diff(easy) | diff(easy)  | diff(hard) | diff(hard) | diff(hard)  |
+    +----------+------------+------------+-------------+------------+------------+-------------+
+    | intel    | intel(low) | intel(mid) | intel(high) | intel(low) | intel(mid) | intel(high) |
+    +----------+------------+------------+-------------+------------+------------+-------------+
+    | grade(A) | 0.2        | 0.3        | 0.4         | 0.1        | 0.2        | 0.3         |
+    +----------+------------+------------+-------------+------------+------------+-------------+
+    | grade(B) | 0.2        | 0.3        | 0.4         | 0.1        | 0.2        | 0.3         |
+    +----------+------------+------------+-------------+------------+------------+-------------+
+    | grade(C) | 0.6        | 0.4        | 0.2         | 0.8        | 0.6        | 0.4         |
+    +----------+------------+------------+-------------+------------+------------+-------------+
+    >>> cpd.values
+    array([[[0.2, 0.3, 0.4],
+            [0.1, 0.2, 0.3]],
+    <BLANKLINE>
+           [[0.2, 0.3, 0.4],
+            [0.1, 0.2, 0.3]],
+    <BLANKLINE>
+           [[0.6, 0.4, 0.2],
+            [0.8, 0.6, 0.4]]])
+    >>> cpd.variables
+    ['grade', 'diff', 'intel']
+    >>> cpd.cardinality
+    array([3, 2, 3])
+    >>> cpd.node
+    'grade'
+    >>> cpd.cardinality
+    array([2])
+    >>> cpd.node
+    'A'
+    >>> cpd.variable_card
+    2
+
+    >>> cpd = DiscreteCPD(node='B', parents=['A'],
+    ...              values={0:[0.2, 0.8], 1:[0.9, 0.1]})
+    >>> print(cpd)
+    +------+------+------+
+    | A    | A(0) | A(1) |
+    +------+------+------+
+    | B(0) | 0.2  | 0.9  |
+    +------+------+------+
+    | B(1) | 0.8  | 0.1  |
+    +------+------+------+
+    >>> cpd.values
+    array([[0.2, 0.9],
+           [0.8, 0.1]])
+    >>> cpd.variables
+    ['B', 'A']
+    >>> cpd.cardinality
+    array([2, 2])
+    >>> cpd.node
+    'B'
+    >>> cpd.variable_card
+    2
+    """
+
+    def normalize(self, pgm):
+        """
+        Convert a CPD into a standard dict-of-dicts format
+
+        Note that this requires the state information, which is passed-in.
+        """
+        if type(self.values) is dict:
+            tmp = next(iter(self.values.values()))
+            if type(tmp) is list:
+                #
+                # Convert a CPD specified with list values into a CPD with dictionary values.
+                #
+                states = pgm.states_of(self.node)
+                return DiscreteCPD(
+                    node=self.node,
+                    default_value=self.default_value,
+                    parents=self.parents,
+                    values={
+                        key: {states[i]: value for i, value in enumerate(val)}
+                        for key, val in self.values.items()
+                    },
+                )
+            else:
+                return self
+
+        else:
+            #
+            # Convert a CPD specified with a dict of list values into a CPD with dictionary values.
+            #
+            var_states = pgm.states_of(self.node)
+            if self.parents:
+                slist = [pgm.states_of(node) for node in self.parents]
+                node_values = [
+                    dict(zip(var_states, vals))
+                    for vals in batched(self.values, len(var_states))
+                ]
+                values = dict(zip(itertools.product(*slist), node_values))
+            else:
+                values = dict(zip(var_states, self.values))
+
+            return DiscreteCPD(
+                node=self.node,
+                default_value=self.default_value,
+                parents=self.parents,
+                values=values,
+            )
+
+    def to_factor(self):
+        if type(self.values) is list:
+            values = self.values
+        else:
+            tmp = next(iter(self.values.values()))
+            if type(tmp) is dict:
+                values = {
+                    (key if type(key) is tuple else (key,)) + (node_value,): value
+                    for key, values in self.values.items()
+                    for node_value, value in values.items()
+                }
+            else:
+                values = self.values
+
+        return DiscreteFactor(
+            nodes=([self.node] if self.parents is None else self.parents + [self.node]),
+            values=values,
+            default_value=self.default_value,
+        )
+
+
+class DiscreteBayesianNetwork:
+
+    def __init__(self, *, states={}, cpds=[]):
+        self._nodes = []
+        self._edges = None
+        self._states = states
+        self._cpds = cpds
+
+    def check_model(self):
+        model_nodes = set(self._states.keys())
+
+        cnodes = set()
+        for f in self._cpds:
+            assert f.node in self._states, f"Unexpected node {f.node} in cpd"
+            vnodes = set(self._states[f.node])
+            cnodes.add(f.node)
+            if f.parents is not None:
+                for node in f.parents:
+                    cnodes.add(node)
+
+            if type(f.values) is dict:
+                for k, v in f.values.items():
+                    vkey = False
+                    if type(v) is list:
+                        for val in v:
+                            assert val >= 0 and val <= 1, f"Unexpected cpd value {val}"
+                    elif type(v) is dict:
+                        for key, val in v.items():
+                            assert key in vnodes, f"Unexpected cpd state {key}"
+                            assert val >= 0 and val <= 1, f"Unexpected cpd value {val}"
+                    else:
+                        assert v >= 0 and v <= 1, f"Unexpected cpd value {v}"
+                        vkey = True
+
+                    if vkey:
+                        # The key is for the node
+                        assert (
+                            not f.parents and k in vnodes
+                        ), f"Unexpected cpd state {key}"
+                    else:
+                        # The key is for the parents
+                        if type(k) is tuple:
+                            for i, iv in enumerate(k):
+                                assert (
+                                    iv in self._states[f.parents[i]]
+                                ), f"Unexpected value {iv} in the {i}-th node value of {k}"
+                        else:
+                            assert (
+                                k in self._states[f.parents[0]]
+                            ), f"Unexpected node value {k} for parents {self._nodes[0]}. Factor values {f.values}"
+            else:
+                for v in f.values:
+                    assert v >= 0 and v <= 1
+                # We assert equality to ensure the list of values covers all combinations of
+                # node states
+                if f.parents:
+                    assert len(f.values) == prod(
+                        len(self._states[v]) for v in f.parents
+                    ) * len(self._states[f.node])
+                else:
+                    assert len(f.values) == len(self._states[f.node])
+
+        # Note: We assert equality to ensure that all nodes are used in the model
+        assert model_nodes == cnodes
+
+    #
+    # Nodes
+    #
+
+    @property
+    def nodes(self):
+        return self._nodes
+
+    #
+    # Edges
+    #
+
+    @property
+    def edges(self):
+        if not self._edges:
+            self._edges = sorted(
+                {
+                    (e, cpd.node)
+                    for cpd in self._cpds
+                    for e in (cpd.parents if cpd.parents else [])
+                }
+            )
+        return self._edges
+
+    #
+    # States
+    #
+
+    @property
+    def states(self):
+        return self._states
+
+    @states.setter
+    def states(self, values):
+        """
+        DBN = DiscreteBayesianNetwork()
+        DBN.states = [4, 3]  # Cardinality of nodes
+        assert DBN.nodes == [0,1]
+        assert DBN.states == {0: [0,1,2,3], 1:[0,1,2]}
+
+        DBN = DiscreteBayesianNetwork()
+        DBN.states = {"A": ["T", "F"], "B": [-1, 1]}
+        assert DBN.nodes == ["A", "B"]
+        assert DBN.states == {"A": ["T", "F"], "B": [-1, 1]}
+        """
+        if type(values) is list:
+            self._nodes = list(range(len(values)))
+            self._states = {i: list(range(v)) for i, v in enumerate(values)}
+
+        elif type(values) is dict:
+            self._nodes = sorted(values.keys())
+            self._states = values
+
+        else:
+            raise TypeError(f"Unexpected type for states: {type(values)}")
+
+    def states_of(self, node):
+        return self._states[node]
+
+    def card(self, node):
+        return len(self._states[node])
+
+    #
+    # CPDs
+    #
+
+    @property
+    def cpds(self):
+        return self._cpds
+
+    @cpds.setter
+    def cpds(self, cpd_list):
+        """
+        DBN = DiscreteBayesianNetwork()
+        DBN.states = [4, 3]  # Cardinality of nodes
+        c1 = DiscreteCPD(node=1, parents=[0],
+                values={0: dict(0=0.2, 1=0.2, 2=0.6),
+                        1: dict(0=0.3, 1=0.3, 2=0.4),
+                        2: dict(0=0.4, 1=0.4, 2=0.2),
+                        3: dict(0=0.1, 1=0.1, 2=0.8)})
+        c2 = DiscreteCPD(node=0, values={0:0.25, 1:0.25, 2:0.05, 3:0.45})
+        DMN.cpds = [c1, c2]
+        """
+        self._cpds = [cpd.normalize(self) for cpd in cpd_list]
+
+    def create_map_query_model(
+        self, variables=None, evidence=None, timing=False, **options
+    ):
+        return create_BN_map_query_model(
+            pgm=self,
+            variables=variables,
+            evidence=evidence,
+            timing=timing,
+            **options,
+        )
 
 
 class ConstrainedDiscreteBayesianNetwork:
 
     def __init__(self, pgm, constraints=None):
-        assert pgmpy_available and isinstance(
-            pgm, pgmpy.models.DiscreteBayesianNetwork
-        ), "Argument must be a pgmpy DiscreteBayesianNetwork"
         self.pgm = pgm
         self.constraint_functor = constraints
 

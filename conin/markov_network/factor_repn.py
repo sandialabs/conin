@@ -17,7 +17,7 @@ class State:
 
 
 def extract_factor_representation(pgm):
-    return extract_factor_representation_(pgm.states, list(pgm.get_factors()))
+    return extract_factor_representation_(pgm.states, pgm.factors)
 
 
 def extract_factor_representation_(pgm_states, pgm_factors, var_index_map=None):
@@ -35,6 +35,9 @@ def extract_factor_representation_(pgm_states, pgm_factors, var_index_map=None):
     # w[i,j]: the log-probability of factor i in configuration j
     #           Note that j \in J[i]
     #
+    if var_index_map is None:
+        var_index_map = {}
+
     if var_index_map:
         S = {
             var_index_map[r]: [State(value=s) for s in values]
@@ -46,35 +49,48 @@ def extract_factor_representation_(pgm_states, pgm_factors, var_index_map=None):
     v = {}
     w = {}
     for factor in pgm_factors:
-        vars = factor.scope()
-        size = prod(factor.get_cardinality(vars).values())
-        assignments = factor.assignment(list(range(size)))
-
         # Create a string name for this factor
+        vars = factor.nodes
         if var_index_map:
             i = "_".join(var_index_map[v] for v in vars)
         else:
             i = "_".join(vars)
 
         # J
+        size = len(factor.values)
         J[i] = list(range(size))
 
         # Compute values of assignments, normalizing if all values are zero
-        values = [
-            get_factor_value(factor, dict(assignment)) for assignment in assignments
-        ]
-        total = np.sum(factor.values)
+        if type(factor.values) is dict:
+            values = [v for _, v in factor.values.items()]
+        else:
+            values = factor.values
+        total = sum(values)
         if total == 0.0:
             values = [1 / len(values)] * size
             total = 1.0
 
-        #
-        for j, assignment in enumerate(assignments):
-            if values[j] > 0:
-                for key, value in assignment:
-                    if var_index_map:
-                        v[i, j, var_index_map[key]] = State(value)
-                    else:
+        # v
+        if type(factor.values) is dict:
+            if len(vars) == 1:
+                for j, (assignment, value) in enumerate(factor.values.items()):
+                    if values[j] > 0:
+                        for key in vars:
+                            value = assignment
+                            key = var_index_map.get(key, key)
+                            v[i, j, key] = State(value)
+            else:
+                for j, (assignment, value) in enumerate(factor.values.items()):
+                    if values[j] > 0:
+                        for k, key in enumerate(vars):
+                            value = assignment[k]
+                            key = var_index_map.get(key, key)
+                            v[i, j, key] = State(value)
+        else:
+            for j, assignment in enumerate(factor.assignments(pgm_states)):
+                if values[j] > 0:
+                    for key, value in assignment:
+                        key = var_index_map.get(key, key)
                         v[i, j, key] = State(value)
 
         # w

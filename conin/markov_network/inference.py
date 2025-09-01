@@ -61,18 +61,19 @@ def create_MN_map_query_model(
     **options,
 ):
 
-    if timing:
+    if timing:  # pragma:nocover
         timer = TicTocTimer()
         timer.tic("create_MN_map_query_model - START")
     if variables or evidence:
         variables_ = [] if variables is None else variables
         evidence_ = {} if evidence is None else evidence
-        if not evidence_ and len(variables_) == len(pgm.nodes()):
-            factors = pgm.get_factors()
+        if not evidence_ and len(variables_) == len(pgm.nodes):
+            factors = pgm.factors
         else:
-            factors = _variable_elimination(
-                pgm=pgm, variables=variables_, evidence=evidence_
-            )
+            raise RuntimeError("VariableElimination is not supported for CONIN models")
+            # factors = _variable_elimination(
+            # pgm=pgm, variables=variables_, evidence=evidence_
+            # )
         if variables_:
             states = {var: pgm.states[var] for var in variables_}
         else:
@@ -81,12 +82,12 @@ def create_MN_map_query_model(
             }
     else:
         states = pgm.states
-        factors = pgm.get_factors()
-    if timing:
+        factors = pgm.factors
+    if timing:  # pragma:nocover
         timer.toc("Setup states and factors")
 
     S, J, v, w = extract_factor_representation_(states, factors, var_index_map)
-    if timing:
+    if timing:  # pragma:nocover
         timer.toc("Created factor repn")
 
     model = create_MN_map_query_model_from_factorial_repn(
@@ -103,7 +104,7 @@ def create_MN_map_query_model(
     #    for k, v in evidence.items():
     #        model.X[k, State(v)].fix(1)
 
-    if timing:
+    if timing:  # pragma:nocover
         timer.toc("create_MN_map_query_model - STOP")
     return model
 
@@ -117,6 +118,7 @@ def create_MN_map_query_model_from_factorial_repn(
     var_index_map=None,
     variables=None,
     timing=False,
+    tuple_repn=True,
 ):
     #
     # S[r]: the (finite) set of possible values of variable X_r
@@ -134,7 +136,7 @@ def create_MN_map_query_model_from_factorial_repn(
     #
     # var_index_map[hr]: a dictionary that maps hashable value hr to variable name X_r
     #
-    if timing:
+    if timing:  # pragma:nocover
         timer = TicTocTimer()
         timer.tic("create_MN_map_query_model_from_factorial - START")
     R = list(S.keys())
@@ -144,8 +146,6 @@ def create_MN_map_query_model_from_factorial_repn(
     # IJ = [(i, j) for i, values in J.items() for j in values]
     IJ = sorted(w.keys())
     IJset = set(w.keys())
-
-    tuple_repn = True
 
     if tuple_repn:
         IRS = defaultdict(set)
@@ -165,7 +165,7 @@ def create_MN_map_query_model_from_factorial_repn(
     # TODO: consistency checks on inputs
     #   v[i,j,r] in S[r]
     #   {(i,j) in w} == IJ
-    if timing:
+    if timing:  # pragma:nocover
         timer.toc("DATA")
 
     #
@@ -189,7 +189,7 @@ def create_MN_map_query_model_from_factorial_repn(
             }
         )
 
-    if timing:
+    if timing:  # pragma:nocover
         timer.toc("VARIABLES")
 
     # Each variable X_r only assumes one value
@@ -198,7 +198,7 @@ def create_MN_map_query_model_from_factorial_repn(
 
     model.c1 = pe.Constraint(R, rule=c1_)
 
-    if timing:
+    if timing:  # pragma:nocover
         timer.toc("c1")
 
     # Each factor i can only be in one configration for the joint distribution
@@ -207,7 +207,7 @@ def create_MN_map_query_model_from_factorial_repn(
 
     model.c2 = pe.Constraint(I, rule=c2_)
 
-    if timing:
+    if timing:  # pragma:nocover
         timer.toc("c2")
 
     if tuple_repn:
@@ -217,7 +217,7 @@ def create_MN_map_query_model_from_factorial_repn(
 
         model.c5 = pe.Constraint(sorted(IRS.keys()), rule=c5_)
 
-        if timing:
+        if timing:  # pragma:nocover
             timer.toc("c5")
 
     else:
@@ -228,7 +228,7 @@ def create_MN_map_query_model_from_factorial_repn(
 
         model.c3 = pe.Constraint(IJR, rule=c3_)
 
-        if timing:
+        if timing:  # pragma:nocover
             timer.toc("c3")
 
         # If factor i is not in configuration j, then at least one of its
@@ -240,7 +240,7 @@ def create_MN_map_query_model_from_factorial_repn(
 
         model.c4 = pe.Constraint(IJ, rule=c4_)
 
-        if timing:
+        if timing:  # pragma:nocover
             timer.toc("c4")
 
     # Maximize the sum of log-values of all posible factors and configurations
@@ -248,7 +248,7 @@ def create_MN_map_query_model_from_factorial_repn(
         expr=sum(w[i, j] * model.y[i, j] for i, j in IJ), sense=pe.maximize
     )
 
-    if timing:
+    if timing:  # pragma:nocover
         timer.toc("create_MN_map_query_model_from_factorial - STOP")
 
     return model
@@ -263,20 +263,20 @@ def optimize_map_query_model(
     timing=False,
     solver_options=None,
 ):
-    if timing:
+    if timing:  # pragma:nocover
         timer = TicTocTimer()
         timer.tic("optimize_map_query_model - START")
     opt = pe.SolverFactory(solver)
     if solver_options:
         opt.options = solver_options
-    if timing:
+    if timing:  # pragma:nocover
         timer.toc("Initialize solver")
     timer = TicTocTimer()
     timer.tic(None)
     res = opt.solve(model, tee=tee)
     solvetime = timer.toc(None)
     pe.assert_optimal_termination(res)
-    if timing:
+    if timing:  # pragma:nocover
         timer.toc("Completed optimization")
 
     var = {}
@@ -295,7 +295,7 @@ def optimize_map_query_model(
     ), "Some variables do not have values."
 
     soln = munch.Munch(variable_value=var, log_factor_sum=pe.value(model.o))
-    if timing:
+    if timing:  # pragma:nocover
         timer.toc("optimize_map_query_model - STOP")
     return munch.Munch(
         solution=soln,

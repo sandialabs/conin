@@ -9,5 +9,3 @@ dependencies:
   - numpy
   - glpk
   - pip
-  - pip:
-    - pgmpy

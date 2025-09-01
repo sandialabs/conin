@@ -1,14 +1,11 @@
 import itertools
 import os
 from typing import Hashable, Optional, Dict, List, Tuple
-import warnings
 
-try:
+from conin.util import try_import
+
+with try_import() as pgmpy_available:
     import pgmpy.factors.discrete
-except Exception as e:
-    warnings.warn(
-        f"Warning: pgmpy not installed, so cpd.py will not work. Exception: {e}"
-    )
 
 
 def MapCPD(

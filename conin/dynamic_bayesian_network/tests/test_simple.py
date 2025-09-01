@@ -1,66 +1,74 @@
 import pytest
-from . import examples
 
-try:
-    import pgmpy
-
-    pgmpy_available = True
-except Exception as e:
-    pgmpy_available = False
-
+from conin.util import try_import
 from conin.dynamic_bayesian_network import (
-    create_DBN_map_query_model,
+    create_DDBN_map_query_model,
     optimize_map_query_model,
 )
 
+from . import examples
 
-@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-def test_simple0_ALL():
+with try_import() as pgmpy_available:
+    import pgmpy
+    from conin.common.pgmpy import convert_pgmpy_to_conin
+
+#
+# simple0
+#
+
+
+def test_simple0_ALL_conin():
     """
     Z
     """
-    G = examples.simple0_DBN()
+    G = examples.simple0_DDBN_conin()
     q = {("Z", 0): 1, ("Z", 1): 0}
 
-    model = create_DBN_map_query_model(pgm=G)  # variables=None, evidence=None
+    model = create_DDBN_map_query_model(pgm=G)  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver="glpk")
     assert q == results.solution.variable_value
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-def test_simple2_ALL():
+def test_simple0_DDBN1_ALL_pgmpy():
     """
     Z
     """
-    G = examples.simple2_DBN()
+    G = examples.simple0_DDBN1_pgmpy()
     q = {("Z", 0): 1, ("Z", 1): 0}
 
-    model = create_DBN_map_query_model(pgm=G)  # variables=None, evidence=None
+    G = convert_pgmpy_to_conin(G)
+    model = create_DDBN_map_query_model(pgm=G)  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver="glpk")
     assert q == results.solution.variable_value
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-def test_simple3_ALL():
+def test_simple0_DDBN2_ALL_pgmpy():
     """
     Z
     """
-    G = examples.simple3_DBN()
+    G = examples.simple0_DDBN2_pgmpy()
     q = {("Z", 0): 1, ("Z", 1): 0}
 
-    model = create_DBN_map_query_model(pgm=G)  # variables=None, evidence=None
+    G = convert_pgmpy_to_conin(G)
+    model = create_DDBN_map_query_model(pgm=G)  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver="glpk")
     assert q == results.solution.variable_value
 
 
-@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-def test_simple1_ALL():
+#
+# simple1
+#
+
+
+def test_simple1_ALL_conin():
     """
     A -> B
 
     No evidence
     """
-    G = examples.simple1_DBN()
+    G = examples.simple1_DDBN_conin()
     q = {
         ("A", 0): 0,
         ("A", 1): 1,
@@ -68,40 +76,83 @@ def test_simple1_ALL():
         ("B", 1): 0,
     }
 
-    model = create_DBN_map_query_model(pgm=G)  # variables=None, evidence=None
+    model = create_DDBN_map_query_model(pgm=G)  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver="glpk")
     assert q == results.solution.variable_value
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-def test_simple1_B():
+def test_simple1_ALL_pgmpy():
+    """
+    A -> B
+
+    No evidence
+    """
+    G = examples.simple1_DDBN_pgmpy()
+    q = {
+        ("A", 0): 0,
+        ("A", 1): 1,
+        ("B", 0): 1,
+        ("B", 1): 0,
+    }
+
+    G = convert_pgmpy_to_conin(G)
+    model = create_DDBN_map_query_model(pgm=G)  # variables=None, evidence=None
+    results = optimize_map_query_model(model, solver="glpk")
+    assert q == results.solution.variable_value
+
+
+def test_simple1_B_conin():
     """
     A -> B
 
     Evidence: A_0 = 1
     """
-    G = examples.simple1_DBN()
+    G = examples.simple1_DDBN_conin()
     q = {
         ("A", 1): 0,
         ("B", 0): 0,
         ("B", 1): 1,
     }
 
-    model = create_DBN_map_query_model(
-        pgm=G, evidence={("A", 0): 1}
-    )  # variables=None, evidence=None
-    results = optimize_map_query_model(model, solver="glpk")
-    assert q == results.solution.variable_value
+    with pytest.raises(RuntimeError):
+        model = create_DDBN_map_query_model(
+            pgm=G, evidence={("A", 0): 1}
+        )  # variables=None, evidence=None
+        results = optimize_map_query_model(model, solver="glpk")
+        assert q == results.solution.variable_value
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-def test_simple1_ALL_constrained():
+def test_simple1_B_pgmpy():
+    """
+    A -> B
+
+    Evidence: A_0 = 1
+    """
+    G = examples.simple1_DDBN_pgmpy()
+    q = {
+        ("A", 1): 0,
+        ("B", 0): 0,
+        ("B", 1): 1,
+    }
+
+    G = convert_pgmpy_to_conin(G)
+    with pytest.raises(RuntimeError):
+        model = create_DDBN_map_query_model(
+            pgm=G, evidence={("A", 0): 1}
+        )  # variables=None, evidence=None
+        results = optimize_map_query_model(model, solver="glpk")
+        assert q == results.solution.variable_value
+
+
+def test_simple1_ALL_constrained_conin():
     """
     A -> B
 
     No evidence
     """
-    cpgm = examples.simple1_DBN_constrained()
+    cpgm = examples.simple1_DDBN_constrained_conin()
     q = {
         ("A", 0): 0,
         ("A", 1): 0,
@@ -114,13 +165,37 @@ def test_simple1_ALL_constrained():
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-def test_simple3_ALL():
+def test_simple1_ALL_constrained_pgmpy():
     """
     A -> B
 
     No evidence
     """
-    G = examples.simple3_DBN()
+    cpgm = examples.simple1_DDBN_constrained_pgmpy()
+    q = {
+        ("A", 0): 0,
+        ("A", 1): 0,
+        ("B", 0): 1,
+        ("B", 1): 1,
+    }
+
+    # cpgm = convert_pgmpy_to_conin(cpgm)
+    results = optimize_map_query_model(cpgm.create_map_query_model(), solver="glpk")
+    assert q == results.solution.variable_value
+
+
+#
+# simple2
+#
+
+
+def test_simple2_ALL_conin():
+    """
+    A -> B
+
+    No evidence
+    """
+    G = examples.simple2_DDBN_conin()
     q = {
         ("A", 0): 0,
         ("A", 1): 1,
@@ -128,40 +203,83 @@ def test_simple3_ALL():
         ("B", 1): 0,
     }
 
-    model = create_DBN_map_query_model(pgm=G)  # variables=None, evidence=None
+    model = create_DDBN_map_query_model(pgm=G)  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver="glpk")
     assert q == results.solution.variable_value
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-def test_simple3_B():
+def test_simple2_ALL_pgmpy():
+    """
+    A -> B
+
+    No evidence
+    """
+    G = examples.simple2_DDBN_pgmpy()
+    q = {
+        ("A", 0): 0,
+        ("A", 1): 1,
+        ("B", 0): 1,
+        ("B", 1): 0,
+    }
+
+    G = convert_pgmpy_to_conin(G)
+    model = create_DDBN_map_query_model(pgm=G)  # variables=None, evidence=None
+    results = optimize_map_query_model(model, solver="glpk")
+    assert q == results.solution.variable_value
+
+
+def test_simple2_B_conin():
     """
     A -> B
 
     Evidence: A_0 = 1
     """
-    G = examples.simple3_DBN()
+    G = examples.simple2_DDBN_conin()
     q = {
         ("A", 1): 0,
         ("B", 0): 0,
         ("B", 1): 1,
     }
 
-    model = create_DBN_map_query_model(
-        pgm=G, evidence={("A", 0): 1}
-    )  # variables=None, evidence=None
-    results = optimize_map_query_model(model, solver="glpk")
-    assert q == results.solution.variable_value
+    with pytest.raises(RuntimeError):
+        model = create_DDBN_map_query_model(
+            pgm=G, evidence={("A", 0): 1}
+        )  # variables=None, evidence=None
+        results = optimize_map_query_model(model, solver="glpk")
+        assert q == results.solution.variable_value
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-def test_simple3_ALL_constrained():
+def test_simple2_B_pgmpy():
+    """
+    A -> B
+
+    Evidence: A_0 = 1
+    """
+    G = examples.simple2_DDBN_pgmpy()
+    q = {
+        ("A", 1): 0,
+        ("B", 0): 0,
+        ("B", 1): 1,
+    }
+
+    G = convert_pgmpy_to_conin(G)
+    with pytest.raises(RuntimeError):
+        model = create_DDBN_map_query_model(
+            pgm=G, evidence={("A", 0): 1}
+        )  # variables=None, evidence=None
+        results = optimize_map_query_model(model, solver="glpk")
+        assert q == results.solution.variable_value
+
+
+def test_simple2_ALL_constrained_conin():
     """
     A -> B
 
     No evidence
     """
-    cpgm = examples.simple3_DBN_constrained()
+    cpgm = examples.simple2_DDBN_constrained_conin()
     q = {
         ("A", 0): 0,
         ("A", 1): 0,
@@ -169,5 +287,25 @@ def test_simple3_ALL_constrained():
         ("B", 1): 1,
     }
 
+    results = optimize_map_query_model(cpgm.create_map_query_model(), solver="glpk")
+    assert q == results.solution.variable_value
+
+
+@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+def test_simple2_ALL_constrained_pgmpy():
+    """
+    A -> B
+
+    No evidence
+    """
+    cpgm = examples.simple2_DDBN_constrained_pgmpy()
+    q = {
+        ("A", 0): 0,
+        ("A", 1): 0,
+        ("B", 0): 1,
+        ("B", 1): 1,
+    }
+
+    # cpgm = convert_pgmpy_to_conin(cpgm)
     results = optimize_map_query_model(cpgm.create_map_query_model(), solver="glpk")
     assert q == results.solution.variable_value

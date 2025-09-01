@@ -1,6 +1,12 @@
 name: Pytest Tests
 
 on:
+  workflow_run:
+    workflows: ["Code Coverage"]
+    types:
+      - completed
+    branches:
+      - main
   push:
     branches:
       - main
@@ -57,9 +63,7 @@ jobs:
       - name: Test with pytest
         run: pytest -v
 
-      - name: Run pytest withough pgmpy
-        run: | # You might not need to copy the environment, but I don't want to mess up the caching 
-          conda create --name conin_dev_no_pgmpy --clone conin_dev
-          conda activate conin_dev_no_pgmpy
-          pip uninstall -y pgmpy
+      - name: Run pytest with pgmpy
+        run: |
+          pip install pgmpy
           pytest .
