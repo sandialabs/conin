@@ -39,7 +39,7 @@ def test_load_model_error3():
     pgmpy_available, reason="Testing an error when pgmpy is not installed"
 )
 def test_load_model_error4():
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ImportError):
         pgm = load_model(os.path.join(cwd, "asia.uai"), model_type="pgmpy")
 
 
