@@ -17,10 +17,10 @@ from conin.dynamic_bayesian_network import (
     ConstrainedDynamicDiscreteBayesianNetwork,
     create_DDBN_map_query_model,
 )
-from conin.common.pgmpy import convert_pgmpy_to_conin
 
 with try_import() as pgmpy_available:
     import pgmpy.models
+    from conin.common.pgmpy import convert_pgmpy_to_conin
 
 
 class IntegerProgrammingInference:
@@ -68,8 +68,9 @@ class IntegerProgrammingInference:
         >>> inference = OptimizationInference(model)
         >>> phi_query = inference.map_query(variables=['A', 'B'])
         """
-        if isinstance(self.pgm, pgmpy.models.MarkovNetwork) or isinstance(
-            self.pgm, pgmpy.models.DiscreteBayesianNetwork
+        if pgmpy_available and (
+            isinstance(self.pgm, pgmpy.models.MarkovNetwork)
+            or isinstance(self.pgm, pgmpy.models.DiscreteBayesianNetwork)
         ):
             pgm = convert_pgmpy_to_conin(self.pgm)
         else:
@@ -136,7 +137,9 @@ class DDBN_IntegerProgrammingInference:
         >>> phi_query = inference.map_query(variables=['A', 'B'])
         """
 
-        if isinstance(self.pgm, pgmpy.models.DynamicBayesianNetwork):
+        if pgmpy_available and isinstance(
+            self.pgm, pgmpy.models.DynamicBayesianNetwork
+        ):
             pgm = convert_pgmpy_to_conin(self.pgm)
         else:
             pgm = self.pgm
