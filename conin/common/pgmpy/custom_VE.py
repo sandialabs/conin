@@ -29,7 +29,8 @@ with try_import() as pgmpy_available:
         LinearGaussianBayesianNetwork,
     )
     from pgmpy.utils import compat_fns
-    #from tqdm.auto import tqdm
+
+    # from tqdm.auto import tqdm
 
 
 class logprob_VE(VariableElimination):
@@ -87,9 +88,9 @@ class logprob_VE(VariableElimination):
         )
 
         # Step 3: Run variable elimination
-        #if show_progress and config.SHOW_PROGRESS:
+        # if show_progress and config.SHOW_PROGRESS:
         #    pbar = tqdm(elimination_order)
-        #else:
+        # else:
         #    pbar = elimination_order
         pbar = elimination_order
 
