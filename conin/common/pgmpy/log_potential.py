@@ -11,8 +11,7 @@ with try_import() as pgmpy_available:
         MarkovNetwork,
     )  # DiscreteMarkovNetwork
     import pgmpy.metrics
-
-from .custom_VE import logprob_VE
+    from .custom_VE import logprob_VE
 
 
 def set_backend_(torch_bool):
