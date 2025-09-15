@@ -4,10 +4,6 @@ from pyomo.common.timing import TicTocTimer
 # from conin.util import try_import
 from conin.markov_network import create_MN_map_query_model, DiscreteMarkovNetwork
 
-# with try_import() as pgmpy_available:
-#    import pgmpy.models
-#    import pgmpy.inference
-
 
 def create_BN_map_query_model(
     *,

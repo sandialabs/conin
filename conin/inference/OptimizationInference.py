@@ -26,7 +26,11 @@ with try_import() as pgmpy_available:
 class IntegerProgrammingInference:
 
     def __init__(self, pgm):
-        # pgm.check_model()
+        if pgmpy_available and (
+            isinstance(pgm, pgmpy.models.MarkovNetwork)
+            or isinstance(pgm, pgmpy.models.DiscreteBayesianNetwork)
+        ):
+            pgm = convert_pgmpy_to_conin(pgm)
         self.pgm = pgm
         self.variables = self.pgm.nodes
 
@@ -68,13 +72,7 @@ class IntegerProgrammingInference:
         >>> inference = OptimizationInference(model)
         >>> phi_query = inference.map_query(variables=['A', 'B'])
         """
-        if pgmpy_available and (
-            isinstance(self.pgm, pgmpy.models.MarkovNetwork)
-            or isinstance(self.pgm, pgmpy.models.DiscreteBayesianNetwork)
-        ):
-            pgm = convert_pgmpy_to_conin(self.pgm)
-        else:
-            pgm = self.pgm
+        pgm = self.pgm
 
         if (
             isinstance(pgm, DiscreteMarkovNetwork)
@@ -89,11 +87,15 @@ class IntegerProgrammingInference:
                 **options,
             )
             return optimize_map_query_model(model, timing=timing, **options)
+        else:
+            raise TypeError("Unexpected model type: {type(pgm)}")
 
 
 class DDBN_IntegerProgrammingInference:
 
     def __init__(self, pgm):
+        if pgmpy_available and isinstance(pgm, pgmpy.models.DynamicBayesianNetwork):
+            pgm = convert_pgmpy_to_conin(pgm)
         self.pgm = pgm
         self.variables = self.pgm.nodes
 
@@ -137,12 +139,7 @@ class DDBN_IntegerProgrammingInference:
         >>> phi_query = inference.map_query(variables=['A', 'B'])
         """
 
-        if pgmpy_available and isinstance(
-            self.pgm, pgmpy.models.DynamicBayesianNetwork
-        ):
-            pgm = convert_pgmpy_to_conin(self.pgm)
-        else:
-            pgm = self.pgm
+        pgm = self.pgm
 
         if isinstance(pgm, DynamicDiscreteBayesianNetwork) or isinstance(
             pgm, ConstrainedDynamicDiscreteBayesianNetwork
@@ -151,3 +148,5 @@ class DDBN_IntegerProgrammingInference:
                 start=start, stop=stop, variables=variables, evidence=evidence
             )
             return optimize_map_query_model(model, **options)
+        else:
+            raise TypeError("Unexpected model type: {type(pgm)}")

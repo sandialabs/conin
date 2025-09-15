@@ -164,14 +164,7 @@ class DynamicDiscreteBayesianNetwork:
 class ConstrainedDynamicDiscreteBayesianNetwork:
 
     def __init__(self, pgm, constraints=None):
-        if isinstance(pgm, DynamicDiscreteBayesianNetwork):
-            self.pgm = pgm
-        else:
-            from conin.dynamic_bayesian_network.model_pgmpy import (
-                convert_to_DynamicDiscreteBayesianNetwork,
-            )
-
-            self.pgm = convert_to_DynamicDiscreteBayesianNetwork(pgm)
+        self.pgm = pgm
         self.constraint_functor = constraints
 
     def check_model(self):
