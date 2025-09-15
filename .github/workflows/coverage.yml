@@ -49,8 +49,7 @@ jobs:
 
       - name: Install package
         run: |
-            pip install -e .
-            pip install pgmpy
+            pip install -e .[pgmpy]
 
       - name: Test with pytest & coverage
         run: pytest --cov --cov-branch --cov-report=xml --junitxml=junit.xml -vv
