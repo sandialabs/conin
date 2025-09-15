@@ -9,7 +9,7 @@ dependencies = [
     "black",
     "munch",
     "numpy",
-    "pandas"
+    "pandas",
     "pyomo",
     ]
 readme = {file = "README.md", content-type = "text/plain"}
