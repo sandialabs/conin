@@ -5,9 +5,6 @@ from dataclasses import dataclass
 from conin.util import try_import
 from conin.markov_network.inference import create_MN_map_query_model
 
-with try_import() as pgmpy_available:
-    import pgmpy.models
-
 
 @dataclass(slots=True)
 class DiscreteFactor:
