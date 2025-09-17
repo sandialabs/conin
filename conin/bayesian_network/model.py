@@ -223,7 +223,6 @@ class DiscreteCPD:
 
 
 class DiscreteBayesianNetwork:
-
     """Discrete Bayesian network composed of nodes, edges, and CPDs."""
 
     def __init__(self, *, states={}, cpds=[]):
@@ -486,7 +485,6 @@ class DiscreteBayesianNetwork:
 
 
 class ConstrainedDiscreteBayesianNetwork:
-
     """Wrap a Bayesian network with optional constraint enforcement."""
 
     def __init__(self, pgm, constraints=None):
