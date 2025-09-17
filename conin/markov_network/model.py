@@ -28,6 +28,7 @@ class DiscreteFactor:
         with a dictionary.  (default is 0)
     :type default_value: int | str
     """
+
     nodes: list
     values: list | dict
     default_value: str | int = 0
