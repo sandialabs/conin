@@ -1,30 +1,23 @@
-Markov Network Model
-====================
+Markov Networks
+===============
 
-This page documents the discrete Markov network classes provided in
-`conin/markov_network/model.py`. It explains core concepts, public attributes and
-methods, and includes small, practical examples drawn from
-`conin/markov_network/tests/examples.py`.
+This page documents classes that are used to define discrete Markov networks.
+The ``DiscreteFactor`` class is used to declare a discrete factor,
+which is added to a ``DiscreteMarkovNetwork`` instance.  Further, the
+``ConstrainedDiscreteMarkovNetwork`` class is used to augment a discrete
+Markov network with application-specific constraints.
 
 
-DiscreteFactor
---------------
+Discrete Factors
+----------------
 
-Represents a factor over one or more discrete nodes.
+The ``DiscreteFactor`` class represents a factor defined over one or more discrete nodes. This class has the following public data members:
 
-- nodes: list of node identifiers (e.g., strings like ``"A"`` or integers).
+- nodes: a list of node identifiers (e.g., strings like ``"A"`` or integers).
 - values: a dictionary or a list providing non-negative weights.
-  - dict form: keys are assignments, e.g. ``{("A_val", "B_val"): weight}`` or ``{"A_val": weight}`` for unary.
-  - list form: a flat list of weights that will be normalized against a model's state order via ``normalize``.
-- default_value: optional fallback value for missing assignments (string or int, defaults to ``0``).
-
-API Reference
-^^^^^^^^^^^^^
-
-.. autoclass:: conin.markov_network.DiscreteFactor
-   :members:
-   :undoc-members:
-   :show-inheritance:
+  - dict form: keys are assignments, e.g. ``{("A_val", "B_val"): weight}`` or ``{"A_val": weight}``.
+  - list form: a list of weights that are associated with the Cartesian product of node states.
+- default_value: optional fallback value for missing assignments (float, defaults to ``0``).
 
 Example (unary and pairwise factors)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -45,8 +38,8 @@ Example (unary and pairwise factors)
    })
 
 
-DiscreteMarkovNetwork
----------------------
+Discrete Markov Networks
+------------------------
 
 A discrete Markov network defined by a set of nodes, optional edges, and a list of factors.
 
@@ -58,14 +51,6 @@ Construction
   - dict: explicit mapping from node to list of values.
 - edges: optional list of undirected edges ``[(u, v), ...]``. If omitted, edges are derived from factors.
 - factors: list of ``DiscreteFactor`` instances. When set, they are normalized against the model's states.
-
-API Reference
-^^^^^^^^^^^^^
-
-.. autoclass:: conin.markov_network.DiscreteMarkovNetwork
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 Example (two-node network, adapted from ``example6_conin``)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -97,20 +82,12 @@ Example (two-node network, adapted from ``example6_conin``)
    # Solve with your preferred Pyomo solver (e.g., glpk, highs).
 
 
-ConstrainedDiscreteMarkovNetwork
---------------------------------
+Constrained Discrete Markov Networks
+------------------------------------
 
 A thin wrapper that augments a base ``DiscreteMarkovNetwork`` with user-defined optimization
 constraints. The constraints are supplied as a functor that takes a Pyomo model and returns
 the same model with constraints attached.
-
-API Reference
-^^^^^^^^^^^^^
-
-.. autoclass:: conin.markov_network.ConstrainedDiscreteMarkovNetwork
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 Example (three nodes with pairwise interactions and a "values must differ" constraint)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -160,3 +137,4 @@ Notes and Behaviors
   to a dictionary keyed by assignments.
 - If ``edges`` are not set explicitly, they are inferred from factor scopes.
 - ``create_map_query_model`` relies on Pyomo; ensure a compatible solver is installed to optimize the model.
+
