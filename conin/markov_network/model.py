@@ -36,13 +36,17 @@ class DiscreteFactor:
     def assignments(self, states):
         """Iterate over assignments for this factor's scope.
 
-        Generates each combination of node values and yields it as a list of
-        ``(node, value)`` pairs in the same order as :pyattr:`self.nodes`.
+        Parameters
+        ----------
+        states : Mapping[Any, Iterable[Any]]
+            Mapping from node identifiers to the ordered collection of allowed
+            state values.
 
-        :param dict states: Mapping from node identifier to a list of allowed
-            values (i.e., ``{node: [v0, v1, ...]}``).
-        :yields: Lists of ``(node, value)`` pairs describing an assignment.
-        :rtype: Iterator[list[tuple[object, object]]]
+        Yields
+        ------
+        list of tuple
+            A sequence of ``(node, value)`` pairs ordered consistently with
+            :attr:`nodes`.
         """
         if len(self.nodes) == 1:
             for node_value in states[self.nodes[0]]:
@@ -59,11 +63,17 @@ class DiscreteFactor:
         returned. Otherwise, the flat list is converted to a dictionary keyed by
         assignments constructed from the provided model's state order.
 
-        :param DiscreteMarkovNetwork pgm: A model that defines the states and
-            their order for each node in this factor's scope.
-        :return: A new factor whose ``values`` are a dictionary keyed by
-            assignments.
-        :rtype: DiscreteFactor
+        Parameters
+        ----------
+        pgm : DiscreteMarkovNetwork
+            The probabilistic graphical model whose node state definitions are
+            used to expand list-based factor values.
+
+        Returns
+        -------
+        DiscreteFactor
+            A factor whose ``values`` attribute is a dictionary keyed by state
+            assignments instead of a flat list.
         """
         if type(self.values) is dict:
             return self
@@ -87,16 +97,20 @@ class DiscreteMarkovNetwork:
     dictionary keyed by assignments using the model's states.
     """
 
-    def __init__(self, *, states={}, edges=None, factors=[]):
-        """Create a discrete Markov network.
+    """Markov network with discrete variables and factor potentials."""
 
-        :param states: Node states specified either as a list of cardinalities
-            (nodes become ``0..n-1``) or as a mapping ``{node: [values]}``.
-        :type states: list[int] | dict
-        :param edges: Optional list of undirected edges ``[(u, v), ...]``.
-        :type edges: list[tuple] | None
-        :param factors: Optional list of factors to attach to the model.
-        :type factors: list[DiscreteFactor]
+    def __init__(self, *, states={}, edges=None, factors=[]):
+        """Initialize a discrete Markov network.
+
+        Parameters
+        ----------
+        states : dict or list, optional
+            Mapping from node identifiers to ordered states or a list of node
+            cardinalities. Defaults to an empty dictionary.
+        edges : Iterable[tuple], optional
+            Pairwise edges that connect nodes in the network.
+        factors : Iterable[DiscreteFactor], optional
+            Factors that encode the potential of each clique in the network.
         """
         self._nodes = []
         self._edges = edges
@@ -114,7 +128,11 @@ class DiscreteMarkovNetwork:
         - For list-based factors, the number of values equals the product of
           the cardinalities for the factor's nodes.
 
-        :raises AssertionError: If any validation check fails.
+        Raises
+        ------
+        AssertionError
+            If the states, edges, or factors are inconsistent with one
+            another, or if any factor value is negative.
         """
         model_nodes = set(self._states.keys())
 
@@ -167,8 +185,10 @@ class DiscreteMarkovNetwork:
     def nodes(self):
         """List of node identifiers in the model.
 
-        :return: Node identifiers in a deterministic order.
-        :rtype: list
+        Returns
+        -------
+        list
+            Node identifiers registered with the model.
         """
         return self._nodes
 
@@ -176,9 +196,10 @@ class DiscreteMarkovNetwork:
     def states(self):
         """Mapping from node to its allowed states.
 
-        :return: Mapping ``{node: [values]}`` describing each node's state
-            space.
-        :rtype: dict
+        Returns
+        -------
+        dict
+            Dictionary mapping each node to the ordered list of valid states.
         """
         return self._states
 
@@ -191,10 +212,32 @@ class DiscreteMarkovNetwork:
         dictionary is provided, keys are node identifiers and values are the
         explicit lists of allowed states.
 
-        :param values: Either a list of cardinalities or a mapping
-            ``{node: [values]}``.
-        :type values: list[int] | dict
-        :raises TypeError: If ``values`` is neither a list nor a dictionary.
+        Parameters
+        ----------
+        values : list of int or dict
+            Either a list containing the cardinality for each anonymous node or
+            a dictionary that directly maps node identifiers to ordered states.
+
+        Raises
+        ------
+        TypeError
+            If ``values`` is neither a list nor a dictionary.
+
+        Examples
+        --------
+        >>> dmn = DiscreteMarkovNetwork()
+        >>> dmn.states = [4, 3]
+        >>> dmn.nodes
+        [0, 1]
+        >>> dmn.states
+        {0: [0, 1, 2, 3], 1: [0, 1, 2]}
+
+        >>> dmn = DiscreteMarkovNetwork()
+        >>> dmn.states = {"A": ["T", "F"], "B": [-1, 1]}
+        >>> dmn.nodes
+        ['A', 'B']
+        >>> dmn.states
+        {'A': ['T', 'F'], 'B': [-1, 1]}
         """
         if type(values) is list:
             self._nodes = list(range(len(values)))
@@ -210,20 +253,30 @@ class DiscreteMarkovNetwork:
     def states_of(self, node):
         """Return the allowed states for a node.
 
-        :param node: Node identifier.
-        :return: List of allowed values for ``node``.
-        :rtype: list
-        :raises KeyError: If ``node`` is not present.
+        Parameters
+        ----------
+        node : Hashable
+            Identifier of the node of interest.
+
+        Returns
+        -------
+        list
+            Ordered list of valid states for ``node``.
         """
         return self._states[node]
 
     def card(self, node):
         """Return the cardinality of a node.
 
-        :param node: Node identifier.
-        :return: Number of allowed states for ``node``.
-        :rtype: int
-        :raises KeyError: If ``node`` is not present.
+        Parameters
+        ----------
+        node : Hashable
+            Identifier of the node of interest.
+
+        Returns
+        -------
+        int
+            Cardinality of the node.
         """
         return len(self._states[node])
 
@@ -238,8 +291,10 @@ class DiscreteMarkovNetwork:
         If edges are not explicitly set, they are inferred from the scopes of
         the current factors.
 
-        :return: List of edges ``[(u, v), ...]``.
-        :rtype: list[tuple]
+        Returns
+        -------
+        list
+            Edge list describing pairwise connections between nodes.
         """
         if not self._edges:
             edges = set()
@@ -253,8 +308,16 @@ class DiscreteMarkovNetwork:
     def edges(self, edges):
         """Set the list of undirected edges.
 
-        :param edges: Iterable of node pairs ``(u, v)``.
-        :type edges: Iterable[tuple]
+        Parameters
+        ----------
+        edges : Iterable[tuple]
+            Collection of pairwise node connections.
+
+        Examples
+        --------
+        >>> dmn = DiscreteMarkovNetwork()
+        >>> dmn.states = [4, 3]
+        >>> dmn.edges = [(0, 1), (1, 2)]
         """
         self._edges = list(edges)
 
@@ -264,45 +327,64 @@ class DiscreteMarkovNetwork:
 
     @property
     def factors(self):
-        """List of factor potentials attached to the model.
+        """Return the factors registered with the model.
 
-        :return: List of :class:`DiscreteFactor`.
-        :rtype: list[DiscreteFactor]
+        Returns
+        -------
+        list of DiscreteFactor
+            Factor objects representing clique potentials.
         """
         return self._factors
 
     @factors.setter
     def factors(self, factor_list):
-        """Attach a list of factors, normalizing list-valued weights.
+        """Attach a list of factors to the model.
 
         Each factor is converted to the dictionary form via
         :meth:`DiscreteFactor.normalize` using the current model states.
 
-        :param factor_list: Iterable of :class:`DiscreteFactor` objects.
-        :type factor_list: Iterable[DiscreteFactor]
+        Parameters
+        ----------
+        factor_list : Iterable[DiscreteFactor]
+            Factors that define the potential of each clique. Factors with
+            list-valued potentials are normalized against the current state
+            definitions.
+
+        Examples
+        --------
+        >>> dmn = DiscreteMarkovNetwork()
+        >>> dmn.states = [4, 3]
+        >>> f1 = DiscreteFactor(nodes=[0, 1], values={(0, 0): 1, (0, 1): 2, (0, 2): 3})
+        >>> f2 = DiscreteFactor(nodes=[0], values={0: 0, 1: 1, 2: 2, 3: 3})
+        >>> dmn.factors = [f1, f2]
         """
         self._factors = [factor.normalize(self) for factor in factor_list]
 
     def create_map_query_model(
         self, variables=None, evidence=None, timing=False, **options
     ):
-        """Create a Pyomo model for a MAP query.
+        """Build a Pyomo inference model for maximum a posteriori queries.
 
         Builds an optimization model that selects one state per node to
         maximize the joint score implied by the factors, optionally under
         evidence or for a subset of variables.
 
-        :param variables: Optional subset of variables to include.
-        :type variables: list | None
-        :param evidence: Optional fixed assignments ``{node: value}``.
-        :type evidence: dict | None
-        :param bool timing: If ``True``, collect timing diagnostics.
-        :param options: Additional keyword options forwarded to the inference
-            routine.
-        :return: A Pyomo model representing the MAP problem.
-        :rtype: object
-        :raises Exception: Exceptions raised by the underlying inference
-            backend are propagated.
+        Parameters
+        ----------
+        variables : Iterable, optional
+            Nodes for which the MAP configuration is requested.
+        evidence : dict, optional
+            Observed states keyed by node.
+        timing : bool, optional
+            If ``True``, return inference statistics along with the MAP result.
+        **options
+            Additional keyword arguments forwarded to the inference backend.
+
+        Returns
+        -------
+        Any
+            A callable or object produced by :func:`create_MN_map_query_model`
+            that can execute the MAP query.
         """
         return create_MN_map_query_model(
             pgm=self,
@@ -314,7 +396,7 @@ class DiscreteMarkovNetwork:
 
 
 class ConstrainedDiscreteMarkovNetwork:
-    """Markov network wrapper that supports custom constraints.
+    """Markov network that supports custom constraints.
 
     Wraps a :class:`DiscreteMarkovNetwork` and an optional constraint functor
     that decorates a Pyomo model with additional feasibility constraints.
@@ -323,28 +405,28 @@ class ConstrainedDiscreteMarkovNetwork:
     def __init__(self, pgm, constraints=None):
         """Initialize the constrained wrapper.
 
-        :param pgm: Base discrete Markov network to wrap.
-        :type pgm: DiscreteMarkovNetwork
-        :param constraints: Optional functor ``f(model) -> model`` that adds
-            constraints to the Pyomo model.
-        :type constraints: callable | None
+        Parameters
+        ----------
+        pgm : DiscreteMarkovNetwork
+            Underlying probabilistic graphical model to constrain.
+        constraints : Callable or None, optional
+            Functor that applies additional restrictions during inference.
         """
         self.pgm = pgm
         self.constraint_functor = constraints
 
     def check_model(self):
-        """Validate the wrapped model.
-
-        :raises AssertionError: If the underlying model is invalid.
-        """
+        """Validate the underlying model."""
         self.pgm.check_model()
 
     @property
     def nodes(self):
         """Return the underlying model's nodes.
 
-        :return: List of node identifiers.
-        :rtype: list
+        Returns
+        -------
+        list
+            Node identifiers maintained by the underlying model.
         """
         return self.pgm.nodes
 
@@ -359,20 +441,29 @@ class ConstrainedDiscreteMarkovNetwork:
 
     @constraints.setter
     def constraints(self, constraint_functor):
-        """Set the constraint functor.
+        """Set a functor that defines model constraints.
 
-        :param constraint_functor: Callable that accepts a Pyomo model and
-            returns it with constraints attached.
-        :type constraint_functor: callable | None
+        Parameters
+        ----------
+        constraint_functor : Callable
+            Function that receives an inference model and returns a constrained
+            version of it.
         """
         self.constraint_functor = constraint_functor
 
     def create_constraints(self, model):
-        """Apply the constraint functor to a Pyomo model, if present.
+        """Apply the constraint functor to add constraints to a Pyomo model.
 
-        :param model: A Pyomo model constructed from the wrapped network.
-        :return: The same model, possibly with constraints added.
-        :rtype: object
+        Parameters
+        ----------
+        model : Any
+            Model object produced by an inference routine.
+
+        Returns
+        -------
+        Any
+            The constrained model, or the original ``model`` when no
+            constraint functor is set.
         """
         if self.constraint_functor is not None:
             model = self.constraint_functor(model)
@@ -381,22 +472,23 @@ class ConstrainedDiscreteMarkovNetwork:
     def create_map_query_model(
         self, variables=None, evidence=None, timing=False, **options
     ):
-        """Create a constrained MAP Pyomo model.
+        """Build a constrained inference model for MAP queries.
 
-        Builds the base MAP model from the wrapped network and applies the
-        constraint functor before returning the final model.
+        Parameters
+        ----------
+        variables : Iterable, optional
+            Nodes for which the MAP configuration is requested.
+        evidence : dict, optional
+            Observed states keyed by node.
+        timing : bool, optional
+            If ``True``, return inference statistics along with the MAP result.
+        **options
+            Additional keyword arguments forwarded to the inference backend.
 
-        :param variables: Optional subset of variables to include.
-        :type variables: list | None
-        :param evidence: Optional fixed assignments ``{node: value}``.
-        :type evidence: dict | None
-        :param bool timing: If ``True``, collect timing diagnostics.
-        :param options: Additional keyword options forwarded to the inference
-            routine.
-        :return: A constrained Pyomo model representing the MAP problem.
-        :rtype: object
-        :raises Exception: Exceptions raised by the underlying inference
-            backend are propagated.
+        Returns
+        -------
+        Any
+            The constrained inference model configured for MAP queries.
         """
         model = create_MN_map_query_model(
             pgm=self.pgm,
