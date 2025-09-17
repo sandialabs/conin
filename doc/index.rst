@@ -12,4 +12,5 @@ TESTING
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
-
+   
+   probabilistic_graphical_models
