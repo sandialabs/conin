@@ -20,39 +20,42 @@ class DiscreteCPD:
     parents: list = None
     default_value: float = 0  # NOTE: Note used yet
 
-    """
-    Defines a conditional probability distribution table (CPD table)
+    """Represent a discrete conditional probability distribution (CPD).
+
+    The CPD describes the conditional distribution of ``node`` given its
+    ``parents``. Values can be specified either as a mapping from parent
+    assignments to probability tables or as a flat list interpreted in
+    row-major order.
 
     Parameters
     ----------
-    node: int, string (any hashable python object)
-        The node (variable) whose CPD is defined.
-
-    parents: array-like
-        List of parent variables (if any) w.r.t. which CPD is defined.
-
-    values: dict, list
-        Values for the CPD table. If a list is specified and no parents are
-        supplied, then the CPD is indexed by integers from 0 to N-1.
-        See the example for the format needed for a dictionary.
+    node : str or int
+        Node whose conditional distribution is defined.
+    values : list or dict
+        Conditional probability values for the node.
+    parents : list, optional
+        Ordered collection of parent nodes.
+    default_value : float, optional
+        Default probability returned when a configuration is not specified
+        explicitly.
 
     Examples
     --------
-    For a distribution of P(grade|diff, intel)
+    For a distribution of ``P(grade|diff, intel)``::
 
-    +---------+-------------------------+------------------------+
-    |diff     |          easy           |         hard           |
-    +---------+------+--------+---------+------+--------+--------+
-    |intel    | low  | medium |  high   | low  | medium |  high  |
-    +---------+------+--------+---------+------+--------+--------+
-    |gradeA   | 0.2  | 0.3    |   0.4   |  0.1 |  0.2   |   0.3  |
-    +---------+------+--------+---------+------+--------+--------+
-    |gradeB   | 0.2  | 0.3    |   0.4   |  0.1 |  0.2   |   0.3  |
-    +---------+------+--------+---------+------+--------+--------+
-    |gradeC   | 0.6  | 0.4    |   0.2   |  0.8 |  0.6   |   0.4  |
-    +---------+------+--------+---------+------+--------+--------+
+        +---------+-------------------------+------------------------+
+        |diff     |          easy           |         hard           |
+        +---------+------+--------+---------+------+--------+--------+
+        |intel    | low  | medium |  high   | low  | medium |  high  |
+        +---------+------+--------+---------+------+--------+--------+
+        |gradeA   | 0.2  | 0.3    |   0.4   |  0.1 |  0.2   |   0.3  |
+        +---------+------+--------+---------+------+--------+--------+
+        |gradeB   | 0.2  | 0.3    |   0.4   |  0.1 |  0.2   |   0.3  |
+        +---------+------+--------+---------+------+--------+--------+
+        |gradeC   | 0.6  | 0.4    |   0.2   |  0.8 |  0.6   |   0.4  |
+        +---------+------+--------+---------+------+--------+--------+
 
-    the values dictionary should be
+    the ``values`` dictionary should be::
 
        {('easy','low'): dict(A=0.2, B=0.2, C=0.6),
         ('easy','medium'): dict(A=0.3, B=0.3, C=0.4),
@@ -87,10 +90,10 @@ class DiscreteCPD:
     >>> cpd.values
     array([[[0.2, 0.3, 0.4],
             [0.1, 0.2, 0.3]],
-    <BLANKLINE>
+
            [[0.2, 0.3, 0.4],
             [0.1, 0.2, 0.3]],
-    <BLANKLINE>
+
            [[0.6, 0.4, 0.2],
             [0.8, 0.6, 0.4]]])
     >>> cpd.variables
@@ -130,10 +133,21 @@ class DiscreteCPD:
     """
 
     def normalize(self, pgm):
-        """
-        Convert a CPD into a standard dict-of-dicts format
+        """Return a CPD whose values are normalized to dictionaries.
 
-        Note that this requires the state information, which is passed-in.
+        The method converts CPDs expressed as lists or dictionaries of lists
+        into a canonical mapping from parent assignments to dictionaries keyed
+        by node states. The state information is retrieved from ``pgm``.
+
+        Parameters
+        ----------
+        pgm : DiscreteBayesianNetwork
+            Bayesian network supplying state metadata.
+
+        Returns
+        -------
+        DiscreteCPD
+            CPD with dictionary-valued entries.
         """
         if type(self.values) is dict:
             tmp = next(iter(self.values.values()))
@@ -177,6 +191,17 @@ class DiscreteCPD:
             )
 
     def to_factor(self):
+        """Convert the CPD into a :class:`~conin.markov_network.DiscreteFactor`.
+
+        The factor mirrors the semantics of the CPD while providing a uniform
+        representation that can be combined with other factors during
+        inference.
+
+        Returns
+        -------
+        DiscreteFactor
+            Factor representation of the CPD.
+        """
         if type(self.values) is list:
             values = self.values
         else:
@@ -199,13 +224,37 @@ class DiscreteCPD:
 
 class DiscreteBayesianNetwork:
 
+    """Discrete Bayesian network composed of nodes, edges, and CPDs."""
+
     def __init__(self, *, states={}, cpds=[]):
+        """Create a new Bayesian network.
+
+        Parameters
+        ----------
+        states : dict, optional
+            Mapping from each node to its possible states. If omitted, the
+            mapping can be populated later.
+        cpds : list of DiscreteCPD, optional
+            Collection of conditional probability distributions for the
+            network.
+        """
         self._nodes = []
         self._edges = None
         self._states = states
         self._cpds = cpds
 
     def check_model(self):
+        """Validate that the network structure and CPDs are well formed.
+
+        The method asserts that every CPD references known nodes and that the
+        probabilities are non-negative, normalized, and cover every possible
+        configuration implied by the node states.
+
+        Raises
+        ------
+        AssertionError
+            If the network contains inconsistent definitions.
+        """
         model_nodes = set(self._states.keys())
 
         cnodes = set()
@@ -268,6 +317,13 @@ class DiscreteBayesianNetwork:
 
     @property
     def nodes(self):
+        """List the nodes in the Bayesian network.
+
+        Returns
+        -------
+        list
+            Ordered collection of node identifiers.
+        """
         return self._nodes
 
     #
@@ -276,6 +332,16 @@ class DiscreteBayesianNetwork:
 
     @property
     def edges(self):
+        """Return the edges implied by the CPDs.
+
+        The edges are computed lazily by examining the parent relationships in
+        the CPDs and cached for subsequent calls.
+
+        Returns
+        -------
+        list of tuple
+            Sorted list of ``(parent, child)`` pairs.
+        """
         if not self._edges:
             self._edges = sorted(
                 {
@@ -292,20 +358,32 @@ class DiscreteBayesianNetwork:
 
     @property
     def states(self):
+        """Mapping from nodes to their discrete states.
+
+        Returns
+        -------
+        dict
+            Dictionary mapping each node to an ordered list of states.
+        """
         return self._states
 
     @states.setter
     def states(self, values):
-        """
-        DBN = DiscreteBayesianNetwork()
-        DBN.states = [4, 3]  # Cardinality of nodes
-        assert DBN.nodes == [0,1]
-        assert DBN.states == {0: [0,1,2,3], 1:[0,1,2]}
+        """Define the state space for each node in the network.
 
-        DBN = DiscreteBayesianNetwork()
-        DBN.states = {"A": ["T", "F"], "B": [-1, 1]}
-        assert DBN.nodes == ["A", "B"]
-        assert DBN.states == {"A": ["T", "F"], "B": [-1, 1]}
+        The setter accepts either a list describing the cardinality for
+        anonymous nodes or a dictionary mapping node identifiers to their
+        explicit state lists.
+
+        Parameters
+        ----------
+        values : list or dict
+            Cardinalities or explicit state definitions for nodes.
+
+        Raises
+        ------
+        TypeError
+            If ``values`` is neither a list nor a dictionary.
         """
         if type(values) is list:
             self._nodes = list(range(len(values)))
@@ -319,9 +397,33 @@ class DiscreteBayesianNetwork:
             raise TypeError(f"Unexpected type for states: {type(values)}")
 
     def states_of(self, node):
+        """Return the states associated with a node.
+
+        Parameters
+        ----------
+        node : str or int
+            Node whose state list is requested.
+
+        Returns
+        -------
+        list
+            Ordered list of states for ``node``.
+        """
         return self._states[node]
 
     def card(self, node):
+        """Return the number of states for a node.
+
+        Parameters
+        ----------
+        node : str or int
+            Node whose cardinality is requested.
+
+        Returns
+        -------
+        int
+            Number of possible states for ``node``.
+        """
         return len(self._states[node])
 
     #
@@ -330,26 +432,50 @@ class DiscreteBayesianNetwork:
 
     @property
     def cpds(self):
+        """Return the conditional probability distributions of the network.
+
+        Returns
+        -------
+        list of DiscreteCPD
+            List of CPDs defining the network.
+        """
         return self._cpds
 
     @cpds.setter
     def cpds(self, cpd_list):
-        """
-        DBN = DiscreteBayesianNetwork()
-        DBN.states = [4, 3]  # Cardinality of nodes
-        c1 = DiscreteCPD(node=1, parents=[0],
-                values={0: dict(0=0.2, 1=0.2, 2=0.6),
-                        1: dict(0=0.3, 1=0.3, 2=0.4),
-                        2: dict(0=0.4, 1=0.4, 2=0.2),
-                        3: dict(0=0.1, 1=0.1, 2=0.8)})
-        c2 = DiscreteCPD(node=0, values={0:0.25, 1:0.25, 2:0.05, 3:0.45})
-        DMN.cpds = [c1, c2]
+        """Store CPDs after normalizing their internal representation.
+
+        Parameters
+        ----------
+        cpd_list : list of DiscreteCPD
+            Iterable of CPDs to attach to the network.
         """
         self._cpds = [cpd.normalize(self) for cpd in cpd_list]
 
     def create_map_query_model(
         self, variables=None, evidence=None, timing=False, **options
     ):
+        """Create a MAP query model for the Bayesian network.
+
+        The model can be used to compute maximum a posteriori assignments for
+        ``variables`` given optional ``evidence``.
+
+        Parameters
+        ----------
+        variables : list, optional
+            Nodes for which to compute the MAP estimate.
+        evidence : dict, optional
+            Observed node assignments.
+        timing : bool, optional
+            Whether to collect timing information.
+        **options : dict, optional
+            Additional options forwarded to :func:`create_BN_map_query_model`.
+
+        Returns
+        -------
+        conin.bayesian_network.inference.BNMapQueryModel
+            Query model configured for MAP inference.
+        """
         return create_BN_map_query_model(
             pgm=self,
             variables=variables,
@@ -361,21 +487,62 @@ class DiscreteBayesianNetwork:
 
 class ConstrainedDiscreteBayesianNetwork:
 
+    """Wrap a Bayesian network with optional constraint enforcement."""
+
     def __init__(self, pgm, constraints=None):
+        """Initialise the constrained Bayesian network.
+
+        Parameters
+        ----------
+        pgm : DiscreteBayesianNetwork
+            Underlying Bayesian network to be constrained.
+        constraints : callable, optional
+            Callable that augments a query model with constraints.
+        """
         self.pgm = pgm
         self.constraint_functor = constraints
 
     def check_model(self):
+        """Validate the underlying Bayesian network."""
         self.pgm.check_model()
 
     def nodes(self):
+        """Return the nodes of the wrapped Bayesian network.
+
+        Returns
+        -------
+        list
+            Nodes maintained by the underlying Bayesian network.
+        """
         return self.pgm.nodes()
 
     @property
     def constraints(self, constraint_functor):
+        """Assign the constraint functor used to modify MAP query models.
+
+        Parameters
+        ----------
+        constraint_functor : callable
+            Function that receives the query model and associated data,
+            returning the constrained model.
+        """
         self.constraint_functor = constraint_functor
 
     def create_constraints(self, model, data):
+        """Apply the constraint functor to a MAP query model.
+
+        Parameters
+        ----------
+        model : conin.bayesian_network.inference.BNMapQueryModel
+            Query model produced for the Bayesian network.
+        data : munch.Munch
+            Data bundle describing variables and evidence.
+
+        Returns
+        -------
+        conin.bayesian_network.inference.BNMapQueryModel
+            Constrained model ready for inference.
+        """
         if self.constraint_functor is not None:
             model = self.constraint_functor(model, data)
         return model
@@ -383,6 +550,25 @@ class ConstrainedDiscreteBayesianNetwork:
     def create_map_query_model(
         self, variables=None, evidence=None, timing=False, **options
     ):
+        """Create a MAP query model and apply registered constraints.
+
+        Parameters
+        ----------
+        variables : list, optional
+            Nodes for which to compute the MAP estimate.
+        evidence : dict, optional
+            Observed node assignments.
+        timing : bool, optional
+            Whether to collect timing information.
+        **options : dict, optional
+            Additional keyword arguments forwarded to
+            :func:`create_BN_map_query_model`.
+
+        Returns
+        -------
+        conin.bayesian_network.inference.BNMapQueryModel
+            Constrained MAP query model.
+        """
         model = create_BN_map_query_model(
             pgm=self.pgm,
             variables=variables,
