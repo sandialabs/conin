@@ -13,4 +13,4 @@ TESTING
    :maxdepth: 2
    :caption: Contents:
    
-   markov_network_model
+   probabilistic_graphical_models

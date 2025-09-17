@@ -20,7 +20,7 @@ class DiscreteCPD:
     parents: list = None
     default_value: float = 0  # NOTE: Note used yet
 
-    """Represent a discrete conditional probability distribution (CPD).
+    """Define a discrete conditional probability distribution (CPD).
 
     The CPD describes the conditional distribution of ``node`` given its
     ``parents``. Values can be specified either as a mapping from parent
@@ -29,7 +29,7 @@ class DiscreteCPD:
 
     Parameters
     ----------
-    node : str or int
+    node : str or int (any hashable python object)
         Node whose conditional distribution is defined.
     values : list or dict
         Conditional probability values for the node.
@@ -90,10 +90,10 @@ class DiscreteCPD:
     >>> cpd.values
     array([[[0.2, 0.3, 0.4],
             [0.1, 0.2, 0.3]],
-
+    <BLANKLINE>
            [[0.2, 0.3, 0.4],
             [0.1, 0.2, 0.3]],
-
+    <BLANKLINE>
            [[0.6, 0.4, 0.2],
             [0.8, 0.6, 0.4]]])
     >>> cpd.variables
@@ -108,7 +108,7 @@ class DiscreteCPD:
     'A'
     >>> cpd.variable_card
     2
-
+    
     >>> cpd = DiscreteCPD(node='B', parents=['A'],
     ...              values={0:[0.2, 0.8], 1:[0.9, 0.1]})
     >>> print(cpd)
