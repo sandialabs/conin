@@ -1,4 +1,5 @@
 import pytest
+import pyomo.opt
 
 from conin.util import try_import
 from conin.bayesian_network import (
@@ -11,6 +12,9 @@ from . import examples
 with try_import() as pgmpy_available:
     from pgmpy.inference import VariableElimination, BeliefPropagation
 
+mip_solver = pyomo.opt.check_available_solvers("glpk", "gurobi")
+mip_solver = mip_solver[0] if mip_solver else None
+
 
 #
 # conin DBDA_51 tests
@@ -19,12 +23,13 @@ with try_import() as pgmpy_available:
 #
 
 
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_DBDA_51_conin():
     pgm = examples.DBDA_5_1_conin()
     q = {"disease-state": 1, "test-result1": 1, "test-result2": 1}
 
     model = create_BN_map_query_model(pgm=pgm)  # variables=None, evidence=None
-    results = optimize_map_query_model(model, solver="glpk")
+    results = optimize_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
 

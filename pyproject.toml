@@ -34,7 +34,6 @@ classifiers=[
 
 [project.optional-dependencies]
 test = [
-    "glpk",
     "pytest",
     "pytest-cov",
     ]

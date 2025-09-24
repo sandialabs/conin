@@ -1,4 +1,5 @@
 import pytest
+import pyomo.opt
 
 from conin.util import try_import
 from conin.dynamic_bayesian_network import (
@@ -12,7 +13,11 @@ with try_import() as pgmpy_available:
     import pgmpy
     from conin.common.pgmpy import convert_pgmpy_to_conin
 
+mip_solver = pyomo.opt.check_available_solvers("glpk", "gurobi")
+mip_solver = mip_solver[0] if mip_solver else None
 
+
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_weather_A_conin():
     """
     Test with conin representation
@@ -44,11 +49,12 @@ def test_weather_A_conin():
     model = create_DDBN_map_query_model(
         pgm=pgm, stop=4
     )  # variables=None, evidence=None
-    results = optimize_map_query_model(model, solver="glpk")
+    results = optimize_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_weather1_A_pgmpy():
     """
     Test with pgmpy TabularCPD representation
@@ -81,11 +87,12 @@ def test_weather1_A_pgmpy():
     model = create_DDBN_map_query_model(
         pgm=pgm, stop=4
     )  # variables=None, evidence=None
-    results = optimize_map_query_model(model, solver="glpk")
+    results = optimize_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_weather2_A_pgmpy():
     """
     Test with pgmpy MapCPD representation
@@ -118,10 +125,11 @@ def test_weather2_A_pgmpy():
     model = create_DDBN_map_query_model(
         pgm=pgm, stop=4
     )  # variables=None, evidence=None
-    results = optimize_map_query_model(model, solver="glpk")
+    results = optimize_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
 
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_weather_B_conin():
     """
     Test with conin representation
@@ -157,11 +165,12 @@ def test_weather_B_conin():
 
     with pytest.raises(RuntimeError):
         model = create_DDBN_map_query_model(pgm=pgm, stop=4, evidence=evidence)
-        results = optimize_map_query_model(model, solver="glpk")
+        results = optimize_map_query_model(model, solver=mip_solver)
         assert q == results.solution.variable_value
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_weather1_B_pgmpy():
     """
     Test with pgmpy TabularCPD representation
@@ -198,11 +207,12 @@ def test_weather1_B_pgmpy():
     pgm = convert_pgmpy_to_conin(pgm)
     with pytest.raises(RuntimeError):
         model = create_DDBN_map_query_model(pgm=pgm, stop=4, evidence=evidence)
-        results = optimize_map_query_model(model, solver="glpk")
+        results = optimize_map_query_model(model, solver=mip_solver)
         assert q == results.solution.variable_value
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_weather2_B_pgmpy():
     """
     Test with pgmpy MapCPD representation
@@ -239,10 +249,11 @@ def test_weather2_B_pgmpy():
     pgm = convert_pgmpy_to_conin(pgm)
     with pytest.raises(RuntimeError):
         model = create_DDBN_map_query_model(pgm=pgm, stop=4, evidence=evidence)
-        results = optimize_map_query_model(model, solver="glpk")
+        results = optimize_map_query_model(model, solver=mip_solver)
         assert q == results.solution.variable_value
 
 
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_weather_A_constrained_conin():
     """
     Test with conin representation
@@ -272,11 +283,12 @@ def test_weather_A_constrained_conin():
     }
 
     model = cpgm.create_map_query_model(stop=4)  # variables=None, evidence=None
-    results = optimize_map_query_model(model, solver="glpk")
+    results = optimize_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_weather_A_constrained_pgmpy():
     """
     Test with pgmpy representation
@@ -306,10 +318,11 @@ def test_weather_A_constrained_pgmpy():
     }
 
     model = cpgm.create_map_query_model(stop=4)  # variables=None, evidence=None
-    results = optimize_map_query_model(model, solver="glpk")
+    results = optimize_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
 
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_weather_B_constrained_conin():
     """
     Test with pgmpy representation
@@ -344,11 +357,12 @@ def test_weather_B_constrained_conin():
 
     with pytest.raises(RuntimeError):
         model = cpgm.create_map_query_model(stop=4, evidence=evidence)
-        results = optimize_map_query_model(model, solver="glpk")
+        results = optimize_map_query_model(model, solver=mip_solver)
         assert q == results.solution.variable_value
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_weather_B_constrained_pgmpy():
     """
     Test with pgmpy representation
@@ -384,5 +398,5 @@ def test_weather_B_constrained_pgmpy():
     # cpgm = convert_pgmpy_to_conin(cpgm)
     with pytest.raises(RuntimeError):
         model = cpgm.create_map_query_model(stop=4, evidence=evidence)
-        results = optimize_map_query_model(model, solver="glpk")
+        results = optimize_map_query_model(model, solver=mip_solver)
         assert q == results.solution.variable_value

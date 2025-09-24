@@ -1,4 +1,5 @@
 import pytest
+import pyomo.opt
 
 from conin.util import try_import
 from conin.dynamic_bayesian_network import (
@@ -12,11 +13,16 @@ with try_import() as pgmpy_available:
     import pgmpy
     from conin.common.pgmpy import convert_pgmpy_to_conin
 
+mip_solver = pyomo.opt.check_available_solvers("glpk", "gurobi")
+mip_solver = mip_solver[0] if mip_solver else None
+
+
 #
 # simple0
 #
 
 
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_simple0_ALL_conin():
     """
     Z
@@ -25,11 +31,12 @@ def test_simple0_ALL_conin():
     q = {("Z", 0): 1, ("Z", 1): 0}
 
     model = create_DDBN_map_query_model(pgm=G)  # variables=None, evidence=None
-    results = optimize_map_query_model(model, solver="glpk")
+    results = optimize_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_simple0_DDBN1_ALL_pgmpy():
     """
     Z
@@ -39,11 +46,12 @@ def test_simple0_DDBN1_ALL_pgmpy():
 
     G = convert_pgmpy_to_conin(G)
     model = create_DDBN_map_query_model(pgm=G)  # variables=None, evidence=None
-    results = optimize_map_query_model(model, solver="glpk")
+    results = optimize_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_simple0_DDBN2_ALL_pgmpy():
     """
     Z
@@ -53,7 +61,7 @@ def test_simple0_DDBN2_ALL_pgmpy():
 
     G = convert_pgmpy_to_conin(G)
     model = create_DDBN_map_query_model(pgm=G)  # variables=None, evidence=None
-    results = optimize_map_query_model(model, solver="glpk")
+    results = optimize_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
 
@@ -62,6 +70,7 @@ def test_simple0_DDBN2_ALL_pgmpy():
 #
 
 
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_simple1_ALL_conin():
     """
     A -> B
@@ -77,11 +86,12 @@ def test_simple1_ALL_conin():
     }
 
     model = create_DDBN_map_query_model(pgm=G)  # variables=None, evidence=None
-    results = optimize_map_query_model(model, solver="glpk")
+    results = optimize_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_simple1_ALL_pgmpy():
     """
     A -> B
@@ -98,10 +108,11 @@ def test_simple1_ALL_pgmpy():
 
     G = convert_pgmpy_to_conin(G)
     model = create_DDBN_map_query_model(pgm=G)  # variables=None, evidence=None
-    results = optimize_map_query_model(model, solver="glpk")
+    results = optimize_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
 
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_simple1_B_conin():
     """
     A -> B
@@ -119,11 +130,12 @@ def test_simple1_B_conin():
         model = create_DDBN_map_query_model(
             pgm=G, evidence={("A", 0): 1}
         )  # variables=None, evidence=None
-        results = optimize_map_query_model(model, solver="glpk")
+        results = optimize_map_query_model(model, solver=mip_solver)
         assert q == results.solution.variable_value
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_simple1_B_pgmpy():
     """
     A -> B
@@ -142,10 +154,11 @@ def test_simple1_B_pgmpy():
         model = create_DDBN_map_query_model(
             pgm=G, evidence={("A", 0): 1}
         )  # variables=None, evidence=None
-        results = optimize_map_query_model(model, solver="glpk")
+        results = optimize_map_query_model(model, solver=mip_solver)
         assert q == results.solution.variable_value
 
 
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_simple1_ALL_constrained_conin():
     """
     A -> B
@@ -160,11 +173,12 @@ def test_simple1_ALL_constrained_conin():
         ("B", 1): 1,
     }
 
-    results = optimize_map_query_model(cpgm.create_map_query_model(), solver="glpk")
+    results = optimize_map_query_model(cpgm.create_map_query_model(), solver=mip_solver)
     assert q == results.solution.variable_value
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_simple1_ALL_constrained_pgmpy():
     """
     A -> B
@@ -180,7 +194,7 @@ def test_simple1_ALL_constrained_pgmpy():
     }
 
     # cpgm = convert_pgmpy_to_conin(cpgm)
-    results = optimize_map_query_model(cpgm.create_map_query_model(), solver="glpk")
+    results = optimize_map_query_model(cpgm.create_map_query_model(), solver=mip_solver)
     assert q == results.solution.variable_value
 
 
@@ -189,6 +203,7 @@ def test_simple1_ALL_constrained_pgmpy():
 #
 
 
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_simple2_ALL_conin():
     """
     A -> B
@@ -204,11 +219,12 @@ def test_simple2_ALL_conin():
     }
 
     model = create_DDBN_map_query_model(pgm=G)  # variables=None, evidence=None
-    results = optimize_map_query_model(model, solver="glpk")
+    results = optimize_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_simple2_ALL_pgmpy():
     """
     A -> B
@@ -225,10 +241,11 @@ def test_simple2_ALL_pgmpy():
 
     G = convert_pgmpy_to_conin(G)
     model = create_DDBN_map_query_model(pgm=G)  # variables=None, evidence=None
-    results = optimize_map_query_model(model, solver="glpk")
+    results = optimize_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
 
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_simple2_B_conin():
     """
     A -> B
@@ -246,11 +263,12 @@ def test_simple2_B_conin():
         model = create_DDBN_map_query_model(
             pgm=G, evidence={("A", 0): 1}
         )  # variables=None, evidence=None
-        results = optimize_map_query_model(model, solver="glpk")
+        results = optimize_map_query_model(model, solver=mip_solver)
         assert q == results.solution.variable_value
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_simple2_B_pgmpy():
     """
     A -> B
@@ -269,10 +287,11 @@ def test_simple2_B_pgmpy():
         model = create_DDBN_map_query_model(
             pgm=G, evidence={("A", 0): 1}
         )  # variables=None, evidence=None
-        results = optimize_map_query_model(model, solver="glpk")
+        results = optimize_map_query_model(model, solver=mip_solver)
         assert q == results.solution.variable_value
 
 
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_simple2_ALL_constrained_conin():
     """
     A -> B
@@ -287,11 +306,12 @@ def test_simple2_ALL_constrained_conin():
         ("B", 1): 1,
     }
 
-    results = optimize_map_query_model(cpgm.create_map_query_model(), solver="glpk")
+    results = optimize_map_query_model(cpgm.create_map_query_model(), solver=mip_solver)
     assert q == results.solution.variable_value
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_simple2_ALL_constrained_pgmpy():
     """
     A -> B
@@ -307,5 +327,5 @@ def test_simple2_ALL_constrained_pgmpy():
     }
 
     # cpgm = convert_pgmpy_to_conin(cpgm)
-    results = optimize_map_query_model(cpgm.create_map_query_model(), solver="glpk")
+    results = optimize_map_query_model(cpgm.create_map_query_model(), solver=mip_solver)
     assert q == results.solution.variable_value

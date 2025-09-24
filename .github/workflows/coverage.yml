@@ -2,7 +2,7 @@ name: Code Coverage
 
 on:
   workflow_run:
-    workflows: ["Auto Format Python Code"]
+    workflows: ["Quick Tests"]
     types:
       - completed
     branches:
@@ -49,7 +49,8 @@ jobs:
 
       - name: Install package
         run: |
-            pip install -e .[pgmpy]
+            pip install -e .
+            pip install pgmpy
 
       - name: Test with pytest & coverage
         run: pytest --cov --cov-branch --cov-report=xml --junitxml=junit.xml -vv
