@@ -1,5 +1,7 @@
+import pytest
 from math import log
 import pyomo.environ as pyo
+import pyomo.opt
 
 from conin.util import try_import
 from conin.markov_network import (
@@ -20,7 +22,11 @@ with try_import() as pgmpy_available:
     import pgmpy
     from conin.common.pgmpy import convert_pgmpy_to_conin
 
+mip_solver = pyomo.opt.check_available_solvers("glpk", "gurobi")
+mip_solver = mip_solver[0] if mip_solver else None
 
+
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_example6():
     """
     See Obbens, p.18
@@ -59,7 +65,7 @@ def test_example6():
     }
 
     model = create_MN_map_query_model_from_factorial_repn(S=S, J=J, v=v, w=w)
-    results = optimize_map_query_model(model, solver="glpk")
+    results = optimize_map_query_model(model, solver=mip_solver)
     assert results.solution.variable_value == {"A": 0, "B": 1}
 
     if True:
@@ -71,7 +77,7 @@ def test_example6():
         assert v == v_
         assert w == w_
         model = create_MN_map_query_model(pgm=pgm)
-        results = optimize_map_query_model(model, solver="glpk")
+        results = optimize_map_query_model(model, solver=mip_solver)
         assert results.solution.variable_value == {"A": 0, "B": 1}
 
     if pgmpy_available:
@@ -83,10 +89,11 @@ def test_example6():
         assert v == v_
         assert w == w_
         model = create_MN_map_query_model(pgm=pgm)
-        results = optimize_map_query_model(model, solver="glpk")
+        results = optimize_map_query_model(model, solver=mip_solver)
         assert results.solution.variable_value == {"A": 0, "B": 1}
 
 
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_ABC():
     """
     Three variables with pair-wise interactions.
@@ -217,7 +224,7 @@ def test_ABC():
     }
 
     model = create_MN_map_query_model_from_factorial_repn(S=S, J=J, v=v, w=w)
-    results = optimize_map_query_model(model, solver="glpk")
+    results = optimize_map_query_model(model, solver=mip_solver)
     assert results.solution.variable_value == {"A": 2, "B": 2, "C": 1}
 
     if False:
@@ -238,6 +245,7 @@ def test_ABC():
         assert w == w_
 
 
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_ABC_constrained():
     """
     Three variables with pair-wise interactions.
@@ -377,7 +385,7 @@ def test_ABC_constrained():
 
     model.diff = pyo.Constraint([0, 1, 2], rule=diff_)
 
-    results = optimize_map_query_model(model, solver="glpk")
+    results = optimize_map_query_model(model, solver=mip_solver)
     assert results.solution.variable_value == {"A": 0, "B": 2, "C": 1}
 
     if True:

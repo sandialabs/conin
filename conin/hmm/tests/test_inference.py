@@ -1,4 +1,5 @@
 import pytest
+import pyomo.opt
 import random
 
 from conin.hmm.inference.recursive_a_star import *
@@ -9,6 +10,9 @@ from conin.hmm.oracle_chmm import Oracle_CHMM
 from conin.hmm.inference import ip_inference
 
 import conin.hmm.tests.test_cases as tc
+
+mip_solver = pyomo.opt.check_available_solvers("glpk", "gurobi")
+mip_solver = mip_solver[0] if mip_solver else None
 
 # TODO IP Testing
 # TODO Viterbi/LP Testing
@@ -343,6 +347,7 @@ class Test_Inference_a_star:
 
 class Test_Inference_ip:
 
+    @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
     def test_ip(self, recursive_app):
         observed = ["o1", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0"]
 
@@ -354,7 +359,7 @@ class Test_Inference_ip:
             ip_inference(
                 statistical_model=recursive_app,
                 observed=observed,
-                solver="glpk",
+                solver=mip_solver,
             )
             .solutions[0]
             .hidden
@@ -373,6 +378,7 @@ class Test_Inference_ip:
             "h0",
         ]
 
+    @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
     def test_ip2(self, recursive_app):
         observed = ["o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1"]
 
@@ -384,7 +390,7 @@ class Test_Inference_ip:
             ip_inference(
                 statistical_model=recursive_app,
                 observed=observed,
-                solver="glpk",
+                solver=mip_solver,
             )
             .solutions[0]
             .hidden
@@ -461,13 +467,14 @@ class Test_Inference_ip:
         assert inferred1.termination_condition == "ok"
         assert inferred2.termination_condition == "ok"
 
+    @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
     def test_ip_deterministic_hmm(self):
         model = HMMApplication()
         model.hmm = tc.create_hmm0()
 
         observed = ["o0", "o1", "o1", "o1"]
         hidden = (
-            ip_inference(statistical_model=model, observed=observed, solver="glpk")
+            ip_inference(statistical_model=model, observed=observed, solver=mip_solver)
             .solutions[0]
             .hidden
         )
