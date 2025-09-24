@@ -1,0 +1,126 @@
+name: Quick Tests
+
+on:
+  workflow_run:
+    workflows: ["Auto Format Python Code"]
+    types:
+      - completed
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  no_deps:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v4
+      
+      # Cache the conda environment (using a key for Ubuntu and Python 3.11)
+      - name: Cache conda environment
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/conda_pkgs_dir
+            ~/.conda
+            ~/miniconda3/envs
+          key: conda-ubuntu-latest-3.11-${{ hashFiles('dev_environment.yml') }}
+          restore-keys: |
+            conda-ubuntu-latest-3.11-
+            conda-ubuntu-latest-
+      
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniconda-version: "latest"
+          auto-update-conda: true
+          python-version: 3.13
+          channels: conda-forge,defaults
+          activate-environment: conin_dev
+          environment-file: dev_environment.yml
+          use-mamba: true
+
+      - name: Install package
+        run: |
+            conda uninstall -y glpk
+            pip install -e .
+
+      - name: Test with pytest & coverage
+        run: pytest -vv
+
+  with_glpk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Cache the conda environment (using a key for Ubuntu and Python 3.11)
+      - name: Cache conda environment
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/conda_pkgs_dir
+            ~/.conda
+            ~/miniconda3/envs
+          key: conda-ubuntu-latest-3.11-${{ hashFiles('dev_environment.yml') }}
+          restore-keys: |
+            conda-ubuntu-latest-3.11-
+            conda-ubuntu-latest-
+
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniconda-version: "latest"
+          auto-update-conda: true
+          python-version: 3.13
+          channels: conda-forge,defaults
+          activate-environment: conin_dev
+
+  with_glpk_pgmpy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Cache the conda environment (using a key for Ubuntu and Python 3.11)
+      - name: Cache conda environment
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/conda_pkgs_dir
+            ~/.conda
+            ~/miniconda3/envs
+          key: conda-ubuntu-latest-3.11-${{ hashFiles('dev_environment.yml') }}
+          restore-keys: |
+            conda-ubuntu-latest-3.11-
+            conda-ubuntu-latest-
+
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniconda-version: "latest"
+          auto-update-conda: true
+          python-version: 3.13
+          channels: conda-forge,defaults
+          activate-environment: conin_dev
+          environment-file: dev_environment.yml
+          use-mamba: true
+
+      - name: Install package
+        run: |
+            pip install -e .[pgmpy]
+
+      - name: Test with pytest & coverage
+        run: pytest -vv
+
