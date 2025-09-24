@@ -2,7 +2,7 @@ name: Pytest Tests
 
 on:
   workflow_run:
-    workflows: ["Code Coverage"]
+    workflows: ["Quick Tests"]
     types:
       - completed
     branches:
