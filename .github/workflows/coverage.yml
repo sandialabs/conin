@@ -2,7 +2,7 @@ name: Code Coverage
 
 on:
   workflow_run:
-    workflows: ["Auto Format Python Code"]
+    workflows: ["Quick Tests"]
     types:
       - completed
     branches:
