@@ -12,7 +12,7 @@ from conin.markov_network.factor_repn import (
     extract_factor_representation,
     State,
 )
-from conin.markov_network.inference import (
+from conin.markov_network.inference_pyomo import (
     create_MN_map_query_model_from_factorial_repn,
 )
 
