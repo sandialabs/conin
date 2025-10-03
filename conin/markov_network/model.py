@@ -3,7 +3,6 @@ from math import prod
 from dataclasses import dataclass
 
 from conin.util import try_import
-from conin.markov_network.inference import create_MN_map_query_model
 
 
 @dataclass(slots=True)
@@ -107,8 +106,10 @@ class DiscreteMarkovNetwork:
         states : dict or list, optional
             Mapping from node identifiers to ordered states or a list of node
             cardinalities. Defaults to an empty dictionary.
+
         edges : Iterable[tuple], optional
             Pairwise edges that connect nodes in the network.
+
         factors : Iterable[DiscreteFactor], optional
             Factors that encode the potential of each clique in the network.
         """
@@ -360,40 +361,6 @@ class DiscreteMarkovNetwork:
         """
         self._factors = [factor.normalize(self) for factor in factor_list]
 
-    def create_map_query_model(
-        self, variables=None, evidence=None, timing=False, **options
-    ):
-        """Build a Pyomo inference model for maximum a posteriori queries.
-
-        Builds an optimization model that selects one state per node to
-        maximize the joint score implied by the factors, optionally under
-        evidence or for a subset of variables.
-
-        Parameters
-        ----------
-        variables : Iterable, optional
-            Nodes for which the MAP configuration is requested.
-        evidence : dict, optional
-            Observed states keyed by node.
-        timing : bool, optional
-            If ``True``, return inference statistics along with the MAP result.
-        **options
-            Additional keyword arguments forwarded to the inference backend.
-
-        Returns
-        -------
-        Any
-            A callable or object produced by :func:`create_MN_map_query_model`
-            that can execute the MAP query.
-        """
-        return create_MN_map_query_model(
-            pgm=self,
-            variables=variables,
-            evidence=evidence,
-            timing=timing,
-            **options,
-        )
-
 
 class ConstrainedDiscreteMarkovNetwork:
     """Markov network that supports custom constraints.
@@ -413,7 +380,10 @@ class ConstrainedDiscreteMarkovNetwork:
             Functor that applies additional restrictions during inference.
         """
         self.pgm = pgm
-        self.constraint_functor = constraints
+        if constraints:
+            self._constraints = constraints
+        else:
+            self._constraints = []
 
     def check_model(self):
         """Validate the underlying model."""
@@ -432,69 +402,21 @@ class ConstrainedDiscreteMarkovNetwork:
 
     @property
     def constraints(self):
-        """Get the current constraint functor.
+        """Get a list of constraint functors.
 
         :return: The constraint functor or ``None`` if not set.
         :rtype: callable | None
         """
-        return self.constraint_functor
+        return self._constraints
 
     @constraints.setter
-    def constraints(self, constraint_functor):
-        """Set a functor that defines model constraints.
+    def constraints(self, constraint_list):
+        """Set a list of functions that are used to define model constraints.
 
         Parameters
         ----------
-        constraint_functor : Callable
-            Function that receives an inference model and returns a constrained
-            version of it.
+        constraint_list : List[Callable]
+            List of functions that generate model constraints.
         """
-        self.constraint_functor = constraint_functor
-
-    def create_constraints(self, model):
-        """Apply the constraint functor to add constraints to a Pyomo model.
-
-        Parameters
-        ----------
-        model : Any
-            Model object produced by an inference routine.
-
-        Returns
-        -------
-        Any
-            The constrained model, or the original ``model`` when no
-            constraint functor is set.
-        """
-        if self.constraint_functor is not None:
-            model = self.constraint_functor(model)
-        return model
-
-    def create_map_query_model(
-        self, variables=None, evidence=None, timing=False, **options
-    ):
-        """Build a constrained inference model for MAP queries.
-
-        Parameters
-        ----------
-        variables : Iterable, optional
-            Nodes for which the MAP configuration is requested.
-        evidence : dict, optional
-            Observed states keyed by node.
-        timing : bool, optional
-            If ``True``, return inference statistics along with the MAP result.
-        **options
-            Additional keyword arguments forwarded to the inference backend.
-
-        Returns
-        -------
-        Any
-            The constrained inference model configured for MAP queries.
-        """
-        model = create_MN_map_query_model(
-            pgm=self.pgm,
-            variables=variables,
-            evidence=evidence,
-            timing=timing,
-            **options,
-        )
-        return self.create_constraints(model)
+        assert type(constraint_list) is list
+        self._constraints = constraint_list

@@ -5,17 +5,17 @@ from conin.markov_network import (
     DiscreteMarkovNetwork,
     ConstrainedDiscreteMarkovNetwork,
     optimize_map_query_model,
-    create_MN_map_query_model,
+    create_MN_map_query_pyomo_model,
 )
 from conin.bayesian_network import (
     DiscreteBayesianNetwork,
     ConstrainedDiscreteBayesianNetwork,
-    create_BN_map_query_model,
+    create_BN_map_query_pyomo_model,
 )
 from conin.dynamic_bayesian_network import (
     DynamicDiscreteBayesianNetwork,
     ConstrainedDynamicDiscreteBayesianNetwork,
-    create_DDBN_map_query_model,
+    create_DDBN_map_query_pyomo_model,
 )
 
 with try_import() as pgmpy_available:
@@ -74,13 +74,22 @@ class IntegerProgrammingInference:
         """
         pgm = self.pgm
 
-        if (
-            isinstance(pgm, DiscreteMarkovNetwork)
-            or isinstance(pgm, ConstrainedDiscreteMarkovNetwork)
-            or isinstance(pgm, DiscreteBayesianNetwork)
-            or isinstance(pgm, ConstrainedDiscreteBayesianNetwork)
+        if isinstance(pgm, DiscreteMarkovNetwork) or isinstance(
+            pgm, ConstrainedDiscreteMarkovNetwork
         ):
-            model = pgm.create_map_query_model(
+            model = create_MN_map_query_pyomo_model(
+                pgm=pgm,
+                variables=variables,
+                evidence=evidence,
+                timing=timing,
+                **options,
+            )
+            return optimize_map_query_model(model, timing=timing, **options)
+        elif isinstance(pgm, DiscreteBayesianNetwork) or isinstance(
+            pgm, ConstrainedDiscreteBayesianNetwork
+        ):
+            model = create_BN_map_query_pyomo_model(
+                pgm=pgm,
                 variables=variables,
                 evidence=evidence,
                 timing=timing,
@@ -144,8 +153,8 @@ class DDBN_IntegerProgrammingInference:
         if isinstance(pgm, DynamicDiscreteBayesianNetwork) or isinstance(
             pgm, ConstrainedDynamicDiscreteBayesianNetwork
         ):
-            model = pgm.create_map_query_model(
-                start=start, stop=stop, variables=variables, evidence=evidence
+            model = create_DDBN_map_query_pyomo_model(
+                pgm=pgm, start=start, stop=stop, variables=variables, evidence=evidence
             )
             return optimize_map_query_model(model, **options)
         else:

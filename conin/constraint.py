@@ -1,3 +1,4 @@
+import inspect
 from conin.exceptions import InvalidInputError
 
 
@@ -63,3 +64,25 @@ class Constraint:
                 f"In constraint {self.name}, the actual constraint function is not defined."
             )
         return self.func(seq)
+
+
+class PyomoConstraint:
+
+    def __init__(self, func):
+        self.func = func
+        self.num_args = len(inspect.signature(self.func).parameters)
+        if self.num_args > 2:
+            raise ValueError("Pyomo constraint defined with more than 2 arguments")
+
+    def __call__(self, model, data):
+        if self.num_args == 1:
+            return self.func(model)
+        else:
+            return self.func(model, data)
+
+
+def pyomo_constraint_fn(func):
+    """
+    Decorator that wraps the user constraint function in a PyomoConstraint class.
+    """
+    return PyomoConstraint(func)

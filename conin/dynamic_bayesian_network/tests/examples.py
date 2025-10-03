@@ -1,5 +1,6 @@
 import pyomo.environ as pyo
 
+from conin.constraint import pyomo_constraint_fn
 from conin.util import try_import
 from conin.dynamic_bayesian_network import (
     DynamicDiscreteBayesianNetwork,
@@ -142,26 +143,28 @@ def simple1_DDBN_pgmpy(debug=False):
 def simple1_DDBN_constrained_conin(debug=False):
     pgm = simple1_DDBN_conin(debug=debug)
 
-    def constraints(model, data):
+    @pyomo_constraint_fn
+    def constraints(model):
         model.c = pyo.ConstraintList()
         model.c.add(model.X[("A", 0), 0] == model.X[("A", 1), 0])
         model.c.add(model.X[("B", 0), 0] == model.X[("B", 1), 0])
         return model
 
-    return ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=constraints)
+    return ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=[constraints])
 
 
 def simple1_DDBN_constrained_pgmpy(debug=False):
     pgm = simple1_DDBN_pgmpy(debug=debug)
 
-    def constraints(model, data):
+    @pyomo_constraint_fn
+    def constraints(model):
         model.c = pyo.ConstraintList()
         model.c.add(model.X[("A", 0), 0] == model.X[("A", 1), 0])
         model.c.add(model.X[("B", 0), 0] == model.X[("B", 1), 0])
         return model
 
     pgm = convert_pgmpy_to_conin(pgm)
-    return ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=constraints)
+    return ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=[constraints])
 
 
 #
@@ -222,26 +225,28 @@ def simple2_DDBN_pgmpy(debug=False):
 def simple2_DDBN_constrained_conin(debug=False):
     pgm = simple2_DDBN_conin(debug=debug)
 
-    def constraints(model, data):
+    @pyomo_constraint_fn
+    def constraints(model):
         model.c = pyo.ConstraintList()
         model.c.add(model.X[("A", 0), 0] == model.X[("A", 1), 0])
         model.c.add(model.X[("B", 0), 0] == model.X[("B", 1), 0])
         return model
 
-    return ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=constraints)
+    return ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=[constraints])
 
 
 def simple2_DDBN_constrained_pgmpy(debug=False):
     pgm = simple2_DDBN_pgmpy(debug=debug)
 
-    def constraints(model, data):
+    @pyomo_constraint_fn
+    def constraints(model):
         model.c = pyo.ConstraintList()
         model.c.add(model.X[("A", 0), 0] == model.X[("A", 1), 0])
         model.c.add(model.X[("B", 0), 0] == model.X[("B", 1), 0])
         return model
 
     pgm = convert_pgmpy_to_conin(pgm)
-    return ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=constraints)
+    return ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=[constraints])
 
 
 #
@@ -677,6 +682,7 @@ def weather2_pgmpy(debug=False):
 def weather_constrained_conin(debug=False):
     pgm = weather_conin(debug)
 
+    @pyomo_constraint_fn
     def constraints(model, data):
         """2 rainy days"""
         model.c = pyo.Constraint(
@@ -684,12 +690,13 @@ def weather_constrained_conin(debug=False):
         )
         return model
 
-    return ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=constraints)
+    return ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=[constraints])
 
 
 def weather_constrained_pgmpy(debug=False):
     pgm = weather2_pgmpy(debug)
 
+    @pyomo_constraint_fn
     def constraints(model, data):
         """2 rainy days"""
         model.c = pyo.Constraint(
@@ -698,4 +705,4 @@ def weather_constrained_pgmpy(debug=False):
         return model
 
     pgm = convert_pgmpy_to_conin(pgm)
-    return ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=constraints)
+    return ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=[constraints])

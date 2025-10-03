@@ -1,6 +1,7 @@
 import numpy as np
 import pyomo.environ as pyo
 
+from conin.constraint import pyomo_constraint_fn
 from conin.util import try_import
 from conin.markov_network import (
     DiscreteFactor,
@@ -119,6 +120,7 @@ def ABC_constrained_pgmpy():
     """
     pgm = ABC_pgmpy()
 
+    @pyomo_constraint_fn
     def constraint_fn(model):
         @model.Constraint([0, 1, 2])
         def diff(M, s):
@@ -127,7 +129,7 @@ def ABC_constrained_pgmpy():
         return model
 
     pgm = convert_pgmpy_to_conin(pgm)
-    return ConstrainedDiscreteMarkovNetwork(pgm, constraints=constraint_fn)
+    return ConstrainedDiscreteMarkovNetwork(pgm, constraints=[constraint_fn])
 
 
 def ABC_constrained_conin():
@@ -141,6 +143,7 @@ def ABC_constrained_conin():
     """
     pgm = ABC_conin()
 
+    @pyomo_constraint_fn
     def constraint_fn(model):
         @model.Constraint([0, 1, 2])
         def diff(M, s):
@@ -148,4 +151,4 @@ def ABC_constrained_conin():
 
         return model
 
-    return ConstrainedDiscreteMarkovNetwork(pgm, constraints=constraint_fn)
+    return ConstrainedDiscreteMarkovNetwork(pgm, constraints=[constraint_fn])

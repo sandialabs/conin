@@ -4,7 +4,7 @@ import pyomo.opt
 
 from conin.util import try_import
 from conin.bayesian_network import (
-    create_BN_map_query_model,
+    create_BN_map_query_pyomo_model,
     optimize_map_query_model,
 )
 from . import examples
@@ -27,7 +27,7 @@ def test_cancer1_conin_ALL():
     pgm = examples.cancer1_BN_conin()
     q = {"Cancer": 1, "Dyspnoea": 1, "Pollution": 0, "Smoker": 1, "Xray": 1}
 
-    model = create_BN_map_query_model(pgm=pgm)  # variables=None, evidence=None
+    model = create_BN_map_query_pyomo_model(pgm=pgm)  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
@@ -49,7 +49,7 @@ def test_cancer1_pgmpy_ALL():
     )
 
     pgm = convert_pgmpy_to_conin(pgm)
-    model = create_BN_map_query_model(pgm=pgm)  # variables=None, evidence=None
+    model = create_BN_map_query_pyomo_model(pgm=pgm)  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
@@ -65,7 +65,7 @@ def test_cancer1_conin_Cancer():
     q = {"Xray": 0, "Dyspnoea": 0, "Smoker": 0, "Pollution": 0}
 
     with pytest.raises(RuntimeError):
-        model = create_BN_map_query_model(
+        model = create_BN_map_query_pyomo_model(
             pgm=pgm, evidence={"Cancer": 0}
         )  # variables=None, evidence=None
         results = optimize_map_query_model(model, solver=mip_solver)
@@ -91,7 +91,7 @@ def test_cancer1_pgmpy_Cancer():
 
     pgm = convert_pgmpy_to_conin(pgm)
     with pytest.raises(RuntimeError):
-        model = create_BN_map_query_model(
+        model = create_BN_map_query_pyomo_model(
             pgm=pgm, evidence={"Cancer": 0}
         )  # variables=None, evidence=None
         results = optimize_map_query_model(model, solver=mip_solver)
@@ -109,7 +109,7 @@ def test_cancer1_conin_ALL_constrained1():
     pgm = examples.cancer1_BN_conin()
     q = {"Cancer": 1, "Dyspnoea": 0, "Pollution": 0, "Smoker": 1, "Xray": 1}
 
-    model = create_BN_map_query_model(pgm=pgm)  # variables=None, evidence=None
+    model = create_BN_map_query_pyomo_model(pgm=pgm)  # variables=None, evidence=None
     model.c = pyo.ConstraintList()
     model.c.add(model.X["Dyspnoea", 1] + model.X["Xray", 1] <= 1)
     model.c.add(model.X["Dyspnoea", 0] + model.X["Xray", 0] <= 1)
@@ -129,7 +129,9 @@ def test_cancer1_conin_ALL_constrained2():
     cpgm = examples.cancer1_BN_constrained_conin()
     q = {"Cancer": 1, "Dyspnoea": 0, "Pollution": 0, "Smoker": 1, "Xray": 1}
 
-    results = optimize_map_query_model(cpgm.create_map_query_model(), solver=mip_solver)
+    results = optimize_map_query_model(
+        create_BN_map_query_pyomo_model(pgm=cpgm), solver=mip_solver
+    )
     assert q == results.solution.variable_value
 
 
@@ -150,7 +152,7 @@ def test_cancer2_pgmpy_ALL():
     )
 
     pgm = convert_pgmpy_to_conin(pgm)
-    model = create_BN_map_query_model(pgm=pgm)  # variables=None, evidence=None
+    model = create_BN_map_query_pyomo_model(pgm=pgm)  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
@@ -174,7 +176,7 @@ def test_cancer2_pgmpy_Cancer():
 
     pgm = convert_pgmpy_to_conin(pgm)
     with pytest.raises(RuntimeError):
-        model = create_BN_map_query_model(
+        model = create_BN_map_query_pyomo_model(
             pgm=pgm, evidence={"Cancer": 0}
         )  # variables=None, evidence=None
         results = optimize_map_query_model(model, solver=mip_solver)
@@ -194,7 +196,7 @@ def test_cancer2_pgmpy_ALL_constrained1():
     q = {"Cancer": 1, "Dyspnoea": 0, "Pollution": 0, "Smoker": 1, "Xray": 1}
 
     pgm = convert_pgmpy_to_conin(pgm)
-    model = create_BN_map_query_model(pgm=pgm)  # variables=None, evidence=None
+    model = create_BN_map_query_pyomo_model(pgm=pgm)  # variables=None, evidence=None
     model.c = pyo.ConstraintList()
     model.c.add(model.X["Dyspnoea", 1] + model.X["Xray", 1] <= 1)
     model.c.add(model.X["Dyspnoea", 0] + model.X["Xray", 0] <= 1)
@@ -215,5 +217,7 @@ def test_cancer2_pgmpy_ALL_constrained2():
     cpgm = examples.cancer2_BN_constrained_pgmpy()
     q = {"Cancer": 1, "Dyspnoea": 0, "Pollution": 0, "Smoker": 1, "Xray": 1}
 
-    results = optimize_map_query_model(cpgm.create_map_query_model(), solver=mip_solver)
+    results = optimize_map_query_model(
+        create_BN_map_query_pyomo_model(pgm=cpgm), solver=mip_solver
+    )
     assert q == results.solution.variable_value

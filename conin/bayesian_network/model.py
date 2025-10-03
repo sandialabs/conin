@@ -5,7 +5,6 @@ from math import prod
 from dataclasses import dataclass
 
 from conin.util import batched
-from conin.bayesian_network.inference import create_BN_map_query_model
 from conin.markov_network import DiscreteFactor
 
 
@@ -451,38 +450,6 @@ class DiscreteBayesianNetwork:
         """
         self._cpds = [cpd.normalize(self) for cpd in cpd_list]
 
-    def create_map_query_model(
-        self, variables=None, evidence=None, timing=False, **options
-    ):
-        """Create a MAP query model for the Bayesian network.
-
-        The model can be used to compute maximum a posteriori assignments for
-        ``variables`` given optional ``evidence``.
-
-        Parameters
-        ----------
-        variables : list, optional
-            Nodes for which to compute the MAP estimate.
-        evidence : dict, optional
-            Observed node assignments.
-        timing : bool, optional
-            Whether to collect timing information.
-        **options : dict, optional
-            Additional options forwarded to :func:`create_BN_map_query_model`.
-
-        Returns
-        -------
-        conin.bayesian_network.inference.BNMapQueryModel
-            Query model configured for MAP inference.
-        """
-        return create_BN_map_query_model(
-            pgm=self,
-            variables=variables,
-            evidence=evidence,
-            timing=timing,
-            **options,
-        )
-
 
 class ConstrainedDiscreteBayesianNetwork:
     """Wrap a Bayesian network with optional constraint enforcement."""
@@ -498,7 +465,10 @@ class ConstrainedDiscreteBayesianNetwork:
             Callable that augments a query model with constraints.
         """
         self.pgm = pgm
-        self.constraint_functor = constraints
+        if constraints:
+            self._constraints = constraints
+        else:
+            self._constraints = []
 
     def check_model(self):
         """Validate the underlying Bayesian network."""
@@ -515,67 +485,22 @@ class ConstrainedDiscreteBayesianNetwork:
         return self.pgm.nodes()
 
     @property
-    def constraints(self, constraint_functor):
-        """Assign the constraint functor used to modify MAP query models.
+    def constraints(self):
+        """Get a list of constraint functors.
+
+        :return: The constraint functor or ``None`` if not set.
+        :rtype: callable | None
+        """
+        return self._constraints
+
+    @constraints.setter
+    def constraints(self, constraint_list):
+        """Set a list of functions that are used to define model constraints.
 
         Parameters
         ----------
-        constraint_functor : callable
-            Function that receives the query model and associated data,
-            returning the constrained model.
+        constraint_list : List[Callable]
+            List of functions that generate model constraints.
         """
-        self.constraint_functor = constraint_functor
-
-    def create_constraints(self, model, data):
-        """Apply the constraint functor to a MAP query model.
-
-        Parameters
-        ----------
-        model : conin.bayesian_network.inference.BNMapQueryModel
-            Query model produced for the Bayesian network.
-        data : munch.Munch
-            Data bundle describing variables and evidence.
-
-        Returns
-        -------
-        conin.bayesian_network.inference.BNMapQueryModel
-            Constrained model ready for inference.
-        """
-        if self.constraint_functor is not None:
-            model = self.constraint_functor(model, data)
-        return model
-
-    def create_map_query_model(
-        self, variables=None, evidence=None, timing=False, **options
-    ):
-        """Create a MAP query model and apply registered constraints.
-
-        Parameters
-        ----------
-        variables : list, optional
-            Nodes for which to compute the MAP estimate.
-        evidence : dict, optional
-            Observed node assignments.
-        timing : bool, optional
-            Whether to collect timing information.
-        **options : dict, optional
-            Additional keyword arguments forwarded to
-            :func:`create_BN_map_query_model`.
-
-        Returns
-        -------
-        conin.bayesian_network.inference.BNMapQueryModel
-            Constrained MAP query model.
-        """
-        model = create_BN_map_query_model(
-            pgm=self.pgm,
-            variables=variables,
-            evidence=evidence,
-            timing=timing,
-            **options,
-        )
-        self.data = munch.Munch(
-            variables=variables,
-            evidence=evidence,
-        )
-        return self.create_constraints(model, self.data)
+        assert type(constraint_list) is list
+        self._constraints = constraint_list

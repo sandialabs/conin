@@ -4,7 +4,7 @@ import pyomo.opt
 
 from conin.util import try_import
 from conin.bayesian_network import (
-    create_BN_map_query_model,
+    create_BN_map_query_pyomo_model,
     optimize_map_query_model,
 )
 
@@ -32,7 +32,9 @@ def test_holmes0_conin():
     variables = None
     evidence = None
 
-    model = create_BN_map_query_model(pgm=pgm, variables=variables, evidence=evidence)
+    model = create_BN_map_query_pyomo_model(
+        pgm=pgm, variables=variables, evidence=evidence
+    )
     results = optimize_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
@@ -54,7 +56,9 @@ def test_holmes0_pgmpy():
     assert q == infer.map_query(variables=variables, evidence=evidence)
 
     pgm = convert_pgmpy_to_conin(pgm)
-    model = create_BN_map_query_model(pgm=pgm, variables=variables, evidence=evidence)
+    model = create_BN_map_query_pyomo_model(
+        pgm=pgm, variables=variables, evidence=evidence
+    )
     results = optimize_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
@@ -72,7 +76,7 @@ def test_holmes1():
 
     pgm = convert_pgmpy_to_conin(pgm)
     with pytest.raises(RuntimeError):
-        model = create_BN_map_query_model(
+        model = create_BN_map_query_pyomo_model(
             pgm=pgm, variables=variables, evidence=evidence
         )
         results = optimize_map_query_model(model, solver=mip_solver)
@@ -92,7 +96,7 @@ def test_holmes2():
 
     pgm = convert_pgmpy_to_conin(pgm)
     with pytest.raises(RuntimeError):
-        model = create_BN_map_query_model(
+        model = create_BN_map_query_pyomo_model(
             pgm=pgm, variables=variables, evidence=evidence
         )
         results = optimize_map_query_model(model, solver=mip_solver)
@@ -112,7 +116,7 @@ def test_holmes3():
 
     pgm = convert_pgmpy_to_conin(pgm)
     with pytest.raises(RuntimeError):
-        model = create_BN_map_query_model(
+        model = create_BN_map_query_pyomo_model(
             pgm=pgm, variables=variables, evidence=evidence
         )
         results = optimize_map_query_model(model, solver=mip_solver)
@@ -132,7 +136,7 @@ def test_holmes4():
 
     pgm = convert_pgmpy_to_conin(pgm)
     with pytest.raises(RuntimeError):
-        model = create_BN_map_query_model(
+        model = create_BN_map_query_pyomo_model(
             pgm=pgm, variables=variables, evidence=evidence
         )
         results = optimize_map_query_model(model, solver=mip_solver)
@@ -152,7 +156,7 @@ def test_holmes5():
 
     pgm = convert_pgmpy_to_conin(pgm)
     with pytest.raises(RuntimeError):
-        model = create_BN_map_query_model(
+        model = create_BN_map_query_pyomo_model(
             pgm=pgm, variables=variables, evidence=evidence
         )
         results = optimize_map_query_model(model, solver=mip_solver)

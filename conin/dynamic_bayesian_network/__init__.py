@@ -1,6 +1,6 @@
 from conin.markov_network import optimize_map_query_model
 import conin.dynamic_bayesian_network.dbn_to_bn
-from .inference import create_DDBN_map_query_model
+from .inference import create_DDBN_map_query_pyomo_model
 from .model import (
     DynamicDiscreteBayesianNetwork,
     ConstrainedDynamicDiscreteBayesianNetwork,

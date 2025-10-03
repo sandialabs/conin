@@ -6,6 +6,7 @@ from pyomo.common.timing import TicTocTimer
 
 from .factor_repn import extract_factor_representation_, State
 from .variable_elimination import _variable_elimination
+from .model import ConstrainedDiscreteMarkovNetwork
 
 
 """
@@ -51,7 +52,7 @@ class VarWrapper(dict):
         return dict.__getitem__(self, (r, s))
 
 
-def create_MN_map_query_model(
+def create_MN_map_query_pyomo_model(
     *,
     pgm,
     variables=None,
@@ -60,29 +61,50 @@ def create_MN_map_query_model(
     timing=False,
     **options,
 ):
+    """Build a inference model for MAP queries.
+
+    Parameters
+    ----------
+    pgm : DiscreteMarkovNetwork or ConstrainedDiscreteMarkovNetwork
+        The graphical model that is used to construct the Pyomo model.
+    variables : Iterable, optional
+        Nodes for which the MAP configuration is requested.
+    evidence : dict, optional
+        Observed states keyed by node.
+    timing : bool, optional
+        If ``True``, return inference statistics along with the MAP result.
+    var_index_map : dict, optional
+        A dictionary of that is used construct mapped varibles
+    **options
+        Additional keyword arguments forwarded to the inference backend.
+
+    Returns
+    -------
+    ConcreteModel
+        The pyomo optimization model that supports inference with MAP queries.
+    """
 
     if timing:  # pragma:nocover
         timer = TicTocTimer()
-        timer.tic("create_MN_map_query_model - START")
+        timer.tic("create_MN_map_query_pyomo_model - START")
+    pgm_ = pgm.pgm if isinstance(pgm, ConstrainedDiscreteMarkovNetwork) else pgm
+
     if variables or evidence:
         variables_ = [] if variables is None else variables
         evidence_ = {} if evidence is None else evidence
-        if not evidence_ and len(variables_) == len(pgm.nodes):
-            factors = pgm.factors
+        if not evidence_ and len(variables_) == len(pgm_.nodes):
+            factors = pgm_.factors
         else:
             raise RuntimeError("VariableElimination is not supported for CONIN models")
-            # factors = _variable_elimination(
-            # pgm=pgm, variables=variables_, evidence=evidence_
-            # )
         if variables_:
-            states = {var: pgm.states[var] for var in variables_}
+            states = {var: pgm_.states[var] for var in variables_}
         else:
             states = {
-                var: pgm.states[var] for var in pgm.nodes() if var not in evidence_
+                var: pgm_.states[var] for var in pgm_.nodes() if var not in evidence_
             }
     else:
-        states = pgm.states
-        factors = pgm.factors
+        states = pgm_.states
+        factors = pgm_.factors
     if timing:  # pragma:nocover
         timer.toc("Setup states and factors")
 
@@ -103,6 +125,11 @@ def create_MN_map_query_model(
     # if evidence:
     #    for k, v in evidence.items():
     #        model.X[k, State(v)].fix(1)
+
+    if isinstance(pgm, ConstrainedDiscreteMarkovNetwork) and pgm.constraints:
+        data = munch.Munch(variables=variables, evidence=evidence)
+        for func in pgm.constraints:
+            model = func(model, data)
 
     if timing:  # pragma:nocover
         timer.toc("create_MN_map_query_model - STOP")

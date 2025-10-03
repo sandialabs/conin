@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import pyomo.environ as pyo
 
+from conin.constraint import pyomo_constraint_fn
 from conin.util import try_import
 from conin.bayesian_network import (
     DiscreteBayesianNetwork,
@@ -200,39 +201,42 @@ def cancer2_BN_pgmpy(debug=False):
 def cancer1_BN_constrained_conin(debug=False):
     pgm = cancer1_BN_conin(debug=debug)
 
-    def constraints(model, data):
+    @pyomo_constraint_fn
+    def constraints(model):
         model.c = pyo.ConstraintList()
         model.c.add(model.X["Dyspnoea", 1] + model.X["Xray", 1] <= 1)
         model.c.add(model.X["Dyspnoea", 0] + model.X["Xray", 0] <= 1)
         return model
 
-    return ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraints)
+    return ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
 
 
 def cancer1_BN_constrained_pgmpy(debug=False):
     pgm = cancer1_BN_pgmpy(debug=debug)
 
-    def constraints(model, data):
+    @pyomo_constraint_fn
+    def constraints(model):
         model.c = pyo.ConstraintList()
         model.c.add(model.X["Dyspnoea", 1] + model.X["Xray", 1] <= 1)
         model.c.add(model.X["Dyspnoea", 0] + model.X["Xray", 0] <= 1)
         return model
 
     pgm = convert_pgmpy_to_conin(pgm)
-    return ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraints)
+    return ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
 
 
 def cancer2_BN_constrained_pgmpy(debug=False):
     pgm = cancer2_BN_pgmpy(debug=debug)
 
-    def constraints(model, data):
+    @pyomo_constraint_fn
+    def constraints(model):
         model.c = pyo.ConstraintList()
         model.c.add(model.X["Dyspnoea", 1] + model.X["Xray", 1] <= 1)
         model.c.add(model.X["Dyspnoea", 0] + model.X["Xray", 0] <= 1)
         return model
 
     pgm = convert_pgmpy_to_conin(pgm)
-    return ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraints)
+    return ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
 
 
 #
