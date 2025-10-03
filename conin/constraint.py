@@ -86,3 +86,25 @@ def pyomo_constraint_fn(func):
     Decorator that wraps the user constraint function in a PyomoConstraint class.
     """
     return PyomoConstraint(func)
+
+
+class Toulbar2Constraint:
+
+    def __init__(self, func):
+        self.func = func
+        self.num_args = len(inspect.signature(self.func).parameters)
+        if self.num_args > 2:
+            raise ValueError("Toulbar2 constraint defined with more than 2 arguments")
+
+    def __call__(self, model, data):
+        if self.num_args == 1:
+            return self.func(model)
+        else:
+            return self.func(model, data)
+
+
+def toulbar2_constraint_fn(func):
+    """
+    Decorator that wraps the user constraint function in a Toulbar2Constraint class.
+    """
+    return Toulbar2Constraint(func)
