@@ -11,16 +11,20 @@ from conin.hmm import Internal_Statistical_Model
 from conin.util import Util
 
 
-class HMM(Internal_Statistical_Model):
+class HMM:
 
-    def __init__(self, *, start_vec, transition_mat, emission_mat):
-        self.load_start_vec(start_vec)
-        self.load_transition_mat(transition_mat)
-        self.load_emission_mat(emission_mat)
-        self.check_dimensions()
+    def __init__(self, *, start_vec, transition_mat, emission_mat, check_errors=True):
+        self.load_start_vec(start_vec, check_errors=check_errors)
+        self.load_transition_mat(transition_mat, check_errors=check_errors)
+        self.load_emission_mat(emission_mat, check_errors=check_errors)
+        if check_errors:
+            self.check_dimensions()
         self.load_dimensions()
 
-    def load_start_vec(self, start_vec):
+    def get_internal_hmm(self):
+        return self
+
+    def load_start_vec(self, start_vec, check_errors=True):
         """
         Loads the start vec
 
@@ -30,16 +34,18 @@ class HMM(Internal_Statistical_Model):
         Raises:
             InvalidInputError: If any probabilities are negative or if the probabilities do not sum to 1
         """
-        for prob in start_vec:
-            # Non-negative
-            if not prob >= 0:
-                raise InvalidInputError("start_probs values must be positive floats.")
-        # Sums to 1
-        if not np.isclose(sum(start_vec), 1):
-            raise InvalidInputError("start_prob values must sum to 1.")
+        if check_errors:
+            # Confirm that the start_vec is non-negative
+            for prob in start_vec:
+                if not prob >= 0:
+                    raise InvalidInputError("start_probs values must be positive floats.")
+            # Confirm that the start_vec sums to one
+            if not np.isclose(sum(start_vec), 1):
+                raise InvalidInputError("start_prob values must sum to 1.")
+
         self.start_vec = start_vec
 
-    def load_transition_mat(self, transition_mat):
+    def load_transition_mat(self, transition_mat, check_errors=True):
         """
         Loads the transition matrix
 
@@ -49,18 +55,20 @@ class HMM(Internal_Statistical_Model):
         Raises:
             InvalidInputError: If any probabilities are negative or if the rows do not sum to 1
         """
+        if check_errors:
+            # Non-negative transition probabilities
+            for h1 in range(len(transition_mat)):
+                for h2 in range(len(transition_mat[h1])):
+                    if not transition_mat[h1][h2] >= 0:
+                        raise InvalidInputError("Transition_mat must be positive floats.")
+            # Rows sum to 1
+            for vec in transition_mat:
+                if not np.isclose(sum(vec), 1):
+                    raise InvalidInputError("Transition_mat rows do not sum to 1.")
 
-        for h1 in range(len(transition_mat)):
-            for h2 in range(len(transition_mat[h1])):
-                if not transition_mat[h1][h2] >= 0:
-                    raise InvalidInputError("Transition_mat must be positive floats.")
-        # Rows sum to 1
-        for vec in transition_mat:
-            if not np.isclose(sum(vec), 1):
-                raise InvalidInputError("Transition_mat rows do not sum to 1.")
         self.transition_mat = transition_mat
 
-    def load_emission_mat(self, emission_mat):
+    def load_emission_mat(self, emission_mat, check_errors=True):
         """
         Loads the emission matrix
 
@@ -70,17 +78,19 @@ class HMM(Internal_Statistical_Model):
         Raises:
             InvalidInputError: If any probabilities are negative or if the rows do not sum to 1
         """
+        if check_errors:
+            # Non-negative emission probabilities
+            for h1 in range(len(emission_mat)):
+                for h2 in range(len(emission_mat[h1])):
+                    if not emission_mat[h1][h2] >= 0:
+                        raise InvalidInputError("Emission_mat must be positive floats.")
+            # Rows sum to 1
+            for vec in emission_mat:
+                if not np.isclose(sum(vec), 1):
+                    raise InvalidInputError(
+                        f"Emission_mat rows do not sum to 1: {sum(vec)}"
+                    )
 
-        for h1 in range(len(emission_mat)):
-            for h2 in range(len(emission_mat[h1])):
-                if not emission_mat[h1][h2] >= 0:
-                    raise InvalidInputError("Emission_mat must be positive floats.")
-        # Rows sum to 1
-        for vec in emission_mat:
-            if not np.isclose(sum(vec), 1):
-                raise InvalidInputError(
-                    f"Emission_mat rows do not sum to 1: {sum(vec)}"
-                )
         self.emission_mat = emission_mat
 
     def check_dimensions(self):
@@ -119,12 +129,6 @@ class HMM(Internal_Statistical_Model):
         self.num_observed_states = len(self.emission_mat[0])
         self.hidden_states = range(self.num_hidden_states)
         self.observed_states = range(self.num_observed_states)
-
-    def get_internal_hmm(self):
-        """
-        Returns internal_hmm
-        """
-        return self
 
     def generate_hidden(self, time_steps):
         """

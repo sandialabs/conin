@@ -2,7 +2,8 @@ from conin.exceptions import InvalidInputError, InsufficientSolutionsError
 from conin.hmm import HiddenMarkovModel
 from conin.hmm.oracle_chmm import Oracle_CHMM
 
-from .viterbi import viterbi, a_star
+from .viterbi import viterbi
+from .a_star import a_star
 
 
 class Inference:
