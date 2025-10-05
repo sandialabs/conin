@@ -1,5 +1,5 @@
 from conin.exceptions import InvalidInputError, InsufficientSolutionsError
-from conin.hmm import HMM
+from conin.hmm import HiddenMarkovModel
 from conin.hmm.oracle_chmm import Oracle_CHMM
 
 from .viterbi import viterbi, a_star
@@ -31,7 +31,7 @@ class Inference:
         Raises:
             InvalidInputError: If statistical_model is not hmm or constrained hmm
         """
-        if isinstance(statistical_model, HMM) or isinstance(
+        if isinstance(statistical_model, HiddenMarkovModel) or isinstance(
             statistical_model, Oracle_CHMM
         ):
             self.statistical_model = statistical_model
@@ -87,7 +87,7 @@ class Inference:
         if (
             self.oracle_based
             and self.num_solutions == 1
-            and isinstance(self.statistical_model, HMM)
+            and isinstance(self.statistical_model, HiddenMarkovModel)
         ):
             return self._viterbi(observed)
 
@@ -105,7 +105,7 @@ class Inference:
 
         elif (
             self.oracle_based
-            and isinstance(self.statistical_model, HMM)
+            and isinstance(self.statistical_model, HiddenMarkovModel)
             and self.num_solutions > 1
         ):
             return self._a_star(observed)

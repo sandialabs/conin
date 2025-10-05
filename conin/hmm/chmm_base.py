@@ -1,8 +1,8 @@
 from conin.exceptions import InvalidInputError
-from conin.hmm import HMM, Statistical_Model
+from conin.hmm import HiddenMarkovModel, Statistical_Model
 
 
-class CHMM_Base(Statistical_Model):
+class ConstrainedHiddenMarkovModel(Statistical_Model):
     """
     A class to represent a base Hidden Markov Model (HMM).
     """
@@ -14,12 +14,9 @@ class CHMM_Base(Statistical_Model):
         Parameters:
             hmm (HMM, optional): An instance of the HMM class (default is None, which initializes a new HMM instance).
         """
-        self.hmm = HMM() if hmm is None else hmm
+        self.hmm = HiddenMarkovModel() if hmm is None else hmm
 
     def get_hmm(self):
-        """
-        Returns hmm
-        """
         return self.hmm
 
     def get_internal_hmm(self):
@@ -58,7 +55,7 @@ class CHMM_Base(Statistical_Model):
             and emission_probs is not None
         ):
             # If dictionaries are provided, create an HMM object and load it
-            hmm = HMM()
+            hmm = HiddenMarkovModel()
             hmm.load_model(
                 start_probs=start_probs,
                 transition_probs=transition_probs,
@@ -157,7 +154,9 @@ class CHMM_Base(Statistical_Model):
         Raises:
             InvalidInputError: If time_steps is negative.
         """
-        raise NotImplementedError("CHMM_Base.generate_hidden() is not implemented")
+        raise NotImplementedError(
+            "ConstrainedHiddenMarkovModel.generate_hidden() is not implemented"
+        )
 
     def generate_observed_from_hidden(self, hidden):
         """
@@ -171,7 +170,7 @@ class CHMM_Base(Statistical_Model):
         """
         if not self.is_feasible(hidden):
             raise InvalidInputError(
-                "CHMM_Base.generate_observed_from_hidden() - The sequence of hidden states is not feasible."
+                "ConstrainedHiddenMarkovModel.generate_observed_from_hidden() - The sequence of hidden states is not feasible."
             )
         internal_hidden = [self.hmm.hidden_to_internal[h] for h in hidden]
         internal_observed = self.hmm.internal_hmm.generate_observed_from_hidden(
@@ -202,7 +201,9 @@ class CHMM_Base(Statistical_Model):
         """
         Compute the log-probability of the observations given the hidden state.
         """
-        raise NotImplementedError("CHMM_Base.log_probability() is not implemented")
+        raise NotImplementedError(
+            "ConstrainedHiddenMarkovModel.log_probability() is not implemented"
+        )
 
     def is_feasible(self, seq):
         """
@@ -214,4 +215,6 @@ class CHMM_Base(Statistical_Model):
         Returns:
             bool: True if the sequence satisfies all constraints, False otherwise.
         """
-        raise NotImplementedError("CHMM_Base.is_feasible() is not implemented")
+        raise NotImplementedError(
+            "ConstrainedHiddenMarkovModel.is_feasible() is not implemented"
+        )

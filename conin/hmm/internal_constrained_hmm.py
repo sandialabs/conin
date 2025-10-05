@@ -1,6 +1,7 @@
 from conin.exceptions import InvalidInputError
 from conin.constraint import Constraint
-from conin.hmm import Internal_HMM
+
+# from conin.hmm import HMM
 
 
 class Internal_Oracle_CHMM:
@@ -9,7 +10,7 @@ class Internal_Oracle_CHMM:
         Constructs all the necessary attributes for the ConstrainedHMM object.
 
         Parameters:
-            internal_hmm (Internal_HMM): An instance of the Internal_HMM class (default is None, which initializes a new HMM instance).
+            internal_hmm (HMM): An instance of the HMM class (default is None, which initializes a new HMM instance).
             constraints (list, optional): A list of constraints to be applied to the HMM (default is an empty list).
         """
         self.internal_hmm = internal_hmm

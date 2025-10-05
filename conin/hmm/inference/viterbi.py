@@ -4,7 +4,7 @@ import numpy as np
 import munch
 import time
 
-from conin.hmm import HMM
+from conin.hmm import HiddenMarkovModel
 from conin.hmm import hmm_application
 
 from dataclasses import dataclass, field
@@ -230,7 +230,7 @@ def a_star(
                     or chmm.internal_constrained_hmm.partial_is_feasible(
                         T=time_steps, seq=seq
                     )
-                ) or (isinstance(statistical_model, HMM)):
+                ) or (isinstance(statistical_model, HiddenMarkovModel)):
                     tempGScore = (
                         currentGScore
                         - log_transition_mat[h1, h2]

@@ -21,7 +21,7 @@ class Test_Oracle_CHMM:
     def test_load_model2(self):
         chmm = tc.create_chmm1()
         _chmm = Oracle_CHMM()
-        _hmm = HMM()
+        _hmm = HiddenMarkovModel()
         _hmm.load_model(
             start_probs=chmm.hmm.get_start_probs(),
             emission_probs=chmm.hmm.get_emission_probs(),
@@ -50,7 +50,7 @@ class Test_Oracle_CHMM:
 
     def test_load_model_failure2(self):
         _chmm = Oracle_CHMM()
-        _hmm = HMM()
+        _hmm = HiddenMarkovModel()
         with pytest.raises(InvalidInputError):
             _hmm.load_model(
                 start_probs={"h0": 0.4, "h1": 0.6},

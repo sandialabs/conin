@@ -1,4 +1,4 @@
-from conin.hmm import HMM
+from conin.hmm import HiddenMarkovModel
 
 # TODO also allows for hidden and observed instead of simulations
 
@@ -114,7 +114,7 @@ def supervised_learning(
     # pprint.pprint(transition_probs)
     # print()
     # pprint.pprint(emission_probs)
-    hmm = HMM()
+    hmm = HiddenMarkovModel()
     hmm.load_model(
         start_probs=start_probs,
         transition_probs=transition_probs,

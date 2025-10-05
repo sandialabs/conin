@@ -5,7 +5,7 @@ import numpy as np
 import munch
 
 from conin.exceptions import InvalidInputError
-from conin.hmm import HMM, Statistical_Model
+from conin.hmm import HiddenMarkovModel
 from . import chmm_base
 
 import pyomo.environ as pyo
@@ -110,7 +110,7 @@ def _create_index_sets(*, hmm, observations):
     return index_sets
 
 
-class Algebraic_CHMM(chmm_base.CHMM_Base):
+class Algebraic_CHMM(chmm_base.ConstrainedHiddenMarkovModel):
     """
     A class to represent a Hidden Markov Model (HMM) with optimization equations.
     """
@@ -163,7 +163,7 @@ class Algebraic_CHMM(chmm_base.CHMM_Base):
             and emission_probs is not None
         ):
             # If dictionaries are provided, create an HMM object and load it
-            hmm = HMM()
+            hmm = HiddenMarkovModel()
             hmm.load_model(
                 start_probs=start_probs,
                 transition_probs=transition_probs,

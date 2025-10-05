@@ -1,14 +1,15 @@
 # import copy
 from conin.exceptions import InvalidInputError
 from conin.constraint import Constraint
-from conin.hmm import HMM
+
+# from conin.hmm import HiddenMarkovModel
 from . import internal_constrained_hmm
 from . import chmm_base
 
 # TODO I Really don't like this initalization and load logic
 
 
-class Oracle_CHMM(chmm_base.CHMM_Base):
+class Oracle_CHMM(chmm_base.ConstrainedHiddenMarkovModel):
     """
     A class to represent a Hidden Markov Model (HMM) with additional constraints.
     """

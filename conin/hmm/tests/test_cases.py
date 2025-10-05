@@ -25,7 +25,7 @@ def create_hmm0():
         ("h1", "o0"): 0,
         ("h1", "o1"): 1,
     }
-    hmm = conin.hmm.HMM()
+    hmm = conin.hmm.HiddenMarkovModel()
     hmm.load_model(
         start_probs=start_probs,
         transition_probs=transition_probs,
@@ -49,7 +49,7 @@ def create_hmm1():
         ("h1", "o0"): 0.4,
         ("h1", "o1"): 0.6,
     }
-    hmm = conin.hmm.HMM()
+    hmm = conin.hmm.HiddenMarkovModel()
     hmm.load_model(
         start_probs=start_probs,
         transition_probs=transition_probs,
@@ -77,7 +77,7 @@ def create_hmm2():
         ("h1", "o1"): 0.6,
         ("h2", "o2"): 1.0,
     }
-    hmm = conin.hmm.HMM()
+    hmm = conin.hmm.HiddenMarkovModel()
     hmm.load_model(
         start_probs=start_probs,
         transition_probs=transition_probs,

@@ -44,7 +44,7 @@ class Num_Zeros(HMMApplication):
                 (1, 0): prob_error,
                 (1, 1): 1 - prob_error,
             }
-            hmm = HMM()
+            hmm = HiddenMarkovModel()
             hmm.load_model(
                 start_probs=start_probs,
                 transition_probs=transition_probs,
@@ -133,7 +133,7 @@ class Test_Application_CHMM:
         assert app.hmm == app.algebraic.hmm
 
     def test_hmm_equality_setter(self, app):
-        hmm = HMM()
+        hmm = HiddenMarkovModel()
         hmm.load_model(
             emission_probs={
                 (0, 0): 0.6,

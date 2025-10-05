@@ -1,5 +1,5 @@
 import numpy as np
-from conin.hmm import HMM
+from conin.hmm import HiddenMarkovModel
 from conin.util import Util
 
 
@@ -16,6 +16,6 @@ def random_hmm(*, hidden_states, observed_states, seed=None):
         {(s, o): np.random.uniform() for s in hidden_states for o in observed_states}
     )
 
-    hmm = HMM()
+    hmm = HiddenMarkovModel()
     hmm.load_model(start_probs=S, transition_probs=T, emission_probs=E)
     return hmm
