@@ -3,7 +3,7 @@ import pyomo.opt
 
 from conin.util import try_import
 from conin.dynamic_bayesian_network import (
-    create_DDBN_map_query_model,
+    create_DDBN_map_query_pyomo_model,
     optimize_map_query_model,
 )
 
@@ -30,7 +30,7 @@ def test_simple0_ALL_conin():
     G = examples.simple0_DDBN_conin()
     q = {("Z", 0): 1, ("Z", 1): 0}
 
-    model = create_DDBN_map_query_model(pgm=G)  # variables=None, evidence=None
+    model = create_DDBN_map_query_pyomo_model(pgm=G)  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
@@ -45,7 +45,7 @@ def test_simple0_DDBN1_ALL_pgmpy():
     q = {("Z", 0): 1, ("Z", 1): 0}
 
     G = convert_pgmpy_to_conin(G)
-    model = create_DDBN_map_query_model(pgm=G)  # variables=None, evidence=None
+    model = create_DDBN_map_query_pyomo_model(pgm=G)  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
@@ -60,7 +60,7 @@ def test_simple0_DDBN2_ALL_pgmpy():
     q = {("Z", 0): 1, ("Z", 1): 0}
 
     G = convert_pgmpy_to_conin(G)
-    model = create_DDBN_map_query_model(pgm=G)  # variables=None, evidence=None
+    model = create_DDBN_map_query_pyomo_model(pgm=G)  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
@@ -85,7 +85,7 @@ def test_simple1_ALL_conin():
         ("B", 1): 0,
     }
 
-    model = create_DDBN_map_query_model(pgm=G)  # variables=None, evidence=None
+    model = create_DDBN_map_query_pyomo_model(pgm=G)  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
@@ -107,7 +107,7 @@ def test_simple1_ALL_pgmpy():
     }
 
     G = convert_pgmpy_to_conin(G)
-    model = create_DDBN_map_query_model(pgm=G)  # variables=None, evidence=None
+    model = create_DDBN_map_query_pyomo_model(pgm=G)  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
@@ -127,7 +127,7 @@ def test_simple1_B_conin():
     }
 
     with pytest.raises(RuntimeError):
-        model = create_DDBN_map_query_model(
+        model = create_DDBN_map_query_pyomo_model(
             pgm=G, evidence={("A", 0): 1}
         )  # variables=None, evidence=None
         results = optimize_map_query_model(model, solver=mip_solver)
@@ -151,7 +151,7 @@ def test_simple1_B_pgmpy():
 
     G = convert_pgmpy_to_conin(G)
     with pytest.raises(RuntimeError):
-        model = create_DDBN_map_query_model(
+        model = create_DDBN_map_query_pyomo_model(
             pgm=G, evidence={("A", 0): 1}
         )  # variables=None, evidence=None
         results = optimize_map_query_model(model, solver=mip_solver)
@@ -173,7 +173,8 @@ def test_simple1_ALL_constrained_conin():
         ("B", 1): 1,
     }
 
-    results = optimize_map_query_model(cpgm.create_map_query_model(), solver=mip_solver)
+    model = create_DDBN_map_query_pyomo_model(pgm=cpgm)
+    results = optimize_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
 
@@ -193,8 +194,8 @@ def test_simple1_ALL_constrained_pgmpy():
         ("B", 1): 1,
     }
 
-    # cpgm = convert_pgmpy_to_conin(cpgm)
-    results = optimize_map_query_model(cpgm.create_map_query_model(), solver=mip_solver)
+    model = create_DDBN_map_query_pyomo_model(pgm=cpgm)
+    results = optimize_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
 
@@ -218,7 +219,7 @@ def test_simple2_ALL_conin():
         ("B", 1): 0,
     }
 
-    model = create_DDBN_map_query_model(pgm=G)  # variables=None, evidence=None
+    model = create_DDBN_map_query_pyomo_model(pgm=G)  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
@@ -240,7 +241,7 @@ def test_simple2_ALL_pgmpy():
     }
 
     G = convert_pgmpy_to_conin(G)
-    model = create_DDBN_map_query_model(pgm=G)  # variables=None, evidence=None
+    model = create_DDBN_map_query_pyomo_model(pgm=G)  # variables=None, evidence=None
     results = optimize_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
@@ -260,7 +261,7 @@ def test_simple2_B_conin():
     }
 
     with pytest.raises(RuntimeError):
-        model = create_DDBN_map_query_model(
+        model = create_DDBN_map_query_pyomo_model(
             pgm=G, evidence={("A", 0): 1}
         )  # variables=None, evidence=None
         results = optimize_map_query_model(model, solver=mip_solver)
@@ -284,7 +285,7 @@ def test_simple2_B_pgmpy():
 
     G = convert_pgmpy_to_conin(G)
     with pytest.raises(RuntimeError):
-        model = create_DDBN_map_query_model(
+        model = create_DDBN_map_query_pyomo_model(
             pgm=G, evidence={("A", 0): 1}
         )  # variables=None, evidence=None
         results = optimize_map_query_model(model, solver=mip_solver)
@@ -306,7 +307,8 @@ def test_simple2_ALL_constrained_conin():
         ("B", 1): 1,
     }
 
-    results = optimize_map_query_model(cpgm.create_map_query_model(), solver=mip_solver)
+    model = create_DDBN_map_query_pyomo_model(pgm=cpgm)
+    results = optimize_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
 
@@ -326,6 +328,6 @@ def test_simple2_ALL_constrained_pgmpy():
         ("B", 1): 1,
     }
 
-    # cpgm = convert_pgmpy_to_conin(cpgm)
-    results = optimize_map_query_model(cpgm.create_map_query_model(), solver=mip_solver)
+    model = create_DDBN_map_query_pyomo_model(pgm=cpgm)
+    results = optimize_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value

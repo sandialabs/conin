@@ -1,11 +1,13 @@
 import warnings
+import munch
 from pyomo.common.timing import TicTocTimer
 
 # from conin.util import try_import
-from conin.markov_network import create_MN_map_query_model, DiscreteMarkovNetwork
+from conin.markov_network import create_MN_map_query_pyomo_model, DiscreteMarkovNetwork
+from .model import ConstrainedDiscreteBayesianNetwork
 
 
-def create_BN_map_query_model(
+def create_BN_map_query_pyomo_model(
     *,
     pgm,
     variables=None,
@@ -14,11 +16,34 @@ def create_BN_map_query_model(
     timing=False,
     **options,
 ):
+    """Create a MAP query model.
+
+    Parameters
+    ----------
+    variables : list, optional
+        Nodes for which to compute the MAP estimate.
+    evidence : dict, optional
+        Observed node assignments.
+    timing : bool, optional
+        Whether to collect timing information.
+    var_index_map : dict, optional
+        Dictionary mapping variable indices to Pyomo variable data objects
+    **options : dict, optional
+        Additional keyword arguments forwarded to
+        :func:`create_BN_map_query_model`.
+
+    Returns
+    -------
+    conin.bayesian_network.inference.BNMapQueryModel
+        Constrained MAP query model.
+    """
     if timing:
         timer = TicTocTimer()
         timer.tic("create_BN_map_query_model - START")
     prune_network = options.pop("prune_network", False)
     create_MN = options.pop("create_MN", False)
+
+    pgm_ = pgm.pgm if isinstance(pgm, ConstrainedDiscreteBayesianNetwork) else pgm
 
     if prune_network:
         """
@@ -41,9 +66,9 @@ def create_BN_map_query_model(
         # if timing:
         #    timer.toc("Created pruned model")
 
-    if variables and len(variables) == len(pgm.nodes):
+    if variables and len(variables) == len(pgm_.nodes):
         assert set(variables) == set(
-            pgm.nodes
+            pgm_.nodes
         ), "Mismatch in the specified variables and the nodes in the model"
         # We continue with 'variables' set to None, which is a special case recognized below
         variables = None
@@ -57,7 +82,7 @@ def create_BN_map_query_model(
         raise RuntimeError(
             "CONIN does not currently support the generation of discrete Markov networks using variable elimination to prune unspecified variables."
         )
-        MN = pgm.to_markov_model()
+        MN = pgm_.to_markov_model()
         if timing:
             timer.toc("Created Markov network from Bayesian network")
     else:
@@ -66,18 +91,24 @@ def create_BN_map_query_model(
         # create the skeleton of a model that is used to setup the integer program.
         #
         MN = DiscreteMarkovNetwork()
-        MN.states = pgm.states
-        MN.factors = [cpd.to_factor() for cpd in pgm.cpds]
+        MN.states = pgm_.states
+        MN.factors = [cpd.to_factor() for cpd in pgm_.cpds]
         if timing:
             timer.toc("Created skeleton Markov network")
 
-    model = create_MN_map_query_model(
+    model = create_MN_map_query_pyomo_model(
         pgm=MN,
         variables=variables,
         evidence=evidence,
         var_index_map=var_index_map,
         timing=timing,
     )
+
+    if isinstance(pgm, ConstrainedDiscreteBayesianNetwork) and pgm.constraints:
+        data = munch.Munch(variables=variables, evidence=evidence)
+        for func in pgm.constraints:
+            model = func(model, data)
+
     if timing:
         timer.toc("create_BN_map_query_model - STOP")
     return model

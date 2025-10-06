@@ -6,7 +6,7 @@ import pyomo.opt
 
 from conin.util import try_import
 from conin.markov_network import (
-    create_MN_map_query_model,
+    create_MN_map_query_pyomo_model,
     optimize_map_query_model,
 )
 from conin.markov_network.factor_repn import State
@@ -23,7 +23,7 @@ mip_solver = mip_solver[0] if mip_solver else None
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_ABC_conin():
     pgm = examples.ABC_conin()
-    model = create_MN_map_query_model(pgm=pgm)
+    model = create_MN_map_query_pyomo_model(pgm=pgm)
     results = optimize_map_query_model(model, solver=mip_solver)
     assert results.solution.variable_value == {"A": 2, "B": 2, "C": 1}
 
@@ -33,7 +33,7 @@ def test_ABC_conin():
 def test_ABC_pgmpy():
     pgm = examples.ABC_pgmpy()
     pgm = convert_pgmpy_to_conin(pgm)
-    model = create_MN_map_query_model(pgm=pgm)
+    model = create_MN_map_query_pyomo_model(pgm=pgm)
     results = optimize_map_query_model(model, solver=mip_solver)
     assert results.solution.variable_value == {"A": 2, "B": 2, "C": 1}
 
@@ -42,7 +42,7 @@ def test_ABC_pgmpy():
 def Xtest_ABC3_conin():
     pgm = examples.ABC_conin()
     # pgm = convert_pgmpy_to_conin(pgm)
-    model = create_MN_map_query_model(pgm=pgm, variables=["A"])
+    model = create_MN_map_query_pyomo_model(pgm=pgm, variables=["A"])
     results = optimize_map_query_model(model, solver=mip_solver)
     assert results.solution.variable_value == {"A": 2}
 
@@ -51,7 +51,7 @@ def Xtest_ABC3_conin():
 def Xtest_ABC4_conin():
     pgm = examples.ABC_conin()
     # pgm = convert_pgmpy_to_conin(pgm)
-    model = create_MN_map_query_model(pgm=pgm, variables=["B"])
+    model = create_MN_map_query_pyomo_model(pgm=pgm, variables=["B"])
     results = optimize_map_query_model(model, solver=mip_solver)
     assert results.solution.variable_value == {"B": 2}
 
@@ -60,7 +60,7 @@ def Xtest_ABC4_conin():
 def Xtest_ABC5_conin():
     pgm = examples.ABC_conin()
     # pgm = convert_pgmpy_to_conin(pgm)
-    model = create_MN_map_query_model(pgm=pgm, variables=["C"])
+    model = create_MN_map_query_pyomo_model(pgm=pgm, variables=["C"])
     results = optimize_map_query_model(model, solver=mip_solver)
     assert results.solution.variable_value == {"C": 1}
 
@@ -69,7 +69,7 @@ def Xtest_ABC5_conin():
 def Xtest_ABC6_conin():
     pgm = examples.ABC_conin()
     # pgm = convert_pgmpy_to_conin(pgm)
-    model = create_MN_map_query_model(pgm=pgm, variables=["C"], evidence={"B": 0})
+    model = create_MN_map_query_pyomo_model(pgm=pgm, variables=["C"], evidence={"B": 0})
     results = optimize_map_query_model(model, solver=mip_solver)
     assert results.solution.variable_value == {"C": 1}
 
@@ -89,7 +89,7 @@ def test_ABC_constrained():
 
     # Explicit setup of constraints, which requires indexing using State() objects
     pgm = examples.ABC_conin()
-    model = create_MN_map_query_model(pgm=pgm)
+    model = create_MN_map_query_pyomo_model(pgm=pgm)
 
     def diff_(M, s):
         s = State(s)
@@ -102,5 +102,7 @@ def test_ABC_constrained():
 
     # Setup constraints using the ConstrainedDiscreteMarkovNetwork class, which does not require State() functions
     cpgm = examples.ABC_constrained_conin()
-    results = optimize_map_query_model(cpgm.create_map_query_model(), solver=mip_solver)
+    results = optimize_map_query_model(
+        create_MN_map_query_pyomo_model(pgm=cpgm), solver=mip_solver
+    )
     assert results.solution.variable_value == {"A": 0, "B": 2, "C": 1}

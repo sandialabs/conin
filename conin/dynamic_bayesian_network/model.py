@@ -1,6 +1,5 @@
 import munch
 
-from conin.dynamic_bayesian_network.inference import create_DDBN_map_query_model
 from conin.dynamic_bayesian_network.expr import ExpressionVariable
 
 
@@ -151,21 +150,15 @@ class DynamicDiscreteBayesianNetwork:
         """
         self._cpds = [cpd.normalize(self) for cpd in cpd_list]
 
-    def create_map_query_model(self, *, start=0, stop=1, variables=None, evidence=None):
-        return create_DDBN_map_query_model(
-            pgm=self,
-            start=start,
-            stop=stop,
-            variables=variables,
-            evidence=evidence,
-        )
-
 
 class ConstrainedDynamicDiscreteBayesianNetwork:
 
     def __init__(self, pgm, constraints=None):
         self.pgm = pgm
-        self.constraint_functor = constraints
+        if constraints:
+            self._constraints = constraints
+        else:
+            self._constraints = []
 
     def check_model(self):
         self.pgm.check_model()
@@ -174,27 +167,22 @@ class ConstrainedDynamicDiscreteBayesianNetwork:
         return self.pgm.nodes()
 
     @property
-    def constraints(self, constraint_functor):
-        self.constraint_functor = constraint_functor
+    def constraints(self):
+        """Get a list of constraint functors.
 
-    def create_constraints(self, model, data):
-        if self.constraint_functor is not None:
-            model = self.constraint_functor(model, data)
-        return model
+        :return: The constraint functor or ``None`` if not set.
+        :rtype: callable | None
+        """
+        return self._constraints
 
-    def create_map_query_model(self, *, start=0, stop=1, variables=None, evidence=None):
-        model = create_DDBN_map_query_model(
-            pgm=self.pgm,
-            start=start,
-            stop=stop,
-            variables=variables,
-            evidence=evidence,
-        )
-        self.data = munch.Munch(
-            start=start,
-            stop=stop,
-            variables=variables,
-            evidence=evidence,
-            T=list(range(start, stop + 1)),
-        )
-        return self.create_constraints(model, self.data)
+    @constraints.setter
+    def constraints(self, constraint_list):
+        """Set a list of functions that are used to define model constraints.
+
+        Parameters
+        ----------
+        constraint_list : List[Callable]
+            List of functions that generate model constraints.
+        """
+        assert type(constraint_list) is list
+        self._constraints = constraint_list

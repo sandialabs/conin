@@ -5,14 +5,14 @@ import pyomo.opt
 
 from conin.util import try_import
 from conin.markov_network import (
-    create_MN_map_query_model,
+    create_MN_map_query_pyomo_model,
     optimize_map_query_model,
 )
 from conin.markov_network.factor_repn import (
     extract_factor_representation,
     State,
 )
-from conin.markov_network.inference import (
+from conin.markov_network.inference_pyomo import (
     create_MN_map_query_model_from_factorial_repn,
 )
 
@@ -76,7 +76,7 @@ def test_example6():
         assert J == J_
         assert v == v_
         assert w == w_
-        model = create_MN_map_query_model(pgm=pgm)
+        model = create_MN_map_query_pyomo_model(pgm=pgm)
         results = optimize_map_query_model(model, solver=mip_solver)
         assert results.solution.variable_value == {"A": 0, "B": 1}
 
@@ -88,7 +88,7 @@ def test_example6():
         assert J == J_
         assert v == v_
         assert w == w_
-        model = create_MN_map_query_model(pgm=pgm)
+        model = create_MN_map_query_pyomo_model(pgm=pgm)
         results = optimize_map_query_model(model, solver=mip_solver)
         assert results.solution.variable_value == {"A": 0, "B": 1}
 
