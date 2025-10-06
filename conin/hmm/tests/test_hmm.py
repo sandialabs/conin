@@ -189,11 +189,11 @@ class Test_HMM1:
 
     def test_get_hidden_states(self):
         hmm = tc.create_hmm1()
-        assert hmm.get_hidden_states() == {"h0", "h1"}
+        assert hmm.get_hidden_states() == ["h0", "h1"]
 
     def test_get_observable_states(self):
         hmm = tc.create_hmm1()
-        assert hmm.get_observable_states() == {"o0", "o1"}
+        assert hmm.get_observable_states() == ["o0", "o1"]
 
     def test_get_start_probs(self):
         hmm = tc.create_hmm1()

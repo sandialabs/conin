@@ -123,7 +123,7 @@ class Inference:
 
     def _a_star(self, observed):
         return a_star(
-            statistical_model=self.statistical_model,
+            hmm=self.statistical_model,
             num_solutions=self.num_solutions,
             observed=observed,
         )

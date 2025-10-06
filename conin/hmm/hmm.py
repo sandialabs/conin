@@ -236,7 +236,7 @@ class HiddenMarkovModel(Statistical_Model):
             num_hidden_states (int): Number of hidden states.
             num_observed_states (int): Number of observed states.
         """
-        self.internal_hmm = None
+        self._hmm = None
         self.start_vec = []
         self.transition_mat = []
         self.emission_mat = []
@@ -263,7 +263,20 @@ class HiddenMarkovModel(Statistical_Model):
         """
         Returns internal hmm
         """
-        return self.internal_hmm.get_internal_hmm()
+        return self._hmm
+
+    @property
+    def internal_hmm(self):
+        return self._hmm
+    
+    @property
+    def hmm(self):
+        return self._hmm
+    
+    @property
+    def hidden_states(self):
+        return self.hidden_to_external
+        
 
     def load_model(self, *, start_probs, transition_probs, emission_probs):
         """
@@ -277,7 +290,7 @@ class HiddenMarkovModel(Statistical_Model):
         Raises:
             InvalidInputError: If any probabilities are negative or if the probabilities do not sum to 1.
         """
-        self.internal_hmm = None
+        self._hmm = None
         self.start_vec = []
         self.transition_mat = []
         self.emission_mat = []
@@ -350,7 +363,7 @@ class HiddenMarkovModel(Statistical_Model):
                 self.observed_to_internal[o]
             ] = prob
 
-        self.internal_hmm = HMM(
+        self._hmm = HMM(
             start_vec=self.start_vec,
             transition_mat=self.transition_mat,
             emission_mat=self.emission_mat,
@@ -396,14 +409,14 @@ class HiddenMarkovModel(Statistical_Model):
         Returns:
             set: hidden states
         """
-        return set(self.hidden_to_external)
+        return self.hidden_to_external
 
     def get_observable_states(self):
         """
         Returns:
             set: observable states
         """
-        return set(self.observed_to_external)
+        return self.observed_to_external
 
     def get_start_probs(self):
         """
@@ -497,7 +510,7 @@ class HiddenMarkovModel(Statistical_Model):
         Returns:
             list: Feasible sequence of hidden states (labels).
         """
-        internal_hidden = self.internal_hmm.generate_hidden(time_steps)
+        internal_hidden = self._hmm.generate_hidden(time_steps)
         return [self.hidden_to_external[h] for h in internal_hidden]
 
     def generate_hidden_until_state(self, h):
@@ -510,7 +523,7 @@ class HiddenMarkovModel(Statistical_Model):
         Returns:
             list: Feasible sequence of hidden states, where last value is h
         """
-        internal_hidden = self.internal_hmm.generate_hidden_until_state(
+        internal_hidden = self._hmm.generate_hidden_until_state(
             self.hidden_to_internal[h]
         )
         return [self.hidden_to_external[h] for h in internal_hidden]
@@ -526,7 +539,7 @@ class HiddenMarkovModel(Statistical_Model):
             list: Observations generated from the hidden states.
         """
         internal_hidden = [self.hidden_to_internal[h] for h in hidden]
-        internal_observed = self.internal_hmm.generate_observed_from_hidden(
+        internal_observed = self._hmm.generate_observed_from_hidden(
             internal_hidden
         )
         return [self.observed_to_external[o] for o in internal_observed]
@@ -541,7 +554,7 @@ class HiddenMarkovModel(Statistical_Model):
         Returns:
             list: Observations generated from the hidden states.
         """
-        internal_observed = self.internal_hmm.generate_observed(time_steps)
+        internal_observed = self._hmm.generate_observed(time_steps)
         return [self.observed_to_external[o] for o in internal_observed]
 
     def log_probability(self, observations, hidden):

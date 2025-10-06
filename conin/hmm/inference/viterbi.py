@@ -109,3 +109,4 @@ def viterbi(*, observed, hmm):
         solutions=solutions,
         termination_condition=ans_.termination_condition,
     )
+

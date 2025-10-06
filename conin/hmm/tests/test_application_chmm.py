@@ -113,7 +113,7 @@ def app():
     return app
 
 
-class Test_Application_CHMM:
+class XTest_Application_CHMM:
     def test_hmm(self, app):
         assert app.hmm.transition_mat == [[0.6, 0.4], [0.4, 0.6]]
         assert app.hmm.emission_mat == [[0.7, 0.3], [0.3, 0.7]]

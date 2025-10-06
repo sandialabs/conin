@@ -109,14 +109,16 @@ def create_chmm1():
         func=lambda seq: seq.count("h0") < 13,
         partial_func=lambda T, seq: seq.count("h0") < 13,
     )
-    chmm = conin.hmm.Oracle_CHMM()
-    chmm.load_model(
+    hmm = conin.hmm.HiddenMarkovModel()
+    hmm.load_model(
         start_probs=start_probs,
         transition_probs=transition_probs,
         emission_probs=emission_probs,
     )
+    chmm = conin.hmm.ConstrainedHiddenMarkovModel(hmm=hmm)
     chmm.add_constraint(num_zeros_greater_than_nine)
     chmm.add_constraint(num_zeros_less_than_thirteen)
+    chmm.initialize_chmm()
     return chmm
 
 

@@ -4,7 +4,7 @@ import numpy as np
 import munch
 import time
 
-from conin.hmm import HiddenMarkovModel
+from conin.hmm import HiddenMarkovModel, HMM
 from conin.hmm import hmm_application
 
 from dataclasses import dataclass, field
@@ -22,11 +22,12 @@ class HeapItem:
         yield self.seq
 
 
-def a_star(
+def a_star_(
     *,
-    statistical_model,
-    num_solutions=1,
     observed,
+    chmm=None,
+    hmm=None,
+    num_solutions=1,
     max_iterations=None,
     max_time=None,
     debug=False,
@@ -45,43 +46,45 @@ def a_star(
     start_time = time.time()
 
     # Initalize variables
-    hmm = statistical_model.get_hmm()
-    internal_hmm = statistical_model.get_internal_hmm()
+    #hmm = statistical_model.get_hmm()
+    #internal_hmm = statistical_model.get_internal_hmm()
     time_steps = len(observed)
-    internal_observed = [hmm.observed_to_internal[o] for o in observed]
+    #internal_observed = [hmm.observed_to_internal[o] for o in observed]
 
-    if isinstance(statistical_model, hmm_application.HMMApplication):
-        statistical_model.generate_oracle_constraints()
+    #if isinstance(hmm, hmm_application.HMMApplication):
+    #    hmm.generate_oracle_constraints()
 
-    try:
-        chmm = statistical_model.get_constrained_hmm()
-    except BaseException:
-        chmm = None
+    if chmm:
+        hmm = chmm.hmm
+    #try:
+    #    chmm = hmm.get_constrained_hmm()
+    #except BaseException:
+    #    chmm = None
 
     # Precompute log probabilities for emission and transmission matrices
     log_emission_mat = {
-        (h1, o): np.log(internal_hmm.emission_mat[h1][o])
-        for h1 in internal_hmm.hidden_states
-        for o in internal_hmm.observed_states
-        if internal_hmm.emission_mat[h1][o] > 0
+        (h1, o): np.log(hmm.emission_mat[h1][o])
+        for h1 in hmm.hidden_states
+        for o in hmm.observed_states
+        if hmm.emission_mat[h1][o] > 0
     }
     log_transition_mat = {
-        (h1, h2): np.log(internal_hmm.transition_mat[h1][h2])
-        for h1 in internal_hmm.hidden_states
-        for h2 in internal_hmm.hidden_states
-        if internal_hmm.transition_mat[h1][h2] > 0
+        (h1, h2): np.log(hmm.transition_mat[h1][h2])
+        for h1 in hmm.hidden_states
+        for h2 in hmm.hidden_states
+        if hmm.transition_mat[h1][h2] > 0
     }
 
     # Precompute V[t][h] - The log-probability of the shortest path starting at time
     #       t in hidden state h
-    V = [[0 for h in internal_hmm.hidden_states] for t in range(time_steps)]
+    V = [[0 for h in hmm.hidden_states] for t in range(time_steps)]
     for t in range(time_steps - 2, -1, -1):
-        obs = internal_observed[t + 1]
-        for h1 in internal_hmm.hidden_states:
+        obs = observed[t + 1]
+        for h1 in hmm.hidden_states:
             temp = np.inf
-            for h2 in internal_hmm.hidden_states:
-                if (internal_hmm.transition_mat[h1][h2] != 0) and (
-                    internal_hmm.emission_mat[h2][obs] != 0
+            for h2 in hmm.hidden_states:
+                if (hmm.transition_mat[h1][h2] != 0) and (
+                    hmm.emission_mat[h2][obs] != 0
                 ):
                     temp = min(
                         temp,
@@ -99,13 +102,13 @@ def a_star(
     openSet = []
 
     # Initialize the heap with the starting states
-    for h in internal_hmm.hidden_states:
+    for h in hmm.hidden_states:
         tempGScore = np.inf
-        if (internal_hmm.start_vec[h] > 0) and (
-            internal_hmm.emission_mat[h][internal_observed[0]] > 0
+        if (hmm.start_vec[h] > 0) and (
+            hmm.emission_mat[h][observed[0]] > 0
         ):
             tempGScore = (
-                -np.log(hmm.start_vec[h]) - log_emission_mat[h, internal_observed[0]]
+                -np.log(hmm.start_vec[h]) - log_emission_mat[h, observed[0]]
             )
             # Use tuple here b/c Python doesn't hash a list
             gScore[(h,)] = tempGScore
@@ -122,8 +125,8 @@ def a_star(
 
         if t == time_steps:
             if chmm is None or chmm.internal_constrained_hmm.is_feasible(seq):
-                external_seq = [hmm.hidden_to_external[h] for h in seq]
-                output.append(munch.Munch(hidden=external_seq, log_likelihood=-val))
+                #external_seq = [hmm.hidden_to_external[h] for h in seq]
+                output.append(munch.Munch(hidden=seq, log_likelihood=-val))
                 if len(output) == num_solutions:
                     termination_condition = "ok"
                     break
@@ -133,11 +136,11 @@ def a_star(
         else:
             h1 = seq[t - 1]
             currentGScore = gScore[seq]
-            obs = internal_observed[t]
-            for h2 in internal_hmm.hidden_states:
+            obs = observed[t]
+            for h2 in hmm.hidden_states:
                 if (
-                    internal_hmm.emission_mat[h2][obs] == 0.0
-                    or internal_hmm.transition_mat[h1][h2] == 0.0
+                    hmm.emission_mat[h2][obs] == 0.0
+                    or hmm.transition_mat[h1][h2] == 0.0
                 ):
                     continue
                 if (
@@ -145,7 +148,7 @@ def a_star(
                     or chmm.internal_constrained_hmm.partial_is_feasible(
                         T=time_steps, seq=seq
                     )
-                ) or (isinstance(statistical_model, HiddenMarkovModel)):
+                ) or (isinstance(hmm, HMM)):
                     tempGScore = (
                         currentGScore
                         - log_transition_mat[h1, h2]
@@ -192,3 +195,49 @@ def a_star(
         termination_condition=termination_condition,
     )
     return ans
+
+
+def a_star(
+    *,
+    observed,
+    hmm,
+    **kwargs,
+    ):
+    if isinstance(hmm, HMM):
+        return a_star_(observed=observed, hmm=hmm, **kwargs)
+
+    elif isinstance(hmm, HiddenMarkovModel):
+        observed_ = [hmm.observed_to_internal[o] for o in observed]
+        hmm_ = hmm.internal_hmm
+        ans_ = a_star_(observed=observed_, hmm=hmm_, **kwargs)
+
+        # Convert internal indices back to external labels
+        solutions = []
+        for sol in ans_.solutions:
+            hidden = [hmm.hidden_to_external[h] for h in sol.hidden]
+            solutions.append(munch.Munch(hidden=hidden, log_likelihood=sol.log_likelihood))
+
+        return munch.Munch(
+            observations=observed,
+            solutions=solutions,
+            termination_condition=ans_.termination_condition,
+        )
+
+    else:   # CHMM
+        chmm = hmm
+        hmm = chmm.hmm
+        observed_ = [hmm.observed_to_internal[o] for o in observed]
+        hmm_ = hmm.internal_hmm
+        ans_ = a_star_(observed=observed_, chmm=chmm, **kwargs)
+
+        # Convert internal indices back to external labels
+        solutions = []
+        for sol in ans_.solutions:
+            hidden = [hmm.hidden_to_external[h] for h in sol.hidden]
+            solutions.append(munch.Munch(hidden=hidden, log_likelihood=sol.log_likelihood))
+
+        return munch.Munch(
+            observations=observed,
+            solutions=solutions,
+            termination_condition=ans_.termination_condition,
+        )

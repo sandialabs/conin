@@ -2,39 +2,36 @@
 from conin.exceptions import InvalidInputError
 from conin.constraint import Constraint
 
-# from conin.hmm import HiddenMarkovModel
-from . import internal_constrained_hmm
-from . import chmm_base
+#from . import internal_constrained_hmm
+from . import chmm
 
 # TODO I Really don't like this initalization and load logic
 
 
-class Oracle_CHMM(chmm_base.ConstrainedHiddenMarkovModel):
+class Oracle_CHMM(chmm.CHMM):
     """
     A class to represent a Hidden Markov Model (HMM) with additional constraints.
     """
 
-    def __init__(self, *, hmm=None, constraints=None):
+    def __init__(self, *, hmm=None, constraints=None, hidden_to_external={}):
         """
-        Constructs all the necessary attributes for the ConstrainedHMM object.
-
         Parameters:
-            hmm (HMM, optional): An instance of the HMM class (default is None, which initializes a new HMM instance).
-            constraints (list, optional): A list of constraints to be applied to the HMM (default is an empty list).
+            hmm (HMM, optional):
+                An instance of the HMM class (default is None,
+                which initializes a new HMM instance).
+            constraints (list, optional): 
+                A list of constraintsto be applied to the HMM (default is an empty list).
         """
         super().__init__(hmm=hmm)
+        if constraints:
+            self.constraints = [self.make_internal_constraint(c, hidden_to_external) for c in constraints]
 
-        if constraints is None:
-            self.constraints = []
-        else:
-            self.constraints = [con for con in constraints]
+        #self.load_internal_constrained_hmm()
 
-        self.load_internal_constrained_hmm()
-
-    def get_constrained_hmm(self):
+    def Xget_constrained_hmm(self):
         return self
 
-    def load_model(
+    def Xload_model(
         self, *, start_probs=None, transition_probs=None, emission_probs=None, hmm=None
     ):
         super().load_model(
@@ -45,7 +42,7 @@ class Oracle_CHMM(chmm_base.ConstrainedHiddenMarkovModel):
         )
         self.load_internal_constrained_hmm()
 
-    def load_internal_constrained_hmm(self):
+    def Xload_internal_constrained_hmm(self):
         """
         Creates self.internal_constrained_hmm
         """
@@ -59,7 +56,7 @@ class Oracle_CHMM(chmm_base.ConstrainedHiddenMarkovModel):
             constraints=internal_constraints,
         )
 
-    def make_internal_constraint(self, constraint):
+    def make_internal_constraint(self, constraint, hidden_to_external):
         """
         Makes an internal version of the constraint that works on indices rather than keys
 
@@ -69,25 +66,23 @@ class Oracle_CHMM(chmm_base.ConstrainedHiddenMarkovModel):
         Returns:
             Constraint: An internalized version of constraint
         """
-        if self.hmm is not None:
+        def internal_func(internal_seq):
+            external_seq = [hidden_to_external[h] for h in internal_seq]
+            return constraint(external_seq)
 
-            def internal_func(internal_seq):
-                external_seq = [self.hmm.hidden_to_external[h] for h in internal_seq]
-                return constraint(external_seq)
+        def internal_partial_func(T, internal_seq):
+            external_seq = [hidden_to_external[h] for h in internal_seq]
+            return constraint.partial_func(T, external_seq)
 
-            def internal_partial_func(T, internal_seq):
-                external_seq = [self.hmm.hidden_to_external[h] for h in internal_seq]
-                return constraint.partial_func(T, external_seq)
+        internal_constraint = Constraint(
+            func=internal_func,
+            name="internal_" + constraint.name,
+            partial_func=internal_partial_func,
+        )
 
-            internal_constraint = Constraint(
-                func=internal_func,
-                name="internal_" + constraint.name,
-                partial_func=internal_partial_func,
-            )
+        return internal_constraint
 
-            return internal_constraint
-
-    def add_constraint(self, constraint):
+    def Xadd_constraint(self, constraint):
         """
         Adds a new constraint to the HMM.
         Automatically updates internal constraints if possible.
@@ -100,7 +95,7 @@ class Oracle_CHMM(chmm_base.ConstrainedHiddenMarkovModel):
             self.make_internal_constraint(constraint)
         )
 
-    def set_constraints(self, constraints):
+    def Xset_constraints(self, constraints):
         """
         Resets the constraints
         Automatically updates internal constraints if possible.
@@ -113,7 +108,7 @@ class Oracle_CHMM(chmm_base.ConstrainedHiddenMarkovModel):
             self.add_constraint(constraint)
         self.load_internal_constrained_hmm()
 
-    def generate_hidden(self, time_steps):
+    def generate_hidden(self, time_steps, max_failures=1000):
         """
         Generates a sequence of hidden variables satisfying the internal constraints
 
@@ -126,35 +121,15 @@ class Oracle_CHMM(chmm_base.ConstrainedHiddenMarkovModel):
         Raises:
             InvalidInputError: If time_steps is negative.
         """
-        internal_hidden = self.internal_constrained_hmm.generate_hidden(time_steps)
-        return [self.hmm.hidden_to_external[h] for h in internal_hidden]
-
-    def generate_observed_from_hidden(self, hidden):
-        """
-        Generates random observed sequence of states from a hidden sequence of states.
-
-        Parameters:
-            hidden (list): What we wish to generate from
-
-        Returns:
-            list: Observations generated from hidden
-        """
-        return super().generate_observed_from_hidden(hidden)
-
-    def generate_observed(self, time_steps):
-        """
-        Generates random observed sequence of states.
-
-        Parameters:
-            hidden (list): What we wish to generate from
-
-        Returns:
-            list: Observations generated from hidden
-
-        Raises:
-            InvalidInputError: If time_steps is negative.
-        """
-        return super().generate_observed(time_steps)
+        hidden = self.hmm.generate_hidden(time_steps)
+        ctr = 0
+        while not self.is_feasible(hidden):
+            hidden = self.hmm.generate_hidden(time_steps)
+            ctr += 1
+            if ctr > max_failures:
+                raise RuntimeError(f"Failed to generate a feasible hidden state after {max_failures} trials")
+        return hidden
+        #return [self.hmm.hidden_to_external[h] for h in internal_hidden]
 
     def is_feasible(self, seq):
         """
