@@ -1,9 +1,5 @@
-# import math
-# import heapq
 import numpy as np
 import munch
-
-# import time
 
 from conin.hmm import HiddenMarkovModel, HMM
 
@@ -12,19 +8,19 @@ def viterbi_(*, observed, hmm):
     """
     Performs the Viterbi algorithm to find the most likely sequence of hidden states.
 
+    This function performs inference using an instance of the HMM class, which defines
+    a matrix/vector representation of a hidden Markov model.
+
     Parameters:
-        statistical_model (HMM): The HMM model to use for inference.
-        observed (list): The sequence of observed to perform inference on.
+        observed (list): The sequence of observations to perform inference on.
+        hmm (HMM): The HMM model to use for inference.
 
     Returns:
         list: The most likely sequence of hidden states.
     """
     with np.errstate(divide="ignore"):  # TODO Is this the best way to deal with this?
         # Initalize variables
-        # hmm = statistical_model.get_hmm()
-        # internal_hmm = statistical_model.get_internal_hmm()
         time_steps = len(observed)
-        # internal_observed = [hmm.observed_to_internal[o] for o in observed]
         viterbi_recursion = np.zeros((hmm.num_hidden_states, time_steps))
         backpointer = np.zeros((hmm.num_hidden_states, time_steps), dtype=int)
 
@@ -74,9 +70,6 @@ def viterbi_(*, observed, hmm):
         for t in range(time_steps - 2, -1, -1):
             hidden[t] = backpointer[hidden[t + 1], t + 1]
 
-        # Convert internal indices back to external labels
-        # hidden = [hmm.hidden_to_external[h] for h in internal_hidden]
-
         ans = munch.Munch(
             observations=observed,
             solutions=[munch.Munch(hidden=hidden, log_likelihood=max_prob)],
@@ -90,8 +83,8 @@ def viterbi(*, observed, hmm):
     Performs the Viterbi algorithm to find the most likely sequence of hidden states.
 
     Parameters:
-        statistical_model (HMM): The HMM model to use for inference.
         observed (list): The sequence of observed to perform inference on.
+        hmm (HiddenMarkovModel or HMM): The HMM to use for inference.
 
     Returns:
         list: The most likely sequence of hidden states.

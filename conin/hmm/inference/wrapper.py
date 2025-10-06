@@ -32,7 +32,11 @@ class Inference:
         Raises:
             InvalidInputError: If statistical_model is not hmm or constrained hmm
         """
-        if isinstance(statistical_model, HiddenMarkovModel) or isinstance(statistical_model, Oracle_CHMM) or isinstance(statistical_model, HMM):
+        if (
+            isinstance(statistical_model, HiddenMarkovModel)
+            or isinstance(statistical_model, Oracle_CHMM)
+            or isinstance(statistical_model, HMM)
+        ):
             self.statistical_model = statistical_model
         else:
             raise InvalidInputError(
