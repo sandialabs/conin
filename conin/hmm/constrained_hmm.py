@@ -3,6 +3,7 @@ from conin.exceptions import InvalidInputError
 from conin.hmm import HiddenMarkovModel
 from .chmm import CHMM
 from .chmm_oracle import Oracle_CHMM
+from .chmm_algebraic import Algebraic_CHMM
 
 
 class ConstrainedHiddenMarkovModel:
