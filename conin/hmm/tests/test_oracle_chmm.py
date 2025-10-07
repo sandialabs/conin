@@ -2,7 +2,7 @@ import pytest
 
 from conin import *
 from conin.hmm import *
-from conin.hmm.oracle_chmm import Oracle_CHMM
+from conin.hmm.chmm_oracle import Oracle_CHMM
 
 import conin.hmm.tests.test_cases as tc
 import conin.common_constraints as cc
@@ -14,7 +14,10 @@ class Test_Oracle_CHMM:
     def test_load_model(self):
         cpgm = tc.create_chmm1()
 
-        assert cpgm.chmm.hmm.start_vec == [cpgm.hidden_markov_model.get_start_probs()[h] for h in cpgm.hidden_markov_model.hidden_states]
+        assert cpgm.chmm.hmm.start_vec == [
+            cpgm.hidden_markov_model.get_start_probs()[h]
+            for h in cpgm.hidden_markov_model.hidden_states
+        ]
 
     def test_load_model2(self):
         cpgm = tc.create_chmm1()
@@ -27,7 +30,10 @@ class Test_Oracle_CHMM:
         )
         _chmm = Oracle_CHMM(hmm=_hmm.hmm)
 
-        assert _chmm.hmm.start_vec == [cpgm.hidden_markov_model.get_start_probs()[h] for h in cpgm.hidden_markov_model.hidden_states]
+        assert _chmm.hmm.start_vec == [
+            cpgm.hidden_markov_model.get_start_probs()[h]
+            for h in cpgm.hidden_markov_model.hidden_states
+        ]
 
     def test_load_model3(self):
         pgm = tc.create_hmm0()

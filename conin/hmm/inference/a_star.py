@@ -46,19 +46,19 @@ def a_star_(
     start_time = time.time()
 
     # Initalize variables
-    #hmm = statistical_model.get_hmm()
-    #internal_hmm = statistical_model.get_internal_hmm()
+    # hmm = statistical_model.get_hmm()
+    # internal_hmm = statistical_model.get_internal_hmm()
     time_steps = len(observed)
-    #internal_observed = [hmm.observed_to_internal[o] for o in observed]
+    # internal_observed = [hmm.observed_to_internal[o] for o in observed]
 
-    #if isinstance(hmm, hmm_application.HMMApplication):
+    # if isinstance(hmm, hmm_application.HMMApplication):
     #    hmm.generate_oracle_constraints()
 
     if chmm:
         hmm = chmm.hmm
-    #try:
+    # try:
     #    chmm = hmm.get_constrained_hmm()
-    #except BaseException:
+    # except BaseException:
     #    chmm = None
 
     # Precompute log probabilities for emission and transmission matrices
@@ -104,12 +104,8 @@ def a_star_(
     # Initialize the heap with the starting states
     for h in hmm.hidden_states:
         tempGScore = np.inf
-        if (hmm.start_vec[h] > 0) and (
-            hmm.emission_mat[h][observed[0]] > 0
-        ):
-            tempGScore = (
-                -np.log(hmm.start_vec[h]) - log_emission_mat[h, observed[0]]
-            )
+        if (hmm.start_vec[h] > 0) and (hmm.emission_mat[h][observed[0]] > 0):
+            tempGScore = -np.log(hmm.start_vec[h]) - log_emission_mat[h, observed[0]]
             # Use tuple here b/c Python doesn't hash a list
             gScore[(h,)] = tempGScore
             openSet.append(HeapItem(priority=tempGScore + V[0][h], seq=(h,)))
@@ -125,7 +121,7 @@ def a_star_(
 
         if t == time_steps:
             if chmm is None or chmm.internal_constrained_hmm.is_feasible(seq):
-                #external_seq = [hmm.hidden_to_external[h] for h in seq]
+                # external_seq = [hmm.hidden_to_external[h] for h in seq]
                 output.append(munch.Munch(hidden=seq, log_likelihood=-val))
                 if len(output) == num_solutions:
                     termination_condition = "ok"
@@ -202,7 +198,7 @@ def a_star(
     observed,
     hmm,
     **kwargs,
-    ):
+):
     if isinstance(hmm, HMM):
         return a_star_(observed=observed, hmm=hmm, **kwargs)
 
@@ -215,7 +211,9 @@ def a_star(
         solutions = []
         for sol in ans_.solutions:
             hidden = [hmm.hidden_to_external[h] for h in sol.hidden]
-            solutions.append(munch.Munch(hidden=hidden, log_likelihood=sol.log_likelihood))
+            solutions.append(
+                munch.Munch(hidden=hidden, log_likelihood=sol.log_likelihood)
+            )
 
         return munch.Munch(
             observations=observed,
@@ -223,7 +221,7 @@ def a_star(
             termination_condition=ans_.termination_condition,
         )
 
-    else:   # CHMM
+    else:  # CHMM
         chmm = hmm
         hmm = chmm.hmm
         observed_ = [hmm.observed_to_internal[o] for o in observed]
@@ -234,7 +232,9 @@ def a_star(
         solutions = []
         for sol in ans_.solutions:
             hidden = [hmm.hidden_to_external[h] for h in sol.hidden]
-            solutions.append(munch.Munch(hidden=hidden, log_likelihood=sol.log_likelihood))
+            solutions.append(
+                munch.Munch(hidden=hidden, log_likelihood=sol.log_likelihood)
+            )
 
         return munch.Munch(
             observations=observed,

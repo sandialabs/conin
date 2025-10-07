@@ -1,4 +1,4 @@
-#from conin.exceptions import InvalidInputError
+# from conin.exceptions import InvalidInputError
 from conin.constraint import Constraint
 
 from . import chmm
@@ -15,12 +15,15 @@ class Oracle_CHMM(chmm.CHMM):
             hmm (HMM, optional):
                 An instance of the HMM class (default is None,
                 which initializes a new HMM instance).
-            constraints (list, optional): 
+            constraints (list, optional):
                 A list of constraintsto be applied to the HMM (default is an empty list).
         """
         super().__init__(hmm=hmm)
         if constraints:
-            self.constraints = [self.make_internal_constraint(c, hidden_to_external) for c in constraints]
+            self.constraints = [
+                self.make_internal_constraint(c, hidden_to_external)
+                for c in constraints
+            ]
 
     def make_internal_constraint(self, constraint, hidden_to_external):
         """
@@ -32,6 +35,7 @@ class Oracle_CHMM(chmm.CHMM):
         Returns:
             Constraint: An internalized version of constraint
         """
+
         def internal_func(internal_seq):
             external_seq = [hidden_to_external[h] for h in internal_seq]
             return constraint(external_seq)
@@ -67,7 +71,9 @@ class Oracle_CHMM(chmm.CHMM):
             hidden = self.hmm.generate_hidden(time_steps)
             ctr += 1
             if ctr > max_failures:
-                raise RuntimeError(f"Failed to generate a feasible hidden state after {max_failures} trials")
+                raise RuntimeError(
+                    f"Failed to generate a feasible hidden state after {max_failures} trials"
+                )
         return hidden
 
     def is_feasible(self, seq):

@@ -4,8 +4,8 @@ import munch
 
 from . import learning
 from .constrained_hmm import ConstrainedHiddenMarkovModel
-from .algebraic_chmm import create_algebraic_chmm
-from .oracle_chmm import Oracle_CHMM
+from .chmm_algebraic import create_algebraic_chmm
+from .chmm_oracle import Oracle_CHMM
 
 
 class HMMApplication:

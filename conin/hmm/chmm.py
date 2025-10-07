@@ -8,4 +8,3 @@ class CHMM:
             raise ValueError("The hmm argument must be a HMM instance")
         self.hmm = hmm
         self.constraints = constraints
-

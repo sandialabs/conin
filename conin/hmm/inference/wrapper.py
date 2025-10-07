@@ -2,7 +2,7 @@ from conin.exceptions import InvalidInputError, InsufficientSolutionsError
 from conin.hmm import HiddenMarkovModel, HMM
 from conin.hmm import CHMM
 from conin.hmm.constrained_hmm import ConstrainedHiddenMarkovModel
-from conin.hmm.oracle_chmm import Oracle_CHMM
+from conin.hmm.chmm_oracle import Oracle_CHMM
 
 from .viterbi import viterbi
 from .a_star import a_star

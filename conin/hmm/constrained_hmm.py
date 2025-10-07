@@ -2,7 +2,7 @@ from conin.constraint import Constraint, PyomoConstraint
 from conin.exceptions import InvalidInputError
 from conin.hmm import HiddenMarkovModel
 from .chmm import CHMM
-from .oracle_chmm import Oracle_CHMM
+from .chmm_oracle import Oracle_CHMM
 
 
 class ConstrainedHiddenMarkovModel:
@@ -62,11 +62,19 @@ class ConstrainedHiddenMarkovModel:
 
     def initialize_chmm(self):
         if self.constraint_type is None:
-            self.chmm = CHMM(hmm=self.hidden_markov_model.hmm, constraints=self.constraints)
+            self.chmm = CHMM(
+                hmm=self.hidden_markov_model.hmm, constraints=self.constraints
+            )
         elif self.constraint_type == "oracle":
-            self.chmm = Oracle_CHMM(hmm=self.hidden_markov_model.hmm, constraints=self.constraints, hidden_to_external=self.hidden_markov_model.hidden_to_external)
+            self.chmm = Oracle_CHMM(
+                hmm=self.hidden_markov_model.hmm,
+                constraints=self.constraints,
+                hidden_to_external=self.hidden_markov_model.hidden_to_external,
+            )
         elif self.constraint_type == "pyomo":
-            self.chmm = Algebraic_CHMM(hmm=self.hidden_markov_model.hmm, constraints=self.constraints)
+            self.chmm = Algebraic_CHMM(
+                hmm=self.hidden_markov_model.hmm, constraints=self.constraints
+            )
 
     def generate_hidden(self, time_steps):
         """
@@ -81,7 +89,10 @@ class ConstrainedHiddenMarkovModel:
         Raises:
             InvalidInputError: If time_steps is negative.
         """
-        return [self.hidden_markov_model.hidden_to_external[h] for h in self.chmm.generate_hidden(time_steps)]
+        return [
+            self.hidden_markov_model.hidden_to_external[h]
+            for h in self.chmm.generate_hidden(time_steps)
+        ]
 
     def generate_observed_from_hidden(self, hidden):
         """
@@ -93,7 +104,9 @@ class ConstrainedHiddenMarkovModel:
         Returns:
             list: Observations generated from hidden
         """
-        internal_hidden = [self.hidden_markov_model.hidden_to_internal[h] for h in hidden]
+        internal_hidden = [
+            self.hidden_markov_model.hidden_to_internal[h] for h in hidden
+        ]
         if not self.chmm.is_feasible(internal_hidden):
             raise InvalidInputError(
                 "ConstrainedHiddenMarkovModel.generate_observed_from_hidden() - The sequence of hidden states is not feasible."
@@ -101,7 +114,9 @@ class ConstrainedHiddenMarkovModel:
         internal_observed = self.hidden_markov_model.hmm.generate_observed_from_hidden(
             internal_hidden
         )
-        return [self.hidden_markov_model.observed_to_external[o] for o in internal_observed]
+        return [
+            self.hidden_markov_model.observed_to_external[o] for o in internal_observed
+        ]
 
     def generate_observed(self, time_steps):
         """
@@ -132,7 +147,9 @@ class ConstrainedHiddenMarkovModel:
         Returns:
             bool: True if the sequence satisfies all constraints, False otherwise.
         """
-        return self.chmm.is_feasible( [self.hidden_markov_model.hidden_to_internal[h] for h in seq] )
+        return self.chmm.is_feasible(
+            [self.hidden_markov_model.hidden_to_internal[h] for h in seq]
+        )
 
     def partial_is_feasible(self, *, T, seq):
         """
@@ -141,11 +158,14 @@ class ConstrainedHiddenMarkovModel:
         being feasible.
 
         Parameters:
-            seq (list): A sequence to be checked against the constraints.                                                            
+            seq (list): A sequence to be checked against the constraints.
         Returns:
             bool: True if the sequence satisfies all constraints, False otherwise.
         """
-        return self.chmm.partial_is_feasible( T=T, seq=[self.hidden_markov_model.hidden_to_internal[h] for h in seq] )
+        return self.chmm.partial_is_feasible(
+            T=T, seq=[self.hidden_markov_model.hidden_to_internal[h] for h in seq]
+        )
+
 
 class XConstrainedHiddenMarkovModel:
 
@@ -281,4 +301,3 @@ class XConstrainedHiddenMarkovModel:
         raise NotImplementedError(
             "ConstrainedHiddenMarkovModel.log_probability() is not implemented"
         )
-
