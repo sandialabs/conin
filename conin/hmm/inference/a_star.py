@@ -46,20 +46,13 @@ def a_star_(
     start_time = time.time()
 
     # Initalize variables
-    # hmm = statistical_model.get_hmm()
-    # internal_hmm = statistical_model.get_internal_hmm()
     time_steps = len(observed)
-    # internal_observed = [hmm.observed_to_internal[o] for o in observed]
 
     # if isinstance(hmm, hmm_application.HMMApplication):
     #    hmm.generate_oracle_constraints()
 
     if chmm:
         hmm = chmm.hmm
-    # try:
-    #    chmm = hmm.get_constrained_hmm()
-    # except BaseException:
-    #    chmm = None
 
     # Precompute log probabilities for emission and transmission matrices
     log_emission_mat = {
@@ -121,7 +114,6 @@ def a_star_(
 
         if t == time_steps:
             if chmm is None or chmm.internal_constrained_hmm.is_feasible(seq):
-                # external_seq = [hmm.hidden_to_external[h] for h in seq]
                 output.append(munch.Munch(hidden=seq, log_likelihood=-val))
                 if len(output) == num_solutions:
                     termination_condition = "ok"
@@ -202,42 +194,26 @@ def a_star(
     if isinstance(hmm, HMM):
         return a_star_(observed=observed, hmm=hmm, **kwargs)
 
-    elif isinstance(hmm, HiddenMarkovModel):
-        observed_ = [hmm.observed_to_internal[o] for o in observed]
-        hmm_ = hmm.internal_hmm
-        ans_ = a_star_(observed=observed_, hmm=hmm_, **kwargs)
-
-        # Convert internal indices back to external labels
-        solutions = []
-        for sol in ans_.solutions:
-            hidden = [hmm.hidden_to_external[h] for h in sol.hidden]
-            solutions.append(
-                munch.Munch(hidden=hidden, log_likelihood=sol.log_likelihood)
-            )
-
-        return munch.Munch(
-            observations=observed,
-            solutions=solutions,
-            termination_condition=ans_.termination_condition,
-        )
-
-    else:  # CHMM
+    if isinstance(hmm, HiddenMarkovModel):
+        chmm = None
+    else: # CHMM
         chmm = hmm
         hmm = chmm.hmm
-        observed_ = [hmm.observed_to_internal[o] for o in observed]
-        hmm_ = hmm.internal_hmm
-        ans_ = a_star_(observed=observed_, chmm=chmm, **kwargs)
 
-        # Convert internal indices back to external labels
-        solutions = []
-        for sol in ans_.solutions:
-            hidden = [hmm.hidden_to_external[h] for h in sol.hidden]
-            solutions.append(
-                munch.Munch(hidden=hidden, log_likelihood=sol.log_likelihood)
-            )
+    observed_ = [hmm.observed_to_internal[o] for o in observed]
+    hmm_ = hmm.internal_hmm
+    ans_ = a_star_(observed=observed_, chmm=chmm, hmm=hmm_, **kwargs)
 
-        return munch.Munch(
-            observations=observed,
-            solutions=solutions,
-            termination_condition=ans_.termination_condition,
+    # Convert internal indices back to external labels
+    solutions = []
+    for sol in ans_.solutions:
+        hidden = [hmm.hidden_to_external[h] for h in sol.hidden]
+        solutions.append(
+            munch.Munch(hidden=hidden, log_likelihood=sol.log_likelihood)
         )
+
+    return munch.Munch(
+        observations=observed,
+        solutions=solutions,
+        termination_condition=ans_.termination_condition,
+    )
