@@ -196,21 +196,19 @@ def a_star(
 
     if isinstance(hmm, HiddenMarkovModel):
         chmm = None
-    else: # CHMM
+    else:  # CHMM
         chmm = hmm
         hmm = chmm.hmm
 
     observed_ = [hmm.observed_to_internal[o] for o in observed]
-    hmm_ = hmm.internal_hmm
+    hmm_ = hmm.hmm  # HMM instance associated with the HiddenMarkovModel
     ans_ = a_star_(observed=observed_, chmm=chmm, hmm=hmm_, **kwargs)
 
     # Convert internal indices back to external labels
     solutions = []
     for sol in ans_.solutions:
         hidden = [hmm.hidden_to_external[h] for h in sol.hidden]
-        solutions.append(
-            munch.Munch(hidden=hidden, log_likelihood=sol.log_likelihood)
-        )
+        solutions.append(munch.Munch(hidden=hidden, log_likelihood=sol.log_likelihood))
 
     return munch.Munch(
         observations=observed,

@@ -95,7 +95,7 @@ def viterbi(*, observed, hmm):
     # ELSE isinstance(hmm, HiddenMarkovModel)
 
     observed_ = [hmm.observed_to_internal[o] for o in observed]
-    hmm_ = hmm.internal_hmm
+    hmm_ = hmm.hmm  # HMM instance associated with the HiddenMarkovModel
     ans_ = viterbi_(observed=observed_, hmm=hmm_)
 
     # Convert internal indices back to external labels

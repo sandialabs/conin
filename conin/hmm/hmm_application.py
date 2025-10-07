@@ -50,7 +50,7 @@ class HMMApplication:
         return self._hmm
 
     def get_internal_hmm(self):
-        return self._hmm.internal_hmm
+        return self._hmm.hmm
 
     def get_constrained_hmm(self):
         return self.oracle

@@ -252,10 +252,6 @@ class HiddenMarkovModel:
         return pprint.pformat(self.to_dict(), indent=4, sort_dicts=True)
 
     @property
-    def internal_hmm(self):
-        return self._hmm
-
-    @property
     def hmm(self):
         return self._hmm
 
