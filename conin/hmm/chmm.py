@@ -3,8 +3,16 @@ from conin.hmm import HMM
 
 class CHMM:
 
-    def __init__(self, *, hmm, constraints=None):
-        if not isinstance(hmm, HMM):
-            raise ValueError("The hmm argument must be a HMM instance")
+    def __init__(self, *, hmm=None, hidden_markov_model=None, constraints=None):
+        if hmm and not isinstance(hmm, HMM):
+            raise ValueError(f"The hmm argument must be a HMM instance: {type(hmm)=}")
         self.hmm = hmm
+        if hidden_markov_model:
+            from conin.hmm import HiddenMarkovModel
+
+            if not isinstance(hidden_markov_model, HiddenMarkovModel):
+                raise ValueError(
+                    f"The hidden_markov_model argument must be a HiddenMarkovModel instance: {type(hidden_markov_model)=}"
+                )
+        self.hidden_markov_model = hidden_markov_model
         self.constraints = constraints

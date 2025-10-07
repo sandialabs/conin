@@ -34,7 +34,8 @@ class HMMApplication:
     def initialize_algebraic_hmm(self, aml):
         if aml != self.algebraic_aml:
             self.algebraic_aml = aml
-            self.algebraic = create_algebraic_chmm(aml, app=self)
+            # self.algebraic = create_algebraic_chmm(aml, app=self)
+            self.algebraic = create_algebraic_chmm(aml)
 
     @property
     def hmm(self):

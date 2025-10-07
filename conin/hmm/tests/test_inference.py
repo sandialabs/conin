@@ -25,6 +25,11 @@ def hmm():
 
 
 @pytest.fixture
+def chmm1_pyomo():
+    return tc.create_chmm1_pyomo()
+
+
+@pytest.fixture
 def lb():
     return 10
 
@@ -339,7 +344,7 @@ class Test_Inference_a_star:
 
         observed = ["o0", "o1", "o1", "o1"]
 
-        inference = Inference(statistical_model=hmm)
+        inference = Inference(hmm=hmm)
         assert inference(observed).solutions[0].hidden == [
             "h0",
             "h1",
@@ -351,7 +356,7 @@ class Test_Inference_a_star:
 class Test_Inference_ip:
 
     @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-    def test_ip(self, recursive_app):
+    def test_ip(self, chmm1_pyomo):
         observed = ["o1", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0"]
 
         # TODO - Compare LP solution?
@@ -360,7 +365,7 @@ class Test_Inference_ip:
 
         inferred2 = (
             ip_inference(
-                statistical_model=recursive_app,
+                hmm=chmm1_pyomo,
                 observed=observed,
                 solver=mip_solver,
             )
@@ -382,7 +387,7 @@ class Test_Inference_ip:
         ]
 
     @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-    def test_ip2(self, recursive_app):
+    def test_ip2(self, chmm1_pyomo):
         observed = ["o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1"]
 
         # TODO - Compare LP solution?
@@ -391,7 +396,7 @@ class Test_Inference_ip:
 
         inferred2 = (
             ip_inference(
-                statistical_model=recursive_app,
+                hmm=chmm1_pyomo,
                 observed=observed,
                 solver=mip_solver,
             )
@@ -429,7 +434,7 @@ class Test_Inference_ip:
             "o0",
         ]
 
-        inference1 = Inference(statistical_model=chmm, num_solutions=2)
+        inference1 = Inference(hmm=chmm, num_solutions=2)
         inferred1 = inference1(observed)
 
         inferred2 = recursive_a_star(
@@ -450,7 +455,7 @@ class Test_Inference_ip:
     def Xtest_a_star_no_solution(self, chmm, recursive_app):
         observed = ["o0"]
 
-        inference1 = Inference(statistical_model=chmm)
+        inference1 = Inference(hmm=chmm)
         inferred1 = inference1(observed)
 
         inferred2 = recursive_a_star(hmm_app=recursive_app, observed=observed)
@@ -461,7 +466,7 @@ class Test_Inference_ip:
 
     def Xtest_a_star_not_enough_solutions(self, chmm, recursive_app):
         observed = ["o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1"]
-        inference1 = Inference(statistical_model=chmm, num_solutions=2)
+        inference1 = Inference(hmm=chmm, num_solutions=2)
         inferred1 = inference1(observed)
 
         inferred2 = recursive_a_star(
@@ -472,13 +477,28 @@ class Test_Inference_ip:
 
     @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
     def test_ip_deterministic_hmm(self):
-        model = HMMApplication()
-        model.hmm = tc.create_hmm0()
+        hmm = tc.create_chmm1_pyomo()
 
-        observed = ["o0", "o1", "o1", "o1"]
+        observed = ["o0"] + ["o1"] * 14
         hidden = (
-            ip_inference(statistical_model=model, observed=observed, solver=mip_solver)
+            ip_inference(hmm=hmm, observed=observed, solver=mip_solver)
             .solutions[0]
             .hidden
         )
-        assert hidden == ["h0", "h1", "h1", "h1"]
+        assert hidden == [
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h1",
+            "h1",
+            "h1",
+            "h1",
+            "h1",
+        ]

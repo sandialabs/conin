@@ -8,6 +8,7 @@ from conin.inference.OptimizationInference import (
 )
 import conin.markov_network.tests.examples
 import conin.bayesian_network.tests.examples
+import conin.hmm.tests.examples
 import conin.dynamic_bayesian_network.tests.examples
 
 with try_import() as pgmpy_available:
@@ -219,6 +220,105 @@ def test_IntegerProgrammingInference_cancer1_constrained_pgmpy():
             "Pollution": 0,
             "Xray": 0,
         }
+
+
+#
+# HiddenMarkovModel tests
+#
+
+
+def test_IntegerProgrammingInference_hmm1_test0():
+    pgm = conin.hmm.tests.examples.create_hmm1()
+    inf = IntegerProgrammingInference(pgm)
+    observed = ["o0", "o0", "o1", "o0", "o0"]
+    results = inf.map_query(evidence=observed)
+    print(results)
+    assert results.solution.variable_value == ["h0", "h0", "h0", "h0", "h0"]
+
+
+def test_IntegerProgrammingInference_hmm1_test1():
+    pgm = conin.hmm.tests.examples.create_hmm1()
+    inf = IntegerProgrammingInference(pgm)
+    observed = ["o0", "o1", "o1", "o1", "o1"]
+    results = inf.map_query(evidence=observed)
+    assert results.solution.variable_value == ["h1", "h1", "h1", "h1", "h1"]
+
+
+def test_IntegerProgrammingInference_hmm1_test2():
+    pgm = conin.hmm.tests.examples.create_hmm1()
+    inf = IntegerProgrammingInference(pgm)
+    observed = {0: "o0", 1: "o0", 2: "o1", 3: "o0", 4: "o0"}
+    results = inf.map_query(evidence=observed)
+    assert results.solution.variable_value == {
+        0: "h0",
+        1: "h0",
+        2: "h0",
+        3: "h0",
+        4: "h0",
+    }
+
+
+def test_IntegerProgrammingInference_hmm1_test3():
+    pgm = conin.hmm.tests.examples.create_hmm1()
+    inf = IntegerProgrammingInference(pgm)
+    observed = {0: "o0", 1: "o1", 2: "o1", 3: "o1", 4: "o1"}
+    results = inf.map_query(evidence=observed)
+    assert results.solution.variable_value == {
+        0: "h1",
+        1: "h1",
+        2: "h1",
+        3: "h1",
+        4: "h1",
+    }
+
+
+def test_IntegerProgrammingInference_chmm1_test0():
+    pgm = conin.hmm.tests.examples.create_chmm1_pyomo()
+    inf = IntegerProgrammingInference(pgm)
+    observed = ["o0"] * 15
+    results = inf.map_query(evidence=observed)
+    print(results)
+    assert results.solution.variable_value == [
+        "h1",
+        "h1",
+        "h1",
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+    ]
+
+
+def test_IntegerProgrammingInference_hmm1_test1():
+    pgm = conin.hmm.tests.examples.create_chmm1_pyomo()
+    inf = IntegerProgrammingInference(pgm)
+    observed = ["o0"] + ["o1"] * 14
+    results = inf.map_query(evidence=observed)
+    assert results.solution.variable_value == [
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+        "h1",
+        "h1",
+        "h1",
+        "h1",
+        "h1",
+    ]
 
 
 #

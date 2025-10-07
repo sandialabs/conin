@@ -1,7 +1,7 @@
 import math
 import munch
 
-from conin.hmm import hmm_application
+# from conin.hmm import hmm_application
 
 import pyomo.environ as pyo
 from pyomo.common.timing import tic, toc
@@ -13,9 +13,9 @@ from pyomo.contrib.alternative_solutions.aos_utils import (
 
 def lp_inference(
     *,
-    statistical_model,
-    num_solutions=1,
+    hmm,
     observed,
+    num_solutions=1,
     solver="gurobi",
     solver_options=None,
     debug=False,
@@ -25,14 +25,9 @@ def lp_inference(
         num_solutions == 1
     ), "ERROR: Support for inferring multiple solutions with an LP model has not been setup"
 
-    assert isinstance(
-        statistical_model, hmm_application.HMMApplication
-    ), "ERROR: LP inference is only supported with a HMMApplication instance"
-    algebraic_hmm = statistical_model.algebraic
-
     if debug:
         tic("Generating Model - START")
-    M = algebraic_hmm.generate_unconstrained_model(observations=observed)
+    M = hmm.chmm.generate_unconstrained_model(observations=observed)
     if debug:
         toc("Generating Model - STOP")
     if debug:
@@ -48,16 +43,20 @@ def lp_inference(
     log_likelihood = pyo.value(M.hmm.o)
     hidden = ["__UNKNOWN__"] * T
     for t in range(T):
-        for a in algebraic_hmm.data.A:
+        for a in hmm.chmm.data.A:
             if pyo.value(M.hmm.x[t, a]) > 0.5:
-                hidden[t] = algebraic_hmm.hmm.hidden_to_external[a]
+                hidden[t] = hmm.hidden_markov_model.hidden_to_external[a]
         assert (
             hidden[t] != "__UNKNOWN__"
         ), f"ERROR: Unexpected missing hidden state at time step {t}"
 
+    soln = munch.Munch(
+        variable_value=hidden, hidden=hidden, log_likelihood=log_likelihood
+    )
     ans = munch.Munch(
         observations=observed,
-        solutions=[munch.Munch(hidden=hidden, log_likelihood=log_likelihood)],
+        solution=soln,
+        solutions=[soln],
         termination_condition="ok",
     )
     if debug:
@@ -75,7 +74,7 @@ def lp_inference(
 
 def ip_inference(
     *,
-    statistical_model,
+    hmm,
     num_solutions=1,
     observed,
     solver="gurobi",
@@ -87,14 +86,14 @@ def ip_inference(
         num_solutions == 1
     ), "ERROR: Support for inferring multiple solutions with an IP model has not been setup"
 
-    assert isinstance(
-        statistical_model, hmm_application.HMMApplication
-    ), "ERROR: IP inference is only supported with a HMMApplication instance"
-    algebraic_hmm = statistical_model.algebraic
+    # assert isinstance(
+    #    statistical_model, hmm_application.HMMApplication
+    # ), "ERROR: IP inference is only supported with a HMMApplication instance"
+    # algebraic_hmm = statistical_model.algebraic
 
     if debug:
         tic("Generating Model - START")
-    M = algebraic_hmm.generate_model(observations=observed)
+    M = hmm.chmm.generate_model(observations=observed)
     if debug:
         toc("Generating Model - STOP")
     if debug:
@@ -115,9 +114,9 @@ def ip_inference(
 
     hidden = ["__UNKNOWN__"] * T
     for t in range(T):
-        for a in algebraic_hmm.data.A:
+        for a in hmm.chmm.data.A:
             if pyo.value(M.hmm.x[t, a]) > 0.5:
-                hidden[t] = algebraic_hmm.hmm.hidden_to_external[a]
+                hidden[t] = hmm.hidden_markov_model.hidden_to_external[a]
         assert (
             hidden[t] != "__UNKNOWN__"
         ), f"ERROR: Unexpected missing hidden state at time step {t}"
@@ -127,15 +126,16 @@ def ip_inference(
         str(v): pyo.value(v) for v in model_variables if math.fabs(pyo.value(v)) > 1e-3
     }
 
+    soln = munch.Munch(
+        variable_value=hidden,
+        hidden=hidden,
+        log_likelihood=log_likelihood,
+        variables=variables,
+    )
     ans = munch.Munch(
         observations=observed,
-        solutions=[
-            munch.Munch(
-                hidden=hidden,
-                log_likelihood=log_likelihood,
-                variables=variables,
-            )
-        ],
+        solution=soln,
+        solutions=[soln],
         termination_condition="ok",
     )
     if debug:

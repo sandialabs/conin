@@ -6,9 +6,6 @@ import json
 import ast
 
 from conin.exceptions import InvalidInputError
-
-# from conin.hmm import Statistical_Model
-# from conin.hmm import Internal_Statistical_Model
 from conin.util import Util
 
 
