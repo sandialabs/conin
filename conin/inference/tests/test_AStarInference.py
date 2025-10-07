@@ -60,17 +60,47 @@ def test_AStarInference_hmm1_test3():
 def test_AStarInference_chmm1_test0():
     pgm = conin.hmm.tests.examples.create_chmm1_oracle()
     inf = AStarInference(pgm)
-    observed = ["o0"]*15
+    observed = ["o0"] * 15
     results = inf.map_query(evidence=observed)
     print(results)
-    assert results.solution.variable_value == ['h1', 'h1', 'h1', 'h0', 'h0', 'h0', 'h0', 'h0', 'h0', 'h0', 'h0', 'h0', 'h0', 'h0', 'h0']
+    assert results.solution.variable_value == [
+        "h1",
+        "h1",
+        "h1",
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+    ]
 
 
 def test_AStarInference_hmm1_test1():
     pgm = conin.hmm.tests.examples.create_chmm1_oracle()
     inf = AStarInference(pgm)
-    observed = ["o0"] + ["o1"]*14
+    observed = ["o0"] + ["o1"] * 14
     results = inf.map_query(evidence=observed)
-    assert results.solution.variable_value == ['h0', 'h0', 'h0', 'h0', 'h0', 'h0', 'h0', 'h0', 'h0', 'h0', 'h1', 'h1', 'h1', 'h1', 'h1']
-
-
+    assert results.solution.variable_value == [
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+        "h0",
+        "h1",
+        "h1",
+        "h1",
+        "h1",
+        "h1",
+    ]

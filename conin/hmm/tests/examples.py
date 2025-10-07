@@ -109,11 +109,11 @@ def create_chmm1_pyomo():
     hmm = create_hmm1()
 
     @pyomo_constraint
-    def num_zeros_greater_than_nine(M,D):
+    def num_zeros_greater_than_nine(M, D):
         M.h0_lower = pe.Constraint(expr=sum(M.hmm.x[t, "h0"] for t in D.T) > 9)
 
     @pyomo_constraint
-    def num_zeros_less_than_thirteen(M,D):
+    def num_zeros_less_than_thirteen(M, D):
         M.h0_lower = pe.Constraint(expr=sum(M.hmm.x[t, "h0"] for t in D.T) < 13)
 
     constraints = [num_zeros_greater_than_nine, num_zeros_less_than_thirteen]

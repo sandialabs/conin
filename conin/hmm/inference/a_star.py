@@ -51,8 +51,8 @@ def a_star_(
     # if isinstance(hmm, hmm_application.HMMApplication):
     #    hmm.generate_oracle_constraints()
 
-    if chmm:                # CHMM
-        hmm = chmm.hmm # HMM
+    if chmm:  # CHMM
+        hmm = chmm.hmm  # HMM
 
     # Precompute log probabilities for emission and transmission matrices
     log_emission_mat = {
@@ -134,10 +134,7 @@ def a_star_(
                 ):
                     continue
                 if (
-                    chmm is None
-                    or chmm.partial_is_feasible(
-                        T=time_steps, seq=seq
-                    )
+                    chmm is None or chmm.partial_is_feasible(T=time_steps, seq=seq)
                 ) or (isinstance(hmm, HMM)):
                     tempGScore = (
                         currentGScore
