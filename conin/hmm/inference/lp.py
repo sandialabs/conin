@@ -60,15 +60,15 @@ def lp_inference(
         termination_condition="ok",
     )
     if debug:
-        ans.hmm = algebraic_hmm.hmm
+        ans.hmm = hmm.chmm.hmm
         ans.M = M
-        print(f"E: {len(algebraic_hmm.data.E)}")
-        print(f"F: {len(algebraic_hmm.data.F)}")
-        print(f"G: {len(algebraic_hmm.data.G)}")
-        print(f"GG: {len(algebraic_hmm.data.GG)}")
-        print(f"FF: {len(algebraic_hmm.data.FF)}")
-        print(f"T: {len(algebraic_hmm.data.T)}")
-        print(f"A: {len(algebraic_hmm.data.A)}")
+        print(f"E: {len(hmm.chmm.data.E)}")
+        print(f"F: {len(hmm.chmm.data.F)}")
+        print(f"G: {len(hmm.chmm.data.G)}")
+        print(f"GG: {len(hmm.chmm.data.GG)}")
+        print(f"FF: {len(hmm.chmm.data.FF)}")
+        print(f"T: {len(hmm.chmm.data.T)}")
+        print(f"A: {len(hmm.chmm.data.A)}")
     return ans
 
 
@@ -85,11 +85,6 @@ def ip_inference(
     assert (
         num_solutions == 1
     ), "ERROR: Support for inferring multiple solutions with an IP model has not been setup"
-
-    # assert isinstance(
-    #    statistical_model, hmm_application.HMMApplication
-    # ), "ERROR: IP inference is only supported with a HMMApplication instance"
-    # algebraic_hmm = statistical_model.algebraic
 
     if debug:
         tic("Generating Model - START")
@@ -139,14 +134,14 @@ def ip_inference(
         termination_condition="ok",
     )
     if debug:
-        ans.hmm = algebraic_hmm.hmm
+        ans.hmm = hmm.chmm.hmm
         ans.M = M
-        print(f"E: {len(algebraic_hmm.data.E)}")
-        print(f"F: {len(algebraic_hmm.data.F)}")
-        print(f"Gt: {len(algebraic_hmm.data.Gt)}")
-        print(f"Ge: {len(algebraic_hmm.data.Ge)}")
-        print(f"GG: {len(algebraic_hmm.data.GG)}")
-        print(f"FF: {len(algebraic_hmm.data.FF)}")
-        print(f"T: {len(algebraic_hmm.data.T)}")
-        print(f"A: {len(algebraic_hmm.data.A)}")
+        print(f"E: {len(hmm.chmm.data.E)}")
+        print(f"F: {len(hmm.chmm.data.F)}")
+        print(f"Gt: {len(hmm.chmm.data.Gt)}")
+        print(f"Ge: {len(hmm.chmm.data.Ge)}")
+        print(f"GG: {len(hmm.chmm.data.GG)}")
+        print(f"FF: {len(hmm.chmm.data.FF)}")
+        print(f"T: {len(hmm.chmm.data.T)}")
+        print(f"A: {len(hmm.chmm.data.A)}")
     return ans
