@@ -105,6 +105,24 @@ def create_chmm1_oracle():
     return chmm
 
 
+def create_chmm1_pyomo():
+    hmm = create_hmm1()
+
+    @pyomo_constraint
+    def num_zeros_greater_than_nine(M,D):
+        M.h0_lower = pe.Constraint(expr=sum(M.hmm.x[t, "h0"] for t in D.T) > 9)
+
+    @pyomo_constraint
+    def num_zeros_less_than_thirteen(M,D):
+        M.h0_lower = pe.Constraint(expr=sum(M.hmm.x[t, "h0"] for t in D.T) < 13)
+
+    constraints = [num_zeros_greater_than_nine, num_zeros_less_than_thirteen]
+
+    chmm = conin.hmm.ConstrainedHiddenMarkovModel(hmm=hmm, constraints=constraints)
+    chmm.initialize_chmm()
+    return chmm
+
+
 class Num_Zeros(conin.hmm.HMMApplication):
     def __init__(self):
         self.num_zeros = None
@@ -170,7 +188,6 @@ class Num_Zeros(conin.hmm.HMMApplication):
     def generate_pyomo_constraints(self, *, M):
         # Data used to construct the base HMM formulation
         D = self.algebraic.data
-
         h0 = self.hmm.hidden_to_internal["h0"]
         M.h0_lower = pe.Constraint(expr=sum(M.hmm.x[t, h0] for t in D.T) >= self.lb)
         M.h0_upper = pe.Constraint(expr=sum(M.hmm.x[t, h0] for t in D.T) <= self.ub)

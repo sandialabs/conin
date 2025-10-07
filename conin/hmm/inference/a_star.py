@@ -51,8 +51,8 @@ def a_star_(
     # if isinstance(hmm, hmm_application.HMMApplication):
     #    hmm.generate_oracle_constraints()
 
-    if chmm:
-        hmm = chmm.hmm
+    if chmm:                # CHMM
+        hmm = chmm.hmm # HMM
 
     # Precompute log probabilities for emission and transmission matrices
     log_emission_mat = {
@@ -113,7 +113,7 @@ def a_star_(
         t = len(seq)
 
         if t == time_steps:
-            if chmm is None or chmm.internal_constrained_hmm.is_feasible(seq):
+            if chmm is None or chmm.is_feasible(seq):
                 output.append(
                     munch.Munch(variable_value=seq, hidden=seq, log_likelihood=-val)
                 )
@@ -135,7 +135,7 @@ def a_star_(
                     continue
                 if (
                     chmm is None
-                    or chmm.internal_constrained_hmm.partial_is_feasible(
+                    or chmm.partial_is_feasible(
                         T=time_steps, seq=seq
                     )
                 ) or (isinstance(hmm, HMM)):
@@ -200,8 +200,8 @@ def a_star(
     if isinstance(hmm, HiddenMarkovModel):
         chmm = None
     else:  # CHMM
-        chmm = hmm
-        hmm = chmm.hmm
+        chmm = hmm.chmm
+        hmm = hmm.hidden_markov_model
 
     observed_ = [hmm.observed_to_internal[o] for o in observed]
     hmm_ = hmm.hmm  # HMM instance associated with the HiddenMarkovModel
