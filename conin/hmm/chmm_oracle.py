@@ -1,4 +1,3 @@
-# from conin.exceptions import InvalidInputError
 from conin.constraint import Constraint
 
 from . import chmm
@@ -21,11 +20,11 @@ class Oracle_CHMM(chmm.CHMM):
         super().__init__(hmm=hmm)
         if constraints:
             self.constraints = [
-                self.make_internal_constraint(c, hidden_to_external)
+                self._make_internal_constraint(c, hidden_to_external)
                 for c in constraints
             ]
 
-    def make_internal_constraint(self, constraint, hidden_to_external):
+    def _make_internal_constraint(self, constraint, hidden_to_external):
         """
         Makes an internal version of the constraint that works on indices rather than keys
 
