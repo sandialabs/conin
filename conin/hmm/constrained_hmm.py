@@ -2,8 +2,6 @@ from conin.constraint import Constraint, PyomoConstraint
 from conin.exceptions import InvalidInputError
 from conin.hmm import HiddenMarkovModel
 from .chmm import CHMM
-from .chmm_oracle import Oracle_CHMM
-from .chmm_algebraic import Algebraic_CHMM
 
 
 class ConstrainedHiddenMarkovModel:
@@ -11,7 +9,7 @@ class ConstrainedHiddenMarkovModel:
     A class to represent a base Hidden Markov Model (HMM).
     """
 
-    def __init__(self, *, hmm=None, constraint_list=None):
+    def __init__(self, *, hmm=None, constraints=None):
         """
         Constructor.
 
@@ -20,11 +18,11 @@ class ConstrainedHiddenMarkovModel:
             or HMM class (default is None).
         """
         self.hidden_markov_model = hmm
-        if constraint_list:
-            self.constraints = constraint_list
+        self.constraint_type = None
+        if constraints:
+            self.constraints = constraints
         else:
             self._constraints = []
-        self.constraint_type = None
 
     @property
     def constraints(self):
@@ -67,12 +65,16 @@ class ConstrainedHiddenMarkovModel:
                 hmm=self.hidden_markov_model.hmm, constraints=self.constraints
             )
         elif self.constraint_type == "oracle":
+            from .chmm_oracle import Oracle_CHMM
+
             self.chmm = Oracle_CHMM(
                 hmm=self.hidden_markov_model.hmm,  # HMM object
                 constraints=self.constraints,  # list of Constraint objects
                 hidden_to_external=self.hidden_markov_model.hidden_to_external,
             )
         elif self.constraint_type == "pyomo":
+            from .chmm_algebraic import Algebraic_CHMM
+
             self.chmm = Algebraic_CHMM(
                 hmm=self.hidden_markov_model,  # HiddenMarkovModel object
                 constraints=self.constraints,  # list of PyomoConstraint objects

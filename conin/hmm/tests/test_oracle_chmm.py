@@ -12,7 +12,7 @@ class Test_Oracle_CHMM:
     T = 25
 
     def test_load_model(self):
-        cpgm = tc.create_chmm1()
+        cpgm = tc.create_chmm1_oracle()
 
         assert cpgm.chmm.hmm.start_vec == [
             cpgm.hidden_markov_model.get_start_probs()[h]
@@ -20,7 +20,7 @@ class Test_Oracle_CHMM:
         ]
 
     def test_load_model2(self):
-        cpgm = tc.create_chmm1()
+        cpgm = tc.create_chmm1_oracle()
 
         _hmm = HiddenMarkovModel()
         _hmm.load_model(
@@ -43,7 +43,7 @@ class Test_Oracle_CHMM:
         assert len(chmm.constraints) == 1
 
     def test_internal_is_feasible(self):
-        cpgm = tc.create_chmm1()
+        cpgm = tc.create_chmm1_oracle()
         assert len(cpgm.constraints) == 2
 
         fail_seq1 = [0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -55,17 +55,17 @@ class Test_Oracle_CHMM:
         assert not cpgm.chmm.is_feasible(fail_seq2)
 
     def Xtest_is_valid_hidden_state(self):
-        cpgm = tc.create_chmm1()
+        cpgm = tc.create_chmm1_oracle()
         assert cpgm.hidden_markov_model.is_valid_hidden_state("h0")
         assert not cpgm.hidden_markov_model.is_valid_hidden_state("invalid")
 
     def Xtest_set_seed(self):
-        chmm = tc.create_chmm1()
+        chmm = tc.create_chmm1_oracle()
         chmm.set_seed(1)
         assert chmm._seed == 1
 
     def test_generate(self):
-        cpgm = tc.create_chmm1()
+        cpgm = tc.create_chmm1_oracle()
         observed = cpgm.generate_observed_from_hidden(
             [
                 "h0",
@@ -93,7 +93,7 @@ class Test_Oracle_CHMM:
             cpgm.generate_observed_from_hidden(["h0"])
 
     def test_is_feasible(self):
-        cpgm = tc.create_chmm1()
+        cpgm = tc.create_chmm1_oracle()
         fail_seq1 = ["h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"]
         pass_seq = [
             "h0",
@@ -131,7 +131,7 @@ class Test_Oracle_CHMM:
         assert not cpgm.is_feasible(fail_seq2)
 
     def test_partial_is_feasible(self):
-        chmm = tc.create_chmm1()
+        chmm = tc.create_chmm1_oracle()
         fail_seq1 = ["h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"]
         pass_seq = [
             "h0",
@@ -172,54 +172,54 @@ class Test_Oracle_CHMM:
         assert not chmm.partial_is_feasible(T=100, seq=fail_seq2)
 
     def test_generate_hidden_length(self):
-        chmm = tc.create_chmm1()
+        chmm = tc.create_chmm1_oracle()
         assert len(chmm.generate_hidden(self.T)) == self.T
         with pytest.raises(InvalidInputError):
             chmm.generate_hidden(-1)
 
     def test_generate_hidden_output(self):
-        chmm = tc.create_chmm1()
+        chmm = tc.create_chmm1_oracle()
         for h in chmm.generate_hidden(self.T):
             assert h in {"h0", "h1"}
 
     def test_generate_hidden_constraint(self):
-        chmm = tc.create_chmm1()
+        chmm = tc.create_chmm1_oracle()
         assert chmm.is_feasible(chmm.generate_hidden(self.T))
 
     def test_generate_hidden_negative_time_steps(self):
-        chmm = tc.create_chmm1()
+        chmm = tc.create_chmm1_oracle()
         with pytest.raises(InvalidInputError):
             chmm.generate_hidden(-1)
 
     def test_generate_observed_from_hidden_length(self):
-        chmm = tc.create_chmm1()
+        chmm = tc.create_chmm1_oracle()
         hidden = chmm.generate_hidden(self.T)
         assert len(chmm.generate_observed_from_hidden(hidden)) == self.T
 
     def test_generate_observed_from_hidden_failure(self):
-        chmm = tc.create_chmm1()
+        chmm = tc.create_chmm1_oracle()
         hidden = ["h0"]
         with pytest.raises(InvalidInputError):
             chmm.generate_observed_from_hidden(hidden)
 
     def test_generate_observed_from_hidden_output(self):
-        chmm = tc.create_chmm1()
+        chmm = tc.create_chmm1_oracle()
         hidden = chmm.generate_hidden(self.T)
         for o in chmm.generate_observed_from_hidden(hidden):
             assert o in {"o0", "o1"}
 
     def test_generate_observed_length(self):
-        chmm = tc.create_chmm1()
+        chmm = tc.create_chmm1_oracle()
         assert len(chmm.generate_observed(self.T)) == self.T
         with pytest.raises(InvalidInputError):
             chmm.generate_observed(-1)
 
     def test_generate_observed_output(self):
-        chmm = tc.create_chmm1()
+        chmm = tc.create_chmm1_oracle()
         for h in chmm.generate_observed(self.T):
             assert h in {"o0", "o1"}
 
     def test_generate_observed_negative_time_steps(self):
-        chmm = tc.create_chmm1()
+        chmm = tc.create_chmm1_oracle()
         with pytest.raises(InvalidInputError):
             chmm.generate_observed(-1)
