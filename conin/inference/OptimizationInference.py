@@ -1,6 +1,8 @@
 import warnings
 
 from conin.util import try_import
+from conin.hmm import HiddenMarkovModel, HMM, ConstrainedHiddenMarkovModel, CHMM
+
 from conin.markov_network import (
     DiscreteMarkovNetwork,
     ConstrainedDiscreteMarkovNetwork,
@@ -85,6 +87,7 @@ class IntegerProgrammingInference:
                 **options,
             )
             return optimize_map_query_model(model, timing=timing, **options)
+
         elif isinstance(pgm, DiscreteBayesianNetwork) or isinstance(
             pgm, ConstrainedDiscreteBayesianNetwork
         ):
@@ -96,6 +99,19 @@ class IntegerProgrammingInference:
                 **options,
             )
             return optimize_map_query_model(model, timing=timing, **options)
+
+        elif isinstance(pgm, HiddenMarkovModel) or isinstance(
+            pgm, ConstrainedHiddenMarkovModel
+        ):
+            model = create_BN_map_query_pyomo_model(
+                pgm=pgm,
+                variables=variables,
+                evidence=evidence,
+                timing=timing,
+                **options,
+            )
+            return optimize_map_query_model(model, timing=timing, **options)
+
         else:
             raise TypeError("Unexpected model type: {type(pgm)}")
 
