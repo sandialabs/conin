@@ -128,53 +128,6 @@ class Algebraic_CHMM(constrained_hmm.ConstrainedHiddenMarkovModel):
         self.data = munch.Munch()
         self._app = None if app is None else weakref.ref(app)
 
-    def load_model(
-        self,
-        *,
-        start_probs=None,
-        transition_probs=None,
-        emission_probs=None,
-        hmm=None,
-    ):
-        """
-        Loads the HMM model with the given parameters.
-        Either give all three dictionaries or hmm, but not both
-
-        Parameters:
-            start_probs (dict, optional): A dictionary representing the start probabilities.
-            transition_probs (dict, optional): A dictionary representing the transition probabilities.
-            emission_probs (dict, optional: A dictionary representing the emission probabilities.
-            hmm (HMM, optional): The HMM we wish to load with.
-
-        Raises:
-            InvalidInputError: If we supply too much or not enough information
-        """
-        if (
-            hmm is not None
-            and start_probs is None
-            and transition_probs is None
-            and emission_probs is None
-        ):
-            # If an HMM object is provided, load it directly
-            self.hmm = hmm
-        elif (
-            start_probs is not None
-            and transition_probs is not None
-            and emission_probs is not None
-        ):
-            # If dictionaries are provided, create an HMM object and load it
-            hmm = HiddenMarkovModel()
-            hmm.load_model(
-                start_probs=start_probs,
-                transition_probs=transition_probs,
-                emission_probs=emission_probs,
-            )
-            self.hmm = hmm
-        else:
-            raise InvalidInputError(
-                "You must provide either an HMM object or all three dictionaries, and not both."
-            )
-
     def generate_model(self, *, observations):
         M = self.generate_unconstrained_model(observations=observations)
         if self._app is None:

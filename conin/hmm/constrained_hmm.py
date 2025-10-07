@@ -67,13 +67,14 @@ class ConstrainedHiddenMarkovModel:
             )
         elif self.constraint_type == "oracle":
             self.chmm = Oracle_CHMM(
-                hmm=self.hidden_markov_model.hmm,
-                constraints=self.constraints,
+                hmm=self.hidden_markov_model.hmm,  # HMM object
+                constraints=self.constraints,  # list of Constraint objects
                 hidden_to_external=self.hidden_markov_model.hidden_to_external,
             )
         elif self.constraint_type == "pyomo":
             self.chmm = Algebraic_CHMM(
-                hmm=self.hidden_markov_model.hmm, constraints=self.constraints
+                hmm=self.hidden_markov_model,  # HiddenMarkovModel object
+                constraints=self.constraints,  # list of PyomoConstraint objects
             )
 
     def generate_hidden(self, time_steps):

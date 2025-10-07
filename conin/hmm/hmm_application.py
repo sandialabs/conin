@@ -44,7 +44,7 @@ class HMMApplication:
     def hmm(self, hmm):
         self._hmm = hmm
         self.oracle.hmm = hmm
-        self.algebraic.load_model(hmm=hmm)
+        self.algebraic.hmm = hmm
 
     def get_hmm(self):
         return self._hmm
