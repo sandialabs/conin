@@ -1,11 +1,7 @@
-# import copy
-from conin.exceptions import InvalidInputError
+#from conin.exceptions import InvalidInputError
 from conin.constraint import Constraint
 
-#from . import internal_constrained_hmm
 from . import chmm
-
-# TODO I Really don't like this initalization and load logic
 
 
 class Oracle_CHMM(chmm.CHMM):
@@ -25,36 +21,6 @@ class Oracle_CHMM(chmm.CHMM):
         super().__init__(hmm=hmm)
         if constraints:
             self.constraints = [self.make_internal_constraint(c, hidden_to_external) for c in constraints]
-
-        #self.load_internal_constrained_hmm()
-
-    def Xget_constrained_hmm(self):
-        return self
-
-    def Xload_model(
-        self, *, start_probs=None, transition_probs=None, emission_probs=None, hmm=None
-    ):
-        super().load_model(
-            start_probs=start_probs,
-            transition_probs=transition_probs,
-            emission_probs=emission_probs,
-            hmm=hmm,
-        )
-        self.load_internal_constrained_hmm()
-
-    def Xload_internal_constrained_hmm(self):
-        """
-        Creates self.internal_constrained_hmm
-        """
-        # Make internal constraints
-        internal_constraints = []
-        for constraint in self.constraints:
-            internal_constraints.append(self.make_internal_constraint(constraint))
-
-        self.internal_constrained_hmm = internal_constrained_hmm.Internal_Oracle_CHMM(
-            internal_hmm=self.hmm.internal_hmm,
-            constraints=internal_constraints,
-        )
 
     def make_internal_constraint(self, constraint, hidden_to_external):
         """
@@ -82,32 +48,6 @@ class Oracle_CHMM(chmm.CHMM):
 
         return internal_constraint
 
-    def Xadd_constraint(self, constraint):
-        """
-        Adds a new constraint to the HMM.
-        Automatically updates internal constraints if possible.
-
-        Parameters:
-            constraint (Constraint): A function that takes a sequence as input and returns a boolean indicating whether the sequence satisfies the constraint.
-        """
-        self.constraints.append(constraint)
-        self.internal_constrained_hmm.add_constraint(
-            self.make_internal_constraint(constraint)
-        )
-
-    def Xset_constraints(self, constraints):
-        """
-        Resets the constraints
-        Automatically updates internal constraints if possible.
-
-        Parameters:
-            constraint (array of Constraint): Our new Constraints
-        """
-        self.constraints = []
-        for constraint in constraints:
-            self.add_constraint(constraint)
-        self.load_internal_constrained_hmm()
-
     def generate_hidden(self, time_steps, max_failures=1000):
         """
         Generates a sequence of hidden variables satisfying the internal constraints
@@ -129,7 +69,6 @@ class Oracle_CHMM(chmm.CHMM):
             if ctr > max_failures:
                 raise RuntimeError(f"Failed to generate a feasible hidden state after {max_failures} trials")
         return hidden
-        #return [self.hmm.hidden_to_external[h] for h in internal_hidden]
 
     def is_feasible(self, seq):
         """

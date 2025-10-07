@@ -3,6 +3,7 @@ import numpy as np
 import munch
 
 from . import learning
+from .constrained_hmm import ConstrainedHiddenMarkovModel
 from .algebraic_chmm import create_algebraic_chmm
 from .oracle_chmm import Oracle_CHMM
 
@@ -16,7 +17,7 @@ class HMMApplication:
 
         # Oracle HMM representation
         self._hmm = None
-        self.oracle = Oracle_CHMM()
+        self.oracle = ConstrainedHiddenMarkovModel()
         self.generate_oracle_constraints()
 
         # Algebraic HMM representation
@@ -42,7 +43,7 @@ class HMMApplication:
     @hmm.setter
     def hmm(self, hmm):
         self._hmm = hmm
-        self.oracle.load_model(hmm=hmm)
+        self.oracle.hmm = hmm
         self.algebraic.load_model(hmm=hmm)
 
     def get_hmm(self):

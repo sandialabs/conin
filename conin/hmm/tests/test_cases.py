@@ -137,7 +137,7 @@ class Num_Zeros(conin.hmm.HMMApplication):
     ):
         self.hmm = hmm
         self.constraints = constraints
-        self.oracle.set_constraints(constraints)
+        self.oracle.constraints = constraints
         self.lb = lb
         self.ub = ub
 

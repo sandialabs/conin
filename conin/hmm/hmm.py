@@ -6,8 +6,8 @@ import json
 import ast
 
 from conin.exceptions import InvalidInputError
-from conin.hmm import Statistical_Model
-from conin.hmm import Internal_Statistical_Model
+#from conin.hmm import Statistical_Model
+#from conin.hmm import Internal_Statistical_Model
 from conin.util import Util
 
 
@@ -21,7 +21,7 @@ class HMM:
             self.check_dimensions()
         self.load_dimensions()
 
-    def get_internal_hmm(self):
+    def Xget_internal_hmm(self):
         return self
 
     def load_start_vec(self, start_vec, check_errors=True):
@@ -219,7 +219,7 @@ class HMM:
         return self.generate_observed_from_hidden(hidden)
 
 
-class HiddenMarkovModel(Statistical_Model):
+class HiddenMarkovModel:
 
     def __init__(self):
         """
@@ -253,13 +253,13 @@ class HiddenMarkovModel(Statistical_Model):
         """
         return pprint.pformat(self.to_dict(), indent=4, sort_dicts=True)
 
-    def get_hmm(self):
+    def Xget_hmm(self):
         """
         Returns hmm
         """
         return self
 
-    def get_internal_hmm(self):
+    def Xget_internal_hmm(self):
         """
         Returns internal hmm
         """
@@ -272,6 +272,10 @@ class HiddenMarkovModel(Statistical_Model):
     @property
     def hmm(self):
         return self._hmm
+
+    @hmm.setter
+    def hmm(self, hmm):
+        self._hmm = hmm
     
     @property
     def hidden_states(self):

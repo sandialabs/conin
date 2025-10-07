@@ -1,5 +1,7 @@
 from conin.exceptions import InvalidInputError, InsufficientSolutionsError
 from conin.hmm import HiddenMarkovModel, HMM
+from conin.hmm import CHMM
+from conin.hmm.constrained_hmm import ConstrainedHiddenMarkovModel
 from conin.hmm.oracle_chmm import Oracle_CHMM
 
 from .viterbi import viterbi
@@ -34,7 +36,8 @@ class Inference:
         """
         if (
             isinstance(statistical_model, HiddenMarkovModel)
-            or isinstance(statistical_model, Oracle_CHMM)
+            or isinstance(statistical_model, CHMM)
+            or isinstance(statistical_model, ConstrainedHiddenMarkovModel)
             or isinstance(statistical_model, HMM)
         ):
             self.statistical_model = statistical_model

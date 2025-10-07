@@ -1,4 +1,3 @@
-#from conin.exceptions import InvalidInputError
 from conin.hmm import HMM
 
 
