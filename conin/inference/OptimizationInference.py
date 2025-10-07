@@ -129,7 +129,7 @@ class IntegerProgrammingInference:
 
             if type(evidence) is dict:
                 observed = [evidence[i] for i in range(len(evidence))]
-                results = lp_inference(hmm=pgm_, observed=observed, **options)
+                results = lp_inference(hmm=pgm, observed=observed, **options)
                 solutions = results.solutions
                 for soln in solutions:
                     soln.variable_value = {
