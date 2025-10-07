@@ -4,7 +4,7 @@ from conin import *
 from conin.hmm import *
 from conin.hmm.chmm_oracle import Oracle_CHMM
 
-import conin.hmm.tests.test_cases as tc
+import conin.hmm.tests.examples as tc
 import conin.common_constraints as cc
 
 

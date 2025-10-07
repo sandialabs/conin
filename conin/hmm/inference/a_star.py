@@ -114,7 +114,9 @@ def a_star_(
 
         if t == time_steps:
             if chmm is None or chmm.internal_constrained_hmm.is_feasible(seq):
-                output.append(munch.Munch(hidden=seq, log_likelihood=-val))
+                output.append(
+                    munch.Munch(variable_value=seq, hidden=seq, log_likelihood=-val)
+                )
                 if len(output) == num_solutions:
                     termination_condition = "ok"
                     break
@@ -179,6 +181,7 @@ def a_star_(
 
     ans = munch.Munch(
         observations=observed,
+        solution=output[0],
         solutions=output,
         termination_condition=termination_condition,
     )
@@ -208,10 +211,15 @@ def a_star(
     solutions = []
     for sol in ans_.solutions:
         hidden = [hmm.hidden_to_external[h] for h in sol.hidden]
-        solutions.append(munch.Munch(hidden=hidden, log_likelihood=sol.log_likelihood))
+        solutions.append(
+            munch.Munch(
+                variable_value=hidden, hidden=hidden, log_likelihood=sol.log_likelihood
+            )
+        )
 
     return munch.Munch(
         observations=observed,
+        solution=solutions[0],
         solutions=solutions,
         termination_condition=ans_.termination_condition,
     )

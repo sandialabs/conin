@@ -3,7 +3,7 @@ import pytest
 import conin.hmm
 import conin.hmm.chmm_algebraic
 
-import conin.hmm.tests.test_cases as tc
+import conin.hmm.tests.examples as tc
 
 
 class Test_IndexSets1:

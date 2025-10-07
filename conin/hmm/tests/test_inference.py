@@ -10,7 +10,7 @@ from conin import *
 # from conin.hmm.oracle_chmm import Oracle_CHMM
 from conin.hmm.inference import ip_inference
 
-import conin.hmm.tests.test_cases as tc
+import conin.hmm.tests.examples as tc
 
 mip_solver = pyomo.opt.check_available_solvers("glpk", "gurobi")
 mip_solver = mip_solver[0] if mip_solver else None
