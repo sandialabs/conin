@@ -183,7 +183,6 @@ class XTest_Application_CHMM:
         assert not app.oracle.is_feasible(seq3)
 
     # This assumes that the internal logic is correct, and is really just
-    # testing the wrapper
     def test_initalize_hmm_from_simulations(self, app):
         app.initialize_hmm_from_simulations(num=7)
         assert app.hmm == app.oracle.hmm
