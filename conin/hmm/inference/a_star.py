@@ -177,7 +177,7 @@ def a_star_(
             termination_condition = "ok"
 
     ans = munch.Munch(
-        observations=observed,
+        observed=observed,
         solution=output[0],
         solutions=output,
         termination_condition=termination_condition,
@@ -215,7 +215,7 @@ def a_star(
         )
 
     return munch.Munch(
-        observations=observed,
+        observed=observed,
         solution=solutions[0],
         solutions=solutions,
         termination_condition=ans_.termination_condition,

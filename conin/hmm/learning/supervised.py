@@ -21,7 +21,7 @@ def supervised_learning(
     Inputs:
         - simulations: Generated using helper.convert_to_simulations
         - hidden_states: Hidden states that you could possibly have (you don't need to see all of them in the simulations)
-        - observable_states: Same as hidden states but for observations
+        - observable_states: Same as hidden states but for observed states
         - X_tolerance: If in a simulation we have a zero in our calculation we replace it with this tolerance
         - X_priors: These are only used for transitions or emissions which are not observed and for which we want some default values
     """

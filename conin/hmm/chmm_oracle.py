@@ -23,6 +23,8 @@ class Oracle_CHMM(chmm.CHMM):
                 self._make_internal_constraint(c, hidden_to_external)
                 for c in constraints
             ]
+        else:
+            self.constraints = []
 
     def _make_internal_constraint(self, constraint, hidden_to_external):
         """

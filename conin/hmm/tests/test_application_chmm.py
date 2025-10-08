@@ -98,9 +98,7 @@ def app():
     # 1/(1-prob_stay_in_same_state) = expected number of iterations of the
     # same state
     prob_stay_in_same_state = 0.6
-    prob_error = (
-        0.3  # Proability that hidden state h has an observation which does not match it
-    )
+    prob_error = 0.3  # Probability that hidden state h has an observed state that does not match it
     num_zeros = 10  # Number of zeros
     time = 20
     app = Num_Zeros()

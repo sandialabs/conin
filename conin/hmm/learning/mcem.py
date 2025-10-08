@@ -15,7 +15,7 @@ def mcem(
     # integration.
     *,
     app,
-    observations,
+    observed,
     hidden_states,
     observable_states,
     samples_per_iteration=None,
@@ -25,7 +25,7 @@ def mcem(
     transition_tolerance=None,
     emission_tolerance=None,
 ):
-    assert len(observations) > 0, "No observations"
+    assert len(observed) > 0, "No observed states"
     assert (
         hidden_states is not None and len(hidden_states) != 0
     ), "No hidden states specified"
@@ -53,12 +53,12 @@ def mcem(
         simulations = []
         log_prob = 0.0
         for _ in range(samples_per_iteration):
-            feasible_hidden = app.generate_hidden(observations)
-            log_prob = log_prob + app.hmm.log_probability(observations, feasible_hidden)
+            feasible_hidden = app.generate_hidden(observed)
+            log_prob = log_prob + app.hmm.log_probability(observed, feasible_hidden)
             simulations.append(
                 munch.Munch(
-                    observations=observations,
-                    hidden=app.generate_hidden(observations),
+                    observed=observed,
+                    hidden=app.generate_hidden(observed),
                 )
             )
 

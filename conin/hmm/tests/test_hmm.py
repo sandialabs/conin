@@ -339,17 +339,17 @@ class Test_HMM1:
 
     def test_log_probability(self):
         hmm = tc.create_hmm1()
-        observation1 = ["o1"]
+        observed1 = ["o1"]
         hidden1 = ["h0"]
-        observation2 = ["o0", "o0"]
+        observed2 = ["o0", "o0"]
         hidden2 = ["h1", "h0"]
 
         assert math.isclose(
-            hmm.log_probability(observations=observation1, hidden=hidden1),
+            hmm.log_probability(observed=observed1, hidden=hidden1),
             math.log(0.4) + math.log(0.3),
         )
         assert math.isclose(
-            hmm.log_probability(observations=observation2, hidden=hidden2),
+            hmm.log_probability(observed=observed2, hidden=hidden2),
             math.log(0.6) + math.log(0.4) + math.log(0.2) + math.log(0.7),
         )
 

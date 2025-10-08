@@ -515,7 +515,7 @@ class HiddenMarkovModel:
         Generates a random observed sequence of states from a hidden sequence of states.
 
         Parameters:
-            hidden (list): A list of hidden states from which to generate observations.
+            hidden (list): A list of hidden states from which to generate observed states.
 
         Returns:
             list: Observations generated from the hidden states.
@@ -537,16 +537,16 @@ class HiddenMarkovModel:
         internal_observed = self._hmm.generate_observed(time_steps)
         return [self.observed_to_external[o] for o in internal_observed]
 
-    def log_probability(self, observations, hidden):
+    def log_probability(self, observed, hidden):
         """
-        Compute the log-probability of the observations given the hidden state.
+        Compute the log-probability of the observed states given the hidden state.
         """
 
         h = [self.hidden_to_internal[hval] for hval in hidden]
-        o = [self.observed_to_internal[oval] for oval in observations]
+        o = [self.observed_to_internal[oval] for oval in observed]
 
         ans = math.log(self.start_vec[h[0]]) + math.log(self.emission_mat[h[0]][o[0]])
-        for t in range(1, len(observations)):
+        for t in range(1, len(observed)):
             ans += math.log(self.transition_mat[h[t - 1]][h[t]]) + math.log(
                 self.emission_mat[h[t]][o[t]]
             )

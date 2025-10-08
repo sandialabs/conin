@@ -29,7 +29,7 @@ class ViterbiInference:
             list of variables over which we want to compute the max-marginal.
 
         evidence: dict or list
-            a list of observations or dict key, value pair as {var: state_of_var_observed}
+            a list of observed states or dict key, value pair as {var: state_of_var_observed}
 
         show_progress: boolean
             If True, shows search progress. (ignored)

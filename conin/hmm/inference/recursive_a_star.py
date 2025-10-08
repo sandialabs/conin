@@ -323,7 +323,7 @@ def recursive_a_star(
             termination_condition = "ok"
 
     ans = munch.Munch(
-        observations=observed,
+        observed=observed,
         solutions=output,
         termination_condition=termination_condition,
         knowledge_state_times=knowledge_state_times_output,

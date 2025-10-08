@@ -12,7 +12,7 @@ def viterbi_(*, observed, hmm):
     a matrix/vector representation of a hidden Markov model.
 
     Parameters:
-        observed (list): The sequence of observations to perform inference on.
+        observed (list): The sequence of observed states to perform inference on.
         hmm (HMM): The HMM model to use for inference.
 
     Returns:
@@ -74,7 +74,7 @@ def viterbi_(*, observed, hmm):
             variable_value=hidden, hidden=hidden, log_likelihood=max_prob
         )
         ans = munch.Munch(
-            observations=observed,
+            observed=observed,
             solution=soln,
             solutions=[soln],
             termination_condition="ok",
@@ -113,7 +113,7 @@ def viterbi(*, observed, hmm):
         )
 
     return munch.Munch(
-        observations=observed,
+        observed=observed,
         solution=solutions[0],
         solutions=solutions,
         termination_condition=ans_.termination_condition,

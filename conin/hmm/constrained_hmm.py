@@ -153,9 +153,10 @@ class ConstrainedHiddenMarkovModel:
         Returns:
             bool: True if the sequence satisfies all constraints, False otherwise.
         """
-        return self.chmm.is_feasible(
-            [self.hidden_markov_model.hidden_to_internal[h] for h in seq]
-        )
+        for constraint in self.constraints:
+            if not constraint(seq):
+                return False
+        return True
 
     def partial_is_feasible(self, *, T, seq):
         """

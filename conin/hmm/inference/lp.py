@@ -27,7 +27,7 @@ def lp_inference(
 
     if debug:
         tic("Generating Model - START")
-    M = hmm.chmm.generate_unconstrained_model(observations=observed)
+    M = hmm.chmm.generate_unconstrained_model(observed=observed)
     if debug:
         toc("Generating Model - STOP")
     if debug:
@@ -54,7 +54,7 @@ def lp_inference(
         variable_value=hidden, hidden=hidden, log_likelihood=log_likelihood
     )
     ans = munch.Munch(
-        observations=observed,
+        observed=observed,
         solution=soln,
         solutions=[soln],
         termination_condition="ok",
@@ -88,7 +88,7 @@ def ip_inference(
 
     if debug:
         tic("Generating Model - START")
-    M = hmm.chmm.generate_model(observations=observed)
+    M = hmm.chmm.generate_model(observed=observed)
     if debug:
         toc("Generating Model - STOP")
     if debug:
@@ -128,7 +128,7 @@ def ip_inference(
         variables=variables,
     )
     ans = munch.Munch(
-        observations=observed,
+        observed=observed,
         solution=soln,
         solutions=[soln],
         termination_condition="ok",

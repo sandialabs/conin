@@ -11,7 +11,7 @@ from . import chmm
 import pyomo.environ as pyo
 
 
-def _create_index_sets(*, hmm, observations):
+def _create_index_sets(*, hmm, observed):
     # N - Number of hidden states
     # start_probs[i] - map from i=1..N to a probability value in 0..1
     # emission_probes[i][k] - probability that output k is generated when in hidden state i
@@ -19,12 +19,12 @@ def _create_index_sets(*, hmm, observations):
     # hidden state j
 
     N = hmm.num_hidden_states
-    obs = [hmm.observed_to_internal[o] for o in observations]
+    obs = [hmm.observed_to_internal[o] for o in observed]
     start_probs = hmm.start_vec
     emission_probs = hmm.emission_mat
     trans_mat = np.array(hmm.transition_mat)
 
-    Tmax = len(observations)
+    Tmax = len(observed)
     T = list(range(Tmax))
 
     A = list(range(N))
@@ -105,7 +105,7 @@ def _create_index_sets(*, hmm, observations):
     index_sets.Ge = Ge
     index_sets.GG = GG
     index_sets.states = states
-    index_sets.observations_index = obs
+    index_sets.observed_index = obs
     index_sets.hidden_to_internal = hmm.hidden_to_internal
 
     return index_sets
@@ -133,13 +133,13 @@ class Algebraic_CHMM(chmm.CHMM):
         # An empty Munch object for index data
         self.data = munch.Munch()
 
-    def generate_model(self, *, observations):
-        M = self.generate_unconstrained_model(observations=observations)
+    def generate_model(self, *, observed):
+        M = self.generate_unconstrained_model(observed=observed)
         for con in self.constraints:
             con(M, self.data)
         return M
 
-    def Xgenerate_unconstrained_model(self, *, observations):  # pragma: nocover
+    def Xgenerate_unconstrained_model(self, *, observed):  # pragma: nocover
         raise NotImplementedError(
             "Algebraic_CHMM.generate_unconstrained_model() is not implemented"
         )
@@ -179,9 +179,9 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
     def Xgenerate_pyomo_constraints(self, M):
         return self._app().generate_pyomo_constraints(M=M)
 
-    def generate_unconstrained_model(self, *, observations):
-        self.observations = observations
-        D = _create_index_sets(hmm=self.hidden_markov_model, observations=observations)
+    def generate_unconstrained_model(self, *, observed):
+        self.observed = observed
+        D = _create_index_sets(hmm=self.hidden_markov_model, observed=observed)
         if self.cache_indices:
             self.data = D
 
@@ -255,7 +255,7 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
 
         return M
 
-    def Xgenerate_hidden(self, *, observations, solver=None, solver_options=None):
+    def Xgenerate_hidden(self, *, observed, solver=None, solver_options=None):
         """
         This should probably be called something different
 
@@ -266,8 +266,8 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
             quiet = solver_options["quiet"]
         else:
             quiet = True
-        hidden = self.hmm.generate_hidden_conditioned_on_observations(observations)
-        T = len(observations)
+        hidden = self.hmm.generate_hidden_conditioned_on_observed(observed)
+        T = len(observed)
 
         # Find the closest feasible point
         old_x_binary, old_y_binary, old_cache_indices = (
@@ -278,7 +278,7 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
         self.x_binary = True
         self.y_binary = False
         self.cache_indices = True
-        M = self.generate_algebraic_constraints(observations=observations)
+        M = self.generate_algebraic_constraints(observed=observed)
         M.hmm.o.deactivate()
 
         M.closest_point = pyo.Objective(
