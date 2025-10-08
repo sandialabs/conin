@@ -4,8 +4,6 @@ from conin.hmm import HiddenMarkovModel
 
 
 def supervised_learning(
-    # The training data may not exhibit all feasible starting values, so we allow
-    # for a default non-zero start_tolerance, transition_tolerance and emission_tolerance.
     *,
     simulations,
     hidden_states,
@@ -17,6 +15,9 @@ def supervised_learning(
     emission_prior=None  # Nonzero values
 ):
     """
+    The training data may not exhibit all feasible starting values, so we allow
+    for a default non-zero start_tolerance, transition_tolerance and emission_tolerance.
+
     Inputs:
         - simulations: Generated using helper.convert_to_simulations
         - hidden_states: Hidden states that you could possibly have (you don't need to see all of them in the simulations)
@@ -107,13 +108,6 @@ def supervised_learning(
             for o in observable_states:
                 emission_probs[i, o] /= rowsum[i]
 
-    # import pprint
-    # print()
-    # pprint.pprint(start_probs)
-    # print()
-    # pprint.pprint(transition_probs)
-    # print()
-    # pprint.pprint(emission_probs)
     hmm = HiddenMarkovModel()
     hmm.load_model(
         start_probs=start_probs,

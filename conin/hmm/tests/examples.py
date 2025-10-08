@@ -1,5 +1,6 @@
 import pyomo.environ as pe
 import conin.hmm
+from conin import pyomo_constraint_fn
 
 import munch
 import random
@@ -126,6 +127,7 @@ def create_chmm1_pyomo():
 
 
 class Num_Zeros(conin.hmm.HMMApplication):
+
     def __init__(self):
         self.num_zeros = None
         super().__init__(self.__class__.__name__)
@@ -134,13 +136,12 @@ class Num_Zeros(conin.hmm.HMMApplication):
         self,
         *,
         hmm,
-        constraints,
+        oracle_constraints,
         lb,
         ub,
     ):
         self.hmm = hmm
-        self.constraints = constraints
-        self.oracle.constraints = constraints
+        self._oracle_constraints = oracle_constraints
         self.lb = lb
         self.ub = ub
 
@@ -167,6 +168,22 @@ class Num_Zeros(conin.hmm.HMMApplication):
             output.append(res)
         return output
 
+    def get_oracle_constraints(self):
+        return self._oracle_constraints
+
+    def get_pyomo_constraints(self):
+        @pyomo_constraint_fn
+        def constraint(M, D):
+            h0 = D.hidden_to_internal["h0"]
+            M.h0_lower = pe.Constraint(expr=sum(M.hmm.x[t, h0] for t in D.T) >= self.lb)
+            M.h0_upper = pe.Constraint(expr=sum(M.hmm.x[t, h0] for t in D.T) <= self.ub)
+
+        return [constraint]
+
+    #
+    # The following methods are used by recursive A*
+    #
+
     def initialize_constraint_data(self, hidden_state):
         if hidden_state == "h0":
             return 1
@@ -186,12 +203,3 @@ class Num_Zeros(conin.hmm.HMMApplication):
             return constraint_data + 1
         else:
             return constraint_data
-
-    def generate_pyomo_constraints(self, *, M):
-        # Data used to construct the base HMM formulation
-        D = self.algebraic.data
-        h0 = self.hmm.hidden_to_internal["h0"]
-        M.h0_lower = pe.Constraint(expr=sum(M.hmm.x[t, h0] for t in D.T) >= self.lb)
-        M.h0_upper = pe.Constraint(expr=sum(M.hmm.x[t, h0] for t in D.T) <= self.ub)
-
-        return M

@@ -59,7 +59,7 @@ def chmm(hmm, constraints):
 @pytest.fixture
 def recursive_app(hmm, constraints, lb, ub):
     app = tc.Num_Zeros()
-    app.initialize(hmm=hmm, constraints=constraints, lb=lb, ub=ub)
+    app.initialize(hmm=hmm, oracle_constraints=constraints, lb=lb, ub=ub)
     return app
 
 
