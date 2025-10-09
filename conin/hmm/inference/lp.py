@@ -2,6 +2,7 @@ import math
 import munch
 
 # from conin.hmm import hmm_application
+from conin.hmm import ConstrainedHiddenMarkovModel
 
 import pyomo.environ as pyo
 from pyomo.common.timing import tic, toc
@@ -27,7 +28,9 @@ def lp_inference(
 
     if debug:
         tic("Generating Model - START")
-    M = hmm.chmm.generate_unconstrained_model(observed=observed)
+    chmm = ConstrainedHiddenMarkovModel(hmm=hmm)
+    chmm.initialize_chmm("pyomo")
+    M = chmm.chmm.generate_unconstrained_model(observed=observed)
     if debug:
         toc("Generating Model - STOP")
     if debug:
@@ -43,9 +46,9 @@ def lp_inference(
     log_likelihood = pyo.value(M.hmm.o)
     hidden = ["__UNKNOWN__"] * T
     for t in range(T):
-        for a in hmm.chmm.data.A:
+        for a in chmm.chmm.data.A:
             if pyo.value(M.hmm.x[t, a]) > 0.5:
-                hidden[t] = hmm.hidden_markov_model.hidden_to_external[a]
+                hidden[t] = hmm.hidden_to_external[a]
         assert (
             hidden[t] != "__UNKNOWN__"
         ), f"ERROR: Unexpected missing hidden state at time step {t}"
@@ -60,7 +63,7 @@ def lp_inference(
         termination_condition="ok",
     )
     if debug:
-        ans.hmm = hmm.chmm.hmm
+        ans.hmm = hmm
         ans.M = M
         print(f"E: {len(hmm.chmm.data.E)}")
         print(f"F: {len(hmm.chmm.data.F)}")

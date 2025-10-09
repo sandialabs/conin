@@ -104,14 +104,12 @@ class IntegerProgrammingInference:
         elif isinstance(pgm, HiddenMarkovModel) or isinstance(pgm, HMM):
             # TODO: warning about specifying 'variables'
             # TODO: warning about specifying timing
-            pgm_ = ConstrainedHiddenMarkovModel(hmm=pgm)
-            pgm_.initialize_chmm("pyomo")
             if type(evidence) is list:
-                return lp_inference(hmm=pgm_, observed=evidence, **options)
+                return lp_inference(hmm=pgm, observed=evidence, **options)
 
             if type(evidence) is dict:
                 observed = [evidence[i] for i in range(len(evidence))]
-                results = lp_inference(hmm=pgm_, observed=observed, **options)
+                results = lp_inference(hmm=pgm, observed=observed, **options)
                 solutions = results.solutions
                 for soln in solutions:
                     soln.variable_value = {
@@ -129,7 +127,7 @@ class IntegerProgrammingInference:
 
             if type(evidence) is dict:
                 observed = [evidence[i] for i in range(len(evidence))]
-                results = lp_inference(hmm=pgm, observed=observed, **options)
+                results = ip_inference(hmm=pgm, observed=observed, **options)
                 solutions = results.solutions
                 for soln in solutions:
                     soln.variable_value = {
