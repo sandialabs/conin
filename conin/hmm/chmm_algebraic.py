@@ -139,11 +139,6 @@ class Algebraic_CHMM(chmm.CHMM):
             con(M, self.data)
         return M
 
-    def Xgenerate_unconstrained_model(self, *, observed):  # pragma: nocover
-        raise NotImplementedError(
-            "Algebraic_CHMM.generate_unconstrained_model() is not implemented"
-        )
-
 
 class PyomoAlgebraic_CHMM(Algebraic_CHMM):
 
@@ -172,12 +167,6 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
         # Default configuration
         # self.solver = "gurobi" if solver is None else solver
         # self.solver_options = {} if solver_options is None else solver_options
-
-    def X_generate_application_constraints(self, M):
-        return self.generate_pyomo_constraints(M)
-
-    def Xgenerate_pyomo_constraints(self, M):
-        return self._app().generate_pyomo_constraints(M=M)
 
     def generate_unconstrained_model(self, *, observed):
         self.observed = observed
