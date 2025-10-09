@@ -45,6 +45,7 @@ class Test_HMM1:
 
     def test_start_vec(self):
         hmm = tc.create_hmm1()
+        hmm.initialize()
         assert hmm.start_vec == [0.4, 0.6]
 
     def test_start_vec_negative(self):
@@ -57,6 +58,7 @@ class Test_HMM1:
                 start_probs=_start_probs,
                 transition_probs=hmm.get_transition_probs(),
                 emission_probs=hmm.get_emission_probs(),
+                initialize=True,
             )
 
     def test_start_vec_new_hidden_state(self):
@@ -69,6 +71,7 @@ class Test_HMM1:
                 start_probs=_start_probs,
                 transition_probs=hmm.get_transition_probs(),
                 emission_probs=hmm.get_emission_probs(),
+                initialize=True,
             )
 
     def test_start_vec_sum_to_one(self):
@@ -81,10 +84,12 @@ class Test_HMM1:
                 start_probs=_start_probs,
                 transition_probs=hmm.get_transition_probs(),
                 emission_probs=hmm.get_emission_probs(),
+                initialize=True,
             )
 
     def test_transition_matrix(self):
         hmm = tc.create_hmm1()
+        hmm.initialize()
         assert hmm.transition_mat == [[0.9, 0.1], [0.2, 0.8]]
 
     def test_transition_mat_negative(self):
@@ -97,6 +102,7 @@ class Test_HMM1:
                 start_probs=hmm.get_start_probs(),
                 transition_probs=_transition_probs,
                 emission_probs=hmm.get_emission_probs(),
+                initialize=True,
             )
 
     def test_transition_mat_sum_to_one(self):
@@ -109,6 +115,7 @@ class Test_HMM1:
                 start_probs=hmm.get_start_probs(),
                 transition_probs=_transition_probs,
                 emission_probs=hmm.get_emission_probs(),
+                initialize=True,
             )
 
     def test_transition_mat_filled_out(self):
@@ -121,6 +128,7 @@ class Test_HMM1:
                 start_probs=hmm.get_start_probs(),
                 transition_probs=_transition_probs,
                 emission_probs=hmm.get_emission_probs(),
+                initialize=True,
             )
 
     def test_transition_mat_extra_label(self):
@@ -133,10 +141,12 @@ class Test_HMM1:
                 start_probs=hmm.get_start_probs(),
                 transition_probs=_transition_probs,
                 emission_probs=hmm.get_emission_probs(),
+                initialize=True,
             )
 
     def test_emission_matrix(self):
         hmm = tc.create_hmm1()
+        hmm.initialize()
         assert hmm.emission_mat == [[0.7, 0.3], [0.4, 0.6]]
 
     def test_emission_mat_negative(self):
@@ -149,6 +159,7 @@ class Test_HMM1:
                 start_probs=hmm.get_start_probs(),
                 transition_probs=hmm.get_transition_probs(),
                 emission_probs=_emission_probs,
+                initialize=True,
             )
 
     def test_emission_mat_sum_to_one(self):
@@ -161,6 +172,7 @@ class Test_HMM1:
                 start_probs=hmm.get_start_probs(),
                 transition_probs=hmm.get_transition_probs(),
                 emission_probs=_emission_probs,
+                initialize=True,
             )
 
     def test_emission_mat_filled_out(self):
@@ -173,6 +185,7 @@ class Test_HMM1:
                 start_probs=hmm.get_start_probs(),
                 transition_probs=hmm.get_transition_probs(),
                 emission_probs=_emission_probs,
+                initialize=True,
             )
 
     def test_emission_mat_extra_label(self):
@@ -185,6 +198,7 @@ class Test_HMM1:
                 start_probs=hmm.get_start_probs(),
                 transition_probs=hmm.get_transition_probs(),
                 emission_probs=_emission_probs,
+                initialize=True,
             )
 
     def test_get_hidden_states(self):
@@ -364,5 +378,6 @@ class Test_HMM_Util:
             observed_states=observed_states,
             seed=1,
         )
+        hmm.initialize()
         assert set(hmm.get_hidden_states()) == set(hidden_states)
         assert set(hmm.get_observable_states()) == set(observed_states)
