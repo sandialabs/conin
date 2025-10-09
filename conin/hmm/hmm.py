@@ -260,7 +260,9 @@ class HiddenMarkovModel:
     def hidden_states(self):
         return self.hidden_to_external
 
-    def load_model(self, *, start_probs, transition_probs, emission_probs, initialize=False):
+    def load_model(
+        self, *, start_probs, transition_probs, emission_probs, initialize=False
+    ):
         """
         Loads the model parameters including starting probabilities, transition probabilities, and emission probabilities.
 
