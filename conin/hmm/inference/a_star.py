@@ -4,7 +4,7 @@ import numpy as np
 import munch
 import time
 
-from conin.hmm import HiddenMarkovModel, HMM
+from conin.hmm.hmm import HiddenMarkovModel, HMM_MatVecRepn
 from conin.hmm import hmm_application
 
 from dataclasses import dataclass, field
@@ -52,7 +52,7 @@ def a_star_(
     #    hmm.generate_oracle_constraints()
 
     if chmm:  # CHMM
-        hmm = chmm.hmm  # HMM
+        hmm = chmm.hmm  # HMM_MatVecRepn or HiddenMarkovModel
 
     # Precompute log probabilities for emission and transmission matrices
     log_emission_mat = {
@@ -135,7 +135,7 @@ def a_star_(
                     continue
                 if (
                     chmm is None or chmm.partial_is_feasible(T=time_steps, seq=seq)
-                ) or (isinstance(hmm, HMM)):
+                ) or (isinstance(hmm, HMM_MatVecRepn)):
                     tempGScore = (
                         currentGScore
                         - log_transition_mat[h1, h2]
@@ -191,7 +191,7 @@ def a_star(
     hmm,
     **kwargs,
 ):
-    if isinstance(hmm, HMM):
+    if isinstance(hmm, HMM_MatVecRepn):
         return a_star_(observed=observed, hmm=hmm, **kwargs)
 
     if isinstance(hmm, HiddenMarkovModel):
@@ -201,7 +201,7 @@ def a_star(
         hmm = hmm.hidden_markov_model
 
     observed_ = [hmm.observed_to_internal[o] for o in observed]
-    hmm_ = hmm.hmm  # HMM instance associated with the HiddenMarkovModel
+    hmm_ = hmm.repn  # HMM_MatVecRepn instance associated with the HiddenMarkovModel
     ans_ = a_star_(observed=observed_, chmm=chmm, hmm=hmm_, **kwargs)
 
     # Convert internal indices back to external labels

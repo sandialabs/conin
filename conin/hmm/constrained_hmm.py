@@ -64,13 +64,13 @@ class ConstrainedHiddenMarkovModel:
             self.constraint_type = constraint_type
         if self.constraint_type is None:
             self.chmm = CHMM(
-                hmm=self.hidden_markov_model.hmm, constraints=self.constraints
+                hmm=self.hidden_markov_model.repn, constraints=self.constraints
             )
         elif self.constraint_type == "oracle":
             from .chmm_oracle import Oracle_CHMM
 
             self.chmm = Oracle_CHMM(
-                hmm=self.hidden_markov_model.hmm,  # HMM object
+                hmm=self.hidden_markov_model.repn,  # HMM object
                 constraints=self.constraints,  # list of Constraint objects
                 hidden_to_external=self.hidden_markov_model.hidden_to_external,
             )
@@ -117,7 +117,7 @@ class ConstrainedHiddenMarkovModel:
             raise InvalidInputError(
                 "ConstrainedHiddenMarkovModel.generate_observed_from_hidden() - The sequence of hidden states is not feasible."
             )
-        internal_observed = self.hidden_markov_model.hmm.generate_observed_from_hidden(
+        internal_observed = self.hidden_markov_model.repn.generate_observed_from_hidden(
             internal_hidden
         )
         return [

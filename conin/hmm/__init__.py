@@ -1,6 +1,6 @@
 # conin.__init__.py
 
-from .hmm import HiddenMarkovModel, HMM
+from .hmm import HiddenMarkovModel
 from .hmm_util import random_hmm
 from .constrained_hmm import ConstrainedHiddenMarkovModel
 from .chmm import CHMM

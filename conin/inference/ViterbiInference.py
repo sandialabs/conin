@@ -1,7 +1,7 @@
 import warnings
 
 from conin.util import try_import
-from conin.hmm import HiddenMarkovModel, HMM
+from conin.hmm.hmm import HiddenMarkovModel, HMM_MatVecRepn
 from conin.hmm.inference import viterbi
 
 
@@ -39,7 +39,7 @@ class ViterbiInference:
         """
         pgm = self.pgm
 
-        if isinstance(pgm, HiddenMarkovModel) or isinstance(pgm, HMM):
+        if isinstance(pgm, HiddenMarkovModel) or isinstance(pgm, HMM_MatVecRepn):
             if type(evidence) is dict:
                 observed = [evidence[i] for i in range(len(evidence))]
                 results = viterbi(observed=observed, hmm=pgm)

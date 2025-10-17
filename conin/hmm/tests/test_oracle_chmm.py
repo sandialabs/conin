@@ -28,7 +28,7 @@ class Test_Oracle_CHMM:
             emission_probs=cpgm.hidden_markov_model.get_emission_probs(),
             transition_probs=cpgm.hidden_markov_model.get_transition_probs(),
         )
-        _chmm = Oracle_CHMM(hmm=_hmm.hmm)
+        _chmm = Oracle_CHMM(hmm=_hmm.repn)
 
         assert _chmm.hmm.start_vec == [
             cpgm.hidden_markov_model.get_start_probs()[h]
@@ -38,8 +38,8 @@ class Test_Oracle_CHMM:
     def test_load_model3(self):
         pgm = tc.create_hmm0()
         constraints = [cc.all_diff_constraint]
-        chmm = Oracle_CHMM(hmm=pgm.hmm, constraints=constraints)
-        assert chmm.hmm == pgm.hmm
+        chmm = Oracle_CHMM(hmm=pgm.repn, constraints=constraints)
+        assert chmm.hmm == pgm.repn
         assert len(chmm.constraints) == 1
 
     def test_internal_is_feasible(self):

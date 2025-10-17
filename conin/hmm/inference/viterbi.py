@@ -1,7 +1,7 @@
 import numpy as np
 import munch
 
-from conin.hmm import HiddenMarkovModel, HMM
+from conin.hmm.hmm import HiddenMarkovModel, HMM_MatVecRepn
 
 
 def viterbi_(*, observed, hmm):
@@ -13,7 +13,7 @@ def viterbi_(*, observed, hmm):
 
     Parameters:
         observed (list): The sequence of observed states to perform inference on.
-        hmm (HMM): The HMM model to use for inference.
+        hmm (HMM_MatVecRepn): The HMM model to use for inference.
 
     Returns:
         list: The most likely sequence of hidden states.
@@ -88,18 +88,18 @@ def viterbi(*, observed, hmm):
 
     Parameters:
         observed (list): The sequence of observed to perform inference on.
-        hmm (HiddenMarkovModel or HMM): The HMM to use for inference.
+        hmm (HiddenMarkovModel or HMM_MatVecRepn): The HMM to use for inference.
 
     Returns:
         list: The most likely sequence of hidden states.
     """
-    if isinstance(hmm, HMM):
+    if isinstance(hmm, HMM_MatVecRepn):
         return viterbi_(observed=observed, hmm=hmm)
 
     # ELSE isinstance(hmm, HiddenMarkovModel)
 
     observed_ = [hmm.observed_to_internal[o] for o in observed]
-    hmm_ = hmm.hmm  # HMM instance associated with the HiddenMarkovModel
+    hmm_ = hmm.repn  # HMM_MatVecRepn instance associated with the HiddenMarkovModel
     ans_ = viterbi_(observed=observed_, hmm=hmm_)
 
     # Convert internal indices back to external labels

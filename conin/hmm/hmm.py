@@ -9,7 +9,7 @@ from conin.exceptions import InvalidInputError
 from conin.util import Util
 
 
-class HMM:
+class HMM_MatVecRepn:
 
     def __init__(self, *, start_vec, transition_mat, emission_mat, check_errors=True):
         self.load_start_vec(start_vec, check_errors=check_errors)
@@ -231,7 +231,7 @@ class HiddenMarkovModel:
             num_hidden_states (int): Number of hidden states.
             num_observed_states (int): Number of observed states.
         """
-        self._hmm = None
+        self._repn = None
         self.start_vec = []
         self.transition_mat = []
         self.emission_mat = []
@@ -249,12 +249,12 @@ class HiddenMarkovModel:
         return pprint.pformat(self.to_dict(), indent=4, sort_dicts=True)
 
     @property
-    def hmm(self):
+    def repn(self):
         return self.initialize()
 
-    @hmm.setter
-    def hmm(self, hmm):
-        self._hmm = hmm
+    @repn.setter
+    def repn(self, hmm):
+        self._repn = hmm
 
     @property
     def hidden_states(self):
@@ -274,7 +274,7 @@ class HiddenMarkovModel:
         Raises:
             InvalidInputError: If any probabilities are negative or if the probabilities do not sum to 1.
         """
-        self._hmm = None
+        self._repn = None
         self.start_vec = []
         self.transition_mat = []
         self.emission_mat = []
@@ -354,17 +354,17 @@ class HiddenMarkovModel:
         """
         Used to conver the model into a vector/matrix representation
         """
-        if avoid_reinitialization and self._hmm is not None:
-            return self._hmm
+        if avoid_reinitialization and self._repn is not None:
+            return self._repn
         if not self.start_vec:
-            return self._hmm
+            return self._repn
 
-        self._hmm = HMM(
+        self._repn = HMM_MatVecRepn(
             start_vec=self.start_vec,
             transition_mat=self.transition_mat,
             emission_mat=self.emission_mat,
         )
-        return self._hmm
+        return self._repn
 
     def is_valid_observed_state(self, o):
         """
@@ -507,7 +507,7 @@ class HiddenMarkovModel:
         Returns:
             list: Feasible sequence of hidden states (labels).
         """
-        internal_hidden = self.hmm.generate_hidden(time_steps)
+        internal_hidden = self.repn.generate_hidden(time_steps)
         return [self.hidden_to_external[h] for h in internal_hidden]
 
     def generate_hidden_until_state(self, h):
@@ -520,7 +520,7 @@ class HiddenMarkovModel:
         Returns:
             list: Feasible sequence of hidden states, where last value is h
         """
-        internal_hidden = self.hmm.generate_hidden_until_state(
+        internal_hidden = self.repn.generate_hidden_until_state(
             self.hidden_to_internal[h]
         )
         return [self.hidden_to_external[h] for h in internal_hidden]
@@ -536,7 +536,7 @@ class HiddenMarkovModel:
             list: Observations generated from the hidden states.
         """
         internal_hidden = [self.hidden_to_internal[h] for h in hidden]
-        internal_observed = self.hmm.generate_observed_from_hidden(internal_hidden)
+        internal_observed = self.repn.generate_observed_from_hidden(internal_hidden)
         return [self.observed_to_external[o] for o in internal_observed]
 
     def generate_observed(self, time_steps):
@@ -549,7 +549,7 @@ class HiddenMarkovModel:
         Returns:
             list: Observations generated from the hidden states.
         """
-        internal_observed = self.hmm.generate_observed(time_steps)
+        internal_observed = self.repn.generate_observed(time_steps)
         return [self.observed_to_external[o] for o in internal_observed]
 
     def log_probability(self, observed, hidden):

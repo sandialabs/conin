@@ -1,11 +1,13 @@
-from conin.hmm import HMM
+from conin.hmm.hmm import HMM_MatVecRepn
 
 
 class CHMM:
 
     def __init__(self, *, hmm=None, hidden_markov_model=None, constraints=None):
-        if hmm and not isinstance(hmm, HMM):
-            raise ValueError(f"The hmm argument must be a HMM instance: {type(hmm)=}")
+        if hmm and not isinstance(hmm, HMM_MatVecRepn):
+            raise ValueError(
+                f"The hmm argument must be a HMM_MatVecRepn instance: {type(hmm)=}"
+            )
         self.hmm = hmm
         if hidden_markov_model:
             from conin.hmm import HiddenMarkovModel

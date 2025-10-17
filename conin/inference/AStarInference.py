@@ -1,7 +1,8 @@
 import warnings
 
 from conin.util import try_import
-from conin.hmm import HiddenMarkovModel, HMM, ConstrainedHiddenMarkovModel, CHMM
+from conin.hmm.hmm import HiddenMarkovModel, HMM_MatVecRepn
+from conin.hmm import ConstrainedHiddenMarkovModel, CHMM
 from conin.hmm.inference import a_star
 
 
@@ -41,7 +42,7 @@ class AStarInference:
 
         if (
             isinstance(pgm, HiddenMarkovModel)
-            or isinstance(pgm, HMM)
+            or isinstance(pgm, HMM_MatVecRepn)
             or isinstance(pgm, ConstrainedHiddenMarkovModel)
             or isinstance(pgm, CHMM)
         ):

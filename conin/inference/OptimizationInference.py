@@ -1,7 +1,7 @@
 import warnings
 
 from conin.util import try_import
-from conin.hmm import HiddenMarkovModel, HMM, ConstrainedHiddenMarkovModel, CHMM
+from conin.hmm import HiddenMarkovModel, ConstrainedHiddenMarkovModel, CHMM
 from conin.hmm.inference import lp_inference, ip_inference
 
 from conin.markov_network import (
@@ -101,7 +101,7 @@ class IntegerProgrammingInference:
             )
             return optimize_map_query_model(model, timing=timing, **options)
 
-        elif isinstance(pgm, HiddenMarkovModel) or isinstance(pgm, HMM):
+        elif isinstance(pgm, HiddenMarkovModel):
             # TODO: warning about specifying 'variables'
             # TODO: warning about specifying timing
             if type(evidence) is list:
