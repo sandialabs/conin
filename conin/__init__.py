@@ -6,7 +6,7 @@ from . import dynamic_bayesian_network
 from . import bayesian_network
 from . import hmm
 from .inference import *
-from .constraint import Constraint
+from .constraint import Constraint, PyomoConstraint, pyomo_constraint_fn
 from .exceptions import InvalidInputError, InsufficientSolutionsError
 from . import __about__
 import os.path

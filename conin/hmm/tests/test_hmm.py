@@ -1,10 +1,10 @@
 import pytest
 
 from conin import InvalidInputError
-from conin.hmm import HMM, Inference
+from conin.hmm import HiddenMarkovModel
 import conin.hmm.hmm_util
 
-import conin.hmm.tests.test_cases as tc
+import conin.hmm.tests.examples as tc
 import math
 
 
@@ -45,6 +45,7 @@ class Test_HMM1:
 
     def test_start_vec(self):
         hmm = tc.create_hmm1()
+        hmm.initialize()
         assert hmm.start_vec == [0.4, 0.6]
 
     def test_start_vec_negative(self):
@@ -52,11 +53,12 @@ class Test_HMM1:
         with pytest.raises(InvalidInputError):
             _start_probs = hmm.get_start_probs().copy()
             _start_probs["h0"] = -0.6
-            _hmm = HMM()
+            _hmm = HiddenMarkovModel()
             _hmm.load_model(
                 start_probs=_start_probs,
                 transition_probs=hmm.get_transition_probs(),
                 emission_probs=hmm.get_emission_probs(),
+                initialize=True,
             )
 
     def test_start_vec_new_hidden_state(self):
@@ -64,11 +66,12 @@ class Test_HMM1:
         with pytest.raises(InvalidInputError):
             _start_probs = hmm.get_start_probs().copy()
             _start_probs["h2"] = 0.1
-            _hmm = HMM()
+            _hmm = HiddenMarkovModel()
             _hmm.load_model(
                 start_probs=_start_probs,
                 transition_probs=hmm.get_transition_probs(),
                 emission_probs=hmm.get_emission_probs(),
+                initialize=True,
             )
 
     def test_start_vec_sum_to_one(self):
@@ -76,15 +79,17 @@ class Test_HMM1:
         with pytest.raises(InvalidInputError):
             _start_probs = hmm.get_start_probs().copy()
             _start_probs["h0"] = 0.6
-            _hmm = HMM()
+            _hmm = HiddenMarkovModel()
             _hmm.load_model(
                 start_probs=_start_probs,
                 transition_probs=hmm.get_transition_probs(),
                 emission_probs=hmm.get_emission_probs(),
+                initialize=True,
             )
 
     def test_transition_matrix(self):
         hmm = tc.create_hmm1()
+        hmm.initialize()
         assert hmm.transition_mat == [[0.9, 0.1], [0.2, 0.8]]
 
     def test_transition_mat_negative(self):
@@ -92,11 +97,12 @@ class Test_HMM1:
         with pytest.raises(InvalidInputError):
             _transition_probs = hmm.get_transition_probs().copy()
             _transition_probs[("h0", "h0")] = -0.1
-            _hmm = HMM()
+            _hmm = HiddenMarkovModel()
             _hmm.load_model(
                 start_probs=hmm.get_start_probs(),
                 transition_probs=_transition_probs,
                 emission_probs=hmm.get_emission_probs(),
+                initialize=True,
             )
 
     def test_transition_mat_sum_to_one(self):
@@ -104,11 +110,12 @@ class Test_HMM1:
         with pytest.raises(InvalidInputError):
             _transition_probs = hmm.get_transition_probs().copy()
             _transition_probs[("h0", "h0")] = 0.8
-            _hmm = HMM()
+            _hmm = HiddenMarkovModel()
             _hmm.load_model(
                 start_probs=hmm.get_start_probs(),
                 transition_probs=_transition_probs,
                 emission_probs=hmm.get_emission_probs(),
+                initialize=True,
             )
 
     def test_transition_mat_filled_out(self):
@@ -116,11 +123,12 @@ class Test_HMM1:
         with pytest.raises(InvalidInputError):
             _transition_probs = hmm.get_transition_probs().copy()
             del _transition_probs[("h0", "h0")]
-            _hmm = HMM()
+            _hmm = HiddenMarkovModel()
             _hmm.load_model(
                 start_probs=hmm.get_start_probs(),
                 transition_probs=_transition_probs,
                 emission_probs=hmm.get_emission_probs(),
+                initialize=True,
             )
 
     def test_transition_mat_extra_label(self):
@@ -128,15 +136,17 @@ class Test_HMM1:
         with pytest.raises(InvalidInputError):
             _transition_probs = hmm.get_transition_probs().copy()
             _transition_probs[("h", "h0")] = 0.3
-            _hmm = HMM()
+            _hmm = HiddenMarkovModel()
             _hmm.load_model(
                 start_probs=hmm.get_start_probs(),
                 transition_probs=_transition_probs,
                 emission_probs=hmm.get_emission_probs(),
+                initialize=True,
             )
 
     def test_emission_matrix(self):
         hmm = tc.create_hmm1()
+        hmm.initialize()
         assert hmm.emission_mat == [[0.7, 0.3], [0.4, 0.6]]
 
     def test_emission_mat_negative(self):
@@ -144,11 +154,12 @@ class Test_HMM1:
         with pytest.raises(InvalidInputError):
             _emission_probs = hmm.get_emission_probs().copy()
             _emission_probs[("h0", "h0")] = -0.1
-            _hmm = HMM()
+            _hmm = HiddenMarkovModel()
             _hmm.load_model(
                 start_probs=hmm.get_start_probs(),
                 transition_probs=hmm.get_transition_probs(),
                 emission_probs=_emission_probs,
+                initialize=True,
             )
 
     def test_emission_mat_sum_to_one(self):
@@ -156,11 +167,12 @@ class Test_HMM1:
         with pytest.raises(InvalidInputError):
             _emission_probs = hmm.get_emission_probs().copy()
             _emission_probs[("h0", "o0")] = 0.6
-            _hmm = HMM()
+            _hmm = HiddenMarkovModel()
             _hmm.load_model(
                 start_probs=hmm.get_start_probs(),
                 transition_probs=hmm.get_transition_probs(),
                 emission_probs=_emission_probs,
+                initialize=True,
             )
 
     def test_emission_mat_filled_out(self):
@@ -168,11 +180,12 @@ class Test_HMM1:
         with pytest.raises(InvalidInputError):
             _emission_probs = hmm.get_emission_probs().copy()
             del _emission_probs[("h0", "o0")]
-            _hmm = HMM()
+            _hmm = HiddenMarkovModel()
             _hmm.load_model(
                 start_probs=hmm.get_start_probs(),
                 transition_probs=hmm.get_transition_probs(),
                 emission_probs=_emission_probs,
+                initialize=True,
             )
 
     def test_emission_mat_extra_label(self):
@@ -180,20 +193,21 @@ class Test_HMM1:
         with pytest.raises(InvalidInputError):
             _emission_probs = hmm.get_emission_probs().copy()
             _emission_probs[("h", "o0")] = 1
-            _hmm = HMM()
+            _hmm = HiddenMarkovModel()
             _hmm.load_model(
                 start_probs=hmm.get_start_probs(),
                 transition_probs=hmm.get_transition_probs(),
                 emission_probs=_emission_probs,
+                initialize=True,
             )
 
     def test_get_hidden_states(self):
         hmm = tc.create_hmm1()
-        assert hmm.get_hidden_states() == {"h0", "h1"}
+        assert hmm.get_hidden_states() == ["h0", "h1"]
 
     def test_get_observable_states(self):
         hmm = tc.create_hmm1()
-        assert hmm.get_observable_states() == {"o0", "o1"}
+        assert hmm.get_observable_states() == ["o0", "o1"]
 
     def test_get_start_probs(self):
         hmm = tc.create_hmm1()
@@ -236,7 +250,7 @@ class Test_HMM1:
         tranisition_probs = hmm.get_transition_probs()
         emission_probs = hmm.get_emission_probs()
         start_probs = {"h0": 1, "h1": 0}
-        hmm = HMM()
+        hmm = HiddenMarkovModel()
         hmm.load_model(
             start_probs=start_probs,
             emission_probs=emission_probs,
@@ -293,7 +307,7 @@ class Test_HMM1:
             ("h1", "o0"): 0.4,
             ("h1", "o1"): 0.6,
         }
-        hmm = HMM()
+        hmm = HiddenMarkovModel()
         hmm.load_model(
             start_probs=start_probs,
             transition_probs=transition_probs,
@@ -321,7 +335,7 @@ class Test_HMM1:
     def test_read_and_write(self, tmp_path):
         hmm = tc.create_hmm1()
         hmm.write_to_file(tmp_path / "temp.txt")
-        _hmm = HMM()
+        _hmm = HiddenMarkovModel()
         _hmm.read_from_file(tmp_path / "temp.txt")
         assert _hmm.get_start_probs() == {"h0": 0.4, "h1": 0.6}
         assert _hmm.get_transition_probs() == {
@@ -339,85 +353,18 @@ class Test_HMM1:
 
     def test_log_probability(self):
         hmm = tc.create_hmm1()
-        observation1 = ["o1"]
+        observed1 = ["o1"]
         hidden1 = ["h0"]
-        observation2 = ["o0", "o0"]
+        observed2 = ["o0", "o0"]
         hidden2 = ["h1", "h0"]
 
         assert math.isclose(
-            hmm.log_probability(observations=observation1, hidden=hidden1),
+            hmm.log_probability(observed=observed1, hidden=hidden1),
             math.log(0.4) + math.log(0.3),
         )
         assert math.isclose(
-            hmm.log_probability(observations=observation2, hidden=hidden2),
+            hmm.log_probability(observed=observed2, hidden=hidden2),
             math.log(0.6) + math.log(0.4) + math.log(0.2) + math.log(0.7),
-        )
-
-
-class Test_Inference_HMM1:
-
-    def test_inference_default_values(self):
-        hmm = tc.create_hmm1()
-        inference = Inference(statistical_model=hmm)
-        assert inference.num_solutions == 1
-        assert inference.oracle_based is True
-
-    def test_inference_with_positive_num_solutions(self):
-        hmm = tc.create_hmm1()
-        inference = Inference(
-            statistical_model=hmm, num_solutions=5, oracle_based=False
-        )
-        assert inference.num_solutions == 5
-        assert inference.oracle_based is False
-
-    def test_inference_with_zero_num_solutions(self):
-        hmm = tc.create_hmm1()
-        with pytest.raises(InvalidInputError):
-            Inference(statistical_model=hmm, num_solutions=0)
-
-    def test_inference_with_negative_num_solutions(self):
-        hmm = tc.create_hmm1()
-        with pytest.raises(InvalidInputError):
-            Inference(statistical_model=hmm, num_solutions=-1)
-
-    def test_viterbi_1(self):
-        hmm = tc.create_hmm1()
-        inference = Inference(statistical_model=hmm)
-        observed = ["o0", "o0", "o1", "o0", "o0"]
-        assert inference(observed).solutions[0].hidden == [
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-        ]
-
-    def test_viterbi_2(self):
-        hmm = tc.create_hmm1()
-        inference = Inference(statistical_model=hmm)
-        observed = ["o0", "o1", "o1", "o1", "o1"]
-        assert inference(observed).solutions[0].hidden == [
-            "h1",
-            "h1",
-            "h1",
-            "h1",
-            "h1",
-        ]
-
-    def test_inference_invalid_observation(self):
-        hmm = tc.create_hmm1()
-        with pytest.raises(InvalidInputError):
-            inference = Inference(statistical_model=hmm)
-            observed = ["o2"]
-            inference(observed)
-
-    def test_a_star_equals_viterbi(self):
-        hmm = tc.create_hmm1()
-        inference = Inference(statistical_model=hmm)
-        observed = hmm.generate_observed(25)
-        assert (
-            inference._viterbi(observed).solutions[0].hidden
-            == inference._a_star(observed).solutions[0].hidden
         )
 
 
@@ -431,5 +378,6 @@ class Test_HMM_Util:
             observed_states=observed_states,
             seed=1,
         )
+        hmm.initialize()
         assert set(hmm.get_hidden_states()) == set(hidden_states)
         assert set(hmm.get_observable_states()) == set(observed_states)

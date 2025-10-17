@@ -3,8 +3,7 @@ import numpy as np
 import munch
 
 from . import learning
-from .algebraic_chmm import create_algebraic_chmm
-from .oracle_chmm import Oracle_CHMM
+from .constrained_hmm import ConstrainedHiddenMarkovModel
 
 
 class HMMApplication:
@@ -14,15 +13,7 @@ class HMMApplication:
         self.data = munch.Munch()
         self.name = name
 
-        # Oracle HMM representation
-        self._hmm = None
-        self.oracle = Oracle_CHMM()
-        self.generate_oracle_constraints()
-
-        # Algebraic HMM representation
-        self.algebraic_aml = None
-        self.algebraic = None
-        self.initialize_algebraic_hmm("pyomo")
+        self._hidden_markov_model = None
 
         # Applicaton data used to initialize the HMM from simulations
         self._transition_prior = (None,)  # Nonzero values
@@ -30,37 +21,27 @@ class HMMApplication:
         self._hidden_states = None
         self._observable_states = None
 
-    def initialize_algebraic_hmm(self, aml):
-        if aml != self.algebraic_aml:
-            self.algebraic_aml = aml
-            self.algebraic = create_algebraic_chmm(aml, app=self)
-
     @property
-    def hmm(self):
-        return self._hmm
+    def hidden_markov_model(self):
+        return self._hidden_markov_model
 
-    @hmm.setter
-    def hmm(self, hmm):
-        self._hmm = hmm
-        self.oracle.load_model(hmm=hmm)
-        self.algebraic.load_model(hmm=hmm)
+    @hidden_markov_model.setter
+    def hidden_markov_model(self, hidden_markov_model):
+        self._hidden_markov_model = hidden_markov_model
 
-    def get_hmm(self):
-        return self._hmm
-
-    def get_internal_hmm(self):
-        return self._hmm.internal_hmm
-
-    def get_constrained_hmm(self):
-        return self.oracle
-
-    def get_internal_constrained_hmm(self):
-        return self.oracle.internal_constrained_hmm
+    def create_chmm(self, constraint_type=None):
+        chmm = ConstrainedHiddenMarkovModel(hmm=self.hidden_markov_model)
+        if constraint_type == "oracle":
+            chmm.constraints = self.get_oracle_constraints()
+        elif constraint_type == "pyomo":
+            chmm.constraints = self.get_pyomo_constraints()
+        chmm.initialize_chmm(constraint_type)
+        return chmm
 
     def initialize(self, *args, **kwargs):
         """
-        This method is used to initialize the application.  In particular, this method
-        creates an HMM that
+        This method is used to initialize the application.  This does not create
+        or initialize the class HiddenMarkovModel instance.
         """
         pass
 
@@ -68,8 +49,8 @@ class HMMApplication:
         self, *, num=1, debug=False, with_observations=False, seed=None
     ):
         """
-        This method is used to generate feasible simulations of hidden states in an HMM
-        application.
+        This method is used to generate feasible simulations of hidden states in a
+        HiddenMarkovModel application.
 
         This method is defined by the application developer, and it provides a
         strategy for expressing domain knowledge regarding feasible hidden states.
@@ -105,7 +86,7 @@ class HMMApplication:
             simulations is not None
         ), f"HMMApplication.create_hmm_from_simulations - Method run_simulations() has not been defined for the {self.name} application"
 
-        hmm = learning.supervised_learning(
+        self.hidden_markov_model = learning.supervised_learning(
             simulations=simulations,
             hidden_states=self._hidden_states,
             observable_states=self._observable_states,
@@ -115,10 +96,9 @@ class HMMApplication:
             transition_prior=self._transition_prior,
             emission_prior=self._emission_prior,
         )
-        self.hmm = hmm
 
-    def generate_oracle_constraints(self):
-        pass
+    def get_oracle_constraints(self):
+        return []
 
-    def generate_pyomo_constraints(self, M):
-        return M
+    def get_pyomo_constraints(self):
+        return []

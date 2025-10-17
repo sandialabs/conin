@@ -5,13 +5,13 @@ import numpy as np
 import munch
 
 from conin.exceptions import InvalidInputError
-from conin.hmm import HMM, Statistical_Model
-from . import chmm_base
+from conin.hmm import HiddenMarkovModel
+from . import chmm
 
 import pyomo.environ as pyo
 
 
-def _create_index_sets(*, hmm, observations):
+def _create_index_sets(*, hmm, observed):
     # N - Number of hidden states
     # start_probs[i] - map from i=1..N to a probability value in 0..1
     # emission_probes[i][k] - probability that output k is generated when in hidden state i
@@ -19,12 +19,12 @@ def _create_index_sets(*, hmm, observations):
     # hidden state j
 
     N = hmm.num_hidden_states
-    obs = [hmm.observed_to_internal[o] for o in observations]
+    obs = [hmm.observed_to_internal[o] for o in observed]
     start_probs = hmm.start_vec
     emission_probs = hmm.emission_mat
     trans_mat = np.array(hmm.transition_mat)
 
-    Tmax = len(observations)
+    Tmax = len(observed)
     T = list(range(Tmax))
 
     A = list(range(N))
@@ -105,91 +105,39 @@ def _create_index_sets(*, hmm, observations):
     index_sets.Ge = Ge
     index_sets.GG = GG
     index_sets.states = states
-    index_sets.observations_index = obs
+    index_sets.observed_index = obs
+    index_sets.hidden_to_internal = hmm.hidden_to_internal
 
     return index_sets
 
 
-class Algebraic_CHMM(chmm_base.CHMM_Base):
+class Algebraic_CHMM(chmm.CHMM):
     """
     A class to represent a Hidden Markov Model (HMM) with optimization equations.
     """
 
-    def __init__(self, *, hmm=None, cache_indices=None, app=None):
+    def __init__(
+        self, *, hidden_markov_model=None, cache_indices=None, constraints=None
+    ):
         """
         Constructor.
 
         Parameters:
-            hmm (HMM, optional): An instance of the HMM class (default is None, which initializes a new HMM instance).
+            hidden_markov_model (HiddenMarkovModel, optional): An instance of the HMM class (default is None, which initializes a new HMM instance).
         """
-        super().__init__(hmm=hmm)
+        super().__init__(
+            hidden_markov_model=hidden_markov_model, constraints=constraints
+        )
+
         self.cache_indices = True if cache_indices is None else cache_indices
         # An empty Munch object for index data
         self.data = munch.Munch()
-        self._app = None if app is None else weakref.ref(app)
 
-    def load_model(
-        self,
-        *,
-        start_probs=None,
-        transition_probs=None,
-        emission_probs=None,
-        hmm=None,
-    ):
-        """
-        Loads the HMM model with the given parameters.
-        Either give all three dictionaries or hmm, but not both
-
-        Parameters:
-            start_probs (dict, optional): A dictionary representing the start probabilities.
-            transition_probs (dict, optional): A dictionary representing the transition probabilities.
-            emission_probs (dict, optional: A dictionary representing the emission probabilities.
-            hmm (HMM, optional): The HMM we wish to load with.
-
-        Raises:
-            InvalidInputError: If we supply too much or not enough information
-        """
-        if (
-            hmm is not None
-            and start_probs is None
-            and transition_probs is None
-            and emission_probs is None
-        ):
-            # If an HMM object is provided, load it directly
-            self.hmm = hmm
-        elif (
-            start_probs is not None
-            and transition_probs is not None
-            and emission_probs is not None
-        ):
-            # If dictionaries are provided, create an HMM object and load it
-            hmm = HMM()
-            hmm.load_model(
-                start_probs=start_probs,
-                transition_probs=transition_probs,
-                emission_probs=emission_probs,
-            )
-            self.hmm = hmm
-        else:
-            raise InvalidInputError(
-                "You must provide either an HMM object or all three dictionaries, and not both."
-            )
-
-    def generate_model(self, *, observations):
-        M = self.generate_unconstrained_model(observations=observations)
-        if self._app is None:
-            return M
-        return self._generate_application_constraints(M)
-
-    def _generate_application_constraints(self, M):  # pragma: nocover
-        raise NotImplementedError(
-            "Algebraic_CHMM.generate_application_constraints() is not implemented"
-        )
-
-    def generate_unconstrained_model(self, *, observations):  # pragma: nocover
-        raise NotImplementedError(
-            "Algebraic_CHMM.generate_unconstrained_model() is not implemented"
-        )
+    def generate_model(self, *, observed):
+        M = self.generate_unconstrained_model(observed=observed)
+        for con in self.constraints:
+            con(M, self.data)
+        return M
 
 
 class PyomoAlgebraic_CHMM(Algebraic_CHMM):
@@ -197,33 +145,32 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
     def __init__(
         self,
         *,
-        hmm=None,
+        hidden_markov_model=None,
         cache_indices=None,
         y_binary=False,
         x_binary=True,
-        solver=None,
-        solver_options=None,
-        app=None,
+        constraints=None,
+        # solver=None,
+        # solver_options=None,
+        # app=None,
     ):
-        super().__init__(hmm=hmm, cache_indices=cache_indices, app=app)
+        super().__init__(
+            hidden_markov_model=hidden_markov_model,
+            cache_indices=cache_indices,
+            constraints=constraints,
+        )
 
         # Generate models with binary y-variables
         self.y_binary = y_binary
         self.x_binary = x_binary
 
         # Default configuration
-        self.solver = "gurobi" if solver is None else solver
-        self.solver_options = {} if solver_options is None else solver_options
+        # self.solver = "gurobi" if solver is None else solver
+        # self.solver_options = {} if solver_options is None else solver_options
 
-    def _generate_application_constraints(self, M):
-        return self.generate_pyomo_constraints(M)
-
-    def generate_pyomo_constraints(self, M):
-        return self._app().generate_pyomo_constraints(M=M)
-
-    def generate_unconstrained_model(self, *, observations):
-        self.observations = observations
-        D = _create_index_sets(hmm=self.hmm, observations=observations)
+    def generate_unconstrained_model(self, *, observed):
+        self.observed = observed
+        D = _create_index_sets(hmm=self.hidden_markov_model, observed=observed)
         if self.cache_indices:
             self.data = D
 
@@ -297,7 +244,7 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
 
         return M
 
-    def generate_hidden(self, *, observations, solver=None, solver_options=None):
+    def Xgenerate_hidden(self, *, observed, solver=None, solver_options=None):
         """
         This should probably be called something different
 
@@ -308,8 +255,8 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
             quiet = solver_options["quiet"]
         else:
             quiet = True
-        hidden = self.hmm.generate_hidden_conditioned_on_observations(observations)
-        T = len(observations)
+        hidden = self.hmm.generate_hidden_conditioned_on_observed(observed)
+        T = len(observed)
 
         # Find the closest feasible point
         old_x_binary, old_y_binary, old_cache_indices = (
@@ -320,7 +267,7 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
         self.x_binary = True
         self.y_binary = False
         self.cache_indices = True
-        M = self.generate_algebraic_constraints(observations=observations)
+        M = self.generate_algebraic_constraints(observed=observed)
         M.hmm.o.deactivate()
 
         M.closest_point = pyo.Objective(

@@ -2,9 +2,8 @@ import pytest
 
 from conin import *
 from conin.hmm import *
-from conin.hmm.oracle_chmm import Oracle_CHMM
 
-import conin.hmm.tests.test_cases as tc
+import conin.hmm.tests.examples as tc
 
 
 @pytest.fixture

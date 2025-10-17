@@ -1,6 +1,9 @@
 import warnings
 
 from conin.util import try_import
+from conin.hmm import HiddenMarkovModel, ConstrainedHiddenMarkovModel, CHMM
+from conin.hmm.inference import lp_inference, ip_inference
+
 from conin.markov_network import (
     DiscreteMarkovNetwork,
     ConstrainedDiscreteMarkovNetwork,
@@ -32,7 +35,7 @@ class IntegerProgrammingInference:
         ):
             pgm = convert_pgmpy_to_conin(pgm)
         self.pgm = pgm
-        self.variables = self.pgm.nodes
+        # self.variables = self.pgm.nodes
 
     def map_query(
         self,
@@ -85,6 +88,7 @@ class IntegerProgrammingInference:
                 **options,
             )
             return optimize_map_query_model(model, timing=timing, **options)
+
         elif isinstance(pgm, DiscreteBayesianNetwork) or isinstance(
             pgm, ConstrainedDiscreteBayesianNetwork
         ):
@@ -96,6 +100,43 @@ class IntegerProgrammingInference:
                 **options,
             )
             return optimize_map_query_model(model, timing=timing, **options)
+
+        elif isinstance(pgm, HiddenMarkovModel):
+            # TODO: warning about specifying 'variables'
+            # TODO: warning about specifying timing
+            if type(evidence) is list:
+                return lp_inference(hmm=pgm, observed=evidence, **options)
+
+            if type(evidence) is dict:
+                observed = [evidence[i] for i in range(len(evidence))]
+                results = lp_inference(hmm=pgm, observed=observed, **options)
+                solutions = results.solutions
+                for soln in solutions:
+                    soln.variable_value = {
+                        i: v for i, v in enumerate(soln.variable_value)
+                    }
+                    soln.hidden = soln.variable_value
+                results.solutions = solutions
+                return results
+
+        elif isinstance(pgm, ConstrainedHiddenMarkovModel) or isinstance(pgm, CHMM):
+            # TODO: warning about specifying 'variables'
+            # TODO: warning about specifying timing
+            if type(evidence) is list:
+                return ip_inference(hmm=pgm, observed=evidence, **options)
+
+            if type(evidence) is dict:
+                observed = [evidence[i] for i in range(len(evidence))]
+                results = ip_inference(hmm=pgm, observed=observed, **options)
+                solutions = results.solutions
+                for soln in solutions:
+                    soln.variable_value = {
+                        i: v for i, v in enumerate(soln.variable_value)
+                    }
+                    soln.hidden = soln.variable_value
+                results.solutions = solutions
+                return results
+
         else:
             raise TypeError("Unexpected model type: {type(pgm)}")
 
@@ -106,7 +147,7 @@ class DDBN_IntegerProgrammingInference:
         if pgmpy_available and isinstance(pgm, pgmpy.models.DynamicBayesianNetwork):
             pgm = convert_pgmpy_to_conin(pgm)
         self.pgm = pgm
-        self.variables = self.pgm.nodes
+        # self.variables = self.pgm.nodes
 
     def map_query(
         self,

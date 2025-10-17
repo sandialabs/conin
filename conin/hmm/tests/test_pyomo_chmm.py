@@ -1,9 +1,9 @@
 import pytest
 
 import conin.hmm
-import conin.hmm.algebraic_chmm
+import conin.hmm.chmm_algebraic
 
-import conin.hmm.tests.test_cases as tc
+import conin.hmm.tests.examples as tc
 
 
 class Test_IndexSets1:
@@ -21,8 +21,8 @@ class Test_IndexSets1:
 
     def test_index_sets(self):
         hmm = tc.create_hmm1()
-        data = conin.hmm.algebraic_chmm._create_index_sets(
-            hmm=hmm, observations=["o0", "o1", "o0", "o1", "o0"]
+        data = conin.hmm.chmm_algebraic._create_index_sets(
+            hmm=hmm, observed=["o0", "o1", "o0", "o1", "o0"]
         )
         assert data.E == [
             (0, -1, 0),
@@ -105,8 +105,8 @@ class Test_IndexSets2:
 
     def test_index_sets(self):
         hmm = tc.create_hmm2()
-        data = conin.hmm.algebraic_chmm._create_index_sets(
-            hmm=hmm, observations=["o0", "o1", "o0", "o1", "o0", "o2"]
+        data = conin.hmm.chmm_algebraic._create_index_sets(
+            hmm=hmm, observed=["o0", "o1", "o0", "o1", "o0", "o2"]
         )
         assert data.E == [
             (0, -1, 0),

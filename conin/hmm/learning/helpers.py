@@ -42,7 +42,7 @@ def convert_to_simulations(*, hidden_list, observed_list):
 
     Parameters
         hidden_list: list of hidden
-        observed_list: list of observations
+        observed_list: list of observed
     """
     simulations = []
     for i, hidden in enumerate(hidden_list):

@@ -1,11 +1,9 @@
-from conin.hmm import HMM
+from conin.hmm import HiddenMarkovModel
 
 # TODO also allows for hidden and observed instead of simulations
 
 
 def supervised_learning(
-    # The training data may not exhibit all feasible starting values, so we allow
-    # for a default non-zero start_tolerance, transition_tolerance and emission_tolerance.
     *,
     simulations,
     hidden_states,
@@ -17,10 +15,13 @@ def supervised_learning(
     emission_prior=None  # Nonzero values
 ):
     """
+    The training data may not exhibit all feasible starting values, so we allow
+    for a default non-zero start_tolerance, transition_tolerance and emission_tolerance.
+
     Inputs:
         - simulations: Generated using helper.convert_to_simulations
         - hidden_states: Hidden states that you could possibly have (you don't need to see all of them in the simulations)
-        - observable_states: Same as hidden states but for observations
+        - observable_states: Same as hidden states but for observed states
         - X_tolerance: If in a simulation we have a zero in our calculation we replace it with this tolerance
         - X_priors: These are only used for transitions or emissions which are not observed and for which we want some default values
     """
@@ -107,14 +108,7 @@ def supervised_learning(
             for o in observable_states:
                 emission_probs[i, o] /= rowsum[i]
 
-    # import pprint
-    # print()
-    # pprint.pprint(start_probs)
-    # print()
-    # pprint.pprint(transition_probs)
-    # print()
-    # pprint.pprint(emission_probs)
-    hmm = HMM()
+    hmm = HiddenMarkovModel()
     hmm.load_model(
         start_probs=start_probs,
         transition_probs=transition_probs,
