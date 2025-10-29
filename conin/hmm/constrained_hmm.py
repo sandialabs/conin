@@ -59,7 +59,7 @@ class ConstrainedHiddenMarkovModel:
         else:
             raise ValueError(f"Unexpected constraint type: {type(constraint)=}")
 
-    def initialize_chmm(self, constraint_type=None):
+    def initialize_chmm(self, constraint_type=None, *, data=None):
         if constraint_type:
             self.constraint_type = constraint_type
         if self.constraint_type is None:
@@ -73,6 +73,7 @@ class ConstrainedHiddenMarkovModel:
                 hmm=self.hidden_markov_model.repn,  # HMM object
                 constraints=self.constraints,  # list of Constraint objects
                 hidden_to_external=self.hidden_markov_model.hidden_to_external,
+                data=data,  # Application-specific data
             )
         elif self.constraint_type == "pyomo":
             from .chmm_algebraic import PyomoAlgebraic_CHMM
@@ -80,6 +81,7 @@ class ConstrainedHiddenMarkovModel:
             self.chmm = PyomoAlgebraic_CHMM(
                 hidden_markov_model=self.hidden_markov_model,  # HiddenMarkovModel object
                 constraints=self.constraints,  # list of PyomoConstraint objects
+                data=data,  # Application-specific data
             )
 
     def generate_hidden(self, time_steps):
