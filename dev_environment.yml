@@ -11,5 +11,6 @@ dependencies:
   - pandas
   - pip 
   - pyomo
+  - pytorch=cpuonly
   - pytest
   - pytest-cov
