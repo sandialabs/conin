@@ -61,5 +61,5 @@ jobs:
 
       - name: Run pytest with pgmpy
         run: |
-          pip install pgmpy
+          pip install pgmpy cpuonly
           pytest -v .
