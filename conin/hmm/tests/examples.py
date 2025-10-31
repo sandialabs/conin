@@ -111,13 +111,13 @@ def create_chmm1_pyomo():
 
     @conin.pyomo_constraint_fn
     def num_zeros_greater_than_nine(M, D):
-        h0 = D.hidden_to_internal["h0"]
-        M.h0_lower = pe.Constraint(expr=sum(M.hmm.x[t, h0] for t in D.T) >= 10)
+        h0 = D.hmm.hidden_to_internal["h0"]
+        M.h0_lower = pe.Constraint(expr=sum(M.hmm.x[t, h0] for t in D.hmm.T) >= 10)
 
     @conin.pyomo_constraint_fn
     def num_zeros_less_than_thirteen(M, D):
-        h0 = D.hidden_to_internal["h0"]
-        M.h0_upper = pe.Constraint(expr=sum(M.hmm.x[t, h0] for t in D.T) <= 12)
+        h0 = D.hmm.hidden_to_internal["h0"]
+        M.h0_upper = pe.Constraint(expr=sum(M.hmm.x[t, h0] for t in D.hmm.T) <= 12)
 
     constraints = [num_zeros_greater_than_nine, num_zeros_less_than_thirteen]
 
@@ -174,9 +174,13 @@ class Num_Zeros(conin.hmm.HMMApplication):
     def get_pyomo_constraints(self):
         @pyomo_constraint_fn
         def constraint(M, D):
-            h0 = D.hidden_to_internal["h0"]
-            M.h0_lower = pe.Constraint(expr=sum(M.hmm.x[t, h0] for t in D.T) >= self.lb)
-            M.h0_upper = pe.Constraint(expr=sum(M.hmm.x[t, h0] for t in D.T) <= self.ub)
+            h0 = D.hmm.hidden_to_internal["h0"]
+            M.h0_lower = pe.Constraint(
+                expr=sum(M.hmm.x[t, h0] for t in D.hmm.T) >= self.lb
+            )
+            M.h0_upper = pe.Constraint(
+                expr=sum(M.hmm.x[t, h0] for t in D.hmm.T) <= self.ub
+            )
 
         return [constraint]
 
