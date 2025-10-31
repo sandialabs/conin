@@ -3,6 +3,7 @@ channels:
   - conda-forge
   - https://repo.anaconda.com/pkgs/main
   - https://repo.anaconda.com/pkgs/r
+  - pytorch
 dependencies:
   - flake8
   - glpk
@@ -11,6 +12,7 @@ dependencies:
   - pandas
   - pip 
   - pyomo
-  - pytorch=cpuonly
+  - pytorch
+  - cpuonly
   - pytest
   - pytest-cov
