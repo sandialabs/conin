@@ -60,5 +60,5 @@ jobs:
 
       - name: Run pytest with pgmpy
         run: |
-          pip install pgmpy cpuonly
+          pip install pgmpy pytorch::cpuonly
           pytest -v .
