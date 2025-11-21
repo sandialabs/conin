@@ -104,14 +104,16 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
                 print("")
                 print(f[-1])
             if len(f) == 1:
-                # map_values = [float(next(tokens)) for i in range(vcard[f[0]])]
                 map_values = {i: float(next(tokens)) for i in range(vcard[f[0]])}
+
                 parents = None
             elif len(f) == 2:
-                map_values = {
-                    index: {i: float(next(tokens)) for i in range(vcard[f[-1]])}
-                    for index in range(vcard[f[0]])
-                }
+                map_values = defaultdict(list)
+                for i in range(vcard[f[-1]]):
+                    for index in range(vcard[f[0]]):
+                        map_values[index].append( (i, float(next(tokens))) )
+                map_values = {k: dict(v) for k, v in map_values.items()}
+
                 parents = [vname[v] for v in f[:-1]]
             else:
                 vlist = [list(range(vcard[v])) for v in f[:-1]]
