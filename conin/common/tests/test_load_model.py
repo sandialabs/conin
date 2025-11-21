@@ -151,7 +151,7 @@ def test_load_model_cancer_conin():
         (0, 1): {0: 0.001, 1: 0.999},
         (1, 1): {0: 0.02, 1: 0.98},
     }
-    assert cpds["var1"].values == {0: {0: 0.65, 1: 0.3}, 1: {0: 0.35, 1: 0.7}}
+    assert cpds["var1"].values == {0: {0: 0.65, 1: 0.35}, 1: {0: 0.3, 1: 0.7}}
     assert cpds["var2"].values == {0: 0.9, 1: 0.1}
     assert cpds["var3"].values == {0: 0.3, 1: 0.7}
-    assert cpds["var4"].values == {0: {0: 0.9, 1: 0.2}, 1: {0: 0.1, 1: 0.8}}
+    assert cpds["var4"].values == {0: {0: 0.9, 1: 0.1}, 1: {0: 0.2, 1: 0.8}}
