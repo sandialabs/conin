@@ -18,6 +18,7 @@ cwd = os.path.dirname(__file__)
 # cancer.uai
 #
 
+
 @pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
 def test_convert_from_pgmpy_cancer():
     pgmpy_pgm = load_model(os.path.join(cwd, "cancer.uai"), model_type="pgmpy")
