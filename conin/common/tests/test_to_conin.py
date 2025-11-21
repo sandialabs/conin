@@ -15,6 +15,7 @@ cwd = os.path.dirname(__file__)
 # cancer.uai
 #
 
+
 def test_convert_from_pgmpy_cancer():
     pgmpy_pgm = load_model(os.path.join(cwd, "cancer.uai"), model_type="pgmpy")
     pgm = convert_pgmpy_to_conin(pgmpy_pgm)

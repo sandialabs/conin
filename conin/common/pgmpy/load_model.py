@@ -198,7 +198,7 @@ def load_model(name, quiet=True):
         elif name.endswith(".uai"):
             reader = UAIReader(name)
             return reader.get_model()
-            #return read_uai(name, verbose=not quiet)
+            # return read_uai(name, verbose=not quiet)
 
         raise RuntimeError("Unexpected model type: {name}")
 

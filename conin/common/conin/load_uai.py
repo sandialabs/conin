@@ -111,7 +111,7 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
                 map_values = defaultdict(list)
                 for i in range(vcard[f[-1]]):
                     for index in range(vcard[f[0]]):
-                        map_values[index].append( (i, float(next(tokens))) )
+                        map_values[index].append((i, float(next(tokens))))
                 map_values = {k: dict(v) for k, v in map_values.items()}
 
                 parents = [vname[v] for v in f[:-1]]
