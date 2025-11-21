@@ -132,3 +132,26 @@ def test_load_model_deer1_conin():
 
 def test_load_model_deer2_conin():
     pgm = load_model(os.path.join(cwd, "deer_compressed.uai.gz"))
+
+
+#
+# cancer.uai
+#
+
+
+# 0.03 0.05 0.001 0.02 0.97 0.95 0.999 0.98
+
+
+def test_load_model_cancer_conin():
+    pgm = load_model(os.path.join(cwd, "cancer.uai"))
+    cpds = {cpd.node: cpd for cpd in pgm.cpds}
+    assert cpds["var0"].values == {
+        (0, 0): {0: 0.03, 1: 0.97},
+        (1, 0): {0: 0.05, 1: 0.95},
+        (0, 1): {0: 0.001, 1: 0.999},
+        (1, 1): {0: 0.02, 1: 0.98},
+    }
+    assert cpds["var1"].values == {0: {0: 0.65, 1: 0.3}, 1: {0: 0.35, 1: 0.7}}
+    assert cpds["var2"].values == {0: 0.9, 1: 0.1}
+    assert cpds["var3"].values == {0: 0.3, 1: 0.7}
+    assert cpds["var4"].values == {0: {0: 0.9, 1: 0.2}, 1: {0: 0.1, 1: 0.8}}
