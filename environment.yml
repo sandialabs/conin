@@ -4,8 +4,9 @@ channels:
   - https://repo.anaconda.com/pkgs/main
   - https://repo.anaconda.com/pkgs/r
 dependencies:
-  - pyomo
+  - glpk
   - munch
   - numpy
-  - glpk
+  - pandas
   - pip
+  - pyomo
