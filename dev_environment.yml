@@ -10,7 +10,7 @@ dependencies:
   - munch
   - numpy
   - pandas
-  - pip 
+  - pip
   - pyomo
   - pytorch
   - cpuonly
