@@ -52,7 +52,7 @@ def test_load_model_asia_uai1_conin():
     pgm = load_model(os.path.join(cwd, "asia.uai"))
 
 
-@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+@pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
 def test_load_model_asia_uai1_pgmpy():
     pgm = load_model(os.path.join(cwd, "asia.uai"), model_type="pgmpy")
 
@@ -66,7 +66,7 @@ def test_load_model_asia_uai2_conin():
     pgm = load_model(os.path.join(cwd, "asia_compressed.uai.gz"))
 
 
-@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+@pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
 def test_load_model_asia_uai2_pgmpy():
     pgm = load_model(os.path.join(cwd, "asia_compressed.uai.gz"), model_type="pgmpy")
 

@@ -187,9 +187,9 @@ def load_model(name, quiet=True):
                     reader = BIFReader(string=content.decode("utf-8"))
                     return reader.get_model()
                 elif name.endswith(".uai.gz"):
-                    # reader = UAIReader(string=content.decode("utf-8"))
-                    # return reader.get_model()
-                    return read_uai(string=content.decode("utf-8"), verbose=not quiet)
+                    reader = UAIReader(string=content.decode("utf-8"))
+                    return reader.get_model()
+                    # return read_uai(string=content.decode("utf-8"), verbose=not quiet)
 
         elif name.endswith(".bif"):
             reader = BIFReader(name)
