@@ -15,6 +15,7 @@ with try_import() as pgmpy_available:
 
 with try_import() as pgmpy_readwrite_available:
     from pgmpy.readwrite.BIF import BIFReader
+    from pgmpy.readwrite.UAI import UAIReader
 
     # from pgmpy.readwrite.UAI import UAIReader
 
@@ -186,18 +187,18 @@ def load_model(name, quiet=True):
                     reader = BIFReader(string=content.decode("utf-8"))
                     return reader.get_model()
                 elif name.endswith(".uai.gz"):
-                    # reader = UAIReader(string=content.decode("utf-8"))
-                    # return reader.get_model()
-                    return read_uai(string=content.decode("utf-8"), verbose=not quiet)
+                    reader = UAIReader(string=content.decode("utf-8"))
+                    return reader.get_model()
+                    # return read_uai(string=content.decode("utf-8"), verbose=not quiet)
 
         elif name.endswith(".bif"):
             reader = BIFReader(name)
             return reader.get_model()
 
         elif name.endswith(".uai"):
-            # reader = UAIReader(name)
-            # return reader.get_model()
-            return read_uai(name, verbose=not quiet)
+            reader = UAIReader(name)
+            return reader.get_model()
+            # return read_uai(name, verbose=not quiet)
 
         raise RuntimeError("Unexpected model type: {name}")
 

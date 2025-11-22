@@ -17,7 +17,6 @@ def test_AStarInference_hmm1_test0():
     inf = AStarInference(pgm)
     observed = ["o0", "o0", "o1", "o0", "o0"]
     results = inf.map_query(evidence=observed)
-    print(results)
     assert results.solution.variable_value == ["h0", "h0", "h0", "h0", "h0"]
 
 
@@ -62,7 +61,6 @@ def test_AStarInference_chmm1_test0():
     inf = AStarInference(pgm)
     observed = ["o0"] * 15
     results = inf.map_query(evidence=observed)
-    print(results)
     assert results.solution.variable_value == [
         "h1",
         "h1",

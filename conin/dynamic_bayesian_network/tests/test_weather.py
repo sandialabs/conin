@@ -312,11 +312,11 @@ def test_weather_A_constrained_pgmpy():
         ("W", 3): "Rainy",
         ("T", 3): "Hot",
         ("O", 3): "Wet",
-        ("H", 3): "High",
+        ("H", 3): "Medium",
         ("W", 4): "Rainy",
-        ("T", 4): "Mild",
+        ("T", 4): "Hot",
         ("O", 4): "Wet",
-        ("H", 4): "High",
+        ("H", 4): "Medium",
     }
 
     model = create_DDBN_map_query_pyomo_model(
