@@ -18,7 +18,7 @@ with try_import() as pgmpy_available:
 #    import conin.common.pyagrum
 
 
-def save_model(pgm, name, quiet=True):
+def save_model(pgm, name, model_type="conin", quiet=True):
 
     if model_type == "conin":
         return conin.common.conin.save_model(pgm, name, quiet=quiet)
