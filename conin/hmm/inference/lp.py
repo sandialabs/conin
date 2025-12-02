@@ -31,6 +31,7 @@ def lp_inference(
     chmm = ConstrainedHiddenMarkovModel(hmm=hmm)
     chmm.initialize_chmm("pyomo")
     M = chmm.chmm.generate_unconstrained_model(observed=observed)
+    data = chmm.chmm.data
     if debug:
         toc("Generating Model - STOP")
     if debug:
@@ -46,7 +47,7 @@ def lp_inference(
     log_likelihood = pyo.value(M.hmm.o)
     hidden = ["__UNKNOWN__"] * T
     for t in range(T):
-        for a in chmm.chmm.data.A:
+        for a in data.hmm.A:
             if pyo.value(M.hmm.x[t, a]) > 0.5:
                 hidden[t] = hmm.hidden_to_external[a]
         assert (
@@ -65,13 +66,13 @@ def lp_inference(
     if debug:
         ans.hmm = hmm
         ans.M = M
-        print(f"E: {len(hmm.chmm.data.E)}")
-        print(f"F: {len(hmm.chmm.data.F)}")
-        print(f"G: {len(hmm.chmm.data.G)}")
-        print(f"GG: {len(hmm.chmm.data.GG)}")
-        print(f"FF: {len(hmm.chmm.data.FF)}")
-        print(f"T: {len(hmm.chmm.data.T)}")
-        print(f"A: {len(hmm.chmm.data.A)}")
+        print(f"E: {len(data.hmm.E)}")
+        print(f"F: {len(data.hmm.F)}")
+        print(f"G: {len(data.hmm.G)}")
+        print(f"GG: {len(data.hmm.GG)}")
+        print(f"FF: {len(data.hmm.FF)}")
+        print(f"T: {len(data.hmm.T)}")
+        print(f"A: {len(data.hmm.A)}")
     return ans
 
 
@@ -92,6 +93,7 @@ def ip_inference(
     if debug:
         tic("Generating Model - START")
     M = hmm.chmm.generate_model(observed=observed)
+    data = hmm.chmm.data
     if debug:
         toc("Generating Model - STOP")
     if debug:
@@ -112,7 +114,7 @@ def ip_inference(
 
     hidden = ["__UNKNOWN__"] * T
     for t in range(T):
-        for a in hmm.chmm.data.A:
+        for a in data.hmm.A:
             if pyo.value(M.hmm.x[t, a]) > 0.5:
                 hidden[t] = hmm.hidden_markov_model.hidden_to_external[a]
         assert (
@@ -139,12 +141,12 @@ def ip_inference(
     if debug:
         ans.hmm = hmm.chmm.hmm
         ans.M = M
-        print(f"E: {len(hmm.chmm.data.E)}")
-        print(f"F: {len(hmm.chmm.data.F)}")
-        print(f"Gt: {len(hmm.chmm.data.Gt)}")
-        print(f"Ge: {len(hmm.chmm.data.Ge)}")
-        print(f"GG: {len(hmm.chmm.data.GG)}")
-        print(f"FF: {len(hmm.chmm.data.FF)}")
-        print(f"T: {len(hmm.chmm.data.T)}")
-        print(f"A: {len(hmm.chmm.data.A)}")
+        print(f"E: {len(data.hmm.E)}")
+        print(f"F: {len(data.hmm.F)}")
+        print(f"Gt: {len(data.hmm.Gt)}")
+        print(f"Ge: {len(data.hmm.Ge)}")
+        print(f"GG: {len(data.hmm.GG)}")
+        print(f"FF: {len(data.hmm.FF)}")
+        print(f"T: {len(data.hmm.T)}")
+        print(f"A: {len(data.hmm.A)}")
     return ans
