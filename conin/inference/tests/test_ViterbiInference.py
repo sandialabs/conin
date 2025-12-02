@@ -17,7 +17,6 @@ def test_ViterbiInference_hmm1_test0():
     inf = ViterbiInference(pgm)
     observed = ["o0", "o0", "o1", "o0", "o0"]
     results = inf.map_query(evidence=observed)
-    print(results)
     assert results.solution.variable_value == ["h0", "h0", "h0", "h0", "h0"]
 
 

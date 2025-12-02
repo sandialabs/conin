@@ -131,6 +131,18 @@ class DiscreteCPD:
     2
     """
 
+    def __str__(self):
+        return "\n".join(
+            [
+                "Dataclass(",
+                f"\t{self.node=}",
+                f"\t{self.values=}",
+                f"\t{self.parents=}",
+                f"\t{self.default_value=}",
+                "\t)",
+            ]
+        )
+
     def normalize(self, pgm):
         """Return a CPD whose values are normalized to dictionaries.
 
@@ -178,7 +190,14 @@ class DiscreteCPD:
                     dict(zip(var_states, vals))
                     for vals in batched(self.values, len(var_states))
                 ]
-                values = dict(zip(itertools.product(*slist), node_values))
+                if len(slist) == 1:
+                    values = dict(zip(*slist, node_values))
+                else:
+                    indices = [
+                        tuple(reversed(index))
+                        for index in itertools.product(*list(reversed(slist)))
+                    ]
+                    values = dict(zip(indices, node_values))
             else:
                 values = dict(zip(var_states, self.values))
 

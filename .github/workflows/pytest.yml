@@ -21,7 +21,6 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
         python-version: ["3.10", "3.11", "3.12", "3.13"]
-        install_glpk: ["YES", "NO"]
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -29,6 +28,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: List files
+        run: |
+             pwd
+             ls -F 
+
       # Cache the conda environment
       - name: Cache conda environment
         uses: actions/cache@v4
@@ -37,7 +41,7 @@ jobs:
             ~/conda_pkgs_dir
             ~/.conda
             ~/miniconda3/envs
-          key: conda-${{ matrix.os }}-${{ matrix.python-version }}-${{ hashFiles('dev_environment.yml') }}
+          key: conda-${{ matrix.os }}-${{ matrix.python-version }}-${{ hashFiles('dev_environment.yml', '*/dev_environment.yml') }}
           restore-keys: |
             conda-${{ matrix.os }}-${{ matrix.python-version }}-
             conda-${{ matrix.os }}-

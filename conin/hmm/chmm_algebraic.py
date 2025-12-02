@@ -117,7 +117,12 @@ class Algebraic_CHMM(chmm.CHMM):
     """
 
     def __init__(
-        self, *, hidden_markov_model=None, cache_indices=None, constraints=None
+        self,
+        *,
+        hidden_markov_model=None,
+        cache_indices=None,
+        constraints=None,
+        data=None,
     ):
         """
         Constructor.
@@ -126,12 +131,12 @@ class Algebraic_CHMM(chmm.CHMM):
             hidden_markov_model (HiddenMarkovModel, optional): An instance of the HMM class (default is None, which initializes a new HMM instance).
         """
         super().__init__(
-            hidden_markov_model=hidden_markov_model, constraints=constraints
+            hidden_markov_model=hidden_markov_model,
+            constraints=constraints,
+            data=data,
         )
 
         self.cache_indices = True if cache_indices is None else cache_indices
-        # An empty Munch object for index data
-        self.data = munch.Munch()
 
     def generate_model(self, *, observed):
         M = self.generate_unconstrained_model(observed=observed)
@@ -150,6 +155,7 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
         y_binary=False,
         x_binary=True,
         constraints=None,
+        data=None,
         # solver=None,
         # solver_options=None,
         # app=None,
@@ -158,6 +164,7 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
             hidden_markov_model=hidden_markov_model,
             cache_indices=cache_indices,
             constraints=constraints,
+            data=data,
         )
 
         # Generate models with binary y-variables
@@ -172,7 +179,7 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
         self.observed = observed
         D = _create_index_sets(hmm=self.hidden_markov_model, observed=observed)
         if self.cache_indices:
-            self.data = D
+            self.data.hmm = D
 
         M = pyo.ConcreteModel()
 
