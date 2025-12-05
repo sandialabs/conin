@@ -139,14 +139,14 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
                 values = [float(next(tokens)) for i in range(vcard[f[0]])]
             else:
                 vlist = [list(range(vcard[v])) for v in f]
-                map_values = {
-                    index: float(next(tokens)) for index in itertools.product(*vlist)
-                }
-                values = [
-                    map_values[tuple(reversed(index))]
-                    for index in itertools.product(*list(reversed(vlist)))
-                ]
 
+                values = {
+                    index: float(next(tokens)) for index in itertools.product(*list(reversed(vlist)))
+                }
+
+            if verbose:  # pragma:nocover
+                pprint.pprint(values)
+                print("")
             factors.append(
                 DiscreteFactor(
                     nodes=[vname[v] for v in f],
