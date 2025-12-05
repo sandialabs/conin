@@ -151,7 +151,6 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
             factors.append(
                 DiscreteFactor(
                     nodes=[vname[v] for v in f],
-                    # cardinality=[vcard[v] for v in f],
                     values=values,
                 )
             )
