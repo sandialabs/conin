@@ -135,15 +135,15 @@ def test_load_model_deer2_conin():
 
 
 #
-# cancer.uai
+# cancer
 #
 
 
 # 0.03 0.05 0.001 0.02 0.97 0.95 0.999 0.98
 
 
-def test_load_model_cancer_conin():
-    pgm = load_model(os.path.join(cwd, "cancer.uai"))
+def test_load_bn_model_cancer_conin():
+    pgm = load_model(os.path.join(cwd, "cancer_bn.uai"))
     cpds = {cpd.node: cpd for cpd in pgm.cpds}
     assert cpds["var0"].values == {
         (0, 0): {0: 0.03, 1: 0.97},
@@ -155,3 +155,36 @@ def test_load_model_cancer_conin():
     assert cpds["var2"].values == {0: 0.9, 1: 0.1}
     assert cpds["var3"].values == {0: 0.3, 1: 0.7}
     assert cpds["var4"].values == {0: {0: 0.9, 1: 0.1}, 1: {0: 0.2, 1: 0.8}}
+
+
+def test_load_mn_model_cancer_conin():
+    pgm = load_model(os.path.join(cwd, "cancer_mn.uai"))
+    factors = {
+        tuple(f.nodes) if len(f.nodes) > 1 else f.nodes[0]: f.values
+        for f in pgm.factors
+    }
+
+    assert factors["var0", "var1"] == {
+        (0, 0): 0.65,
+        (0, 1): 0.3,
+        (1, 0): 0.35,
+        (1, 1): 0.7,
+    }
+    assert factors["var2"] == {0: 0.9, 1: 0.1}
+    assert factors["var3"] == {0: 0.3, 1: 0.7}
+    assert factors["var0", "var4"] == {
+        (0, 0): 0.9,
+        (0, 1): 0.2,
+        (1, 0): 0.1,
+        (1, 1): 0.8,
+    }
+    assert factors["var2", "var3", "var0"] == {
+        (0, 0, 0): 0.03,
+        (0, 0, 1): 0.05,
+        (0, 1, 0): 0.001,
+        (0, 1, 1): 0.02,
+        (1, 0, 0): 0.97,
+        (1, 0, 1): 0.95,
+        (1, 1, 0): 0.999,
+        (1, 1, 1): 0.98,
+    }
