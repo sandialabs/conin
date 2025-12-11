@@ -12,15 +12,19 @@ with try_import() as pgmpy_readwrite_available:
 
 cwd = os.path.dirname(__file__)
 
+
 @pytest.fixture
 def asia_uai():
     return load_model(os.path.join(cwd, "asia.uai"))
+
 
 @pytest.fixture
 def deer_uai():
     return load_model(os.path.join(cwd, "deer.uai"))
 
+
 if pgmpy_readwrite_available:
+
     @pytest.fixture
     def asia_bif():
         return load_model(os.path.join(cwd, "asia.bif"))
@@ -28,6 +32,7 @@ if pgmpy_readwrite_available:
     @pytest.fixture
     def deer_bif():
         return load_model(os.path.join(cwd, "deer.bif"))
+
 
 #
 # errors
@@ -99,4 +104,3 @@ def Xtest_save_model_deer1_conin():
 
 def Xtest_save_model_deer2_conin():
     pgm = save_model(os.path.join(cwd, "deer_compressed.uai.gz"))
-
