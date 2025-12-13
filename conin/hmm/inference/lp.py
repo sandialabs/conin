@@ -92,8 +92,8 @@ def ip_inference(
 
     if debug:
         tic("Generating Model - START")
-    M = hmm.chmm.generate_model(observed=observed)
-    data = hmm.chmm.data
+    M = hmm.chmm.chmm.generate_model(observed=observed)
+    data = hmm.chmm.chmm.data
     if debug:
         toc("Generating Model - STOP")
     if debug:
@@ -139,7 +139,7 @@ def ip_inference(
         termination_condition="ok",
     )
     if debug:
-        ans.hmm = hmm.chmm.hmm
+        ans.hmm = hmm.hidden_markov_model
         ans.M = M
         print(f"E: {len(data.hmm.E)}")
         print(f"F: {len(data.hmm.F)}")
