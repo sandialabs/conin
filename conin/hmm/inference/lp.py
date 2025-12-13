@@ -1,5 +1,6 @@
 import math
 import munch
+
 # from conin.hmm import hmm_application
 from conin.hmm import ConstrainedHiddenMarkovModel
 

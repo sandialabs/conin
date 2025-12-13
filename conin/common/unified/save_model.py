@@ -5,15 +5,15 @@ with try_import() as pgmpy_available:
     import pgmpy
     import conin.common.pgmpy
 
-#with try_import() as pomegranate_available:
+# with try_import() as pomegranate_available:
 #    import pomegranate
 #    import conin.common.pomegranate
 
-#with try_import() as pgmax_available:
+# with try_import() as pgmax_available:
 #    import pgmax
 #    import conin.common.pgmax
 
-#with try_import() as pyagrum_available:
+# with try_import() as pyagrum_available:
 #    import pyagrum
 #    import conin.common.pyagrum
 
