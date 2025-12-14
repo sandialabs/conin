@@ -105,6 +105,7 @@ def test_save_model_barley_uai1_uai(barley_uai):
     pgm = save_model(barley_uai, fname)
     os.remove(fname)
 
+
 #
 # cancer_bn.uai
 #

@@ -6,7 +6,9 @@ def save_model(pgm, name, quiet=True):
     if name.endswith(".uai"):
         return save_model_uai(pgm, name, quiet)
 
-    raise RuntimeError(f"Cannot save conin model.  Uknown format specified by filename suffix: {name}")
+    raise RuntimeError(
+        f"Cannot save conin model.  Uknown format specified by filename suffix: {name}"
+    )
 
 
 def save_model_uai(pgm, name, quiet=True):
