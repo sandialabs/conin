@@ -68,12 +68,16 @@ def Xtest_save_model_error4():
 
 
 def test_save_model_asia_uai1_uai(asia_uai):
-    pgm = save_model(asia_uai, os.path.join(cwd, "asia_test.uai"))
+    fname = os.path.join(cwd, "asia_test.uai")
+    pgm = save_model(asia_uai, fname)
+    os.remove(fname)
 
 
 @pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
 def test_save_model_asia_uai1_bif(asia_bif):
-    pgm = save_model(asia_bif, os.path.join(cwd, "asia_test.uai"))
+    fname = os.path.join(cwd, "asia_test.uai")
+    pgm = save_model(asia_bif, fname)
+    os.remove(fname)
 
 
 def Xtest_save_model_asia_uai2_uai(asia_uai):
