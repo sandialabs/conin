@@ -1,12 +1,3 @@
-# import os
-# import gzip
-# import re
-# import itertools
-# import numpy as np
-# import pprint
-#
-# from conin.util import try_import
-# from .mapcpd import MapCPD
 from conin.bayesian_network.model import DiscreteBayesianNetwork
 from conin.markov_network.model import DiscreteMarkovNetwork
 
