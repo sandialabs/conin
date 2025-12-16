@@ -7,6 +7,12 @@ from conin.common import load_model
 with try_import() as pgmpy_available:
     import pgmpy
 
+#
+# Note that pgmpy is needed to read BIF files by conin.
+#
+# These tests check if pgmpy.readwrite is available, which isn't true of all
+# installations.
+#
 with try_import() as pgmpy_readwrite_available:
     import pgmpy.readwrite
 
@@ -81,11 +87,6 @@ def test_load_model_asia_uai2_pomegranate():
 #
 # asia.bif
 #
-# Note that pgmpy is needed to read BIF files by conin.
-#
-# These tests check if pgmpy.readwrite is available, which isn't true of all
-# installations.
-#
 
 
 @pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
@@ -137,9 +138,6 @@ def test_load_model_deer2_conin():
 #
 # cancer
 #
-
-
-# 0.03 0.05 0.001 0.02 0.97 0.95 0.999 0.98
 
 
 def test_load_bn_model_cancer_conin():

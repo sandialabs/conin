@@ -19,6 +19,21 @@ def asia_uai():
 
 
 @pytest.fixture
+def barley_uai():
+    return load_model(os.path.join(cwd, "barley.uai"))
+
+
+@pytest.fixture
+def cancer_bn_uai():
+    return load_model(os.path.join(cwd, "cancer_bn.uai"))
+
+
+@pytest.fixture
+def cancer_mn_uai():
+    return load_model(os.path.join(cwd, "cancer_mn.uai"))
+
+
+@pytest.fixture
 def deer_uai():
     return load_model(os.path.join(cwd, "deer.uai"))
 
@@ -44,22 +59,22 @@ def Xtest_save_model_error1():
         pgm = save_model(os.path.join(cwd, "unknown.uai"))
 
 
-def Xtest_save_model_error2():
+def test_save_model_error2(asia_uai):
     with pytest.raises(RuntimeError):
-        pgm = save_model(os.path.join(cwd, "test_save_model.py"))
+        pgm = save_model(asia_uai, os.path.join(cwd, "test_save_model.py"))
 
 
-def Xtest_save_model_error3():
+def test_save_model_error3(asia_uai):
     with pytest.raises(RuntimeError):
-        pgm = save_model(os.path.join(cwd, "asia.uai"), model_type="unknown")
+        pgm = save_model(asia_uai, os.path.join(cwd, "asia.uai"), model_type="unknown")
 
 
 @pytest.mark.skipif(
     pgmpy_available, reason="Testing an error when pgmpy is not installed"
 )
-def Xtest_save_model_error4():
+def test_save_model_error4(asia_uai):
     with pytest.raises(ImportError):
-        pgm = save_model(os.path.join(cwd, "asia.uai"), model_type="pgmpy")
+        pgm = save_model(asia_uai, os.path.join(cwd, "asia.uai"), model_type="pgmpy")
 
 
 #
@@ -68,16 +83,16 @@ def Xtest_save_model_error4():
 
 
 def test_save_model_asia_uai1_uai(asia_uai):
-    pgm = save_model(asia_uai, os.path.join(cwd, "asia_test.uai"))
+    fname = os.path.join(cwd, "asia_test.uai")
+    pgm = save_model(asia_uai, fname)
+    os.remove(fname)
 
 
 @pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
 def test_save_model_asia_uai1_bif(asia_bif):
-    pgm = save_model(asia_bif, os.path.join(cwd, "asia_test.uai"))
-
-
-def Xtest_save_model_asia_uai2_uai(asia_uai):
-    pgm = save_model(os.path.join(cwd, "asia_compressed_test.uai.gz"))
+    fname = os.path.join(cwd, "asia_test.uai")
+    pgm = save_model(asia_bif, fname)
+    os.remove(fname)
 
 
 #
@@ -85,12 +100,32 @@ def Xtest_save_model_asia_uai2_uai(asia_uai):
 #
 
 
-def Xtest_save_model_barley1_conin():
-    pgm = save_model(os.path.join(cwd, "barley.uai"))
+def test_save_model_barley_uai1_uai(barley_uai):
+    fname = os.path.join(cwd, "barley_test.uai")
+    pgm = save_model(barley_uai, fname)
+    os.remove(fname)
 
 
-def Xtest_save_model_barley2_conin():
-    pgm = save_model(os.path.join(cwd, "barley_compressed.uai.gz"))
+#
+# cancer_bn.uai
+#
+
+
+def test_save_model_cancer_bn_uai(cancer_bn_uai):
+    fname = os.path.join(cwd, "cancer_bn_test.uai")
+    pgm = save_model(cancer_bn_uai, fname)
+    os.remove(fname)
+
+
+#
+# cancer_mn.uai
+#
+
+
+def test_save_model_cancer_mn_uai(cancer_mn_uai):
+    fname = os.path.join(cwd, "cancer_mn_test.uai")
+    pgm = save_model(cancer_mn_uai, fname)
+    os.remove(fname)
 
 
 #
@@ -98,9 +133,7 @@ def Xtest_save_model_barley2_conin():
 #
 
 
-def Xtest_save_model_deer1_conin():
-    pgm = save_model(os.path.join(cwd, "deer.uai"))
-
-
-def Xtest_save_model_deer2_conin():
-    pgm = save_model(os.path.join(cwd, "deer_compressed.uai.gz"))
+def test_save_model_deer1_conin(deer_uai):
+    fname = os.path.join(cwd, "deer_test.uai")
+    pgm = save_model(deer_uai, fname)
+    os.remove(fname)

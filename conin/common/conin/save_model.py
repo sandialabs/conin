@@ -1,17 +1,17 @@
-# import os
-# import gzip
-# import re
-# import itertools
-# import numpy as np
-# import pprint
-#
-# from conin.util import try_import
-# from .mapcpd import MapCPD
 from conin.bayesian_network.model import DiscreteBayesianNetwork
 from conin.markov_network.model import DiscreteMarkovNetwork
 
 
 def save_model(pgm, name, quiet=True):
+    if name.endswith(".uai"):
+        return save_model_uai(pgm, name, quiet)
+
+    raise RuntimeError(
+        f"Cannot save conin model.  Uknown format specified by filename suffix: {name}"
+    )
+
+
+def save_model_uai(pgm, name, quiet=True):
     """
     Function to serialize the parameters of a DBN in UAI format
     Inputs:  pgm (DiscreteBayesianNetwork, DiscreteMarkovNetwork) - model to be converted
@@ -25,7 +25,7 @@ def save_model(pgm, name, quiet=True):
         case = "MARKOV"
     else:
         raise ValueError(
-            "pgm must be an instance of a DiscreteBayesianNetwork or DiscreteMarkovNetwork"
+            f"pgm must be an instance of a DiscreteBayesianNetwork or DiscreteMarkovNetwork: {type(pgm)=}"
         )
 
     # get node2id mapping
