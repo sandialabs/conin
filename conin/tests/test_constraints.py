@@ -8,10 +8,11 @@ import conin.hmm.tests.examples as tc
 
 @pytest.fixture
 def constraint():
+    @oracle_constraint_fn(name="Test")
     def num_zeros_eq_five(seq):
         return seq.count(0) == 5
 
-    return Constraint(func=num_zeros_eq_five, name="Test")
+    return num_zeros_eq_five
 
 
 class Test_Constraints:
@@ -40,11 +41,11 @@ class Test_Constraints:
         assert not constraint(self.false_seq3)
 
     def test_name_automate(self):
+        @oracle_constraint_fn()
         def num_zeros_eq_five(seq):
             return seq.count(0) == 5  # pragma no cover
 
-        _constraint = Constraint(func=num_zeros_eq_five)
-        assert _constraint.name == "num_zeros_eq_five"
+        assert num_zeros_eq_five.name == "num_zeros_eq_five"
 
 
 class Test_Common_Constraints:
@@ -117,7 +118,7 @@ class Test_Common_Constraints:
         assert constraint.partial_func(5, [1, 0, 2, 1])
 
     def test_citation(self):
-        constraint = citation_constraint()
+        constraint = citation_constraint
         assert constraint([])
         assert constraint([1, 1, 1, 2, 2, 2, 7, 7])
         assert not constraint([1, 2, 2, 7, 7, 7, 7, 1])
