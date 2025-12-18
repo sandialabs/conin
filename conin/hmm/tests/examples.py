@@ -109,12 +109,12 @@ def create_chmm1_oracle():
 def create_chmm1_pyomo():
     hmm = create_hmm1()
 
-    @conin.pyomo_constraint_fn
+    @conin.pyomo_constraint_fn()
     def num_zeros_greater_than_nine(M, D):
         h0 = D.hmm.hidden_to_internal["h0"]
         M.h0_lower = pe.Constraint(expr=sum(M.hmm.x[t, h0] for t in D.hmm.T) >= 10)
 
-    @conin.pyomo_constraint_fn
+    @conin.pyomo_constraint_fn()
     def num_zeros_less_than_thirteen(M, D):
         h0 = D.hmm.hidden_to_internal["h0"]
         M.h0_upper = pe.Constraint(expr=sum(M.hmm.x[t, h0] for t in D.hmm.T) <= 12)
@@ -172,7 +172,7 @@ class Num_Zeros(conin.hmm.HMMApplication):
         return self._oracle_constraints
 
     def get_pyomo_constraints(self):
-        @pyomo_constraint_fn
+        @pyomo_constraint_fn()
         def constraint(M, D):
             h0 = D.hmm.hidden_to_internal["h0"]
             M.h0_lower = pe.Constraint(

@@ -201,7 +201,7 @@ def cancer2_BN_pgmpy(debug=False):
 def cancer1_BN_constrained_conin(debug=False):
     pgm = cancer1_BN_conin(debug=debug)
 
-    @pyomo_constraint_fn
+    @pyomo_constraint_fn()
     def constraints(model):
         model.c = pyo.ConstraintList()
         model.c.add(model.X["Dyspnoea", 1] + model.X["Xray", 1] <= 1)
@@ -214,7 +214,7 @@ def cancer1_BN_constrained_conin(debug=False):
 def cancer1_BN_constrained_pgmpy(debug=False):
     pgm = cancer1_BN_pgmpy(debug=debug)
 
-    @pyomo_constraint_fn
+    @pyomo_constraint_fn()
     def constraints(model):
         model.c = pyo.ConstraintList()
         model.c.add(model.X["Dyspnoea", 1] + model.X["Xray", 1] <= 1)
@@ -228,7 +228,7 @@ def cancer1_BN_constrained_pgmpy(debug=False):
 def cancer2_BN_constrained_pgmpy(debug=False):
     pgm = cancer2_BN_pgmpy(debug=debug)
 
-    @pyomo_constraint_fn
+    @pyomo_constraint_fn()
     def constraints(model):
         model.c = pyo.ConstraintList()
         model.c.add(model.X["Dyspnoea", 1] + model.X["Xray", 1] <= 1)

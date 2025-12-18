@@ -143,7 +143,7 @@ def simple1_DDBN_pgmpy(debug=False):
 def simple1_DDBN_constrained_conin(debug=False):
     pgm = simple1_DDBN_conin(debug=debug)
 
-    @pyomo_constraint_fn
+    @pyomo_constraint_fn()
     def constraints(model):
         model.c = pyo.ConstraintList()
         model.c.add(model.X[("A", 0), 0] == model.X[("A", 1), 0])
@@ -156,7 +156,7 @@ def simple1_DDBN_constrained_conin(debug=False):
 def simple1_DDBN_constrained_pgmpy(debug=False):
     pgm = simple1_DDBN_pgmpy(debug=debug)
 
-    @pyomo_constraint_fn
+    @pyomo_constraint_fn()
     def constraints(model):
         model.c = pyo.ConstraintList()
         model.c.add(model.X[("A", 0), 0] == model.X[("A", 1), 0])
@@ -225,7 +225,7 @@ def simple2_DDBN_pgmpy(debug=False):
 def simple2_DDBN_constrained_conin(debug=False):
     pgm = simple2_DDBN_conin(debug=debug)
 
-    @pyomo_constraint_fn
+    @pyomo_constraint_fn()
     def constraints(model):
         model.c = pyo.ConstraintList()
         model.c.add(model.X[("A", 0), 0] == model.X[("A", 1), 0])
@@ -238,7 +238,7 @@ def simple2_DDBN_constrained_conin(debug=False):
 def simple2_DDBN_constrained_pgmpy(debug=False):
     pgm = simple2_DDBN_pgmpy(debug=debug)
 
-    @pyomo_constraint_fn
+    @pyomo_constraint_fn()
     def constraints(model):
         model.c = pyo.ConstraintList()
         model.c.add(model.X[("A", 0), 0] == model.X[("A", 1), 0])
@@ -682,7 +682,7 @@ def weather2_pgmpy(debug=False):
 def weather_constrained_conin(debug=False):
     pgm = weather_conin(debug)
 
-    @pyomo_constraint_fn
+    @pyomo_constraint_fn()
     def constraints(model, data):
         """2 rainy days"""
         model.c = pyo.Constraint(
@@ -696,7 +696,7 @@ def weather_constrained_conin(debug=False):
 def weather_constrained_pgmpy(debug=False):
     pgm = weather2_pgmpy(debug)
 
-    @pyomo_constraint_fn
+    @pyomo_constraint_fn()
     def constraints(model, data):
         """2 rainy days"""
         model.c = pyo.Constraint(

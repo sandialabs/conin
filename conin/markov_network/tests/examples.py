@@ -120,7 +120,7 @@ def ABC_constrained_pgmpy():
     """
     pgm = ABC_pgmpy()
 
-    @pyomo_constraint_fn
+    @pyomo_constraint_fn()
     def constraint_fn(model):
         @model.Constraint([0, 1, 2])
         def diff(M, s):
@@ -143,7 +143,7 @@ def ABC_constrained_conin():
     """
     pgm = ABC_conin()
 
-    @pyomo_constraint_fn
+    @pyomo_constraint_fn()
     def constraint_fn(model):
         @model.Constraint([0, 1, 2])
         def diff(M, s):
