@@ -26,6 +26,14 @@ def is_polytree(pgm):
                 nbrs[p].add(cpd.node)
                 nbrs[cpd.node].add(p)
 
+    return _is_polytree(nodes, nbrs)
+
+
+def _is_polytree(nodes, nbrs):
+    """
+    This is the core logic for is_polytree, which is shared with other PGM functions.
+    """
+
     visited = set()
     queue = deque()
 
@@ -34,8 +42,6 @@ def is_polytree(pgm):
             if len(visited) == len(nodes):
                 return True
             else:
-                # WEH - Do we just need to pick any member of the set: set(nodes) - visited?
-                #queue.append(list(nodes - visited)[0])
                 queue.append( next(iter(nodes - visited)) )
 
         else:
