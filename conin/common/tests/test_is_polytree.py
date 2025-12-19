@@ -20,6 +20,7 @@ cwd = os.path.dirname(__file__)
 # asia.uai
 #
 
+
 def test_is_polytree_conin_asia():
     pgm = load_model(os.path.join(cwd, "asia.uai"))
     assert is_polytree(pgm) == False
@@ -39,17 +40,21 @@ def test_is_polytree_pgmpy_asia():
     conin_pgm = convert_pgmpy_to_conin(pgm)
     assert is_polytree(conin_pgm) == False
 
+
 #
 # barley.uai
 #
+
 
 def test_is_polytree_conin_barley():
     pgm = load_model(os.path.join(cwd, "barley.uai"))
     assert is_polytree(pgm) == False
 
+
 #
 # cancer.uai
 #
+
 
 def test_is_polytree_conin_cancer():
     pgm = load_model(os.path.join(cwd, "cancer_bn.uai"))
@@ -70,13 +75,14 @@ def test_is_polytree_pgmpy_cancer():
     conin_pgm = convert_pgmpy_to_conin(pgm)
     assert is_polytree(conin_pgm) == True
 
+
 #
 # deer.uai
 #
+
 
 def test_is_polytree_conin_deer():
     with pytest.raises(TypeError):
         # deer.uai defines a Markov Network
         pgm = load_model(os.path.join(cwd, "deer.uai"))
         is_polytree(pgm)
-

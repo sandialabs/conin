@@ -14,8 +14,10 @@ def is_polytree(pgm):
     Output:
         - bool
     """
-    if not(type(pgm) is DiscreteBayesianNetwork):
-        raise TypeError(f"is_polytree() expects an argument of type DiscreteBayesianNetwork ({type(pgm)=})")
+    if not (type(pgm) is DiscreteBayesianNetwork):
+        raise TypeError(
+            f"is_polytree() expects an argument of type DiscreteBayesianNetwork ({type(pgm)=})"
+        )
 
     nodes = set(pgm.nodes)
     nbrs = {node: set() for node in nodes}
@@ -42,7 +44,7 @@ def _is_polytree(nodes, nbrs):
             if len(visited) == len(nodes):
                 return True
             else:
-                queue.append( next(iter(nodes - visited)) )
+                queue.append(next(iter(nodes - visited)))
 
         else:
             u = queue.popleft()
