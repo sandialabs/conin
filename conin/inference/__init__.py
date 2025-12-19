@@ -4,3 +4,7 @@ from .OptimizationInference import (
 )
 from .ViterbiInference import ViterbiInference
 from .AStarInference import AStarInference
+from .CFNInference import (
+    CFNInference,
+    DDBN_CFNInference,
+)
