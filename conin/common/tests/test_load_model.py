@@ -2,7 +2,7 @@ import pytest
 import os.path
 
 from conin.util import try_import
-from conin.common import load_model
+from conin.common.unified import load_model
 
 with try_import() as pgmpy_available:
     import pgmpy
