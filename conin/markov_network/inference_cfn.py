@@ -38,7 +38,7 @@ def create_reduced_MN(
     ConcreteModel
         The pyomo optimization model that supports inference with MAP queries.
     """
-    pass
+    return pgm
 
     """
     if timing:  # pragma:nocover
