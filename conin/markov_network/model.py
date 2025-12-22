@@ -81,7 +81,11 @@ class DiscreteFactor:
             if len(slist) == 1:
                 values = dict(zip(slist[0], self.values))
             else:
-                values = dict(zip(itertools.product(*slist), self.values))
+                indices = [
+                    index[::-1] for index in itertools.product(*list(reversed(slist)))
+                ]
+                values = dict(zip(indices, self.values))
+
             return DiscreteFactor(
                 nodes=self.nodes, values=values, default_value=self.default_value
             )
@@ -143,25 +147,29 @@ class DiscreteMarkovNetwork:
                 enodes.add(v)
                 enodes.add(w)
 
-            # Note: We assert equality to ensure that all nodes are used in the model
-            assert model_nodes == enodes
+            # Note: We have an error if the edges contain nodes that aren't in the model.
+            # BUT, we may have a model_node that is not in any edge
+            if len(enodes - model_nodes) > 0:
+                raise RuntimeError(
+                    f"Unexpected discrepancy in model nodes: the set of edge nodes contains the following nodes that do not appear in the model: {enodes-model_nodes}"
+                )
 
         fnodes = set()
-        for f in self._factors:
+        for factor_num, f in enumerate(self._factors):
             for node in f.nodes:
                 fnodes.add(node)
             if type(f.values) is dict:
                 for k, v in f.values.items():
-                    assert v >= 0, f"Unexpected factor value {v}"
+                    assert v >= 0, f"Unexpected negative factor value {v}"
                     if type(k) is tuple:
                         for i, iv in enumerate(k):
                             assert (
-                                iv in self._states[self._nodes[i]]
-                            ), f"Unexpected value {iv} in the {i}-th node value of {k}"
+                                iv in self._states[f.nodes[i]]
+                            ), f"Unexpected node value {k} for factor {factor_num}: the {i}-th value is {iv} but should be  in {self._states[f.nodes[i]]}"
                     else:
                         assert (
-                            k in self._states[self._nodes[0]]
-                        ), f"Unexpected node value {k}"
+                            k in self._states[f.nodes[0]]
+                        ), f"Unexpected node value {k} in factor {factor_num}"
             else:
                 assert (
                     self.states
@@ -360,6 +368,9 @@ class DiscreteMarkovNetwork:
         >>> dmn.factors = [f1, f2]
         """
         self._factors = [factor.normalize(self) for factor in factor_list]
+
+    def num_factor_parameters(self):
+        return sum(len(f.values) for f in self.factors)
 
 
 class ConstrainedDiscreteMarkovNetwork:

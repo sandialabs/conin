@@ -294,7 +294,9 @@ class DiscreteBayesianNetwork:
                             assert key in vnodes, f"Unexpected cpd state {key}"
                             assert val >= 0 and val <= 1, f"Unexpected cpd value {val}"
                     else:
-                        assert v >= 0 and v <= 1, f"Unexpected cpd value {v}"
+                        assert (
+                            v >= 0 and v <= 1
+                        ), f"Unexpected cpd value {v} for key {k}"
                         vkey = True
 
                     if vkey:
@@ -468,6 +470,9 @@ class DiscreteBayesianNetwork:
             Iterable of CPDs to attach to the network.
         """
         self._cpds = [cpd.normalize(self) for cpd in cpd_list]
+
+    def num_cpd_parameters(self):
+        return sum(len(cpd.values) for cpd in self.cpds)
 
 
 class ConstrainedDiscreteBayesianNetwork:
