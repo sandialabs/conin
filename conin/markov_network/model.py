@@ -81,7 +81,11 @@ class DiscreteFactor:
             if len(slist) == 1:
                 values = dict(zip(slist[0], self.values))
             else:
-                values = dict(zip(itertools.product(*slist), self.values))
+                indices = [
+                    index[::-1] for index in itertools.product(*list(reversed(slist)))
+                ]
+                values = dict(zip(indices, self.values))
+
             return DiscreteFactor(
                 nodes=self.nodes, values=values, default_value=self.default_value
             )
