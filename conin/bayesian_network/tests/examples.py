@@ -448,8 +448,8 @@ def holmes_conin(debug=False):
     E - Does an earthquake happen?
     R - Does he hear about an earthquake on the radio?
 
-    A. Gao. "Lecture 13: Variable Elimination Algorithm", 2021.
-    https://cs.uwaterloo.ca/~a23gao/cs486686_f18/schedule.shtml
+    A. Gao. "Lecture 12: Variable Elimination Algorithm", 2021.
+    https://cs.uwaterloo.ca/~a23gao/cs486686_f18/slides/lec12_inferences_bayes_nets_nosol.pdf
     """
     G = DiscreteBayesianNetwork()
     G.states = {
