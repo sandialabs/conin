@@ -506,27 +506,27 @@ def test_DDBN_IntegerProgrammingInference_weather():
 #
 
 q_weather_constrained = {
-        ("H", 0): "Low",
-        ("H", 1): "Low",
-        ("H", 2): "Low",
-        ("H", 3): "High",
-        ("H", 4): "High",
-        ("O", 0): "Dry",
-        ("O", 1): "Dry",
-        ("O", 2): "Dry",
-        ("O", 3): "Wet",
-        ("O", 4): "Wet",
-        ("T", 0): "Hot",
-        ("T", 1): "Hot",
-        ("T", 2): "Hot",
-        ("T", 3): "Hot",
-        ("T", 4): "Mild",
-        ("W", 0): "Sunny",
-        ("W", 1): "Sunny",
-        ("W", 2): "Sunny",
-        ("W", 3): "Rainy",
-        ("W", 4): "Rainy",
-    }
+    ("H", 0): "Low",
+    ("H", 1): "Low",
+    ("H", 2): "Low",
+    ("H", 3): "High",
+    ("H", 4): "High",
+    ("O", 0): "Dry",
+    ("O", 1): "Dry",
+    ("O", 2): "Dry",
+    ("O", 3): "Wet",
+    ("O", 4): "Wet",
+    ("T", 0): "Hot",
+    ("T", 1): "Hot",
+    ("T", 2): "Hot",
+    ("T", 3): "Hot",
+    ("T", 4): "Mild",
+    ("W", 0): "Sunny",
+    ("W", 1): "Sunny",
+    ("W", 2): "Sunny",
+    ("W", 3): "Rainy",
+    ("W", 4): "Rainy",
+}
 
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
