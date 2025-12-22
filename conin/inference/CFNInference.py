@@ -1,3 +1,4 @@
+import tempfile
 import warnings
 
 from conin.util import try_import
