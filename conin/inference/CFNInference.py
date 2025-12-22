@@ -104,7 +104,7 @@ class CFNInference:
             pgm, ConstrainedDiscreteBayesianNetwork
         ):
             results = None
-            #with tempfile.TemporaryDirectory as tempdir:
+            # with tempfile.TemporaryDirectory as tempdir:
             #    filename = os.path.join(tempdir, "model.uai")
             #    reduced_pgm = create_reduced_MN_from_BN(
             #        pgm=pgm,
@@ -122,13 +122,13 @@ class CFNInference:
         #
         # TODO
         #
-        #elif isinstance(pgm, HiddenMarkovModel):
+        # elif isinstance(pgm, HiddenMarkovModel):
         #    pass
 
         #
         # TODO
         #
-        #elif isinstance(pgm, ConstrainedHiddenMarkovModel) or isinstance(pgm, CHMM):
+        # elif isinstance(pgm, ConstrainedHiddenMarkovModel) or isinstance(pgm, CHMM):
         #    pass
 
         else:
@@ -191,10 +191,10 @@ class DDBN_CFNInference:
         if isinstance(pgm, DynamicDiscreteBayesianNetwork) or isinstance(
             pgm, ConstrainedDynamicDiscreteBayesianNetwork
         ):
-            #model = create_DDBN_map_query_pyomo_model(
+            # model = create_DDBN_map_query_pyomo_model(
             #    pgm=pgm, start=start, stop=stop, variables=variables, evidence=evidence
-            #)
-            #return CFN_map_query(model, **options)
+            # )
+            # return CFN_map_query(model, **options)
             pass
         else:
             raise TypeError("Unexpected model type: {type(pgm)}")
