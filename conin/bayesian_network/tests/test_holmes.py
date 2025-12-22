@@ -127,7 +127,7 @@ def test_holmes3():
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_holmes4():
     pgm = examples.holmes_pgmpy()
-    q = {"W": "w", "G": "-g"}
+    q = {"W": "-w", "G": "-g"}
     variables = ["W", "G"]
     evidence = {"B": "b"}
 
