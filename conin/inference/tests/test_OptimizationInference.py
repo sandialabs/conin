@@ -505,14 +505,7 @@ def test_DDBN_IntegerProgrammingInference_weather():
 # ConstrainedDynamicBayesianNetwork tests
 #
 
-
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_DDBN_IntegerProgrammingInference_weather_constrained_conin():
-    pgm = conin.dynamic_bayesian_network.tests.examples.weather_constrained_conin()
-    inf = DDBN_IntegerProgrammingInference(pgm)
-
-    results = inf.map_query(stop=4, solver=mip_solver)
-    assert results.solution.variable_value == {
+q_weather_constrained = {
         ("H", 0): "Low",
         ("H", 1): "Low",
         ("H", 2): "Low",
@@ -534,6 +527,15 @@ def test_DDBN_IntegerProgrammingInference_weather_constrained_conin():
         ("W", 3): "Rainy",
         ("W", 4): "Rainy",
     }
+
+
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
+def test_DDBN_IntegerProgrammingInference_weather_constrained_conin():
+    pgm = conin.dynamic_bayesian_network.tests.examples.weather_constrained_conin()
+    inf = DDBN_IntegerProgrammingInference(pgm)
+
+    results = inf.map_query(stop=4, solver=mip_solver)
+    assert results.solution.variable_value == q_weather_constrained
 
     evidence = {
         ("O", 0): "Wet",
@@ -571,28 +573,7 @@ def test_DDBN_IntegerProgrammingInference_weather_constrained_pgmpy():
     inf = DDBN_IntegerProgrammingInference(pgm)
 
     results = inf.map_query(stop=4, solver=mip_solver)
-    assert results.solution.variable_value == {
-        ("H", 0): "Low",
-        ("H", 1): "Low",
-        ("H", 2): "Low",
-        ("H", 3): "Medium",
-        ("H", 4): "Medium",
-        ("O", 0): "Dry",
-        ("O", 1): "Dry",
-        ("O", 2): "Dry",
-        ("O", 3): "Wet",
-        ("O", 4): "Wet",
-        ("T", 0): "Hot",
-        ("T", 1): "Hot",
-        ("T", 2): "Hot",
-        ("T", 3): "Hot",
-        ("T", 4): "Hot",
-        ("W", 0): "Sunny",
-        ("W", 1): "Sunny",
-        ("W", 2): "Sunny",
-        ("W", 3): "Rainy",
-        ("W", 4): "Rainy",
-    }
+    assert results.solution.variable_value == q_weather_constrained
 
     evidence = {
         ("O", 0): "Wet",
