@@ -1,5 +1,6 @@
 import pytest
-#import pyomo.opt
+
+# import pyomo.opt
 
 from conin.util import try_import
 from conin.inference.CFNInference import (

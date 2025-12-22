@@ -2,8 +2,9 @@ import tempfile
 import warnings
 
 from conin.util import try_import
-#from conin.hmm import HiddenMarkovModel, ConstrainedHiddenMarkovModel, CHMM
-#from conin.hmm.inference import lp_inference, ip_inference
+
+# from conin.hmm import HiddenMarkovModel, ConstrainedHiddenMarkovModel, CHMM
+# from conin.hmm.inference import lp_inference, ip_inference
 
 from conin.markov_network import (
     DiscreteMarkovNetwork,
@@ -14,12 +15,12 @@ from conin.markov_network import (
 from conin.bayesian_network import (
     DiscreteBayesianNetwork,
     ConstrainedDiscreteBayesianNetwork,
-    #create_reduced_MN_from_BN,
+    # create_reduced_MN_from_BN,
 )
 from conin.dynamic_bayesian_network import (
     DynamicDiscreteBayesianNetwork,
     ConstrainedDynamicDiscreteBayesianNetwork,
-    #create_reduced_MN_from_DBN,
+    # create_reduced_MN_from_DBN,
 )
 
 with try_import() as pgmpy_available:
@@ -91,7 +92,9 @@ class CFNInference:
                     **options,
                 )
                 varmap = save_model(reduced_pgm, filename)
-                results = CFN_map_query(filename, timing=timing, varmap=varmap, **options)
+                results = CFN_map_query(
+                    filename, timing=timing, varmap=varmap, **options
+                )
             return results
 
         elif isinstance(pgm, DiscreteBayesianNetwork) or isinstance(
@@ -108,7 +111,9 @@ class CFNInference:
                     **options,
                 )
                 varmap = save_model(reduced_pgm, filename)
-                results = CFN_map_query(filename, timing=timing, varmap=varmap, **options)
+                results = CFN_map_query(
+                    filename, timing=timing, varmap=varmap, **options
+                )
             return results
 
         #
