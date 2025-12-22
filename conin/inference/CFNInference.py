@@ -7,6 +7,8 @@ from conin.util import try_import
 # from conin.hmm import HiddenMarkovModel, ConstrainedHiddenMarkovModel, CHMM
 # from conin.hmm.inference import lp_inference, ip_inference
 
+from conin.common import save_model
+
 from conin.markov_network import (
     DiscreteMarkovNetwork,
     ConstrainedDiscreteMarkovNetwork,
@@ -102,62 +104,32 @@ class CFNInference:
             pgm, ConstrainedDiscreteBayesianNetwork
         ):
             results = None
-            with tempfile.TemporaryDirectory as tempdir:
-                filename = os.path.join(tempdir, "model.uai")
-                reduced_pgm = create_reduced_MN_from_BN(
-                    pgm=pgm,
-                    variables=variables,
-                    evidence=evidence,
-                    timing=timing,
-                    **options,
-                )
-                varmap = save_model(reduced_pgm, filename)
-                results = CFN_map_query(
-                    filename, timing=timing, varmap=varmap, **options
-                )
+            #with tempfile.TemporaryDirectory as tempdir:
+            #    filename = os.path.join(tempdir, "model.uai")
+            #    reduced_pgm = create_reduced_MN_from_BN(
+            #        pgm=pgm,
+            #        variables=variables,
+            #        evidence=evidence,
+            #        timing=timing,
+            #        **options,
+            #    )
+            #    varmap = save_model(reduced_pgm, filename)
+            #    results = CFN_map_query(
+            #        filename, timing=timing, varmap=varmap, **options
+            #    )
             return results
 
         #
         # TODO
         #
-        elif isinstance(pgm, HiddenMarkovModel):
-            # TODO: warning about specifying 'variables'
-            # TODO: warning about specifying timing
-            if type(evidence) is list:
-                return lp_inference(hmm=pgm, observed=evidence, **options)
-
-            if type(evidence) is dict:
-                observed = [evidence[i] for i in range(len(evidence))]
-                results = lp_inference(hmm=pgm, observed=observed, **options)
-                solutions = results.solutions
-                for soln in solutions:
-                    soln.variable_value = {
-                        i: v for i, v in enumerate(soln.variable_value)
-                    }
-                    soln.hidden = soln.variable_value
-                results.solutions = solutions
-                return results
+        #elif isinstance(pgm, HiddenMarkovModel):
+        #    pass
 
         #
         # TODO
         #
-        elif isinstance(pgm, ConstrainedHiddenMarkovModel) or isinstance(pgm, CHMM):
-            # TODO: warning about specifying 'variables'
-            # TODO: warning about specifying timing
-            if type(evidence) is list:
-                return ip_inference(hmm=pgm, observed=evidence, **options)
-
-            if type(evidence) is dict:
-                observed = [evidence[i] for i in range(len(evidence))]
-                results = ip_inference(hmm=pgm, observed=observed, **options)
-                solutions = results.solutions
-                for soln in solutions:
-                    soln.variable_value = {
-                        i: v for i, v in enumerate(soln.variable_value)
-                    }
-                    soln.hidden = soln.variable_value
-                results.solutions = solutions
-                return results
+        #elif isinstance(pgm, ConstrainedHiddenMarkovModel) or isinstance(pgm, CHMM):
+        #    pass
 
         else:
             raise TypeError("Unexpected model type: {type(pgm)}")
@@ -219,9 +191,10 @@ class DDBN_CFNInference:
         if isinstance(pgm, DynamicDiscreteBayesianNetwork) or isinstance(
             pgm, ConstrainedDynamicDiscreteBayesianNetwork
         ):
-            model = create_DDBN_map_query_pyomo_model(
-                pgm=pgm, start=start, stop=stop, variables=variables, evidence=evidence
-            )
-            return optimize_map_query_model(model, **options)
+            #model = create_DDBN_map_query_pyomo_model(
+            #    pgm=pgm, start=start, stop=stop, variables=variables, evidence=evidence
+            #)
+            #return CFN_map_query(model, **options)
+            pass
         else:
             raise TypeError("Unexpected model type: {type(pgm)}")
