@@ -118,13 +118,13 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
             else:
                 vlist = [list(range(vcard[v])) for v in f[:-1]]
 
-                map_values = defaultdict(list)
+                indices = [
+                    index[::-1] for index in itertools.product(*list(reversed(vlist)))
+                ]
+                map_values = {index: dict() for index in indices}
                 for i in range(vcard[f[-1]]):
-                    for index in itertools.product(*list(reversed(vlist))):
-                        map_values[tuple(reversed(index))].append(
-                            (i, float(next(tokens)))
-                        )
-                map_values = {k: dict(v) for k, v in map_values.items()}
+                    for index in indices:
+                        map_values[index][i] = float(next(tokens))
 
                 parents = [vname[v] for v in f[:-1]]
 
@@ -141,7 +141,7 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
                 vlist = [list(range(vcard[v])) for v in f]
 
                 values = {
-                    index: float(next(tokens))
+                    index[::-1]: float(next(tokens))
                     for index in itertools.product(*list(reversed(vlist)))
                 }
 

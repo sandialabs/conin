@@ -166,7 +166,7 @@ def test_cancer2_pgmpy_Cancer():
     Evidence for Cancer
     """
     pgm = examples.cancer2_BN_pgmpy()
-    q = {"Xray": 0, "Dyspnoea": 0, "Smoker": 0, "Pollution": 0}
+    q = {"Xray": 0, "Dyspnoea": 0, "Smoker": 1, "Pollution": 0}
 
     infer = VariableElimination(pgm)
     assert q == infer.map_query(

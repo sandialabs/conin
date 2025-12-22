@@ -2,7 +2,7 @@ import pytest
 import os.path
 
 from conin.util import try_import
-from conin.common import load_model
+from conin.common.unified import load_model
 
 with try_import() as pgmpy_available:
     import pgmpy
@@ -164,25 +164,25 @@ def test_load_mn_model_cancer_conin():
 
     assert factors["var0", "var1"] == {
         (0, 0): 0.65,
-        (0, 1): 0.3,
-        (1, 0): 0.35,
+        (0, 1): 0.35,
+        (1, 0): 0.3,
         (1, 1): 0.7,
     }
     assert factors["var2"] == {0: 0.9, 1: 0.1}
     assert factors["var3"] == {0: 0.3, 1: 0.7}
     assert factors["var0", "var4"] == {
         (0, 0): 0.9,
-        (0, 1): 0.2,
-        (1, 0): 0.1,
+        (0, 1): 0.1,
+        (1, 0): 0.2,
         (1, 1): 0.8,
     }
     assert factors["var2", "var3", "var0"] == {
         (0, 0, 0): 0.03,
-        (0, 0, 1): 0.05,
+        (0, 0, 1): 0.97,
         (0, 1, 0): 0.001,
-        (0, 1, 1): 0.02,
-        (1, 0, 0): 0.97,
+        (0, 1, 1): 0.999,
+        (1, 0, 0): 0.05,
         (1, 0, 1): 0.95,
-        (1, 1, 0): 0.999,
+        (1, 1, 0): 0.02,
         (1, 1, 1): 0.98,
     }
