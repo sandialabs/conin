@@ -40,7 +40,7 @@ def test_holmes0_conin():
 
 
 #
-# pgmpy tests for homles example
+# pgmpy tests for holmes example
 #
 
 
