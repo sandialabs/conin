@@ -10,10 +10,10 @@ dependencies:
   - munch
   - numpy
   - pandas
-  - pip
+  - pip:
+    - pytoulbar2
   - pyomo
   - pytorch
   - cpuonly
-  - pytoulbar2
   - pytest
   - pytest-cov

@@ -8,6 +8,6 @@ dependencies:
   - munch
   - numpy
   - pandas
-  - pytoulbar2
-  - pip
+  - pip:
+    - pytoulbar2
   - pyomo
