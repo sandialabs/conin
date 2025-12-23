@@ -9,7 +9,7 @@ from conin.util import try_import
 from conin.markov_network import (
     create_MN_map_query_pyomo_model,
     optimize_map_query_model,
-    CFN_map_query
+    CFN_map_query,
 )
 from conin.markov_network.factor_repn import State
 from . import examples
@@ -109,10 +109,11 @@ def test_ABC_constrained():
     )
     assert results.solution.variable_value == {"A": 0, "B": 2, "C": 1}
 
-#@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
+
+# @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_ABC_pytoulbar2():
     pgm = examples.ABC_conin()
-    res = CFN_map_query(pgm, 'ABC.uai', timing=True)
-    os.remove('ABC.uai')
+    res = CFN_map_query(pgm, "ABC.uai", timing=True)
+    os.remove("ABC.uai")
     assert res
-    assert len(res)==3
+    assert len(res) == 3

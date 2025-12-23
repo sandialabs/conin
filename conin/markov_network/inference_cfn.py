@@ -11,6 +11,7 @@ from .model import DiscreteMarkovNetwork
 from .model import DiscreteFactor
 from ..common.unified.save_model import save_model
 
+
 def create_reduced_MN(
     *,
     pgm,
@@ -110,12 +111,12 @@ def CFN_map_query(
 ):
     if timing:  # pragma:nocover
         timer = TicTocTimer()
-        timer.tic('CFN_map_query - START')
-    if not fname.endswith('.uai'):
-        fname = fname +'.uai'
+        timer.tic("CFN_map_query - START")
+    if not fname.endswith(".uai"):
+        fname = fname + ".uai"
     save_model(model, fname)
     if timing:  # pragma.nocover
-        timer.toc('Initialize solver')
+        timer.toc("Initialize solver")
     cfn = pytoulbar2.CFN()
     cfn.Read(fname)
     timer = TicTocTimer()
@@ -123,7 +124,7 @@ def CFN_map_query(
     res = cfn.Solve()
     solvetime = timer.toc(None)
     if timing:  # pragma:nocover
-        timer.toc('Completed optimization')
+        timer.toc("Completed optimization")
 
     # TODO extract vars from res into Munch
     return res
