@@ -1,4 +1,6 @@
 from collections import defaultdict
+import os
+import tempfile
 import pprint
 import munch
 import pytoulbar2
@@ -101,8 +103,8 @@ def create_reduced_MN(
 
 def CFN_map_query(
     model,
-    fname,
     *,
+    filename=None,
     solver="gurobi",
     tee=False,
     with_fixed=False,
@@ -112,17 +114,25 @@ def CFN_map_query(
     if timing:  # pragma:nocover
         timer = TicTocTimer()
         timer.tic("CFN_map_query - START")
-    if not fname.endswith(".uai"):
-        fname = fname + ".uai"
-    save_model(model, fname)
-    if timing:  # pragma.nocover
-        timer.toc("Initialize solver")
-    cfn = pytoulbar2.CFN()
-    cfn.Read(fname)
-    timer = TicTocTimer()
-    timer.tic(None)
-    res = cfn.Solve()
-    solvetime = timer.toc(None)
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        if filename is None:
+            filename = os.path.join(tempdir, "model.uai")
+        else:
+            assert filename.endswith(".uai")
+        save_model(model, filename)
+
+        if timing:  # pragma.nocover
+            timer.toc("Initialize solver")
+
+        cfn = pytoulbar2.CFN()
+        cfn.Read(filename)
+
+        solver_timer = TicTocTimer()
+        solver_timer.tic(None)
+        res = cfn.Solve()
+        solvetime = solver_timer.toc(None)
+
     if timing:  # pragma:nocover
         timer.toc("Completed optimization")
 
