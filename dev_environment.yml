@@ -14,5 +14,6 @@ dependencies:
   - pyomo
   - pytorch
   - cpuonly
+  - pytoulbar2
   - pytest
   - pytest-cov
