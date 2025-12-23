@@ -113,6 +113,5 @@ def test_ABC_constrained():
 # @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_ABC_pytoulbar2():
     pgm = examples.ABC_conin()
-    res = CFN_map_query(pgm, timing=True)
-    assert res
-    assert len(res) == 3
+    results = CFN_map_query(pgm)
+    assert results.solution.variable_value == {"A": 2, "B": 2, "C": 1}

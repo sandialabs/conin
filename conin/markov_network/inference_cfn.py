@@ -105,11 +105,10 @@ def CFN_map_query(
     model,
     *,
     filename=None,
-    solver="gurobi",
-    tee=False,
-    with_fixed=False,
+    # tee=False,
+    # with_fixed=False,
     timing=False,
-    solver_options=None,
+    # solver_options=None,
 ):
     if timing:  # pragma:nocover
         timer = TicTocTimer()
@@ -128,55 +127,23 @@ def CFN_map_query(
         cfn = pytoulbar2.CFN()
         cfn.Read(filename)
 
-        solver_timer = TicTocTimer()
-        solver_timer.tic(None)
-        res = cfn.Solve()
-        solvetime = solver_timer.toc(None)
+    solver_timer = TicTocTimer()
+    solver_timer.tic(None)
+    res = cfn.Solve()
+    solvetime = solver_timer.toc(None)
+
+    solution, primal_bound, num_solutions = res
+    var = dict(zip(model.nodes, solution))
+    soln = munch.Munch(
+        variable_value=var, log_factor_sum=None, primal_bound=primal_bound
+    )
 
     if timing:  # pragma:nocover
         timer.toc("Completed optimization")
 
-    # TODO extract vars from res into Munch
-    return res
-    """
-    if timing:  # pragma:nocover
-        timer = TicTocTimer()
-        timer.tic("optimize_map_query_model - START")
-    opt = pe.SolverFactory(solver)
-    if solver_options:
-        opt.options = solver_options
-    if timing:  # pragma:nocover
-        timer.toc("Initialize solver")
-    timer = TicTocTimer()
-    timer.tic(None)
-    res = opt.solve(model, tee=tee)
-    solvetime = timer.toc(None)
-    pe.assert_optimal_termination(res)
-    if timing:  # pragma:nocover
-        timer.toc("Completed optimization")
-
-    var = {}
-    variables = set()
-    fixed_variables = set()
-    for r, s in model.X:
-        variables.add(r)
-        if model.X[r, s].is_fixed():
-            fixed_variables.add(r)
-            if with_fixed and pe.value(model.X[r, s]) > 0.5:
-                var[r] = s.value
-        elif pe.value(model.X[r, s]) > 0.5:
-            var[r] = s.value
-    assert variables == set(var.keys()).union(
-        fixed_variables
-    ), "Some variables do not have values."
-
-    soln = munch.Munch(variable_value=var, log_factor_sum=pe.value(model.o))
-    if timing:  # pragma:nocover
-        timer.toc("optimize_map_query_model - STOP")
     return munch.Munch(
         solution=soln,
         solutions=[soln],
         termination_condition="ok",
         solvetime=solvetime,
     )
-    """
