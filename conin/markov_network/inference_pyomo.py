@@ -298,10 +298,10 @@ def optimize_map_query_model(
         opt.options = solver_options
     if timing:  # pragma:nocover
         timer.toc("Initialize solver")
-    timer = TicTocTimer()
-    timer.tic(None)
+    solver_timer = TicTocTimer()
+    solver_timer.tic(None)
     res = opt.solve(model, tee=tee)
-    solvetime = timer.toc(None)
+    solvetime = solver_timer.toc(None)
     pe.assert_optimal_termination(res)
     if timing:  # pragma:nocover
         timer.toc("Completed optimization")
