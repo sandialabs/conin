@@ -97,7 +97,7 @@ def create_reduced_MN(
     """
 
 
-def create_MN_toulbar2_map_query_model(
+def create_toulbar2_map_query_model_MN(
     pgm, *, variables=None, evidence=None, timing=False
 ):
     # Ignoring variables and evidence for now
