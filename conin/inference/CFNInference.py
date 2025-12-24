@@ -1,24 +1,28 @@
+import os
+import tempfile
 import warnings
 
 from conin.util import try_import
-from conin.hmm import HiddenMarkovModel, ConstrainedHiddenMarkovModel, CHMM
-from conin.hmm.inference import lp_inference, ip_inference
+
+# from conin.hmm import HiddenMarkovModel, ConstrainedHiddenMarkovModel, CHMM
+# from conin.hmm.inference import lp_inference, ip_inference
+
+from conin.common import save_model
 
 from conin.markov_network import (
     DiscreteMarkovNetwork,
     ConstrainedDiscreteMarkovNetwork,
-    solve_pyomo_map_query_model,
-    create_MN_pyomo_map_query_model,
+    create_MN_toulbar2_map_query_model,
 )
 from conin.bayesian_network import (
     DiscreteBayesianNetwork,
     ConstrainedDiscreteBayesianNetwork,
-    create_BN_map_query_pyomo_model,
+    # create_reduced_MN_from_BN,
 )
 from conin.dynamic_bayesian_network import (
     DynamicDiscreteBayesianNetwork,
     ConstrainedDynamicDiscreteBayesianNetwork,
-    create_DDBN_map_query_pyomo_model,
+    # create_reduced_MN_from_DBN,
 )
 
 with try_import() as pgmpy_available:
@@ -26,7 +30,7 @@ with try_import() as pgmpy_available:
     from conin.common.pgmpy import convert_pgmpy_to_conin
 
 
-class IntegerProgrammingInference:
+class CFNInference:
 
     def __init__(self, pgm):
         if pgmpy_available and (
@@ -35,7 +39,6 @@ class IntegerProgrammingInference:
         ):
             pgm = convert_pgmpy_to_conin(pgm)
         self.pgm = pgm
-        # self.variables = self.pgm.nodes
 
     def map_query(
         self,
@@ -64,7 +67,7 @@ class IntegerProgrammingInference:
 
         Examples
         --------
-        >>> from conin.inference import OptimizationInference
+        >>> from conin.inference import CFNInference
         >>> from pgmpy.models import DiscreteBayesianNetwork
         >>> import numpy as np
         >>> import pandas as pd
@@ -72,7 +75,7 @@ class IntegerProgrammingInference:
         ...                       columns=['A', 'B', 'C', 'D', 'E'])
         >>> model = DiscreteBayesianNetwork([('A', 'B'), ('C', 'B'), ('C', 'D'), ('B', 'E')])
         >>> model = model.fit(values)
-        >>> inference = OptimizationInference(model)
+        >>> inference = CFNInference(model)
         >>> phi_query = inference.map_query(variables=['A', 'B'])
         """
         pgm = self.pgm
@@ -80,68 +83,58 @@ class IntegerProgrammingInference:
         if isinstance(pgm, DiscreteMarkovNetwork) or isinstance(
             pgm, ConstrainedDiscreteMarkovNetwork
         ):
-            model = create_MN_pyomo_map_query_model(
-                pgm=pgm,
-                variables=variables,
-                evidence=evidence,
-                timing=timing,
-                **options,
-            )
-            return solve_pyomo_map_query_model(model, timing=timing, **options)
+            results = None
+            with tempfile.TemporaryDirectory as tempdir:
+                filename = os.path.join(tempdir, "model.uai")
+                reduced_pgm = create_reduced_MN(
+                    pgm=pgm,
+                    variables=variables,
+                    evidence=evidence,
+                    timing=timing,
+                    **options,
+                )
+                varmap = save_model(reduced_pgm, filename)
+                results = CFN_map_query(
+                    filename, timing=timing, varmap=varmap, **options
+                )
+            return results
 
         elif isinstance(pgm, DiscreteBayesianNetwork) or isinstance(
             pgm, ConstrainedDiscreteBayesianNetwork
         ):
-            model = create_BN_map_query_pyomo_model(
-                pgm=pgm,
-                variables=variables,
-                evidence=evidence,
-                timing=timing,
-                **options,
-            )
-            return solve_pyomo_map_query_model(model, timing=timing, **options)
+            results = None
+            # with tempfile.TemporaryDirectory as tempdir:
+            #    filename = os.path.join(tempdir, "model.uai")
+            #    reduced_pgm = create_reduced_MN_from_BN(
+            #        pgm=pgm,
+            #        variables=variables,
+            #        evidence=evidence,
+            #        timing=timing,
+            #        **options,
+            #    )
+            #    varmap = save_model(reduced_pgm, filename)
+            #    results = CFN_map_query(
+            #        filename, timing=timing, varmap=varmap, **options
+            #    )
+            return results
 
-        elif isinstance(pgm, HiddenMarkovModel):
-            # TODO: warning about specifying 'variables'
-            # TODO: warning about specifying timing
-            if type(evidence) is list:
-                return lp_inference(hmm=pgm, observed=evidence, **options)
+        #
+        # TODO
+        #
+        # elif isinstance(pgm, HiddenMarkovModel):
+        #    pass
 
-            if type(evidence) is dict:
-                observed = [evidence[i] for i in range(len(evidence))]
-                results = lp_inference(hmm=pgm, observed=observed, **options)
-                solutions = results.solutions
-                for soln in solutions:
-                    soln.variable_value = {
-                        i: v for i, v in enumerate(soln.variable_value)
-                    }
-                    soln.hidden = soln.variable_value
-                results.solutions = solutions
-                return results
-
-        elif isinstance(pgm, ConstrainedHiddenMarkovModel) or isinstance(pgm, CHMM):
-            # TODO: warning about specifying 'variables'
-            # TODO: warning about specifying timing
-            if type(evidence) is list:
-                return ip_inference(hmm=pgm, observed=evidence, **options)
-
-            if type(evidence) is dict:
-                observed = [evidence[i] for i in range(len(evidence))]
-                results = ip_inference(hmm=pgm, observed=observed, **options)
-                solutions = results.solutions
-                for soln in solutions:
-                    soln.variable_value = {
-                        i: v for i, v in enumerate(soln.variable_value)
-                    }
-                    soln.hidden = soln.variable_value
-                results.solutions = solutions
-                return results
+        #
+        # TODO
+        #
+        # elif isinstance(pgm, ConstrainedHiddenMarkovModel) or isinstance(pgm, CHMM):
+        #    pass
 
         else:
             raise TypeError("Unexpected model type: {type(pgm)}")
 
 
-class DDBN_IntegerProgrammingInference:
+class DDBN_CFNInference:
 
     def __init__(self, pgm):
         if pgmpy_available and isinstance(pgm, pgmpy.models.DynamicBayesianNetwork):
@@ -191,12 +184,16 @@ class DDBN_IntegerProgrammingInference:
 
         pgm = self.pgm
 
+        #
+        # TODO
+        #
         if isinstance(pgm, DynamicDiscreteBayesianNetwork) or isinstance(
             pgm, ConstrainedDynamicDiscreteBayesianNetwork
         ):
-            model = create_DDBN_map_query_pyomo_model(
-                pgm=pgm, start=start, stop=stop, variables=variables, evidence=evidence
-            )
-            return solve_pyomo_map_query_model(model, **options)
+            # model = create_DDBN_map_query_pyomo_model(
+            #    pgm=pgm, start=start, stop=stop, variables=variables, evidence=evidence
+            # )
+            # return CFN_map_query(model, **options)
+            pass
         else:
             raise TypeError("Unexpected model type: {type(pgm)}")

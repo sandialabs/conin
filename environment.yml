@@ -9,4 +9,6 @@ dependencies:
   - numpy
   - pandas
   - pip
+  - pip:
+    - pytoulbar2
   - pyomo

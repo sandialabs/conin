@@ -148,7 +148,6 @@ def simple1_DDBN_constrained_conin(debug=False):
         model.c = pyo.ConstraintList()
         model.c.add(model.X[("A", 0), 0] == model.X[("A", 1), 0])
         model.c.add(model.X[("B", 0), 0] == model.X[("B", 1), 0])
-        return model
 
     return ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=[constraints])
 
@@ -161,7 +160,6 @@ def simple1_DDBN_constrained_pgmpy(debug=False):
         model.c = pyo.ConstraintList()
         model.c.add(model.X[("A", 0), 0] == model.X[("A", 1), 0])
         model.c.add(model.X[("B", 0), 0] == model.X[("B", 1), 0])
-        return model
 
     pgm = convert_pgmpy_to_conin(pgm)
     return ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=[constraints])
@@ -230,7 +228,6 @@ def simple2_DDBN_constrained_conin(debug=False):
         model.c = pyo.ConstraintList()
         model.c.add(model.X[("A", 0), 0] == model.X[("A", 1), 0])
         model.c.add(model.X[("B", 0), 0] == model.X[("B", 1), 0])
-        return model
 
     return ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=[constraints])
 
@@ -243,7 +240,6 @@ def simple2_DDBN_constrained_pgmpy(debug=False):
         model.c = pyo.ConstraintList()
         model.c.add(model.X[("A", 0), 0] == model.X[("A", 1), 0])
         model.c.add(model.X[("B", 0), 0] == model.X[("B", 1), 0])
-        return model
 
     pgm = convert_pgmpy_to_conin(pgm)
     return ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=[constraints])
@@ -688,7 +684,6 @@ def weather_constrained_conin(debug=False):
         model.c = pyo.Constraint(
             expr=sum(model.X[("W", t), "Rainy"] for t in data.T) == 2
         )
-        return model
 
     return ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=[constraints])
 
@@ -702,7 +697,6 @@ def weather_constrained_pgmpy(debug=False):
         model.c = pyo.Constraint(
             expr=sum(model.X[("W", t), "Rainy"] for t in data.T) == 2
         )
-        return model
 
     pgm = convert_pgmpy_to_conin(pgm)
     return ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=[constraints])
