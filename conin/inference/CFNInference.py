@@ -12,8 +12,7 @@ from conin.common import save_model
 from conin.markov_network import (
     DiscreteMarkovNetwork,
     ConstrainedDiscreteMarkovNetwork,
-    CFN_map_query,
-    create_reduced_MN,
+    create_MN_toulbar2_map_query_model,
 )
 from conin.bayesian_network import (
     DiscreteBayesianNetwork,

@@ -3,7 +3,7 @@ import munch
 from pyomo.common.timing import TicTocTimer
 
 # from conin.util import try_import
-from conin.markov_network import create_MN_map_query_pyomo_model, DiscreteMarkovNetwork
+import conin.markov_network
 from .model import ConstrainedDiscreteBayesianNetwork
 
 
@@ -90,13 +90,13 @@ def create_BN_map_query_pyomo_model(
         # By default, we avoid creating a complete Markov model.  Rather, we
         # create the skeleton of a model that is used to setup the integer program.
         #
-        MN = DiscreteMarkovNetwork()
+        MN = conin.markov_network.DiscreteMarkovNetwork()
         MN.states = pgm_.states
         MN.factors = [cpd.to_factor() for cpd in pgm_.cpds]
         if timing:
             timer.toc("Created skeleton Markov network")
 
-    model = create_MN_map_query_pyomo_model(
+    model = conin.markov_network.create_MN_pyomo_map_query_model(
         pgm=MN,
         variables=variables,
         evidence=evidence,

@@ -11,7 +11,7 @@ from .variable_elimination import _variable_elimination
 from .model import ConstrainedDiscreteMarkovNetwork
 from .model import DiscreteMarkovNetwork
 from .model import DiscreteFactor
-from ..common.unified.save_model import save_model
+import conin.common
 
 
 def create_reduced_MN(
@@ -97,7 +97,7 @@ def create_reduced_MN(
     """
 
 
-def create_toulbar2_map_query_model(
+def create_MN_toulbar2_map_query_model(
     pgm, *, variables=None, evidence=None, timing=False
 ):
     # Ignoring variables and evidence for now
@@ -107,7 +107,7 @@ def create_toulbar2_map_query_model(
 
     with tempfile.TemporaryDirectory() as tempdir:
         filename = os.path.join(tempdir, "model.uai")
-        save_model(pgm_, filename)
+        conin.common.save_model(pgm_, filename)
 
         model = pytoulbar2.CFN()
         model.Read(filename)

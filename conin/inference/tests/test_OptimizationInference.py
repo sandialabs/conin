@@ -47,7 +47,7 @@ def test_IntegerProgrammingInference_ABC_pgmpy():
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_IntegerProgrammingInference_ABC_constrained():
-    pgm = conin.markov_network.tests.examples.ABC_constrained_conin()
+    pgm = conin.markov_network.tests.examples.ABC_constrained_pyomo_conin()
     inf = IntegerProgrammingInference(pgm)
     results = inf.map_query(solver=mip_solver)
 

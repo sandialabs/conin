@@ -4,7 +4,7 @@ import pyomo.opt
 from conin.util import try_import
 from conin.dynamic_bayesian_network import (
     create_DDBN_map_query_pyomo_model,
-    optimize_map_query_model,
+    solve_pyomo_map_query_model,
 )
 
 from . import examples
@@ -51,7 +51,7 @@ def test_weather_A_conin():
     model = create_DDBN_map_query_pyomo_model(
         pgm=pgm, stop=4
     )  # variables=None, evidence=None
-    results = optimize_map_query_model(model, solver=mip_solver)
+    results = solve_pyomo_map_query_model(model, solver=mip_solver)
     assert q_weather_A == results.solution.variable_value
 
 
@@ -67,7 +67,7 @@ def test_weather1_A_pgmpy():
     model = create_DDBN_map_query_pyomo_model(
         pgm=pgm, stop=4
     )  # variables=None, evidence=None
-    results = optimize_map_query_model(model, solver=mip_solver)
+    results = solve_pyomo_map_query_model(model, solver=mip_solver)
     assert q_weather_A == results.solution.variable_value
 
 
@@ -83,7 +83,7 @@ def test_weather2_A_pgmpy():
     model = create_DDBN_map_query_pyomo_model(
         pgm=pgm, stop=4
     )  # variables=None, evidence=None
-    results = optimize_map_query_model(model, solver=mip_solver)
+    results = solve_pyomo_map_query_model(model, solver=mip_solver)
     assert q_weather_A == results.solution.variable_value
 
 
@@ -125,7 +125,7 @@ def test_weather_B_conin():
 
     with pytest.raises(RuntimeError):
         model = create_DDBN_map_query_pyomo_model(pgm=pgm, stop=4, evidence=evidence)
-        results = optimize_map_query_model(model, solver=mip_solver)
+        results = solve_pyomo_map_query_model(model, solver=mip_solver)
         assert q_weather_B == results.solution.variable_value
 
 
@@ -154,7 +154,7 @@ def test_weather1_B_pgmpy():
     pgm = convert_pgmpy_to_conin(pgm)
     with pytest.raises(RuntimeError):
         model = create_DDBN_map_query_pyomo_model(pgm=pgm, stop=4, evidence=evidence)
-        results = optimize_map_query_model(model, solver=mip_solver)
+        results = solve_pyomo_map_query_model(model, solver=mip_solver)
         assert q_weather_B == results.solution.variable_value
 
 
@@ -183,7 +183,7 @@ def test_weather2_B_pgmpy():
     pgm = convert_pgmpy_to_conin(pgm)
     with pytest.raises(RuntimeError):
         model = create_DDBN_map_query_pyomo_model(pgm=pgm, stop=4, evidence=evidence)
-        results = optimize_map_query_model(model, solver=mip_solver)
+        results = solve_pyomo_map_query_model(model, solver=mip_solver)
         assert q_weather_B == results.solution.variable_value
 
 
@@ -221,7 +221,7 @@ def test_weather_A_constrained_conin():
     model = create_DDBN_map_query_pyomo_model(
         pgm=cpgm, stop=4
     )  # variables=None, evidence=None
-    results = optimize_map_query_model(model, solver=mip_solver)
+    results = solve_pyomo_map_query_model(model, solver=mip_solver)
     assert q_weather_A_constrained == results.solution.variable_value
 
 
@@ -236,7 +236,7 @@ def test_weather_A_constrained_pgmpy():
     model = create_DDBN_map_query_pyomo_model(
         pgm=cpgm, stop=4
     )  # variables=None, evidence=None
-    results = optimize_map_query_model(model, solver=mip_solver)
+    results = solve_pyomo_map_query_model(model, solver=mip_solver)
     assert q_weather_A_constrained == results.solution.variable_value
 
 
@@ -277,7 +277,7 @@ def test_weather_B_constrained_conin():
 
     with pytest.raises(RuntimeError):
         model = create_DDBN_map_query_pyomo_model(pgm=cpgm, stop=4, evidence=evidence)
-        results = optimize_map_query_model(model, solver=mip_solver)
+        results = solve_pyomo_map_query_model(model, solver=mip_solver)
         assert q_weather_B_constrained == results.solution.variable_value
 
 
@@ -305,5 +305,5 @@ def test_weather_B_constrained_pgmpy():
 
     with pytest.raises(RuntimeError):
         model = create_DDBN_map_query_pyomo_model(pgm=cpgm, stop=4, evidence=evidence)
-        results = optimize_map_query_model(model, solver=mip_solver)
+        results = solve_pyomo_map_query_model(model, solver=mip_solver)
         assert q_weather_B_constrained == results.solution.variable_value

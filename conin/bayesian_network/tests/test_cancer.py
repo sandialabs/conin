@@ -5,7 +5,7 @@ import pyomo.opt
 from conin.util import try_import
 from conin.bayesian_network import (
     create_BN_map_query_pyomo_model,
-    optimize_map_query_model,
+    solve_pyomo_map_query_model,
 )
 from . import examples
 
@@ -28,7 +28,7 @@ def test_cancer1_conin_ALL():
     q = {"Cancer": 1, "Dyspnoea": 1, "Pollution": 0, "Smoker": 1, "Xray": 1}
 
     model = create_BN_map_query_pyomo_model(pgm=pgm)  # variables=None, evidence=None
-    results = optimize_map_query_model(model, solver=mip_solver)
+    results = solve_pyomo_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
 
@@ -50,7 +50,7 @@ def test_cancer1_pgmpy_ALL():
 
     pgm = convert_pgmpy_to_conin(pgm)
     model = create_BN_map_query_pyomo_model(pgm=pgm)  # variables=None, evidence=None
-    results = optimize_map_query_model(model, solver=mip_solver)
+    results = solve_pyomo_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
 
@@ -68,7 +68,7 @@ def test_cancer1_conin_Cancer():
         model = create_BN_map_query_pyomo_model(
             pgm=pgm, evidence={"Cancer": 0}
         )  # variables=None, evidence=None
-        results = optimize_map_query_model(model, solver=mip_solver)
+        results = solve_pyomo_map_query_model(model, solver=mip_solver)
         assert q == results.solution.variable_value
 
 
@@ -94,7 +94,7 @@ def test_cancer1_pgmpy_Cancer():
         model = create_BN_map_query_pyomo_model(
             pgm=pgm, evidence={"Cancer": 0}
         )  # variables=None, evidence=None
-        results = optimize_map_query_model(model, solver=mip_solver)
+        results = solve_pyomo_map_query_model(model, solver=mip_solver)
         assert q == results.solution.variable_value
 
 
@@ -114,7 +114,7 @@ def test_cancer1_conin_ALL_constrained1():
     model.c.add(model.X["Dyspnoea", 1] + model.X["Xray", 1] <= 1)
     model.c.add(model.X["Dyspnoea", 0] + model.X["Xray", 0] <= 1)
 
-    results = optimize_map_query_model(model, solver=mip_solver)  # num=1
+    results = solve_pyomo_map_query_model(model, solver=mip_solver)  # num=1
     assert q == results.solution.variable_value
 
 
@@ -129,7 +129,7 @@ def test_cancer1_conin_ALL_constrained2():
     cpgm = examples.cancer1_BN_constrained_conin()
     q = {"Cancer": 1, "Dyspnoea": 0, "Pollution": 0, "Smoker": 1, "Xray": 1}
 
-    results = optimize_map_query_model(
+    results = solve_pyomo_map_query_model(
         create_BN_map_query_pyomo_model(pgm=cpgm), solver=mip_solver
     )
     assert q == results.solution.variable_value
@@ -153,7 +153,7 @@ def test_cancer2_pgmpy_ALL():
 
     pgm = convert_pgmpy_to_conin(pgm)
     model = create_BN_map_query_pyomo_model(pgm=pgm)  # variables=None, evidence=None
-    results = optimize_map_query_model(model, solver=mip_solver)
+    results = solve_pyomo_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
 
@@ -179,7 +179,7 @@ def test_cancer2_pgmpy_Cancer():
         model = create_BN_map_query_pyomo_model(
             pgm=pgm, evidence={"Cancer": 0}
         )  # variables=None, evidence=None
-        results = optimize_map_query_model(model, solver=mip_solver)
+        results = solve_pyomo_map_query_model(model, solver=mip_solver)
         assert q == results.solution.variable_value
 
 
@@ -201,7 +201,7 @@ def test_cancer2_pgmpy_ALL_constrained1():
     model.c.add(model.X["Dyspnoea", 1] + model.X["Xray", 1] <= 1)
     model.c.add(model.X["Dyspnoea", 0] + model.X["Xray", 0] <= 1)
 
-    results = optimize_map_query_model(model, solver=mip_solver)  # num=1
+    results = solve_pyomo_map_query_model(model, solver=mip_solver)  # num=1
     assert q == results.solution.variable_value
 
 
@@ -217,7 +217,7 @@ def test_cancer2_pgmpy_ALL_constrained2():
     cpgm = examples.cancer2_BN_constrained_pgmpy()
     q = {"Cancer": 1, "Dyspnoea": 0, "Pollution": 0, "Smoker": 1, "Xray": 1}
 
-    results = optimize_map_query_model(
+    results = solve_pyomo_map_query_model(
         create_BN_map_query_pyomo_model(pgm=cpgm), solver=mip_solver
     )
     assert q == results.solution.variable_value

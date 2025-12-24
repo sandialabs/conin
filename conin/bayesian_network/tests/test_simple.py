@@ -5,7 +5,7 @@ import pyomo.opt
 from conin.util import try_import
 from conin.bayesian_network import (
     create_BN_map_query_pyomo_model,
-    optimize_map_query_model,
+    solve_pyomo_map_query_model,
 )
 
 from . import examples
@@ -27,7 +27,7 @@ def test_simple1_ALL_conin():
     q = {"A": 0, "B": 1}
 
     model = create_BN_map_query_pyomo_model(pgm=pgm)  # variables=None, evidence=None
-    results = optimize_map_query_model(model, solver=mip_solver)
+    results = solve_pyomo_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
 
@@ -43,7 +43,7 @@ def test_simple1_B_conin():
         model = create_BN_map_query_pyomo_model(
             pgm=pgm, evidence={"A": 1}
         )  # variables=None, evidence=None
-        results = optimize_map_query_model(model, solver=mip_solver)
+        results = solve_pyomo_map_query_model(model, solver=mip_solver)
         assert q == results.solution.variable_value
 
 
@@ -61,7 +61,7 @@ def test_simple1_ALL_pgmpy():
 
     pgm = convert_pgmpy_to_conin(pgm)
     model = create_BN_map_query_pyomo_model(pgm=pgm)  # variables=None, evidence=None
-    results = optimize_map_query_model(model, solver=mip_solver)
+    results = solve_pyomo_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
 
@@ -82,7 +82,7 @@ def test_simple1_B_pgmpy():
         model = create_BN_map_query_pyomo_model(
             pgm=pgm, evidence={"A": 1}
         )  # variables=None, evidence=None
-        results = optimize_map_query_model(model, solver=mip_solver)
+        results = solve_pyomo_map_query_model(model, solver=mip_solver)
         assert q == results.solution.variable_value
 
 
@@ -100,7 +100,7 @@ def test_simple2_ALL_pgmpy():
 
     pgm = convert_pgmpy_to_conin(pgm)
     model = create_BN_map_query_pyomo_model(pgm=pgm)  # variables=None, evidence=None
-    results = optimize_map_query_model(model, solver=mip_solver)
+    results = solve_pyomo_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
 
@@ -121,5 +121,5 @@ def test_simple2_B_pgmpy():
         model = create_BN_map_query_pyomo_model(
             pgm=pgm, evidence={"A": 1}
         )  # variables=None, evidence=None
-        results = optimize_map_query_model(model, solver=mip_solver)
+        results = solve_pyomo_map_query_model(model, solver=mip_solver)
         assert q == results.solution.variable_value

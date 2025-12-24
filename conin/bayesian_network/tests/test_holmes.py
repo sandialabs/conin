@@ -5,7 +5,7 @@ import pyomo.opt
 from conin.util import try_import
 from conin.bayesian_network import (
     create_BN_map_query_pyomo_model,
-    optimize_map_query_model,
+    solve_pyomo_map_query_model,
 )
 
 from . import examples
@@ -35,7 +35,7 @@ def test_holmes0_conin():
     model = create_BN_map_query_pyomo_model(
         pgm=pgm, variables=variables, evidence=evidence
     )
-    results = optimize_map_query_model(model, solver=mip_solver)
+    results = solve_pyomo_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
 
@@ -59,7 +59,7 @@ def test_holmes0_pgmpy():
     model = create_BN_map_query_pyomo_model(
         pgm=pgm, variables=variables, evidence=evidence
     )
-    results = optimize_map_query_model(model, solver=mip_solver)
+    results = solve_pyomo_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
 
@@ -79,7 +79,7 @@ def test_holmes1():
         model = create_BN_map_query_pyomo_model(
             pgm=pgm, variables=variables, evidence=evidence
         )
-        results = optimize_map_query_model(model, solver=mip_solver)
+        results = solve_pyomo_map_query_model(model, solver=mip_solver)
         assert q == results.solution.variable_value
 
 
@@ -99,7 +99,7 @@ def test_holmes2():
         model = create_BN_map_query_pyomo_model(
             pgm=pgm, variables=variables, evidence=evidence
         )
-        results = optimize_map_query_model(model, solver=mip_solver)
+        results = solve_pyomo_map_query_model(model, solver=mip_solver)
         assert q == results.solution.variable_value
 
 
@@ -119,7 +119,7 @@ def test_holmes3():
         model = create_BN_map_query_pyomo_model(
             pgm=pgm, variables=variables, evidence=evidence
         )
-        results = optimize_map_query_model(model, solver=mip_solver)
+        results = solve_pyomo_map_query_model(model, solver=mip_solver)
         assert q == results.solution.variable_value
 
 
@@ -139,7 +139,7 @@ def test_holmes4():
         model = create_BN_map_query_pyomo_model(
             pgm=pgm, variables=variables, evidence=evidence
         )
-        results = optimize_map_query_model(model, solver=mip_solver)
+        results = solve_pyomo_map_query_model(model, solver=mip_solver)
         assert q == results.solution.variable_value
 
 
@@ -159,5 +159,5 @@ def test_holmes5():
         model = create_BN_map_query_pyomo_model(
             pgm=pgm, variables=variables, evidence=evidence
         )
-        results = optimize_map_query_model(model, solver=mip_solver)
+        results = solve_pyomo_map_query_model(model, solver=mip_solver)
         assert q == results.solution.variable_value

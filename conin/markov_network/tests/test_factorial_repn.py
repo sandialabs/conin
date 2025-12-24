@@ -5,15 +5,15 @@ import pyomo.opt
 
 from conin.util import try_import
 from conin.markov_network import (
-    create_MN_map_query_pyomo_model,
-    optimize_map_query_model,
+    create_MN_pyomo_map_query_model,
+    solve_pyomo_map_query_model,
 )
 from conin.markov_network.factor_repn import (
     extract_factor_representation,
     State,
 )
 from conin.markov_network.inference_pyomo import (
-    create_MN_map_query_model_from_factorial_repn,
+    create_MN_pyomo_map_query_model_from_factorial_repn,
 )
 
 from . import examples
@@ -64,8 +64,8 @@ def test_example6():
         ("A_B", 3): -log(6),
     }
 
-    model = create_MN_map_query_model_from_factorial_repn(S=S, J=J, v=v, w=w)
-    results = optimize_map_query_model(model, solver=mip_solver)
+    model = create_MN_pyomo_map_query_model_from_factorial_repn(S=S, J=J, v=v, w=w)
+    results = solve_pyomo_map_query_model(model, solver=mip_solver)
     assert results.solution.variable_value == {"A": 0, "B": 1}
 
     if True:
@@ -76,8 +76,8 @@ def test_example6():
         assert J == J_
         assert v == v_
         assert w == w_
-        model = create_MN_map_query_pyomo_model(pgm=pgm)
-        results = optimize_map_query_model(model, solver=mip_solver)
+        model = create_MN_pyomo_map_query_model(pgm=pgm)
+        results = solve_pyomo_map_query_model(model, solver=mip_solver)
         assert results.solution.variable_value == {"A": 0, "B": 1}
 
     if pgmpy_available:
@@ -88,8 +88,8 @@ def test_example6():
         assert J == J_
         assert v == v_
         assert w == w_
-        model = create_MN_map_query_pyomo_model(pgm=pgm)
-        results = optimize_map_query_model(model, solver=mip_solver)
+        model = create_MN_pyomo_map_query_model(pgm=pgm)
+        results = solve_pyomo_map_query_model(model, solver=mip_solver)
         assert results.solution.variable_value == {"A": 0, "B": 1}
 
 
@@ -223,8 +223,8 @@ def test_ABC():
         ("A_C", 8): -log(9),
     }
 
-    model = create_MN_map_query_model_from_factorial_repn(S=S, J=J, v=v, w=w)
-    results = optimize_map_query_model(model, solver=mip_solver)
+    model = create_MN_pyomo_map_query_model_from_factorial_repn(S=S, J=J, v=v, w=w)
+    results = solve_pyomo_map_query_model(model, solver=mip_solver)
     assert results.solution.variable_value == {"A": 2, "B": 2, "C": 1}
 
     if False:
@@ -375,7 +375,7 @@ def test_ABC_constrained():
         ("A_C", 8): -log(9),
     }
 
-    model = create_MN_map_query_model_from_factorial_repn(S=S, J=J, v=v, w=w)
+    model = create_MN_pyomo_map_query_model_from_factorial_repn(S=S, J=J, v=v, w=w)
 
     # Constrain the inference to ensure that all variables have different
     # values
@@ -385,12 +385,12 @@ def test_ABC_constrained():
 
     model.diff = pyo.Constraint([0, 1, 2], rule=diff_)
 
-    results = optimize_map_query_model(model, solver=mip_solver)
+    results = solve_pyomo_map_query_model(model, solver=mip_solver)
     assert results.solution.variable_value == {"A": 0, "B": 2, "C": 1}
 
     if True:
         # Double-check that we can extract the right factor representation
-        cpgm = examples.ABC_constrained_conin()
+        cpgm = examples.ABC_constrained_pyomo_conin()
         S_, J_, v_, w_ = extract_factor_representation(cpgm.pgm)
         assert S == S_
         assert J == J_
@@ -399,7 +399,7 @@ def test_ABC_constrained():
 
     if pgmpy_available:
         # Double-check that we can extract the right factor representation
-        cpgm = examples.ABC_constrained_pgmpy()
+        cpgm = examples.ABC_constrained_pyomo_pgmpy()
         S_, J_, v_, w_ = extract_factor_representation(cpgm.pgm)
         assert S == S_
         assert J == J_

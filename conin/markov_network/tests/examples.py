@@ -1,7 +1,7 @@
 import numpy as np
 import pyomo.environ as pyo
 
-from conin.constraint import pyomo_constraint_fn
+from conin.constraint import pyomo_constraint_fn, toulbar2_constraint_fn
 from conin.util import try_import
 from conin.markov_network import (
     DiscreteFactor,
@@ -65,10 +65,10 @@ def ABC_conin():
     """
     Three variables with pair-wise interactions.
 
-    The interactions have equal weights, so the MAP solution is defined by the weights for the
+    The interactions have equal weights, so the MPE solution is defined by the weights for the
     factors that describe the individual variables.
 
-    The MAP solution is A:2, B:2, C:1.
+    The MPE solution is A:2, B:2, C:1.
     """
     pgm = DiscreteMarkovNetwork()
     pgm.states = {"A": [0, 1, 2], "B": [0, 1, 2], "C": [0, 1, 2]}
@@ -88,10 +88,10 @@ def ABC_pgmpy():
     """
     Three variables with pair-wise interactions.
 
-    The interactions have equal weights, so the MAP solution is defined by the weights for the
+    The interactions have equal weights, so the MPE solution is defined by the weights for the
     factors that describe the individual variables.
 
-    The MAP solution is A:2, B:2, C:1.
+    The MPE solution is A:2, B:2, C:1.
     """
     pgm = pgmpy_MarkovNetwork()
     pgm.add_nodes_from(["A", "B", "C"])
@@ -109,14 +109,14 @@ def ABC_pgmpy():
     return pgm
 
 
-def ABC_constrained_pgmpy():
+def ABC_constrained_pyomo_pgmpy():
     """
     Three variables with pair-wise interactions.
 
-    The interactions have equal weights.  The unconstrained MAP solution is A:2, B:2, C:1.
+    The interactions have equal weights.  The unconstrained MPE solution is A:2, B:2, C:1.
     However, we include a constraint that excludes variable assignments to values that are equal.
 
-    The constrained MAP solution is A:0, B:2, C:1.
+    The constrained MPE solution is A:0, B:2, C:1.
     """
     pgm = ABC_pgmpy()
 
@@ -126,20 +126,18 @@ def ABC_constrained_pgmpy():
         def diff(M, s):
             return M.X["A", s] + M.X["B", s] + M.X["C", s] <= 1
 
-        return model
-
     pgm = convert_pgmpy_to_conin(pgm)
     return ConstrainedDiscreteMarkovNetwork(pgm, constraints=[constraint_fn])
 
 
-def ABC_constrained_conin():
+def ABC_constrained_pyomo_conin():
     """
     Three variables with pair-wise interactions.
 
-    The interactions have equal weights.  The unconstrained MAP solution is A:2, B:2, C:1.
+    The interactions have equal weights.  The unconstrained MPE solution is A:2, B:2, C:1.
     However, we include a constraint that excludes variable assignments to values that are equal.
 
-    The constrained MAP solution is A:0, B:2, C:1.
+    The constrained MPE solution is A:0, B:2, C:1.
     """
     pgm = ABC_conin()
 
@@ -149,6 +147,47 @@ def ABC_constrained_conin():
         def diff(M, s):
             return M.X["A", s] + M.X["B", s] + M.X["C", s] <= 1
 
-        return model
-
     return ConstrainedDiscreteMarkovNetwork(pgm, constraints=[constraint_fn])
+
+
+def ABC_constrained_toulbar2_pgmpy():
+    """
+    Three variables with pair-wise interactions.
+
+    The interactions have equal weights.  The unconstrained MPE solution is A:2, B:2, C:1.
+    However, we include a constraint that excludes variable assignments to values that are equal.
+
+    The constrained MPE solution is A:0, B:2, C:1.
+    """
+    pgm = ABC_pgmpy()
+
+    @toulbar2_constraint_fn()
+    def constraint_fn(M):
+        for i in [0, 1, 2]:
+            M.AddGeneralizedLinearConstraint(
+                [(M.X["A"], i, 1), (M.X["B"], i, 1), (M.X["C"], i, 1)], "<=", 1
+            )
+
+    pgm = convert_pgmpy_to_conin(pgm)
+    return ConstrainedDiscreteMarkovNetwork(pgm, constraints=[constraint_fn])
+
+
+def ABC_constrained_toulbar2_conin():
+    """
+    Three variables with pair-wise interactions.
+
+    The interactions have equal weights.  The unconstrained MPE solution is A:2, B:2, C:1.
+    However, we include a constraint that excludes variable assignments to values that are equal.
+
+    The constrained MPE solution is A:0, B:2, C:1.
+    """
+    pgm = ABC_conin()
+
+    @toulbar2_constraint_fn()
+    def constraints(M):
+        for i in [0, 1, 2]:
+            M.AddGeneralizedLinearConstraint(
+                [(M.X["A"], i, 1), (M.X["B"], i, 1), (M.X["C"], i, 1)], "<=", 1
+            )
+
+    return ConstrainedDiscreteMarkovNetwork(pgm, constraints=[constraints])

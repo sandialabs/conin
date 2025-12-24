@@ -7,8 +7,8 @@ from conin.hmm.inference import lp_inference, ip_inference
 from conin.markov_network import (
     DiscreteMarkovNetwork,
     ConstrainedDiscreteMarkovNetwork,
-    optimize_map_query_model,
-    create_MN_map_query_pyomo_model,
+    solve_pyomo_map_query_model,
+    create_MN_pyomo_map_query_model,
 )
 from conin.bayesian_network import (
     DiscreteBayesianNetwork,
@@ -80,14 +80,14 @@ class IntegerProgrammingInference:
         if isinstance(pgm, DiscreteMarkovNetwork) or isinstance(
             pgm, ConstrainedDiscreteMarkovNetwork
         ):
-            model = create_MN_map_query_pyomo_model(
+            model = create_MN_pyomo_map_query_model(
                 pgm=pgm,
                 variables=variables,
                 evidence=evidence,
                 timing=timing,
                 **options,
             )
-            return optimize_map_query_model(model, timing=timing, **options)
+            return solve_pyomo_map_query_model(model, timing=timing, **options)
 
         elif isinstance(pgm, DiscreteBayesianNetwork) or isinstance(
             pgm, ConstrainedDiscreteBayesianNetwork
@@ -99,7 +99,7 @@ class IntegerProgrammingInference:
                 timing=timing,
                 **options,
             )
-            return optimize_map_query_model(model, timing=timing, **options)
+            return solve_pyomo_map_query_model(model, timing=timing, **options)
 
         elif isinstance(pgm, HiddenMarkovModel):
             # TODO: warning about specifying 'variables'
@@ -197,6 +197,6 @@ class DDBN_IntegerProgrammingInference:
             model = create_DDBN_map_query_pyomo_model(
                 pgm=pgm, start=start, stop=stop, variables=variables, evidence=evidence
             )
-            return optimize_map_query_model(model, **options)
+            return solve_pyomo_map_query_model(model, **options)
         else:
             raise TypeError("Unexpected model type: {type(pgm)}")

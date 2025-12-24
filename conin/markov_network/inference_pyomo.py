@@ -52,7 +52,7 @@ class VarWrapper(dict):
         return dict.__getitem__(self, (r, s))
 
 
-def create_MN_map_query_pyomo_model(
+def create_MN_pyomo_map_query_model(
     *,
     pgm,
     variables=None,
@@ -112,7 +112,7 @@ def create_MN_map_query_pyomo_model(
     if timing:  # pragma:nocover
         timer.toc("Created factor repn")
 
-    model = create_MN_map_query_model_from_factorial_repn(
+    model = create_MN_pyomo_map_query_model_from_factorial_repn(
         S=S,
         J=J,
         v=v,
@@ -136,7 +136,7 @@ def create_MN_map_query_pyomo_model(
     return model
 
 
-def create_MN_map_query_model_from_factorial_repn(
+def create_MN_pyomo_map_query_model_from_factorial_repn(
     *,
     S=None,
     J=None,
@@ -281,7 +281,7 @@ def create_MN_map_query_model_from_factorial_repn(
     return model
 
 
-def optimize_map_query_model(
+def solve_pyomo_map_query_model(
     model,
     *,
     solver="gurobi",

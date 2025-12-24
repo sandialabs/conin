@@ -4,7 +4,7 @@ import pyomo.opt
 from conin.util import try_import
 from conin.bayesian_network import (
     create_BN_map_query_pyomo_model,
-    optimize_map_query_model,
+    solve_pyomo_map_query_model,
 )
 
 from . import examples
@@ -29,7 +29,7 @@ def test_DBDA_51_conin():
     q = {"disease-state": 1, "test-result1": 1, "test-result2": 1}
 
     model = create_BN_map_query_pyomo_model(pgm=pgm)  # variables=None, evidence=None
-    results = optimize_map_query_model(model, solver=mip_solver)
+    results = solve_pyomo_map_query_model(model, solver=mip_solver)
     assert q == results.solution.variable_value
 
 

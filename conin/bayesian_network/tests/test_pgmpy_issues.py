@@ -5,7 +5,7 @@ import pyomo.environ as pyo
 from conin.util import try_import
 from conin.bayesian_network import (
     create_BN_map_query_pyomo_model,
-    optimize_map_query_model,
+    solve_pyomo_map_query_model,
 )
 from . import examples
 
@@ -33,5 +33,5 @@ def test_pgmpy_issue_1177_pgmpy():
         model = create_BN_map_query_pyomo_model(
             pgm=pgm, variables=variables, evidence=evidence
         )
-        results = optimize_map_query_model(model, solver="glpk")
+        results = solve_pyomo_map_query_model(model, solver="glpk")
         assert q == results.solution.variable_value
