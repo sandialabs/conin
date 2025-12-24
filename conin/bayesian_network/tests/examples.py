@@ -1,3 +1,4 @@
+from munch import Munch
 import pandas as pd
 import numpy as np
 import pyomo.environ as pyo
@@ -78,7 +79,10 @@ def cancer1_BN_conin(debug=False):
 
     # Step 4: Check if the model is correctly defined.
     cancer_model.check_model()
-    return cancer_model
+    return Munch(
+        pgm=cancer_model,
+        solution={"Cancer": 1, "Dyspnoea": 1, "Pollution": 0, "Smoker": 1, "Xray": 1},
+    )
 
 
 def cancer1_BN_pgmpy(debug=False):
@@ -135,7 +139,10 @@ def cancer1_BN_pgmpy(debug=False):
 
     # Step 4: Check if the model is correctly defined.
     cancer_model.check_model()
-    return cancer_model
+    return Munch(
+        pgm=cancer_model,
+        solution={"Cancer": 1, "Dyspnoea": 1, "Pollution": 0, "Smoker": 1, "Xray": 1},
+    )
 
 
 def cancer2_BN_pgmpy(debug=False):
@@ -190,7 +197,10 @@ def cancer2_BN_pgmpy(debug=False):
 
     # Step 4: Check if the model is correctly defined.
     cancer_model.check_model()
-    return cancer_model
+    return Munch(
+        pgm=cancer_model,
+        solution={"Cancer": 1, "Dyspnoea": 1, "Pollution": 0, "Smoker": 1, "Xray": 1},
+    )
 
 
 #
@@ -199,7 +209,7 @@ def cancer2_BN_pgmpy(debug=False):
 
 
 def cancer1_BN_constrained_conin(debug=False):
-    pgm = cancer1_BN_conin(debug=debug)
+    pgm = cancer1_BN_conin(debug=debug).pgm
 
     @pyomo_constraint_fn()
     def constraints(model):
@@ -207,11 +217,15 @@ def cancer1_BN_constrained_conin(debug=False):
         model.c.add(model.X["Dyspnoea", 1] + model.X["Xray", 1] <= 1)
         model.c.add(model.X["Dyspnoea", 0] + model.X["Xray", 0] <= 1)
 
-    return ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    return Munch(
+        pgm=cpgm,
+        solution={"Cancer": 1, "Dyspnoea": 0, "Pollution": 0, "Smoker": 1, "Xray": 1},
+    )
 
 
 def cancer1_BN_constrained_pgmpy(debug=False):
-    pgm = cancer1_BN_pgmpy(debug=debug)
+    pgm = cancer1_BN_pgmpy(debug=debug).pgm
 
     @pyomo_constraint_fn()
     def constraints(model):
@@ -220,11 +234,15 @@ def cancer1_BN_constrained_pgmpy(debug=False):
         model.c.add(model.X["Dyspnoea", 0] + model.X["Xray", 0] <= 1)
 
     pgm = convert_pgmpy_to_conin(pgm)
-    return ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    return Munch(
+        pgm=cpgm,
+        solution={"Cancer": 1, "Dyspnoea": 0, "Pollution": 0, "Smoker": 1, "Xray": 1},
+    )
 
 
 def cancer2_BN_constrained_pgmpy(debug=False):
-    pgm = cancer2_BN_pgmpy(debug=debug)
+    pgm = cancer2_BN_pgmpy(debug=debug).pgm
 
     @pyomo_constraint_fn()
     def constraints(model):
@@ -233,7 +251,11 @@ def cancer2_BN_constrained_pgmpy(debug=False):
         model.c.add(model.X["Dyspnoea", 0] + model.X["Xray", 0] <= 1)
 
     pgm = convert_pgmpy_to_conin(pgm)
-    return ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    return Munch(
+        pgm=cpgm,
+        solution={"Cancer": 1, "Dyspnoea": 0, "Pollution": 0, "Smoker": 1, "Xray": 1},
+    )
 
 
 #
@@ -255,7 +277,7 @@ def simple1_BN_conin(debug=False):
         print(cpd_B)
     G.cpds = [cpd_A, cpd_B]
     G.check_model()
-    return G
+    return Munch(pgm=G, solution={"A": 0, "B": 1})
 
 
 def simple1_BN_pgmpy(debug=False):
@@ -275,7 +297,7 @@ def simple1_BN_pgmpy(debug=False):
         print(cpd_B)
     G.add_cpds(cpd_A, cpd_B)
     G.check_model()
-    return G
+    return Munch(pgm=G, solution={"A": 0, "B": 1})
 
 
 def simple2_BN_pgmpy(debug=False):
@@ -293,7 +315,7 @@ def simple2_BN_pgmpy(debug=False):
         print(cpd_B)
     G.add_cpds(cpd_A, cpd_B)
     G.check_model()
-    return G
+    return Munch(pgm=G, solution={"A": 0, "B": 1})
 
 
 #
@@ -361,7 +383,9 @@ def DBDA_5_1_conin(debug=False):
         print(test_result_CPD_1)
         print(test_result_CPD_2)
 
-    return model
+    return Munch(
+        pgm=model, solution={"disease-state": 1, "test-result1": 1, "test-result2": 1}
+    )
 
 
 def DBDA_5_1_pgmpy(debug=False):
@@ -426,7 +450,9 @@ def DBDA_5_1_pgmpy(debug=False):
         print(test_result_CPD_1)
         print(test_result_CPD_2)
 
-    return model
+    return Munch(
+        pgm=model, solution={"disease-state": 1, "test-result1": 1, "test-result2": 1}
+    )
 
 
 #
@@ -495,7 +521,10 @@ def holmes_conin(debug=False):
         print(cpd_G)
     G.cpds = [cpd_E, cpd_B, cpd_R, cpd_A, cpd_W, cpd_G]
     G.check_model()
-    return G
+    return Munch(
+        pgm=G,
+        solution={"W": "-w", "G": "-g", "A": "-a", "B": "-b", "E": "-e", "R": "r"},
+    )
 
 
 def holmes_pgmpy(debug=False):
@@ -555,7 +584,10 @@ def holmes_pgmpy(debug=False):
         print(cpd_G)
     G.add_cpds(cpd_E, cpd_B, cpd_R, cpd_A, cpd_W, cpd_G)
     G.check_model()
-    return G
+    return Munch(
+        pgm=G,
+        solution={"W": "-w", "G": "-g", "A": "-a", "B": "-b", "E": "-e", "R": "r"},
+    )
 
 
 #

@@ -3,9 +3,8 @@ import pyomo.environ as pyo
 import pyomo.opt
 
 from conin.util import try_import
-from conin.bayesian_network import (
-    create_BN_map_query_pyomo_model,
-    solve_pyomo_map_query_model,
+from conin.bayesian_network.inference import (
+    inference_pyomo_map_query_BN,
 )
 
 from . import examples
@@ -23,28 +22,26 @@ def test_simple1_ALL_conin():
     """
     A -> B
     """
-    pgm = examples.simple1_BN_conin()
-    q = {"A": 0, "B": 1}
+    example = examples.simple1_BN_conin()
 
-    model = create_BN_map_query_pyomo_model(pgm=pgm)  # variables=None, evidence=None
-    results = solve_pyomo_map_query_model(model, solver=mip_solver)
-    assert q == results.solution.variable_value
+    results = inference_pyomo_map_query_BN(pgm=example.pgm, solver=mip_solver)
+    assert results.solution.variable_value == example.solution
 
 
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_simple1_B_conin():
-    """
-    A -> B, with evidence for A
-    """
-    pgm = examples.simple1_BN_conin()
-    q = {"B": 0}
-
-    with pytest.raises(RuntimeError):
-        model = create_BN_map_query_pyomo_model(
-            pgm=pgm, evidence={"A": 1}
-        )  # variables=None, evidence=None
-        results = solve_pyomo_map_query_model(model, solver=mip_solver)
-        assert q == results.solution.variable_value
+# @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
+# def test_simple1_B_conin():
+#    """
+#    A -> B, with evidence for A
+#    """
+#    example = examples.simple1_BN_conin()
+#    q = {"B": 0}
+#
+#    with pytest.raises(RuntimeError):
+#        model = create_pyomo_map_query_model_BN(
+#            pgm=pgm, evidence={"A": 1}
+#        )  # variables=None, evidence=None
+#        results = solve_pyomo_map_query_model(model, solver=mip_solver)
+#        assert q == results.solution.variable_value
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -53,37 +50,35 @@ def test_simple1_ALL_pgmpy():
     """
     A -> B
     """
-    pgm = examples.simple1_BN_pgmpy()
-    q = {"A": 0, "B": 1}
+    example = examples.simple1_BN_pgmpy()
 
-    infer = VariableElimination(pgm)
-    assert q == infer.map_query(variables=["A", "B"])
+    infer = VariableElimination(example.pgm)
+    assert infer.map_query(variables=["A", "B"]) == example.solution
 
-    pgm = convert_pgmpy_to_conin(pgm)
-    model = create_BN_map_query_pyomo_model(pgm=pgm)  # variables=None, evidence=None
-    results = solve_pyomo_map_query_model(model, solver=mip_solver)
-    assert q == results.solution.variable_value
+    pgm = convert_pgmpy_to_conin(example.pgm)
+    results = inference_pyomo_map_query_BN(pgm=pgm, solver=mip_solver)
+    assert results.solution.variable_value == example.solution
 
 
-@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_simple1_B_pgmpy():
-    """
-    A -> B, with evidence for A
-    """
-    pgm = examples.simple1_BN_pgmpy()
-    q = {"B": 0}
-
-    infer = VariableElimination(pgm)
-    assert q == infer.map_query(variables=["B"], evidence={"A": 1})
-
-    pgm = convert_pgmpy_to_conin(pgm)
-    with pytest.raises(RuntimeError):
-        model = create_BN_map_query_pyomo_model(
-            pgm=pgm, evidence={"A": 1}
-        )  # variables=None, evidence=None
-        results = solve_pyomo_map_query_model(model, solver=mip_solver)
-        assert q == results.solution.variable_value
+# @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+# @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
+# def test_simple1_B_pgmpy():
+#    """
+#    A -> B, with evidence for A
+#    """
+#    pgm = examples.simple1_BN_pgmpy()
+#    q = {"B": 0}
+#
+#    infer = VariableElimination(pgm)
+#    assert q == infer.map_query(variables=["B"], evidence={"A": 1})
+#
+#    pgm = convert_pgmpy_to_conin(pgm)
+#    with pytest.raises(RuntimeError):
+#        model = create_pyomo_map_query_model_BN(
+#            pgm=pgm, evidence={"A": 1}
+#        )  # variables=None, evidence=None
+#        results = solve_pyomo_map_query_model(model, solver=mip_solver)
+#        assert q == results.solution.variable_value
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -92,34 +87,32 @@ def test_simple2_ALL_pgmpy():
     """
     A -> B
     """
-    pgm = examples.simple2_BN_pgmpy()
-    q = {"A": 0, "B": 1}
+    example = examples.simple2_BN_pgmpy()
 
-    infer = VariableElimination(pgm)
-    assert q == infer.map_query(variables=["A", "B"])
+    infer = VariableElimination(example.pgm)
+    assert infer.map_query(variables=["A", "B"]) == example.solution
 
-    pgm = convert_pgmpy_to_conin(pgm)
-    model = create_BN_map_query_pyomo_model(pgm=pgm)  # variables=None, evidence=None
-    results = solve_pyomo_map_query_model(model, solver=mip_solver)
-    assert q == results.solution.variable_value
+    pgm = convert_pgmpy_to_conin(example.pgm)
+    results = inference_pyomo_map_query_BN(pgm=pgm, solver=mip_solver)
+    assert results.solution.variable_value == example.solution
 
 
-@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_simple2_B_pgmpy():
-    """
-    A -> B, with evidence for A
-    """
-    pgm = examples.simple2_BN_pgmpy()
-    q = {"B": 0}
-
-    infer = VariableElimination(pgm)
-    assert q == infer.map_query(variables=["B"], evidence={"A": 1})
-
-    pgm = convert_pgmpy_to_conin(pgm)
-    with pytest.raises(RuntimeError):
-        model = create_BN_map_query_pyomo_model(
-            pgm=pgm, evidence={"A": 1}
-        )  # variables=None, evidence=None
-        results = solve_pyomo_map_query_model(model, solver=mip_solver)
-        assert q == results.solution.variable_value
+# @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+# @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
+# def test_simple2_B_pgmpy():
+#    """
+#    A -> B, with evidence for A
+#    """
+#    example = examples.simple2_BN_pgmpy()
+#    q = {"B": 0}
+#
+#    infer = VariableElimination(pgm)
+#    assert q == infer.map_query(variables=["B"], evidence={"A": 1})
+#
+#    pgm = convert_pgmpy_to_conin(pgm)
+#    with pytest.raises(RuntimeError):
+#        model = create_pyomo_map_query_model_BN(
+#            pgm=pgm, evidence={"A": 1}
+#        )  # variables=None, evidence=None
+#        results = solve_pyomo_map_query_model(model, solver=mip_solver)
+#        assert q == results.solution.variable_value

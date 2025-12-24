@@ -3,7 +3,7 @@ import munch
 from pyomo.common.timing import TicTocTimer
 
 import conin.markov_network
-from .model import ConstrainedDiscreteBayesianNetwork
+from conin.bayesian_network import ConstrainedDiscreteBayesianNetwork
 
 
 def create_pyomo_map_query_model_BN(
@@ -95,12 +95,14 @@ def create_pyomo_map_query_model_BN(
         if timing:
             timer.toc("Created skeleton Markov network")
 
-    model = conin.markov_network.inference_pyomo.create_pyomo_map_query_model_MN(
-        pgm=MN,
-        variables=variables,
-        evidence=evidence,
-        var_index_map=var_index_map,
-        timing=timing,
+    model = (
+        conin.markov_network.inference.inference_pyomo.create_pyomo_map_query_model_MN(
+            pgm=MN,
+            variables=variables,
+            evidence=evidence,
+            var_index_map=var_index_map,
+            timing=timing,
+        )
     )
 
     if isinstance(pgm, ConstrainedDiscreteBayesianNetwork) and pgm.constraints:
@@ -111,3 +113,19 @@ def create_pyomo_map_query_model_BN(
     if timing:
         timer.toc("create_pyomo_map_query_model_BN - STOP")
     return model
+
+
+def inference_pyomo_map_query_BN(
+    *,
+    pgm,
+    variables=None,
+    evidence=None,
+    timing=False,
+    **options,
+):
+    model = create_pyomo_map_query_model_BN(
+        pgm=pgm, variables=variables, evidence=evidence, timing=timing, **options
+    )
+    return conin.markov_network.inference.inference_pyomo.solve_pyomo_map_query_model(
+        model, timing=timing, **options
+    )
