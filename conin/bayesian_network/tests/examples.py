@@ -206,7 +206,6 @@ def cancer1_BN_constrained_conin(debug=False):
         model.c = pyo.ConstraintList()
         model.c.add(model.X["Dyspnoea", 1] + model.X["Xray", 1] <= 1)
         model.c.add(model.X["Dyspnoea", 0] + model.X["Xray", 0] <= 1)
-        return model
 
     return ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
 
@@ -219,7 +218,6 @@ def cancer1_BN_constrained_pgmpy(debug=False):
         model.c = pyo.ConstraintList()
         model.c.add(model.X["Dyspnoea", 1] + model.X["Xray", 1] <= 1)
         model.c.add(model.X["Dyspnoea", 0] + model.X["Xray", 0] <= 1)
-        return model
 
     pgm = convert_pgmpy_to_conin(pgm)
     return ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
@@ -233,7 +231,6 @@ def cancer2_BN_constrained_pgmpy(debug=False):
         model.c = pyo.ConstraintList()
         model.c.add(model.X["Dyspnoea", 1] + model.X["Xray", 1] <= 1)
         model.c.add(model.X["Dyspnoea", 0] + model.X["Xray", 0] <= 1)
-        return model
 
     pgm = convert_pgmpy_to_conin(pgm)
     return ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
