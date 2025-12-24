@@ -97,9 +97,10 @@ class PyomoConstraint:
 
     def __call__(self, model, data):
         if self.num_args == 1:
-            return self.func(model)
+            model_ = self.func(model)
         else:
-            return self.func(model, data)
+            model_ = self.func(model, data)
+        return model if model_ is None else model_
 
 
 def pyomo_constraint_fn(*, name=None):
@@ -118,21 +119,35 @@ def pyomo_constraint_fn(*, name=None):
 
 class Toulbar2Constraint:
 
-    def __init__(self, func):
+    def __init__(self, func, name=None):
         self.func = func
         self.num_args = len(inspect.signature(self.func).parameters)
         if self.num_args > 2:
             raise ValueError("Toulbar2 constraint defined with more than 2 arguments")
 
+        # If no name is provided, use the function's name
+        if name is not None:
+            self.name = name
+        else:
+            self.name = func.__name__
+
     def __call__(self, model, data):
         if self.num_args == 1:
-            return self.func(model)
+            model_ = self.func(model)
         else:
-            return self.func(model, data)
+            model_ = self.func(model, data)
+        return model if model_ is None else model_
 
 
-def toulbar2_constraint_fn(func):
+def toulbar2_constraint_fn(*, name=None):
     """
-    Decorator that wraps the user constraint function in a Toulbar2Constraint class.
+    Decorator factory that takes the 'name' and returns a decorator function.
     """
-    return Toulbar2Constraint(func)
+
+    def decorator(func):
+        """
+        The actual decorator that wraps the user constraint function in a Toulbar2Constraint class.
+        """
+        return Toulbar2Constraint(func=func, name=name)
+
+    return decorator
