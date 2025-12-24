@@ -9,5 +9,6 @@ from .model import (
 )
 from .inference_cfn import (
     create_reduced_MN,
-    CFN_map_query,
+    create_toulbar2_map_query_model,
+    solve_toulbar2_map_query_model,
 )

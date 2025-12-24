@@ -90,10 +90,6 @@ def create_reduced_MN(
     #    for k, v in evidence.items():
     #        model.X[k, State(v)].fix(1)
 
-    if isinstance(pgm, ConstrainedDiscreteMarkovNetwork) and pgm.constraints:
-        data = munch.Munch(variables=variables, evidence=evidence)
-        for func in pgm.constraints:
-            model = func(model, data)
 
     if timing:  # pragma:nocover
         timer.toc("create_MN_map_query_model - STOP")
@@ -101,10 +97,36 @@ def create_reduced_MN(
     """
 
 
-def CFN_map_query(
+def create_toulbar2_map_query_model(
+    pgm, *, variables=None, evidence=None, timing=False
+):
+    # Ignoring variables and evidence for now
+    if timing:  # pragma:nocover
+        timer.toc("create_toulbar2_model - START")
+    pgm_ = pgm.pgm if isinstance(pgm, ConstrainedDiscreteMarkovNetwork) else pgm
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        filename = os.path.join(tempdir, "model.uai")
+        save_model(pgm_, filename)
+
+        model = pytoulbar2.CFN()
+        model.Read(filename)
+
+    model.X = {name: i for i, name in enumerate(pgm.nodes)}
+
+    if isinstance(pgm, ConstrainedDiscreteMarkovNetwork) and pgm.constraints:
+        data = munch.Munch(variables=variables, evidence=evidence)
+        for func in pgm.constraints:
+            model = func(model, data)
+
+    if timing:  # pragma:nocover
+        timer.toc("create_toulbar2_model - STOP")
+    return model
+
+
+def solve_toulbar2_map_query_model(
     model,
     *,
-    filename=None,
     # tee=False,
     # with_fixed=False,
     timing=False,
@@ -114,26 +136,13 @@ def CFN_map_query(
         timer = TicTocTimer()
         timer.tic("CFN_map_query - START")
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        if filename is None:
-            filename = os.path.join(tempdir, "model.uai")
-        else:
-            assert filename.endswith(".uai")
-        save_model(model, filename)
-
-        if timing:  # pragma.nocover
-            timer.toc("Initialize solver")
-
-        cfn = pytoulbar2.CFN()
-        cfn.Read(filename)
-
     solver_timer = TicTocTimer()
     solver_timer.tic(None)
-    res = cfn.Solve()
+    res = model.Solve()
     solvetime = solver_timer.toc(None)
 
     solution, primal_bound, num_solutions = res
-    var = dict(zip(model.nodes, solution))
+    var = {name: solution[i] for name, i in model.X.items()}
     soln = munch.Munch(
         variable_value=var, log_factor_sum=None, primal_bound=primal_bound
     )
