@@ -2,12 +2,11 @@ import warnings
 import munch
 from pyomo.common.timing import TicTocTimer
 
-# from conin.util import try_import
 import conin.markov_network
 from .model import ConstrainedDiscreteBayesianNetwork
 
 
-def create_BN_map_query_pyomo_model(
+def create_pyomo_map_query_model_BN(
     *,
     pgm,
     variables=None,
@@ -39,7 +38,7 @@ def create_BN_map_query_pyomo_model(
     """
     if timing:
         timer = TicTocTimer()
-        timer.tic("create_BN_map_query_model - START")
+        timer.tic("create_pyomo_map_query_model_BN - START")
     prune_network = options.pop("prune_network", False)
     create_MN = options.pop("create_MN", False)
 
@@ -96,7 +95,7 @@ def create_BN_map_query_pyomo_model(
         if timing:
             timer.toc("Created skeleton Markov network")
 
-    model = conin.markov_network.create_MN_pyomo_map_query_model(
+    model = conin.markov_network.inference_pyomo.create_pyomo_map_query_model_MN(
         pgm=MN,
         variables=variables,
         evidence=evidence,
@@ -110,5 +109,5 @@ def create_BN_map_query_pyomo_model(
             model = func(model, data)
 
     if timing:
-        timer.toc("create_BN_map_query_model - STOP")
+        timer.toc("create_pyomo_map_query_model_BN - STOP")
     return model
