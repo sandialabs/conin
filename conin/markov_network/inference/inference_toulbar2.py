@@ -7,10 +7,11 @@ import pytoulbar2
 from pyomo.common.timing import TicTocTimer
 
 from .factor_repn import extract_factor_representation_, State
-from .variable_elimination import _variable_elimination
-from .model import ConstrainedDiscreteMarkovNetwork
-from .model import DiscreteMarkovNetwork
-from .model import DiscreteFactor
+from conin.markov_network import (
+    ConstrainedDiscreteMarkovNetwork,
+    DiscreteMarkovNetwork,
+    DiscreteFactor,
+)
 import conin.common
 
 
@@ -156,3 +157,17 @@ def solve_toulbar2_map_query_model(
         termination_condition="ok",
         solvetime=solvetime,
     )
+
+
+def inference_toulbar2_map_query_MN(
+    *,
+    pgm,
+    variables=None,
+    evidence=None,
+    timing=False,
+    **options,
+):
+    model = create_toulbar2_map_query_model_MN(
+        pgm, variables=variables, evidence=evidence, timing=timing, **options
+    )
+    return solve_toulbar2_map_query_model(model, timing=timing, **options)

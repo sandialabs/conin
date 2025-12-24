@@ -5,8 +5,9 @@ import pyomo.environ as pe
 from pyomo.common.timing import TicTocTimer
 
 from .factor_repn import extract_factor_representation_, State
-from .variable_elimination import _variable_elimination
-from .model import ConstrainedDiscreteMarkovNetwork
+
+# from .variable_elimination import _variable_elimination
+from conin.markov_network import ConstrainedDiscreteMarkovNetwork
 
 
 """
@@ -340,6 +341,7 @@ def inference_pyomo_map_query_MN(
     timing=False,
     **options,
 ):
-    model = create_pyomo_map_query_model(pgm, variables=variables, evidence=evidence, timing=timing, **options)
+    model = create_pyomo_map_query_model_MN(
+        pgm=pgm, variables=variables, evidence=evidence, timing=timing, **options
+    )
     return solve_pyomo_map_query_model(model, timing=timing, **options)
-
