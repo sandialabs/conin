@@ -25,6 +25,7 @@ mip_solver = mip_solver[0] if mip_solver else None
 #
 # ===============================================================================
 
+
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_ABC_pyomo_conin():
     example = examples.ABC_conin()
@@ -102,11 +103,13 @@ def test_ABC_constrained_pyomo():
     results = inference_pyomo_map_query_MN(pgm=example.pgm, solver=mip_solver)
     assert results.solution.variable_value == example.solution
 
+
 # ===============================================================================
 #
 # Toulbar2 tests
 #
 # ===============================================================================
+
 
 @pytest.mark.skipif(not pytoulbar2_available, reason="Toulbar2 not installed")
 def test_ABC_toulbar2():
