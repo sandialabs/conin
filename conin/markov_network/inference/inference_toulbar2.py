@@ -114,6 +114,7 @@ def create_toulbar2_map_query_model_MN(
         model.Read(filename)
 
     model.X = {name: i for i, name in enumerate(pgm.nodes)}
+    model.states = {i: pgm.states_of(name) for i, name in enumerate(pgm.nodes)}
 
     if isinstance(pgm, ConstrainedDiscreteMarkovNetwork) and pgm.constraints:
         data = munch.Munch(variables=variables, evidence=evidence)
@@ -143,7 +144,7 @@ def solve_toulbar2_map_query_model(
     solvetime = solver_timer.toc(None)
 
     solution, primal_bound, num_solutions = res
-    var = {name: solution[i] for name, i in model.X.items()}
+    var = {name: model.states[i][solution[i]] for name, i in model.X.items()}
     soln = munch.Munch(
         variable_value=var, log_factor_sum=None, primal_bound=primal_bound
     )

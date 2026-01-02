@@ -411,6 +411,21 @@ class ConstrainedDiscreteMarkovNetwork:
         """
         return self.pgm.nodes
 
+    def states_of(self, node):
+        """Return the allowed states for a node.
+
+        Parameters
+        ----------
+        node : Hashable
+            Identifier of the node of interest.
+
+        Returns
+        -------
+        list
+            Ordered list of valid states for ``node``.
+        """
+        return self.pgm.states_of(node)
+
     @property
     def constraints(self):
         """Get a list of constraint functors.
