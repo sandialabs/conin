@@ -1,7 +1,4 @@
 import pytest
-import os
-
-from math import log
 import pyomo.environ as pyo
 import pyomo.opt
 
@@ -22,6 +19,11 @@ with try_import() as pytoulbar2_available:
 mip_solver = pyomo.opt.check_available_solvers("glpk", "gurobi")
 mip_solver = mip_solver[0] if mip_solver else None
 
+# ===============================================================================
+#
+# Pyomo tests
+#
+# ===============================================================================
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_ABC_pyomo_conin():
@@ -100,6 +102,11 @@ def test_ABC_constrained_pyomo():
     results = inference_pyomo_map_query_MN(pgm=example.pgm, solver=mip_solver)
     assert results.solution.variable_value == example.solution
 
+# ===============================================================================
+#
+# Toulbar2 tests
+#
+# ===============================================================================
 
 @pytest.mark.skipif(not pytoulbar2_available, reason="Toulbar2 not installed")
 def test_ABC_toulbar2():
