@@ -5,6 +5,7 @@ import pyomo.opt
 from conin.util import try_import
 from conin.bayesian_network.inference import (
     inference_pyomo_map_query_BN,
+    inference_toulbar2_map_query_BN,
 )
 
 from . import examples
@@ -13,19 +14,24 @@ with try_import() as pgmpy_available:
     from pgmpy.inference import VariableElimination
     from conin.common.pgmpy import convert_pgmpy_to_conin
 
+with try_import() as pytoulbar2_available:
+    import pytoulbar2
+
 mip_solver = pyomo.opt.check_available_solvers("glpk", "gurobi")
 mip_solver = mip_solver[0] if mip_solver else None
 
 
+# ===============================================================================
 #
 # conin tests for holmes example
 #
+# ===============================================================================
+
 # TODO: Add tests with evidence.
-#
 
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_holmes0_conin():
+def test_holmes0_pyomo_conin():
     example = examples.holmes_conin()
     variables = None
     evidence = None
@@ -39,9 +45,32 @@ def test_holmes0_conin():
     assert results.solution.variable_value == example.solution
 
 
+# ===============================================================================
+#
+# toulbar2 tests for holmes example
+#
+# ===============================================================================
+
+
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
+def test_holmes0_toulbar2_conin():
+    example = examples.holmes_conin()
+    variables = None
+    evidence = None
+
+    results = inference_toulbar2_map_query_BN(
+        pgm=example.pgm,
+        variables=variables,
+        evidence=evidence,
+    )
+    assert results.solution.variable_value == example.solution
+
+
+# ===============================================================================
 #
 # pgmpy tests for holmes example
 #
+# ===============================================================================
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")

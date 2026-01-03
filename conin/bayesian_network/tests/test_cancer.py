@@ -5,6 +5,7 @@ import pyomo.opt
 from conin.util import try_import
 from conin.bayesian_network.inference import (
     inference_pyomo_map_query_BN,
+    inference_toulbar2_map_query_BN,
 )
 from . import examples
 
@@ -12,8 +13,18 @@ with try_import() as pgmpy_available:
     from pgmpy.inference import VariableElimination
     from conin.common.pgmpy import convert_pgmpy_to_conin
 
+with try_import() as pytoulbar2_available:
+    import pytoulbar2
+
 mip_solver = pyomo.opt.check_available_solvers("glpk", "gurobi")
 mip_solver = mip_solver[0] if mip_solver else None
+
+
+# ===============================================================================
+#
+# pyomo tests for cancer - All variables
+#
+# ===============================================================================
 
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
@@ -32,7 +43,7 @@ def test_cancer1_conin_ALL():
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_cancer1_pgmpy_ALL():
     """
-    Cancer model from pgmpy examples
+    Cancer model from pgmpy examples (using TabularCPD)
 
     No evidence
     """
@@ -46,6 +57,46 @@ def test_cancer1_pgmpy_ALL():
 
     pgm = convert_pgmpy_to_conin(example.pgm)
     results = inference_pyomo_map_query_BN(pgm=pgm, solver=mip_solver)
+    assert results.solution.variable_value == example.solution
+
+
+@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
+def test_cancer2_pgmpy_ALL():
+    """
+    Cancer model from pgmpy examples (using MapCPD)
+
+    No evidence
+    """
+    example = examples.cancer2_BN_pgmpy()
+
+    infer = VariableElimination(example.pgm)
+    assert (
+        infer.map_query(variables=["Cancer", "Dyspnoea", "Pollution", "Smoker", "Xray"])
+        == example.solution
+    )
+
+    pgm = convert_pgmpy_to_conin(example.pgm)
+    results = inference_pyomo_map_query_BN(pgm=pgm, solver=mip_solver)
+    assert results.solution.variable_value == example.solution
+
+
+# ===============================================================================
+#
+# toulbar2 tests for cancer - All variables
+#
+# ===============================================================================
+
+
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
+def test_cancer1_toulbar2_ALL():
+    """
+    Cancer model from pgmpy examples
+
+    No evidence
+    """
+    example = examples.cancer1_BN_conin()
+    results = inference_toulbar2_map_query_BN(pgm=example.pgm)
     assert results.solution.variable_value == example.solution
 
 
@@ -123,27 +174,6 @@ def test_cancer1_conin_ALL_constrained2():
     """
     example = examples.cancer1_BN_constrained_conin()
     results = inference_pyomo_map_query_BN(pgm=example.pgm, solver=mip_solver)
-    assert results.solution.variable_value == example.solution
-
-
-@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_cancer2_pgmpy_ALL():
-    """
-    Cancer model from pgmpy examples
-
-    No evidence
-    """
-    example = examples.cancer2_BN_pgmpy()
-
-    infer = VariableElimination(example.pgm)
-    assert (
-        infer.map_query(variables=["Cancer", "Dyspnoea", "Pollution", "Smoker", "Xray"])
-        == example.solution
-    )
-
-    pgm = convert_pgmpy_to_conin(example.pgm)
-    results = inference_pyomo_map_query_BN(pgm=pgm, solver=mip_solver)
     assert results.solution.variable_value == example.solution
 
 
