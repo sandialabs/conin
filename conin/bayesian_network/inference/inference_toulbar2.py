@@ -48,6 +48,7 @@ def create_toulbar2_map_query_model_BN(
         timer.tic("create_toulbar2_map_query_model_BN - START")
     prune_network = options.pop("prune_network", False)
     create_MN = options.pop("create_MN", False)
+    verbose = options.pop("verbose", -1)
 
     pgm_ = pgm.pgm if isinstance(pgm, ConstrainedDiscreteBayesianNetwork) else pgm
 
@@ -65,19 +66,17 @@ def create_toulbar2_map_query_model_BN(
     with tempfile.TemporaryDirectory() as tempdir:
         filename = os.path.join(tempdir, "model.uai")
         conin.common.save_model(pgm_, filename)
-        with open(filename, "r") as INPUT:
-            for line in INPUT:
-                print(f"HERE {line}")
+        #with open(filename, "r") as INPUT:
+        #    for line in INPUT:
+        #        print(f"HERE {line}")
 
-        model = pytoulbar2.CFN(verbose=10)
-        print("X")
+        model = pytoulbar2.CFN(verbose=verbose)
         model.Read(filename)
-        model.Print()
-        print("X")
+        #model.Print()
 
     model.X = {name: i for i, name in enumerate(pgm.nodes)}
     model.states = {i: pgm.states_of(name) for i, name in enumerate(pgm.nodes)}
-    print(f"{model.states=}")
+    #print(f"{model.states=}")
 
     if isinstance(pgm, ConstrainedDiscreteBayesianNetwork) and pgm.constraints:
         data = munch.Munch(variables=variables, evidence=evidence)
