@@ -145,8 +145,8 @@ def test_load_bn_model_cancer_conin():
     cpds = {cpd.node: cpd for cpd in pgm.cpds}
     assert cpds["var0"].values == {
         (0, 0): {0: 0.03, 1: 0.97},
-        (1, 0): {0: 0.05, 1: 0.95},
-        (0, 1): {0: 0.001, 1: 0.999},
+        (0, 1): {0: 0.05, 1: 0.95},
+        (1, 0): {0: 0.001, 1: 0.999},
         (1, 1): {0: 0.02, 1: 0.98},
     }
     assert cpds["var1"].values == {0: {0: 0.65, 1: 0.35}, 1: {0: 0.3, 1: 0.7}}
@@ -179,10 +179,27 @@ def test_load_mn_model_cancer_conin():
     assert factors["var2", "var3", "var0"] == {
         (0, 0, 0): 0.03,
         (0, 0, 1): 0.97,
-        (0, 1, 0): 0.001,
-        (0, 1, 1): 0.999,
-        (1, 0, 0): 0.05,
-        (1, 0, 1): 0.95,
+        (0, 1, 0): 0.05,
+        (0, 1, 1): 0.95,
+        (1, 0, 0): 0.001,
+        (1, 0, 1): 0.999,
         (1, 1, 0): 0.02,
         (1, 1, 1): 0.98,
+    }
+
+
+#
+# toulbar2
+#
+
+
+def test_load_bn_model_toulbar2_conin():
+    pgm = load_model(os.path.join(cwd, "toulbar2_bn.uai"))
+    cpds = {cpd.node: cpd for cpd in pgm.cpds}
+
+    assert cpds["var0"].values == {0: 0.436, 1: 0.564}
+    assert cpds["var1"].values == {0: {0: 0.128, 1: 0.872}, 1: {0: 0.92, 1: 0.08}}
+    assert cpds["var2"].values == {
+        0: {0: 0.21, 1: 0.333, 2: 0.457},
+        1: {0: 0.811, 1: 0.0, 2: 0.189},
     }
