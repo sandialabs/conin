@@ -50,17 +50,7 @@ def save_model_uai(pgm, name, quiet=True):
         table_preamble = [str(d) for d in table_preamble]
 
         # table values
-        # Markov:  table is listed in order node[0], node[1], ..., node[n-1]
-        # Bayes: table is listed in order node[n-1], node[0], node[1], ... node[n-2]
         table_values = [str(v) for k, v in factor.values.items()]
-        if case == "BAYES":
-            # move the LSD to the MSD
-            table_values_reorder = []
-            nsize = len(pgm.states[factor.nodes[-1]])
-            for j in range(nsize):
-                idx = [i + j for i in range(0, len(table_values), nsize)]
-                table_values_reorder += [table_values[i] for i in idx]
-            table_values = table_values_reorder
 
         tables += [(table_preamble, table_values)]
 
