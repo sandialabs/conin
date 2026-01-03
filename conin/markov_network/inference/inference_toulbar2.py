@@ -99,7 +99,11 @@ def create_reduced_MN(
 
 
 def create_toulbar2_map_query_model_MN(
-    pgm, *, variables=None, evidence=None, timing=False
+    pgm,
+    *,
+    variables=None,
+    evidence=None,
+    timing=False,
 ):
     # Ignoring variables and evidence for now
     if timing:  # pragma:nocover
@@ -169,6 +173,9 @@ def inference_toulbar2_map_query_MN(
     **options,
 ):
     model = create_toulbar2_map_query_model_MN(
-        pgm, variables=variables, evidence=evidence, timing=timing, **options
+        pgm,
+        variables=variables,
+        evidence=evidence,
+        timing=timing,
     )
     return solve_toulbar2_map_query_model(model, timing=timing, **options)
