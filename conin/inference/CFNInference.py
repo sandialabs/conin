@@ -1,5 +1,4 @@
 import os
-import tempfile
 import warnings
 
 from conin.util import try_import
@@ -12,17 +11,23 @@ from conin.common import save_model
 from conin.markov_network import (
     DiscreteMarkovNetwork,
     ConstrainedDiscreteMarkovNetwork,
-    create_MN_toulbar2_map_query_model,
+)
+from conin.markov_network.inference import (
+    inference_toulbar2_map_query_MN,
 )
 from conin.bayesian_network import (
     DiscreteBayesianNetwork,
     ConstrainedDiscreteBayesianNetwork,
-    # create_reduced_MN_from_BN,
+)
+from conin.bayesian_network.inference import (
+    inference_toulbar2_map_query_BN,
 )
 from conin.dynamic_bayesian_network import (
     DynamicDiscreteBayesianNetwork,
     ConstrainedDynamicDiscreteBayesianNetwork,
-    # create_reduced_MN_from_DBN,
+)
+from conin.dynamic_bayesian_network.inference import (
+    inference_toulbar2_map_query_DDBN,
 )
 
 with try_import() as pgmpy_available:
@@ -83,40 +88,24 @@ class CFNInference:
         if isinstance(pgm, DiscreteMarkovNetwork) or isinstance(
             pgm, ConstrainedDiscreteMarkovNetwork
         ):
-            results = None
-            with tempfile.TemporaryDirectory as tempdir:
-                filename = os.path.join(tempdir, "model.uai")
-                reduced_pgm = create_reduced_MN(
-                    pgm=pgm,
-                    variables=variables,
-                    evidence=evidence,
-                    timing=timing,
-                    **options,
-                )
-                varmap = save_model(reduced_pgm, filename)
-                results = CFN_map_query(
-                    filename, timing=timing, varmap=varmap, **options
-                )
-            return results
+            return inference_toulbar2_map_query_MN(
+                pgm=pgm,
+                variables=variables,
+                evidence=evidence,
+                timing=timing,
+                **options,
+            )
 
         elif isinstance(pgm, DiscreteBayesianNetwork) or isinstance(
             pgm, ConstrainedDiscreteBayesianNetwork
         ):
-            results = None
-            # with tempfile.TemporaryDirectory as tempdir:
-            #    filename = os.path.join(tempdir, "model.uai")
-            #    reduced_pgm = create_reduced_MN_from_BN(
-            #        pgm=pgm,
-            #        variables=variables,
-            #        evidence=evidence,
-            #        timing=timing,
-            #        **options,
-            #    )
-            #    varmap = save_model(reduced_pgm, filename)
-            #    results = CFN_map_query(
-            #        filename, timing=timing, varmap=varmap, **options
-            #    )
-            return results
+            return inference_toulbar2_map_query_BN(
+                pgm=pgm,
+                variables=variables,
+                evidence=evidence,
+                timing=timing,
+                **options,
+            )
 
         #
         # TODO
@@ -150,6 +139,7 @@ class DDBN_CFNInference:
         variables=None,
         evidence=None,
         show_progress=False,
+        timing=False,
         **options,
     ):
         """
@@ -184,16 +174,17 @@ class DDBN_CFNInference:
 
         pgm = self.pgm
 
-        #
-        # TODO
-        #
         if isinstance(pgm, DynamicDiscreteBayesianNetwork) or isinstance(
             pgm, ConstrainedDynamicDiscreteBayesianNetwork
         ):
-            # model = create_DDBN_map_query_pyomo_model(
-            #    pgm=pgm, start=start, stop=stop, variables=variables, evidence=evidence
-            # )
-            # return CFN_map_query(model, **options)
-            pass
+            return inference_toulbar2_map_query_DDBN(
+                pgm=pgm,
+                start=start,
+                stop=stop,
+                variables=variables,
+                evidence=evidence,
+                timing=timing,
+                **options,
+            )
         else:
             raise TypeError("Unexpected model type: {type(pgm)}")

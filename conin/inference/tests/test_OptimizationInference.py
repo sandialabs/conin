@@ -71,6 +71,7 @@ def test_IntegerProgrammingInference_cancer1_ALL_conin():
 
     # TODO - Confirm that these marginalized results are correct
 
+
 #    with pytest.raises(RuntimeError):
 #        results = inf.map_query(
 #            variables=["Dyspnoea", "Pollution", "Smoker", "Xray"],
@@ -113,6 +114,7 @@ def test_IntegerProgrammingInference_cancer1_ALL_pgmpy():
 
     # TODO - Confirm that these marginalized results are correct
 
+
 #    with pytest.raises(RuntimeError):
 #        results = inf.map_query(
 #            variables=["Dyspnoea", "Pollution", "Smoker", "Xray"],
@@ -148,7 +150,7 @@ def test_IntegerProgrammingInference_cancer1_ALL_pgmpy():
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_IntegerProgrammingInference_cancer1_constrained_conin():
-    example = conin.bayesian_network.tests.examples.cancer1_BN_constrained_conin()
+    example = conin.bayesian_network.tests.examples.cancer1_BN_constrained_pyomo_conin()
     inf = IntegerProgrammingInference(example.pgm)
 
     results = inf.map_query(
@@ -158,6 +160,7 @@ def test_IntegerProgrammingInference_cancer1_constrained_conin():
     assert results.solution.variable_value == example.solution
 
     # TODO - Confirm that these marginalized results are correct
+
 
 #    with pytest.raises(RuntimeError):
 #        results = inf.map_query(
@@ -175,7 +178,7 @@ def test_IntegerProgrammingInference_cancer1_constrained_conin():
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_IntegerProgrammingInference_cancer1_constrained_pgmpy():
-    example = conin.bayesian_network.tests.examples.cancer1_BN_constrained_pgmpy()
+    example = conin.bayesian_network.tests.examples.cancer1_BN_constrained_pyomo_pgmpy()
     inf = IntegerProgrammingInference(example.pgm)
 
     results = inf.map_query(
@@ -185,6 +188,7 @@ def test_IntegerProgrammingInference_cancer1_constrained_pgmpy():
     assert results.solution.variable_value == example.solution
 
     # TODO - Confirm that these marginalized results are correct
+
 
 #    with pytest.raises(RuntimeError):
 #        results = inf.map_query(
@@ -366,6 +370,7 @@ def test_DDBN_IntegerProgrammingInference_weather_conin():
     results = inf.map_query(stop=4, solver=mip_solver)
     assert results.solution.variable_value == example.solution
 
+
 #    evidence = {
 #        ("O", 0): "Wet",
 #        ("O", 1): "Wet",
@@ -404,6 +409,7 @@ def test_DDBN_IntegerProgrammingInference_weather():
     results = inf.map_query(stop=4, solver=mip_solver)
     assert results.solution.variable_value == example.solution
 
+
 #    evidence = {
 #        ("O", 0): "Wet",
 #        ("O", 1): "Wet",
@@ -438,12 +444,16 @@ def test_DDBN_IntegerProgrammingInference_weather():
 # ConstrainedDynamicBayesianNetwork tests
 #
 
+
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_DDBN_IntegerProgrammingInference_weather_constrained_conin():
-    example = conin.dynamic_bayesian_network.tests.examples.weather_constrained_conin()
+    example = (
+        conin.dynamic_bayesian_network.tests.examples.weather_constrained_pyomo_conin()
+    )
     inf = DDBN_IntegerProgrammingInference(example.pgm)
     results = inf.map_query(stop=4, solver=mip_solver)
     assert results.solution.variable_value == example.solution
+
 
 #    evidence = {
 #        ("O", 0): "Wet",
@@ -476,11 +486,14 @@ def test_DDBN_IntegerProgrammingInference_weather_constrained_conin():
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_DDBN_IntegerProgrammingInference_weather_constrained_pgmpy():
-    example = conin.dynamic_bayesian_network.tests.examples.weather_constrained_pgmpy()
+def test_DDBN_IntegerProgrammingInference_weather_constrained_pyomo_pgmpy():
+    example = (
+        conin.dynamic_bayesian_network.tests.examples.weather_constrained_pyomo_pgmpy()
+    )
     inf = DDBN_IntegerProgrammingInference(example.pgm)
     results = inf.map_query(stop=4, solver=mip_solver)
     assert results.solution.variable_value == example.solution
+
 
 #    evidence = {
 #        ("O", 0): "Wet",

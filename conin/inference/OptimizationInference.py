@@ -198,7 +198,12 @@ class DDBN_IntegerProgrammingInference:
             pgm, ConstrainedDynamicDiscreteBayesianNetwork
         ):
             return inference_pyomo_map_query_DDBN(
-                pgm=pgm, start=start, stop=stop, variables=variables, evidence=evidence, **options
+                pgm=pgm,
+                start=start,
+                stop=stop,
+                variables=variables,
+                evidence=evidence,
+                **options,
             )
         else:
             raise TypeError("Unexpected model type: {type(pgm)}")
