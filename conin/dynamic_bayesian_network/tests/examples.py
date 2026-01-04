@@ -157,7 +157,7 @@ def simple1_DDBN_pgmpy(debug=False):
     )
 
 
-def simple1_DDBN_constrained_conin(debug=False):
+def simple1_DDBN_constrained_pyomo_conin(debug=False):
     pgm = simple1_DDBN_conin(debug=debug).pgm
 
     @pyomo_constraint_fn()
@@ -177,7 +177,7 @@ def simple1_DDBN_constrained_conin(debug=False):
     )
 
 
-def simple1_DDBN_constrained_pgmpy(debug=False):
+def simple1_DDBN_constrained_pyomo_pgmpy(debug=False):
     pgm = simple1_DDBN_pgmpy(debug=debug).pgm
 
     @pyomo_constraint_fn()
@@ -675,7 +675,7 @@ q_weather_A_constrained = {
 }
 
 
-def weather_constrained_conin(debug=False):
+def weather_constrained_pyomo_conin(debug=False):
     pgm = weather_conin(debug).pgm
 
     @pyomo_constraint_fn()
@@ -691,7 +691,7 @@ def weather_constrained_conin(debug=False):
     )
 
 
-def weather_constrained_pgmpy(debug=False):
+def weather_constrained_pyomo_pgmpy(debug=False):
     pgm = weather2_pgmpy(debug).pgm
 
     @pyomo_constraint_fn()
