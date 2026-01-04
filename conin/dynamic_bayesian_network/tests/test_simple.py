@@ -188,7 +188,7 @@ def test_simple1_pyomo_ALL_constrained_pgmpy():
 #
 
 
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
 def test_simple0_toulbar2_ALL_conin():
     """
     Z
@@ -201,7 +201,7 @@ def test_simple0_toulbar2_ALL_conin():
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
 def test_simple0_toulbar2_DDBN1_ALL_pgmpy():
     """
     Z
@@ -215,7 +215,7 @@ def test_simple0_toulbar2_DDBN1_ALL_pgmpy():
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
 def test_simple0_toulbar2_DDBN2_ALL_pgmpy():
     """
     Z
@@ -233,7 +233,7 @@ def test_simple0_toulbar2_DDBN2_ALL_pgmpy():
 #
 
 
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
 def test_simple1_toulbar2_ALL_conin():
     """
     A -> B
@@ -248,7 +248,7 @@ def test_simple1_toulbar2_ALL_conin():
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
 def test_simple1_toulbar2_ALL_pgmpy():
     """
     A -> B
@@ -309,7 +309,7 @@ def test_simple1_toulbar2_ALL_pgmpy():
 #        assert q == results.solution.variable_value
 
 
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
 def Xtest_simple1_toulbar2_ALL_constrained_conin():
     """
     A -> B
@@ -322,7 +322,7 @@ def Xtest_simple1_toulbar2_ALL_constrained_conin():
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
 def Xtest_simple1_toulbar2_ALL_constrained_pgmpy():
     """
     A -> B

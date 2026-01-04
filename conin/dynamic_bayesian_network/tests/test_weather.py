@@ -270,7 +270,7 @@ def test_weather_pyomo_A_constrained_pgmpy():
 # ===============================================================================
 
 
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
 def test_weather_toulbar2_A_conin():
     """
     Test with conin representation
@@ -284,7 +284,7 @@ def test_weather_toulbar2_A_conin():
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
 def test_weather1_toulbar2_A_pgmpy():
     """
     Test with pgmpy TabularCPD representation
@@ -299,7 +299,7 @@ def test_weather1_toulbar2_A_pgmpy():
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
 def test_weather2_toulbar2_A_pgmpy():
     """
     Test with pgmpy MapCPD representation
@@ -413,7 +413,7 @@ def test_weather2_toulbar2_A_pgmpy():
 #        assert q_weather_B == results.solution.variable_value
 
 
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
 def Xtest_weather_toulbar2_A_constrained_conin():
     """
     Test with conin representation
@@ -427,7 +427,7 @@ def Xtest_weather_toulbar2_A_constrained_conin():
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
 def Xtest_weather_toulbar2_A_constrained_pgmpy():
     """
     Test with pgmpy representation
