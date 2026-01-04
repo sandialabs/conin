@@ -208,7 +208,7 @@ def cancer2_BN_pgmpy(debug=False):
 #
 
 
-def cancer1_BN_constrained_conin(debug=False):
+def cancer1_BN_constrained_pyomo_conin(debug=False):
     pgm = cancer1_BN_conin(debug=debug).pgm
 
     @pyomo_constraint_fn()
@@ -224,7 +224,7 @@ def cancer1_BN_constrained_conin(debug=False):
     )
 
 
-def cancer1_BN_constrained_pgmpy(debug=False):
+def cancer1_BN_constrained_pyomo_pgmpy(debug=False):
     pgm = cancer1_BN_pgmpy(debug=debug).pgm
 
     @pyomo_constraint_fn()
@@ -241,7 +241,7 @@ def cancer1_BN_constrained_pgmpy(debug=False):
     )
 
 
-def cancer2_BN_constrained_pgmpy(debug=False):
+def cancer2_BN_constrained_pyomo_pgmpy(debug=False):
     pgm = cancer2_BN_pgmpy(debug=debug).pgm
 
     @pyomo_constraint_fn()

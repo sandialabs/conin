@@ -1,5 +1,4 @@
 import pytest
-import pyomo.environ as pyo
 import pyomo.opt
 
 from conin.util import try_import

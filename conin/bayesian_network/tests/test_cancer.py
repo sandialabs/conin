@@ -165,14 +165,14 @@ def test_cancer1_toulbar2_ALL():
 
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_cancer1_conin_ALL_constrained2():
+def test_cancer1_pyomo_conin_ALL_constrained2():
     """
     Cancer model from pgmpy examples
 
     No evidence
     Constrained inference of Xray and Dyspnoea so they are different
     """
-    example = examples.cancer1_BN_constrained_conin()
+    example = examples.cancer1_BN_constrained_pyomo_conin()
     results = inference_pyomo_map_query_BN(pgm=example.pgm, solver=mip_solver)
     assert results.solution.variable_value == example.solution
 
@@ -227,13 +227,13 @@ def test_cancer1_conin_ALL_constrained2():
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_cancer2_pgmpy_ALL_constrained2():
+def test_cancer2_pyomo_pgmpy_ALL_constrained2():
     """
     Cancer model from pgmpy examples
 
     No evidence
     Constrained inference of Xray and Dyspnoea so they are different
     """
-    example = examples.cancer2_BN_constrained_pgmpy()
+    example = examples.cancer2_BN_constrained_pyomo_pgmpy()
     results = inference_pyomo_map_query_BN(pgm=example.pgm, solver=mip_solver)
     assert results.solution.variable_value == example.solution

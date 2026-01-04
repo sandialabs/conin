@@ -1,6 +1,5 @@
 import os.path
 import tempfile
-import warnings
 import munch
 from pyomo.common.timing import TicTocTimer
 
@@ -66,17 +65,29 @@ def create_toulbar2_map_query_model_BN(
     with tempfile.TemporaryDirectory() as tempdir:
         filename = os.path.join(tempdir, "model.uai")
         conin.common.save_model(pgm_, filename)
-        #with open(filename, "r") as INPUT:
+        # with open(filename, "r") as INPUT:
         #    for line in INPUT:
         #        print(f"HERE {line}")
 
         model = pytoulbar2.CFN(verbose=verbose)
         model.Read(filename)
-        #model.Print()
+        # model.Print()
 
-    model.X = {name: i for i, name in enumerate(pgm.nodes)}
+    if var_index_map:
+        # model.X = {
+        #        (r, s): model.x[index, s]
+        #        for r, index in var_index_map.items()
+        #        for s in S.get(index, [])
+        #    }
+        model.X = {name: i for i, name in enumerate(pgm.nodes)}
+        print("HERE")
+        print(f"{model.X=}")
+        print(f"{var_index_map=}")
+        print(f"{pgm.nodes=}")
+    else:
+        model.X = {name: i for i, name in enumerate(pgm.nodes)}
     model.states = {i: pgm.states_of(name) for i, name in enumerate(pgm.nodes)}
-    #print(f"{model.states=}")
+    # print(f"{model.states=}")
 
     if isinstance(pgm, ConstrainedDiscreteBayesianNetwork) and pgm.constraints:
         data = munch.Munch(variables=variables, evidence=evidence)
