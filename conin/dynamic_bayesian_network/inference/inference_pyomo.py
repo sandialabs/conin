@@ -42,13 +42,18 @@ def inference_pyomo_map_query_DDBN(
     *,
     pgm,
     start=0,
-    stop=1, 
+    stop=1,
     variables=None,
     evidence=None,
     **options,
 ):
     model = create_pyomo_map_query_model_DDBN(
-        pgm=pgm, start=start, stop=stop, variables=variables, evidence=evidence, **options
+        pgm=pgm,
+        start=start,
+        stop=stop,
+        variables=variables,
+        evidence=evidence,
+        **options,
     )
     return conin.markov_network.inference.inference_pyomo.solve_pyomo_map_query_model(
         model, **options
