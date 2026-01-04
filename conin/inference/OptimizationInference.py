@@ -7,18 +7,23 @@ from conin.hmm.inference import lp_inference, ip_inference
 from conin.markov_network import (
     DiscreteMarkovNetwork,
     ConstrainedDiscreteMarkovNetwork,
-    solve_pyomo_map_query_model,
-    create_MN_pyomo_map_query_model,
+)
+from conin.markov_network.inference import (
+    inference_pyomo_map_query_MN,
 )
 from conin.bayesian_network import (
     DiscreteBayesianNetwork,
     ConstrainedDiscreteBayesianNetwork,
-    create_BN_map_query_pyomo_model,
+)
+from conin.bayesian_network.inference import (
+    inference_pyomo_map_query_BN,
 )
 from conin.dynamic_bayesian_network import (
     DynamicDiscreteBayesianNetwork,
     ConstrainedDynamicDiscreteBayesianNetwork,
-    create_DDBN_map_query_pyomo_model,
+)
+from conin.dynamic_bayesian_network.inference import (
+    inference_pyomo_map_query_DDBN,
 )
 
 with try_import() as pgmpy_available:
@@ -80,26 +85,24 @@ class IntegerProgrammingInference:
         if isinstance(pgm, DiscreteMarkovNetwork) or isinstance(
             pgm, ConstrainedDiscreteMarkovNetwork
         ):
-            model = create_MN_pyomo_map_query_model(
+            return inference_pyomo_map_query_MN(
                 pgm=pgm,
                 variables=variables,
                 evidence=evidence,
                 timing=timing,
                 **options,
             )
-            return solve_pyomo_map_query_model(model, timing=timing, **options)
 
         elif isinstance(pgm, DiscreteBayesianNetwork) or isinstance(
             pgm, ConstrainedDiscreteBayesianNetwork
         ):
-            model = create_BN_map_query_pyomo_model(
+            return inference_pyomo_map_query_BN(
                 pgm=pgm,
                 variables=variables,
                 evidence=evidence,
                 timing=timing,
                 **options,
             )
-            return solve_pyomo_map_query_model(model, timing=timing, **options)
 
         elif isinstance(pgm, HiddenMarkovModel):
             # TODO: warning about specifying 'variables'
@@ -194,9 +197,8 @@ class DDBN_IntegerProgrammingInference:
         if isinstance(pgm, DynamicDiscreteBayesianNetwork) or isinstance(
             pgm, ConstrainedDynamicDiscreteBayesianNetwork
         ):
-            model = create_DDBN_map_query_pyomo_model(
-                pgm=pgm, start=start, stop=stop, variables=variables, evidence=evidence
+            return inference_pyomo_map_query_DDBN(
+                pgm=pgm, start=start, stop=stop, variables=variables, evidence=evidence, **options
             )
-            return solve_pyomo_map_query_model(model, **options)
         else:
             raise TypeError("Unexpected model type: {type(pgm)}")
