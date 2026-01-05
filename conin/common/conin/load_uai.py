@@ -139,8 +139,7 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
                 vlist = [list(range(vcard[v])) for v in f]
 
                 values = {
-                    index: float(next(tokens))
-                    for index in itertools.product(*vlist)
+                    index: float(next(tokens)) for index in itertools.product(*vlist)
                 }
 
             if verbose:  # pragma:nocover
