@@ -38,8 +38,8 @@ def test_tb2_pyomo_ALL_conin():
 def test_tb2_pyomo_ALL_pgmpy():
     example = examples.tb2_BN_pgmpy()
 
-    #infer = VariableElimination(example.pgm)
-    #assert infer.map_query(variables=["A", "B", "C"]) == example.solution
+    # infer = VariableElimination(example.pgm)
+    # assert infer.map_query(variables=["A", "B", "C"]) == example.solution
 
     pgm = convert_pgmpy_to_conin(example.pgm)
     results = inference_pyomo_map_query_BN(pgm=pgm, solver=mip_solver)
@@ -51,8 +51,8 @@ def test_tb2_pyomo_ALL_pgmpy():
 def test_tb2_pyomo_ALL_pgmpy_mapcpd():
     example = examples.tb2_BN_pgmpy_mapcpd()
 
-    #infer = VariableElimination(example.pgm)
-    #assert infer.map_query(variables=["A", "B", "C"]) == example.solution
+    # infer = VariableElimination(example.pgm)
+    # assert infer.map_query(variables=["A", "B", "C"]) == example.solution
 
     pgm = convert_pgmpy_to_conin(example.pgm)
     results = inference_pyomo_map_query_BN(pgm=pgm, solver=mip_solver)
