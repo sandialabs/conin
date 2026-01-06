@@ -193,10 +193,7 @@ class DiscreteCPD:
                 if len(slist) == 1:
                     values = dict(zip(*slist, node_values))
                 else:
-                    indices = [
-                        tuple(reversed(index))
-                        for index in itertools.product(*list(reversed(slist)))
-                    ]
+                    indices = [index for index in itertools.product(*slist)]
                     values = dict(zip(indices, node_values))
             else:
                 values = dict(zip(var_states, self.values))

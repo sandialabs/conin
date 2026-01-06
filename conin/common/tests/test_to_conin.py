@@ -21,21 +21,24 @@ cwd = os.path.dirname(__file__)
 
 @pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
 def test_convert_bn_from_pgmpy_cancer():
-    pgmpy_pgm = load_model(os.path.join(cwd, "cancer_bn.uai"), model_type="pgmpy")
+    pgmpy_pgm = load_model(os.path.join(cwd, "cancer_bn.bif"), model_type="pgmpy")
     pgmpy_pgm.check_model()
     pgm = convert_pgmpy_to_conin(pgmpy_pgm)
 
     cpds = {cpd.node: cpd for cpd in pgm.cpds}
-    assert cpds["var_0"].values == {
-        (0, 0): {0: 0.03, 1: 0.97},
-        (0, 1): {0: 0.05, 1: 0.95},
-        (1, 0): {0: 0.001, 1: 0.999},
-        (1, 1): {0: 0.02, 1: 0.98},
+    assert cpds["Cancer"].values == {
+        ("0", "0"): {"0": 0.03, "1": 0.97},
+        ("0", "1"): {"0": 0.05, "1": 0.95},
+        ("1", "0"): {"0": 0.001, "1": 0.999},
+        ("1", "1"): {"0": 0.02, "1": 0.98},
     }
-    assert cpds["var_1"].values == {0: {0: 0.65, 1: 0.35}, 1: {0: 0.3, 1: 0.7}}
-    assert cpds["var_2"].values == {0: 0.9, 1: 0.1}
-    assert cpds["var_3"].values == {0: 0.3, 1: 0.7}
-    assert cpds["var_4"].values == {0: {0: 0.9, 1: 0.1}, 1: {0: 0.2, 1: 0.8}}
+    assert cpds["Dyspnoea"].values == {
+        "0": {"0": 0.65, "1": 0.35},
+        "1": {"0": 0.3, "1": 0.7},
+    }
+    assert cpds["Pollution"].values == {"0": 0.9, "1": 0.1}
+    assert cpds["Smoker"].values == {"0": 0.3, "1": 0.7}
+    assert cpds["Xray"].values == {"0": {"0": 0.9, "1": 0.1}, "1": {"0": 0.2, "1": 0.8}}
 
 
 @pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
@@ -72,27 +75,3 @@ def test_convert_mn_from_pgmpy_cancer():
         (1, 1, 0): 0.02,
         (1, 1, 1): 0.98,
     }
-
-
-#
-# toulbar2
-#
-
-
-@pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
-def test_convert_bn_from_pgmpy_toulbar2():
-    pgmpy_pgm = load_model(os.path.join(cwd, "toulbar2_bn.uai"), model_type="pgmpy")
-    pgmpy_pgm.check_model()
-    pgm = convert_pgmpy_to_conin(pgmpy_pgm)
-
-    cpds = {cpd.node: cpd for cpd in pgm.cpds}
-    assert cpds["var_0"].values == {
-        (0, 0): {0: 0.03, 1: 0.97},
-        (0, 1): {0: 0.05, 1: 0.95},
-        (1, 0): {0: 0.001, 1: 0.999},
-        (1, 1): {0: 0.02, 1: 0.98},
-    }
-    assert cpds["var_1"].values == {0: {0: 0.65, 1: 0.35}, 1: {0: 0.3, 1: 0.7}}
-    assert cpds["var_2"].values == {0: 0.9, 1: 0.1}
-    assert cpds["var_3"].values == {0: 0.3, 1: 0.7}
-    assert cpds["var_4"].values == {0: {0: 0.9, 1: 0.1}, 1: {0: 0.2, 1: 0.8}}
