@@ -1,5 +1,6 @@
 import pytest
 import os.path
+import filecmp
 
 from conin.util import try_import
 from conin.common.unified import save_model, load_model
@@ -36,6 +37,11 @@ def cancer_mn_uai():
 @pytest.fixture
 def deer_uai():
     return load_model(os.path.join(cwd, "deer.uai"))
+
+
+@pytest.fixture
+def toulbar2_bn_uai():
+    return load_model(os.path.join(cwd, "toulbar2_bn.uai"))
 
 
 if pgmpy_readwrite_available:
@@ -114,6 +120,9 @@ def test_save_model_barley_uai1_uai(barley_uai):
 def test_save_model_cancer_bn_uai(cancer_bn_uai):
     fname = os.path.join(cwd, "cancer_bn_test.uai")
     pgm = save_model(cancer_bn_uai, fname)
+
+    orig = os.path.join(cwd, "cancer_bn.uai")
+    assert filecmp.cmp(orig, fname) == True
     os.remove(fname)
 
 
@@ -125,6 +134,9 @@ def test_save_model_cancer_bn_uai(cancer_bn_uai):
 def test_save_model_cancer_mn_uai(cancer_mn_uai):
     fname = os.path.join(cwd, "cancer_mn_test.uai")
     pgm = save_model(cancer_mn_uai, fname)
+
+    orig = os.path.join(cwd, "cancer_mn.uai")
+    assert filecmp.cmp(orig, fname) == True
     os.remove(fname)
 
 
@@ -136,4 +148,18 @@ def test_save_model_cancer_mn_uai(cancer_mn_uai):
 def test_save_model_deer1_conin(deer_uai):
     fname = os.path.join(cwd, "deer_test.uai")
     pgm = save_model(deer_uai, fname)
+    os.remove(fname)
+
+
+#
+# toulbar2_bn.uai
+#
+
+
+def test_save_model_toulbar2_conin(toulbar2_bn_uai):
+    fname = os.path.join(cwd, "toulbar2_bn_test.uai")
+    pgm = save_model(toulbar2_bn_uai, fname)
+
+    orig = os.path.join(cwd, "toulbar2_bn.uai")
+    assert filecmp.cmp(orig, fname) == True
     os.remove(fname)

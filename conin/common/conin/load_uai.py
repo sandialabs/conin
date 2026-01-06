@@ -109,8 +109,8 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
                 parents = None
             elif len(f) == 2:
                 map_values = defaultdict(list)
-                for i in range(vcard[f[-1]]):
-                    for index in range(vcard[f[0]]):
+                for index in range(vcard[f[0]]):
+                    for i in range(vcard[f[-1]]):
                         map_values[index].append((i, float(next(tokens))))
                 map_values = {k: dict(v) for k, v in map_values.items()}
 
@@ -118,12 +118,10 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
             else:
                 vlist = [list(range(vcard[v])) for v in f[:-1]]
 
-                indices = [
-                    index[::-1] for index in itertools.product(*list(reversed(vlist)))
-                ]
+                indices = list(itertools.product(*vlist))
                 map_values = {index: dict() for index in indices}
-                for i in range(vcard[f[-1]]):
-                    for index in indices:
+                for index in indices:
+                    for i in range(vcard[f[-1]]):
                         map_values[index][i] = float(next(tokens))
 
                 parents = [vname[v] for v in f[:-1]]
@@ -141,8 +139,7 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
                 vlist = [list(range(vcard[v])) for v in f]
 
                 values = {
-                    index[::-1]: float(next(tokens))
-                    for index in itertools.product(*list(reversed(vlist)))
+                    index: float(next(tokens)) for index in itertools.product(*vlist)
                 }
 
             if verbose:  # pragma:nocover
@@ -160,6 +157,7 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
         pgm.cpds = factors
     else:
         pgm.factors = factors
+
     pgm.check_model()
 
     return pgm

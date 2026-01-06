@@ -4,6 +4,7 @@ import pyomo.opt
 from conin.util import try_import
 from conin.bayesian_network.inference import (
     inference_pyomo_map_query_BN,
+    inference_toulbar2_map_query_BN,
 )
 
 from . import examples
@@ -11,27 +12,50 @@ from . import examples
 with try_import() as pgmpy_available:
     from pgmpy.inference import VariableElimination, BeliefPropagation
 
+with try_import() as pytoulbar2_available:
+    import pytoulbar2
+
 mip_solver = pyomo.opt.check_available_solvers("glpk", "gurobi")
 mip_solver = mip_solver[0] if mip_solver else None
 
 
+# ===============================================================================
 #
-# conin DBDA_51 tests
+# pyomo DBDA_51 tests
 #
+# ===============================================================================
+
 # TODO: replicate pgmpy tests with evidence here
-#
 
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_DBDA_51_conin():
+def test_DBDA_51_pyomo():
     example = examples.DBDA_5_1_conin()
     results = inference_pyomo_map_query_BN(pgm=example.pgm, solver=mip_solver)
     assert results.solution.variable_value == example.solution
 
 
+# ===============================================================================
+#
+# toulbar2 DBDA_51 tests
+#
+# ===============================================================================
+
+# TODO: replicate pgmpy tests with evidence here
+
+
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
+def test_DBDA_51_toulbar2():
+    example = examples.DBDA_5_1_conin()
+    results = inference_toulbar2_map_query_BN(pgm=example.pgm)
+    assert results.solution.variable_value == example.solution
+
+
+# ===============================================================================
 #
 # pgmpy BP tests
 #
+# ===============================================================================
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")

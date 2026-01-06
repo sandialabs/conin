@@ -2,9 +2,9 @@ import pytest
 import pyomo.opt
 
 from conin.util import try_import
-from conin.dynamic_bayesian_network import (
-    create_DDBN_map_query_pyomo_model,
-    solve_pyomo_map_query_model,
+from conin.dynamic_bayesian_network.inference import (
+    inference_pyomo_map_query_DDBN,
+    inference_toulbar2_map_query_DDBN,
 )
 
 from . import examples
@@ -13,9 +13,18 @@ with try_import() as pgmpy_available:
     import pgmpy
     from conin.common.pgmpy import convert_pgmpy_to_conin
 
+with try_import() as pytoulbar2_available:
+    import pytoulbar2
+
 mip_solver = pyomo.opt.check_available_solvers("glpk", "gurobi")
 mip_solver = mip_solver[0] if mip_solver else None
 
+
+# ===============================================================================
+#
+# Pyomo tests
+#
+# ===============================================================================
 
 #
 # simple0
@@ -23,46 +32,43 @@ mip_solver = mip_solver[0] if mip_solver else None
 
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_simple0_ALL_conin():
+def test_simple0_pyomo_ALL_conin():
     """
     Z
     """
-    G = examples.simple0_DDBN_conin()
-    q = {("Z", 0): 1, ("Z", 1): 0}
-
-    model = create_DDBN_map_query_pyomo_model(pgm=G)  # variables=None, evidence=None
-    results = solve_pyomo_map_query_model(model, solver=mip_solver)
-    assert q == results.solution.variable_value
+    example = examples.simple0_DDBN_conin()
+    results = inference_pyomo_map_query_DDBN(
+        pgm=example.pgm, solver=mip_solver
+    )  # variables=None, evidence=None
+    assert results.solution.variable_value == example.solution
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_simple0_DDBN1_ALL_pgmpy():
+def test_simple0_pyomo_DDBN1_ALL_pgmpy():
     """
     Z
     """
-    G = examples.simple0_DDBN1_pgmpy()
-    q = {("Z", 0): 1, ("Z", 1): 0}
-
-    G = convert_pgmpy_to_conin(G)
-    model = create_DDBN_map_query_pyomo_model(pgm=G)  # variables=None, evidence=None
-    results = solve_pyomo_map_query_model(model, solver=mip_solver)
-    assert q == results.solution.variable_value
+    example = examples.simple0_DDBN1_pgmpy()
+    pgm = convert_pgmpy_to_conin(example.pgm)
+    results = inference_pyomo_map_query_DDBN(
+        pgm=pgm, solver=mip_solver
+    )  # variables=None, evidence=None
+    assert results.solution.variable_value == example.solution
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_simple0_DDBN2_ALL_pgmpy():
+def test_simple0_pyomo_DDBN2_ALL_pgmpy():
     """
     Z
     """
-    G = examples.simple0_DDBN2_pgmpy()
-    q = {("Z", 0): 1, ("Z", 1): 0}
-
-    G = convert_pgmpy_to_conin(G)
-    model = create_DDBN_map_query_pyomo_model(pgm=G)  # variables=None, evidence=None
-    results = solve_pyomo_map_query_model(model, solver=mip_solver)
-    assert q == results.solution.variable_value
+    example = examples.simple0_DDBN2_pgmpy()
+    pgm = convert_pgmpy_to_conin(example.pgm)
+    results = inference_pyomo_map_query_DDBN(
+        pgm=pgm, solver=mip_solver
+    )  # variables=None, evidence=None
+    assert results.solution.variable_value == example.solution
 
 
 #
@@ -71,263 +77,258 @@ def test_simple0_DDBN2_ALL_pgmpy():
 
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_simple1_ALL_conin():
+def test_simple1_pyomo_ALL_conin():
     """
     A -> B
 
     No evidence
     """
-    G = examples.simple1_DDBN_conin()
-    q = {
-        ("A", 0): 0,
-        ("A", 1): 1,
-        ("B", 0): 1,
-        ("B", 1): 0,
-    }
-
-    model = create_DDBN_map_query_pyomo_model(pgm=G)  # variables=None, evidence=None
-    results = solve_pyomo_map_query_model(model, solver=mip_solver)
-    assert q == results.solution.variable_value
+    example = examples.simple1_DDBN_conin()
+    results = inference_pyomo_map_query_DDBN(
+        pgm=example.pgm, solver=mip_solver
+    )  # variables=None, evidence=None
+    assert results.solution.variable_value == example.solution
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_simple1_ALL_pgmpy():
+def test_simple1_pyomo_ALL_pgmpy():
     """
     A -> B
 
     No evidence
     """
-    G = examples.simple1_DDBN_pgmpy()
-    q = {
-        ("A", 0): 0,
-        ("A", 1): 1,
-        ("B", 0): 1,
-        ("B", 1): 0,
-    }
+    example = examples.simple1_DDBN_pgmpy()
+    pgm = convert_pgmpy_to_conin(example.pgm)
+    results = inference_pyomo_map_query_DDBN(
+        pgm=pgm, solver=mip_solver
+    )  # variables=None, evidence=None
+    assert results.solution.variable_value == example.solution
 
-    G = convert_pgmpy_to_conin(G)
-    model = create_DDBN_map_query_pyomo_model(pgm=G)  # variables=None, evidence=None
-    results = solve_pyomo_map_query_model(model, solver=mip_solver)
-    assert q == results.solution.variable_value
+
+# @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
+# def test_simple1_B_conin():
+#    """
+#    A -> B
+#
+#    Evidence: A_0 = 1
+#    """
+#    G = examples.simple1_DDBN_conin()
+#    q = {
+#        ("A", 1): 0,
+#        ("B", 0): 0,
+#        ("B", 1): 1,
+#    }
+#
+#    with pytest.raises(RuntimeError):
+#        model = create_pyomo_map_query_model_DDBN(
+#            pgm=G, evidence={("A", 0): 1}
+#        )  # variables=None, evidence=None
+#        results = inference_pyomo_map_query_DDBN(model, solver=mip_solver)
+#        assert q == results.solution.variable_value
+
+
+# @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+# @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
+# def test_simple1_B_pgmpy():
+#    """
+#    A -> B
+#
+#    Evidence: A_0 = 1
+#    """
+#    G = examples.simple1_DDBN_pgmpy()
+#    q = {
+#        ("A", 1): 0,
+#        ("B", 0): 0,
+#        ("B", 1): 1,
+#    }
+#
+#    G = convert_pgmpy_to_conin(G)
+#    with pytest.raises(RuntimeError):
+#        model = create_pyomo_map_query_model_DDBN(
+#            pgm=G, evidence={("A", 0): 1}
+#        )  # variables=None, evidence=None
+#        results = inference_pyomo_map_query_DDBN(model, solver=mip_solver)
+#        assert q == results.solution.variable_value
 
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_simple1_B_conin():
+def test_simple1_pyomo_ALL_constrained_conin():
     """
     A -> B
 
-    Evidence: A_0 = 1
+    No evidence
     """
-    G = examples.simple1_DDBN_conin()
-    q = {
-        ("A", 1): 0,
-        ("B", 0): 0,
-        ("B", 1): 1,
-    }
-
-    with pytest.raises(RuntimeError):
-        model = create_DDBN_map_query_pyomo_model(
-            pgm=G, evidence={("A", 0): 1}
-        )  # variables=None, evidence=None
-        results = solve_pyomo_map_query_model(model, solver=mip_solver)
-        assert q == results.solution.variable_value
+    example = examples.simple1_DDBN_constrained_pyomo_conin()
+    results = inference_pyomo_map_query_DDBN(pgm=example.pgm, solver=mip_solver)
+    assert results.solution.variable_value == example.solution
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_simple1_B_pgmpy():
-    """
-    A -> B
-
-    Evidence: A_0 = 1
-    """
-    G = examples.simple1_DDBN_pgmpy()
-    q = {
-        ("A", 1): 0,
-        ("B", 0): 0,
-        ("B", 1): 1,
-    }
-
-    G = convert_pgmpy_to_conin(G)
-    with pytest.raises(RuntimeError):
-        model = create_DDBN_map_query_pyomo_model(
-            pgm=G, evidence={("A", 0): 1}
-        )  # variables=None, evidence=None
-        results = solve_pyomo_map_query_model(model, solver=mip_solver)
-        assert q == results.solution.variable_value
-
-
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_simple1_ALL_constrained_conin():
+def test_simple1_pyomo_ALL_constrained_pgmpy():
     """
     A -> B
 
     No evidence
     """
-    cpgm = examples.simple1_DDBN_constrained_conin()
-    q = {
-        ("A", 0): 0,
-        ("A", 1): 0,
-        ("B", 0): 1,
-        ("B", 1): 1,
-    }
-
-    model = create_DDBN_map_query_pyomo_model(pgm=cpgm)
-    results = solve_pyomo_map_query_model(model, solver=mip_solver)
-    assert q == results.solution.variable_value
+    example = examples.simple1_DDBN_constrained_pyomo_pgmpy()
+    results = inference_pyomo_map_query_DDBN(pgm=example.pgm, solver=mip_solver)
+    assert results.solution.variable_value == example.solution
 
 
-@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_simple1_ALL_constrained_pgmpy():
-    """
-    A -> B
-
-    No evidence
-    """
-    cpgm = examples.simple1_DDBN_constrained_pgmpy()
-    q = {
-        ("A", 0): 0,
-        ("A", 1): 0,
-        ("B", 0): 1,
-        ("B", 1): 1,
-    }
-
-    model = create_DDBN_map_query_pyomo_model(pgm=cpgm)
-    results = solve_pyomo_map_query_model(model, solver=mip_solver)
-    assert q == results.solution.variable_value
-
+# ===============================================================================
+#
+# Toulbar2 tests
+#
+# ===============================================================================
 
 #
-# simple2
+# simple0
 #
 
 
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_simple2_ALL_conin():
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
+def test_simple0_toulbar2_ALL_conin():
     """
-    A -> B
-
-    No evidence
+    Z
     """
-    G = examples.simple2_DDBN_conin()
-    q = {
-        ("A", 0): 0,
-        ("A", 1): 1,
-        ("B", 0): 1,
-        ("B", 1): 0,
-    }
-
-    model = create_DDBN_map_query_pyomo_model(pgm=G)  # variables=None, evidence=None
-    results = solve_pyomo_map_query_model(model, solver=mip_solver)
-    assert q == results.solution.variable_value
+    example = examples.simple0_DDBN_conin()
+    results = inference_toulbar2_map_query_DDBN(
+        pgm=example.pgm
+    )  # variables=None, evidence=None
+    assert results.solution.variable_value == example.solution
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_simple2_ALL_pgmpy():
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
+def test_simple0_toulbar2_DDBN1_ALL_pgmpy():
     """
-    A -> B
-
-    No evidence
+    Z
     """
-    G = examples.simple2_DDBN_pgmpy()
-    q = {
-        ("A", 0): 0,
-        ("A", 1): 1,
-        ("B", 0): 1,
-        ("B", 1): 0,
-    }
-
-    G = convert_pgmpy_to_conin(G)
-    model = create_DDBN_map_query_pyomo_model(pgm=G)  # variables=None, evidence=None
-    results = solve_pyomo_map_query_model(model, solver=mip_solver)
-    assert q == results.solution.variable_value
-
-
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_simple2_B_conin():
-    """
-    A -> B
-
-    Evidence: A_0 = 1
-    """
-    G = examples.simple2_DDBN_conin()
-    q = {
-        ("A", 1): 0,
-        ("B", 0): 0,
-        ("B", 1): 1,
-    }
-
-    with pytest.raises(RuntimeError):
-        model = create_DDBN_map_query_pyomo_model(
-            pgm=G, evidence={("A", 0): 1}
-        )  # variables=None, evidence=None
-        results = solve_pyomo_map_query_model(model, solver=mip_solver)
-        assert q == results.solution.variable_value
+    example = examples.simple0_DDBN1_pgmpy()
+    pgm = convert_pgmpy_to_conin(example.pgm)
+    results = inference_toulbar2_map_query_DDBN(
+        pgm=pgm
+    )  # variables=None, evidence=None
+    assert results.solution.variable_value == example.solution
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_simple2_B_pgmpy():
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
+def test_simple0_toulbar2_DDBN2_ALL_pgmpy():
     """
-    A -> B
-
-    Evidence: A_0 = 1
+    Z
     """
-    G = examples.simple2_DDBN_pgmpy()
-    q = {
-        ("A", 1): 0,
-        ("B", 0): 0,
-        ("B", 1): 1,
-    }
-
-    G = convert_pgmpy_to_conin(G)
-    with pytest.raises(RuntimeError):
-        model = create_DDBN_map_query_pyomo_model(
-            pgm=G, evidence={("A", 0): 1}
-        )  # variables=None, evidence=None
-        results = solve_pyomo_map_query_model(model, solver=mip_solver)
-        assert q == results.solution.variable_value
+    example = examples.simple0_DDBN2_pgmpy()
+    pgm = convert_pgmpy_to_conin(example.pgm)
+    results = inference_toulbar2_map_query_DDBN(
+        pgm=pgm
+    )  # variables=None, evidence=None
+    assert results.solution.variable_value == example.solution
 
 
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_simple2_ALL_constrained_conin():
+#
+# simple1
+#
+
+
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
+def test_simple1_toulbar2_ALL_conin():
     """
     A -> B
 
     No evidence
     """
-    cpgm = examples.simple2_DDBN_constrained_conin()
-    q = {
-        ("A", 0): 0,
-        ("A", 1): 0,
-        ("B", 0): 1,
-        ("B", 1): 1,
-    }
-
-    model = create_DDBN_map_query_pyomo_model(pgm=cpgm)
-    results = solve_pyomo_map_query_model(model, solver=mip_solver)
-    assert q == results.solution.variable_value
+    example = examples.simple1_DDBN_conin()
+    results = inference_toulbar2_map_query_DDBN(
+        pgm=example.pgm
+    )  # variables=None, evidence=None
+    assert results.solution.variable_value == example.solution
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_simple2_ALL_constrained_pgmpy():
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
+def test_simple1_toulbar2_ALL_pgmpy():
     """
     A -> B
 
     No evidence
     """
-    cpgm = examples.simple2_DDBN_constrained_pgmpy()
-    q = {
-        ("A", 0): 0,
-        ("A", 1): 0,
-        ("B", 0): 1,
-        ("B", 1): 1,
-    }
+    example = examples.simple1_DDBN_pgmpy()
+    pgm = convert_pgmpy_to_conin(example.pgm)
+    results = inference_toulbar2_map_query_DDBN(
+        pgm=pgm
+    )  # variables=None, evidence=None
+    assert results.solution.variable_value == example.solution
 
-    model = create_DDBN_map_query_pyomo_model(pgm=cpgm)
-    results = solve_pyomo_map_query_model(model, solver=mip_solver)
-    assert q == results.solution.variable_value
+
+# @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
+# def test_simple1_B_conin():
+#    """
+#    A -> B
+#
+#    Evidence: A_0 = 1
+#    """
+#    G = examples.simple1_DDBN_conin()
+#    q = {
+#        ("A", 1): 0,
+#        ("B", 0): 0,
+#        ("B", 1): 1,
+#    }
+#
+#    with pytest.raises(RuntimeError):
+#        model = create_toulbar2_map_query_model_DDBN(
+#            pgm=G, evidence={("A", 0): 1}
+#        )  # variables=None, evidence=None
+#        results = inference_toulbar2_map_query_DDBN(model)
+#        assert q == results.solution.variable_value
+
+
+# @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+# @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
+# def test_simple1_B_pgmpy():
+#    """
+#    A -> B
+#
+#    Evidence: A_0 = 1
+#    """
+#    G = examples.simple1_DDBN_pgmpy()
+#    q = {
+#        ("A", 1): 0,
+#        ("B", 0): 0,
+#        ("B", 1): 1,
+#    }
+#
+#    G = convert_pgmpy_to_conin(G)
+#    with pytest.raises(RuntimeError):
+#        model = create_toulbar2_map_query_model_DDBN(
+#            pgm=G, evidence={("A", 0): 1}
+#        )  # variables=None, evidence=None
+#        results = inference_toulbar2_map_query_DDBN(model)
+#        assert q == results.solution.variable_value
+
+
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
+def Xtest_simple1_toulbar2_ALL_constrained_conin():
+    """
+    A -> B
+
+    No evidence
+    """
+    example = examples.simple1_DDBN_constrained_toulbar2_conin()
+    results = inference_toulbar2_map_query_DDBN(pgm=example.pgm)
+    assert results.solution.variable_value == example.solution
+
+
+@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
+def Xtest_simple1_toulbar2_ALL_constrained_pgmpy():
+    """
+    A -> B
+
+    No evidence
+    """
+    example = examples.simple1_DDBN_constrained_toulbar2_pgmpy()
+    results = inference_toulbar2_map_query_DDBN(pgm=example.pgm)
+    assert results.solution.variable_value == example.solution

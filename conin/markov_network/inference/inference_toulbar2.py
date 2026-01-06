@@ -99,7 +99,11 @@ def create_reduced_MN(
 
 
 def create_toulbar2_map_query_model_MN(
-    pgm, *, variables=None, evidence=None, timing=False
+    pgm,
+    *,
+    variables=None,
+    evidence=None,
+    timing=False,
 ):
     # Ignoring variables and evidence for now
     if timing:  # pragma:nocover
@@ -114,6 +118,7 @@ def create_toulbar2_map_query_model_MN(
         model.Read(filename)
 
     model.X = {name: i for i, name in enumerate(pgm.nodes)}
+    model.states = {i: pgm.states_of(name) for i, name in enumerate(pgm.nodes)}
 
     if isinstance(pgm, ConstrainedDiscreteMarkovNetwork) and pgm.constraints:
         data = munch.Munch(variables=variables, evidence=evidence)
@@ -143,7 +148,7 @@ def solve_toulbar2_map_query_model(
     solvetime = solver_timer.toc(None)
 
     solution, primal_bound, num_solutions = res
-    var = {name: solution[i] for name, i in model.X.items()}
+    var = {name: model.states[i][solution[i]] for name, i in model.X.items()}
     soln = munch.Munch(
         variable_value=var, log_factor_sum=None, primal_bound=primal_bound
     )
@@ -168,6 +173,9 @@ def inference_toulbar2_map_query_MN(
     **options,
 ):
     model = create_toulbar2_map_query_model_MN(
-        pgm, variables=variables, evidence=evidence, timing=timing, **options
+        pgm,
+        variables=variables,
+        evidence=evidence,
+        timing=timing,
     )
     return solve_toulbar2_map_query_model(model, timing=timing, **options)
