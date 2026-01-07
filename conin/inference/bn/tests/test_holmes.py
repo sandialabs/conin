@@ -3,16 +3,15 @@ import pyomo.environ as pyo
 import pyomo.opt
 
 from conin.util import try_import
-from conin.bayesian_network.inference import (
+from conin.inference.bn import (
     inference_pyomo_map_query_BN,
     inference_toulbar2_map_query_BN,
 )
 
-from . import examples
+from conin.bayesian_network import examples
 
 with try_import() as pgmpy_available:
     from pgmpy.inference import VariableElimination
-    from conin.common.pgmpy import convert_pgmpy_to_conin
 
 with try_import() as pytoulbar2_available:
     import pytoulbar2
@@ -82,6 +81,8 @@ def test_holmes0_pgmpy():
 
     infer = VariableElimination(example.pgm)
     assert infer.map_query(variables=variables, evidence=evidence) == example.solution
+
+    from conin.common.pgmpy import convert_pgmpy_to_conin
 
     pgm = convert_pgmpy_to_conin(example.pgm)
     results = inference_pyomo_map_query_BN(

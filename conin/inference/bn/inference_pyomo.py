@@ -95,14 +95,12 @@ def create_pyomo_map_query_model_BN(
         if timing:
             timer.toc("Created skeleton Markov network")
 
-    model = (
-        conin.markov_network.inference.inference_pyomo.create_pyomo_map_query_model_MN(
-            pgm=MN,
-            variables=variables,
-            evidence=evidence,
-            var_index_map=var_index_map,
-            timing=timing,
-        )
+    model = conin.inference.mn.inference_pyomo.create_pyomo_map_query_model_MN(
+        pgm=MN,
+        variables=variables,
+        evidence=evidence,
+        var_index_map=var_index_map,
+        timing=timing,
     )
 
     if isinstance(pgm, ConstrainedDiscreteBayesianNetwork) and pgm.constraints:
@@ -126,6 +124,6 @@ def inference_pyomo_map_query_BN(
     model = create_pyomo_map_query_model_BN(
         pgm=pgm, variables=variables, evidence=evidence, timing=timing, **options
     )
-    return conin.markov_network.inference.inference_pyomo.solve_pyomo_map_query_model(
+    return conin.inference.mn.inference_pyomo.solve_pyomo_map_query_model(
         model, timing=timing, **options
     )

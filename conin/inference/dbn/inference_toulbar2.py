@@ -1,10 +1,10 @@
 import munch
-from conin.bayesian_network.inference.inference_toulbar2 import (
-    create_toulbar2_map_query_model_BN,
-)
+import conin.markov_network
 from conin.dynamic_bayesian_network.dbn_to_bn import create_bn_from_dbn
 from conin.dynamic_bayesian_network import ConstrainedDynamicDiscreteBayesianNetwork
-import conin.markov_network
+from conin.inference.bn.inference_toulbar2 import (
+    create_toulbar2_map_query_model_BN,
+)
 
 
 def create_toulbar2_map_query_model_DDBN(
@@ -55,6 +55,6 @@ def inference_toulbar2_map_query_DDBN(
         evidence=evidence,
         **options,
     )
-    return conin.markov_network.inference.inference_toulbar2.solve_toulbar2_map_query_model(
+    return conin.inference.mn.inference_toulbar2.solve_toulbar2_map_query_model(
         model, **options
     )

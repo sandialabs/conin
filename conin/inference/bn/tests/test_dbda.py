@@ -2,12 +2,12 @@ import pytest
 import pyomo.opt
 
 from conin.util import try_import
-from conin.bayesian_network.inference import (
+from conin.inference.bn import (
     inference_pyomo_map_query_BN,
     inference_toulbar2_map_query_BN,
 )
 
-from . import examples
+from conin.bayesian_network import examples
 
 with try_import() as pgmpy_available:
     from pgmpy.inference import VariableElimination, BeliefPropagation

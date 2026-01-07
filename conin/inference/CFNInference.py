@@ -12,21 +12,21 @@ from conin.markov_network import (
     DiscreteMarkovNetwork,
     ConstrainedDiscreteMarkovNetwork,
 )
-from conin.markov_network.inference import (
+from .mn import (
     inference_toulbar2_map_query_MN,
 )
 from conin.bayesian_network import (
     DiscreteBayesianNetwork,
     ConstrainedDiscreteBayesianNetwork,
 )
-from conin.bayesian_network.inference import (
+from .bn import (
     inference_toulbar2_map_query_BN,
 )
 from conin.dynamic_bayesian_network import (
     DynamicDiscreteBayesianNetwork,
     ConstrainedDynamicDiscreteBayesianNetwork,
 )
-from conin.dynamic_bayesian_network.inference import (
+from .dbn import (
     inference_toulbar2_map_query_DDBN,
 )
 

@@ -6,12 +6,12 @@ import munch
 import pytoulbar2
 from pyomo.common.timing import TicTocTimer
 
-from .factor_repn import extract_factor_representation_, State
 from conin.markov_network import (
     ConstrainedDiscreteMarkovNetwork,
     DiscreteMarkovNetwork,
     DiscreteFactor,
 )
+from conin.inference.mn.factor_repn import extract_factor_representation_, State
 import conin.common
 
 

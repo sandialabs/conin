@@ -3,11 +3,11 @@ import pyomo.environ as pyo
 import pyomo.opt
 
 from conin.util import try_import
-from conin.markov_network.inference import (
+from conin.inference.mn import (
     inference_pyomo_map_query_MN,
     inference_toulbar2_map_query_MN,
 )
-from . import examples
+from conin.markov_network import examples
 
 with try_import() as pgmpy_available:
     import pgmpy

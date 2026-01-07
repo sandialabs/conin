@@ -2,18 +2,16 @@ from munch import Munch
 import pyomo.environ as pyo
 
 from conin.constraint import pyomo_constraint_fn
-from conin.util import try_import
 from conin.dynamic_bayesian_network import (
     DynamicDiscreteBayesianNetwork,
     ConstrainedDynamicDiscreteBayesianNetwork,
 )
 from conin.bayesian_network import DiscreteCPD
+from conin.util import try_import
 
 with try_import() as pgmpy_available:
     from pgmpy.models import DynamicBayesianNetwork as pgmpy_DynamicBayesianNetwork
     from pgmpy.factors.discrete import TabularCPD
-    from conin.common.pgmpy import MapCPD
-    from conin.common.pgmpy import convert_pgmpy_to_conin
 
 
 #
@@ -63,6 +61,8 @@ def simple0_DDBN1_pgmpy(debug=False):
 
 
 def simple0_DDBN2_pgmpy(debug=False):
+    from conin.common.pgmpy import MapCPD
+
     G = pgmpy_DynamicBayesianNetwork()
     G.add_edges_from([(("Z", 0), ("Z", 1))])
     z_start_cpd = MapCPD(variable=("Z", 0), values=[0.5, 0.5])
@@ -186,7 +186,9 @@ def simple1_DDBN_constrained_pyomo_pgmpy(debug=False):
         model.c.add(model.X[("A", 0), 0] == model.X[("A", 1), 0])
         model.c.add(model.X[("B", 0), 0] == model.X[("B", 1), 0])
 
-    pgm = convert_pgmpy_to_conin(pgm)
+    import conin.common.pgmpy
+
+    pgm = conin.common.pgmpy.convert_pgmpy_to_conin(pgm)
     return Munch(
         pgm=ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=[constraints]),
         solution={
@@ -522,6 +524,8 @@ def weather2_pgmpy(debug=False):
 
     Using explicit state names, and MapCPD declarations.
     """
+    from conin.common.pgmpy import MapCPD
+
     # Initialize a simple DDBN model modeling the Weather (W), Rain (O),
     # Temperature (T), and Humidity (H).
 
@@ -701,7 +705,9 @@ def weather_constrained_pyomo_pgmpy(debug=False):
             expr=sum(model.X[("W", t), "Rainy"] for t in data.T) == 2
         )
 
-    pgm = convert_pgmpy_to_conin(pgm)
+    import conin.common.pgmpy
+
+    pgm = conin.common.pgmpy.convert_pgmpy_to_conin(pgm)
     return Munch(
         pgm=ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=[constraints]),
         solution=q_weather_A_constrained,

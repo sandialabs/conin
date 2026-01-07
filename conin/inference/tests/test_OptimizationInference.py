@@ -1,15 +1,16 @@
 import pytest
 import pyomo.opt
 
-from conin.util import try_import
+import conin.markov_network.examples
+import conin.bayesian_network.examples
+import conin.dynamic_bayesian_network.examples
+import conin.hmm.tests.examples
+
 from conin.inference.OptimizationInference import (
     IntegerProgrammingInference,
     DDBN_IntegerProgrammingInference,
 )
-import conin.markov_network.tests.examples
-import conin.bayesian_network.tests.examples
-import conin.hmm.tests.examples
-import conin.dynamic_bayesian_network.tests.examples
+from conin.util import try_import
 
 with try_import() as pgmpy_available:
     import pgmpy
@@ -25,7 +26,7 @@ mip_solver = mip_solver[0] if mip_solver else None
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_IntegerProgrammingInference_ABC_conin():
-    example = conin.markov_network.tests.examples.ABC_conin()
+    example = conin.markov_network.examples.ABC_conin()
     inf = IntegerProgrammingInference(example.pgm)
     results = inf.map_query(solver=mip_solver)
     assert results.solution.variable_value == example.solution
@@ -34,7 +35,7 @@ def test_IntegerProgrammingInference_ABC_conin():
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_IntegerProgrammingInference_ABC_pgmpy():
-    example = conin.markov_network.tests.examples.ABC_pgmpy()
+    example = conin.markov_network.examples.ABC_pgmpy()
     inf = IntegerProgrammingInference(example.pgm)
     results = inf.map_query(solver=mip_solver)
     assert results.solution.variable_value == example.solution
@@ -47,7 +48,7 @@ def test_IntegerProgrammingInference_ABC_pgmpy():
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_IntegerProgrammingInference_ABC_constrained():
-    example = conin.markov_network.tests.examples.ABC_constrained_pyomo_conin()
+    example = conin.markov_network.examples.ABC_constrained_pyomo_conin()
     inf = IntegerProgrammingInference(example.pgm)
     results = inf.map_query(solver=mip_solver)
     assert results.solution.variable_value == example.solution
@@ -60,7 +61,7 @@ def test_IntegerProgrammingInference_ABC_constrained():
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_IntegerProgrammingInference_cancer1_ALL_conin():
-    example = conin.bayesian_network.tests.examples.cancer1_BN_conin()
+    example = conin.bayesian_network.examples.cancer1_BN_conin()
     inf = IntegerProgrammingInference(example.pgm)
 
     results = inf.map_query(
@@ -103,7 +104,7 @@ def test_IntegerProgrammingInference_cancer1_ALL_conin():
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_IntegerProgrammingInference_cancer1_ALL_pgmpy():
-    example = conin.bayesian_network.tests.examples.cancer1_BN_pgmpy()
+    example = conin.bayesian_network.examples.cancer1_BN_pgmpy()
     inf = IntegerProgrammingInference(example.pgm)
 
     results = inf.map_query(
@@ -150,7 +151,7 @@ def test_IntegerProgrammingInference_cancer1_ALL_pgmpy():
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_IntegerProgrammingInference_cancer1_constrained_conin():
-    example = conin.bayesian_network.tests.examples.cancer1_BN_constrained_pyomo_conin()
+    example = conin.bayesian_network.examples.cancer1_BN_constrained_pyomo_conin()
     inf = IntegerProgrammingInference(example.pgm)
 
     results = inf.map_query(
@@ -178,7 +179,7 @@ def test_IntegerProgrammingInference_cancer1_constrained_conin():
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_IntegerProgrammingInference_cancer1_constrained_pgmpy():
-    example = conin.bayesian_network.tests.examples.cancer1_BN_constrained_pyomo_pgmpy()
+    example = conin.bayesian_network.examples.cancer1_BN_constrained_pyomo_pgmpy()
     inf = IntegerProgrammingInference(example.pgm)
 
     results = inf.map_query(
@@ -365,7 +366,7 @@ def test_IntegerProgrammingInference_chmm1_test3():
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_DDBN_IntegerProgrammingInference_weather_conin():
-    example = conin.dynamic_bayesian_network.tests.examples.weather_conin()
+    example = conin.dynamic_bayesian_network.examples.weather_conin()
     inf = DDBN_IntegerProgrammingInference(example.pgm)
     results = inf.map_query(stop=4, solver=mip_solver)
     assert results.solution.variable_value == example.solution
@@ -404,7 +405,7 @@ def test_DDBN_IntegerProgrammingInference_weather_conin():
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_DDBN_IntegerProgrammingInference_weather():
-    example = conin.dynamic_bayesian_network.tests.examples.weather2_pgmpy()
+    example = conin.dynamic_bayesian_network.examples.weather2_pgmpy()
     inf = DDBN_IntegerProgrammingInference(example.pgm)
     results = inf.map_query(stop=4, solver=mip_solver)
     assert results.solution.variable_value == example.solution
@@ -447,9 +448,7 @@ def test_DDBN_IntegerProgrammingInference_weather():
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_DDBN_IntegerProgrammingInference_weather_constrained_conin():
-    example = (
-        conin.dynamic_bayesian_network.tests.examples.weather_constrained_pyomo_conin()
-    )
+    example = conin.dynamic_bayesian_network.examples.weather_constrained_pyomo_conin()
     inf = DDBN_IntegerProgrammingInference(example.pgm)
     results = inf.map_query(stop=4, solver=mip_solver)
     assert results.solution.variable_value == example.solution
@@ -487,9 +486,7 @@ def test_DDBN_IntegerProgrammingInference_weather_constrained_conin():
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_DDBN_IntegerProgrammingInference_weather_constrained_pyomo_pgmpy():
-    example = (
-        conin.dynamic_bayesian_network.tests.examples.weather_constrained_pyomo_pgmpy()
-    )
+    example = conin.dynamic_bayesian_network.examples.weather_constrained_pyomo_pgmpy()
     inf = DDBN_IntegerProgrammingInference(example.pgm)
     results = inf.map_query(stop=4, solver=mip_solver)
     assert results.solution.variable_value == example.solution

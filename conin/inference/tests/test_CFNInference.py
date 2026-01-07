@@ -6,10 +6,10 @@ from conin.inference.CFNInference import (
     CFNInference,
     DDBN_CFNInference,
 )
-import conin.markov_network.tests.examples
-import conin.bayesian_network.tests.examples
+import conin.markov_network.examples
+import conin.bayesian_network.examples
 import conin.hmm.tests.examples
-import conin.dynamic_bayesian_network.tests.examples
+import conin.dynamic_bayesian_network.examples
 
 with try_import() as pgmpy_available:
     import pgmpy
@@ -24,7 +24,7 @@ with try_import() as pytoulbar2_available:
 
 @pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
 def test_CFNInference_ABC_conin():
-    example = conin.markov_network.tests.examples.ABC_conin()
+    example = conin.markov_network.examples.ABC_conin()
     inf = CFNInference(example.pgm)
     results = inf.map_query()
     assert results.solution.variable_value == example.solution
@@ -33,7 +33,7 @@ def test_CFNInference_ABC_conin():
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 @pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
 def test_CFNInference_ABC_pgmpy():
-    example = conin.markov_network.tests.examples.ABC_pgmpy()
+    example = conin.markov_network.examples.ABC_pgmpy()
     inf = CFNInference(example.pgm)
     results = inf.map_query()
     assert results.solution.variable_value == example.solution
@@ -46,7 +46,7 @@ def test_CFNInference_ABC_pgmpy():
 
 @pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
 def Xtest_CFNInference_ABC_constrained():
-    example = conin.markov_network.tests.examples.ABC_constrained_toulbar2_conin()
+    example = conin.markov_network.examples.ABC_constrained_toulbar2_conin()
     inf = CFNInference(example.pgm)
     results = inf.map_query()
     assert results.solution.variable_value == example.solution
@@ -59,7 +59,7 @@ def Xtest_CFNInference_ABC_constrained():
 
 @pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
 def test_CFNInference_cancer1_ALL_conin():
-    example = conin.bayesian_network.tests.examples.cancer1_BN_conin()
+    example = conin.bayesian_network.examples.cancer1_BN_conin()
     inf = CFNInference(example.pgm)
 
     results = inf.map_query(
@@ -101,7 +101,7 @@ def test_CFNInference_cancer1_ALL_conin():
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 @pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
 def test_CFNInference_cancer1_ALL_pgmpy():
-    example = conin.bayesian_network.tests.examples.cancer1_BN_pgmpy()
+    example = conin.bayesian_network.examples.cancer1_BN_pgmpy()
     inf = CFNInference(example.pgm)
 
     results = inf.map_query(
@@ -147,9 +147,7 @@ def test_CFNInference_cancer1_ALL_pgmpy():
 
 @pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
 def Xtest_CFNInference_cancer1_constrained_conin():
-    example = (
-        conin.bayesian_network.tests.examples.cancer1_BN_constrained_toulbar2_conin()
-    )
+    example = conin.bayesian_network.examples.cancer1_BN_constrained_toulbar2_conin()
     inf = CFNInference(example.pgm)
 
     results = inf.map_query(
@@ -176,9 +174,7 @@ def Xtest_CFNInference_cancer1_constrained_conin():
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 @pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
 def Xtest_CFNInference_cancer1_constrained_pgmpy():
-    example = (
-        conin.bayesian_network.tests.examples.cancer1_BN_constrained_toulbar2_pgmpy()
-    )
+    example = conin.bayesian_network.examples.cancer1_BN_constrained_toulbar2_pgmpy()
     inf = CFNInference(example.pgm)
 
     results = inf.map_query(
@@ -364,7 +360,7 @@ def Xtest_CFNInference_chmm1_test3():
 
 @pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
 def test_DDBN_CFNInference_weather_conin():
-    example = conin.dynamic_bayesian_network.tests.examples.weather_conin()
+    example = conin.dynamic_bayesian_network.examples.weather_conin()
     inf = DDBN_CFNInference(example.pgm)
     results = inf.map_query(stop=4)
     assert results.solution.variable_value == example.solution
@@ -403,7 +399,7 @@ def test_DDBN_CFNInference_weather_conin():
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 @pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
 def test_DDBN_CFNInference_weather():
-    example = conin.dynamic_bayesian_network.tests.examples.weather2_pgmpy()
+    example = conin.dynamic_bayesian_network.examples.weather2_pgmpy()
     inf = DDBN_CFNInference(example.pgm)
     results = inf.map_query(stop=4)
     assert results.solution.variable_value == example.solution
@@ -447,7 +443,7 @@ def test_DDBN_CFNInference_weather():
 @pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
 def Xtest_DDBN_CFNInference_weather_constrained_conin():
     example = (
-        conin.dynamic_bayesian_network.tests.examples.weather_constrained_toulbar2_conin()
+        conin.dynamic_bayesian_network.examples.weather_constrained_toulbar2_conin()
     )
     inf = DDBN_CFNInference(example.pgm)
     results = inf.map_query(stop=4)
@@ -487,7 +483,7 @@ def Xtest_DDBN_CFNInference_weather_constrained_conin():
 @pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
 def Xtest_DDBN_CFNInference_weather_constrained_pgmpy():
     example = (
-        conin.dynamic_bayesian_network.tests.examples.weather_constrained_toulbar2_pgmpy()
+        conin.dynamic_bayesian_network.examples.weather_constrained_toulbar2_pgmpy()
     )
     inf = DDBN_CFNInference(example.pgm)
     results = inf.map_query(stop=4)

@@ -80,10 +80,10 @@ def create_toulbar2_map_query_model_BN(
         #        for s in S.get(index, [])
         #    }
         model.X = {name: i for i, name in enumerate(pgm.nodes)}
-        #print("HERE")
-        #print(f"{model.X=}")
-        #print(f"{var_index_map=}")
-        #print(f"{pgm.nodes=}")
+        # print("HERE")
+        # print(f"{model.X=}")
+        # print(f"{var_index_map=}")
+        # print(f"{pgm.nodes=}")
     else:
         model.X = {name: i for i, name in enumerate(pgm.nodes)}
     model.states = {i: pgm.states_of(name) for i, name in enumerate(pgm.nodes)}
@@ -110,6 +110,6 @@ def inference_toulbar2_map_query_BN(
     model = create_toulbar2_map_query_model_BN(
         pgm=pgm, variables=variables, evidence=evidence, timing=timing, **options
     )
-    return conin.markov_network.inference.inference_toulbar2.solve_toulbar2_map_query_model(
+    return conin.inference.mn.inference_toulbar2.solve_toulbar2_map_query_model(
         model, timing=timing, **options
     )

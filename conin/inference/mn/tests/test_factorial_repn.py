@@ -4,17 +4,17 @@ import pyomo.environ as pyo
 import pyomo.opt
 
 from conin.util import try_import
-from conin.markov_network.inference.inference_pyomo import (
+from conin.inference.mn.inference_pyomo import (
     create_pyomo_map_query_model_MN,
     solve_pyomo_map_query_model,
     create_MN_pyomo_map_query_model_from_factorial_repn,
 )
-from conin.markov_network.inference.factor_repn import (
+from conin.inference.mn.factor_repn import (
     extract_factor_representation,
     State,
 )
 
-from . import examples
+from conin.markov_network import examples
 
 with try_import() as pgmpy_available:
     import pgmpy

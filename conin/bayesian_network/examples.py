@@ -17,8 +17,6 @@ with try_import() as pgmpy_available:
         MaximumLikelihoodEstimator as pgmpy_MaximumLikelihoodEstimator,
     )
     from pgmpy.factors.discrete import TabularCPD as pgmpy_TabularCPD
-    from conin.common.pgmpy import MapCPD
-    from conin.common.pgmpy import convert_pgmpy_to_conin
 
 
 #
@@ -149,6 +147,8 @@ def cancer2_BN_pgmpy(debug=False):
     """
     Cancer example using pgmpy with MapCPD
     """
+    from conin.common.pgmpy import MapCPD
+
     # Step 1: Define the network structure.
     cancer_model = pgmpy_DiscreteBayesianNetwork(
         [
@@ -233,7 +233,9 @@ def cancer1_BN_constrained_pyomo_pgmpy(debug=False):
         model.c.add(model.X["Dyspnoea", 1] + model.X["Xray", 1] <= 1)
         model.c.add(model.X["Dyspnoea", 0] + model.X["Xray", 0] <= 1)
 
-    pgm = convert_pgmpy_to_conin(pgm)
+    import conin.common.pgmpy
+
+    pgm = conin.common.pgmpy.convert_pgmpy_to_conin(pgm)
     cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
     return Munch(
         pgm=cpgm,
@@ -250,7 +252,9 @@ def cancer2_BN_constrained_pyomo_pgmpy(debug=False):
         model.c.add(model.X["Dyspnoea", 1] + model.X["Xray", 1] <= 1)
         model.c.add(model.X["Dyspnoea", 0] + model.X["Xray", 0] <= 1)
 
-    pgm = convert_pgmpy_to_conin(pgm)
+    import conin.common.pgmpy
+
+    pgm = conin.common.pgmpy.convert_pgmpy_to_conin(pgm)
     cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
     return Munch(
         pgm=cpgm,
@@ -301,6 +305,8 @@ def simple1_BN_pgmpy(debug=False):
 
 
 def simple2_BN_pgmpy(debug=False):
+    from conin.common.pgmpy import MapCPD
+
     G = pgmpy_DiscreteBayesianNetwork()
     G.add_nodes_from(["A", "B"])
     G.add_edge("A", "B")
@@ -541,6 +547,8 @@ def holmes_pgmpy(debug=False):
     A. Gao. "Lecture 12: Variable Elimination Algorithm", 2021.
     https://cs.uwaterloo.ca/~a23gao/cs486686_f18/slides/lec12_inferences_bayes_nets_nosol.pdf
     """
+    from conin.common.pgmpy import MapCPD
+
     G = pgmpy_DiscreteBayesianNetwork()
     G.add_nodes_from(["E", "B", "R", "A", "W", "G"])
     G.add_edge("E", "R")
@@ -645,13 +653,15 @@ def pgmpy_issue_1177_pgmpy(debug=False):
     model.fit(data, estimator=pgmpy_MaximumLikelihoodEstimator)
     return model
 
+
 #
 # tb2
 #
 
+
 def tb2_BN_conin(debug=False):
     G = DiscreteBayesianNetwork()
-    G.states = {"A": [0, 1], "B": [2, 3], "C":[4,5,6]}
+    G.states = {"A": [0, 1], "B": [2, 3], "C": [4, 5, 6]}
     cpd_A = DiscreteCPD(node="A", values=[0.436, 0.564])
     cpd_B = DiscreteCPD(
         node="B",
@@ -669,7 +679,7 @@ def tb2_BN_conin(debug=False):
         print(cpd_C)
     G.cpds = [cpd_A, cpd_B, cpd_C]
     G.check_model()
-    return Munch(pgm=G, solution={"A": 0, "B": 3, "C":4})
+    return Munch(pgm=G, solution={"A": 0, "B": 3, "C": 4})
 
 
 def tb2_BN_pgmpy(debug=False):
@@ -684,7 +694,7 @@ def tb2_BN_pgmpy(debug=False):
         values=[[0.128, 0.92], [0.872, 0.08]],
         evidence=["A"],
         evidence_card=[2],
-        state_names={"A": [0,1], "B":[2,3]}
+        state_names={"A": [0, 1], "B": [2, 3]},
     )
     cpd_C = pgmpy_TabularCPD(
         variable="C",
@@ -692,7 +702,7 @@ def tb2_BN_pgmpy(debug=False):
         values=[[0.21, 0.811], [0.333, 0.0], [0.457, 0.189]],
         evidence=["B"],
         evidence_card=[2],
-        state_names={"C": [4,5,6], "B":[2,3]}
+        state_names={"C": [4, 5, 6], "B": [2, 3]},
     )
     if debug:
         print(cpd_A)
@@ -700,23 +710,26 @@ def tb2_BN_pgmpy(debug=False):
         print(cpd_C)
     G.add_cpds(cpd_A, cpd_B, cpd_C)
     G.check_model()
-    return Munch(pgm=G, solution={"A": 0, "B": 3, "C":4})
+    return Munch(pgm=G, solution={"A": 0, "B": 3, "C": 4})
+
 
 def tb2_BN_pgmpy_mapcpd(debug=False):
+    from conin.common.pgmpy import MapCPD
+
     G = pgmpy_DiscreteBayesianNetwork()
     G.add_nodes_from(["A", "B", "C"])
     G.add_edge("A", "B")
     G.add_edge("B", "C")
-    cpd_A = MapCPD(variable="A", values={0:0.436, 1:0.564})
+    cpd_A = MapCPD(variable="A", values={0: 0.436, 1: 0.564})
     cpd_B = MapCPD(
         variable="B",
         evidence=["A"],
-        values={0: {2:0.128, 3:0.872}, 1: {2:0.92, 3:0.08}},
+        values={0: {2: 0.128, 3: 0.872}, 1: {2: 0.92, 3: 0.08}},
     )
     cpd_C = MapCPD(
         variable="C",
         evidence=["B"],
-        values={2: {4:0.21, 5:0.333, 6:0.457}, 3: {4:0.811, 5:0.0, 6:0.189}},
+        values={2: {4: 0.21, 5: 0.333, 6: 0.457}, 3: {4: 0.811, 5: 0.0, 6: 0.189}},
     )
     if debug:
         print(cpd_A)
@@ -724,15 +737,17 @@ def tb2_BN_pgmpy_mapcpd(debug=False):
         print(cpd_C)
     G.add_cpds(cpd_A, cpd_B, cpd_C)
     G.check_model()
-    return Munch(pgm=G, solution={"A": 0, "B": 3, "C":4})
+    return Munch(pgm=G, solution={"A": 0, "B": 3, "C": 4})
+
 
 #
 # tb2*
 #
 
+
 def tb2_BN_conin(debug=False):
     G = DiscreteBayesianNetwork()
-    G.states = {"A": [0, 1], "B": [2, 3], "C":[4,5,6]}
+    G.states = {"A": [0, 1], "B": [2, 3], "C": [4, 5, 6]}
     cpd_A = DiscreteCPD(node="A", values=[0.436, 0.564])
     cpd_B = DiscreteCPD(
         node="B",
@@ -741,9 +756,13 @@ def tb2_BN_conin(debug=False):
     )
     cpd_C = DiscreteCPD(
         node="C",
-        parents=["A","B"],
-        values={(0,2): [0.21, 0.333, 0.457], (0,3): [0.811, 0.0, 0.189],
-                (1,2): [0.2, 0.3, 0.5], (1,3): [0.8, 0.0, 0.2]},
+        parents=["A", "B"],
+        values={
+            (0, 2): [0.21, 0.333, 0.457],
+            (0, 3): [0.811, 0.0, 0.189],
+            (1, 2): [0.2, 0.3, 0.5],
+            (1, 3): [0.8, 0.0, 0.2],
+        },
     )
     if debug:
         print(cpd_A)
@@ -751,12 +770,14 @@ def tb2_BN_conin(debug=False):
         print(cpd_C)
     G.cpds = [cpd_A, cpd_B, cpd_C]
     G.check_model()
-    return Munch(pgm=G, solution={"A": 0, "B": 3, "C":4})
+    return Munch(pgm=G, solution={"A": 0, "B": 3, "C": 4})
 
-#0 2 0.21, 0.333, 0.457
-#0 3 0.811, 0.0, 0.189
-#1 2 0.2, 0.3, 0.4
-#1 3 0.8, 0.0, 0.2
+
+# 0 2 0.21, 0.333, 0.457
+# 0 3 0.811, 0.0, 0.189
+# 1 2 0.2, 0.3, 0.4
+# 1 3 0.8, 0.0, 0.2
+
 
 def tb2_BN_pgmpy(debug=False):
     G = pgmpy_DiscreteBayesianNetwork()
@@ -771,17 +792,19 @@ def tb2_BN_pgmpy(debug=False):
         values=[[0.128, 0.92], [0.872, 0.08]],
         evidence=["A"],
         evidence_card=[2],
-        state_names={"A": [0,1], "B":[2,3]}
+        state_names={"A": [0, 1], "B": [2, 3]},
     )
     cpd_C = pgmpy_TabularCPD(
         variable="C",
         variable_card=3,
-        values=[[0.21,  0.811,  0.2, 0.8],
-                [0.333, 0.0,    0.3, 0.0],
-                [0.457, 0.189,  0.5, 0.2]],
-        evidence=["A","B"],
-        evidence_card=[2,2],
-        state_names={"C": [4,5,6], "B":[2,3], "A":[0,1]}
+        values=[
+            [0.21, 0.811, 0.2, 0.8],
+            [0.333, 0.0, 0.3, 0.0],
+            [0.457, 0.189, 0.5, 0.2],
+        ],
+        evidence=["A", "B"],
+        evidence_card=[2, 2],
+        state_names={"C": [4, 5, 6], "B": [2, 3], "A": [0, 1]},
     )
     if debug:
         print(cpd_A)
@@ -789,25 +812,32 @@ def tb2_BN_pgmpy(debug=False):
         print(cpd_C)
     G.add_cpds(cpd_A, cpd_B, cpd_C)
     G.check_model()
-    return Munch(pgm=G, solution={"A": 0, "B": 3, "C":4})
+    return Munch(pgm=G, solution={"A": 0, "B": 3, "C": 4})
+
 
 def tb2_BN_pgmpy_mapcpd(debug=False):
+    from conin.common.pgmpy import MapCPD
+
     G = pgmpy_DiscreteBayesianNetwork()
     G.add_nodes_from(["A", "B", "C"])
     G.add_edge("A", "B")
     G.add_edge("A", "C")
     G.add_edge("B", "C")
-    cpd_A = MapCPD(variable="A", values={0:0.436, 1:0.564})
+    cpd_A = MapCPD(variable="A", values={0: 0.436, 1: 0.564})
     cpd_B = MapCPD(
         variable="B",
         evidence=["A"],
-        values={0: {2:0.128, 3:0.872}, 1: {2:0.92, 3:0.08}},
+        values={0: {2: 0.128, 3: 0.872}, 1: {2: 0.92, 3: 0.08}},
     )
     cpd_C = MapCPD(
         variable="C",
-        evidence=["A","B"],
-        values={(0,2): {4:0.21, 5:0.333, 6:0.457}, (0,3): {4:0.811, 5:0.0, 6:0.189},
-                (1,2): {4:0.2, 5:0.3, 6:0.5}, (1,3): {4:0.8, 5:0.0, 6:0.2}},
+        evidence=["A", "B"],
+        values={
+            (0, 2): {4: 0.21, 5: 0.333, 6: 0.457},
+            (0, 3): {4: 0.811, 5: 0.0, 6: 0.189},
+            (1, 2): {4: 0.2, 5: 0.3, 6: 0.5},
+            (1, 3): {4: 0.8, 5: 0.0, 6: 0.2},
+        },
     )
     if debug:
         print(cpd_A)
@@ -815,5 +845,4 @@ def tb2_BN_pgmpy_mapcpd(debug=False):
         print(cpd_C)
     G.add_cpds(cpd_A, cpd_B, cpd_C)
     G.check_model()
-    return Munch(pgm=G, solution={"A": 0, "B": 3, "C":4})
-
+    return Munch(pgm=G, solution={"A": 0, "B": 3, "C": 4})

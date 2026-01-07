@@ -14,7 +14,6 @@ from conin.markov_network import (
 with try_import() as pgmpy_available:
     from pgmpy.models import MarkovNetwork as pgmpy_MarkovNetwork
     from pgmpy.factors.discrete import DiscreteFactor as pgmpy_DiscreteFactor
-    from conin.common.pgmpy import convert_pgmpy_to_conin
 
 
 #
@@ -128,7 +127,9 @@ def ABC_constrained_pyomo_pgmpy():
         def diff(M, s):
             return M.X["A", s] + M.X["B", s] + M.X["C", s] <= 1
 
-    pgm = convert_pgmpy_to_conin(pgm.pgm)
+    import conin.common.pgmpy
+
+    pgm = conin.common.pgmpy.convert_pgmpy_to_conin(pgm.pgm)
     cpgm = ConstrainedDiscreteMarkovNetwork(pgm, constraints=[constraint_fn])
     return Munch(pgm=cpgm, solution={"A": 0, "B": 2, "C": 1})
 
@@ -172,7 +173,9 @@ def ABC_constrained_toulbar2_pgmpy():
                 [(M.X["A"], i, 1), (M.X["B"], i, 1), (M.X["C"], i, 1)], "<=", 1
             )
 
-    pgm = convert_pgmpy_to_conin(pgm.pgm)
+    import conin.common.pgmpy
+
+    pgm = conin.common.pgmpy.convert_pgmpy_to_conin(pgm.pgm)
     cpgm = ConstrainedDiscreteMarkovNetwork(pgm, constraints=[constraint_fn])
     return Munch(pgm=cpgm, solution={"A": 0, "B": 2, "C": 1})
 

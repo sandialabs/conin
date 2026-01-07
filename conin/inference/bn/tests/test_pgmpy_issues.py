@@ -10,11 +10,13 @@ from conin.util import try_import
 # from conin.markov_network.inference_pyomo import (
 #    solve_pyomo_map_query_model,
 # )
-from . import examples
+
+from conin.bayesian_network import examples
 
 with try_import() as pgmpy_available:
     from pgmpy.inference import VariableElimination
-    from conin.common.pgmpy import convert_pgmpy_to_conin
+
+    # from conin.common.pgmpy import convert_pgmpy_to_conin
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")

@@ -4,10 +4,8 @@ import munch
 import pyomo.environ as pe
 from pyomo.common.timing import TicTocTimer
 
-from .factor_repn import extract_factor_representation_, State
-
-# from .variable_elimination import _variable_elimination
 from conin.markov_network import ConstrainedDiscreteMarkovNetwork
+from conin.inference.mn.factor_repn import extract_factor_representation_, State
 
 
 """

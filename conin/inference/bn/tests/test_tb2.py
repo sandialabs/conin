@@ -2,15 +2,14 @@ import pytest
 import pyomo.opt
 
 from conin.util import try_import
-from conin.bayesian_network.inference import (
+from conin.inference.bn import (
     inference_pyomo_map_query_BN,
     inference_toulbar2_map_query_BN,
 )
-from . import examples
+from conin.bayesian_network import examples
 
 with try_import() as pgmpy_available:
     from pgmpy.inference import VariableElimination
-    from conin.common.pgmpy import convert_pgmpy_to_conin
 
 with try_import() as pytoulbar2_available:
     import pytoulbar2
@@ -38,8 +37,10 @@ def test_tb2_pyomo_ALL_conin():
 def test_tb2_pyomo_ALL_pgmpy():
     example = examples.tb2_BN_pgmpy()
 
-    #infer = VariableElimination(example.pgm)
-    #assert infer.map_query(variables=["A", "B", "C"]) == example.solution
+    # infer = VariableElimination(example.pgm)
+    # assert infer.map_query(variables=["A", "B", "C"]) == example.solution
+
+    from conin.common.pgmpy import convert_pgmpy_to_conin
 
     pgm = convert_pgmpy_to_conin(example.pgm)
     results = inference_pyomo_map_query_BN(pgm=pgm, solver=mip_solver)
@@ -51,8 +52,10 @@ def test_tb2_pyomo_ALL_pgmpy():
 def test_tb2_pyomo_ALL_pgmpy_mapcpd():
     example = examples.tb2_BN_pgmpy_mapcpd()
 
-    #infer = VariableElimination(example.pgm)
-    #assert infer.map_query(variables=["A", "B", "C"]) == example.solution
+    # infer = VariableElimination(example.pgm)
+    # assert infer.map_query(variables=["A", "B", "C"]) == example.solution
+
+    from conin.common.pgmpy import convert_pgmpy_to_conin
 
     pgm = convert_pgmpy_to_conin(example.pgm)
     results = inference_pyomo_map_query_BN(pgm=pgm, solver=mip_solver)
