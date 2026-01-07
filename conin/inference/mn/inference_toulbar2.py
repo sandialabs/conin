@@ -1,6 +1,7 @@
 # from collections import defaultdict
 import os
 import tempfile
+
 # import pprint
 import munch
 import pytoulbar2
@@ -11,6 +12,7 @@ from conin.markov_network import (
     # DiscreteMarkovNetwork,
     # DiscreteFactor,
 )
+
 # from conin.inference.mn.factor_repn import extract_factor_representation_, State
 import conin.common
 
