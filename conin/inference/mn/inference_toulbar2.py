@@ -1,17 +1,17 @@
-from collections import defaultdict
+# from collections import defaultdict
 import os
 import tempfile
-import pprint
+# import pprint
 import munch
 import pytoulbar2
 from pyomo.common.timing import TicTocTimer
 
 from conin.markov_network import (
     ConstrainedDiscreteMarkovNetwork,
-    DiscreteMarkovNetwork,
-    DiscreteFactor,
+    # DiscreteMarkovNetwork,
+    # DiscreteFactor,
 )
-from conin.inference.mn.factor_repn import extract_factor_representation_, State
+# from conin.inference.mn.factor_repn import extract_factor_representation_, State
 import conin.common
 
 
@@ -107,6 +107,7 @@ def create_toulbar2_map_query_model_MN(
 ):
     # Ignoring variables and evidence for now
     if timing:  # pragma:nocover
+        timer = TicTocTimer()
         timer.toc("create_toulbar2_model - START")
     pgm_ = pgm.pgm if isinstance(pgm, ConstrainedDiscreteMarkovNetwork) else pgm
 
