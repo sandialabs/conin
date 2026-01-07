@@ -41,7 +41,6 @@ def test_tb2_pyomo_ALL_pgmpy():
     # assert infer.map_query(variables=["A", "B", "C"]) == example.solution
 
     from conin.common.pgmpy import convert_pgmpy_to_conin
-
     pgm = convert_pgmpy_to_conin(example.pgm)
     results = inference_pyomo_map_query_BN(pgm=pgm, solver=mip_solver)
     assert results.solution.variable_value == example.solution
@@ -56,7 +55,6 @@ def test_tb2_pyomo_ALL_pgmpy_mapcpd():
     # assert infer.map_query(variables=["A", "B", "C"]) == example.solution
 
     from conin.common.pgmpy import convert_pgmpy_to_conin
-
     pgm = convert_pgmpy_to_conin(example.pgm)
     results = inference_pyomo_map_query_BN(pgm=pgm, solver=mip_solver)
     assert results.solution.variable_value == example.solution
