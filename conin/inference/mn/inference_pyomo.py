@@ -4,9 +4,8 @@ import munch
 import pyomo.environ as pe
 from pyomo.common.timing import TicTocTimer
 
-from .factor_repn import extract_factor_representation_, State
-from .variable_elimination import _variable_elimination
-from .model import ConstrainedDiscreteMarkovNetwork
+from conin.markov_network import ConstrainedDiscreteMarkovNetwork
+from conin.inference.mn.factor_repn import extract_factor_representation_, State
 
 
 """
@@ -52,7 +51,7 @@ class VarWrapper(dict):
         return dict.__getitem__(self, (r, s))
 
 
-def create_MN_map_query_pyomo_model(
+def create_pyomo_map_query_model_MN(
     *,
     pgm,
     variables=None,
@@ -86,7 +85,7 @@ def create_MN_map_query_pyomo_model(
 
     if timing:  # pragma:nocover
         timer = TicTocTimer()
-        timer.tic("create_MN_map_query_pyomo_model - START")
+        timer.tic("create_map_query_pyomo_model_MN - START")
     pgm_ = pgm.pgm if isinstance(pgm, ConstrainedDiscreteMarkovNetwork) else pgm
 
     if variables or evidence:
@@ -112,7 +111,7 @@ def create_MN_map_query_pyomo_model(
     if timing:  # pragma:nocover
         timer.toc("Created factor repn")
 
-    model = create_MN_map_query_model_from_factorial_repn(
+    model = create_MN_pyomo_map_query_model_from_factorial_repn(
         S=S,
         J=J,
         v=v,
@@ -132,11 +131,11 @@ def create_MN_map_query_pyomo_model(
             model = func(model, data)
 
     if timing:  # pragma:nocover
-        timer.toc("create_MN_map_query_model - STOP")
+        timer.toc("create_pyomo_map_query_model_MN - STOP")
     return model
 
 
-def create_MN_map_query_model_from_factorial_repn(
+def create_MN_pyomo_map_query_model_from_factorial_repn(
     *,
     S=None,
     J=None,
@@ -281,7 +280,7 @@ def create_MN_map_query_model_from_factorial_repn(
     return model
 
 
-def optimize_map_query_model(
+def solve_pyomo_map_query_model(
     model,
     *,
     solver="gurobi",
@@ -298,10 +297,10 @@ def optimize_map_query_model(
         opt.options = solver_options
     if timing:  # pragma:nocover
         timer.toc("Initialize solver")
-    timer = TicTocTimer()
-    timer.tic(None)
+    solver_timer = TicTocTimer()
+    solver_timer.tic(None)
     res = opt.solve(model, tee=tee)
-    solvetime = timer.toc(None)
+    solvetime = solver_timer.toc(None)
     pe.assert_optimal_termination(res)
     if timing:  # pragma:nocover
         timer.toc("Completed optimization")
@@ -330,3 +329,17 @@ def optimize_map_query_model(
         termination_condition="ok",
         solvetime=solvetime,
     )
+
+
+def inference_pyomo_map_query_MN(
+    *,
+    pgm,
+    variables=None,
+    evidence=None,
+    timing=False,
+    **options,
+):
+    model = create_pyomo_map_query_model_MN(
+        pgm=pgm, variables=variables, evidence=evidence, timing=timing, **options
+    )
+    return solve_pyomo_map_query_model(model, timing=timing, **options)

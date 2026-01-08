@@ -2,12 +2,11 @@ import warnings
 import munch
 from pyomo.common.timing import TicTocTimer
 
-# from conin.util import try_import
-from conin.markov_network import create_MN_map_query_pyomo_model, DiscreteMarkovNetwork
-from .model import ConstrainedDiscreteBayesianNetwork
+import conin.markov_network
+from conin.bayesian_network import ConstrainedDiscreteBayesianNetwork
 
 
-def create_BN_map_query_pyomo_model(
+def create_pyomo_map_query_model_BN(
     *,
     pgm,
     variables=None,
@@ -39,7 +38,7 @@ def create_BN_map_query_pyomo_model(
     """
     if timing:
         timer = TicTocTimer()
-        timer.tic("create_BN_map_query_model - START")
+        timer.tic("create_pyomo_map_query_model_BN - START")
     prune_network = options.pop("prune_network", False)
     create_MN = options.pop("create_MN", False)
 
@@ -90,13 +89,13 @@ def create_BN_map_query_pyomo_model(
         # By default, we avoid creating a complete Markov model.  Rather, we
         # create the skeleton of a model that is used to setup the integer program.
         #
-        MN = DiscreteMarkovNetwork()
+        MN = conin.markov_network.DiscreteMarkovNetwork()
         MN.states = pgm_.states
         MN.factors = [cpd.to_factor() for cpd in pgm_.cpds]
         if timing:
             timer.toc("Created skeleton Markov network")
 
-    model = create_MN_map_query_pyomo_model(
+    model = conin.inference.mn.inference_pyomo.create_pyomo_map_query_model_MN(
         pgm=MN,
         variables=variables,
         evidence=evidence,
@@ -110,5 +109,21 @@ def create_BN_map_query_pyomo_model(
             model = func(model, data)
 
     if timing:
-        timer.toc("create_BN_map_query_model - STOP")
+        timer.toc("create_pyomo_map_query_model_BN - STOP")
     return model
+
+
+def inference_pyomo_map_query_BN(
+    *,
+    pgm,
+    variables=None,
+    evidence=None,
+    timing=False,
+    **options,
+):
+    model = create_pyomo_map_query_model_BN(
+        pgm=pgm, variables=variables, evidence=evidence, timing=timing, **options
+    )
+    return conin.inference.mn.inference_pyomo.solve_pyomo_map_query_model(
+        model, timing=timing, **options
+    )

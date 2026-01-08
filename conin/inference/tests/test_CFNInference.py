@@ -1,43 +1,41 @@
 import pytest
 import pyomo.opt
 
+from conin.util import try_import
+from conin.inference.CFNInference import (
+    CFNInference,
+    DDBN_CFNInference,
+)
 import conin.markov_network.examples
 import conin.bayesian_network.examples
-import conin.dynamic_bayesian_network.examples
 import conin.hmm.tests.examples
-
-from conin.inference.OptimizationInference import (
-    IntegerProgrammingInference,
-    DDBN_IntegerProgrammingInference,
-)
-from conin.util import try_import
+import conin.dynamic_bayesian_network.examples
 
 with try_import() as pgmpy_available:
     import pgmpy
 
-mip_solver = pyomo.opt.check_available_solvers("glpk", "gurobi")
-mip_solver = mip_solver[0] if mip_solver else None
-
+with try_import() as pytoulbar2_available:
+    import pytoulbar2
 
 #
 # DiscreteMarkovNetwork tests
 #
 
 
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_IntegerProgrammingInference_ABC_conin():
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
+def test_CFNInference_ABC_conin():
     example = conin.markov_network.examples.ABC_conin()
-    inf = IntegerProgrammingInference(example.pgm)
-    results = inf.map_query(solver=mip_solver)
+    inf = CFNInference(example.pgm)
+    results = inf.map_query()
     assert results.solution.variable_value == example.solution
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_IntegerProgrammingInference_ABC_pgmpy():
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
+def test_CFNInference_ABC_pgmpy():
     example = conin.markov_network.examples.ABC_pgmpy()
-    inf = IntegerProgrammingInference(example.pgm)
-    results = inf.map_query(solver=mip_solver)
+    inf = CFNInference(example.pgm)
+    results = inf.map_query()
     assert results.solution.variable_value == example.solution
 
 
@@ -46,11 +44,11 @@ def test_IntegerProgrammingInference_ABC_pgmpy():
 #
 
 
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_IntegerProgrammingInference_ABC_constrained():
-    example = conin.markov_network.examples.ABC_constrained_pyomo_conin()
-    inf = IntegerProgrammingInference(example.pgm)
-    results = inf.map_query(solver=mip_solver)
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
+def Xtest_CFNInference_ABC_constrained():
+    example = conin.markov_network.examples.ABC_constrained_toulbar2_conin()
+    inf = CFNInference(example.pgm)
+    results = inf.map_query()
     assert results.solution.variable_value == example.solution
 
 
@@ -59,14 +57,13 @@ def test_IntegerProgrammingInference_ABC_constrained():
 #
 
 
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_IntegerProgrammingInference_cancer1_ALL_conin():
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
+def test_CFNInference_cancer1_ALL_conin():
     example = conin.bayesian_network.examples.cancer1_BN_conin()
-    inf = IntegerProgrammingInference(example.pgm)
+    inf = CFNInference(example.pgm)
 
     results = inf.map_query(
         variables=["Cancer", "Dyspnoea", "Pollution", "Smoker", "Xray"],
-        solver=mip_solver,
     )
     assert results.solution.variable_value == example.solution
 
@@ -77,7 +74,7 @@ def test_IntegerProgrammingInference_cancer1_ALL_conin():
 #        results = inf.map_query(
 #            variables=["Dyspnoea", "Pollution", "Smoker", "Xray"],
 #            evidence={"Cancer": 0},
-#            solver=mip_solver,
+#            ,
 #        )
 #        assert results.solution.variable_value == {
 #            "Dyspnoea": 0,
@@ -92,7 +89,7 @@ def test_IntegerProgrammingInference_cancer1_ALL_conin():
 #        results = inf.map_query(
 #            variables=["Dyspnoea", "Pollution", "Xray"],
 #            evidence={"Cancer": 0},
-#            solver=mip_solver,
+#            ,
 #        )
 #        assert results.solution.variable_value == {
 #            "Dyspnoea": 0,
@@ -102,14 +99,13 @@ def test_IntegerProgrammingInference_cancer1_ALL_conin():
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_IntegerProgrammingInference_cancer1_ALL_pgmpy():
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
+def test_CFNInference_cancer1_ALL_pgmpy():
     example = conin.bayesian_network.examples.cancer1_BN_pgmpy()
-    inf = IntegerProgrammingInference(example.pgm)
+    inf = CFNInference(example.pgm)
 
     results = inf.map_query(
         variables=["Cancer", "Dyspnoea", "Pollution", "Smoker", "Xray"],
-        solver=mip_solver,
     )
     assert results.solution.variable_value == example.solution
 
@@ -120,7 +116,7 @@ def test_IntegerProgrammingInference_cancer1_ALL_pgmpy():
 #        results = inf.map_query(
 #            variables=["Dyspnoea", "Pollution", "Smoker", "Xray"],
 #            evidence={"Cancer": 0},
-#            solver=mip_solver,
+#            ,
 #        )
 #        assert results.solution.variable_value == {
 #            "Dyspnoea": 0,
@@ -135,7 +131,7 @@ def test_IntegerProgrammingInference_cancer1_ALL_pgmpy():
 #        results = inf.map_query(
 #            variables=["Dyspnoea", "Pollution", "Xray"],
 #            evidence={"Cancer": 0},
-#            solver=mip_solver,
+#            ,
 #        )
 #        assert results.solution.variable_value == {
 #            "Dyspnoea": 0,
@@ -149,14 +145,13 @@ def test_IntegerProgrammingInference_cancer1_ALL_pgmpy():
 #
 
 
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_IntegerProgrammingInference_cancer1_constrained_conin():
-    example = conin.bayesian_network.examples.cancer1_BN_constrained_pyomo_conin()
-    inf = IntegerProgrammingInference(example.pgm)
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
+def Xtest_CFNInference_cancer1_constrained_conin():
+    example = conin.bayesian_network.examples.cancer1_BN_constrained_toulbar2_conin()
+    inf = CFNInference(example.pgm)
 
     results = inf.map_query(
         variables=["Cancer", "Dyspnoea", "Pollution", "Smoker", "Xray"],
-        solver=mip_solver,
     )
     assert results.solution.variable_value == example.solution
 
@@ -167,7 +162,7 @@ def test_IntegerProgrammingInference_cancer1_constrained_conin():
 #        results = inf.map_query(
 #            variables=["Dyspnoea", "Pollution", "Xray"],
 #            evidence={"Cancer": 0},
-#            solver=mip_solver,
+#            ,
 #        )
 #        assert results.solution.variable_value == {
 #            "Dyspnoea": 1,
@@ -177,14 +172,13 @@ def test_IntegerProgrammingInference_cancer1_constrained_conin():
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_IntegerProgrammingInference_cancer1_constrained_pgmpy():
-    example = conin.bayesian_network.examples.cancer1_BN_constrained_pyomo_pgmpy()
-    inf = IntegerProgrammingInference(example.pgm)
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
+def Xtest_CFNInference_cancer1_constrained_pgmpy():
+    example = conin.bayesian_network.examples.cancer1_BN_constrained_toulbar2_pgmpy()
+    inf = CFNInference(example.pgm)
 
     results = inf.map_query(
         variables=["Cancer", "Dyspnoea", "Pollution", "Smoker", "Xray"],
-        solver=mip_solver,
     )
     assert results.solution.variable_value == example.solution
 
@@ -195,7 +189,7 @@ def test_IntegerProgrammingInference_cancer1_constrained_pgmpy():
 #        results = inf.map_query(
 #            variables=["Dyspnoea", "Pollution", "Xray"],
 #            evidence={"Cancer": 0},
-#            solver=mip_solver,
+#            ,
 #        )
 #        assert results.solution.variable_value == {
 #            "Dyspnoea": 1,
@@ -209,30 +203,30 @@ def test_IntegerProgrammingInference_cancer1_constrained_pgmpy():
 #
 
 
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_IntegerProgrammingInference_hmm1_test0():
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
+def Xtest_CFNInference_hmm1_test0():
     pgm = conin.hmm.tests.examples.create_hmm1()
-    inf = IntegerProgrammingInference(pgm)
+    inf = CFNInference(pgm)
     observed = ["o0", "o0", "o1", "o0", "o0"]
-    results = inf.map_query(evidence=observed, solver=mip_solver)
+    results = inf.map_query(evidence=observed)
     assert results.solution.variable_value == ["h0", "h0", "h0", "h0", "h0"]
 
 
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_IntegerProgrammingInference_hmm1_test1():
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
+def Xtest_CFNInference_hmm1_test1():
     pgm = conin.hmm.tests.examples.create_hmm1()
-    inf = IntegerProgrammingInference(pgm)
+    inf = CFNInference(pgm)
     observed = ["o0", "o1", "o1", "o1", "o1"]
-    results = inf.map_query(evidence=observed, solver=mip_solver)
+    results = inf.map_query(evidence=observed)
     assert results.solution.variable_value == ["h1", "h1", "h1", "h1", "h1"]
 
 
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_IntegerProgrammingInference_hmm1_test2():
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
+def Xtest_CFNInference_hmm1_test2():
     pgm = conin.hmm.tests.examples.create_hmm1()
-    inf = IntegerProgrammingInference(pgm)
+    inf = CFNInference(pgm)
     observed = {0: "o0", 1: "o0", 2: "o1", 3: "o0", 4: "o0"}
-    results = inf.map_query(evidence=observed, solver=mip_solver)
+    results = inf.map_query(evidence=observed)
     assert results.solution.variable_value == {
         0: "h0",
         1: "h0",
@@ -242,12 +236,12 @@ def test_IntegerProgrammingInference_hmm1_test2():
     }
 
 
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_IntegerProgrammingInference_hmm1_test3():
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
+def Xtest_CFNInference_hmm1_test3():
     pgm = conin.hmm.tests.examples.create_hmm1()
-    inf = IntegerProgrammingInference(pgm)
+    inf = CFNInference(pgm)
     observed = {0: "o0", 1: "o1", 2: "o1", 3: "o1", 4: "o1"}
-    results = inf.map_query(evidence=observed, solver=mip_solver)
+    results = inf.map_query(evidence=observed)
     assert results.solution.variable_value == {
         0: "h1",
         1: "h1",
@@ -257,12 +251,12 @@ def test_IntegerProgrammingInference_hmm1_test3():
     }
 
 
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_IntegerProgrammingInference_chmm1_test0():
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
+def Xtest_CFNInference_chmm1_test0():
     pgm = conin.hmm.tests.examples.create_chmm1_pyomo()
-    inf = IntegerProgrammingInference(pgm)
+    inf = CFNInference(pgm)
     observed = ["o0"] * 15
-    results = inf.map_query(evidence=observed, solver=mip_solver)
+    results = inf.map_query(evidence=observed)
     assert results.solution.variable_value == [
         "h1",
         "h1",
@@ -282,12 +276,12 @@ def test_IntegerProgrammingInference_chmm1_test0():
     ]
 
 
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_IntegerProgrammingInference_chmm1_test1():
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
+def Xtest_CFNInference_chmm1_test1():
     pgm = conin.hmm.tests.examples.create_chmm1_pyomo()
-    inf = IntegerProgrammingInference(pgm)
+    inf = CFNInference(pgm)
     observed = ["o0"] + ["o1"] * 14
-    results = inf.map_query(evidence=observed, solver=mip_solver)
+    results = inf.map_query(evidence=observed)
     assert results.solution.variable_value == [
         "h0",
         "h0",
@@ -307,12 +301,12 @@ def test_IntegerProgrammingInference_chmm1_test1():
     ]
 
 
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_IntegerProgrammingInference_chmm1_test2():
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
+def Xtest_CFNInference_chmm1_test2():
     pgm = conin.hmm.tests.examples.create_chmm1_pyomo()
-    inf = IntegerProgrammingInference(pgm)
+    inf = CFNInference(pgm)
     observed = {i: "o0" for i in range(15)}
-    results = inf.map_query(evidence=observed, solver=mip_solver)
+    results = inf.map_query(evidence=observed)
     assert results.solution.variable_value == {
         0: "h1",
         1: "h1",
@@ -332,14 +326,14 @@ def test_IntegerProgrammingInference_chmm1_test2():
     }
 
 
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_IntegerProgrammingInference_chmm1_test3():
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
+def Xtest_CFNInference_chmm1_test3():
     pgm = conin.hmm.tests.examples.create_chmm1_pyomo()
-    inf = IntegerProgrammingInference(pgm)
+    inf = CFNInference(pgm)
     observed = {0: "o0"}
     for i in range(14):
         observed[i + 1] = "o1"
-    results = inf.map_query(evidence=observed, solver=mip_solver)
+    results = inf.map_query(evidence=observed)
     assert results.solution.variable_value == {
         0: "h0",
         1: "h0",
@@ -364,11 +358,11 @@ def test_IntegerProgrammingInference_chmm1_test3():
 #
 
 
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_DDBN_IntegerProgrammingInference_weather_conin():
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
+def test_DDBN_CFNInference_weather_conin():
     example = conin.dynamic_bayesian_network.examples.weather_conin()
-    inf = DDBN_IntegerProgrammingInference(example.pgm)
-    results = inf.map_query(stop=4, solver=mip_solver)
+    inf = DDBN_CFNInference(example.pgm)
+    results = inf.map_query(stop=4)
     assert results.solution.variable_value == example.solution
 
 
@@ -386,7 +380,7 @@ def test_DDBN_IntegerProgrammingInference_weather_conin():
 #    }
 #
 #    with pytest.raises(RuntimeError):
-#        results = inf.map_query(stop=4, evidence=evidence, solver=mip_solver)
+#        results = inf.map_query(stop=4, evidence=evidence)
 #        # TODO - Confirm that this result makes sense
 #        assert results.solution.variable_value == {
 #            ("T", 0): "Hot",
@@ -403,11 +397,11 @@ def test_DDBN_IntegerProgrammingInference_weather_conin():
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_DDBN_IntegerProgrammingInference_weather():
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
+def test_DDBN_CFNInference_weather():
     example = conin.dynamic_bayesian_network.examples.weather2_pgmpy()
-    inf = DDBN_IntegerProgrammingInference(example.pgm)
-    results = inf.map_query(stop=4, solver=mip_solver)
+    inf = DDBN_CFNInference(example.pgm)
+    results = inf.map_query(stop=4)
     assert results.solution.variable_value == example.solution
 
 
@@ -425,7 +419,7 @@ def test_DDBN_IntegerProgrammingInference_weather():
 #    }
 #
 #    with pytest.raises(RuntimeError):
-#        results = inf.map_query(stop=4, evidence=evidence, solver=mip_solver)
+#        results = inf.map_query(stop=4, evidence=evidence)
 #        # TODO - Confirm that this result makes sense
 #        assert results.solution.variable_value == {
 #            ("T", 0): "Hot",
@@ -446,11 +440,13 @@ def test_DDBN_IntegerProgrammingInference_weather():
 #
 
 
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_DDBN_IntegerProgrammingInference_weather_constrained_conin():
-    example = conin.dynamic_bayesian_network.examples.weather_constrained_pyomo_conin()
-    inf = DDBN_IntegerProgrammingInference(example.pgm)
-    results = inf.map_query(stop=4, solver=mip_solver)
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
+def Xtest_DDBN_CFNInference_weather_constrained_conin():
+    example = (
+        conin.dynamic_bayesian_network.examples.weather_constrained_toulbar2_conin()
+    )
+    inf = DDBN_CFNInference(example.pgm)
+    results = inf.map_query(stop=4)
     assert results.solution.variable_value == example.solution
 
 
@@ -468,7 +464,7 @@ def test_DDBN_IntegerProgrammingInference_weather_constrained_conin():
 #    }
 #
 #    with pytest.raises(RuntimeError):
-#        results = inf.map_query(stop=4, evidence=evidence, solver=mip_solver)
+#        results = inf.map_query(stop=4, evidence=evidence)
 #        assert results.solution.variable_value == {
 #            ("T", 0): "Hot",
 #            ("T", 1): "Mild",
@@ -484,11 +480,13 @@ def test_DDBN_IntegerProgrammingInference_weather_constrained_conin():
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_DDBN_IntegerProgrammingInference_weather_constrained_pyomo_pgmpy():
-    example = conin.dynamic_bayesian_network.examples.weather_constrained_pyomo_pgmpy()
-    inf = DDBN_IntegerProgrammingInference(example.pgm)
-    results = inf.map_query(stop=4, solver=mip_solver)
+@pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
+def Xtest_DDBN_CFNInference_weather_constrained_pgmpy():
+    example = (
+        conin.dynamic_bayesian_network.examples.weather_constrained_toulbar2_pgmpy()
+    )
+    inf = DDBN_CFNInference(example.pgm)
+    results = inf.map_query(stop=4)
     assert results.solution.variable_value == example.solution
 
 
@@ -506,7 +504,7 @@ def test_DDBN_IntegerProgrammingInference_weather_constrained_pyomo_pgmpy():
 #    }
 #
 #    with pytest.raises(RuntimeError):
-#        results = inf.map_query(stop=4, evidence=evidence, solver=mip_solver)
+#        results = inf.map_query(stop=4, evidence=evidence)
 #        assert results.solution.variable_value == {
 #            ("T", 0): "Hot",
 #            ("T", 1): "Mild",

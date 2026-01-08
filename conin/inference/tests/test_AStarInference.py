@@ -1,11 +1,11 @@
 import pytest
 import pyomo.opt
 
+import conin.hmm.tests.examples
 from conin.util import try_import
 from conin.inference.AStarInference import (
     AStarInference,
 )
-import conin.hmm.tests.examples
 
 #
 # HiddenMarkovModel tests
