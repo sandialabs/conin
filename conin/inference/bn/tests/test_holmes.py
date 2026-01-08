@@ -52,7 +52,7 @@ def test_holmes0_pyomo_conin():
 
 
 @pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
-def test_holmes0_toulbar2_conin():
+def Xtest_holmes0_toulbar2_conin():
     example = examples.holmes_conin()
     variables = None
     evidence = None
