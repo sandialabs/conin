@@ -292,41 +292,53 @@ def solve_pyomo_map_query_model(
     if timing:  # pragma:nocover
         timer = TicTocTimer()
         timer.tic("optimize_map_query_model - START")
-    opt = pe.SolverFactory(solver)
-    if solver_options:
-        opt.options = solver_options
-    if timing:  # pragma:nocover
-        timer.toc("Initialize solver")
-    solver_timer = TicTocTimer()
-    solver_timer.tic(None)
-    res = opt.solve(model, tee=tee)
-    solvetime = solver_timer.toc(None)
-    pe.assert_optimal_termination(res)
-    if timing:  # pragma:nocover
-        timer.toc("Completed optimization")
+    if solver == 'topas':
+        # Q: How do we specify the integer programming solver?  Maybe have this branch driven off of 
+        #       a request for AOS options?
+        #
+        # TODO - Add call to or-topas here
+        # NOTE: We'll need to interrogate a solution pool a bit differently than we do here.
+        soln = None
+        solutions = []
+        termination_condition="fail",
+    else:
+        opt = pe.SolverFactory(solver)
+        if solver_options:
+            opt.options = solver_options
+        if timing:  # pragma:nocover
+            timer.toc("Initialize solver")
+        solver_timer = TicTocTimer()
+        solver_timer.tic(None)
+        res = opt.solve(model, tee=tee)
+        solvetime = solver_timer.toc(None)
+        pe.assert_optimal_termination(res)
+        if timing:  # pragma:nocover
+            timer.toc("Completed optimization")
 
-    var = {}
-    variables = set()
-    fixed_variables = set()
-    for r, s in model.X:
-        variables.add(r)
-        if model.X[r, s].is_fixed():
-            fixed_variables.add(r)
-            if with_fixed and pe.value(model.X[r, s]) > 0.5:
+        var = {}
+        variables = set()
+        fixed_variables = set()
+        for r, s in model.X:
+            variables.add(r)
+            if model.X[r, s].is_fixed():
+                fixed_variables.add(r)
+                if with_fixed and pe.value(model.X[r, s]) > 0.5:
+                    var[r] = s.value
+            elif pe.value(model.X[r, s]) > 0.5:
                 var[r] = s.value
-        elif pe.value(model.X[r, s]) > 0.5:
-            var[r] = s.value
-    assert variables == set(var.keys()).union(
-        fixed_variables
-    ), "Some variables do not have values."
+        assert variables == set(var.keys()).union(
+            fixed_variables
+        ), "Some variables do not have values."
 
-    soln = munch.Munch(variable_value=var, log_factor_sum=pe.value(model.o))
+        soln = munch.Munch(variable_value=var, log_factor_sum=pe.value(model.o))
+        solutions = [soln]
+        termination_condition="ok",
+
     if timing:  # pragma:nocover
         timer.toc("optimize_map_query_model - STOP")
     return munch.Munch(
         solution=soln,
-        solutions=[soln],
-        termination_condition="ok",
+        solutions=solutions,
         solvetime=solvetime,
     )
 
