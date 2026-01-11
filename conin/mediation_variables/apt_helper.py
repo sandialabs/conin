@@ -887,7 +887,7 @@ def Viterbi_torch_list(hmm, cst_list, obs, sat,  time_hom = True, dtype = torch.
         max_ix = torch.argmax(V, axis = -1, keepdims = True)
         ix_tracker[t-1] = max_ix.squeeze()
         V = torch.take_along_dim(V, max_ix, axis=-1).squeeze()
-        if t == T:
+        if t == T-1:
             # val[t] = torch.einsum('k,kr,kr -> kr',emit_weights[t],final_ind,V)
             val[t] = torch.einsum(emit_weights[t],[0], V, kr_indices,*final_ind_list, kr_indices).cpu()
         else:
