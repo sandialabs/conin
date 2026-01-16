@@ -16,8 +16,12 @@ with try_import() as pgmpy_available:
 with try_import() as pytoulbar2_available:
     import pytoulbar2
 
+with try_import() as or_topas_aviable:
+    import or_topas
+
 mip_solver = pyomo.opt.check_available_solvers("glpk", "gurobi")
 mip_solver = mip_solver[0] if mip_solver else None
+test_or_topas_gurobi = len(pyomo.opt.check_available_solvers("gurobi")) > 0
 
 # ===============================================================================
 #
@@ -26,11 +30,116 @@ mip_solver = mip_solver[0] if mip_solver else None
 # ===============================================================================
 
 
+# this should have multiple solutions, extend as AOS example
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_ABC_pyomo_conin():
     example = examples.ABC_conin()
     results = inference_pyomo_map_query_MN(pgm=example.pgm, solver=mip_solver)
     assert results.solution.variable_value == example.solution
+
+
+@pytest.mark.skipif(not or_topas_aviable, reason="or_topas not installed")
+def test_ABC_pyomo_conin_topas_balas_ask_1_solution():
+    example = examples.ABC_conin()
+    solver_options = dict(
+        num_solutions=1,
+        rel_opt_gap=None,
+        abs_opt_gap=None,
+        solver_options={},
+        pool_manager=None,
+        topas_method="balas",
+    )
+    results = inference_pyomo_map_query_MN(
+        pgm=example.pgm, tee=False, solver="or_topas", solver_options=solver_options
+    )
+    assert len(results.solutions) == 1
+    assert results.solution.variable_value == example.solution
+
+
+@pytest.mark.skipif(
+    not or_topas_aviable or not test_or_topas_gurobi,
+    reason="or_topas/gurobi not installed",
+)
+def test_ABC_pyomo_conin_topas_gurobi_ask_1_solution():
+    example = examples.ABC_conin()
+    solver_options = dict(
+        num_solutions=1,
+        rel_opt_gap=None,
+        abs_opt_gap=None,
+        solver_options={},
+        pool_manager=None,
+        topas_method="gurobi_solution_pool",
+    )
+    results = inference_pyomo_map_query_MN(
+        pgm=example.pgm, tee=False, solver="or_topas", solver_options=solver_options
+    )
+    assert len(results.solutions) == 1
+    assert results.solution.variable_value == example.solution
+
+
+@pytest.mark.skipif(not or_topas_aviable, reason="or_topas not installed")
+def test_ABC_pyomo_conin_topas_balas_ask_2_solution():
+    example = examples.ABC_conin_aos_2()
+    solver_options = dict(
+        num_solutions=2,
+        rel_opt_gap=None,
+        abs_opt_gap=None,
+        solver_options={},
+        pool_manager=None,
+        topas_method="balas",
+    )
+    results = inference_pyomo_map_query_MN(
+        pgm=example.pgm, tee=False, solver="or_topas", solver_options=solver_options
+    )
+    assert len(results.solutions) == 2
+    assert results.solution.variable_value == example.solution
+    assert results.solutions[0].variable_value == example.solution
+    assert results.solutions[1].variable_value == example.second_best
+
+
+@pytest.mark.skipif(
+    not or_topas_aviable or not test_or_topas_gurobi,
+    reason="or_topas/gurobi not installed",
+)
+def test_ABC_pyomo_conin_topas_gurobi_ask_2_solution():
+    example = examples.ABC_conin_aos_2()
+    solver_options = dict(
+        num_solutions=2,
+        rel_opt_gap=None,
+        abs_opt_gap=None,
+        solver_options={},
+        pool_manager=None,
+        topas_method="gurobi_solution_pool",
+    )
+    results = inference_pyomo_map_query_MN(
+        pgm=example.pgm, tee=False, solver="or_topas", solver_options=solver_options
+    )
+    assert len(results.solutions) == 2
+    assert results.solution.variable_value == example.solution
+    assert results.solutions[0].variable_value == example.solution
+    assert results.solutions[1].variable_value == example.second_best
+
+
+@pytest.mark.skipif(
+    not or_topas_aviable or not test_or_topas_gurobi,
+    reason="or_topas/gurobi not installed",
+)
+def test_ABC_pyomo_conin_topas_gurobi_ask_2_with_opt_gap_solution():
+    example = examples.ABC_conin_aos_2()
+    solver_options = dict(
+        num_solutions=2,
+        rel_opt_gap=None,
+        abs_opt_gap=0,
+        solver_options={},
+        pool_manager=None,
+        topas_method="gurobi_solution_pool",
+    )
+    results = inference_pyomo_map_query_MN(
+        pgm=example.pgm, tee=False, solver="or_topas", solver_options=solver_options
+    )
+    assert len(results.solutions) == 1
+    assert results.solution.variable_value == example.solution
+    assert results.solutions[0].variable_value == example.solution
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -72,6 +181,8 @@ def test_ABC_pyomo_pgmpy():
 #    assert results.solution.variable_value == {"C": 1}
 
 
+# other test to extend with AOS, expect approximate alternatives
+# could extend to get exact
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_ABC_constrained_pyomo():
     """
@@ -102,6 +213,92 @@ def test_ABC_constrained_pyomo():
     example = examples.ABC_constrained_pyomo_conin()
     results = inference_pyomo_map_query_MN(pgm=example.pgm, solver=mip_solver)
     assert results.solution.variable_value == example.solution
+
+
+@pytest.mark.skipif(not or_topas_aviable, reason="or_topas not installed")
+def test_ABC_constrained_pyomo_conin_topas_balas_ask_1_solution():
+    example = examples.ABC_constrained_pyomo_conin_aos_2()
+    solver_options = dict(
+        num_solutions=1,
+        rel_opt_gap=None,
+        abs_opt_gap=None,
+        solver_options={},
+        pool_manager=None,
+        topas_method="balas",
+    )
+    results = inference_pyomo_map_query_MN(
+        pgm=example.pgm, tee=False, solver="or_topas", solver_options=solver_options
+    )
+    assert len(results.solutions) == 1
+    assert results.solution.variable_value == example.solution
+
+
+@pytest.mark.skipif(
+    not or_topas_aviable or not test_or_topas_gurobi,
+    reason="or_topas/gurobi not installed",
+)
+def test_ABC_constrained_pyomo_conin_topas_balas_ask_2_solution():
+    example = examples.ABC_constrained_pyomo_conin_aos_2()
+    solver_options = dict(
+        num_solutions=2,
+        rel_opt_gap=None,
+        abs_opt_gap=None,
+        solver_options={},
+        pool_manager=None,
+        topas_method="balas",
+    )
+    results = inference_pyomo_map_query_MN(
+        pgm=example.pgm, tee=False, solver="or_topas", solver_options=solver_options
+    )
+    assert len(results.solutions) == 2
+    assert results.solution.variable_value == example.solution
+    assert results.solutions[0].variable_value == example.solution
+    assert results.solutions[1].variable_value == example.second_best
+
+
+@pytest.mark.skipif(
+    not or_topas_aviable or not test_or_topas_gurobi,
+    reason="or_topas/gurobi not installed",
+)
+def test_ABC_constrained_pyomo_conin_topas_gurobi_ask_1_solution():
+    example = examples.ABC_constrained_pyomo_conin_aos_2()
+    solver_options = dict(
+        num_solutions=1,
+        rel_opt_gap=None,
+        abs_opt_gap=None,
+        solver_options={},
+        pool_manager=None,
+        topas_method="gurobi_solution_pool",
+    )
+    results = inference_pyomo_map_query_MN(
+        pgm=example.pgm, tee=False, solver="or_topas", solver_options=solver_options
+    )
+    assert len(results.solutions) == 1
+    assert results.solution.variable_value == example.solution
+    assert results.solutions[0].variable_value == example.solution
+
+
+@pytest.mark.skipif(
+    not or_topas_aviable or not test_or_topas_gurobi,
+    reason="or_topas/gurobi not installed",
+)
+def test_ABC_constrained_pyomo_conin_topas_gurobi_ask_2_solution():
+    example = examples.ABC_constrained_pyomo_conin_aos_2()
+    solver_options = dict(
+        num_solutions=2,
+        rel_opt_gap=None,
+        abs_opt_gap=None,
+        solver_options={},
+        pool_manager=None,
+        topas_method="gurobi_solution_pool",
+    )
+    results = inference_pyomo_map_query_MN(
+        pgm=example.pgm, tee=False, solver="or_topas", solver_options=solver_options
+    )
+    assert len(results.solutions) == 2
+    assert results.solution.variable_value == example.solution
+    assert results.solutions[0].variable_value == example.solution
+    assert results.solutions[1].variable_value == example.second_best
 
 
 # ===============================================================================

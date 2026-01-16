@@ -71,6 +71,7 @@ def ABC_conin():
 
     The MPE solution is A:2, B:2, C:1.
     """
+
     pgm = DiscreteMarkovNetwork()
     pgm.states = {"A": [0, 1, 2], "B": [0, 1, 2], "C": [0, 1, 2]}
     pgm.edges = [("A", "B"), ("B", "C"), ("A", "C")]
@@ -83,6 +84,32 @@ def ABC_conin():
     pgm.factors = [f1, f2, f3, f4, f5, f6]
 
     return Munch(pgm=pgm, solution={"A": 2, "B": 2, "C": 1})
+
+
+def ABC_conin_aos_2():
+    """
+    Three variables with pair-wise interactions.
+
+    The interactions have equal weights, so the MPE solution is defined by the weights for the
+    factors that describe the individual variables.
+
+    The MPE solution is A:2, B:2, C:1.
+    """
+
+    pgm = DiscreteMarkovNetwork()
+    pgm.states = {"A": [0, 1, 2], "B": [0, 1, 2], "C": [0, 1, 2]}
+    pgm.edges = [("A", "B"), ("B", "C"), ("A", "C")]
+    f1 = DiscreteFactor(nodes=["A"], values=[10, 19, 20])
+    f2 = DiscreteFactor(nodes=["B"], values=[10, 10, 30])
+    f3 = DiscreteFactor(nodes=["C"], values=[10, 20, 10])
+    f4 = DiscreteFactor(nodes=["A", "B"], values=np.ones(9))
+    f5 = DiscreteFactor(nodes=["B", "C"], values=np.ones(9))
+    f6 = DiscreteFactor(nodes=["A", "C"], values=np.ones(9))
+    pgm.factors = [f1, f2, f3, f4, f5, f6]
+
+    optimal_solution = {"A": 2, "B": 2, "C": 1}
+    second_best = {"A": 1, "B": 2, "C": 1}
+    return Munch(pgm=pgm, solution=optimal_solution, second_best=second_best)
 
 
 def ABC_pgmpy():
@@ -153,6 +180,29 @@ def ABC_constrained_pyomo_conin():
 
     cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=[constraint_fn])
     return Munch(pgm=cpgm, solution={"A": 0, "B": 2, "C": 1})
+
+
+def ABC_constrained_pyomo_conin_aos_2():
+    """
+    Three variables with pair-wise interactions.
+
+    The interactions have equal weights.  The unconstrained MPE solution is A:2, B:2, C:1.
+    However, we include a constraint that excludes variable assignments to values that are equal.
+
+    The constrained MPE solution is A:0, B:2, C:1.
+    """
+    pgm = ABC_conin_aos_2()
+
+    @pyomo_constraint_fn()
+    def constraint_fn(model):
+        @model.Constraint([0, 1, 2])
+        def diff(M, s):
+            return M.X["A", s] + M.X["B", s] + M.X["C", s] <= 1
+
+    cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=[constraint_fn])
+    optimal_solution = {"A": 0, "B": 2, "C": 1}
+    second_best = {"A": 1, "B": 2, "C": 0}
+    return Munch(pgm=cpgm, solution=optimal_solution, second_best=second_best)
 
 
 def ABC_constrained_toulbar2_pgmpy():
