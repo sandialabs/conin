@@ -4,8 +4,11 @@ import tempfile
 
 # import pprint
 import munch
-import pytoulbar2
+from conin.util import try_import
 from pyomo.common.timing import TicTocTimer
+
+with try_import() as pytoulbar2_available:
+    import pytoulbar2
 
 from conin.markov_network import (
     ConstrainedDiscreteMarkovNetwork,
@@ -175,6 +178,14 @@ def inference_toulbar2_map_query_MN(
     timing=False,
     **options,
 ):
+    if not pytoulbar2_available:
+        return munch.Munch(
+            solution=None,
+            solutions=[],
+            termination_condition="pytoulbar2 not available",
+            solvetime=0.0,
+        )
+
     model = create_toulbar2_map_query_model_MN(
         pgm,
         variables=variables,
