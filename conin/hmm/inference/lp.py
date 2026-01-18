@@ -16,6 +16,7 @@ try:
     from or_topas.utils import (
         get_model_variables as topas_get_model_variables,
     )
+
     aos_available = True
 except ImportError:
     aos_available = False
@@ -85,8 +86,6 @@ def lp_inference(
     return ans
 
 
-
-
 def ip_inference(
     *,
     hmm,
@@ -104,7 +103,7 @@ def ip_inference(
     T = len(observed)
     if debug:
         toc("Generating Model - STOP")
-    #if solver == "or_topas":
+    # if solver == "or_topas":
     if True:
         solver_options = dict(
             num_solutions=1,
@@ -112,12 +111,12 @@ def ip_inference(
             abs_opt_gap=None,
             solver_options={},
             pool_manager=None,
-            topas_method="gurobi_solution_pool",
+            topas_method="balas",
         )
         if True:
-        # if not aos_available:
-        #     raise RuntimeError("or_topas Solver Unavailable")
-        # else:
+            # if not aos_available:
+            #     raise RuntimeError("or_topas Solver Unavailable")
+            # else:
             if solver_options == None:
                 solver_options = dict()
             topas_method = solver_options.pop("topas_method", "balas")
@@ -138,7 +137,9 @@ def ip_inference(
             # print(f"Number of solutions found: {len(aos_pm.solutions)}")
             for index, aos_solution in enumerate(aos_pm.solutions):
                 # print(f"Solution {index}: is {type(aos_solution)}, number of vars {len(aos_solution._variables)}")
-                aos_sol_munch = parse_aos_solution_pyomo_ip_inference(aos_solution = aos_solution, M = M, hmm = hmm, T = T)
+                aos_sol_munch = parse_aos_solution_pyomo_ip_inference(
+                    aos_solution=aos_solution, M=M, hmm=hmm, T=T
+                )
                 if index == 0:
                     first_sol = aos_sol_munch
                 solutions.append(aos_sol_munch)
@@ -149,7 +150,6 @@ def ip_inference(
         assert (
             num_solutions == 1
         ), "ERROR: Support for inferring multiple solutions with an IP model has not been setup"
-
 
         if debug:
             tic("Optimizing Model - START")
@@ -167,7 +167,9 @@ def ip_inference(
         # so this is just the objective
         log_likelihood = res["Problem"][0]["Lower bound"]
 
-        soln = parse_model_solution_pyomo_ip_inference(M = M, hmm = hmm, T = T, log_likelihood = log_likelihood)
+        soln = parse_model_solution_pyomo_ip_inference(
+            M=M, hmm=hmm, T=T, log_likelihood=log_likelihood
+        )
         solutions = [soln]
     if debug:
         # ans.hmm = hmm.chmm.hmm
@@ -186,6 +188,7 @@ def ip_inference(
         solutions=solutions,
         termination_condition="ok",
     )
+
 
 def parse_model_solution_pyomo_ip_inference(M, hmm, T, log_likelihood):
     data = hmm.chmm.data
@@ -212,20 +215,21 @@ def parse_model_solution_pyomo_ip_inference(M, hmm, T, log_likelihood):
         log_likelihood=log_likelihood,
         variables=variables,
     )
-    
+
     return soln
+
 
 def parse_aos_solution_pyomo_ip_inference(aos_solution, M, hmm, T):
     obj_list = aos_solution._objectives
     assert len(obj_list) > 0, "Solution in parse_aos_solution has empty objective list"
-    #this implicitly forces an assumption that there is only 1 objective
+    # this implicitly forces an assumption that there is only 1 objective
     log_likelihood = obj_list[0].value
     data = hmm.chmm.data
     hidden = ["__UNKNOWN__"] * T
     for t in range(T):
         for a in data.hmm.A:
             aos_var_hmm_x_t_a = aos_solution.variable(M.hmm.x[t, a].name)
-            #if pyo.value(M.hmm.x[t, a]) > 0.5:
+            # if pyo.value(M.hmm.x[t, a]) > 0.5:
             if aos_var_hmm_x_t_a.value > 0.5:
                 hidden[t] = hmm.hidden_markov_model.hidden_to_external[a]
         assert (
@@ -241,7 +245,9 @@ def parse_aos_solution_pyomo_ip_inference(aos_solution, M, hmm, T):
     #     str(v): pyo.value(v) for v in model_variables if math.fabs(pyo.value(v)) > 1e-3
     # }
     variables = {
-        aos_var.name : aos_var.value for aos_var in model_variables if math.fabs(aos_var.value) > 1e-3
+        aos_var.name: aos_var.value
+        for aos_var in model_variables
+        if math.fabs(aos_var.value) > 1e-3
     }
 
     soln = munch.Munch(
@@ -250,5 +256,5 @@ def parse_aos_solution_pyomo_ip_inference(aos_solution, M, hmm, T):
         log_likelihood=log_likelihood,
         variables=variables,
     )
-    
+
     return soln
