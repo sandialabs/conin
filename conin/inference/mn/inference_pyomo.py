@@ -301,20 +301,11 @@ def solve_pyomo_map_query_model(
         timer = TicTocTimer()
         timer.tic("optimize_map_query_model - START")
     if solver == "or_topas":
-        # Q: How do we specify the integer programming solver?  Maybe have this branch driven off of
-        #       a request for AOS options?
-        #
-        # TODO - Add call to or-topas here
-        # NOTE: We'll need to interrogate a solution pool a bit differently than we do here.
-
-        # enforcing the assumption that we are using gurobi solution pool here
         if not aos_available:
             raise RuntimeError("or_topas Solver Unavailable")
         else:
             if solver_options == None:
                 solver_options = dict()
-            # else:
-            #     print(f"{solver_options=}")
             if timing:  # pragma:nocover
                 timer.toc("Initialize solver")
             solver_timer = TicTocTimer()
