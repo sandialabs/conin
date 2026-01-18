@@ -386,12 +386,16 @@ def parse_aos_solution_pyomo_map_query(model, aos_solution, with_fixed):
     fixed_variables = set()
     for r, s in model.X:
         variables.add(r)
-        current_variable = aos_solution.variable(model.X[r, s].name)
-        if current_variable.fixed:
+        aos_var_X_r_s = aos_solution.variable(model.X[r, s].name)
+        if aos_var_X_r_s.fixed:
             fixed_variables.add(r)
-            if with_fixed and current_variable.value > 0.5:
+            if with_fixed and aos_var_X_r_s.value > 0.5:
+                #N.B. this works the same between parse_aos and parse_model
+                #     because r and s are parameters not variables
                 var[r] = s.value
-        elif current_variable.value > 0.5:
+        elif aos_var_X_r_s.value > 0.5:
+            #N.B. this works the same between parse_aos and parse_model
+            #     because r and s are parameters not variables
             var[r] = s.value
     assert variables == set(var.keys()).union(
         fixed_variables
