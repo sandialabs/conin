@@ -7,7 +7,6 @@ from pyomo.common.timing import TicTocTimer
 from conin.markov_network import ConstrainedDiscreteMarkovNetwork
 from conin.inference.mn.factor_repn import extract_factor_representation_, State
 
-
 """
 Notes on this integer program:
 
