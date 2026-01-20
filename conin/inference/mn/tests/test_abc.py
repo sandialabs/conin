@@ -30,7 +30,6 @@ test_or_topas_gurobi = len(pyomo.opt.check_available_solvers("gurobi")) > 0
 # ===============================================================================
 
 
-# this should have multiple solutions, extend as AOS example
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_ABC_pyomo_conin():
     example = examples.ABC_conin()
@@ -181,8 +180,6 @@ def test_ABC_pyomo_pgmpy():
 #    assert results.solution.variable_value == {"C": 1}
 
 
-# other test to extend with AOS, expect approximate alternatives
-# could extend to get exact
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_ABC_constrained_pyomo():
     """
