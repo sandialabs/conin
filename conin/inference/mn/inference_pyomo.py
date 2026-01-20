@@ -7,13 +7,10 @@ from pyomo.common.timing import TicTocTimer
 from conin.markov_network import ConstrainedDiscreteMarkovNetwork
 from conin.inference.mn.factor_repn import extract_factor_representation_, State
 
+from conin.util import try_import
 
-try:
+with try_import() as or_topas_available:
     import or_topas.aos as aos
-
-    aos_available = True
-except ImportError:
-    aos_available = False
 
 
 """
@@ -301,7 +298,7 @@ def solve_pyomo_map_query_model(
         timer = TicTocTimer()
         timer.tic("optimize_map_query_model - START")
     if solver == "or_topas":
-        if not aos_available:
+        if not or_topas_available:
             raise RuntimeError("or_topas Solver Unavailable")
         else:
             if solver_options == None:
