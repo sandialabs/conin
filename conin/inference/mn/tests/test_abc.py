@@ -16,12 +16,12 @@ with try_import() as pgmpy_available:
 with try_import() as pytoulbar2_available:
     import pytoulbar2
 
-with try_import() as or_topas_aviable:
+with try_import() as or_topas_available:
     import or_topas
 
 mip_solver = pyomo.opt.check_available_solvers("glpk", "gurobi")
 mip_solver = mip_solver[0] if mip_solver else None
-test_or_topas_gurobi = len(pyomo.opt.check_available_solvers("gurobi")) > 0
+gurobi_available = len(pyomo.opt.check_available_solvers("gurobi")) > 0
 
 # ===============================================================================
 #
@@ -37,7 +37,7 @@ def test_ABC_pyomo_conin():
     assert results.solution.variable_value == example.solution
 
 
-@pytest.mark.skipif(not or_topas_aviable, reason="or_topas not installed")
+@pytest.mark.skipif(not or_topas_available, reason="or_topas not installed")
 def test_ABC_pyomo_conin_topas_balas_ask_1_solution():
     example = examples.ABC_conin()
     solver_options = dict(
@@ -56,8 +56,8 @@ def test_ABC_pyomo_conin_topas_balas_ask_1_solution():
 
 
 @pytest.mark.skipif(
-    not or_topas_aviable or not test_or_topas_gurobi,
-    reason="or_topas/gurobi not installed",
+    not (or_topas_available and gurobi_available),
+    reason="or_topas or gurobi not installed",
 )
 def test_ABC_pyomo_conin_topas_gurobi_ask_1_solution():
     example = examples.ABC_conin()
@@ -76,7 +76,7 @@ def test_ABC_pyomo_conin_topas_gurobi_ask_1_solution():
     assert results.solution.variable_value == example.solution
 
 
-@pytest.mark.skipif(not or_topas_aviable, reason="or_topas not installed")
+@pytest.mark.skipif(not or_topas_available, reason="or_topas not installed")
 def test_ABC_pyomo_conin_topas_balas_ask_2_solution():
     example = examples.ABC_conin_aos_2()
     solver_options = dict(
@@ -97,8 +97,8 @@ def test_ABC_pyomo_conin_topas_balas_ask_2_solution():
 
 
 @pytest.mark.skipif(
-    not or_topas_aviable or not test_or_topas_gurobi,
-    reason="or_topas/gurobi not installed",
+    not (or_topas_available and gurobi_available),
+    reason="or_topas or gurobi not installed",
 )
 def test_ABC_pyomo_conin_topas_gurobi_ask_2_solution():
     example = examples.ABC_conin_aos_2()
@@ -120,8 +120,8 @@ def test_ABC_pyomo_conin_topas_gurobi_ask_2_solution():
 
 
 @pytest.mark.skipif(
-    not or_topas_aviable or not test_or_topas_gurobi,
-    reason="or_topas/gurobi not installed",
+    not (or_topas_available and gurobi_available),
+    reason="or_topas or gurobi not installed",
 )
 def test_ABC_pyomo_conin_topas_gurobi_ask_2_with_opt_gap_solution():
     example = examples.ABC_conin_aos_2()
@@ -212,7 +212,7 @@ def test_ABC_constrained_pyomo():
     assert results.solution.variable_value == example.solution
 
 
-@pytest.mark.skipif(not or_topas_aviable, reason="or_topas not installed")
+@pytest.mark.skipif(not or_topas_available, reason="or_topas not installed")
 def test_ABC_constrained_pyomo_conin_topas_balas_ask_1_solution():
     example = examples.ABC_constrained_pyomo_conin_aos_2()
     solver_options = dict(
@@ -231,8 +231,8 @@ def test_ABC_constrained_pyomo_conin_topas_balas_ask_1_solution():
 
 
 @pytest.mark.skipif(
-    not or_topas_aviable or not test_or_topas_gurobi,
-    reason="or_topas/gurobi not installed",
+    not (or_topas_available and gurobi_available),
+    reason="or_topas or gurobi not installed",
 )
 def test_ABC_constrained_pyomo_conin_topas_balas_ask_2_solution():
     example = examples.ABC_constrained_pyomo_conin_aos_2()
@@ -254,8 +254,8 @@ def test_ABC_constrained_pyomo_conin_topas_balas_ask_2_solution():
 
 
 @pytest.mark.skipif(
-    not or_topas_aviable or not test_or_topas_gurobi,
-    reason="or_topas/gurobi not installed",
+    not (or_topas_available and gurobi_available),
+    reason="or_topas or gurobi not installed",
 )
 def test_ABC_constrained_pyomo_conin_topas_gurobi_ask_1_solution():
     example = examples.ABC_constrained_pyomo_conin_aos_2()
@@ -276,8 +276,8 @@ def test_ABC_constrained_pyomo_conin_topas_gurobi_ask_1_solution():
 
 
 @pytest.mark.skipif(
-    not or_topas_aviable or not test_or_topas_gurobi,
-    reason="or_topas/gurobi not installed",
+    not (or_topas_available and gurobi_available),
+    reason="or_topas or gurobi not installed",
 )
 def test_ABC_constrained_pyomo_conin_topas_gurobi_ask_2_solution():
     example = examples.ABC_constrained_pyomo_conin_aos_2()
