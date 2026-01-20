@@ -319,9 +319,7 @@ def solve_pyomo_map_query_model(
                 len(aos_pm.solutions) > 0
             ), f"No solutions found for OR_TOPAS Solver use"
             solutions = []
-            # print(f"Number of solutions found: {len(aos_pm.solutions)}")
             for index, aos_solution in enumerate(aos_pm.solutions):
-                # print(f"Solution {index}: is {type(aos_solution)}, number of vars {len(aos_solution._variables)}")
                 aos_sol_munch = parse_aos_solution_pyomo_map_query(
                     model, aos_solution, with_fixed
                 )

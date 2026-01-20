@@ -1,7 +1,6 @@
 import inspect
 from conin.exceptions import InvalidInputError
 
-
 # One could also create an inherited class for additional functionality
 # TODO think about partial_func semantics
 
