@@ -285,7 +285,7 @@ def create_MN_pyomo_map_query_model_from_factorial_repn(
     return model
 
 
-
+#black test
 
 
 def solve_pyomo_map_query_model(
