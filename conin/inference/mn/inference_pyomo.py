@@ -320,9 +320,7 @@ def solve_pyomo_map_query_model(
         if timing:  # pragma:nocover
             timer.toc("Completed optimization")
 
-        assert (
-            len(aos_pm.solutions) > 0
-        ), f"No solutions found by 'or_topas' solver"
+        assert len(aos_pm.solutions) > 0, f"No solutions found by 'or_topas' solver"
         solutions = [
             parse_aos_solution_pyomo_map_query(model, aos_solution, with_fixed)
             for aos_solution in aos_pm.solutions
