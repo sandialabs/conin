@@ -38,12 +38,14 @@ def test_ABC_pyomo_conin():
 
 
 @pytest.mark.skipif(not or_topas_available, reason="or_topas not installed")
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_ABC_pyomo_conin_topas_balas_ask_1_solution():
     example = examples.ABC_conin()
     solver_options = dict(
         num_solutions=1,
         rel_opt_gap=None,
         abs_opt_gap=None,
+        solver=mip_solver,
         solver_options={},
         pool_manager=None,
         topas_method="balas",
@@ -77,12 +79,14 @@ def test_ABC_pyomo_conin_topas_gurobi_ask_1_solution():
 
 
 @pytest.mark.skipif(not or_topas_available, reason="or_topas not installed")
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_ABC_pyomo_conin_topas_balas_ask_2_solution():
     example = examples.ABC_conin_aos_2()
     solver_options = dict(
         num_solutions=2,
         rel_opt_gap=None,
         abs_opt_gap=None,
+        solver=mip_solver,
         solver_options={},
         pool_manager=None,
         topas_method="balas",
@@ -213,12 +217,14 @@ def test_ABC_constrained_pyomo():
 
 
 @pytest.mark.skipif(not or_topas_available, reason="or_topas not installed")
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_ABC_constrained_pyomo_conin_topas_balas_ask_1_solution():
     example = examples.ABC_constrained_pyomo_conin_aos_2()
     solver_options = dict(
         num_solutions=1,
         rel_opt_gap=None,
         abs_opt_gap=None,
+        solver=mip_solver,
         solver_options={},
         pool_manager=None,
         topas_method="balas",
