@@ -11,5 +11,5 @@ dependencies:
   - pip
   - pip:
     - pytoulbar2
-    - -e git+https://github.com/sandialabs/or_topas.git
+    - -e git+https://github.com/sandialabs/or_topas
   - pyomo
