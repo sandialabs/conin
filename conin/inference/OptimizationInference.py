@@ -115,10 +115,8 @@ class IntegerProgrammingInference:
                 results = lp_inference(hmm=pgm, observed=observed, **options)
                 solutions = results.solutions
                 for soln in solutions:
-                    soln.variable_value = {
-                        i: v for i, v in enumerate(soln.variable_value)
-                    }
-                    soln.hidden = soln.variable_value
+                    soln.states = {i: v for i, v in enumerate(soln.states)}
+                    soln.hidden = soln.states
                 results.solutions = solutions
                 return results
 
@@ -133,10 +131,8 @@ class IntegerProgrammingInference:
                 results = ip_inference(hmm=pgm, observed=observed, **options)
                 solutions = results.solutions
                 for soln in solutions:
-                    soln.variable_value = {
-                        i: v for i, v in enumerate(soln.variable_value)
-                    }
-                    soln.hidden = soln.variable_value
+                    soln.states = {i: v for i, v in enumerate(soln.states)}
+                    soln.hidden = soln.states
                 results.solutions = solutions
                 return results
 

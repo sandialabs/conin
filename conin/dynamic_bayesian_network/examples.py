@@ -7,7 +7,7 @@ from conin.dynamic_bayesian_network import (
     ConstrainedDynamicDiscreteBayesianNetwork,
 )
 from conin.bayesian_network import DiscreteCPD
-from conin.util import try_import
+from conin.util import try_import, MPESolution
 
 with try_import() as pgmpy_available:
     from pgmpy.models import DynamicBayesianNetwork as pgmpy_DynamicBayesianNetwork
@@ -35,7 +35,7 @@ def simple0_DDBN_conin(debug=False):
     if debug:
         for cpd in G.cpds:
             print(cpd)
-    return Munch(pgm=G, solution={("Z", 0): 1, ("Z", 1): 0})
+    return Munch(pgm=G, solutions=[MPESolution(states={("Z", 0): 1, ("Z", 1): 0})])
 
 
 def simple0_DDBN1_pgmpy(debug=False):
@@ -57,7 +57,7 @@ def simple0_DDBN1_pgmpy(debug=False):
     if debug:
         for cpd in G.get_cpds():
             print(cpd)
-    return Munch(pgm=G, solution={("Z", 0): 1, ("Z", 1): 0})
+    return Munch(pgm=G, solutions=[MPESolution(states={("Z", 0): 1, ("Z", 1): 0})])
 
 
 def simple0_DDBN2_pgmpy(debug=False):
@@ -79,7 +79,7 @@ def simple0_DDBN2_pgmpy(debug=False):
     if debug:
         for cpd in G.get_cpds():
             print(cpd)
-    return Munch(pgm=G, solution={("Z", 0): 1, ("Z", 1): 0})
+    return Munch(pgm=G, solutions=[MPESolution(states={("Z", 0): 1, ("Z", 1): 0})])
 
 
 #
@@ -110,12 +110,16 @@ def simple1_DDBN_conin(debug=False):
             print(cpd)
     return Munch(
         pgm=G,
-        solution={
-            ("A", 0): 0,
-            ("A", 1): 1,
-            ("B", 0): 1,
-            ("B", 1): 0,
-        },
+        solutions=[
+            MPESolution(
+                states={
+                    ("A", 0): 0,
+                    ("A", 1): 1,
+                    ("B", 0): 1,
+                    ("B", 1): 0,
+                }
+            )
+        ],
     )
 
 
@@ -148,12 +152,16 @@ def simple1_DDBN_pgmpy(debug=False):
             print(cpd)
     return Munch(
         pgm=G,
-        solution={
-            ("A", 0): 0,
-            ("A", 1): 1,
-            ("B", 0): 1,
-            ("B", 1): 0,
-        },
+        solutions=[
+            MPESolution(
+                states={
+                    ("A", 0): 0,
+                    ("A", 1): 1,
+                    ("B", 0): 1,
+                    ("B", 1): 0,
+                }
+            )
+        ],
     )
 
 
@@ -168,12 +176,16 @@ def simple1_DDBN_constrained_pyomo_conin(debug=False):
 
     return Munch(
         pgm=ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=[constraints]),
-        solution={
-            ("A", 0): 0,
-            ("A", 1): 0,
-            ("B", 0): 1,
-            ("B", 1): 1,
-        },
+        solutions=[
+            MPESolution(
+                states={
+                    ("A", 0): 0,
+                    ("A", 1): 0,
+                    ("B", 0): 1,
+                    ("B", 1): 1,
+                }
+            )
+        ],
     )
 
 
@@ -191,12 +203,16 @@ def simple1_DDBN_constrained_pyomo_pgmpy(debug=False):
     pgm = conin.common.pgmpy.convert_pgmpy_to_conin(pgm)
     return Munch(
         pgm=ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=[constraints]),
-        solution={
-            ("A", 0): 0,
-            ("A", 1): 0,
-            ("B", 0): 1,
-            ("B", 1): 1,
-        },
+        solutions=[
+            MPESolution(
+                states={
+                    ("A", 0): 0,
+                    ("A", 1): 0,
+                    ("B", 0): 1,
+                    ("B", 1): 1,
+                }
+            )
+        ],
     )
 
 
@@ -345,7 +361,7 @@ def weather_conin(debug=False):
     if debug:
         for cpd in dbn.cpds:
             print(cpd)
-    return Munch(pgm=dbn, solution=q_weather_A)
+    return Munch(pgm=dbn, solutions=[MPESolution(states=q_weather_A)])
 
 
 def weather1_pgmpy(debug=False):
@@ -515,7 +531,7 @@ def weather1_pgmpy(debug=False):
     if debug:
         for cpd in dbn.get_cpds():
             print(cpd)
-    return Munch(pgm=dbn, solution=q_weather_A)
+    return Munch(pgm=dbn, solutions=[MPESolution(states=q_weather_A)])
 
 
 def weather2_pgmpy(debug=False):
@@ -652,7 +668,7 @@ def weather2_pgmpy(debug=False):
     if debug:
         for cpd in dbn.get_cpds():
             print(cpd)
-    return Munch(pgm=dbn, solution=q_weather_A)
+    return Munch(pgm=dbn, solutions=[MPESolution(states=q_weather_A)])
 
 
 q_weather_A_constrained = {
@@ -691,7 +707,7 @@ def weather_constrained_pyomo_conin(debug=False):
 
     return Munch(
         pgm=ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=[constraints]),
-        solution=q_weather_A_constrained,
+        solutions=[MPESolution(states=q_weather_A_constrained)],
     )
 
 
@@ -710,5 +726,5 @@ def weather_constrained_pyomo_pgmpy(debug=False):
     pgm = conin.common.pgmpy.convert_pgmpy_to_conin(pgm)
     return Munch(
         pgm=ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=[constraints]),
-        solution=q_weather_A_constrained,
+        solutions=[MPESolution(states=q_weather_A_constrained)],
     )

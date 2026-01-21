@@ -79,7 +79,17 @@ def cancer1_BN_conin(debug=False):
     cancer_model.check_model()
     return Munch(
         pgm=cancer_model,
-        solution={"Cancer": 1, "Dyspnoea": 1, "Pollution": 0, "Smoker": 1, "Xray": 1},
+        solutions=[
+            MPESolution(
+                states={
+                    "Cancer": 1,
+                    "Dyspnoea": 1,
+                    "Pollution": 0,
+                    "Smoker": 1,
+                    "Xray": 1,
+                }
+            )
+        ],
     )
 
 
@@ -139,7 +149,17 @@ def cancer1_BN_pgmpy(debug=False):
     cancer_model.check_model()
     return Munch(
         pgm=cancer_model,
-        solution={"Cancer": 1, "Dyspnoea": 1, "Pollution": 0, "Smoker": 1, "Xray": 1},
+        solutions=[
+            MPESolution(
+                states={
+                    "Cancer": 1,
+                    "Dyspnoea": 1,
+                    "Pollution": 0,
+                    "Smoker": 1,
+                    "Xray": 1,
+                }
+            )
+        ],
     )
 
 
@@ -199,7 +219,17 @@ def cancer2_BN_pgmpy(debug=False):
     cancer_model.check_model()
     return Munch(
         pgm=cancer_model,
-        solution={"Cancer": 1, "Dyspnoea": 1, "Pollution": 0, "Smoker": 1, "Xray": 1},
+        solutions=[
+            MPESolution(
+                states={
+                    "Cancer": 1,
+                    "Dyspnoea": 1,
+                    "Pollution": 0,
+                    "Smoker": 1,
+                    "Xray": 1,
+                }
+            )
+        ],
     )
 
 
@@ -220,7 +250,17 @@ def cancer1_BN_constrained_pyomo_conin(debug=False):
     cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
     return Munch(
         pgm=cpgm,
-        solution={"Cancer": 1, "Dyspnoea": 0, "Pollution": 0, "Smoker": 1, "Xray": 1},
+        solutions=[
+            MPESolution(
+                states={
+                    "Cancer": 1,
+                    "Dyspnoea": 0,
+                    "Pollution": 0,
+                    "Smoker": 1,
+                    "Xray": 1,
+                }
+            )
+        ],
     )
 
 
@@ -239,7 +279,17 @@ def cancer1_BN_constrained_pyomo_pgmpy(debug=False):
     cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
     return Munch(
         pgm=cpgm,
-        solution={"Cancer": 1, "Dyspnoea": 0, "Pollution": 0, "Smoker": 1, "Xray": 1},
+        solutions=[
+            MPESolution(
+                states={
+                    "Cancer": 1,
+                    "Dyspnoea": 0,
+                    "Pollution": 0,
+                    "Smoker": 1,
+                    "Xray": 1,
+                }
+            )
+        ],
     )
 
 
@@ -258,7 +308,17 @@ def cancer2_BN_constrained_pyomo_pgmpy(debug=False):
     cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
     return Munch(
         pgm=cpgm,
-        solution={"Cancer": 1, "Dyspnoea": 0, "Pollution": 0, "Smoker": 1, "Xray": 1},
+        solutions=[
+            MPESolution(
+                states={
+                    "Cancer": 1,
+                    "Dyspnoea": 0,
+                    "Pollution": 0,
+                    "Smoker": 1,
+                    "Xray": 1,
+                }
+            )
+        ],
     )
 
 
@@ -281,7 +341,7 @@ def simple1_BN_conin(debug=False):
         print(cpd_B)
     G.cpds = [cpd_A, cpd_B]
     G.check_model()
-    return Munch(pgm=G, solution={"A": 0, "B": 1})
+    return Munch(pgm=G, solutions=[MPESolution(states={"A": 0, "B": 1})])
 
 
 def simple1_BN_pgmpy(debug=False):
@@ -301,7 +361,7 @@ def simple1_BN_pgmpy(debug=False):
         print(cpd_B)
     G.add_cpds(cpd_A, cpd_B)
     G.check_model()
-    return Munch(pgm=G, solution={"A": 0, "B": 1})
+    return Munch(pgm=G, solutions=[MPESolution(states={"A": 0, "B": 1})])
 
 
 def simple2_BN_pgmpy(debug=False):
@@ -321,7 +381,7 @@ def simple2_BN_pgmpy(debug=False):
         print(cpd_B)
     G.add_cpds(cpd_A, cpd_B)
     G.check_model()
-    return Munch(pgm=G, solution={"A": 0, "B": 1})
+    return Munch(pgm=G, solutions=[MPESolution(states={"A": 0, "B": 1})])
 
 
 #
@@ -390,7 +450,12 @@ def DBDA_5_1_conin(debug=False):
         print(test_result_CPD_2)
 
     return Munch(
-        pgm=model, solution={"disease-state": 1, "test-result1": 1, "test-result2": 1}
+        pgm=model,
+        solutions=[
+            MPESolution(
+                states={"disease-state": 1, "test-result1": 1, "test-result2": 1}
+            )
+        ],
     )
 
 
@@ -457,7 +522,12 @@ def DBDA_5_1_pgmpy(debug=False):
         print(test_result_CPD_2)
 
     return Munch(
-        pgm=model, solution={"disease-state": 1, "test-result1": 1, "test-result2": 1}
+        pgm=model,
+        solutions=[
+            MPESolution(
+                states={"disease-state": 1, "test-result1": 1, "test-result2": 1}
+            )
+        ],
     )
 
 
@@ -529,7 +599,11 @@ def holmes_conin(debug=False):
     G.check_model()
     return Munch(
         pgm=G,
-        solution={"W": "-w", "G": "-g", "A": "-a", "B": "-b", "E": "-e", "R": "r"},
+        solutions=[
+            MPESolution(
+                {"W": "-w", "G": "-g", "A": "-a", "B": "-b", "E": "-e", "R": "r"}
+            )
+        ],
     )
 
 
@@ -594,7 +668,11 @@ def holmes_pgmpy(debug=False):
     G.check_model()
     return Munch(
         pgm=G,
-        solution={"W": "-w", "G": "-g", "A": "-a", "B": "-b", "E": "-e", "R": "r"},
+        solutions=[
+            MPESolution(
+                {"W": "-w", "G": "-g", "A": "-a", "B": "-b", "E": "-e", "R": "r"}
+            )
+        ],
     )
 
 
@@ -679,7 +757,7 @@ def tb2_BN_conin(debug=False):
         print(cpd_C)
     G.cpds = [cpd_A, cpd_B, cpd_C]
     G.check_model()
-    return Munch(pgm=G, solution={"A": 0, "B": 3, "C": 4})
+    return Munch(pgm=G, solutions=[MPESolution(states={"A": 0, "B": 3, "C": 4})])
 
 
 def tb2_BN_pgmpy(debug=False):
@@ -710,7 +788,7 @@ def tb2_BN_pgmpy(debug=False):
         print(cpd_C)
     G.add_cpds(cpd_A, cpd_B, cpd_C)
     G.check_model()
-    return Munch(pgm=G, solution={"A": 0, "B": 3, "C": 4})
+    return Munch(pgm=G, solutions=[MPESolution(states={"A": 0, "B": 3, "C": 4})])
 
 
 def tb2_BN_pgmpy_mapcpd(debug=False):
@@ -737,7 +815,7 @@ def tb2_BN_pgmpy_mapcpd(debug=False):
         print(cpd_C)
     G.add_cpds(cpd_A, cpd_B, cpd_C)
     G.check_model()
-    return Munch(pgm=G, solution={"A": 0, "B": 3, "C": 4})
+    return Munch(pgm=G, solutions=[MPESolution(states={"A": 0, "B": 3, "C": 4})])
 
 
 #
@@ -770,7 +848,7 @@ def tb2_BN_conin(debug=False):
         print(cpd_C)
     G.cpds = [cpd_A, cpd_B, cpd_C]
     G.check_model()
-    return Munch(pgm=G, solution={"A": 0, "B": 3, "C": 4})
+    return Munch(pgm=G, solutions=[MPESolution(states={"A": 0, "B": 3, "C": 4})])
 
 
 # 0 2 0.21, 0.333, 0.457
@@ -812,7 +890,7 @@ def tb2_BN_pgmpy(debug=False):
         print(cpd_C)
     G.add_cpds(cpd_A, cpd_B, cpd_C)
     G.check_model()
-    return Munch(pgm=G, solution={"A": 0, "B": 3, "C": 4})
+    return Munch(pgm=G, solutions=[MPESolution(states={"A": 0, "B": 3, "C": 4})])
 
 
 def tb2_BN_pgmpy_mapcpd(debug=False):
@@ -845,4 +923,4 @@ def tb2_BN_pgmpy_mapcpd(debug=False):
         print(cpd_C)
     G.add_cpds(cpd_A, cpd_B, cpd_C)
     G.check_model()
-    return Munch(pgm=G, solution={"A": 0, "B": 3, "C": 4})
+    return Munch(pgm=G, solutions=[MPESolution(states={"A": 0, "B": 3, "C": 4})])

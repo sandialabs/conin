@@ -32,7 +32,7 @@ mip_solver = mip_solver[0] if mip_solver else None
 def test_DBDA_51_pyomo():
     example = examples.DBDA_5_1_conin()
     results = inference_pyomo_map_query_BN(pgm=example.pgm, solver=mip_solver)
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 # ===============================================================================
@@ -48,7 +48,7 @@ def test_DBDA_51_pyomo():
 def test_DBDA_51_toulbar2():
     example = examples.DBDA_5_1_conin()
     results = inference_toulbar2_map_query_BN(pgm=example.pgm)
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 # ===============================================================================
