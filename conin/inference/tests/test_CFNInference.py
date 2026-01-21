@@ -27,7 +27,7 @@ def test_CFNInference_ABC_conin():
     example = conin.markov_network.examples.ABC_conin()
     inf = CFNInference(example.pgm)
     results = inf.map_query()
-    assert results.solution.variable_value == example.solution
+    assert results.solution.variable_value == example.solutions[0].solution
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -36,7 +36,7 @@ def test_CFNInference_ABC_pgmpy():
     example = conin.markov_network.examples.ABC_pgmpy()
     inf = CFNInference(example.pgm)
     results = inf.map_query()
-    assert results.solution.variable_value == example.solution
+    assert results.solution.variable_value == example.solutions[0].solution
 
 
 #
@@ -49,7 +49,7 @@ def Xtest_CFNInference_ABC_constrained():
     example = conin.markov_network.examples.ABC_constrained_toulbar2_conin()
     inf = CFNInference(example.pgm)
     results = inf.map_query()
-    assert results.solution.variable_value == example.solution
+    assert results.solution.variable_value == example.solutions[0].solution
 
 
 #
