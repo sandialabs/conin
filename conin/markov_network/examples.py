@@ -4,7 +4,7 @@ import numpy as np
 import pyomo.environ as pyo
 
 from conin.constraint import pyomo_constraint_fn, toulbar2_constraint_fn
-from conin.util import try_import
+from conin.util import try_import, PGMSolution
 from conin.markov_network import (
     DiscreteFactor,
     DiscreteMarkovNetwork,
@@ -36,7 +36,7 @@ def example6_conin():
     f3 = DiscreteFactor(["A", "B"], {(0, 0): 1, (0, 1): 3, (1, 0): 1, (1, 1): 1})
     pgm.factors = [f1, f2, f3]
 
-    return Munch(pgm=pgm, solution=[])
+    return Munch(pgm=pgm, solutions=[PGMSolution()])
 
 
 def example6_pgmpy():
@@ -54,7 +54,7 @@ def example6_pgmpy():
     f3 = pgmpy_DiscreteFactor(["A", "B"], [2, 2], [1, 3, 1, 1])
     pgm.add_factors(f1, f2, f3)
 
-    return Munch(pgm=pgm, solution=[])
+    return Munch(pgm=pgm, solutions=[PGMSolution()])
 
 
 #
@@ -83,7 +83,7 @@ def ABC_conin():
     f6 = DiscreteFactor(nodes=["A", "C"], values=np.ones(9))
     pgm.factors = [f1, f2, f3, f4, f5, f6]
 
-    return Munch(pgm=pgm, solution={"A": 2, "B": 2, "C": 1})
+    return Munch(pgm=pgm, solutions=[PGMSolution(solution={"A": 2, "B": 2, "C": 1})])
 
 
 def ABC_conin_aos_2():
@@ -107,9 +107,13 @@ def ABC_conin_aos_2():
     f6 = DiscreteFactor(nodes=["A", "C"], values=np.ones(9))
     pgm.factors = [f1, f2, f3, f4, f5, f6]
 
-    optimal_solution = {"A": 2, "B": 2, "C": 1}
-    second_best = {"A": 1, "B": 2, "C": 1}
-    return Munch(pgm=pgm, solution=optimal_solution, second_best=second_best)
+    return Munch(
+        pgm=pgm,
+        solutions=[
+            PGMSolution(solution={"A": 2, "B": 2, "C": 1}),
+            PGMSolution(solution={"A": 1, "B": 2, "C": 1}),
+        ],
+    )
 
 
 def ABC_pgmpy():
@@ -134,7 +138,7 @@ def ABC_pgmpy():
     f6 = pgmpy_DiscreteFactor(["A", "C"], [3, 3], np.ones(9))
     pgm.factors = [f1, f2, f3, f4, f5, f6]
 
-    return Munch(pgm=pgm, solution={"A": 2, "B": 2, "C": 1})
+    return Munch(pgm=pgm, solutions=[PGMSolution(solution={"A": 2, "B": 2, "C": 1})])
 
 
 def ABC_constrained_pyomo_pgmpy():
@@ -158,7 +162,7 @@ def ABC_constrained_pyomo_pgmpy():
 
     pgm = conin.common.pgmpy.convert_pgmpy_to_conin(pgm.pgm)
     cpgm = ConstrainedDiscreteMarkovNetwork(pgm, constraints=[constraint_fn])
-    return Munch(pgm=cpgm, solution={"A": 0, "B": 2, "C": 1})
+    return Munch(pgm=cpgm, solutions=[PGMSolution(solution={"A": 0, "B": 2, "C": 1})])
 
 
 def ABC_constrained_pyomo_conin():
@@ -179,7 +183,7 @@ def ABC_constrained_pyomo_conin():
             return M.X["A", s] + M.X["B", s] + M.X["C", s] <= 1
 
     cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=[constraint_fn])
-    return Munch(pgm=cpgm, solution={"A": 0, "B": 2, "C": 1})
+    return Munch(pgm=cpgm, solutions=[PGMSolution(solution={"A": 0, "B": 2, "C": 1})])
 
 
 def ABC_constrained_pyomo_conin_aos_2():
@@ -200,9 +204,13 @@ def ABC_constrained_pyomo_conin_aos_2():
             return M.X["A", s] + M.X["B", s] + M.X["C", s] <= 1
 
     cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=[constraint_fn])
-    optimal_solution = {"A": 0, "B": 2, "C": 1}
-    second_best = {"A": 1, "B": 2, "C": 0}
-    return Munch(pgm=cpgm, solution=optimal_solution, second_best=second_best)
+    return Munch(
+        pgm=cpgm,
+        solutions=[
+            PGMSolution(solution={"A": 0, "B": 2, "C": 1}),
+            PGMSolution(solution={"A": 1, "B": 2, "C": 0}),
+        ],
+    )
 
 
 def ABC_constrained_toulbar2_pgmpy():
@@ -227,7 +235,7 @@ def ABC_constrained_toulbar2_pgmpy():
 
     pgm = conin.common.pgmpy.convert_pgmpy_to_conin(pgm.pgm)
     cpgm = ConstrainedDiscreteMarkovNetwork(pgm, constraints=[constraint_fn])
-    return Munch(pgm=cpgm, solution={"A": 0, "B": 2, "C": 1})
+    return Munch(pgm=cpgm, solutions=[PGMSolution(solution={"A": 0, "B": 2, "C": 1})])
 
 
 def ABC_constrained_toulbar2_conin():
@@ -249,4 +257,4 @@ def ABC_constrained_toulbar2_conin():
             )
 
     cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=[constraints])
-    return Munch(pgm=cpgm, solution={"A": 0, "B": 2, "C": 1})
+    return Munch(pgm=cpgm, solutions=[PGMSolution(solution={"A": 0, "B": 2, "C": 1})])
