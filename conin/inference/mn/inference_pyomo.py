@@ -7,6 +7,12 @@ from pyomo.common.timing import TicTocTimer
 from conin.markov_network import ConstrainedDiscreteMarkovNetwork
 from conin.inference.mn.factor_repn import extract_factor_representation_, State
 
+from conin.util import try_import
+
+with try_import() as or_topas_available:
+    import or_topas.aos as aos
+
+
 """
 Notes on this integer program:
 
@@ -291,19 +297,66 @@ def solve_pyomo_map_query_model(
     if timing:  # pragma:nocover
         timer = TicTocTimer()
         timer.tic("optimize_map_query_model - START")
-    opt = pe.SolverFactory(solver)
-    if solver_options:
-        opt.options = solver_options
-    if timing:  # pragma:nocover
-        timer.toc("Initialize solver")
-    solver_timer = TicTocTimer()
-    solver_timer.tic(None)
-    res = opt.solve(model, tee=tee)
-    solvetime = solver_timer.toc(None)
-    pe.assert_optimal_termination(res)
-    if timing:  # pragma:nocover
-        timer.toc("Completed optimization")
 
+    if solver == "or_topas":
+        if not or_topas_available:
+            raise RuntimeError("or_topas not installed")
+
+        if solver_options == None:
+            solver_options = dict()
+        topas_method = solver_options.pop("topas_method", "balas")
+        if timing:  # pragma:nocover
+            timer.toc("Initialize solver")
+
+        solver_timer = TicTocTimer()
+        solver_timer.tic(None)
+        if topas_method == "balas":
+            aos_pm = aos.enumerate_binary_solutions(model, **solver_options)
+        elif topas_method == "gurobi_solution_pool":
+            aos_pm = aos.gurobi_generate_solutions(model, tee=tee, **solver_options)
+        else:
+            raise RuntimeError(f"Asked for {topas_method=}, which is not supported")
+        solvetime = solver_timer.toc(None)
+        if timing:  # pragma:nocover
+            timer.toc("Completed optimization")
+
+        assert len(aos_pm.solutions) > 0, f"No solutions found by 'or_topas' solver"
+        solutions = [
+            parse_aos_solution_pyomo_map_query(model, aos_solution, with_fixed)
+            for aos_solution in aos_pm.solutions
+        ]
+        soln = solutions[0]
+        termination_condition = "ok"
+    else:
+        opt = pe.SolverFactory(solver)
+        if solver_options:
+            opt.options = solver_options
+        if timing:  # pragma:nocover
+            timer.toc("Initialize solver")
+
+        solver_timer = TicTocTimer()
+        solver_timer.tic(None)
+        res = opt.solve(model, tee=tee)
+        solvetime = solver_timer.toc(None)
+        if timing:  # pragma:nocover
+            timer.toc("Completed optimization")
+
+        pe.assert_optimal_termination(res)
+        soln = parse_model_solution_pyomo_map_query(model, with_fixed)
+        solutions = [soln]
+        termination_condition = "ok"
+
+    if timing:  # pragma:nocover
+        timer.toc("optimize_map_query_model - STOP")
+    return munch.Munch(
+        solution=soln,
+        solutions=solutions,
+        termination_condition=termination_condition,
+        solvetime=solvetime,
+    )
+
+
+def parse_model_solution_pyomo_map_query(model, with_fixed):
     var = {}
     variables = set()
     fixed_variables = set()
@@ -320,14 +373,34 @@ def solve_pyomo_map_query_model(
     ), "Some variables do not have values."
 
     soln = munch.Munch(variable_value=var, log_factor_sum=pe.value(model.o))
-    if timing:  # pragma:nocover
-        timer.toc("optimize_map_query_model - STOP")
-    return munch.Munch(
-        solution=soln,
-        solutions=[soln],
-        termination_condition="ok",
-        solvetime=solvetime,
-    )
+    return soln
+
+
+def parse_aos_solution_pyomo_map_query(model, aos_solution, with_fixed):
+    var = {}
+    variables = set()
+    fixed_variables = set()
+    for r, s in model.X:
+        variables.add(r)
+        aos_var_X_r_s = aos_solution.variable(model.X[r, s].name)
+        if aos_var_X_r_s.fixed:
+            fixed_variables.add(r)
+            if with_fixed and aos_var_X_r_s.value > 0.5:
+                # N.B. this works the same between parse_aos and parse_model
+                #     because r and s are parameters not variables
+                var[r] = s.value
+        elif aos_var_X_r_s.value > 0.5:
+            # N.B. this works the same between parse_aos and parse_model
+            #     because r and s are parameters not variables
+            var[r] = s.value
+    assert variables == set(var.keys()).union(
+        fixed_variables
+    ), "Some variables do not have values."
+
+    obj_list = aos_solution._objectives
+    assert len(obj_list) > 0, "Solution in parse_aos_solution has empty objective list"
+    soln = munch.Munch(variable_value=var, log_factor_sum=obj_list[0].value)
+    return soln
 
 
 def inference_pyomo_map_query_MN(
