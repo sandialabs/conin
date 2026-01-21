@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 
 @dataclass
-class PGMSolution:
+class MPESolution:
 
-    solution: dict = None
-    value: float = nan
+    states: dict = None
+    log_value: float = nan

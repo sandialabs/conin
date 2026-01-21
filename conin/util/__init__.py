@@ -1,2 +1,2 @@
 from .misc import Util, try_import, batched
-from .solution import PGMSolution
+from .solution import MPESolution

@@ -29,7 +29,7 @@ def test_IntegerProgrammingInference_ABC_conin():
     example = conin.markov_network.examples.ABC_conin()
     inf = IntegerProgrammingInference(example.pgm)
     results = inf.map_query(solver=mip_solver)
-    assert results.solution.variable_value == example.solutions[0].solution
+    assert results.solution.variable_value == example.solutions[0].states
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -38,7 +38,7 @@ def test_IntegerProgrammingInference_ABC_pgmpy():
     example = conin.markov_network.examples.ABC_pgmpy()
     inf = IntegerProgrammingInference(example.pgm)
     results = inf.map_query(solver=mip_solver)
-    assert results.solution.variable_value == example.solutions[0].solution
+    assert results.solution.variable_value == example.solutions[0].states
 
 
 #
@@ -51,7 +51,7 @@ def test_IntegerProgrammingInference_ABC_constrained():
     example = conin.markov_network.examples.ABC_constrained_pyomo_conin()
     inf = IntegerProgrammingInference(example.pgm)
     results = inf.map_query(solver=mip_solver)
-    assert results.solution.variable_value == example.solutions[0].solution
+    assert results.solution.variable_value == example.solutions[0].states
 
 
 #
