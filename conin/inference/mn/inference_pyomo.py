@@ -372,7 +372,7 @@ def parse_model_solution_pyomo_map_query(model, with_fixed):
         fixed_variables
     ), "Some variables do not have values."
 
-    soln = munch.Munch(variable_value=var, log_factor_sum=pe.value(model.o))
+    soln = munch.Munch(states=var, log_factor_sum=pe.value(model.o))
     return soln
 
 
@@ -399,7 +399,7 @@ def parse_aos_solution_pyomo_map_query(model, aos_solution, with_fixed):
 
     obj_list = aos_solution._objectives
     assert len(obj_list) > 0, "Solution in parse_aos_solution has empty objective list"
-    soln = munch.Munch(variable_value=var, log_factor_sum=obj_list[0].value)
+    soln = munch.Munch(states=var, log_factor_sum=obj_list[0].value)
     return soln
 
 

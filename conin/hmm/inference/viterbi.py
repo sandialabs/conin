@@ -70,9 +70,7 @@ def viterbi_(*, observed, hmm):
         for t in range(time_steps - 2, -1, -1):
             hidden[t] = backpointer[hidden[t + 1], t + 1]
 
-        soln = munch.Munch(
-            variable_value=hidden, hidden=hidden, log_likelihood=max_prob
-        )
+        soln = munch.Munch(states=hidden, hidden=hidden, log_likelihood=max_prob)
         ans = munch.Munch(
             observed=observed,
             solution=soln,
@@ -107,9 +105,7 @@ def viterbi(*, observed, hmm):
     for sol in ans_.solutions:
         hidden = [hmm.hidden_to_external[h] for h in sol.hidden]
         solutions.append(
-            munch.Munch(
-                variable_value=hidden, hidden=hidden, log_likelihood=sol.log_likelihood
-            )
+            munch.Munch(states=hidden, hidden=hidden, log_likelihood=sol.log_likelihood)
         )
 
     return munch.Munch(

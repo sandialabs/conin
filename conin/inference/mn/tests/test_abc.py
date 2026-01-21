@@ -34,7 +34,7 @@ gurobi_available = len(pyomo.opt.check_available_solvers("gurobi")) > 0
 def test_ABC_pyomo_conin():
     example = examples.ABC_conin()
     results = inference_pyomo_map_query_MN(pgm=example.pgm, solver=mip_solver)
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 @pytest.mark.skipif(not or_topas_available, reason="or_topas not installed")
@@ -54,7 +54,7 @@ def test_ABC_pyomo_conin_topas_balas_ask_1_solution():
         pgm=example.pgm, tee=False, solver="or_topas", solver_options=solver_options
     )
     assert len(results.solutions) == 1
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 @pytest.mark.skipif(
@@ -75,7 +75,7 @@ def test_ABC_pyomo_conin_topas_gurobi_ask_1_solution():
         pgm=example.pgm, tee=False, solver="or_topas", solver_options=solver_options
     )
     assert len(results.solutions) == 1
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 @pytest.mark.skipif(not or_topas_available, reason="or_topas not installed")
@@ -95,9 +95,9 @@ def test_ABC_pyomo_conin_topas_balas_ask_2_solution():
         pgm=example.pgm, tee=False, solver="or_topas", solver_options=solver_options
     )
     assert len(results.solutions) == 2
-    assert results.solution.variable_value == example.solution
-    assert results.solutions[0].variable_value == example.solution
-    assert results.solutions[1].variable_value == example.second_best
+    assert results.solution.states == example.solutions[0].states
+    assert results.solutions[0].states == example.solutions[0].states
+    assert results.solutions[1].states == example.solutions[1].states
 
 
 @pytest.mark.skipif(
@@ -118,9 +118,9 @@ def test_ABC_pyomo_conin_topas_gurobi_ask_2_solution():
         pgm=example.pgm, tee=False, solver="or_topas", solver_options=solver_options
     )
     assert len(results.solutions) == 2
-    assert results.solution.variable_value == example.solution
-    assert results.solutions[0].variable_value == example.solution
-    assert results.solutions[1].variable_value == example.second_best
+    assert results.solution.states == example.solutions[0].states
+    assert results.solutions[0].states == example.solutions[0].states
+    assert results.solutions[1].states == example.solutions[1].states
 
 
 @pytest.mark.skipif(
@@ -141,8 +141,8 @@ def test_ABC_pyomo_conin_topas_gurobi_ask_2_with_opt_gap_solution():
         pgm=example.pgm, tee=False, solver="or_topas", solver_options=solver_options
     )
     assert len(results.solutions) == 1
-    assert results.solution.variable_value == example.solution
-    assert results.solutions[0].variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
+    assert results.solutions[0].states == example.solutions[0].states
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -151,28 +151,28 @@ def test_ABC_pyomo_pgmpy():
     example = examples.ABC_pgmpy()
     pgm = convert_pgmpy_to_conin(example.pgm)
     results = inference_pyomo_map_query_MN(pgm=pgm, solver=mip_solver)
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 # @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 # def Xtest_ABC3_pyomo_conin():
 #    pgm = examples.ABC_conin()
 #    results = inference_pyomo_map_query_model_MN(pgm=pgm, variables=["A"], solver=mip_solver)
-#    assert results.solution.variable_value == {"A": 2}
+#    assert results.solution.states == {"A": 2}
 
 
 # @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 # def Xtest_ABC4_pyomo_conin():
 #    pgm = examples.ABC_conin()
 #    results = inference_pyomo_map_query_model_MN(pgm=pgm, variables=["B"], solver=mip_solver)
-#    assert results.solution.variable_value == {"B": 2}
+#    assert results.solution.states == {"B": 2}
 
 
 # @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 # def Xtest_ABC5_pyomo_conin():
 #    pgm = examples.ABC_conin()
 #    results = inference_pyomo_map_query_model_MN(pgm=pgm, variables=["C"], solver=mip_solver)
-#    assert results.solution.variable_value == {"C": 1}
+#    assert results.solution.states == {"C": 1}
 
 
 # @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
@@ -181,7 +181,7 @@ def test_ABC_pyomo_pgmpy():
 #    # pgm = convert_pgmpy_to_conin(pgm)
 #    model = create_pyomo_map_query_model_MN(pgm=pgm, variables=["C"], evidence={"B": 0})
 #    results = solve_pyomo_map_query_model(model, solver=mip_solver)
-#    assert results.solution.variable_value == {"C": 1}
+#    assert results.solution.states == {"C": 1}
 
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
@@ -208,12 +208,12 @@ def test_ABC_constrained_pyomo():
     # model.diff = pyo.Constraint([0, 1, 2], rule=diff_)
     #
     # results = solve_pyomo_map_query_model(model, solver=mip_solver)
-    # assert results.solution.variable_value == {"A": 0, "B": 2, "C": 1}
+    # assert results.solution.states == {"A": 0, "B": 2, "C": 1}
 
     # Setup constraints using the ConstrainedDiscreteMarkovNetwork class
     example = examples.ABC_constrained_pyomo_conin()
     results = inference_pyomo_map_query_MN(pgm=example.pgm, solver=mip_solver)
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 @pytest.mark.skipif(not or_topas_available, reason="or_topas not installed")
@@ -233,7 +233,7 @@ def test_ABC_constrained_pyomo_conin_topas_balas_ask_1_solution():
         pgm=example.pgm, tee=False, solver="or_topas", solver_options=solver_options
     )
     assert len(results.solutions) == 1
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 @pytest.mark.skipif(
@@ -254,9 +254,9 @@ def test_ABC_constrained_pyomo_conin_topas_balas_ask_2_solution():
         pgm=example.pgm, tee=False, solver="or_topas", solver_options=solver_options
     )
     assert len(results.solutions) == 2
-    assert results.solution.variable_value == example.solution
-    assert results.solutions[0].variable_value == example.solution
-    assert results.solutions[1].variable_value == example.second_best
+    assert results.solution.states == example.solutions[0].states
+    assert results.solutions[0].states == example.solutions[0].states
+    assert results.solutions[1].states == example.solutions[1].states
 
 
 @pytest.mark.skipif(
@@ -277,8 +277,8 @@ def test_ABC_constrained_pyomo_conin_topas_gurobi_ask_1_solution():
         pgm=example.pgm, tee=False, solver="or_topas", solver_options=solver_options
     )
     assert len(results.solutions) == 1
-    assert results.solution.variable_value == example.solution
-    assert results.solutions[0].variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
+    assert results.solutions[0].states == example.solutions[0].states
 
 
 @pytest.mark.skipif(
@@ -299,9 +299,9 @@ def test_ABC_constrained_pyomo_conin_topas_gurobi_ask_2_solution():
         pgm=example.pgm, tee=False, solver="or_topas", solver_options=solver_options
     )
     assert len(results.solutions) == 2
-    assert results.solution.variable_value == example.solution
-    assert results.solutions[0].variable_value == example.solution
-    assert results.solutions[1].variable_value == example.second_best
+    assert results.solution.states == example.solutions[0].states
+    assert results.solutions[0].states == example.solutions[0].states
+    assert results.solutions[1].states == example.solutions[1].states
 
 
 # ===============================================================================
@@ -315,7 +315,7 @@ def test_ABC_constrained_pyomo_conin_topas_gurobi_ask_2_solution():
 def test_ABC_toulbar2():
     example = examples.ABC_conin()
     results = inference_toulbar2_map_query_MN(pgm=example.pgm)
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 @pytest.mark.skipif(not pytoulbar2_available, reason="Toulbar2 not installed")
@@ -341,9 +341,9 @@ def test_ABC_constrained_toulbar2():
     #    )
     #
     # results = solve_toulbar2_map_query_model(model)
-    # assert results.solution.variable_value == {"A": 0, "B": 2, "C": 1}
+    # assert results.solution.states == {"A": 0, "B": 2, "C": 1}
 
     # Setup constraints using the ConstrainedDiscreteMarkovNetwork class
     example = examples.ABC_constrained_toulbar2_conin()
     results = inference_toulbar2_map_query_MN(pgm=example.pgm)
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states

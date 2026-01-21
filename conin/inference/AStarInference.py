@@ -51,10 +51,8 @@ class AStarInference:
                 results = a_star(observed=observed, hmm=pgm, **options)
                 solutions = results.solutions
                 for soln in solutions:
-                    soln.variable_value = {
-                        i: v for i, v in enumerate(soln.variable_value)
-                    }
-                    soln.hidden = soln.variable_value
+                    soln.states = {i: v for i, v in enumerate(soln.states)}
+                    soln.hidden = soln.states
                 results.solutions = solutions
                 return results
             elif type(evidence) is list:

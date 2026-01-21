@@ -39,7 +39,7 @@ def test_simple0_pyomo_ALL_conin():
     results = inference_pyomo_map_query_DDBN(
         pgm=example.pgm, solver=mip_solver
     )  # variables=None, evidence=None
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -55,7 +55,7 @@ def test_simple0_pyomo_DDBN1_ALL_pgmpy():
     results = inference_pyomo_map_query_DDBN(
         pgm=pgm, solver=mip_solver
     )  # variables=None, evidence=None
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -71,7 +71,7 @@ def test_simple0_pyomo_DDBN2_ALL_pgmpy():
     results = inference_pyomo_map_query_DDBN(
         pgm=pgm, solver=mip_solver
     )  # variables=None, evidence=None
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 #
@@ -90,7 +90,7 @@ def test_simple1_pyomo_ALL_conin():
     results = inference_pyomo_map_query_DDBN(
         pgm=example.pgm, solver=mip_solver
     )  # variables=None, evidence=None
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -108,7 +108,7 @@ def test_simple1_pyomo_ALL_pgmpy():
     results = inference_pyomo_map_query_DDBN(
         pgm=pgm, solver=mip_solver
     )  # variables=None, evidence=None
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 # @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
@@ -130,7 +130,7 @@ def test_simple1_pyomo_ALL_pgmpy():
 #            pgm=G, evidence={("A", 0): 1}
 #        )  # variables=None, evidence=None
 #        results = inference_pyomo_map_query_DDBN(model, solver=mip_solver)
-#        assert q == results.solution.variable_value
+#        assert q == results.solution.states
 
 
 # @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -154,7 +154,7 @@ def test_simple1_pyomo_ALL_pgmpy():
 #            pgm=G, evidence={("A", 0): 1}
 #        )  # variables=None, evidence=None
 #        results = inference_pyomo_map_query_DDBN(model, solver=mip_solver)
-#        assert q == results.solution.variable_value
+#        assert q == results.solution.states
 
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
@@ -166,7 +166,7 @@ def test_simple1_pyomo_ALL_constrained_conin():
     """
     example = examples.simple1_DDBN_constrained_pyomo_conin()
     results = inference_pyomo_map_query_DDBN(pgm=example.pgm, solver=mip_solver)
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -179,7 +179,7 @@ def test_simple1_pyomo_ALL_constrained_pgmpy():
     """
     example = examples.simple1_DDBN_constrained_pyomo_pgmpy()
     results = inference_pyomo_map_query_DDBN(pgm=example.pgm, solver=mip_solver)
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 # ===============================================================================
@@ -202,7 +202,7 @@ def test_simple0_toulbar2_ALL_conin():
     results = inference_toulbar2_map_query_DDBN(
         pgm=example.pgm
     )  # variables=None, evidence=None
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -218,7 +218,7 @@ def test_simple0_toulbar2_DDBN1_ALL_pgmpy():
     results = inference_toulbar2_map_query_DDBN(
         pgm=pgm
     )  # variables=None, evidence=None
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -234,7 +234,7 @@ def test_simple0_toulbar2_DDBN2_ALL_pgmpy():
     results = inference_toulbar2_map_query_DDBN(
         pgm=pgm
     )  # variables=None, evidence=None
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 #
@@ -253,7 +253,7 @@ def test_simple1_toulbar2_ALL_conin():
     results = inference_toulbar2_map_query_DDBN(
         pgm=example.pgm
     )  # variables=None, evidence=None
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -271,7 +271,7 @@ def test_simple1_toulbar2_ALL_pgmpy():
     results = inference_toulbar2_map_query_DDBN(
         pgm=pgm
     )  # variables=None, evidence=None
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 # @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
@@ -293,7 +293,7 @@ def test_simple1_toulbar2_ALL_pgmpy():
 #            pgm=G, evidence={("A", 0): 1}
 #        )  # variables=None, evidence=None
 #        results = inference_toulbar2_map_query_DDBN(model)
-#        assert q == results.solution.variable_value
+#        assert q == results.solution.states
 
 
 # @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -317,7 +317,7 @@ def test_simple1_toulbar2_ALL_pgmpy():
 #            pgm=G, evidence={("A", 0): 1}
 #        )  # variables=None, evidence=None
 #        results = inference_toulbar2_map_query_DDBN(model)
-#        assert q == results.solution.variable_value
+#        assert q == results.solution.states
 
 
 @pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
@@ -329,7 +329,7 @@ def Xtest_simple1_toulbar2_ALL_constrained_conin():
     """
     example = examples.simple1_DDBN_constrained_toulbar2_conin()
     results = inference_toulbar2_map_query_DDBN(pgm=example.pgm)
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -342,4 +342,4 @@ def Xtest_simple1_toulbar2_ALL_constrained_pgmpy():
     """
     example = examples.simple1_DDBN_constrained_toulbar2_pgmpy()
     results = inference_toulbar2_map_query_DDBN(pgm=example.pgm)
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
