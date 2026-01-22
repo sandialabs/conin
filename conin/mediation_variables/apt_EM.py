@@ -442,7 +442,7 @@ def apt_EM(apt_hmm, cst_list, seq_list,  device ='cpu', conv = 1e-10, max_step =
         param_change = sum([torch.linalg.norm(old-new).cpu().item() for old,new in zip(hmm_params[:2],new_hmm_params[:2])])
         change = param_change + abs(new_hmm_params[3] - hmm_params[3])
         # if it % 10 == 0:
-        print(f'Step:{it}, T+E change: {param_change}, Ttl change: {change}, neg log prob: {-1*log_prob}')
+        # print(f'Step:{it}, T+E change: {param_change}, Ttl change: {change}, neg log prob: {-1*log_prob}')
         it += 1
         hmm_params = new_hmm_params
 
@@ -509,7 +509,7 @@ def apt_EM_v2(apt_hmm, cst_list, seq_list,  device ='cpu', conv = 1e-10, max_ste
             
         change = abs((new_log_prob - log_prob)/log_prob)
         # if it % 10 == 0:
-        print(f'Step:{it}, neg log prob: {-1*new_log_prob}, log_prob_change %: {change}')
+        # print(f'Step:{it}, neg log prob: {-1*new_log_prob}, log_prob_change %: {change}')
         it += 1
         hmm_params = new_hmm_params
         log_prob = new_log_prob
