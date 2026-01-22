@@ -8,7 +8,6 @@ from collections import defaultdict
 from conin.markov_network import DiscreteFactor, DiscreteMarkovNetwork
 from conin.bayesian_network import DiscreteCPD, DiscreteBayesianNetwork
 
-
 lineno = 0
 
 

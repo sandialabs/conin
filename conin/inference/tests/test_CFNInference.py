@@ -27,7 +27,7 @@ def test_CFNInference_ABC_conin():
     example = conin.markov_network.examples.ABC_conin()
     inf = CFNInference(example.pgm)
     results = inf.map_query()
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -36,7 +36,7 @@ def test_CFNInference_ABC_pgmpy():
     example = conin.markov_network.examples.ABC_pgmpy()
     inf = CFNInference(example.pgm)
     results = inf.map_query()
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 #
@@ -49,7 +49,7 @@ def Xtest_CFNInference_ABC_constrained():
     example = conin.markov_network.examples.ABC_constrained_toulbar2_conin()
     inf = CFNInference(example.pgm)
     results = inf.map_query()
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 #
@@ -65,7 +65,7 @@ def test_CFNInference_cancer1_ALL_conin():
     results = inf.map_query(
         variables=["Cancer", "Dyspnoea", "Pollution", "Smoker", "Xray"],
     )
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
     # TODO - Confirm that these marginalized results are correct
 
@@ -76,7 +76,7 @@ def test_CFNInference_cancer1_ALL_conin():
 #            evidence={"Cancer": 0},
 #            ,
 #        )
-#        assert results.solution.variable_value == {
+#        assert results.solution.states == {
 #            "Dyspnoea": 0,
 #            "Pollution": 0,
 #            "Smoker": 0,
@@ -91,7 +91,7 @@ def test_CFNInference_cancer1_ALL_conin():
 #            evidence={"Cancer": 0},
 #            ,
 #        )
-#        assert results.solution.variable_value == {
+#        assert results.solution.states == {
 #            "Dyspnoea": 0,
 #            "Pollution": 0,
 #            "Xray": 0,
@@ -107,7 +107,7 @@ def test_CFNInference_cancer1_ALL_pgmpy():
     results = inf.map_query(
         variables=["Cancer", "Dyspnoea", "Pollution", "Smoker", "Xray"],
     )
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
     # TODO - Confirm that these marginalized results are correct
 
@@ -118,7 +118,7 @@ def test_CFNInference_cancer1_ALL_pgmpy():
 #            evidence={"Cancer": 0},
 #            ,
 #        )
-#        assert results.solution.variable_value == {
+#        assert results.solution.states == {
 #            "Dyspnoea": 0,
 #            "Pollution": 0,
 #            "Smoker": 0,
@@ -133,7 +133,7 @@ def test_CFNInference_cancer1_ALL_pgmpy():
 #            evidence={"Cancer": 0},
 #            ,
 #        )
-#        assert results.solution.variable_value == {
+#        assert results.solution.states == {
 #            "Dyspnoea": 0,
 #            "Pollution": 0,
 #            "Xray": 0,
@@ -153,7 +153,7 @@ def Xtest_CFNInference_cancer1_constrained_conin():
     results = inf.map_query(
         variables=["Cancer", "Dyspnoea", "Pollution", "Smoker", "Xray"],
     )
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
     # TODO - Confirm that these marginalized results are correct
 
@@ -164,7 +164,7 @@ def Xtest_CFNInference_cancer1_constrained_conin():
 #            evidence={"Cancer": 0},
 #            ,
 #        )
-#        assert results.solution.variable_value == {
+#        assert results.solution.states == {
 #            "Dyspnoea": 1,
 #            "Pollution": 0,
 #            "Xray": 0,
@@ -180,7 +180,7 @@ def Xtest_CFNInference_cancer1_constrained_pgmpy():
     results = inf.map_query(
         variables=["Cancer", "Dyspnoea", "Pollution", "Smoker", "Xray"],
     )
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
     # TODO - Confirm that these marginalized results are correct
 
@@ -191,7 +191,7 @@ def Xtest_CFNInference_cancer1_constrained_pgmpy():
 #            evidence={"Cancer": 0},
 #            ,
 #        )
-#        assert results.solution.variable_value == {
+#        assert results.solution.states == {
 #            "Dyspnoea": 1,
 #            "Pollution": 0,
 #            "Xray": 0,
@@ -209,7 +209,7 @@ def Xtest_CFNInference_hmm1_test0():
     inf = CFNInference(pgm)
     observed = ["o0", "o0", "o1", "o0", "o0"]
     results = inf.map_query(evidence=observed)
-    assert results.solution.variable_value == ["h0", "h0", "h0", "h0", "h0"]
+    assert results.solution.states == ["h0", "h0", "h0", "h0", "h0"]
 
 
 @pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
@@ -218,7 +218,7 @@ def Xtest_CFNInference_hmm1_test1():
     inf = CFNInference(pgm)
     observed = ["o0", "o1", "o1", "o1", "o1"]
     results = inf.map_query(evidence=observed)
-    assert results.solution.variable_value == ["h1", "h1", "h1", "h1", "h1"]
+    assert results.solution.states == ["h1", "h1", "h1", "h1", "h1"]
 
 
 @pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
@@ -227,7 +227,7 @@ def Xtest_CFNInference_hmm1_test2():
     inf = CFNInference(pgm)
     observed = {0: "o0", 1: "o0", 2: "o1", 3: "o0", 4: "o0"}
     results = inf.map_query(evidence=observed)
-    assert results.solution.variable_value == {
+    assert results.solution.states == {
         0: "h0",
         1: "h0",
         2: "h0",
@@ -242,7 +242,7 @@ def Xtest_CFNInference_hmm1_test3():
     inf = CFNInference(pgm)
     observed = {0: "o0", 1: "o1", 2: "o1", 3: "o1", 4: "o1"}
     results = inf.map_query(evidence=observed)
-    assert results.solution.variable_value == {
+    assert results.solution.states == {
         0: "h1",
         1: "h1",
         2: "h1",
@@ -257,7 +257,7 @@ def Xtest_CFNInference_chmm1_test0():
     inf = CFNInference(pgm)
     observed = ["o0"] * 15
     results = inf.map_query(evidence=observed)
-    assert results.solution.variable_value == [
+    assert results.solution.states == [
         "h1",
         "h1",
         "h1",
@@ -282,7 +282,7 @@ def Xtest_CFNInference_chmm1_test1():
     inf = CFNInference(pgm)
     observed = ["o0"] + ["o1"] * 14
     results = inf.map_query(evidence=observed)
-    assert results.solution.variable_value == [
+    assert results.solution.states == [
         "h0",
         "h0",
         "h0",
@@ -307,7 +307,7 @@ def Xtest_CFNInference_chmm1_test2():
     inf = CFNInference(pgm)
     observed = {i: "o0" for i in range(15)}
     results = inf.map_query(evidence=observed)
-    assert results.solution.variable_value == {
+    assert results.solution.states == {
         0: "h1",
         1: "h1",
         2: "h1",
@@ -334,7 +334,7 @@ def Xtest_CFNInference_chmm1_test3():
     for i in range(14):
         observed[i + 1] = "o1"
     results = inf.map_query(evidence=observed)
-    assert results.solution.variable_value == {
+    assert results.solution.states == {
         0: "h0",
         1: "h0",
         2: "h0",
@@ -363,7 +363,7 @@ def test_DDBN_CFNInference_weather_conin():
     example = conin.dynamic_bayesian_network.examples.weather_conin()
     inf = DDBN_CFNInference(example.pgm)
     results = inf.map_query(stop=4)
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 #    evidence = {
@@ -382,7 +382,7 @@ def test_DDBN_CFNInference_weather_conin():
 #    with pytest.raises(RuntimeError):
 #        results = inf.map_query(stop=4, evidence=evidence)
 #        # TODO - Confirm that this result makes sense
-#        assert results.solution.variable_value == {
+#        assert results.solution.states == {
 #            ("T", 0): "Hot",
 #            ("T", 1): "Hot",
 #            ("T", 2): "Hot",
@@ -402,7 +402,7 @@ def test_DDBN_CFNInference_weather():
     example = conin.dynamic_bayesian_network.examples.weather2_pgmpy()
     inf = DDBN_CFNInference(example.pgm)
     results = inf.map_query(stop=4)
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 #    evidence = {
@@ -421,7 +421,7 @@ def test_DDBN_CFNInference_weather():
 #    with pytest.raises(RuntimeError):
 #        results = inf.map_query(stop=4, evidence=evidence)
 #        # TODO - Confirm that this result makes sense
-#        assert results.solution.variable_value == {
+#        assert results.solution.states == {
 #            ("T", 0): "Hot",
 #            ("T", 1): "Hot",
 #            ("T", 2): "Hot",
@@ -447,7 +447,7 @@ def Xtest_DDBN_CFNInference_weather_constrained_conin():
     )
     inf = DDBN_CFNInference(example.pgm)
     results = inf.map_query(stop=4)
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 #    evidence = {
@@ -465,7 +465,7 @@ def Xtest_DDBN_CFNInference_weather_constrained_conin():
 #
 #    with pytest.raises(RuntimeError):
 #        results = inf.map_query(stop=4, evidence=evidence)
-#        assert results.solution.variable_value == {
+#        assert results.solution.states == {
 #            ("T", 0): "Hot",
 #            ("T", 1): "Mild",
 #            ("T", 2): "Cold",
@@ -487,7 +487,7 @@ def Xtest_DDBN_CFNInference_weather_constrained_pgmpy():
     )
     inf = DDBN_CFNInference(example.pgm)
     results = inf.map_query(stop=4)
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 #    evidence = {
@@ -505,7 +505,7 @@ def Xtest_DDBN_CFNInference_weather_constrained_pgmpy():
 #
 #    with pytest.raises(RuntimeError):
 #        results = inf.map_query(stop=4, evidence=evidence)
-#        assert results.solution.variable_value == {
+#        assert results.solution.states == {
 #            ("T", 0): "Hot",
 #            ("T", 1): "Mild",
 #            ("T", 2): "Cold",

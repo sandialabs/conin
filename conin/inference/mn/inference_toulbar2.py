@@ -155,9 +155,7 @@ def solve_toulbar2_map_query_model(
     solvetime = solver_timer.toc(None)
     solution, primal_bound, num_solutions = res
     var = {name: model.states[i][solution[i]] for name, i in model.X.items()}
-    soln = munch.Munch(
-        variable_value=var, log_factor_sum=None, primal_bound=primal_bound, objective = model.CFN.solutionCost()
-    )
+    soln = munch.Munch(states=var, log_factor_sum=None, primal_bound=primal_bound)
 
     if timing:  # pragma:nocover
         timer.toc("Completed optimization")

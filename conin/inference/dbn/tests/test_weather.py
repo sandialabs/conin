@@ -37,7 +37,7 @@ def test_weather_pyomo_A_conin():
         stop=4,
         solver=mip_solver,
     )  # variables=None, evidence=None
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -53,7 +53,7 @@ def test_weather1_pyomo_A_pgmpy():
     results = inference_pyomo_map_query_DDBN(
         pgm=pgm, stop=4, solver=mip_solver
     )  # variables=None, evidence=None
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -69,7 +69,7 @@ def test_weather2_pyomo_A_pgmpy():
     results = inference_pyomo_map_query_DDBN(
         pgm=pgm, stop=4, solver=mip_solver
     )  # variables=None, evidence=None
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 # TODO - confirm this answer makes sense
@@ -111,7 +111,7 @@ def test_weather2_pyomo_A_pgmpy():
 #    with pytest.raises(RuntimeError):
 #        model = create_pyomo_map_query_model_DDBN(pgm=pgm, stop=4, evidence=evidence)
 #        results = inference_pyomo_map_query_DDBN(model, solver=mip_solver)
-#        assert q_weather_B == results.solution.variable_value
+#        assert q_weather_B == results.solution.states
 
 
 # @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -140,7 +140,7 @@ def test_weather2_pyomo_A_pgmpy():
 #    with pytest.raises(RuntimeError):
 #        model = create_pyomo_map_query_model_DDBN(pgm=pgm, stop=4, evidence=evidence)
 #        results = inference_pyomo_map_query_DDBN(model, solver=mip_solver)
-#        assert q_weather_B == results.solution.variable_value
+#        assert q_weather_B == results.solution.states
 
 
 # @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -169,7 +169,7 @@ def test_weather2_pyomo_A_pgmpy():
 #    with pytest.raises(RuntimeError):
 #        model = create_pyomo_map_query_model_DDBN(pgm=pgm, stop=4, evidence=evidence)
 #        results = inference_pyomo_map_query_DDBN(model, solver=mip_solver)
-#        assert q_weather_B == results.solution.variable_value
+#        assert q_weather_B == results.solution.states
 
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
@@ -181,7 +181,7 @@ def test_weather_pyomo_A_constrained_conin():
     results = inference_pyomo_map_query_DDBN(
         pgm=example.pgm, stop=4, solver=mip_solver
     )  # variables=None, evidence=None
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -194,7 +194,7 @@ def test_weather_pyomo_A_constrained_pgmpy():
     results = inference_pyomo_map_query_DDBN(
         pgm=example.pgm, stop=4, solver=mip_solver
     )  # variables=None, evidence=None
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 # q_weather_B_constrained = {
@@ -235,7 +235,7 @@ def test_weather_pyomo_A_constrained_pgmpy():
 #    with pytest.raises(RuntimeError):
 #        model = create_pyomo_map_query_model_DDBN(pgm=cpgm, stop=4, evidence=evidence)
 #        results = inference_pyomo_map_query_DDBN(model, solver=mip_solver)
-#        assert q_weather_B_constrained == results.solution.variable_value
+#        assert q_weather_B_constrained == results.solution.states
 
 
 # @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -263,7 +263,7 @@ def test_weather_pyomo_A_constrained_pgmpy():
 #    with pytest.raises(RuntimeError):
 #        model = create_pyomo_map_query_model_DDBN(pgm=cpgm, stop=4, evidence=evidence)
 #        results = inference_pyomo_map_query_DDBN(model, solver=mip_solver)
-#        assert q_weather_B_constrained == results.solution.variable_value
+#        assert q_weather_B_constrained == results.solution.states
 
 
 # ===============================================================================
@@ -283,7 +283,7 @@ def test_weather_toulbar2_A_conin():
         pgm=example.pgm,
         stop=4,
     )  # variables=None, evidence=None
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -300,7 +300,7 @@ def test_weather1_toulbar2_A_pgmpy():
         pgm=pgm,
         stop=4,
     )  # variables=None, evidence=None
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -317,7 +317,7 @@ def test_weather2_toulbar2_A_pgmpy():
         pgm=pgm,
         stop=4,
     )  # variables=None, evidence=None
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 # TODO - confirm this answer makes sense
@@ -359,7 +359,7 @@ def test_weather2_toulbar2_A_pgmpy():
 #    with pytest.raises(RuntimeError):
 #        model = create_toulbar2_map_query_model_DDBN(pgm=pgm, stop=4, evidence=evidence)
 #        results = inference_toulbar2_map_query_DDBN(model, solver=mip_solver)
-#        assert q_weather_B == results.solution.variable_value
+#        assert q_weather_B == results.solution.states
 
 
 # @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -388,7 +388,7 @@ def test_weather2_toulbar2_A_pgmpy():
 #    with pytest.raises(RuntimeError):
 #        model = create_toulbar2_map_query_model_DDBN(pgm=pgm, stop=4, evidence=evidence)
 #        results = inference_toulbar2_map_query_DDBN(model, solver=mip_solver)
-#        assert q_weather_B == results.solution.variable_value
+#        assert q_weather_B == results.solution.states
 
 
 # @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -417,7 +417,7 @@ def test_weather2_toulbar2_A_pgmpy():
 #    with pytest.raises(RuntimeError):
 #        model = create_toulbar2_map_query_model_DDBN(pgm=pgm, stop=4, evidence=evidence)
 #        results = inference_toulbar2_map_query_DDBN(model, solver=mip_solver)
-#        assert q_weather_B == results.solution.variable_value
+#        assert q_weather_B == results.solution.states
 
 
 @pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
@@ -430,7 +430,7 @@ def Xtest_weather_toulbar2_A_constrained_conin():
         pgm=example.pgm,
         stop=4,
     )  # variables=None, evidence=None
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -444,7 +444,7 @@ def Xtest_weather_toulbar2_A_constrained_pgmpy():
         pgm=example.pgm,
         stop=4,
     )  # variables=None, evidence=None
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 # q_weather_B_constrained = {
@@ -485,7 +485,7 @@ def Xtest_weather_toulbar2_A_constrained_pgmpy():
 #    with pytest.raises(RuntimeError):
 #        model = create_toulbar2_map_query_model_DDBN(pgm=cpgm, stop=4, evidence=evidence)
 #        results = inference_toulbar2_map_query_DDBN(model)
-#        assert q_weather_B_constrained == results.solution.variable_value
+#        assert q_weather_B_constrained == results.solution.states
 
 
 # @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -513,4 +513,4 @@ def Xtest_weather_toulbar2_A_constrained_pgmpy():
 #    with pytest.raises(RuntimeError):
 #        model = create_toulbar2_map_query_model_DDBN(pgm=cpgm, stop=4, evidence=evidence)
 #        results = inference_toulbar2_map_query_DDBN(model)
-#        assert q_weather_B_constrained == results.solution.variable_value
+#        assert q_weather_B_constrained == results.solution.states

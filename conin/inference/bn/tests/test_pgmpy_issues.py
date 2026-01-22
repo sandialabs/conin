@@ -39,4 +39,4 @@ def test_pgmpy_issue_1177_pgmpy():
     #        pgm=pgm, variables=variables, evidence=evidence
     #    )
     #    results = solve_pyomo_map_query_model(model, solver="glpk")
-    #    assert q == results.solution.variable_value
+    #    assert q == results.solution.states

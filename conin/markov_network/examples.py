@@ -4,7 +4,7 @@ import numpy as np
 import pyomo.environ as pyo
 
 from conin.constraint import pyomo_constraint_fn, toulbar2_constraint_fn
-from conin.util import try_import
+from conin.util import try_import, MPESolution
 from conin.markov_network import (
     DiscreteFactor,
     DiscreteMarkovNetwork,
@@ -36,7 +36,7 @@ def example6_conin():
     f3 = DiscreteFactor(["A", "B"], {(0, 0): 1, (0, 1): 3, (1, 0): 1, (1, 1): 1})
     pgm.factors = [f1, f2, f3]
 
-    return Munch(pgm=pgm, solution=[])
+    return Munch(pgm=pgm, solutions=[MPESolution()])
 
 
 def example6_pgmpy():
@@ -54,7 +54,7 @@ def example6_pgmpy():
     f3 = pgmpy_DiscreteFactor(["A", "B"], [2, 2], [1, 3, 1, 1])
     pgm.add_factors(f1, f2, f3)
 
-    return Munch(pgm=pgm, solution=[])
+    return Munch(pgm=pgm, solutions=[MPESolution()])
 
 
 #
@@ -71,6 +71,7 @@ def ABC_conin():
 
     The MPE solution is A:2, B:2, C:1.
     """
+
     pgm = DiscreteMarkovNetwork()
     pgm.states = {"A": [0, 1, 2], "B": [0, 1, 2], "C": [0, 1, 2]}
     pgm.edges = [("A", "B"), ("B", "C"), ("A", "C")]
@@ -82,7 +83,37 @@ def ABC_conin():
     f6 = DiscreteFactor(nodes=["A", "C"], values=np.ones(9))
     pgm.factors = [f1, f2, f3, f4, f5, f6]
 
-    return Munch(pgm=pgm, solution={"A": 2, "B": 2, "C": 1})
+    return Munch(pgm=pgm, solutions=[MPESolution(states={"A": 2, "B": 2, "C": 1})])
+
+
+def ABC_conin_aos_2():
+    """
+    Three variables with pair-wise interactions.
+
+    The interactions have equal weights, so the MPE solution is defined by the weights for the
+    factors that describe the individual variables.
+
+    The MPE solution is A:2, B:2, C:1.
+    """
+
+    pgm = DiscreteMarkovNetwork()
+    pgm.states = {"A": [0, 1, 2], "B": [0, 1, 2], "C": [0, 1, 2]}
+    pgm.edges = [("A", "B"), ("B", "C"), ("A", "C")]
+    f1 = DiscreteFactor(nodes=["A"], values=[10, 19, 20])
+    f2 = DiscreteFactor(nodes=["B"], values=[10, 10, 30])
+    f3 = DiscreteFactor(nodes=["C"], values=[10, 20, 10])
+    f4 = DiscreteFactor(nodes=["A", "B"], values=np.ones(9))
+    f5 = DiscreteFactor(nodes=["B", "C"], values=np.ones(9))
+    f6 = DiscreteFactor(nodes=["A", "C"], values=np.ones(9))
+    pgm.factors = [f1, f2, f3, f4, f5, f6]
+
+    return Munch(
+        pgm=pgm,
+        solutions=[
+            MPESolution(states={"A": 2, "B": 2, "C": 1}),
+            MPESolution(states={"A": 1, "B": 2, "C": 1}),
+        ],
+    )
 
 
 def ABC_pgmpy():
@@ -107,7 +138,7 @@ def ABC_pgmpy():
     f6 = pgmpy_DiscreteFactor(["A", "C"], [3, 3], np.ones(9))
     pgm.factors = [f1, f2, f3, f4, f5, f6]
 
-    return Munch(pgm=pgm, solution={"A": 2, "B": 2, "C": 1})
+    return Munch(pgm=pgm, solutions=[MPESolution(states={"A": 2, "B": 2, "C": 1})])
 
 
 def ABC_constrained_pyomo_pgmpy():
@@ -131,7 +162,7 @@ def ABC_constrained_pyomo_pgmpy():
 
     pgm = conin.common.pgmpy.convert_pgmpy_to_conin(pgm.pgm)
     cpgm = ConstrainedDiscreteMarkovNetwork(pgm, constraints=[constraint_fn])
-    return Munch(pgm=cpgm, solution={"A": 0, "B": 2, "C": 1})
+    return Munch(pgm=cpgm, solutions=[MPESolution(states={"A": 0, "B": 2, "C": 1})])
 
 
 def ABC_constrained_pyomo_conin():
@@ -152,7 +183,34 @@ def ABC_constrained_pyomo_conin():
             return M.X["A", s] + M.X["B", s] + M.X["C", s] <= 1
 
     cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=[constraint_fn])
-    return Munch(pgm=cpgm, solution={"A": 0, "B": 2, "C": 1})
+    return Munch(pgm=cpgm, solutions=[MPESolution(states={"A": 0, "B": 2, "C": 1})])
+
+
+def ABC_constrained_pyomo_conin_aos_2():
+    """
+    Three variables with pair-wise interactions.
+
+    The interactions have equal weights.  The unconstrained MPE solution is A:2, B:2, C:1.
+    However, we include a constraint that excludes variable assignments to values that are equal.
+
+    The constrained MPE solution is A:0, B:2, C:1.
+    """
+    pgm = ABC_conin_aos_2()
+
+    @pyomo_constraint_fn()
+    def constraint_fn(model):
+        @model.Constraint([0, 1, 2])
+        def diff(M, s):
+            return M.X["A", s] + M.X["B", s] + M.X["C", s] <= 1
+
+    cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=[constraint_fn])
+    return Munch(
+        pgm=cpgm,
+        solutions=[
+            MPESolution(states={"A": 0, "B": 2, "C": 1}),
+            MPESolution(states={"A": 1, "B": 2, "C": 0}),
+        ],
+    )
 
 
 def ABC_constrained_toulbar2_pgmpy():
@@ -177,7 +235,7 @@ def ABC_constrained_toulbar2_pgmpy():
 
     pgm = conin.common.pgmpy.convert_pgmpy_to_conin(pgm.pgm)
     cpgm = ConstrainedDiscreteMarkovNetwork(pgm, constraints=[constraint_fn])
-    return Munch(pgm=cpgm, solution={"A": 0, "B": 2, "C": 1})
+    return Munch(pgm=cpgm, solutions=[MPESolution(states={"A": 0, "B": 2, "C": 1})])
 
 
 def ABC_constrained_toulbar2_conin():
@@ -199,4 +257,4 @@ def ABC_constrained_toulbar2_conin():
             )
 
     cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=[constraints])
-    return Munch(pgm=cpgm, solution={"A": 0, "B": 2, "C": 1})
+    return Munch(pgm=cpgm, solutions=[MPESolution(states={"A": 0, "B": 2, "C": 1})])

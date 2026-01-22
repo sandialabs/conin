@@ -41,7 +41,7 @@ def test_holmes0_pyomo_conin():
         evidence=evidence,
         solver=mip_solver,
     )
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 # ===============================================================================
@@ -62,7 +62,7 @@ def Xtest_holmes0_toulbar2_conin():
         variables=variables,
         evidence=evidence,
     )
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 # ===============================================================================
@@ -80,7 +80,10 @@ def test_holmes0_pgmpy():
     evidence = None
 
     infer = VariableElimination(example.pgm)
-    assert infer.map_query(variables=variables, evidence=evidence) == example.solution
+    assert (
+        infer.map_query(variables=variables, evidence=evidence)
+        == example.solutions[0].states
+    )
 
     from conin.common.pgmpy import convert_pgmpy_to_conin
 
@@ -91,7 +94,7 @@ def test_holmes0_pgmpy():
         evidence=evidence,
         solver=mip_solver,
     )
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -111,7 +114,7 @@ def test_holmes1():
     #        pgm=pgm, variables=variables, evidence=evidence
     #    )
     #    results = solve_pyomo_map_query_model(model, solver=mip_solver)
-    #    assert q == results.solution.variable_value
+    #    assert q == results.solution.states
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -131,7 +134,7 @@ def test_holmes2():
     #        pgm=pgm, variables=variables, evidence=evidence
     #    )
     #    results = solve_pyomo_map_query_model(model, solver=mip_solver)
-    #    assert q == results.solution.variable_value
+    #    assert q == results.solution.states
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -151,7 +154,7 @@ def test_holmes3():
     #        pgm=pgm, variables=variables, evidence=evidence
     #    )
     #    results = solve_pyomo_map_query_model(model, solver=mip_solver)
-    #    assert q == results.solution.variable_value
+    #    assert q == results.solution.states
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -171,7 +174,7 @@ def test_holmes4():
     #        pgm=pgm, variables=variables, evidence=evidence
     #    )
     #    results = solve_pyomo_map_query_model(model, solver=mip_solver)
-    #    assert q == results.solution.variable_value
+    #    assert q == results.solution.states
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -191,4 +194,4 @@ def test_holmes5():
     #        pgm=pgm, variables=variables, evidence=evidence
     #    )
     #    results = solve_pyomo_map_query_model(model, solver=mip_solver)
-    #    assert q == results.solution.variable_value
+    #    assert q == results.solution.states

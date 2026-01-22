@@ -64,7 +64,7 @@ def test_example6():
 
     model = create_MN_pyomo_map_query_model_from_factorial_repn(S=S, J=J, v=v, w=w)
     results = solve_pyomo_map_query_model(model, solver=mip_solver)
-    assert results.solution.variable_value == {"A": 0, "B": 1}
+    assert results.solution.states == {"A": 0, "B": 1}
 
     if True:
         pgm = examples.example6_conin().pgm
@@ -76,7 +76,7 @@ def test_example6():
         assert w == w_
         model = create_pyomo_map_query_model_MN(pgm=pgm)
         results = solve_pyomo_map_query_model(model, solver=mip_solver)
-        assert results.solution.variable_value == {"A": 0, "B": 1}
+        assert results.solution.states == {"A": 0, "B": 1}
 
     if pgmpy_available:
         pgm = examples.example6_pgmpy().pgm
@@ -88,7 +88,7 @@ def test_example6():
         assert w == w_
         model = create_pyomo_map_query_model_MN(pgm=pgm)
         results = solve_pyomo_map_query_model(model, solver=mip_solver)
-        assert results.solution.variable_value == {"A": 0, "B": 1}
+        assert results.solution.states == {"A": 0, "B": 1}
 
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
@@ -223,7 +223,7 @@ def test_ABC():
 
     model = create_MN_pyomo_map_query_model_from_factorial_repn(S=S, J=J, v=v, w=w)
     results = solve_pyomo_map_query_model(model, solver=mip_solver)
-    assert results.solution.variable_value == {"A": 2, "B": 2, "C": 1}
+    assert results.solution.states == {"A": 2, "B": 2, "C": 1}
 
     if False:
         pgm = examples.ABC_conin().pgm
@@ -384,7 +384,7 @@ def test_ABC_constrained():
     model.diff = pyo.Constraint([0, 1, 2], rule=diff_)
 
     results = solve_pyomo_map_query_model(model, solver=mip_solver)
-    assert results.solution.variable_value == {"A": 0, "B": 2, "C": 1}
+    assert results.solution.states == {"A": 0, "B": 2, "C": 1}
 
     if True:
         # Double-check that we can extract the right factor representation
