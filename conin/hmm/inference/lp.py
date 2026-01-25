@@ -86,7 +86,6 @@ def lp_inference(
 def ip_inference(
     *,
     hmm,
-    num_solutions=1,
     observed,
     solver="gurobi",
     solver_options=None,
@@ -133,10 +132,6 @@ def ip_inference(
             termination_condition = "ok"
             soln = first_sol
     else:
-
-        assert (
-            num_solutions == 1
-        ), "ERROR: Support for inferring multiple solutions with an IP model has not been setup"
 
         if debug:
             tic("Optimizing Model - START")
