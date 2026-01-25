@@ -30,6 +30,16 @@ def chmm1_pyomo():
 
 
 @pytest.fixture
+def chmm1_pyomo_aos():
+    return tc.create_chmm1_pyomo_aos()
+
+
+@pytest.fixture
+def chmm2_pyomo_aos():
+    return tc.create_chmm2_pyomo_aos()
+
+
+@pytest.fixture
 def lb():
     return 10
 
@@ -374,6 +384,335 @@ class Test_Inference_ip:
         )
 
         assert inferred2 == [
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+        ]
+
+    @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
+    def test_ip_aos_trivial(self, chmm1_pyomo):
+        observed = ["o1", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0"]
+        solver_options = dict(
+            num_solutions=1,
+            rel_opt_gap=None,
+            abs_opt_gap=None,
+            solver_options={},
+            pool_manager=None,
+            topas_method="balas",
+        )
+        solver = "or_topas"
+        # TODO - Compare LP solution?
+        # inference1 = Inference(statistical_model=chmm)
+        # inferred1 = inference1(observed).solutions[0].hidden
+
+        inferred2 = (
+            ip_inference(
+                hmm=chmm1_pyomo,
+                observed=observed,
+                solver=solver,
+            )
+            .solutions[0]
+            .hidden
+        )
+
+        assert inferred2 == [
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+        ]
+
+    @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
+    def test_ip_aos_1(self, chmm1_pyomo_aos):
+        # this test does not run into the constraints that limit inference
+        observed = ["o1", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0"]
+        solver_options = dict(
+            num_solutions=2,
+            rel_opt_gap=None,
+            abs_opt_gap=None,
+            solver_options={},
+            pool_manager=None,
+            topas_method="balas",
+        )
+        solver = "or_topas"
+        # TODO - Compare LP solution?
+        # inference1 = Inference(statistical_model=chmm)
+        # inferred1 = inference1(observed).solutions[0].hidden
+        ip_results = ip_inference(
+            hmm=chmm1_pyomo_aos,
+            observed=observed,
+            solver=solver,
+            solver_options=solver_options,
+        )
+        inferred2 = ip_results.solutions[0].hidden
+        inferred_second_best = ip_results.solutions[1].hidden
+
+        assert inferred2 == [
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+        ]
+
+        assert inferred_second_best == [
+            "h1",
+            "h1",
+            "h1",
+            "h1",
+            "h1",
+            "h1",
+            "h1",
+            "h1",
+            "h1",
+            "h1",
+        ]
+
+    @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
+    def test_ip_aos_2(self, chmm1_pyomo_aos):
+        # this test does run into the constraints that limit inference
+        observed = [
+            "o1",
+            "o0",
+            "o0",
+            "o0",
+            "o0",
+            "o0",
+            "o0",
+            "o0",
+            "o0",
+            "o0",
+            "o0",
+            "o0",
+            "o0",
+            "o0",
+        ]
+        solver_options = dict(
+            num_solutions=1,
+            rel_opt_gap=None,
+            abs_opt_gap=None,
+            solver_options={},
+            pool_manager=None,
+            topas_method="balas",
+        )
+        solver = "or_topas"
+        # TODO - Compare LP solution?
+        # inference1 = Inference(statistical_model=chmm)
+        # inferred1 = inference1(observed).solutions[0].hidden
+        ip_results = ip_inference(
+            hmm=chmm1_pyomo_aos,
+            observed=observed,
+            solver=solver,
+            solver_options=solver_options,
+        )
+        inferred2 = ip_results.solutions[0].hidden
+
+        assert inferred2 == [
+            "h1",
+            "h1",
+            "h1",
+            "h1",
+            "h1",
+            "h1",
+            "h1",
+            "h1",
+            "h1",
+            "h1",
+            "h1",
+            "h1",
+            "h1",
+            "h1",
+        ]
+
+    @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
+    def test_ip_aos_3(self, chmm2_pyomo_aos):
+        # this test does not run into the constraints that limit inference
+
+        # best sol is h0*length
+        # second best is h1*length
+        # third best is h2, h0*(length-1)
+        # fourth best is h1,h2, h0*(length-2)
+        # if length > 12, second best can't happen, move sols up one
+        observed = ["o1", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0"]
+        solver_options = dict(
+            num_solutions=4,
+            rel_opt_gap=None,
+            abs_opt_gap=None,
+            solver_options={},
+            pool_manager=None,
+            topas_method="balas",
+        )
+        solver = "or_topas"
+        # TODO - Compare LP solution?
+        # inference1 = Inference(statistical_model=chmm)
+        # inferred1 = inference1(observed).solutions[0].hidden
+        ip_results = ip_inference(
+            hmm=chmm2_pyomo_aos,
+            observed=observed,
+            solver=solver,
+            solver_options=solver_options,
+        )
+        inferred2 = ip_results.solutions[0].hidden
+        inferred_second_best = ip_results.solutions[1].hidden
+        inferred_third_best = ip_results.solutions[2].hidden
+        inferred_fourth_best = ip_results.solutions[3].hidden
+
+        assert inferred2 == [
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+        ]
+
+        assert inferred_second_best == [
+            "h1",
+            "h1",
+            "h1",
+            "h1",
+            "h1",
+            "h1",
+            "h1",
+            "h1",
+            "h1",
+            "h1",
+        ]
+
+        assert inferred_third_best == [
+            "h2",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+        ]
+        assert inferred_fourth_best == [
+            "h1",
+            "h2",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+        ]
+
+    @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
+    def test_ip_aos_4(self, chmm2_pyomo_aos):
+        # this test does run into the constraints that limit inference
+        # length = 14
+
+        # best sol is h0*length
+        # second best is h1*length
+        # third best is h2, h0*(length-1)
+        # fourth best is h1,h2, h0*(length-2)
+        # if length > 12, second best can't happen, move sols up one
+        observed = [
+            "o1",
+            "o0",
+            "o0",
+            "o0",
+            "o0",
+            "o0",
+            "o0",
+            "o0",
+            "o0",
+            "o0",
+            "o0",
+            "o0",
+            "o0",
+            "o0",
+        ]
+        solver_options = dict(
+            num_solutions=4,
+            rel_opt_gap=None,
+            abs_opt_gap=None,
+            solver_options={},
+            pool_manager=None,
+            topas_method="balas",
+        )
+        solver = "or_topas"
+        # TODO - Compare LP solution?
+        # inference1 = Inference(statistical_model=chmm)
+        # inferred1 = inference1(observed).solutions[0].hidden
+        ip_results = ip_inference(
+            hmm=chmm2_pyomo_aos,
+            observed=observed,
+            solver=solver,
+            solver_options=solver_options,
+        )
+        inferred2 = ip_results.solutions[0].hidden
+        inferred_second_best = ip_results.solutions[1].hidden
+        inferred_third_best = ip_results.solutions[2].hidden
+
+        assert inferred2 == [
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+        ]
+
+        assert inferred_second_best == [
+            "h2",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+            "h0",
+        ]
+
+        assert inferred_third_best == [
+            "h1",
+            "h2",
+            "h0",
+            "h0",
             "h0",
             "h0",
             "h0",
