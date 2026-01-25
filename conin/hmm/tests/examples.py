@@ -60,6 +60,31 @@ def create_hmm1():
     return hmm
 
 
+def create_hmm1_aos():
+    # best sol should be h0*Length
+    # second best sol should be h1*Length
+    # all other sols should have prob 0
+    start_probs = {"h0": 0.51, "h1": 0.49}
+    transition_probs = {
+        ("h0", "h0"): 1.0,
+        ("h1", "h1"): 1.0,
+    }
+    emission_probs = {
+        ("h0", "o0"): 0.7,
+        ("h0", "o1"): 0.3,
+        ("h1", "o0"): 0.7,
+        ("h1", "o1"): 0.3,
+    }
+    hmm = conin.hmm.HiddenMarkovModel()
+    hmm.load_model(
+        start_probs=start_probs,
+        transition_probs=transition_probs,
+        emission_probs=emission_probs,
+    )
+    hmm.set_seed(0)
+    return hmm
+
+
 def create_hmm2():
     start_probs = {"h0": 0.4, "h1": 0.6}
     transition_probs = {
@@ -77,6 +102,35 @@ def create_hmm2():
         ("h1", "o0"): 0.4,
         ("h1", "o1"): 0.6,
         ("h2", "o2"): 1.0,
+    }
+    hmm = conin.hmm.HiddenMarkovModel()
+    hmm.load_model(
+        start_probs=start_probs,
+        transition_probs=transition_probs,
+        emission_probs=emission_probs,
+    )
+    hmm.set_seed(0)
+    return hmm
+
+
+def create_hmm2_aos():
+    start_probs = {"h0": 0.6, "h1": 0.3, "h2": 0.1}
+    transition_probs = {
+        ("h0", "h0"): 1.0,
+        ("h1", "h1"): 0.99,
+        ("h1", "h2"): 0.01,
+        ("h2", "h0"): 1.0,
+    }
+    emission_probs = {
+        ("h0", "o0"): 0.7,
+        ("h0", "o1"): 0.2,
+        ("h0", "o2"): 0.1,
+        ("h1", "o0"): 0.7,
+        ("h1", "o1"): 0.2,
+        ("h1", "o2"): 0.1,
+        ("h2", "o0"): 0.7,
+        ("h2", "o1"): 0.2,
+        ("h2", "o2"): 0.1,
     }
     hmm = conin.hmm.HiddenMarkovModel()
     hmm.load_model(
@@ -120,6 +174,43 @@ def create_chmm1_pyomo():
         M.h0_upper = pe.Constraint(expr=sum(M.hmm.x[t, h0] for t in D.hmm.T) <= 12)
 
     constraints = [num_zeros_greater_than_nine, num_zeros_less_than_thirteen]
+
+    chmm = conin.hmm.ConstrainedHiddenMarkovModel(hmm=hmm, constraints=constraints)
+    chmm.initialize_chmm()
+    return chmm
+
+
+def create_chmm2_pyomo_aos():
+    hmm = create_hmm2_aos()
+
+    # best sol is h0*length
+    # second best is h1*length
+    # third best is h2, h0*(length-1)
+    # fourth best is h1,h2, h0*(length-2)
+    # if length > 12, second best can't happen, move sols up one
+    @conin.pyomo_constraint_fn()
+    def num_ones_less_than_thirteen(M, D):
+        h1 = D.hmm.hidden_to_internal["h1"]
+        M.h0_upper = pe.Constraint(expr=sum(M.hmm.x[t, h1] for t in D.hmm.T) <= 12)
+
+    constraints = [num_ones_less_than_thirteen]
+
+    chmm = conin.hmm.ConstrainedHiddenMarkovModel(hmm=hmm, constraints=constraints)
+    chmm.initialize_chmm()
+    return chmm
+
+
+def create_chmm1_pyomo_aos():
+    hmm = create_hmm1_aos()
+
+    # if length > 12, only sol with prob > 0 is h1*length
+    # if length <= 12, best sol h0*length, second best h1*length
+    @conin.pyomo_constraint_fn()
+    def num_zeros_less_than_thirteen(M, D):
+        h0 = D.hmm.hidden_to_internal["h0"]
+        M.h0_upper = pe.Constraint(expr=sum(M.hmm.x[t, h0] for t in D.hmm.T) <= 12)
+
+    constraints = [num_zeros_less_than_thirteen]
 
     chmm = conin.hmm.ConstrainedHiddenMarkovModel(hmm=hmm, constraints=constraints)
     chmm.initialize_chmm()
