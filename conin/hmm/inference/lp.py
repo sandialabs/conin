@@ -101,14 +101,6 @@ def ip_inference(
     if debug:
         toc("Generating Model - STOP")
     if solver == "or_topas":
-        # solver_options = dict(
-        #     num_solutions=1,
-        #     rel_opt_gap=None,
-        #     abs_opt_gap=None,
-        #     solver_options={},
-        #     pool_manager=None,
-        #     topas_method="balas",
-        # )
         if True:
             if not or_topas_available:
                 raise RuntimeError("or_topas Solver Unavailable")
