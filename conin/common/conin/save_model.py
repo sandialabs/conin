@@ -55,7 +55,10 @@ def save_model_uai(pgm, name, quiet=True):
         assignments = list(factor.assignments(pgm.states))
         table_values = []
         for assignment in assignments:
-            state = tuple([t[1] for t in assignment])
+            if len(assignment) == 1:
+                state = assignment[0][1]
+            else:
+                state = tuple([t[1] for t in assignment])
             table_values.append(str(factor.values[state]))
 
         tables += [(table_preamble, table_values)]
