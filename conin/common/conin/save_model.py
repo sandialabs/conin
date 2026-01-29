@@ -1,4 +1,5 @@
 from conin.bayesian_network.model import DiscreteBayesianNetwork
+from conin.dynamic_bayesian_network.model import DynamicDiscreteBayesianNetwork
 from conin.markov_network.model import DiscreteMarkovNetwork
 
 
@@ -14,18 +15,20 @@ def save_model(pgm, name, quiet=True):
 def save_model_uai(pgm, name, quiet=True):
     """
     Function to serialize the parameters of a DBN in UAI format
-    Inputs:  pgm (DiscreteBayesianNetwork, DiscreteMarkovNetwork) - model to be converted
+    Inputs:  pgm (<Dynamic>DiscreteBayesianNetwork, DiscreteMarkovNetwork) - model to be converted
              name  (str) - filename of output (will end in .uai)
              quiet (bool) - unused
     Outputs: <name>.uai - written UAI file
     """
     if isinstance(pgm, DiscreteBayesianNetwork):
         case = "BAYES"
+    elif isinstance(pgm, DynamicDiscreteBayesianNetwork):
+        case = "BAYES"
     elif isinstance(pgm, DiscreteMarkovNetwork):
         case = "MARKOV"
     else:
         raise ValueError(
-            f"pgm must be an instance of a DiscreteBayesianNetwork or DiscreteMarkovNetwork: {type(pgm)=}"
+            f"pgm must be an instance of a <Dynamic>DiscreteBayesianNetwork or DiscreteMarkovNetwork: {type(pgm)=}"
         )
 
     # get node2id mapping
@@ -45,12 +48,15 @@ def save_model_uai(pgm, name, quiet=True):
     for factor in factors:
         # table_preamble
         # len(factor.nodes), factor.node[0], factor.node[1], ..., factor.node[n-1]
-        factor_node_ids = [node2id[n] for n in factor.nodes]
-        table_preamble = [len(factor_node_ids)] + factor_node_ids
-        table_preamble = [str(d) for d in table_preamble]
+        factor_node_ids = [str(node2id[n]) for n in factor.nodes]
+        table_preamble = [str(len(factor_node_ids))] + factor_node_ids
 
         # table values
-        table_values = [str(v) for k, v in factor.values.items()]
+        assignments = list(factor.assignments(pgm.states))
+        table_values = []
+        for assignment in assignments:
+            state = tuple([t[1] for t in assignment])
+            table_values.append(str(factor.values[state]))
 
         tables += [(table_preamble, table_values)]
 
