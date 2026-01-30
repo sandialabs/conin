@@ -61,9 +61,16 @@ def create_hmm1():
 
 
 def create_hmm1_aos():
-    # best sol should be h0*Length
-    # second best sol should be h1*Length
-    # all other sols should have prob 0
+    """
+    Unconstrained HMM example for testing AOS capabilities.
+    Designed so the known solutions should be well-ordered.
+
+    For all observed state Lengths > 0, the follow behavior occurs:
+    best sol should be h0*Length
+    second best sol should be h1*Length
+    all other sols should have prob 0
+    """
+
     start_probs = {"h0": 0.51, "h1": 0.49}
     transition_probs = {
         ("h0", "h0"): 1.0,
@@ -114,6 +121,16 @@ def create_hmm2():
 
 
 def create_hmm2_aos():
+    """
+    Unconstrained HMM example for testing AOS capabilities.
+    Designed so the known solutions should be well-ordered.
+
+    For all observed state Lengths > 0, the follow behavior occurs:
+    best sol is h0*length
+    second best is h1*length
+    third best is h2, h0*(length-1)
+    fourth best is h1,h2, h0*(length-2)
+    """
     start_probs = {"h0": 0.6, "h1": 0.3, "h2": 0.1}
     transition_probs = {
         ("h0", "h0"): 1.0,
@@ -180,37 +197,51 @@ def create_chmm1_pyomo():
     return chmm
 
 
-def create_chmm2_pyomo_aos():
-    hmm = create_hmm2_aos()
-
-    # best sol is h0*length
-    # second best is h1*length
-    # third best is h2, h0*(length-1)
-    # fourth best is h1,h2, h0*(length-2)
-    # if length > 12, second best can't happen, move sols up one
-    @conin.pyomo_constraint_fn()
-    def num_ones_less_than_thirteen(M, D):
-        h1 = D.hmm.hidden_to_internal["h1"]
-        M.h0_upper = pe.Constraint(expr=sum(M.hmm.x[t, h1] for t in D.hmm.T) <= 12)
-
-    constraints = [num_ones_less_than_thirteen]
-
-    chmm = conin.hmm.ConstrainedHiddenMarkovModel(hmm=hmm, constraints=constraints)
-    chmm.initialize_chmm()
-    return chmm
-
-
 def create_chmm1_pyomo_aos():
+    """
+    Constrained HMM example for testing AOS capabilities.
+    Designed so the known solutions should be well-ordered.
+    Modification of create_hmm1_aos to add constraints
+
+    Based on observed state Lengths > 0, the follow behavior occurs:
+    if length > 12, only sol with prob > 0 is h1*length
+    if length <= 12, best sol h0*length, second best h1*length
+    """
     hmm = create_hmm1_aos()
 
-    # if length > 12, only sol with prob > 0 is h1*length
-    # if length <= 12, best sol h0*length, second best h1*length
     @conin.pyomo_constraint_fn()
     def num_zeros_less_than_thirteen(M, D):
         h0 = D.hmm.hidden_to_internal["h0"]
         M.h0_upper = pe.Constraint(expr=sum(M.hmm.x[t, h0] for t in D.hmm.T) <= 12)
 
     constraints = [num_zeros_less_than_thirteen]
+
+    chmm = conin.hmm.ConstrainedHiddenMarkovModel(hmm=hmm, constraints=constraints)
+    chmm.initialize_chmm()
+    return chmm
+
+
+def create_chmm2_pyomo_aos():
+    """
+    Constrained HMM example for testing AOS capabilities.
+    Designed so the known solutions should be well-ordered.
+    Modification of create_hmm2_aos to add constraints
+
+    Based on observed state Lengths, the follow behavior occurs:
+    if length > 12, second best can't happen, move sols up one
+    best sol is h0*length
+    second best is h1*length,
+    third best is h2, h0*(length-1)
+    fourth best is h1,h2, h0*(length-2)
+    """
+    hmm = create_hmm2_aos()
+
+    @conin.pyomo_constraint_fn()
+    def num_ones_less_than_thirteen(M, D):
+        h1 = D.hmm.hidden_to_internal["h1"]
+        M.h0_upper = pe.Constraint(expr=sum(M.hmm.x[t, h1] for t in D.hmm.T) <= 12)
+
+    constraints = [num_ones_less_than_thirteen]
 
     chmm = conin.hmm.ConstrainedHiddenMarkovModel(hmm=hmm, constraints=constraints)
     chmm.initialize_chmm()

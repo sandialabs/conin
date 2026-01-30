@@ -100,39 +100,34 @@ def ip_inference(
     if debug:
         toc("Generating Model - STOP")
     if solver == "or_topas":
-        if True:
-            if not or_topas_available:
-                raise RuntimeError("or_topas Solver Unavailable")
-            if solver_options == None:
-                solver_options = dict()
-            topas_method = solver_options.pop("topas_method", "balas")
-            if debug:
-                tic("Optimizing Model with OR_TOPAS - START")
-            if topas_method == "balas":
-                aos_pm = aos.enumerate_binary_solutions(M, **solver_options)
-            elif topas_method == "gurobi_solution_pool":
-                aos_pm = aos.gurobi_generate_solutions(M, **solver_options)
-            else:
-                raise RuntimeError(f"Asked for {topas_method=}, which is not supported")
-            if debug:
-                toc("Optimizing Model with OR_TOPAS - STOP")
-            assert (
-                len(aos_pm.solutions) > 0
-            ), f"No solutions found for OR_TOPAS Solver use"
-            solutions = []
-            # print(f"Number of solutions found: {len(aos_pm.solutions)}")
-            for index, aos_solution in enumerate(aos_pm.solutions):
-                # print(f"Solution {index}: is {type(aos_solution)}, number of vars {len(aos_solution._variables)}")
-                aos_sol_munch = parse_aos_solution_pyomo_ip_inference(
-                    aos_solution=aos_solution, M=M, hmm=hmm, T=T
-                )
-                if index == 0:
-                    first_sol = aos_sol_munch
-                solutions.append(aos_sol_munch)
-            termination_condition = "ok"
-            soln = first_sol
+        if not or_topas_available:
+            raise RuntimeError("or_topas Solver Unavailable")
+        if solver_options == None:
+            solver_options = dict()
+        topas_method = solver_options.pop("topas_method", "balas")
+        if debug:
+            tic("Optimizing Model with OR_TOPAS - START")
+        if topas_method == "balas":
+            aos_pm = aos.enumerate_binary_solutions(M, **solver_options)
+        elif topas_method == "gurobi_solution_pool":
+            aos_pm = aos.gurobi_generate_solutions(M, **solver_options)
+        else:
+            raise RuntimeError(f"Asked for {topas_method=}, which is not supported")
+        if debug:
+            toc("Optimizing Model with OR_TOPAS - STOP")
+        assert len(aos_pm.solutions) > 0, f"No solutions found for OR_TOPAS Solver use"
+        solutions = []
+        for index, aos_solution in enumerate(aos_pm.solutions):
+            aos_sol_munch = parse_aos_solution_pyomo_ip_inference(
+                aos_solution=aos_solution, M=M, hmm=hmm, T=T
+            )
+            if index == 0:
+                first_sol = aos_sol_munch
+            solutions.append(aos_sol_munch)
+        termination_condition = "ok"
+        soln = first_sol
     else:
-
+        # this is solver != "or_topas"
         if debug:
             tic("Optimizing Model - START")
         opt = pyo.SolverFactory(solver)
@@ -141,11 +136,8 @@ def ip_inference(
         if debug:
             toc("Optimizing Model - STOP")
 
-        #
         # We are maximizing, so the lower bound is the best incumbent found by the solver.
         # We assume that the active objective is a log-likelihood score.
-        #
-
         # so this is just the objective
         log_likelihood = res["Problem"][0]["Lower bound"]
 
@@ -154,8 +146,6 @@ def ip_inference(
         )
         solutions = [soln]
     if debug:
-        # ans.hmm = hmm.chmm.hmm
-        # ans.M = M
         print(f"E: {len(data.hmm.E)}")
         print(f"F: {len(data.hmm.F)}")
         print(f"Gt: {len(data.hmm.Gt)}")
