@@ -14,9 +14,6 @@ from pyomo.contrib.alternative_solutions.aos_utils import (
 
 with try_import() as or_topas_available:
     import or_topas.aos as aos
-    from or_topas.util.pyomo_utils import (
-        get_model_variables as topas_get_model_variables,
-    )
 
 
 def lp_inference(
