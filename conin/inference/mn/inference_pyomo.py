@@ -297,52 +297,51 @@ def solve_pyomo_map_query_model(
     if timing:  # pragma:nocover
         timer = TicTocTimer()
         timer.tic("optimize_map_query_model - START")
+
     if solver == "or_topas":
         if not or_topas_available:
-            raise RuntimeError("or_topas Solver Unavailable")
+            raise RuntimeError("or_topas not installed")
+
+        if solver_options == None:
+            solver_options = dict()
+        topas_method = solver_options.pop("topas_method", "balas")
+        if timing:  # pragma:nocover
+            timer.toc("Initialize solver")
+
+        solver_timer = TicTocTimer()
+        solver_timer.tic(None)
+        if topas_method == "balas":
+            aos_pm = aos.enumerate_binary_solutions(model, **solver_options)
+        elif topas_method == "gurobi_solution_pool":
+            aos_pm = aos.gurobi_generate_solutions(model, tee=tee, **solver_options)
         else:
-            if solver_options == None:
-                solver_options = dict()
-            if timing:  # pragma:nocover
-                timer.toc("Initialize solver")
-            solver_timer = TicTocTimer()
-            solver_timer.tic(None)
-            topas_method = solver_options.pop("topas_method", "balas")
-            if topas_method == "balas":
-                # Note this method is for 0/1 Variables only
-                aos_pm = aos.enumerate_binary_solutions(model, **solver_options)
-            elif topas_method == "gurobi_solution_pool":
-                # this method can support integer variables
-                aos_pm = aos.gurobi_generate_solutions(model, tee=tee, **solver_options)
-            else:
-                raise RuntimeError(f"Asked for {topas_method=}, which is not supported")
-            solvetime = solver_timer.toc(None)
-            assert (
-                len(aos_pm.solutions) > 0
-            ), f"No solutions found for OR_TOPAS Solver use"
-            solutions = []
-            for index, aos_solution in enumerate(aos_pm.solutions):
-                aos_sol_munch = parse_aos_solution_pyomo_map_query(
-                    model, aos_solution, with_fixed
-                )
-                if index == 0:
-                    first_sol = aos_sol_munch
-                solutions.append(aos_sol_munch)
-            termination_condition = "ok"
-            soln = first_sol
+            raise RuntimeError(f"Asked for {topas_method=}, which is not supported")
+        solvetime = solver_timer.toc(None)
+        if timing:  # pragma:nocover
+            timer.toc("Completed optimization")
+
+        assert len(aos_pm.solutions) > 0, f"No solutions found by 'or_topas' solver"
+        solutions = [
+            parse_aos_solution_pyomo_map_query(model, aos_solution, with_fixed)
+            for aos_solution in aos_pm.solutions
+        ]
+        soln = solutions[0]
+        termination_condition = "ok"
     else:
         opt = pe.SolverFactory(solver)
         if solver_options:
             opt.options = solver_options
         if timing:  # pragma:nocover
             timer.toc("Initialize solver")
+
         solver_timer = TicTocTimer()
         solver_timer.tic(None)
         res = opt.solve(model, tee=tee)
         solvetime = solver_timer.toc(None)
-        pe.assert_optimal_termination(res)
         if timing:  # pragma:nocover
             timer.toc("Completed optimization")
+
+        pe.assert_optimal_termination(res)
         soln = parse_model_solution_pyomo_map_query(model, with_fixed)
         solutions = [soln]
         termination_condition = "ok"
