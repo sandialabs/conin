@@ -309,8 +309,10 @@ def solve_pyomo_map_query_model(
             solver_timer.tic(None)
             topas_method = solver_options.pop("topas_method", "balas")
             if topas_method == "balas":
+                # Note this method is for 0/1 Variables only
                 aos_pm = aos.enumerate_binary_solutions(model, **solver_options)
             elif topas_method == "gurobi_solution_pool":
+                # this method can support integer variables
                 aos_pm = aos.gurobi_generate_solutions(model, tee=tee, **solver_options)
             else:
                 raise RuntimeError(f"Asked for {topas_method=}, which is not supported")

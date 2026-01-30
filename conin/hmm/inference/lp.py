@@ -174,21 +174,21 @@ def parse_model_solution_pyomo_ip_inference(M, hmm, T, log_likelihood):
         ), f"ERROR: Unexpected missing hidden state at time step {t}"
 
     if or_topas_available:
+        # if or_topas available, use more recent topas method
         model_variables = topas_get_model_variables(M, include_fixed=True)
     else:
+        # if or_topas not available, use old contrib.alternative_solutions method
         model_variables = get_model_variables(M, include_fixed=True)
     variables = {
         str(v): pyo.value(v) for v in model_variables if math.fabs(pyo.value(v)) > 1e-3
     }
 
-    soln = munch.Munch(
+    return munch.Munch(
         variable_value=hidden,
         hidden=hidden,
         log_likelihood=log_likelihood,
         variables=variables,
     )
-
-    return soln
 
 
 def parse_aos_solution_pyomo_ip_inference(aos_solution, M, hmm, T):
@@ -201,32 +201,22 @@ def parse_aos_solution_pyomo_ip_inference(aos_solution, M, hmm, T):
     for t in range(T):
         for a in data.hmm.A:
             aos_var_hmm_x_t_a = aos_solution.variable(M.hmm.x[t, a].name)
-            # if pyo.value(M.hmm.x[t, a]) > 0.5:
             if aos_var_hmm_x_t_a.value > 0.5:
                 hidden[t] = hmm.hidden_markov_model.hidden_to_external[a]
         assert (
             hidden[t] != "__UNKNOWN__"
         ), f"ERROR: Unexpected missing hidden state at time step {t}"
 
-    # if or_topas_available:
-    #     model_variables = topas_get_model_variables(M, include_fixed=True)
-    # else:
-    #     model_variables = get_model_variables(M, include_fixed=True)
     model_variables = aos_solution._variables
-    # variables = {
-    #     str(v): pyo.value(v) for v in model_variables if math.fabs(pyo.value(v)) > 1e-3
-    # }
     variables = {
         aos_var.name: aos_var.value
         for aos_var in model_variables
         if math.fabs(aos_var.value) > 1e-3
     }
 
-    soln = munch.Munch(
+    return munch.Munch(
         variable_value=hidden,
         hidden=hidden,
         log_likelihood=log_likelihood,
         variables=variables,
     )
-
-    return soln
