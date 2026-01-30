@@ -173,12 +173,7 @@ def parse_model_solution_pyomo_ip_inference(M, hmm, T, log_likelihood):
             hidden[t] != "__UNKNOWN__"
         ), f"ERROR: Unexpected missing hidden state at time step {t}"
 
-    if or_topas_available:
-        # if or_topas available, use more recent topas method
-        model_variables = topas_get_model_variables(M, include_fixed=True)
-    else:
-        # if or_topas not available, use old contrib.alternative_solutions method
-        model_variables = get_model_variables(M, include_fixed=True)
+    model_variables = get_model_variables(M, include_fixed=True)
     variables = {
         str(v): pyo.value(v) for v in model_variables if math.fabs(pyo.value(v)) > 1e-3
     }
