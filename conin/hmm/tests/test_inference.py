@@ -405,6 +405,7 @@ class Test_Inference_ip:
             abs_opt_gap=None,
             solver_options={},
             pool_manager=None,
+            solver=mip_solver,
             topas_method="balas",
         )
         solver = "or_topas"
@@ -445,6 +446,7 @@ class Test_Inference_ip:
             abs_opt_gap=None,
             solver_options={},
             pool_manager=None,
+            solver=mip_solver,
             topas_method="balas",
         )
         solver = "or_topas"
@@ -511,6 +513,7 @@ class Test_Inference_ip:
             abs_opt_gap=None,
             solver_options={},
             pool_manager=None,
+            solver=mip_solver,
             topas_method="balas",
         )
         solver = "or_topas"
@@ -558,6 +561,7 @@ class Test_Inference_ip:
             abs_opt_gap=None,
             solver_options={},
             pool_manager=None,
+            solver=mip_solver,
             topas_method="balas",
         )
         solver = "or_topas"
@@ -658,6 +662,7 @@ class Test_Inference_ip:
             abs_opt_gap=None,
             solver_options={},
             pool_manager=None,
+            solver=mip_solver,
             topas_method="balas",
         )
         solver = "or_topas"
