@@ -114,11 +114,12 @@ def create_toulbar2_map_query_model_MN(
     if timing:  # pragma:nocover
         timer = TicTocTimer()
         timer.toc("create_toulbar2_model - START")
-    pgm_ = pgm.pgm if isinstance(pgm, ConstrainedDiscreteMarkovNetwork) else pgm
+    cpgm = pgm if isinstance(pgm, ConstrainedDiscreteMarkovNetwork) else None
+    pgm = pgm.pgm if cpgm else pgm
 
     with tempfile.TemporaryDirectory() as tempdir:
         filename = os.path.join(tempdir, "model.uai")
-        conin.common.save_model(pgm_, filename)
+        conin.common.save_model(pgm, filename)
 
         model = pytoulbar2.CFN()
         model.Read(filename)
@@ -126,9 +127,9 @@ def create_toulbar2_map_query_model_MN(
     model.X = {name: i for i, name in enumerate(pgm.nodes)}
     model.states = {i: pgm.states_of(name) for i, name in enumerate(pgm.nodes)}
 
-    if isinstance(pgm, ConstrainedDiscreteMarkovNetwork) and pgm.constraints:
+    if cpgm and cpgm.constraints:
         data = munch.Munch(variables=variables, evidence=evidence)
-        for func in pgm.constraints:
+        for func in cpgm.constraints:
             model = func(model, data)
 
     if timing:  # pragma:nocover
@@ -152,12 +153,9 @@ def solve_toulbar2_map_query_model(
     solver_timer.tic(None)
     res = model.Solve()
     solvetime = solver_timer.toc(None)
-
     solution, primal_bound, num_solutions = res
     var = {name: model.states[i][solution[i]] for name, i in model.X.items()}
-    soln = munch.Munch(
-        variable_value=var, log_factor_sum=None, primal_bound=primal_bound
-    )
+    soln = munch.Munch(states=var, log_factor_sum=None, primal_bound=primal_bound)
 
     if timing:  # pragma:nocover
         timer.toc("Completed optimization")

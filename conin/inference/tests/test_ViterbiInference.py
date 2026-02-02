@@ -17,7 +17,7 @@ def test_ViterbiInference_hmm1_test0():
     inf = ViterbiInference(pgm)
     observed = ["o0", "o0", "o1", "o0", "o0"]
     results = inf.map_query(evidence=observed)
-    assert results.solution.variable_value == ["h0", "h0", "h0", "h0", "h0"]
+    assert results.solution.states == ["h0", "h0", "h0", "h0", "h0"]
 
 
 def test_ViterbiInference_hmm1_test1():
@@ -25,7 +25,7 @@ def test_ViterbiInference_hmm1_test1():
     inf = ViterbiInference(pgm)
     observed = ["o0", "o1", "o1", "o1", "o1"]
     results = inf.map_query(evidence=observed)
-    assert results.solution.variable_value == ["h1", "h1", "h1", "h1", "h1"]
+    assert results.solution.states == ["h1", "h1", "h1", "h1", "h1"]
 
 
 def test_ViterbiInference_hmm1_test2():
@@ -33,7 +33,7 @@ def test_ViterbiInference_hmm1_test2():
     inf = ViterbiInference(pgm)
     observed = {0: "o0", 1: "o0", 2: "o1", 3: "o0", 4: "o0"}
     results = inf.map_query(evidence=observed)
-    assert results.solution.variable_value == {
+    assert results.solution.states == {
         0: "h0",
         1: "h0",
         2: "h0",
@@ -47,7 +47,7 @@ def test_ViterbiInference_hmm1_test3():
     inf = ViterbiInference(pgm)
     observed = {0: "o0", 1: "o1", 2: "o1", 3: "o1", 4: "o1"}
     results = inf.map_query(evidence=observed)
-    assert results.solution.variable_value == {
+    assert results.solution.states == {
         0: "h1",
         1: "h1",
         2: "h1",

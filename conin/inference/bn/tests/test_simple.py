@@ -34,7 +34,7 @@ def test_simple1_pyomo_ALL_conin():
     example = examples.simple1_BN_conin()
 
     results = inference_pyomo_map_query_BN(pgm=example.pgm, solver=mip_solver)
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 # @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
@@ -50,7 +50,7 @@ def test_simple1_pyomo_ALL_conin():
 #            pgm=pgm, evidence={"A": 1}
 #        )  # variables=None, evidence=None
 #        results = solve_pyomo_map_query_model(model, solver=mip_solver)
-#        assert q == results.solution.variable_value
+#        assert q == results.solution.states
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -62,13 +62,13 @@ def test_simple1_pyomo_ALL_pgmpy():
     example = examples.simple1_BN_pgmpy()
 
     infer = VariableElimination(example.pgm)
-    assert infer.map_query(variables=["A", "B"]) == example.solution
+    assert infer.map_query(variables=["A", "B"]) == example.solutions[0].states
 
     from conin.common.pgmpy import convert_pgmpy_to_conin
 
     pgm = convert_pgmpy_to_conin(example.pgm)
     results = inference_pyomo_map_query_BN(pgm=pgm, solver=mip_solver)
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 # @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -89,7 +89,7 @@ def test_simple1_pyomo_ALL_pgmpy():
 #            pgm=pgm, evidence={"A": 1}
 #        )  # variables=None, evidence=None
 #        results = solve_pyomo_map_query_model(model, solver=mip_solver)
-#        assert q == results.solution.variable_value
+#        assert q == results.solution.states
 
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -101,13 +101,13 @@ def test_simple2_pyomo_ALL_pgmpy():
     example = examples.simple2_BN_pgmpy()
 
     infer = VariableElimination(example.pgm)
-    assert infer.map_query(variables=["A", "B"]) == example.solution
+    assert infer.map_query(variables=["A", "B"]) == example.solutions[0].states
 
     from conin.common.pgmpy import convert_pgmpy_to_conin
 
     pgm = convert_pgmpy_to_conin(example.pgm)
     results = inference_pyomo_map_query_BN(pgm=pgm, solver=mip_solver)
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states
 
 
 # @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
@@ -128,7 +128,7 @@ def test_simple2_pyomo_ALL_pgmpy():
 #            pgm=pgm, evidence={"A": 1}
 #        )  # variables=None, evidence=None
 #        results = solve_pyomo_map_query_model(model, solver=mip_solver)
-#        assert q == results.solution.variable_value
+#        assert q == results.solution.states
 
 # ===============================================================================
 #
@@ -145,4 +145,4 @@ def test_simple1_toulbar2_ALL():
     example = examples.simple1_BN_conin()
 
     results = inference_toulbar2_map_query_BN(pgm=example.pgm)
-    assert results.solution.variable_value == example.solution
+    assert results.solution.states == example.solutions[0].states

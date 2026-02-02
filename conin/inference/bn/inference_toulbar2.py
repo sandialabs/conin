@@ -49,11 +49,12 @@ def create_toulbar2_map_query_model_BN(
     create_MN = options.pop("create_MN", False)
     verbose = options.pop("verbose", -1)
 
-    pgm_ = pgm.pgm if isinstance(pgm, ConstrainedDiscreteBayesianNetwork) else pgm
+    cpgm = pgm if isinstance(pgm, ConstrainedDiscreteBayesianNetwork) else None
+    pgm = cpgm.pgm if cpgm is not None else pgm
 
-    if variables and set(variables) == set(pgm_.nodes):
+    if variables and set(variables) == set(pgm.nodes):
         assert set(variables) == set(
-            pgm_.nodes
+            pgm.nodes
         ), "Mismatch in the specified variables and the nodes in the model"
         # We continue with 'variables' set to None, which is a special case recognized below
         variables = None
@@ -64,7 +65,7 @@ def create_toulbar2_map_query_model_BN(
     #
     with tempfile.TemporaryDirectory() as tempdir:
         filename = os.path.join(tempdir, "model.uai")
-        conin.common.save_model(pgm_, filename)
+        conin.common.save_model(pgm, filename)
         # with open(filename, "r") as INPUT:
         #    for line in INPUT:
         #        print(f"HERE {line}")
@@ -83,15 +84,15 @@ def create_toulbar2_map_query_model_BN(
         # print("HERE")
         # print(f"{model.X=}")
         # print(f"{var_index_map=}")
-        # print(f"{pgm.nodes=}")
+        # print(f"{pgm.nodes_=}")
     else:
         model.X = {name: i for i, name in enumerate(pgm.nodes)}
     model.states = {i: pgm.states_of(name) for i, name in enumerate(pgm.nodes)}
     # print(f"{model.states=}")
 
-    if isinstance(pgm, ConstrainedDiscreteBayesianNetwork) and pgm.constraints:
+    if cpgm is not None and cpgm.constraints:
         data = munch.Munch(variables=variables, evidence=evidence)
-        for func in pgm.constraints:
+        for func in cpgm.constraints:
             model = func(model, data)
 
     if timing:

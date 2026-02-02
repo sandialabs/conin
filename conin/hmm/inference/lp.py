@@ -58,9 +58,7 @@ def lp_inference(
             hidden[t] != "__UNKNOWN__"
         ), f"ERROR: Unexpected missing hidden state at time step {t}"
 
-    soln = munch.Munch(
-        variable_value=hidden, hidden=hidden, log_likelihood=log_likelihood
-    )
+    soln = munch.Munch(states=hidden, hidden=hidden, log_likelihood=log_likelihood)
     ans = munch.Munch(
         observed=observed,
         solution=soln,
@@ -176,7 +174,7 @@ def parse_model_solution_pyomo_ip_inference(M, hmm, T, log_likelihood):
     }
 
     return munch.Munch(
-        variable_value=hidden,
+        states=hidden,
         hidden=hidden,
         log_likelihood=log_likelihood,
         variables=variables,
