@@ -92,14 +92,14 @@ jobs:
         run: pip install -e .
 
       - name: Test with pytest
-        run: pytest -v
+        run: pytest -v conin
 
       - name: Install pgmpy and run pytest
         run: |
           conda install pytorch
           conda install cpuonly
           pip install pgmpy
-          pytest -v .
+          pytest -v conin
 
   mip-solver-tests:
     needs: format-check
@@ -151,10 +151,12 @@ jobs:
 
       - name: Install package
         run: |
+            python -m highspy
+            which glpsol
             pip install -e .
 
       - name: Test with pytest & coverage
-        run: pytest -vv
+        run: pytest -vv conin
 
   coverage:
     needs: tests
@@ -197,7 +199,7 @@ jobs:
             pip install pgmpy
 
       - name: Test with pytest & coverage
-        run: pytest --cov --cov-branch --cov-report=xml --junitxml=junit.xml -vv
+        run: pytest --cov --cov-branch --cov-report=xml --junitxml=junit.xml -vv conin
       
       - name: Upload test results to Codecov
         uses: codecov/codecov-action@v4
