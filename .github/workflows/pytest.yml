@@ -142,19 +142,19 @@ jobs:
       - name: Configure solver - none
         if: ${{ matrix.solver == 'none' }}
         run: |
-            pip uninstall -y highspy || true
+            pip uninstall highspy || true
             conda uninstall -y glpk || true
 
       - name: Configure solver - glpk
         if: ${{ matrix.solver == 'glpk' }}
         run: |
-            pip uninstall -y highspy || true
+            pip uninstall highspy || true
             conda install -y glpk
 
       - name: Configure solver - highs
         if: ${{ matrix.solver == 'highs' }}
         run: |
-            pip install -y highspy
+            pip install highspy
             conda uninstall -y glpk || true
 
       - name: Install package
