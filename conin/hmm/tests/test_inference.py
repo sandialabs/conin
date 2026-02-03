@@ -398,7 +398,6 @@ class Test_Inference_ip:
 
     @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
     def test_ip_aos_trivial(self, chmm1_pyomo):
-        print(f"HERE {mip_solver}")
         observed = ["o1", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0"]
         solver_options = dict(
             num_solutions=1,
@@ -419,6 +418,7 @@ class Test_Inference_ip:
                 hmm=chmm1_pyomo,
                 observed=observed,
                 solver=solver,
+                solver_options = solver_options,
             )
             .solutions[0]
             .hidden
