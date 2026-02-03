@@ -98,7 +98,9 @@ jobs:
           pip install pgmpy
 
       - name: Test with pytest
-        run: pytest -v conin
+        run: |
+            python -m pgmpy || true
+            pytest -v conin
 
   mip-solver-tests:
     needs: format-check
