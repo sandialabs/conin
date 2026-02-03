@@ -100,7 +100,7 @@ jobs:
 
       - name: Test with pytest
         run: |
-            pytest -vv conin
+            pytest -r s -vv conin
 
   mip-solver-tests:
     needs: format-check
@@ -165,7 +165,7 @@ jobs:
             pip install -e .
 
       - name: Test with pytest & coverage
-        run: pytest -vv conin
+        run: pytest -r s -vv conin
 
   coverage:
     needs: tests
