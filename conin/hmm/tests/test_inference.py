@@ -2,6 +2,10 @@ import pytest
 import pyomo.opt
 import random
 
+from conin.util import try_import
+with try_import() as or_topas_available:
+    import or_topas.aos as aos
+
 from conin.hmm.inference.recursive_a_star import *
 from conin.hmm import *
 from conin.hmm.inference import a_star
@@ -396,6 +400,7 @@ class Test_Inference_ip:
             "h0",
         ]
 
+    @pytest.mark.skipif(not or_topas_available, reason="or_topas is not installed")
     @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
     def test_ip_aos_trivial(self, chmm1_pyomo):
         observed = ["o1", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0"]
@@ -437,6 +442,7 @@ class Test_Inference_ip:
             "h0",
         ]
 
+    @pytest.mark.skipif(not or_topas_available, reason="or_topas is not installed")
     @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
     def test_ip_aos_1(self, chmm1_pyomo_aos):
         # this test does not run into the constraints that limit inference
@@ -489,6 +495,7 @@ class Test_Inference_ip:
             "h1",
         ]
 
+    @pytest.mark.skipif(not or_topas_available, reason="or_topas is not installed")
     @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
     def test_ip_aos_2(self, chmm1_pyomo_aos):
         # this test does run into the constraints that limit inference
@@ -546,6 +553,7 @@ class Test_Inference_ip:
             "h1",
         ]
 
+    @pytest.mark.skipif(not or_topas_available, reason="or_topas is not installed")
     @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
     def test_ip_aos_3(self, chmm2_pyomo_aos):
         # this test does not run into the constraints that limit inference
@@ -631,6 +639,7 @@ class Test_Inference_ip:
             "h0",
         ]
 
+    @pytest.mark.skipif(not or_topas_available, reason="or_topas is not installed")
     @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
     def test_ip_aos_4(self, chmm2_pyomo_aos):
         # this test does run into the constraints that limit inference
