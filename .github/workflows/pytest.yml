@@ -96,6 +96,8 @@ jobs:
 
       - name: Install pgmpy and run pytest
         run: |
+          pip install pytorch
+          pip install cpuonly
           pip install pgmpy
           pytest -v .
 
@@ -190,6 +192,8 @@ jobs:
       - name: Install package
         run: |
             pip install -e .
+            pip install pytorch
+            pip install cpuonly
             pip install pgmpy
 
       - name: Test with pytest & coverage

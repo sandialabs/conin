@@ -15,7 +15,5 @@ dependencies:
     - pytoulbar2
     - -e git+https://github.com/sandialabs/or_topas.git#egg=or_topas
   - pyomo
-  - pytorch
-  - cpuonly
   - pytest
   - pytest-cov
