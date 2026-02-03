@@ -88,12 +88,13 @@ def ABC_conin():
 
 def ABC_conin_aos_2():
     """
-    Three variables with pair-wise interactions.
+    Unconstrained AOS example for three variables with pair-wise interactions.
 
-    The interactions have equal weights, so the MPE solution is defined by the weights for the
-    factors that describe the individual variables.
+    The edge interactions have equal weights, so the MPE solution is defined by the weights for the
+    factors that describe the individual state variables.
 
-    The MPE solution is A:2, B:2, C:1.
+    The best solution is A:2, B:2, C:1.
+    Second best is A:1, B:2, C:1
     """
 
     pgm = DiscreteMarkovNetwork()
@@ -188,13 +189,17 @@ def ABC_constrained_pyomo_conin():
 
 def ABC_constrained_pyomo_conin_aos_2():
     """
-    Three variables with pair-wise interactions.
+    Constrained AOS example for three variables with pair-wise interactions.
+    Based off ABC_conin_aos_2.
+    We add a constraint that excludes variable assignments to values that are equal.
 
-    The interactions have equal weights.  The unconstrained MPE solution is A:2, B:2, C:1.
-    However, we include a constraint that excludes variable assignments to values that are equal.
+    The edge interactions have equal weights, so the MPE solution is defined by the weights for the
+    factors that describe the individual state variables.
 
-    The constrained MPE solution is A:0, B:2, C:1.
+    The best solution is A:0, B:2, C:1.
+    Second best is A:1, B:2, C:0
     """
+
     pgm = ABC_conin_aos_2()
 
     @pyomo_constraint_fn()
