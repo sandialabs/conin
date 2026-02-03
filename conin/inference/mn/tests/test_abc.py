@@ -19,7 +19,7 @@ with try_import() as pytoulbar2_available:
 with try_import() as or_topas_available:
     import or_topas
 
-mip_solver = pyomo.opt.check_available_solvers("glpk", "gurobi")
+mip_solver = pyomo.opt.check_available_solvers("gurobi", "highs", "glpk")
 mip_solver = mip_solver[0] if mip_solver else None
 gurobi_available = len(pyomo.opt.check_available_solvers("gurobi")) > 0
 
