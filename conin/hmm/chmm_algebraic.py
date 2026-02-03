@@ -171,10 +171,6 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
         self.y_binary = y_binary
         self.x_binary = x_binary
 
-        # Default configuration
-        # self.solver = "gurobi" if solver is None else solver
-        # self.solver_options = {} if solver_options is None else solver_options
-
     def generate_unconstrained_model(self, *, observed):
         self.observed = observed
         D = _create_index_sets(hmm=self.hidden_markov_model, observed=observed)

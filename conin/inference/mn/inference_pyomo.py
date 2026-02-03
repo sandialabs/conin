@@ -4,6 +4,7 @@ import munch
 import pyomo.environ as pe
 from pyomo.common.timing import TicTocTimer
 
+from conin.config import default_mip_solver
 from conin.markov_network import ConstrainedDiscreteMarkovNetwork
 from conin.inference.mn.factor_repn import extract_factor_representation_, State
 
@@ -288,7 +289,7 @@ def create_MN_pyomo_map_query_model_from_factorial_repn(
 def solve_pyomo_map_query_model(
     model,
     *,
-    solver="gurobi",
+    solver=default_mip_solver,
     tee=False,
     with_fixed=False,
     timing=False,
