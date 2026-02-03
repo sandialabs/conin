@@ -93,8 +93,8 @@ jobs:
 
       - name: Install pgmpy
         run: |
-            conda install pytorch
-            conda install cpuonly
+            conda install -c pytorch pytorch
+            conda install -c pytorch cpuonly
             pip install pgmpy
             python -m pgmpy || true
 
@@ -203,8 +203,8 @@ jobs:
       - name: Install package
         run: |
             pip install -e .
-            conda install pytorch
-            conda install cpuonly
+            conda install -c pytorch pytorch
+            conda install -c pytorch cpuonly
             pip install pgmpy
 
       - name: Test with pytest & coverage
