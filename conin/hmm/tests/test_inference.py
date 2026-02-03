@@ -3,6 +3,7 @@ import pyomo.opt
 import random
 
 from conin.util import try_import
+
 with try_import() as or_topas_available:
     import or_topas.aos as aos
 
