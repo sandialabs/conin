@@ -1,5 +1,4 @@
 [![Pytest Tests](https://github.com/sandialabs/conin/actions/workflows/pytest.yml/badge.svg?branch=main)](https://github.com/sandialabs/conin/actions/workflows/pytest.yml?query=branch%3Amain)
-[![Coverage Status](https://github.com/sandialabs/conin/actions/workflows/coverage.yml/badge.svg?branch=main)](https://github.com/sandialabs/conin/actions/workflows/coverage.yml?query=branch%3Amain)
 [![codecov](https://codecov.io/gh/sandialabs/conin/branch/main/graph/badge.svg)](https://codecov.io/gh/sandialabs/conin)
 [![Documentation Status](https://readthedocs.org/projects/conin/badge/?version=latest)](http://conin.readthedocs.org/en/latest/)
 [![GitHub contributors](https://img.shields.io/github/contributors/sandialabs/conin.svg)](https://github.com/sandialabs/conin/graphs/contributors)
