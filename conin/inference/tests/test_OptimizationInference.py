@@ -15,7 +15,7 @@ from conin.util import try_import
 with try_import() as pgmpy_available:
     import pgmpy
 
-mip_solver = pyomo.opt.check_available_solvers("gurobi", "highs")
+mip_solver = pyomo.opt.check_available_solvers("gurobi", "highs", "glpk")
 mip_solver = mip_solver[0] if mip_solver else None
 
 
