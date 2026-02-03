@@ -4,12 +4,12 @@ channels:
   - https://repo.anaconda.com/pkgs/main
   - https://repo.anaconda.com/pkgs/r
 dependencies:
-  - highs
   - munch
   - numpy
   - pandas
   - pip
   - pip:
+  - highspy
     - pytoulbar2
     - -e git+https://github.com/sandialabs/or_topas.git#egg=or_topas
   - pyomo
