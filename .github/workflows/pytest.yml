@@ -151,8 +151,8 @@ jobs:
 
       - name: Install package
         run: |
-            - python -m highspy
-            - which glpsol
+            python -m highspy || true
+            which glpsol || true
             pip install -e .
 
       - name: Test with pytest & coverage
