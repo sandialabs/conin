@@ -100,7 +100,7 @@ jobs:
       - name: Test with pytest
         run: |
             python -m pgmpy || true
-            pytest -v conin
+            pytest -vv conin
 
   mip-solver-tests:
     needs: format-check
