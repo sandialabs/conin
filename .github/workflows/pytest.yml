@@ -138,11 +138,11 @@ jobs:
           use-mamba: true
 
       - name: Configure solver - none
-        if: ${{ matrix.solver }} == "none" }}
+        if: ${{ matrix.solver }} == "none"
         run: conda uninstall -y highs
 
       - name: Configure solver - glpk
-        if: ${{ matrix.solver }} == "glpk" }}
+        if: ${{ matrix.solver }} == "glpk"
         run: |
             conda uninstall -y highs
             conda install -y glpk
