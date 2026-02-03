@@ -6,7 +6,7 @@ channels:
   - pytorch
 dependencies:
   - flake8
-  - glpk
+  - highs
   - munch
   - numpy
   - pandas

@@ -4,7 +4,7 @@ channels:
   - https://repo.anaconda.com/pkgs/main
   - https://repo.anaconda.com/pkgs/r
 dependencies:
-  - glpk
+  - highs
   - munch
   - numpy
   - pandas
