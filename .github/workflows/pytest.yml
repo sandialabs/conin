@@ -93,13 +93,13 @@ jobs:
 
       - name: Install pgmpy
         run: |
-          conda install pytorch
-          conda install cpuonly
-          pip install pgmpy
+            conda install pytorch
+            conda install cpuonly
+            pip install pgmpy
+            python -m pgmpy || true
 
       - name: Test with pytest
         run: |
-            python -m pgmpy || true
             pytest -vv conin
 
   mip-solver-tests:
