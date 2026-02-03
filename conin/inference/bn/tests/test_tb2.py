@@ -14,7 +14,7 @@ with try_import() as pgmpy_available:
 with try_import() as pytoulbar2_available:
     import pytoulbar2
 
-mip_solver = pyomo.opt.check_available_solvers("glpk", "gurobi")
+mip_solver = pyomo.opt.check_available_solvers("gurobi", "highs", "glpk")
 mip_solver = mip_solver[0] if mip_solver else None
 
 # ===============================================================================
