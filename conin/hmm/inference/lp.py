@@ -2,6 +2,7 @@ import math
 import munch
 
 # from conin.hmm import hmm_application
+from conin.config import default_mip_solver
 from conin.hmm import ConstrainedHiddenMarkovModel
 from conin.util import try_import
 
@@ -21,7 +22,7 @@ def lp_inference(
     hmm,
     observed,
     num_solutions=1,
-    solver="gurobi",
+    solver=default_mip_solver,
     solver_options=None,
     debug=False,
     quiet=True,
@@ -82,7 +83,7 @@ def ip_inference(
     *,
     hmm,
     observed,
-    solver="gurobi",
+    solver=default_mip_solver,
     solver_options=None,
     debug=False,
     quiet=True,
