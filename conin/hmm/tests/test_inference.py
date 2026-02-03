@@ -418,7 +418,7 @@ class Test_Inference_ip:
                 hmm=chmm1_pyomo,
                 observed=observed,
                 solver=solver,
-                solver_options = solver_options,
+                solver_options=solver_options,
             )
             .solutions[0]
             .hidden
