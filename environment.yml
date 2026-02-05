@@ -3,13 +3,14 @@ channels:
   - conda-forge
   - https://repo.anaconda.com/pkgs/main
   - https://repo.anaconda.com/pkgs/r
+  - pytorch
 dependencies:
-  - glpk
   - munch
   - numpy
   - pandas
   - pip
   - pip:
+    - highspy
     - pytoulbar2
     - -e git+https://github.com/sandialabs/or_topas.git#egg=or_topas
   - pyomo

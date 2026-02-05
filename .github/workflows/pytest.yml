@@ -1,12 +1,6 @@
-name: Pytest Tests
+name: Github CI
 
 on:
-  workflow_run:
-    workflows: ["Quick Tests"]
-    types:
-      - completed
-    branches:
-      - main
   push:
     branches:
       - main
@@ -15,12 +9,54 @@ on:
       - main
 
 jobs:
+  format-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}  # Checkout the branch of the PR
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.13"
+
+      - name: Install formatting tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install black
+
+      - name: Run Black
+        run: |
+          black .
+
+      - name: Commit and push formatting changes
+        run: |
+          # Check if any files have been modified
+          if [ -n "$(git status --porcelain)" ]; then
+            git config --global user.name "github-actions"
+            git config --global user.email "github-actions@github.com"
+            git add .
+            git commit -m "Auto apply black [skip ci]"
+            git push origin ${{ github.head_ref }}  # Push changes to the same PR branch
+          else
+            echo "No formatting changes detected."
+          fi
+
+      - name: Lint with flake8
+        run: |
+          pip install flake8
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
   tests:
+    needs: format-check
     strategy:
       fail-fast: false  # If one job fails, the rest will still run
       matrix:
-        os: [ubuntu-latest, macos-latest]
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        os: [ubuntu-latest] # Omitting macos-latest because it is expensive
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -28,11 +64,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: List files
-        run: |
-             pwd
-             ls -F 
-
       # Cache the conda environment
       - name: Cache conda environment
         uses: actions/cache@v4
@@ -60,10 +91,128 @@ jobs:
       - name: Install package
         run: pip install -e .
 
-      - name: Test with pytest
-        run: pytest -v
-
-      - name: Run pytest with pgmpy
+      - name: Install pgmpy
         run: |
-          pip install pgmpy
-          pytest -v .
+            conda install -c pytorch pytorch
+            conda install -c pytorch cpuonly
+            pip install pgmpy
+            python -m pgmpy || true
+
+      - name: Test with pytest
+        run: |
+            pytest -r s -vv conin
+
+  mip-solver-tests:
+    needs: format-check
+    strategy:
+      fail-fast: false  # If one job fails, the rest will still run
+      matrix:
+        os: [ubuntu-latest] # Omitting macos-latest because it is expensive
+        solver: ["highs", "glpk", "none"]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v4
+      
+      # Cache the conda environment (using a key for Ubuntu and Python 3.13)
+      - name: Cache conda environment
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/conda_pkgs_dir
+            ~/.conda
+            ~/miniconda3/envs
+          key: conda-ubuntu-latest-3.13-${{ hashFiles('dev_environment.yml') }}
+          restore-keys: |
+            conda-ubuntu-latest-3.13-
+            conda-ubuntu-latest-
+      
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniconda-version: "latest"
+          auto-update-conda: true
+          python-version: 3.13
+          channels: conda-forge,defaults
+          activate-environment: conin_dev
+          environment-file: dev_environment.yml
+          use-mamba: true
+
+      - name: Configure solver - none
+        if: ${{ matrix.solver == 'none' }}
+        run: |
+            pip uninstall highspy || true
+            conda uninstall -y glpk || true
+
+      - name: Configure solver - glpk
+        if: ${{ matrix.solver == 'glpk' }}
+        run: |
+            pip uninstall highspy || true
+            conda install -y glpk
+
+      - name: Configure solver - highs
+        if: ${{ matrix.solver == 'highs' }}
+        run: |
+            pip install highspy
+            conda uninstall -y glpk || true
+
+      - name: Install package
+        run: |
+            python -m highspy || true
+            which glpsol || true
+            pip install -e .
+
+      - name: Test with pytest & coverage
+        run: pytest -r s -vv conin
+
+  coverage:
+    needs: tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v4
+      
+      # Cache the conda environment (using a key for Ubuntu and Python 3.13)
+      - name: Cache conda environment
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/conda_pkgs_dir
+            ~/.conda
+            ~/miniconda3/envs
+          key: conda-ubuntu-latest-3.13-${{ hashFiles('dev_environment.yml') }}
+          restore-keys: |
+            conda-ubuntu-latest-3.13-
+            conda-ubuntu-latest-
+      
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniconda-version: "latest"
+          auto-update-conda: true
+          python-version: 3.13
+          channels: conda-forge,defaults
+          activate-environment: conin_dev
+          environment-file: dev_environment.yml
+          use-mamba: true
+
+      - name: Install package
+        run: |
+            pip install -e .
+            conda install -c pytorch pytorch
+            conda install -c pytorch cpuonly
+            pip install pgmpy
+
+      - name: Test with pytest & coverage
+        run: pytest --cov --cov-branch --cov-report=xml --junitxml=junit.xml -vv conin
+      
+      - name: Upload test results to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+
