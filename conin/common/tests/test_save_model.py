@@ -4,6 +4,7 @@ import filecmp
 
 from conin.util import try_import
 from conin.common.unified import save_model, load_model
+from conin.bayesian_network import DiscreteBayesianNetwork, DiscreteCPD
 
 with try_import() as pgmpy_available:
     import pgmpy
@@ -42,6 +43,40 @@ def deer_uai():
 @pytest.fixture
 def toulbar2_bn_uai():
     return load_model(os.path.join(cwd, "toulbar2_bn.uai"))
+
+
+@pytest.fixture
+def tiny_bn_orig():
+    pgm = DiscreteBayesianNetwork()
+    pgm.states = {"node_%i" % i: [0, 1] for i in range(3)}
+    values = {
+        (0, 0): {0: 0.31, 1: 0.69},
+        (0, 1): {0: 0.23, 1: 0.77},
+        (1, 0): {0: 0.27, 1: 0.73},
+        (1, 1): {0: 0.56, 1: 0.44},
+    }
+    pgm.cpds = []
+    pgm.cpds.append(
+        DiscreteCPD(node="node_2", parents=["node_0", "node_1"], values=values)
+    )
+    return pgm
+
+
+@pytest.fixture
+def tiny_bn_permuted():
+    pgm = DiscreteBayesianNetwork()
+    pgm.states = {"node_%i" % i: [0, 1] for i in range(3)}
+    values = {
+        (0, 0): {0: 0.31, 1: 0.69},
+        (1, 0): {0: 0.27, 1: 0.73},
+        (1, 1): {0: 0.56, 1: 0.44},
+        (0, 1): {0: 0.23, 1: 0.77},
+    }
+    pgm.cpds = []
+    pgm.cpds.append(
+        DiscreteCPD(node="node_2", parents=["node_0", "node_1"], values=values)
+    )
+    return pgm
 
 
 if pgmpy_readwrite_available:
@@ -163,3 +198,20 @@ def test_save_model_toulbar2_conin(toulbar2_bn_uai):
     orig = os.path.join(cwd, "toulbar2_bn.uai")
     assert filecmp.cmp(orig, fname) == True
     os.remove(fname)
+
+
+#
+# tiny_bn_orig and tiny_bn_permuted
+#
+
+
+def test_save_model_tiny_bn(tiny_bn_orig, tiny_bn_permuted):
+    fname_orig = os.path.join(cwd, "tiny_bn_orig.uai")
+    pgm_orig = save_model(tiny_bn_orig, fname_orig)
+
+    fname_permuted = os.path.join(cwd, "tiny_bn_permuted.uai")
+    pgm_permuted = save_model(tiny_bn_permuted, fname_permuted)
+
+    assert filecmp.cmp(fname_orig, fname_permuted)
+    os.remove(fname_orig)
+    os.remove(fname_permuted)
