@@ -14,6 +14,7 @@ class HMMApplication:
         self.name = name
 
         self._hidden_markov_model = None
+        self._simulations = None
 
         # Applicaton data used to initialize the HMM from simulations
         self._transition_prior = (None,)  # Nonzero values
@@ -28,6 +29,14 @@ class HMMApplication:
     @hidden_markov_model.setter
     def hidden_markov_model(self, hidden_markov_model):
         self._hidden_markov_model = hidden_markov_model
+
+    @property
+    def simulations(self):
+        return self._simulations
+
+    @simulations.setter
+    def simulations(self, simulations):
+        self._simulations = simulations
 
     def create_chmm(self, constraint_type=None):
         chmm = ConstrainedHiddenMarkovModel(hmm=self.hidden_markov_model)
@@ -45,6 +54,7 @@ class HMMApplication:
         """
         pass
 
+    # TODO - return an error if these methods are not defined
     def run_simulations(
         self, *, num=1, debug=False, with_observations=False, seed=None
     ):
@@ -54,40 +64,31 @@ class HMMApplication:
 
         This method is defined by the application developer, and it provides a
         strategy for expressing domain knowledge regarding feasible hidden states.
+
+        This method returns the simulations generated
         """
-        return None
+        pass
 
     def initialize_hmm_from_simulations(
         self,
         *,
-        num=100,
-        debug=False,
-        seed=None,
         start_tolerance=None,
         transition_tolerance=None,
         emission_tolerance=None,
-        simulation_args=None,
+        simulations=None,
     ):
         assert (
             self._hidden_states is not None
         ), "HMMApplication.create_hmm_from_simulations must be run after the initialize() method is executed"
-        if simulation_args is None:
-            simulation_args = {}
-        simulation_args["num"] = num
-        simulation_args["debug"] = debug
-        simulation_args["seed"] = seed
-        simulation_args["with_observations"] = True
-        simulations = self.run_simulations(**simulation_args)
-        if debug:
-            for sim in simulations:
-                print("TSIM", sim.observations, sim.hidden)
 
+        if simulations is not None:
+            self.simulations = simulations
         assert (
-            simulations is not None
-        ), f"HMMApplication.create_hmm_from_simulations - Method run_simulations() has not been defined for the {self.name} application"
+            self.simulations is not None
+        ), f"HMMApplication.create_hmm_from_simulations - No simulations specified"
 
         self.hidden_markov_model = learning.supervised_learning(
-            simulations=simulations,
+            simulations=self.simulations,
             hidden_states=self._hidden_states,
             observable_states=self._observable_states,
             start_tolerance=start_tolerance,
@@ -97,8 +98,10 @@ class HMMApplication:
             emission_prior=self._emission_prior,
         )
 
+    # TODO - return an error if these methods are not defined
     def get_oracle_constraints(self):
         return []
 
+    # TODO - return an error if these methods are not defined
     def get_pyomo_constraints(self):
         return []
