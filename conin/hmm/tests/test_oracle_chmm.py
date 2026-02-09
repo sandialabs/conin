@@ -5,7 +5,7 @@ from conin.hmm import *
 from conin.hmm.chmm_oracle import Oracle_CHMM
 
 import conin.hmm.tests.examples as tc
-import conin.common_constraints as cc
+import conin.oracle_constraints as oc
 
 
 class Test_Oracle_CHMM:
@@ -37,7 +37,7 @@ class Test_Oracle_CHMM:
 
     def test_load_model3(self):
         pgm = tc.create_hmm0()
-        constraints = [cc.all_diff_constraint]
+        constraints = [oc.all_diff_constraint]
         chmm = Oracle_CHMM(hmm=pgm.repn, constraints=constraints)
         assert chmm.hmm == pgm.repn
         assert len(chmm.constraints) == 1

@@ -5,7 +5,7 @@ from conin.exceptions import InvalidInputError
 # TODO think about partial_func semantics
 
 
-class Constraint:
+class OracleConstraint:
 
     def __init__(
         self,
@@ -16,7 +16,7 @@ class Constraint:
         same_partial_as_func=None,
     ):
         """
-        Initialize a Constraint object.
+        Initialize a OracleConstraint object.
 
         Parameters:
             func (callable, optional): The constraint function to be applied.
@@ -71,9 +71,9 @@ def oracle_constraint_fn(*, name=None, same_partial_as_func=None):
 
     def decorator(func):
         """
-        The actual decorator that wraps the user constraint function in a Constraint class.
+        The actual decorator that wraps the user constraint function in a OracleConstraint class.
         """
-        return Constraint(
+        return OracleConstraint(
             func=func, name=name, same_partial_as_func=same_partial_as_func
         )
 

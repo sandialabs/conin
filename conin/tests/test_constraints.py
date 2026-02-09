@@ -1,6 +1,6 @@
 import pytest
 
-from conin import *
+from conin.oracle_constraints import *
 from conin.hmm import *
 
 import conin.hmm.tests.examples as tc
@@ -23,7 +23,7 @@ class Test_Constraints:
 
     def test_call_no_func(self):
         with pytest.raises(InvalidInputError):
-            _constraint = Constraint(name="No function")
+            _constraint = OracleConstraint(name="No function")
             assert _constraint.name == "No function"
             _constraint(self.true_seq)
 
@@ -31,7 +31,7 @@ class Test_Constraints:
         assert constraint.name == "Test"
 
     def test_no_name(self):
-        _constraint = Constraint()
+        _constraint = OracleConstraint()
         assert _constraint.name == "Unnamed constraint"
 
     def test_call(self, constraint):
