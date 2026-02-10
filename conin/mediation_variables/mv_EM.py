@@ -25,7 +25,7 @@ def arrayConvert(obs, hmm, cst, sat):
     """
     # Initialize and convert all quantities  to np.arrays
     aux_space = list(itertools.product([True, False], repeat=cst.aux_size))
-    T = len(obs)
+    # T = len(obs)
     K = len(hmm.states)
     M = len(aux_space)
 

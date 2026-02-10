@@ -1,6 +1,4 @@
 import itertools
-import munch
-from collections import defaultdict, deque
 from math import prod
 from dataclasses import dataclass
 
@@ -107,7 +105,7 @@ class DiscreteCPD:
     'A'
     >>> cpd.variable_card
     2
-    
+
     >>> cpd = DiscreteCPD(node='B', parents=['A'],
     ...              values={0:[0.2, 0.8], 1:[0.9, 0.1]})
     >>> print(cpd)

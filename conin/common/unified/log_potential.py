@@ -5,17 +5,17 @@ import conin.bayesian_network
 import conin.markov_network
 
 with try_import() as pgmpy_available:
-    import pgmpy
-    import conin.common.pgmpy
+    import pgmpy  # noqa: F401
+    import conin.common.pgmpy  # noqa: F401
 
 with try_import() as pomegranate_available:
-    import pomegranate
+    import pomegranate  # noqa: F401
 
 with try_import() as pgmax_available:
-    import pgmax
+    import pgmax  # noqa: F401
 
 with try_import() as pyagrum_available:
-    import pyagrum
+    import pyagrum  # noqa: F401
 
 
 def log_potential(pgm, query_variables, evidence=None, **options):

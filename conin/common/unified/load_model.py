@@ -2,20 +2,20 @@ from conin.util import try_import
 import conin.common.conin
 
 with try_import() as pgmpy_available:
-    import pgmpy
-    import conin.common.pgmpy
+    import pgmpy  # noqa: F401
+    import conin.common.pgmpy  # noqa: F401
 
 with try_import() as pomegranate_available:
-    import pomegranate
-    import conin.common.pomegranate
+    import pomegranate  # noqa: F401
+    import conin.common.pomegranate  # noqa: F401
 
 with try_import() as pgmax_available:
-    import pgmax
-    import conin.common.pgmax
+    import pgmax  # noqa: F401
+    import conin.common.pgmax  # noqa: F401
 
 with try_import() as pyagrum_available:
-    import pyagrum
-    import conin.common.pyagrum
+    import pyagrum  # noqa: F401
+    import conin.common.pyagrum  # noqa: F401
 
 
 def load_model(name, model_type="conin", quiet=True):
@@ -33,28 +33,28 @@ def load_model(name, model_type="conin", quiet=True):
     elif model_type == "pgmpy":
         if not pgmpy_available:
             raise ImportError(
-                f"Missing import pgmpy, which is required to load a pgmpy model."
+                "Missing import pgmpy, which is required to load a pgmpy model."
             )
         return conin.common.pgmpy.load_model(name, quiet=quiet)
 
     elif model_type == "pomegranate":
         if not pomegranate_available:
             raise ImportError(
-                f"Missing import pomegranate, which is required to load a pomegranate model."
+                "Missing import pomegranate, which is required to load a pomegranate model."
             )
         return conin.common.pomegranate.load_model(name, quiet=quiet)
 
     elif model_type == "pgmax":
         if not pgmax_available:
             raise ImportError(
-                f"Missing import pgmax, which is required to load a pgmax model."
+                "Missing import pgmax, which is required to load a pgmax model."
             )
         return conin.common.pgmax.load_model(name, quiet=quiet)
 
     elif model_type == "pyagrum":
         if not pyagrum_available:
             raise ImportError(
-                f"Missing import pyagrum, which is required to load a pyagrum model."
+                "Missing import pyagrum, which is required to load a pyagrum model."
             )
         return conin.common.pyagrum.load_model(name, quiet=quiet)
 

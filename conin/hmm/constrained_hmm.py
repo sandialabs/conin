@@ -1,6 +1,5 @@
 from conin.constraint import OracleConstraint, PyomoConstraint
 from conin.exceptions import InvalidInputError
-from conin.hmm import HiddenMarkovModel
 from .chmm import CHMM
 
 

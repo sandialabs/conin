@@ -4,7 +4,6 @@ from conin import pyomo_constraint_fn
 
 import munch
 import random
-import math
 
 """
 This script has a collection of HMM test cases that can be used to

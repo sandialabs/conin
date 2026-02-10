@@ -1,5 +1,3 @@
-import math
-import numpy as np
 import munch
 
 from . import learning
@@ -85,7 +83,7 @@ class HMMApplication:
             self.simulations = simulations
         assert (
             self.simulations is not None
-        ), f"HMMApplication.create_hmm_from_simulations - No simulations specified"
+        ), "HMMApplication.create_hmm_from_simulations - No simulations specified"
 
         self.hidden_markov_model = learning.supervised_learning(
             simulations=self.simulations,

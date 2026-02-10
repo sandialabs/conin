@@ -22,7 +22,7 @@ def log_potential(pgm, variables, evidence=None):
     # TODO - remove this error
     assert len(pgm.nodes) == len(
         data
-    ), f"ERROR: cannot yet compute log_probability value with latent variables, which need to be marginalized."
+    ), "ERROR: cannot yet compute log_probability value with latent variables, which need to be marginalized."
 
     log_potential = 0.0
     if type(pgm) is conin.bayesian_network.DiscreteBayesianNetwork:

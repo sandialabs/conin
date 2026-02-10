@@ -1,6 +1,5 @@
 from dataclasses import dataclass
-from math import log, prod
-import numpy as np
+from math import log
 
 
 def get_factor_value(f, values):

@@ -23,7 +23,7 @@ def convert_pgmpy_to_pgmax(pgm):
         - pgmax model
     """
     with try_import() as pgmax_available:
-        from pgmax import fgraph, factor, infer, vgroup, fgroup
+        from pgmax import fgraph, factor, vgroup
 
     if not pgmax_available:
         raise ImportError("Cannot convert to a pgmax model without importing pgmax")

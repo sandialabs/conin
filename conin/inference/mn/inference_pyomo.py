@@ -174,7 +174,7 @@ def create_MN_pyomo_map_query_model_from_factorial_repn(
     R = list(S.keys())
     RS = [(r, s) for r, values in S.items() for s in values]
 
-    I = list(J.keys())
+    J_keys = list(J.keys())
     # IJ = [(i, j) for i, values in J.items() for j in values]
     IJ = sorted(w.keys())
     IJset = set(w.keys())
@@ -237,7 +237,7 @@ def create_MN_pyomo_map_query_model_from_factorial_repn(
     def c2_(M, i):
         return sum(M.y[i, j] for j in J[i] if (i, j) in IJset) == 1
 
-    model.c2 = pe.Constraint(I, rule=c2_)
+    model.c2 = pe.Constraint(J_keys, rule=c2_)
 
     if timing:  # pragma:nocover
         timer.toc("c2")
@@ -303,7 +303,7 @@ def solve_pyomo_map_query_model(
         if not or_topas_available:
             raise RuntimeError("or_topas not installed")
 
-        if solver_options == None:
+        if solver_options is None:
             solver_options = dict()
         topas_method = solver_options.pop("topas_method", "balas")
         if timing:  # pragma:nocover
@@ -321,7 +321,7 @@ def solve_pyomo_map_query_model(
         if timing:  # pragma:nocover
             timer.toc("Completed optimization")
 
-        assert len(aos_pm.solutions) > 0, f"No solutions found by 'or_topas' solver"
+        assert len(aos_pm.solutions) > 0, "No solutions found by 'or_topas' solver"
         solutions = [
             parse_aos_solution_pyomo_map_query(model, aos_solution, with_fixed)
             for aos_solution in aos_pm.solutions

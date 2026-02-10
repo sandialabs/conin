@@ -1,5 +1,4 @@
 import itertools
-import os
 from typing import Hashable, Optional, Dict, List, Tuple
 
 from conin.util import try_import
@@ -151,7 +150,7 @@ def MapCPD(
         if type(values) is list:
             assert (
                 state_names is None
-            ), f"Cannot specify state names when 'values' is a list"
+            ), "Cannot specify state names when 'values' is a list"
             variable_card = len(values)
             state_names = {variable: list(range(len(values)))}
             evidence_card = []
@@ -165,7 +164,7 @@ def MapCPD(
     else:
         assert (
             type(values) is dict
-        ), f"The 'evidence' is specified, but 'values' is not a dict"
+        ), "The 'evidence' is specified, but 'values' is not a dict"
         first = next(iter(values.values()))
         variable_card = len(first)
 

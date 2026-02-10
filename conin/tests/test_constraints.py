@@ -1,9 +1,8 @@
 import pytest
 
+from conin.exceptions import InvalidInputError
 from conin.oracle_constraints import *
 from conin.hmm import *
-
-import conin.hmm.tests.examples as tc
 
 
 @pytest.fixture
