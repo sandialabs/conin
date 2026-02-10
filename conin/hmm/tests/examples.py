@@ -4,7 +4,6 @@ from conin import pyomo_constraint_fn
 
 import munch
 import random
-import math
 
 """
 This script has a collection of HMM test cases that can be used to
@@ -162,11 +161,11 @@ def create_hmm2_aos():
 def create_chmm1_oracle():
     hmm = create_hmm1()
 
-    num_zeros_greater_than_nine = conin.hmm.Constraint(
+    num_zeros_greater_than_nine = conin.hmm.OracleConstraint(
         func=lambda seq: seq.count("h0") > 9,
         partial_func=lambda T, seq: T - len(seq) + seq.count("h0") >= 10,
     )
-    num_zeros_less_than_thirteen = conin.hmm.Constraint(
+    num_zeros_less_than_thirteen = conin.hmm.OracleConstraint(
         func=lambda seq: seq.count("h0") < 13,
         partial_func=lambda T, seq: seq.count("h0") < 13,
     )

@@ -1,7 +1,7 @@
 import numpy as np
 import munch
 
-from conin.hmm.hmm import HiddenMarkovModel, HMM_MatVecRepn
+from conin.hmm.hmm import HMM_MatVecRepn
 
 
 def viterbi_(*, observed, hmm):
@@ -93,8 +93,6 @@ def viterbi(*, observed, hmm):
     """
     if isinstance(hmm, HMM_MatVecRepn):
         return viterbi_(observed=observed, hmm=hmm)
-
-    # ELSE isinstance(hmm, HiddenMarkovModel)
 
     observed_ = [hmm.observed_to_internal[o] for o in observed]
     hmm_ = hmm.repn  # HMM_MatVecRepn instance associated with the HiddenMarkovModel

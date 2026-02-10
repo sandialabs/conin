@@ -1,4 +1,3 @@
-import warnings
 import munch
 from pyomo.common.timing import TicTocTimer
 

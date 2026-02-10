@@ -1,5 +1,5 @@
 import inspect
-from conin.constraint import Constraint, oracle_constraint_fn
+from conin.constraint import OracleConstraint, oracle_constraint_fn
 
 
 def constraint_name():
@@ -162,7 +162,7 @@ def has_minimum_number_of_occurences(seq, *, val, count):
 
 
 def has_minimum_number_of_occurences_constraint(*, val, count):
-    return Constraint(
+    return OracleConstraint(
         func=lambda seq: has_minimum_number_of_occurences(seq, val=val, count=count),
         partial_func=lambda T, seq: seq.count(val) + T - len(seq) >= count,
     )
@@ -206,7 +206,7 @@ def has_exact_number_of_occurences_constraint(*, val, count):
         """
         return seq.count(val) == count
 
-    return Constraint(
+    return OracleConstraint(
         func=lambda seq: has_exact_number_of_occurences(seq, val=val, count=count),
         partial_func=lambda T, seq: seq.count(val) <= count
         and seq.count(val) + T - len(seq) >= count,
@@ -332,7 +332,7 @@ def occurs_at_least_once_in_time_frame_constraint(val, *, lower_t=None, upper_t=
         else:
             return func(seq)
 
-    return Constraint(func=func, partial_func=partial_func)
+    return OracleConstraint(func=func, partial_func=partial_func)
 
 
 # ------------------------------------------
@@ -346,10 +346,10 @@ def or_constraints(constraints):
     is true if at least on of the holds
 
     Parameters:
-        constraints (iterable): List of Constraint objects
+        constraints (iterable): List of OracleConstraint objects
 
     Returns
-        Constraint: Constraint satisfying desired properties
+        OracleConstraint: Constraint satisfying desired properties
     """
     name = "or("
     for constraint in constraints:
@@ -369,7 +369,7 @@ def or_constraints(constraints):
                 return True
         return False
 
-    return Constraint(func=or_func, partial_func=or_partial_func, name=name)
+    return OracleConstraint(func=or_func, partial_func=or_partial_func, name=name)
 
 
 def xor_constraints(constraints):
@@ -378,10 +378,10 @@ def xor_constraints(constraints):
     is true if exactly one of them holds
 
     Parameters:
-        constraints (iterable): List of Constraint objects
+        constraints (iterable): List of OracleConstraint objects
 
     Returns
-        Constraint: Constraint satisfying desired properties
+        OracleConstraint: Constraint satisfying desired properties
     """
     name = "xor("
     for constraint in constraints:
@@ -409,7 +409,7 @@ def xor_constraints(constraints):
                 return True
         return False
 
-    return Constraint(func=xor_func, partial_func=xor_partial_func, name=name)
+    return OracleConstraint(func=xor_func, partial_func=xor_partial_func, name=name)
 
 
 def not_constraint(constraint):
@@ -422,10 +422,10 @@ def not_constraint(constraint):
     process we can't generate partial_func.
 
     Parameters:
-        constraints (iterable): List of Constraint objects
+        constraints (iterable): List of OracleConstraint objects
 
     Returns
-        Constraint: Constraint satisfying desired properties
+        OracleConstraint: Constraint satisfying desired properties
     """
     name = "not(" + constraint.name + ")"
 
@@ -445,10 +445,10 @@ def and_constraints(constraints):
     add multiple constraints to your statistical model
 
     Parameters:
-        constraints (iterable): List of Constraint objects
+        constraints (iterable): List of OracleConstraint objects
 
     Returns
-        Constraint: Constraint satisfying desired properties
+        OracleConstraint: Constraint satisfying desired properties
     """
     name = "and("
     for constraint in constraints:
@@ -468,4 +468,4 @@ def and_constraints(constraints):
                 return False
         return True
 
-    return Constraint(func=and_func, partial_func=and_partial_func, name=name)
+    return OracleConstraint(func=and_func, partial_func=and_partial_func, name=name)

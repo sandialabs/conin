@@ -1,7 +1,5 @@
 from munch import Munch
-import munch
 import numpy as np
-import pyomo.environ as pyo
 
 from conin.constraint import pyomo_constraint_fn, toulbar2_constraint_fn
 from conin.util import try_import, MPESolution

@@ -10,7 +10,7 @@ with try_import() as or_topas_available:
 from conin.hmm.inference.recursive_a_star import *
 from conin.hmm import *
 from conin.hmm.inference import a_star
-from conin import *
+from conin.oracle_constraints import *
 
 # from conin.hmm.oracle_chmm import Oracle_CHMM
 from conin.hmm.inference import ip_inference

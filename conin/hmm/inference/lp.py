@@ -10,7 +10,6 @@ import pyomo.environ as pyo
 from pyomo.common.timing import tic, toc
 from pyomo.contrib.alternative_solutions.aos_utils import (
     get_model_variables,
-    get_active_objective,
 )
 
 with try_import() as or_topas_available:
@@ -98,7 +97,7 @@ def ip_inference(
     if solver == "or_topas":
         if not or_topas_available:
             raise RuntimeError("or_topas Solver Unavailable")
-        if solver_options == None:
+        if solver_options is None:
             solver_options = dict()
         topas_method = solver_options.pop("topas_method", "balas")
         if debug:
@@ -111,7 +110,7 @@ def ip_inference(
             raise RuntimeError(f"Asked for {topas_method=}, which is not supported")
         if debug:
             toc("Optimizing Model with OR_TOPAS - STOP")
-        assert len(aos_pm.solutions) > 0, f"No solutions found for OR_TOPAS Solver use"
+        assert len(aos_pm.solutions) > 0, "No solutions found for OR_TOPAS Solver use"
         solutions = []
         for index, aos_solution in enumerate(aos_pm.solutions):
             aos_sol_munch = parse_aos_solution_pyomo_ip_inference(
@@ -120,7 +119,6 @@ def ip_inference(
             if index == 0:
                 first_sol = aos_sol_munch
             solutions.append(aos_sol_munch)
-        termination_condition = "ok"
         soln = first_sol
     else:
         # this is solver != "or_topas"
@@ -141,6 +139,7 @@ def ip_inference(
             M=M, hmm=hmm, T=T, log_likelihood=log_likelihood
         )
         solutions = [soln]
+
     if debug:
         print(f"E: {len(data.hmm.E)}")
         print(f"F: {len(data.hmm.F)}")
@@ -150,6 +149,7 @@ def ip_inference(
         print(f"FF: {len(data.hmm.FF)}")
         print(f"T: {len(data.hmm.T)}")
         print(f"A: {len(data.hmm.A)}")
+
     return munch.Munch(
         observed=observed,
         solution=soln,

@@ -1,5 +1,3 @@
-import munch
-
 from conin.dynamic_bayesian_network.expr import ExpressionVariable
 
 

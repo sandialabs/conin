@@ -1,8 +1,8 @@
 from conin.util import try_import
 
 with try_import() as pgmpy_available:
-    import pgmpy
-    import conin.common.pgmpy
+    import pgmpy  # noqa: F401
+    import conin.common.pgmpy  # noqa: F401
 
 
 def load_model(name, quiet=True):

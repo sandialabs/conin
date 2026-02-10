@@ -1,6 +1,5 @@
 import copy
 import numpy as np
-from conin.exceptions import InvalidInputError
 
 
 class Util:
@@ -99,6 +98,6 @@ except ImportError:
     # This implementation is fast, but it assumes the iterable has a len() method.
     #
     def batched(iterable, n=1):
-        l = len(iterable)
-        for ndx in range(0, l, n):
-            yield iterable[ndx : min(ndx + n, l)]
+        iterable_len = len(iterable)
+        for ndx in range(0, iterable_len, n):
+            yield iterable[ndx : min(ndx + n, iterable_len)]

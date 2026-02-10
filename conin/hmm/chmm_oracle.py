@@ -1,4 +1,4 @@
-from conin.constraint import Constraint
+from conin.constraint import OracleConstraint
 
 from . import chmm
 
@@ -31,10 +31,10 @@ class Oracle_CHMM(chmm.CHMM):
         Makes an internal version of the constraint that works on indices rather than keys
 
         Parameters:
-            constraint (Constraint): The constraint we wish to make internal
+            constraint (OracleConstraint): The constraint we wish to make internal
 
         Returns:
-            Constraint: An internalized version of constraint
+            OracleConstraint: An internalized version of constraint
         """
 
         def internal_func(internal_seq):
@@ -45,7 +45,7 @@ class Oracle_CHMM(chmm.CHMM):
             external_seq = [hidden_to_external[h] for h in internal_seq]
             return constraint.partial_func(T, external_seq)
 
-        internal_constraint = Constraint(
+        internal_constraint = OracleConstraint(
             func=internal_func,
             name="internal_" + constraint.name,
             partial_func=internal_partial_func,

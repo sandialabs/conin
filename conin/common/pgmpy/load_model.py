@@ -6,7 +6,6 @@ from conin.util import try_import
 with try_import() as pgmpy_available:
     import pgmpy.utils
     import pgmpy.models
-    from pgmpy.factors.discrete import TabularCPD, DiscreteFactor
 
 with try_import() as pgmpy_readwrite_available:
     from pgmpy.readwrite.BIF import BIFReader

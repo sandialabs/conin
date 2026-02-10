@@ -1,6 +1,5 @@
 import gzip
 import tempfile
-import os.path
 from conin.util import try_import
 
 import conin.common.pgmpy

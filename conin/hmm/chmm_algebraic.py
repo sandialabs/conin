@@ -1,14 +1,9 @@
-import weakref
-import pprint
 import math
 import numpy as np
 import munch
 
-from conin.exceptions import InvalidInputError
-from conin.hmm import HiddenMarkovModel
-from . import chmm
-
 import pyomo.environ as pyo
+from . import chmm
 
 
 def _create_index_sets(*, hmm, observed):

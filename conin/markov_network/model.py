@@ -2,8 +2,6 @@ import itertools
 from math import prod
 from dataclasses import dataclass
 
-from conin.util import try_import
-
 
 @dataclass(slots=True)
 class DiscreteFactor:

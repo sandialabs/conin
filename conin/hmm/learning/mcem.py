@@ -1,9 +1,7 @@
-from collections import deque
 import munch
-
-# from conin.hmm import HiddenMarkovModel
-from .supervised import supervised_learning
 import math
+
+from .supervised import supervised_learning
 
 nan = float("nan")
 

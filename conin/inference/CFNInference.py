@@ -1,12 +1,4 @@
-import os
-import warnings
-
 from conin.util import try_import
-
-# from conin.hmm import HiddenMarkovModel, ConstrainedHiddenMarkovModel, CHMM
-# from conin.hmm.inference import lp_inference, ip_inference
-
-from conin.common import save_model
 
 from conin.markov_network import (
     DiscreteMarkovNetwork,

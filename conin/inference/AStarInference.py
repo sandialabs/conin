@@ -1,6 +1,3 @@
-import warnings
-
-from conin.util import try_import
 from conin.hmm.hmm import HiddenMarkovModel, HMM_MatVecRepn
 from conin.hmm import ConstrainedHiddenMarkovModel, CHMM
 from conin.hmm.inference import a_star

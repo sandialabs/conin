@@ -1,6 +1,3 @@
-import copy
-import itertools
-
 # from functools import reduce
 from typing import Hashable, Optional
 
@@ -12,23 +9,25 @@ from conin.util import try_import
 with try_import() as pgmpy_available:
     from pgmpy import config
     from pgmpy.factors import factor_product
-    from pgmpy.factors.discrete import DiscreteFactor
-    from pgmpy.inference import Inference, VariableElimination
-    from pgmpy.inference.EliminationOrder import (
-        MinFill,
-        MinNeighbors,
-        MinWeight,
-        WeightedMinFill,
-    )
+    from pgmpy.factors.discrete import DiscreteFactor  # noqa: F401
+    from pgmpy.inference import Inference, VariableElimination  # noqa: F401
+
+    #    from pgmpy.inference.EliminationOrder import (
+    #        MinFill,
+    #        MinNeighbors,
+    #        MinWeight,
+    #        WeightedMinFill,
+    #    )
     from pgmpy.models import (
         DiscreteBayesianNetwork,
-        DynamicBayesianNetwork,
+        # DynamicBayesianNetwork,
         # FactorGraph,
         FunctionalBayesianNetwork,
         # JunctionTree,
         LinearGaussianBayesianNetwork,
     )
-    from pgmpy.utils import compat_fns
+
+    # from pgmpy.utils import compat_fns
 
     # from tqdm.auto import tqdm
 
@@ -203,10 +202,10 @@ class logprob_VE(VariableElimination):
         # Step 3: Prune the network based on variables and evidence.
         if isinstance(self.model, DiscreteBayesianNetwork):
             model_reduced, evidence = self._prune_bayesian_model(variables, evidence)
-            factors = model_reduced.cpds
+            # factors = model_reduced.cpds
         else:
             model_reduced = self.model
-            factors = self.model.factors
+            # factors = self.model.factors
 
         # Step 4: Greedy EO not allowed since it has its own custom VE implementation.
 

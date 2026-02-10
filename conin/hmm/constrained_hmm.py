@@ -1,6 +1,5 @@
-from conin.constraint import Constraint, PyomoConstraint
+from conin.constraint import OracleConstraint, PyomoConstraint
 from conin.exceptions import InvalidInputError
-from conin.hmm import HiddenMarkovModel
 from .chmm import CHMM
 
 
@@ -48,7 +47,7 @@ class ConstrainedHiddenMarkovModel:
             self.add_constraint(con)
 
     def add_constraint(self, constraint):
-        if isinstance(constraint, Constraint):
+        if isinstance(constraint, OracleConstraint):
             assert self.constraint_type is None or self.constraint_type == "oracle"
             self.constraint_type = "oracle"
             self._constraints.append(constraint)
@@ -71,7 +70,7 @@ class ConstrainedHiddenMarkovModel:
 
             self.chmm = Oracle_CHMM(
                 hmm=self.hidden_markov_model.repn,  # HMM object
-                constraints=self.constraints,  # list of Constraint objects
+                constraints=self.constraints,  # list of OracleConstraint objects
                 hidden_to_external=self.hidden_markov_model.hidden_to_external,
                 data=data,  # Application-specific data
             )

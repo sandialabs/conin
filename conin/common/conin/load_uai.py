@@ -1,7 +1,6 @@
 import os
 import re
 import itertools
-import numpy as np
 import pprint
 from collections import defaultdict
 

@@ -45,8 +45,8 @@ def create_toulbar2_map_query_model_BN(
     if timing:
         timer = TicTocTimer()
         timer.tic("create_toulbar2_map_query_model_BN - START")
-    prune_network = options.pop("prune_network", False)
-    create_MN = options.pop("create_MN", False)
+    # prune_network = options.pop("prune_network", False)
+    # create_MN = options.pop("create_MN", False)
     verbose = options.pop("verbose", -1)
 
     cpgm = pgm if isinstance(pgm, ConstrainedDiscreteBayesianNetwork) else None

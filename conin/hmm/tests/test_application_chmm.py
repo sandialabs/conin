@@ -6,8 +6,9 @@ import copy
 
 import pyomo.environ as pyo
 
-from conin import *
 from conin.hmm import *
+from conin.oracle_constraints import *
+from conin.constraint import pyomo_constraint_fn
 from conin.hmm.inference import viterbi, a_star, lp_inference, ip_inference
 
 

@@ -1,11 +1,9 @@
-import math
 import heapq
 import numpy as np
 import munch
 import time
 
 from conin.hmm.hmm import HiddenMarkovModel, HMM_MatVecRepn
-from conin.hmm import hmm_application
 
 from dataclasses import dataclass, field
 from typing import Any
@@ -47,9 +45,6 @@ def a_star_(
 
     # Initalize variables
     time_steps = len(observed)
-
-    # if isinstance(hmm, hmm_application.HMMApplication):
-    #    hmm.generate_oracle_constraints()
 
     if chmm:  # CHMM
         hmm = chmm.hmm  # HMM_MatVecRepn or HiddenMarkovModel
