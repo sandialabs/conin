@@ -1,4 +1,5 @@
-<img src="doc/logos/conin_logo_large.png" alt="CONIN Logo" width="200"/>
+<img src="doc/logos/conin_logo_large.png" align="center" alt="CONIN Logo" width="450"/>
+A Python library that supports the constrained analysis of probabilistic graphical models 
 
 --------------------------------------------------------------------------------
 
@@ -8,10 +9,6 @@
 [![GitHub contributors](https://img.shields.io/github/contributors/sandialabs/conin.svg)](https://github.com/sandialabs/conin/graphs/contributors)
 [![Merged PRs](https://img.shields.io/github/issues-pr-closed-raw/sandialabs/conin.svg?label=merged+PRs)](https://github.com/sandialabs/conin/pulls?q=is:pr+is:merged)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-
-# conin
-
-A Python library that supports the constrained analysis of probabilistic graphical models
 
 ## Overview
 
