@@ -1,3 +1,7 @@
+<img src="doc/logos/conin_logo_large.png" alt="CONIN Logo" width="200"/>
+
+--------------------------------------------------------------------------------
+
 [![Pytest Tests](https://github.com/sandialabs/conin/actions/workflows/pytest.yml/badge.svg?branch=main)](https://github.com/sandialabs/conin/actions/workflows/pytest.yml?query=branch%3Amain)
 [![codecov](https://codecov.io/gh/sandialabs/conin/branch/main/graph/badge.svg)](https://codecov.io/gh/sandialabs/conin)
 [![Documentation Status](https://readthedocs.org/projects/conin/badge/?version=latest)](http://conin.readthedocs.org/en/latest/)
