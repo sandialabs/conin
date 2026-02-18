@@ -285,7 +285,6 @@ class HiddenMarkovModel:
         self.num_observed_states = None  # Number of observed variables
 
         # Setup hidden_to_internal, hidden_to_external, and num_hidden_states
-        # NOTE: Sorting added here to simplify debugging
         for h1, h2 in sorted(transition_probs.keys()):
             if h1 not in self.hidden_to_internal.keys():
                 self.hidden_to_external.append(h1)
@@ -300,7 +299,7 @@ class HiddenMarkovModel:
 
         # Setup observed_to_internal, observed_to_external, and
         # num_observed_states
-        for h, o in emission_probs:
+        for h, o in sorted(emission_probs.keys()):
             if o not in self.observed_to_internal:
                 self.observed_to_external.append(o)
                 self.observed_to_internal[o] = len(self.observed_to_external) - 1
