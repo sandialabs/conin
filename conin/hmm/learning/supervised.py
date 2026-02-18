@@ -11,8 +11,8 @@ def supervised_learning(
     start_tolerance=None,
     transition_tolerance=None,
     emission_tolerance=None,
-    transition_prior=None,  # Nonzero values
-    emission_prior=None  # Nonzero values
+    transition_prior=None,  # Non-negative values
+    emission_prior=None  # Non-negative values
 ):
     """
     The training data may not exhibit all feasible starting values, so we allow
