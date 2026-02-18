@@ -259,6 +259,10 @@ class HiddenMarkovModel:
     def hidden_states(self):
         return self.hidden_to_external
 
+    @property
+    def observed_states(self):
+        return self.observed_to_external
+
     def load_model(
         self, *, start_probs, transition_probs, emission_probs, initialize=False
     ):
