@@ -245,7 +245,7 @@ class HiddenMarkovModel:
         """
         Nice printing
         """
-        return pprint.pformat(self.to_dict(), indent=4, sort_dicts=True)
+        return pprint.pformat(self.to_dict(tolerance=1e-3), indent=4, sort_dicts=True)
 
     @property
     def repn(self):
@@ -464,7 +464,7 @@ class HiddenMarkovModel:
             for o in range(self.num_observed_states)
         }
 
-    def to_dict(self):
+    def to_dict(self, tolerance=0.0):
         """
         Generate a dict representation of the model data.
 
@@ -472,23 +472,23 @@ class HiddenMarkovModel:
             dict: A dictionary representaiton of this statistical model.
         """
 
-        start_probs = {
-            self.hidden_to_external[i]: v
+        start_probs = [
+            (self.hidden_to_external[i], v)
             for i, v in enumerate(self.start_vec)
-            if v > 1e-3
-        }
-        transition_probs = {
-            (self.hidden_to_external[i], self.hidden_to_external[j]): v
+            if v > tolerance
+        ]
+        transition_probs = [
+            ((self.hidden_to_external[i], self.hidden_to_external[j]), v)
             for i, row in enumerate(self.transition_mat)
             for j, v in enumerate(row)
-            if v > 1e-3
-        }
-        emission_probs = {
-            (self.hidden_to_external[i], self.observed_to_external[o]): v
+            if v > tolerance
+        ]
+        emission_probs = [
+            ((self.hidden_to_external[i], self.observed_to_external[o]), v)
             for i, row in enumerate(self.emission_mat)
             for o, v in enumerate(row)
-            if v > 1e-3
-        }
+            if v > tolerance
+        ]
 
         return dict(
             start_probs=start_probs,
