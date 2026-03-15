@@ -6,7 +6,7 @@ import pyomo.environ as pyo
 from . import chmm
 
 
-def _create_index_sets(*, hmm, observed):
+def _create_index_sets(*, hmm, observed, Tmax=None):
     # N - Number of hidden states
     # start_probs[i] - map from i=1..N to a probability value in 0..1
     # emission_probes[i][k] - probability that output k is generated when in hidden state i
@@ -19,7 +19,8 @@ def _create_index_sets(*, hmm, observed):
     emission_probs = hmm.emission_mat
     trans_mat = np.array(hmm.transition_mat)
 
-    Tmax = len(observed)
+    if Tmax is None:
+        Tmax = len(observed)
     T = list(range(Tmax))
 
     A = list(range(N))
@@ -166,9 +167,11 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
         self.y_binary = y_binary
         self.x_binary = x_binary
 
-    def generate_unconstrained_model(self, *, observed):
+    def generate_unconstrained_model(self, *, observed, Tmax=None):
         self.observed = observed
-        D = _create_index_sets(hmm=self.hidden_markov_model, observed=observed)
+        D = _create_index_sets(
+            hmm=self.hidden_markov_model, observed=observed, Tmax=Tmax
+        )
         if self.cache_indices:
             self.data.hmm = D
 
