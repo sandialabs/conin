@@ -298,7 +298,7 @@ class DiscreteBayesianNetwork:
                         # The key is for the node
                         assert (
                             not f.parents and k in vnodes
-                        ), f"Unexpected cpd state {key}"
+                        ), f"Unexpected node value {k} (no parents). Factor values {f.values}"
                     else:
                         # The key is for the parents
                         if type(k) is tuple:
