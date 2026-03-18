@@ -236,11 +236,18 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
 
         M.hmm.flow_end = pyo.Constraint(rule=flow_end_)
 
+        # Should o_val be defined with an Expression?  If so, how can we provide the value to the user?
+        M.hmm.o_val = pyo.Var(D.Gt, bounds=(None, 0))
+
+        def o_val_c_(m, t, a, b):
+            return (
+                M.hmm.o_val[t, a, b] == (D.Gt[t, a, b] + D.Ge[t, b]) * M.hmm.y[t, a, b]
+            )
+
+        M.hmm.o_val_c = pyo.Constraint(D.Gt, rule=o_val_c_)
+
         M.hmm.o = pyo.Objective(
-            expr=sum(
-                (D.Gt[t, a, b] + D.Ge[t, b]) * M.hmm.y[t, a, b] for t, a, b in D.Gt
-            ),
-            sense=pyo.maximize,
+            expr=sum(M.hmm.o_val[t, a, b] for t, a, b in D.Gt), sense=pyo.maximize
         )
 
         return M
