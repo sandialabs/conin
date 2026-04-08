@@ -23,6 +23,7 @@ def test_import_convert_function():
     assert callable(convert_conin_to_pgmpy)
 
 
+@require_pgmpy
 def test_convert_invalid_input():
     """Test error handling for invalid input types."""
     from conin.common.conin import convert_conin_to_pgmpy
