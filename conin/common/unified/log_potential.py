@@ -32,7 +32,7 @@ def log_potential(pgm, query_variables, evidence=None, **options):
 
     if pgmpy_available:
         if isinstance(pgm, pgmpy.models.DiscreteBayesianNetwork) or isinstance(
-            pgm, pgmpy.models.MarkovNetwork
+            pgm, pgmpy.models.DiscreteMarkovNetwork
         ):
             return conin.common.pgmpy.log_potential(
                 pgm, query_variables, evidence=evidence, **options
@@ -40,7 +40,7 @@ def log_potential(pgm, query_variables, evidence=None, **options):
 
     if pomegranate_available:
         if isinstance(pgm._pgmpy, pgmpy.models.DiscreteBayesianNetwork) or isinstance(
-            pgm._pgmpy, pgmpy.models.MarkovNetwork
+            pgm._pgmpy, pgmpy.models.DiscreteMarkovNetwork
         ):
             return conin.common.pgmpy.log_potential(
                 pgm._pgmpy, query_variables, evidence=evidence, **options
@@ -48,7 +48,7 @@ def log_potential(pgm, query_variables, evidence=None, **options):
 
     if pgmax_available:
         if isinstance(pgm._pgmpy, pgmpy.models.DiscreteBayesianNetwork) or isinstance(
-            pgm._pgmpy, pgmpy.models.MarkovNetwork
+            pgm._pgmpy, pgmpy.models.DiscreteMarkovNetwork
         ):
             return conin.common.pgmpy.log_potential(
                 pgm._pgmpy, query_variables, evidence=evidence, **options
@@ -56,7 +56,7 @@ def log_potential(pgm, query_variables, evidence=None, **options):
 
     if pyagrum_available:
         if isinstance(pgm._pgmpy, pgmpy.models.DiscreteBayesianNetwork) or isinstance(
-            pgm._pgmpy, pgmpy.models.MarkovNetwork
+            pgm._pgmpy, pgmpy.models.DiscreteMarkovNetwork
         ):
             return conin.common.pgmpy.log_potential(
                 pgm._pgmpy, query_variables, evidence=evidence, **options

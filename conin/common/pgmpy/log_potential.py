@@ -49,17 +49,9 @@ def log_potential(pgm, variables, evidence=None):
     ), "ERROR: cannot yet compute log_probability value with latent variables, which need to be marginalized."
 
     if type(pgm) is pgmpy.models.DiscreteBayesianNetwork:
-        assert len(pgm.nodes()) == len(
-            data
-        ), "ERROR: cannot yet compute log_potential value with latent variables, which need to be marginalized."
+        pgm = pgm.to_markov_model()
 
-        df = pd.DataFrame.from_dict(data)
-
-        # WEH - I don't know why I'm getting an error when using pytorch
-        config.set_backend("numpy")
-        return pgmpy.metrics.log_likelihood_score(pgm, df)
-
-    elif type(pgm) is pgmpy.models.MarkovNetwork:
+    if type(pgm) is pgmpy.models.DiscreteMarkovNetwork:
         log_potential = 0.0
         for factor in pgm.get_factors():
             scope_vars = factor.scope()
