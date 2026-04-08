@@ -19,8 +19,6 @@ def _get_factor_value(f, values):
 
 
 def convert_pgmpy_to_DiscreteMarkovNetwork(pgmpy_pgm):
-    # assert type(pgmpy_pgm) is pgmpy.models.MarkovNetwork, "Can only convert a pgmpy MarkovNetwork to a conin DiscreteMarkovNetwork"
-
     pgm = DiscreteMarkovNetwork()
     pgm._pgmpy_pgm = pgmpy_pgm
     pgm.states = pgmpy_pgm.states
@@ -48,8 +46,6 @@ def convert_pgmpy_to_DiscreteMarkovNetwork(pgmpy_pgm):
 
 
 def convert_pgmpy_to_DiscreteBayesianNetwork(pgmpy_pgm):
-    # assert type(pgmpy_pgm) is pgmpy.models.DiscreteBayesianNetwork, "Can only convert a pgmpy DiscreteBayesianNetwork to a conin DiscreteBayesianNetwork"
-
     pgm = DiscreteBayesianNetwork()
     pgm._pgmpy_pgm = pgmpy_pgm
     pgm.states = pgmpy_pgm.states
@@ -138,7 +134,7 @@ def convert_pgmpy_to_DynamicDiscreteBayesianNetwork(pgmpy_pgm):
 
 
 def convert_pgmpy_to_conin(pgmpy_pgm):
-    if type(pgmpy_pgm) is pgmpy.models.MarkovNetwork:
+    if type(pgmpy_pgm) is pgmpy.models.DiscreteMarkovNetwork:
         return convert_pgmpy_to_DiscreteMarkovNetwork(pgmpy_pgm)
 
     elif type(pgmpy_pgm) is pgmpy.models.DiscreteBayesianNetwork:
