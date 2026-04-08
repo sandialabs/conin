@@ -10,7 +10,7 @@ from conin.markov_network import (
 )
 
 with try_import() as pgmpy_available:
-    from pgmpy.models import MarkovNetwork as pgmpy_MarkovNetwork
+    from pgmpy.models import DiscreteMarkovNetwork as pgmpy_MarkovNetwork
     from pgmpy.factors.discrete import DiscreteFactor as pgmpy_DiscreteFactor
 
 
