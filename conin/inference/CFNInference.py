@@ -31,7 +31,7 @@ class CFNInference:
 
     def __init__(self, pgm):
         if pgmpy_available and (
-            isinstance(pgm, pgmpy.models.MarkovNetwork)
+            isinstance(pgm, pgmpy.models.DiscreteMarkovNetwork)
             or isinstance(pgm, pgmpy.models.DiscreteBayesianNetwork)
         ):
             pgm = convert_pgmpy_to_conin(pgm)
@@ -112,7 +112,7 @@ class CFNInference:
         #    pass
 
         else:
-            raise TypeError("Unexpected model type: {type(pgm)}")
+            raise TypeError(f"Unexpected model type: {type(pgm)}")
 
 
 class DDBN_CFNInference:
@@ -179,4 +179,4 @@ class DDBN_CFNInference:
                 **options,
             )
         else:
-            raise TypeError("Unexpected model type: {type(pgm)}")
+            raise TypeError(f"Unexpected model type: {type(pgm)}")
