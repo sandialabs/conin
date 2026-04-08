@@ -207,6 +207,7 @@ jobs:
             conda install -c pytorch pytorch
             conda install -c pytorch cpuonly
             pip install pgmpy
+            python -c "import pgmpy; from pgmpy import config; config.set_backend('numpy'); print('pgmpy initialized')"
 
       - name: Test with pytest & coverage
         run: pytest --cov --cov-branch --cov-report=xml --junitxml=junit.xml -vv conin
