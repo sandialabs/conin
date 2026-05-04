@@ -6,7 +6,7 @@ import pyomo.environ as pyo
 from . import chmm
 
 
-def _create_index_sets(*, hmm, observed):
+def _create_index_sets(*, hmm, observed, Tmax=None):
     # N - Number of hidden states
     # start_probs[i] - map from i=1..N to a probability value in 0..1
     # emission_probes[i][k] - probability that output k is generated when in hidden state i
@@ -19,7 +19,8 @@ def _create_index_sets(*, hmm, observed):
     emission_probs = hmm.emission_mat
     trans_mat = np.array(hmm.transition_mat)
 
-    Tmax = len(observed)
+    if Tmax is None:
+        Tmax = len(observed)
     T = list(range(Tmax))
 
     A = list(range(N))
@@ -166,9 +167,11 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
         self.y_binary = y_binary
         self.x_binary = x_binary
 
-    def generate_unconstrained_model(self, *, observed):
+    def generate_unconstrained_model(self, *, observed, Tmax=None):
         self.observed = observed
-        D = _create_index_sets(hmm=self.hidden_markov_model, observed=observed)
+        D = _create_index_sets(
+            hmm=self.hidden_markov_model, observed=observed, Tmax=Tmax
+        )
         if self.cache_indices:
             self.data.hmm = D
 
@@ -233,11 +236,18 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
 
         M.hmm.flow_end = pyo.Constraint(rule=flow_end_)
 
+        # Should o_val be defined with an Expression?  If so, how can we provide the value to the user?
+        M.hmm.o_val = pyo.Var(D.Gt, bounds=(None, 0))
+
+        def o_val_c_(m, t, a, b):
+            return (
+                M.hmm.o_val[t, a, b] == (D.Gt[t, a, b] + D.Ge[t, b]) * M.hmm.y[t, a, b]
+            )
+
+        M.hmm.o_val_c = pyo.Constraint(D.Gt, rule=o_val_c_)
+
         M.hmm.o = pyo.Objective(
-            expr=sum(
-                (D.Gt[t, a, b] + D.Ge[t, b]) * M.hmm.y[t, a, b] for t, a, b in D.Gt
-            ),
-            sense=pyo.maximize,
+            expr=sum(M.hmm.o_val[t, a, b] for t, a, b in D.Gt), sense=pyo.maximize
         )
 
         return M

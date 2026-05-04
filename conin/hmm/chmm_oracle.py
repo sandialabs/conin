@@ -8,7 +8,15 @@ class Oracle_CHMM(chmm.CHMM):
     A class to represent a Hidden Markov Model (HMM) with additional constraints.
     """
 
-    def __init__(self, *, hmm=None, constraints=None, hidden_to_external={}, data=None):
+    def __init__(
+        self,
+        *,
+        hmm=None,
+        constraints=None,
+        hidden_to_external={},
+        data=None,
+        make_internal_constraint=True,
+    ):
         """
         Parameters:
             hmm (HMM, optional):
@@ -19,10 +27,13 @@ class Oracle_CHMM(chmm.CHMM):
         """
         super().__init__(hmm=hmm, data=data)
         if constraints:
-            self.constraints = [
-                self._make_internal_constraint(c, hidden_to_external)
-                for c in constraints
-            ]
+            if make_internal_constraint:
+                self.constraints = [
+                    self._make_internal_constraint(c, hidden_to_external)
+                    for c in constraints
+                ]
+            else:
+                self.constraints = constraints
         else:
             self.constraints = []
 
