@@ -9,7 +9,12 @@ import pyomo.environ as pyo
 from conin.hidden_markov_model import *
 from conin.oracle_constraints import *
 from conin.constraint import pyomo_constraint_fn
-from conin.hidden_markov_model.inference import viterbi, a_star, lp_inference, ip_inference
+from conin.hidden_markov_model.inference import (
+    viterbi,
+    a_star,
+    lp_inference,
+    ip_inference,
+)
 
 
 #
