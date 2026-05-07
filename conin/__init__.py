@@ -4,7 +4,7 @@
 from . import markov_network
 from . import bayesian_network
 from . import dynamic_bayesian_network
-from . import hmm
+from . import hidden_markov_model
 from .inference import *
 from .constraint import (
     OracleConstraint,

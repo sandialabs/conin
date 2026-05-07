@@ -1,5 +1,5 @@
-from conin.hmm.hmm import HiddenMarkovModel, HMM_MatVecRepn
-from conin.hmm.inference import viterbi
+from conin.hidden_markov_model.hmm import HiddenMarkovModel, HMM_MatVecRepn
+from conin.hidden_markov_model.inference import viterbi
 
 
 class ViterbiInference:

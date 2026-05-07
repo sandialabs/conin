@@ -1,5 +1,5 @@
 from munch import Munch
-from conin.hmm.hmm import HMM_MatVecRepn
+from conin.hidden_markov_model.hmm import HMM_MatVecRepn
 
 
 class CHMM:
@@ -13,7 +13,7 @@ class CHMM:
             )
         self.hmm = hmm
         if hidden_markov_model:
-            from conin.hmm import HiddenMarkovModel
+            from conin.hidden_markov_model import HiddenMarkovModel
 
             if not isinstance(hidden_markov_model, HiddenMarkovModel):
                 raise ValueError(

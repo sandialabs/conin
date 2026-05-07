@@ -1,6 +1,6 @@
-from conin.hmm.hmm import HiddenMarkovModel, HMM_MatVecRepn
-from conin.hmm import ConstrainedHiddenMarkovModel, CHMM
-from conin.hmm.inference import a_star
+from conin.hidden_markov_model.hmm import HiddenMarkovModel, HMM_MatVecRepn
+from conin.hidden_markov_model import ConstrainedHiddenMarkovModel, CHMM
+from conin.hidden_markov_model.inference import a_star
 
 
 class AStarInference:

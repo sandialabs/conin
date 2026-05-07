@@ -2,7 +2,7 @@ import pytest
 
 from conin.exceptions import InvalidInputError
 from conin.oracle_constraints import *
-from conin.hmm import *
+from conin.hidden_markov_model import *
 
 
 @pytest.fixture
