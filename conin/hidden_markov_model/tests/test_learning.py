@@ -1,7 +1,7 @@
 # TODO we need way more here
 import pytest
 
-from conin.hmm import learning
+from conin.hidden_markov_model import learning
 import math
 
 

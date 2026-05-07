@@ -1,6 +1,9 @@
 from conin.util import try_import
-from conin.hmm import HiddenMarkovModel, ConstrainedHiddenMarkovModel, CHMM
-#from conin.hmm.inference import lp_inference, ip_inference
+from conin.hidden_markov_model import (
+    HiddenMarkovModel,
+    ConstrainedHiddenMarkovModel,
+    CHMM,
+)
 
 from conin.markov_network import (
     DiscreteMarkovNetwork,

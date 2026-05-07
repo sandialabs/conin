@@ -1,5 +1,5 @@
 import numpy as np
-from conin.hmm import HiddenMarkovModel
+from conin.hidden_markov_model import HiddenMarkovModel
 from conin.util import Util
 
 

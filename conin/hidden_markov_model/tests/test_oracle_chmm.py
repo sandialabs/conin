@@ -1,10 +1,10 @@
 import pytest
 
 from conin import *
-from conin.hmm import *
-from conin.hmm.chmm_oracle import Oracle_CHMM
+from conin.hidden_markov_model import *
+from conin.hidden_markov_model.chmm_oracle import Oracle_CHMM
 
-import conin.hmm.tests.examples as tc
+import conin.hidden_markov_model.tests.examples as tc
 import conin.oracle_constraints as oc
 
 

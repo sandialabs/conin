@@ -1,5 +1,5 @@
 import pyomo.environ as pe
-import conin.hmm
+import conin.hidden_markov_model
 from conin import pyomo_constraint_fn
 
 import munch
@@ -25,7 +25,7 @@ def create_hmm0():
         ("h1", "o0"): 0,
         ("h1", "o1"): 1,
     }
-    hmm = conin.hmm.HiddenMarkovModel()
+    hmm = conin.hidden_markov_model.HiddenMarkovModel()
     hmm.load_model(
         start_probs=start_probs,
         transition_probs=transition_probs,
@@ -49,7 +49,7 @@ def create_hmm1():
         ("h1", "o0"): 0.4,
         ("h1", "o1"): 0.6,
     }
-    hmm = conin.hmm.HiddenMarkovModel()
+    hmm = conin.hidden_markov_model.HiddenMarkovModel()
     hmm.load_model(
         start_probs=start_probs,
         transition_probs=transition_probs,
@@ -81,7 +81,7 @@ def create_hmm1_aos():
         ("h1", "o0"): 0.7,
         ("h1", "o1"): 0.3,
     }
-    hmm = conin.hmm.HiddenMarkovModel()
+    hmm = conin.hidden_markov_model.HiddenMarkovModel()
     hmm.load_model(
         start_probs=start_probs,
         transition_probs=transition_probs,
@@ -109,7 +109,7 @@ def create_hmm2():
         ("h1", "o1"): 0.6,
         ("h2", "o2"): 1.0,
     }
-    hmm = conin.hmm.HiddenMarkovModel()
+    hmm = conin.hidden_markov_model.HiddenMarkovModel()
     hmm.load_model(
         start_probs=start_probs,
         transition_probs=transition_probs,
@@ -148,7 +148,7 @@ def create_hmm2_aos():
         ("h2", "o1"): 0.2,
         ("h2", "o2"): 0.1,
     }
-    hmm = conin.hmm.HiddenMarkovModel()
+    hmm = conin.hidden_markov_model.HiddenMarkovModel()
     hmm.load_model(
         start_probs=start_probs,
         transition_probs=transition_probs,
@@ -161,17 +161,19 @@ def create_hmm2_aos():
 def create_chmm1_oracle():
     hmm = create_hmm1()
 
-    num_zeros_greater_than_nine = conin.hmm.OracleConstraint(
+    num_zeros_greater_than_nine = conin.hidden_markov_model.OracleConstraint(
         func=lambda seq: seq.count("h0") > 9,
         partial_func=lambda T, seq: T - len(seq) + seq.count("h0") >= 10,
     )
-    num_zeros_less_than_thirteen = conin.hmm.OracleConstraint(
+    num_zeros_less_than_thirteen = conin.hidden_markov_model.OracleConstraint(
         func=lambda seq: seq.count("h0") < 13,
         partial_func=lambda T, seq: seq.count("h0") < 13,
     )
     constraints = [num_zeros_greater_than_nine, num_zeros_less_than_thirteen]
 
-    chmm = conin.hmm.ConstrainedHiddenMarkovModel(hmm=hmm, constraints=constraints)
+    chmm = conin.hidden_markov_model.ConstrainedHiddenMarkovModel(
+        hmm=hmm, constraints=constraints
+    )
     chmm.initialize_chmm()
     return chmm
 
@@ -191,7 +193,9 @@ def create_chmm1_pyomo():
 
     constraints = [num_zeros_greater_than_nine, num_zeros_less_than_thirteen]
 
-    chmm = conin.hmm.ConstrainedHiddenMarkovModel(hmm=hmm, constraints=constraints)
+    chmm = conin.hidden_markov_model.ConstrainedHiddenMarkovModel(
+        hmm=hmm, constraints=constraints
+    )
     chmm.initialize_chmm()
     return chmm
 
@@ -215,7 +219,9 @@ def create_chmm1_pyomo_aos():
 
     constraints = [num_zeros_less_than_thirteen]
 
-    chmm = conin.hmm.ConstrainedHiddenMarkovModel(hmm=hmm, constraints=constraints)
+    chmm = conin.hidden_markov_model.ConstrainedHiddenMarkovModel(
+        hmm=hmm, constraints=constraints
+    )
     chmm.initialize_chmm()
     return chmm
 
@@ -242,12 +248,14 @@ def create_chmm2_pyomo_aos():
 
     constraints = [num_ones_less_than_thirteen]
 
-    chmm = conin.hmm.ConstrainedHiddenMarkovModel(hmm=hmm, constraints=constraints)
+    chmm = conin.hidden_markov_model.ConstrainedHiddenMarkovModel(
+        hmm=hmm, constraints=constraints
+    )
     chmm.initialize_chmm()
     return chmm
 
 
-class Num_Zeros(conin.hmm.HMMApplication):
+class Num_Zeros(conin.hidden_markov_model.HMMApplication):
 
     def __init__(self):
         self.num_zeros = None

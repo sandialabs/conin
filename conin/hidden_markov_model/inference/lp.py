@@ -1,9 +1,8 @@
 import math
 import munch
 
-# from conin.hmm import hmm_application
 from conin.config import default_mip_solver
-from conin.hmm import ConstrainedHiddenMarkovModel
+from conin.hidden_markov_model import ConstrainedHiddenMarkovModel
 from conin.util import try_import
 
 import pyomo.environ as pyo
