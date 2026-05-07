@@ -1,7 +1,7 @@
 import pytest
 import pyomo.opt
 
-import conin.hmm.tests.examples
+import conin.hidden_markov_model.tests.examples
 from conin.util import try_import
 from conin.inference.AStarInference import (
     AStarInference,
@@ -13,7 +13,7 @@ from conin.inference.AStarInference import (
 
 
 def test_AStarInference_hmm1_test0():
-    pgm = conin.hmm.tests.examples.create_hmm1()
+    pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
     inf = AStarInference(pgm)
     observed = ["o0", "o0", "o1", "o0", "o0"]
     results = inf.map_query(evidence=observed)
@@ -21,7 +21,7 @@ def test_AStarInference_hmm1_test0():
 
 
 def test_AStarInference_hmm1_test1():
-    pgm = conin.hmm.tests.examples.create_hmm1()
+    pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
     inf = AStarInference(pgm)
     observed = ["o0", "o1", "o1", "o1", "o1"]
     results = inf.map_query(evidence=observed)
@@ -29,7 +29,7 @@ def test_AStarInference_hmm1_test1():
 
 
 def test_AStarInference_hmm1_test2():
-    pgm = conin.hmm.tests.examples.create_hmm1()
+    pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
     inf = AStarInference(pgm)
     observed = {0: "o0", 1: "o0", 2: "o1", 3: "o0", 4: "o0"}
     results = inf.map_query(evidence=observed)
@@ -43,7 +43,7 @@ def test_AStarInference_hmm1_test2():
 
 
 def test_AStarInference_hmm1_test3():
-    pgm = conin.hmm.tests.examples.create_hmm1()
+    pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
     inf = AStarInference(pgm)
     observed = {0: "o0", 1: "o1", 2: "o1", 3: "o1", 4: "o1"}
     results = inf.map_query(evidence=observed)
@@ -57,7 +57,7 @@ def test_AStarInference_hmm1_test3():
 
 
 def test_AStarInference_chmm1_test0():
-    pgm = conin.hmm.tests.examples.create_chmm1_oracle()
+    pgm = conin.hidden_markov_model.tests.examples.create_chmm1_oracle()
     inf = AStarInference(pgm)
     observed = ["o0"] * 15
     results = inf.map_query(evidence=observed)
@@ -81,7 +81,7 @@ def test_AStarInference_chmm1_test0():
 
 
 def test_AStarInference_hmm1_test1():
-    pgm = conin.hmm.tests.examples.create_chmm1_oracle()
+    pgm = conin.hidden_markov_model.tests.examples.create_chmm1_oracle()
     inf = AStarInference(pgm)
     observed = ["o0"] + ["o1"] * 14
     results = inf.map_query(evidence=observed)

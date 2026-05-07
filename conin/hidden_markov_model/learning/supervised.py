@@ -1,4 +1,4 @@
-from conin.hmm import HiddenMarkovModel
+from conin.hidden_markov_model import HiddenMarkovModel
 
 # TODO also allows for hidden and observed instead of simulations
 
