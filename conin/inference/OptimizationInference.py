@@ -1,6 +1,6 @@
 from conin.util import try_import
 from conin.hmm import HiddenMarkovModel, ConstrainedHiddenMarkovModel, CHMM
-from conin.hmm.inference import lp_inference, ip_inference
+#from conin.hmm.inference import lp_inference, ip_inference
 
 from conin.markov_network import (
     DiscreteMarkovNetwork,
@@ -22,6 +22,10 @@ from conin.dynamic_bayesian_network import (
 )
 from .dbn import (
     inference_pyomo_map_query_DDBN,
+)
+
+from .hmm import (
+    inference_pyomo_map_query_HMM,
 )
 
 with try_import() as pgmpy_available:
@@ -67,7 +71,7 @@ class IntegerProgrammingInference:
 
         Examples
         --------
-        >>> from conin.inference import OptimizationInference
+        >>> from conin.inference import IntegerProgrammingInference
         >>> from pgmpy.models import DiscreteBayesianNetwork
         >>> import numpy as np
         >>> import pandas as pd
@@ -75,7 +79,7 @@ class IntegerProgrammingInference:
         ...                       columns=['A', 'B', 'C', 'D', 'E'])
         >>> model = DiscreteBayesianNetwork([('A', 'B'), ('C', 'B'), ('C', 'D'), ('B', 'E')])
         >>> model = model.fit(values)
-        >>> inference = OptimizationInference(model)
+        >>> inference = IntegerProgrammingInference(model)
         >>> phi_query = inference.map_query(variables=['A', 'B'])
         """
         pgm = self.pgm
@@ -102,55 +106,22 @@ class IntegerProgrammingInference:
                 **options,
             )
 
-        elif isinstance(pgm, HiddenMarkovModel):
-            # TODO: warning about specifying 'variables'
-            # TODO: warning about specifying timing
-            if type(evidence) is list:
-                return lp_inference(hmm=pgm, observed=evidence, **options)
-
-            if type(evidence) is dict:
-                observed = [evidence[i] for i in range(len(evidence))]
-                results = lp_inference(hmm=pgm, observed=observed, **options)
-                solutions = results.solutions
-                for soln in solutions:
-                    soln.states = {i: v for i, v in enumerate(soln.states)}
-                    soln.hidden = soln.states
-                results.solutions = solutions
-                return results
-
-        elif isinstance(pgm, ConstrainedHiddenMarkovModel) or isinstance(pgm, CHMM):
-            # TODO: warning about specifying 'variables'
-            # TODO: warning about specifying timing
-            if type(evidence) is list:
-                return ip_inference(hmm=pgm, observed=evidence, **options)
-
-            if type(evidence) is dict:
-                observed = [evidence[i] for i in range(len(evidence))]
-                results = ip_inference(hmm=pgm, observed=observed, **options)
-                solutions = results.solutions
-                for soln in solutions:
-                    soln.states = {i: v for i, v in enumerate(soln.states)}
-                    soln.hidden = soln.states
-                results.solutions = solutions
-                return results
-
         else:
             raise TypeError(f"Unexpected model type: {type(pgm)}")
 
 
-class DDBN_IntegerProgrammingInference:
+class DPGM_IntegerProgrammingInference:
 
     def __init__(self, pgm):
         if pgmpy_available and isinstance(pgm, pgmpy.models.DynamicBayesianNetwork):
             pgm = convert_pgmpy_to_conin(pgm)
         self.pgm = pgm
-        # self.variables = self.pgm.nodes
 
     def map_query(
         self,
         *,
         start=0,
-        stop=1,
+        stop=None,
         variables=None,
         evidence=None,
         show_progress=False,
@@ -174,7 +145,7 @@ class DDBN_IntegerProgrammingInference:
 
         Examples
         --------
-        >>> from conin.inference import OptimizationInference
+        >>> from conin.inference import DPGM_IntegerProgrammingInference
         >>> from pgmpy.models import DiscreteBayesianNetwork
         >>> import numpy as np
         >>> import pandas as pd
@@ -182,7 +153,7 @@ class DDBN_IntegerProgrammingInference:
         ...                       columns=['A', 'B', 'C', 'D', 'E'])
         >>> model = DiscreteBayesianNetwork([('A', 'B'), ('C', 'B'), ('C', 'D'), ('B', 'E')])
         >>> model = model.fit(values)
-        >>> inference = OptimizationInference(model)
+        >>> inference = DPGM_IntegerProgrammingInference(model)
         >>> phi_query = inference.map_query(variables=['A', 'B'])
         """
 
@@ -191,6 +162,8 @@ class DDBN_IntegerProgrammingInference:
         if isinstance(pgm, DynamicDiscreteBayesianNetwork) or isinstance(
             pgm, ConstrainedDynamicDiscreteBayesianNetwork
         ):
+            # TODO: warning about specifying 'variables'
+            # TODO: warning about specifying timing
             return inference_pyomo_map_query_DDBN(
                 pgm=pgm,
                 start=start,
@@ -199,5 +172,52 @@ class DDBN_IntegerProgrammingInference:
                 evidence=evidence,
                 **options,
             )
+
+        elif isinstance(pgm, HiddenMarkovModel) or \
+             isinstance(pgm, ConstrainedHiddenMarkovModel) or \
+             isinstance(pgm, CHMM):
+            # TODO: warning about specifying 'variables'
+            # TODO: warning about specifying timing
+            return inference_pyomo_map_query_HMM(
+                pgm=pgm,
+                start=start,
+                stop=stop,
+                variables=variables,
+                evidence=evidence,
+                **options,
+            )
+
+        elif isinstance(pgm, HiddenMarkovModel):
+            if type(evidence) is list:
+                return lp_inference(hmm=pgm, observed=evidence, **options)
+
+            if type(evidence) is dict:
+                observed = [evidence[i] for i in range(len(evidence))]
+                results = lp_inference(hmm=pgm, observed=observed, **options)
+
+                solutions = results.solutions
+                for soln in solutions:
+                    soln.states = {i: v for i, v in enumerate(soln.states)}
+                    soln.hidden = soln.states
+                results.solutions = solutions
+                return results
+
+        elif isinstance(pgm, ConstrainedHiddenMarkovModel) or isinstance(pgm, CHMM):
+            # TODO: warning about specifying 'variables'
+            # TODO: warning about specifying timing
+            if type(evidence) is list:
+                return ip_inference(hmm=pgm, observed=evidence, **options)
+
+            if type(evidence) is dict:
+                observed = [evidence[i] for i in range(len(evidence))]
+                results = ip_inference(hmm=pgm, observed=observed, **options)
+
+                solutions = results.solutions
+                for soln in solutions:
+                    soln.states = {i: v for i, v in enumerate(soln.states)}
+                    soln.hidden = soln.states
+                results.solutions = solutions
+                return results
+
         else:
             raise TypeError(f"Unexpected model type: {type(pgm)}")

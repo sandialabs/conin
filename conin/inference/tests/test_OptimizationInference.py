@@ -8,7 +8,7 @@ import conin.hmm.tests.examples
 
 from conin.inference.OptimizationInference import (
     IntegerProgrammingInference,
-    DDBN_IntegerProgrammingInference,
+    DPGM_IntegerProgrammingInference,
 )
 from conin.util import try_import
 
@@ -212,7 +212,7 @@ def test_IntegerProgrammingInference_cancer1_constrained_pgmpy():
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_IntegerProgrammingInference_hmm1_test0():
     pgm = conin.hmm.tests.examples.create_hmm1()
-    inf = IntegerProgrammingInference(pgm)
+    inf = DPGM_IntegerProgrammingInference(pgm)
     observed = ["o0", "o0", "o1", "o0", "o0"]
     results = inf.map_query(evidence=observed, solver=mip_solver)
     assert results.solution.states == ["h0", "h0", "h0", "h0", "h0"]
@@ -221,7 +221,7 @@ def test_IntegerProgrammingInference_hmm1_test0():
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_IntegerProgrammingInference_hmm1_test1():
     pgm = conin.hmm.tests.examples.create_hmm1()
-    inf = IntegerProgrammingInference(pgm)
+    inf = DPGM_IntegerProgrammingInference(pgm)
     observed = ["o0", "o1", "o1", "o1", "o1"]
     results = inf.map_query(evidence=observed, solver=mip_solver)
     assert results.solution.states == ["h1", "h1", "h1", "h1", "h1"]
@@ -230,7 +230,7 @@ def test_IntegerProgrammingInference_hmm1_test1():
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_IntegerProgrammingInference_hmm1_test2():
     pgm = conin.hmm.tests.examples.create_hmm1()
-    inf = IntegerProgrammingInference(pgm)
+    inf = DPGM_IntegerProgrammingInference(pgm)
     observed = {0: "o0", 1: "o0", 2: "o1", 3: "o0", 4: "o0"}
     results = inf.map_query(evidence=observed, solver=mip_solver)
     assert results.solution.states == {
@@ -245,7 +245,7 @@ def test_IntegerProgrammingInference_hmm1_test2():
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_IntegerProgrammingInference_hmm1_test3():
     pgm = conin.hmm.tests.examples.create_hmm1()
-    inf = IntegerProgrammingInference(pgm)
+    inf = DPGM_IntegerProgrammingInference(pgm)
     observed = {0: "o0", 1: "o1", 2: "o1", 3: "o1", 4: "o1"}
     results = inf.map_query(evidence=observed, solver=mip_solver)
     assert results.solution.states == {
@@ -260,7 +260,7 @@ def test_IntegerProgrammingInference_hmm1_test3():
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_IntegerProgrammingInference_chmm1_test0():
     pgm = conin.hmm.tests.examples.create_chmm1_pyomo()
-    inf = IntegerProgrammingInference(pgm)
+    inf = DPGM_IntegerProgrammingInference(pgm)
     observed = ["o0"] * 15
     results = inf.map_query(evidence=observed, solver=mip_solver)
     assert results.solution.states == [
@@ -285,7 +285,7 @@ def test_IntegerProgrammingInference_chmm1_test0():
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_IntegerProgrammingInference_chmm1_test1():
     pgm = conin.hmm.tests.examples.create_chmm1_pyomo()
-    inf = IntegerProgrammingInference(pgm)
+    inf = DPGM_IntegerProgrammingInference(pgm)
     observed = ["o0"] + ["o1"] * 14
     results = inf.map_query(evidence=observed, solver=mip_solver)
     assert results.solution.states == [
@@ -310,7 +310,7 @@ def test_IntegerProgrammingInference_chmm1_test1():
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_IntegerProgrammingInference_chmm1_test2():
     pgm = conin.hmm.tests.examples.create_chmm1_pyomo()
-    inf = IntegerProgrammingInference(pgm)
+    inf = DPGM_IntegerProgrammingInference(pgm)
     observed = {i: "o0" for i in range(15)}
     results = inf.map_query(evidence=observed, solver=mip_solver)
     assert results.solution.states == {
@@ -335,7 +335,7 @@ def test_IntegerProgrammingInference_chmm1_test2():
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_IntegerProgrammingInference_chmm1_test3():
     pgm = conin.hmm.tests.examples.create_chmm1_pyomo()
-    inf = IntegerProgrammingInference(pgm)
+    inf = DPGM_IntegerProgrammingInference(pgm)
     observed = {0: "o0"}
     for i in range(14):
         observed[i + 1] = "o1"
@@ -365,9 +365,9 @@ def test_IntegerProgrammingInference_chmm1_test3():
 
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_DDBN_IntegerProgrammingInference_weather_conin():
+def test_DPGM_IntegerProgrammingInference_weather_conin():
     example = conin.dynamic_bayesian_network.examples.weather_conin()
-    inf = DDBN_IntegerProgrammingInference(example.pgm)
+    inf = DPGM_IntegerProgrammingInference(example.pgm)
     results = inf.map_query(stop=4, solver=mip_solver)
     assert results.solution.states == example.solutions[0].states
 
@@ -404,9 +404,9 @@ def test_DDBN_IntegerProgrammingInference_weather_conin():
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_DDBN_IntegerProgrammingInference_weather():
+def test_DPGM_IntegerProgrammingInference_weather():
     example = conin.dynamic_bayesian_network.examples.weather2_pgmpy()
-    inf = DDBN_IntegerProgrammingInference(example.pgm)
+    inf = DPGM_IntegerProgrammingInference(example.pgm)
     results = inf.map_query(stop=4, solver=mip_solver)
     assert results.solution.states == example.solutions[0].states
 
@@ -447,9 +447,9 @@ def test_DDBN_IntegerProgrammingInference_weather():
 
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_DDBN_IntegerProgrammingInference_weather_constrained_conin():
+def test_DPGM_IntegerProgrammingInference_weather_constrained_conin():
     example = conin.dynamic_bayesian_network.examples.weather_constrained_pyomo_conin()
-    inf = DDBN_IntegerProgrammingInference(example.pgm)
+    inf = DPGM_IntegerProgrammingInference(example.pgm)
     results = inf.map_query(stop=4, solver=mip_solver)
     assert results.solution.states == example.solutions[0].states
 
@@ -485,9 +485,9 @@ def test_DDBN_IntegerProgrammingInference_weather_constrained_conin():
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_DDBN_IntegerProgrammingInference_weather_constrained_pyomo_pgmpy():
+def test_DPGM_IntegerProgrammingInference_weather_constrained_pyomo_pgmpy():
     example = conin.dynamic_bayesian_network.examples.weather_constrained_pyomo_pgmpy()
-    inf = DDBN_IntegerProgrammingInference(example.pgm)
+    inf = DPGM_IntegerProgrammingInference(example.pgm)
     results = inf.map_query(stop=4, solver=mip_solver)
     assert results.solution.states == example.solutions[0].states
 
