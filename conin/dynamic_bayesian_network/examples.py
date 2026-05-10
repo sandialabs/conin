@@ -171,8 +171,8 @@ def simple1_DDBN_constrained_pyomo_conin(debug=False):
     @pyomo_constraint_fn()
     def constraints(model):
         model.c = pyo.ConstraintList()
-        model.c.add(model.X[("A", 0), 0] == model.X[("A", 1), 0])
-        model.c.add(model.X[("B", 0), 0] == model.X[("B", 1), 0])
+        model.c.add(model.V("A", 0, 0) == model.V("A", 1, 0))
+        model.c.add(model.V("B", 0, 0) == model.V("B", 1, 0))
 
     return Munch(
         pgm=ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=[constraints]),
@@ -195,8 +195,8 @@ def simple1_DDBN_constrained_pyomo_pgmpy(debug=False):
     @pyomo_constraint_fn()
     def constraints(model):
         model.c = pyo.ConstraintList()
-        model.c.add(model.X[("A", 0), 0] == model.X[("A", 1), 0])
-        model.c.add(model.X[("B", 0), 0] == model.X[("B", 1), 0])
+        model.c.add(model.V("A", 0, 0) == model.V("A", 1, 0))
+        model.c.add(model.V("B", 0, 0) == model.V("B", 1, 0))
 
     import conin.common.pgmpy
 
@@ -702,7 +702,7 @@ def weather_constrained_pyomo_conin(debug=False):
     def constraints(model, data):
         """2 rainy days"""
         model.c = pyo.Constraint(
-            expr=sum(model.X[("W", t), "Rainy"] for t in data.T) == 2
+            expr=sum(model.V("W", t, "Rainy") for t in data.T) == 2
         )
 
     return Munch(
@@ -718,7 +718,7 @@ def weather_constrained_pyomo_pgmpy(debug=False):
     def constraints(model, data):
         """2 rainy days"""
         model.c = pyo.Constraint(
-            expr=sum(model.X[("W", t), "Rainy"] for t in data.T) == 2
+            expr=sum(model.V("W", t, "Rainy") for t in data.T) == 2
         )
 
     import conin.common.pgmpy

@@ -176,9 +176,11 @@ class DPGM_IntegerProgrammingInference:
                 **options,
             )
 
-        elif isinstance(pgm, HiddenMarkovModel) or \
-             isinstance(pgm, ConstrainedHiddenMarkovModel) or \
-             isinstance(pgm, CHMM):
+        elif (
+            isinstance(pgm, HiddenMarkovModel)
+            or isinstance(pgm, ConstrainedHiddenMarkovModel)
+            or isinstance(pgm, CHMM)
+        ):
             # TODO: warning about specifying 'variables'
             # TODO: warning about specifying timing
             return inference_pyomo_map_query_HMM(

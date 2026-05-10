@@ -244,8 +244,8 @@ def cancer1_BN_constrained_pyomo_conin(debug=False):
     @pyomo_constraint_fn()
     def constraints(model):
         model.c = pyo.ConstraintList()
-        model.c.add(model.X["Dyspnoea", 1] + model.X["Xray", 1] <= 1)
-        model.c.add(model.X["Dyspnoea", 0] + model.X["Xray", 0] <= 1)
+        model.c.add(model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1)
+        model.c.add(model.V("Dyspnoea", 0) + model.V("Xray", 0) <= 1)
 
     cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
     return Munch(
@@ -270,8 +270,8 @@ def cancer1_BN_constrained_pyomo_pgmpy(debug=False):
     @pyomo_constraint_fn()
     def constraints(model):
         model.c = pyo.ConstraintList()
-        model.c.add(model.X["Dyspnoea", 1] + model.X["Xray", 1] <= 1)
-        model.c.add(model.X["Dyspnoea", 0] + model.X["Xray", 0] <= 1)
+        model.c.add(model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1)
+        model.c.add(model.V("Dyspnoea", 0) + model.V("Xray", 0) <= 1)
 
     import conin.common.pgmpy
 
@@ -299,8 +299,8 @@ def cancer2_BN_constrained_pyomo_pgmpy(debug=False):
     @pyomo_constraint_fn()
     def constraints(model):
         model.c = pyo.ConstraintList()
-        model.c.add(model.X["Dyspnoea", 1] + model.X["Xray", 1] <= 1)
-        model.c.add(model.X["Dyspnoea", 0] + model.X["Xray", 0] <= 1)
+        model.c.add(model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1)
+        model.c.add(model.V("Dyspnoea", 0) + model.V("Xray", 0) <= 1)
 
     import conin.common.pgmpy
 

@@ -43,18 +43,66 @@ of constraints is O(N + M + Mcl + Mc) = O(N + Mcl).
 """
 
 
+class VarValue(object):
+
+    def value(self, s):
+        if type(s) is not State:
+            s = State(s)
+        return self._wrapper[self.index, s]
+
+
+class VarDict(object):
+    def __init__(self, name, wrapper):
+        self._name = name
+        self._wrapper = wrapper
+        self._varvalue = VarValue()
+
+    def __getitem__(self, index):
+        self._varvalue.index = (self._name, index)
+        return self._varvalue
+
+
 class VarWrapper(dict):
     def __init__(self, *arg, **kw):
         super(VarWrapper, self).__init__(*arg, **kw)
+        # self._var = {}
+        # for index in self:
+        #    r, s = index
+        #    if type(r) is tuple:
+        #        if r[0] not in self._var:
+        #            self._var[r[0]] = VarDict(r[0], self)
+        #    else:
+        #        if r not in self._var:
+        #            self._var[r] = VarDict(r, self)
 
     def pprint(self):
         pprint.pprint(self)
+
+    def __call__(self, *args):
+        if len(args) == 2:
+            r, s = args
+        elif len(args) == 3:
+            r, i, s = args
+            r = (r, i)
+        else:
+            raise ValueError("There must be either 2 or 3 arguments")
+
+        if type(s) is not State:
+            s = State(s)
+        return dict.__getitem__(self, (r, s))
 
     def __getitem__(self, index):
         r, s = index
         if type(s) is not State:
             s = State(s)
         return dict.__getitem__(self, (r, s))
+
+    def __getattr__(self, name):
+        if name in self._var:
+            return self._var[name]
+        raise AttributeError(
+            f"{self.__class__.__name__} object has not attribute {name}"
+        )
 
 
 def create_pyomo_map_query_model_MN(
@@ -94,22 +142,12 @@ def create_pyomo_map_query_model_MN(
         timer.tic("create_map_query_pyomo_model_MN - START")
     pgm_ = pgm.pgm if isinstance(pgm, ConstrainedDiscreteMarkovNetwork) else pgm
 
-    if variables or evidence:
-        variables_ = [] if variables is None else variables
-        evidence_ = {} if evidence is None else evidence
-        if not evidence_ and len(variables_) == len(pgm_.nodes):
-            factors = pgm_.factors
-        else:
-            raise RuntimeError("VariableElimination is not supported for CONIN models")
-        if variables_:
-            states = {var: pgm_.states[var] for var in variables_}
-        else:
-            states = {
-                var: pgm_.states[var] for var in pgm_.nodes() if var not in evidence_
-            }
-    else:
-        states = pgm_.states
-        factors = pgm_.factors
+    if variables:
+        raise RuntimeError("VariableElimination is not supported for CONIN models")
+
+    states = pgm_.states
+    factors = pgm_.factors
+
     if timing:  # pragma:nocover
         timer.toc("Setup states and factors")
 
@@ -127,9 +165,9 @@ def create_pyomo_map_query_model_MN(
         timing=timing,
     )
 
-    # if evidence:
-    #    for k, v in evidence.items():
-    #        model.X[k, State(v)].fix(1)
+    if evidence:
+        for k, v in evidence.items():
+            model.V(k, State(v)).fix(1)
 
     if isinstance(pgm, ConstrainedDiscreteMarkovNetwork) and pgm.constraints:
         data = munch.Munch(variables=variables, evidence=evidence)
@@ -186,9 +224,9 @@ def create_MN_pyomo_map_query_model_from_factorial_repn(
                 continue
             IRS[i, r, v[i, j, r]].add(j)
     else:
-        V = {(i, j): [] for i, j in IJ}
+        v = {(i, j): [] for i, j in IJ}
         for i, j, r in v:
-            V[i, j].append(r)
+            v[i, j].append(r)
         IJR = list(v.keys())
 
     # TODO: Figure out how to marginalize everything except the specified
@@ -211,9 +249,9 @@ def create_MN_pyomo_map_query_model_from_factorial_repn(
     model.y = pe.Var(IJ, within=pe.Binary)
 
     if var_index_map is None:
-        model.X = VarWrapper({rs: model.x[rs] for rs in RS})
+        model.V = VarWrapper({rs: model.x[rs] for rs in RS})
     else:
-        model.X = VarWrapper(
+        model.V = VarWrapper(
             {
                 (r, s): model.x[index, s]
                 for r, index in var_index_map.items()
@@ -361,13 +399,13 @@ def parse_model_solution_pyomo_map_query(model, with_fixed):
     var = {}
     variables = set()
     fixed_variables = set()
-    for r, s in model.X:
+    for r, s in model.V:
         variables.add(r)
-        if model.X[r, s].is_fixed():
+        if model.V(r, s).is_fixed():
             fixed_variables.add(r)
-            if with_fixed and pe.value(model.X[r, s]) > 0.5:
+            if with_fixed and pe.value(model.V(r, s)) > 0.5:
                 var[r] = s.value
-        elif pe.value(model.X[r, s]) > 0.5:
+        elif pe.value(model.V(r, s)) > 0.5:
             var[r] = s.value
     assert variables == set(var.keys()).union(
         fixed_variables
@@ -381,9 +419,9 @@ def parse_aos_solution_pyomo_map_query(model, aos_solution, with_fixed):
     var = {}
     variables = set()
     fixed_variables = set()
-    for r, s in model.X:
+    for r, s in model.V:
         variables.add(r)
-        aos_var_X_r_s = aos_solution.variable(model.X[r, s].name)
+        aos_var_X_r_s = aos_solution.variable(model.V(r, s).name)
         if aos_var_X_r_s.fixed:
             fixed_variables.add(r)
             if with_fixed and aos_var_X_r_s.value > 0.5:

@@ -80,13 +80,13 @@ def create_toulbar2_map_query_model_BN(
         #        for r, index in var_index_map.items()
         #        for s in S.get(index, [])
         #    }
-        model.X = {name: i for i, name in enumerate(pgm.nodes)}
+        model.V = {name: i for i, name in enumerate(pgm.nodes)}
         # print("HERE")
         # print(f"{model.X=}")
         # print(f"{var_index_map=}")
         # print(f"{pgm.nodes_=}")
     else:
-        model.X = {name: i for i, name in enumerate(pgm.nodes)}
+        model.V = {name: i for i, name in enumerate(pgm.nodes)}
     model.states = {i: pgm.states_of(name) for i, name in enumerate(pgm.nodes)}
     # print(f"{model.states=}")
 

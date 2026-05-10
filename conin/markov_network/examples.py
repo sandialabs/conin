@@ -155,7 +155,7 @@ def ABC_constrained_pyomo_pgmpy():
     def constraint_fn(model):
         @model.Constraint([0, 1, 2])
         def diff(M, s):
-            return M.X["A", s] + M.X["B", s] + M.X["C", s] <= 1
+            return M.V("A", s) + M.V("B", s) + M.V("C", s) <= 1
 
     import conin.common.pgmpy
 
@@ -179,7 +179,7 @@ def ABC_constrained_pyomo_conin():
     def constraint_fn(model):
         @model.Constraint([0, 1, 2])
         def diff(M, s):
-            return M.X["A", s] + M.X["B", s] + M.X["C", s] <= 1
+            return M.V("A", s) + M.V("B", s) + M.V("C", s) <= 1
 
     cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=[constraint_fn])
     return Munch(pgm=cpgm, solutions=[MPESolution(states={"A": 0, "B": 2, "C": 1})])
@@ -204,7 +204,7 @@ def ABC_constrained_pyomo_conin_aos_2():
     def constraint_fn(model):
         @model.Constraint([0, 1, 2])
         def diff(M, s):
-            return M.X["A", s] + M.X["B", s] + M.X["C", s] <= 1
+            return M.V("A", s) + M.V("B", s) + M.V("C", s) <= 1
 
     cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=[constraint_fn])
     return Munch(
@@ -231,7 +231,7 @@ def ABC_constrained_toulbar2_pgmpy():
     def constraint_fn(M):
         for i in [0, 1, 2]:
             M.AddGeneralizedLinearConstraint(
-                [(M.X["A"], i, 1), (M.X["B"], i, 1), (M.X["C"], i, 1)], "<=", 1
+                [(M.V["A"], i, 1), (M.V["B"], i, 1), (M.V["C"], i, 1)], "<=", 1
             )
 
     import conin.common.pgmpy
@@ -256,7 +256,7 @@ def ABC_constrained_toulbar2_conin():
     def constraints(M):
         for i in [0, 1, 2]:
             M.AddGeneralizedLinearConstraint(
-                [(M.X["A"], i, 1), (M.X["B"], i, 1), (M.X["C"], i, 1)], "<=", 1
+                [(M.V["A"], i, 1), (M.V["B"], i, 1), (M.V["C"], i, 1)], "<=", 1
             )
 
     cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=[constraints])

@@ -107,6 +107,17 @@ def _create_index_sets(*, hmm, observed, Tmax=None):
     return index_sets
 
 
+# Instances of this class can be called like a function
+class CallableDict(dict):
+    def __call__(self, *args):
+        if len(args) == 3:
+            return self.get(((args[0], args[1]), args[2]))
+        elif len(args) == 2:
+            return self.get(args)
+        else:
+            return KeyError(f"Unknown dictionary key {args=}")
+
+
 class Algebraic_CHMM(chmm.CHMM):
     """
     A class to represent a Hidden Markov Model (HMM) with optimization equations.
@@ -190,6 +201,11 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
             M.hmm.x = pyo.Var(D.T, D.A, bounds=(0, 1), within=pyo.Boolean)
         else:
             M.hmm.x = pyo.Var(D.T, D.A, bounds=(0, 1))
+
+        M.V = CallableDict(
+            ((("H", t), self.hidden_markov_model.hidden_to_external[s]), M.hmm.x[t, s])
+            for t, s in M.hmm.x
+        )
 
         # Hidden states
 

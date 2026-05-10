@@ -1,24 +1,33 @@
 import munch
-from conin.hmm.hmm_to_dbn import create_dbn_from_hmm
-from conin.hmm import ConstrainedHiddenMarkovModel
-
+import conin
+from conin.hidden_markov_model.hmm_to_dbn import create_dbn_from_hmm
+from conin.hidden_markov_model import ConstrainedHiddenMarkovModel
 from conin.inference.dbn.inference_pyomo import create_pyomo_map_query_model_DDBN
 
 
-def create_pyomo_map_query_model_DDBN(
-    *, pgm, start=0, stop=1, variables=None, evidence=None, **options
+def create_pyomo_map_query_model_HMM(
+    *, pgm, start=0, stop=None, variables=None, evidence=None, **options
 ):
     pgm_ = (
-        pgm.pgm if isinstance(pgm, ConstrainedHiddenMarkovModel) else pgm
+        pgm.hidden_markov_model
+        if isinstance(pgm, ConstrainedHiddenMarkovModel)
+        else pgm
     )
 
-    bn = create_bn_from_dbn(dbn=pgm_, start=start, stop=stop)
+    assert stop is not None, "Expecting evidence (observations) for an HMM"
+
+    dbn = create_dbn_from_hmm(hmm=pgm_)
+    if type(evidence) is list:
+        evidence = {("E", i): evidence[i] for i in range(start, stop + 1)}
+    else:
+        evidence = {("E", k): v for k, v in evidence.items()}
 
     model = create_pyomo_map_query_model_DDBN(
-        pgm=bn,
+        pgm=dbn,
         variables=variables,
         evidence=evidence,
-        var_index_map=bn._pyomo_index_names,
+        start=start,
+        stop=stop,
         **options,
     )
 
@@ -28,7 +37,10 @@ def create_pyomo_map_query_model_DDBN(
             stop=stop,
             variables=variables,
             evidence=evidence,
-            T=list(range(start, stop + 1)),
+            hmm=munch.Munch(
+                T=list(range(start, stop + 1)),
+                hidden_to_internal=pgm_.hidden_to_internal,
+            ),
         )
         for func in pgm.constraints:
             model = func(model, data)
@@ -40,12 +52,12 @@ def inference_pyomo_map_query_HMM(
     *,
     pgm,
     start=0,
-    stop=1,
+    stop=None,
     variables=None,
     evidence=None,
     **options,
 ):
-    ip_formulation = options.get('ip_formulation', None)
+    ip_formulation = options.get("ip_formulation", None)
 
     if ip_formulation == "network_flow":
         if isinstance(pgm, HiddenMarkovModel):
@@ -81,6 +93,8 @@ def inference_pyomo_map_query_HMM(
                 return results
 
     elif ip_formulation is None or ip_formulation == "markov_network":
+        if stop is None and evidence is not None:
+            stop = len(evidence) - 1
         model = create_pyomo_map_query_model_HMM(
             pgm=pgm,
             start=start,
@@ -89,10 +103,18 @@ def inference_pyomo_map_query_HMM(
             evidence=evidence,
             **options,
         )
-        return conin.inference.mn.inference_pyomo.solve_pyomo_map_query_model(
+        results = conin.inference.mn.inference_pyomo.solve_pyomo_map_query_model(
             model, **options
         )
+        if type(evidence) is list:
+            results.solution.states = [
+                results.solution.states["H", i] for i in range(start, stop + 1)
+            ]
+        else:
+            results.solution.states = {
+                i: results.solution.states["H", i] for i in range(start, stop + 1)
+            }
+        return results
 
     else:
         raise ValueError(f"Unexpected ip_formulation value: '{ip_formulation}'")
-

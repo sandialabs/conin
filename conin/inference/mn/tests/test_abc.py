@@ -175,13 +175,13 @@ def test_ABC_pyomo_pgmpy():
 #    assert results.solution.states == {"C": 1}
 
 
-# @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-# def Xtest_ABC6_pyomo_conin():
-#    pgm = examples.ABC_conin()
-#    # pgm = convert_pgmpy_to_conin(pgm)
-#    model = create_pyomo_map_query_model_MN(pgm=pgm, variables=["C"], evidence={"B": 0})
-#    results = solve_pyomo_map_query_model(model, solver=mip_solver)
-#    assert results.solution.states == {"C": 1}
+@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
+def test_ABC6_pyomo_conin():
+    example = examples.ABC_conin()
+    results = inference_pyomo_map_query_MN(
+        pgm=example.pgm, solver=mip_solver, evidence={"B": 0}
+    )
+    assert results.solution.states == {"A": 2, "C": 1}
 
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
@@ -214,6 +214,11 @@ def test_ABC_constrained_pyomo():
     example = examples.ABC_constrained_pyomo_conin()
     results = inference_pyomo_map_query_MN(pgm=example.pgm, solver=mip_solver)
     assert results.solution.states == example.solutions[0].states
+
+    results = inference_pyomo_map_query_MN(
+        pgm=example.pgm, solver=mip_solver, evidence={"B": 0}
+    )
+    assert results.solution.states == {"A": 2, "C": 1}
 
 
 @pytest.mark.skipif(not or_topas_available, reason="or_topas not installed")

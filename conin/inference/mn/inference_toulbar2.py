@@ -94,7 +94,7 @@ def create_reduced_MN(
 
     # if evidence:
     #    for k, v in evidence.items():
-    #        model.X[k, State(v)].fix(1)
+    #        model.V[k, State(v)].fix(1)
 
 
     if timing:  # pragma:nocover
@@ -124,7 +124,7 @@ def create_toulbar2_map_query_model_MN(
         model = pytoulbar2.CFN()
         model.Read(filename)
 
-    model.X = {name: i for i, name in enumerate(pgm.nodes)}
+    model.V = {name: i for i, name in enumerate(pgm.nodes)}
     model.states = {i: pgm.states_of(name) for i, name in enumerate(pgm.nodes)}
 
     if cpgm and cpgm.constraints:
@@ -154,7 +154,7 @@ def solve_toulbar2_map_query_model(
     res = model.Solve()
     solvetime = solver_timer.toc(None)
     solution, primal_bound, num_solutions = res
-    var = {name: model.states[i][solution[i]] for name, i in model.X.items()}
+    var = {name: model.states[i][solution[i]] for name, i in model.V.items()}
     soln = munch.Munch(states=var, log_factor_sum=None, primal_bound=primal_bound)
 
     if timing:  # pragma:nocover
