@@ -18,6 +18,9 @@ with try_import() as pgmpy_available:
 mip_solver = pyomo.opt.check_available_solvers("gurobi", "highs", "glpk")
 mip_solver = mip_solver[0] if mip_solver else None
 
+ip_formulations = pytest.mark.parametrize(
+    "ip_formulation", [None, "markov_network", "network_flow"]
+)
 
 #
 # DiscreteMarkovNetwork tests
@@ -210,29 +213,38 @@ def test_IntegerProgrammingInference_cancer1_constrained_pgmpy():
 
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_IntegerProgrammingInference_hmm1_test0():
+@ip_formulations
+def test_IntegerProgrammingInference_hmm1_test0(ip_formulation):
     pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
     inf = DPGM_IntegerProgrammingInference(pgm)
     observed = ["o0", "o0", "o1", "o0", "o0"]
-    results = inf.map_query(evidence=observed, solver=mip_solver)
+    results = inf.map_query(
+        evidence=observed, solver=mip_solver, ip_formulation=ip_formulation
+    )
     assert results.solution.states == ["h0", "h0", "h0", "h0", "h0"]
 
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_IntegerProgrammingInference_hmm1_test1():
+@ip_formulations
+def test_IntegerProgrammingInference_hmm1_test1(ip_formulation):
     pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
     inf = DPGM_IntegerProgrammingInference(pgm)
     observed = ["o0", "o1", "o1", "o1", "o1"]
-    results = inf.map_query(evidence=observed, solver=mip_solver)
+    results = inf.map_query(
+        evidence=observed, solver=mip_solver, ip_formulation=ip_formulation
+    )
     assert results.solution.states == ["h1", "h1", "h1", "h1", "h1"]
 
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_IntegerProgrammingInference_hmm1_test2():
+@ip_formulations
+def test_IntegerProgrammingInference_hmm1_test2(ip_formulation):
     pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
     inf = DPGM_IntegerProgrammingInference(pgm)
     observed = {0: "o0", 1: "o0", 2: "o1", 3: "o0", 4: "o0"}
-    results = inf.map_query(evidence=observed, solver=mip_solver)
+    results = inf.map_query(
+        evidence=observed, solver=mip_solver, ip_formulation=ip_formulation
+    )
     assert results.solution.states == {
         0: "h0",
         1: "h0",
@@ -243,11 +255,14 @@ def test_IntegerProgrammingInference_hmm1_test2():
 
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_IntegerProgrammingInference_hmm1_test3():
+@ip_formulations
+def test_IntegerProgrammingInference_hmm1_test3(ip_formulation):
     pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
     inf = DPGM_IntegerProgrammingInference(pgm)
     observed = {0: "o0", 1: "o1", 2: "o1", 3: "o1", 4: "o1"}
-    results = inf.map_query(evidence=observed, solver=mip_solver)
+    results = inf.map_query(
+        evidence=observed, solver=mip_solver, ip_formulation=ip_formulation
+    )
     assert results.solution.states == {
         0: "h1",
         1: "h1",
@@ -258,11 +273,14 @@ def test_IntegerProgrammingInference_hmm1_test3():
 
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_IntegerProgrammingInference_chmm1_test0():
+@ip_formulations
+def test_IntegerProgrammingInference_chmm1_test0(ip_formulation):
     pgm = conin.hidden_markov_model.tests.examples.create_chmm1_pyomo()
     inf = DPGM_IntegerProgrammingInference(pgm)
     observed = ["o0"] * 15
-    results = inf.map_query(evidence=observed, solver=mip_solver)
+    results = inf.map_query(
+        evidence=observed, solver=mip_solver, ip_formulation=ip_formulation
+    )
     assert results.solution.states == [
         "h1",
         "h1",
@@ -283,11 +301,14 @@ def test_IntegerProgrammingInference_chmm1_test0():
 
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_IntegerProgrammingInference_chmm1_test1():
+@ip_formulations
+def test_IntegerProgrammingInference_chmm1_test1(ip_formulation):
     pgm = conin.hidden_markov_model.tests.examples.create_chmm1_pyomo()
     inf = DPGM_IntegerProgrammingInference(pgm)
     observed = ["o0"] + ["o1"] * 14
-    results = inf.map_query(evidence=observed, solver=mip_solver)
+    results = inf.map_query(
+        evidence=observed, solver=mip_solver, ip_formulation=ip_formulation
+    )
     assert results.solution.states == [
         "h0",
         "h0",
@@ -308,11 +329,14 @@ def test_IntegerProgrammingInference_chmm1_test1():
 
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_IntegerProgrammingInference_chmm1_test2():
+@ip_formulations
+def test_IntegerProgrammingInference_chmm1_test2(ip_formulation):
     pgm = conin.hidden_markov_model.tests.examples.create_chmm1_pyomo()
     inf = DPGM_IntegerProgrammingInference(pgm)
     observed = {i: "o0" for i in range(15)}
-    results = inf.map_query(evidence=observed, solver=mip_solver)
+    results = inf.map_query(
+        evidence=observed, solver=mip_solver, ip_formulation=ip_formulation
+    )
     assert results.solution.states == {
         0: "h1",
         1: "h1",
@@ -333,13 +357,16 @@ def test_IntegerProgrammingInference_chmm1_test2():
 
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_IntegerProgrammingInference_chmm1_test3():
+@ip_formulations
+def test_IntegerProgrammingInference_chmm1_test3(ip_formulation):
     pgm = conin.hidden_markov_model.tests.examples.create_chmm1_pyomo()
     inf = DPGM_IntegerProgrammingInference(pgm)
     observed = {0: "o0"}
     for i in range(14):
         observed[i + 1] = "o1"
-    results = inf.map_query(evidence=observed, solver=mip_solver)
+    results = inf.map_query(
+        evidence=observed, solver=mip_solver, ip_formulation=ip_formulation
+    )
     assert results.solution.states == {
         0: "h0",
         1: "h0",
