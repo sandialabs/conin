@@ -192,37 +192,5 @@ class DPGM_IntegerProgrammingInference:
                 **options,
             )
 
-        elif isinstance(pgm, HiddenMarkovModel):
-            if type(evidence) is list:
-                return lp_inference(hmm=pgm, observed=evidence, **options)
-
-            if type(evidence) is dict:
-                observed = [evidence[i] for i in range(len(evidence))]
-                results = lp_inference(hmm=pgm, observed=observed, **options)
-
-                solutions = results.solutions
-                for soln in solutions:
-                    soln.states = {i: v for i, v in enumerate(soln.states)}
-                    soln.hidden = soln.states
-                results.solutions = solutions
-                return results
-
-        elif isinstance(pgm, ConstrainedHiddenMarkovModel) or isinstance(pgm, CHMM):
-            # TODO: warning about specifying 'variables'
-            # TODO: warning about specifying timing
-            if type(evidence) is list:
-                return ip_inference(hmm=pgm, observed=evidence, **options)
-
-            if type(evidence) is dict:
-                observed = [evidence[i] for i in range(len(evidence))]
-                results = ip_inference(hmm=pgm, observed=observed, **options)
-
-                solutions = results.solutions
-                for soln in solutions:
-                    soln.states = {i: v for i, v in enumerate(soln.states)}
-                    soln.hidden = soln.states
-                results.solutions = solutions
-                return results
-
         else:
             raise TypeError(f"Unexpected model type: {type(pgm)}")
