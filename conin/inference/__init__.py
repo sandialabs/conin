@@ -6,7 +6,7 @@ from .ViterbiInference import ViterbiInference
 from .AStarInference import AStarInference
 from .CFNInference import (
     CFNInference,
-    DDBN_CFNInference,
+    DPGM_CFNInference,
 )
 
 # import conin.inference.markov_network

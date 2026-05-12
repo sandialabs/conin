@@ -4,7 +4,7 @@ import pyomo.opt
 from conin.util import try_import
 from conin.inference.CFNInference import (
     CFNInference,
-    DDBN_CFNInference,
+    DPGM_CFNInference,
 )
 import conin.markov_network.examples
 import conin.bayesian_network.examples
@@ -204,27 +204,27 @@ def Xtest_CFNInference_cancer1_constrained_pgmpy():
 
 
 @pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
-def Xtest_CFNInference_hmm1_test0():
+def test_CFNInference_hmm1_test0():
     pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
-    inf = CFNInference(pgm)
+    inf = DPGM_CFNInference(pgm)
     observed = ["o0", "o0", "o1", "o0", "o0"]
     results = inf.map_query(evidence=observed)
     assert results.solution.states == ["h0", "h0", "h0", "h0", "h0"]
 
 
 @pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
-def Xtest_CFNInference_hmm1_test1():
+def test_CFNInference_hmm1_test1():
     pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
-    inf = CFNInference(pgm)
+    inf = DPGM_CFNInference(pgm)
     observed = ["o0", "o1", "o1", "o1", "o1"]
     results = inf.map_query(evidence=observed)
     assert results.solution.states == ["h1", "h1", "h1", "h1", "h1"]
 
 
 @pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
-def Xtest_CFNInference_hmm1_test2():
+def test_CFNInference_hmm1_test2():
     pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
-    inf = CFNInference(pgm)
+    inf = DPGM_CFNInference(pgm)
     observed = {0: "o0", 1: "o0", 2: "o1", 3: "o0", 4: "o0"}
     results = inf.map_query(evidence=observed)
     assert results.solution.states == {
@@ -237,9 +237,9 @@ def Xtest_CFNInference_hmm1_test2():
 
 
 @pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
-def Xtest_CFNInference_hmm1_test3():
+def test_CFNInference_hmm1_test3():
     pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
-    inf = CFNInference(pgm)
+    inf = DPGM_CFNInference(pgm)
     observed = {0: "o0", 1: "o1", 2: "o1", 3: "o1", 4: "o1"}
     results = inf.map_query(evidence=observed)
     assert results.solution.states == {
@@ -252,9 +252,9 @@ def Xtest_CFNInference_hmm1_test3():
 
 
 @pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
-def Xtest_CFNInference_chmm1_test0():
+def test_CFNInference_chmm1_test0():
     pgm = conin.hidden_markov_model.tests.examples.create_chmm1_pyomo()
-    inf = CFNInference(pgm)
+    inf = DPGM_CFNInference(pgm)
     observed = ["o0"] * 15
     results = inf.map_query(evidence=observed)
     assert results.solution.states == [
@@ -277,9 +277,9 @@ def Xtest_CFNInference_chmm1_test0():
 
 
 @pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
-def Xtest_CFNInference_chmm1_test1():
+def test_CFNInference_chmm1_test1():
     pgm = conin.hidden_markov_model.tests.examples.create_chmm1_pyomo()
-    inf = CFNInference(pgm)
+    inf = DPGM_CFNInference(pgm)
     observed = ["o0"] + ["o1"] * 14
     results = inf.map_query(evidence=observed)
     assert results.solution.states == [
@@ -302,9 +302,9 @@ def Xtest_CFNInference_chmm1_test1():
 
 
 @pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
-def Xtest_CFNInference_chmm1_test2():
+def test_CFNInference_chmm1_test2():
     pgm = conin.hidden_markov_model.tests.examples.create_chmm1_pyomo()
-    inf = CFNInference(pgm)
+    inf = DPGM_CFNInference(pgm)
     observed = {i: "o0" for i in range(15)}
     results = inf.map_query(evidence=observed)
     assert results.solution.states == {
@@ -327,9 +327,9 @@ def Xtest_CFNInference_chmm1_test2():
 
 
 @pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
-def Xtest_CFNInference_chmm1_test3():
+def test_CFNInference_chmm1_test3():
     pgm = conin.hidden_markov_model.tests.examples.create_chmm1_pyomo()
-    inf = CFNInference(pgm)
+    inf = DPGM_CFNInference(pgm)
     observed = {0: "o0"}
     for i in range(14):
         observed[i + 1] = "o1"
@@ -359,9 +359,9 @@ def Xtest_CFNInference_chmm1_test3():
 
 
 @pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
-def test_DDBN_CFNInference_weather_conin():
+def test_DPGM_CFNInference_weather_conin():
     example = conin.dynamic_bayesian_network.examples.weather_conin()
-    inf = DDBN_CFNInference(example.pgm)
+    inf = DPGM_CFNInference(example.pgm)
     results = inf.map_query(stop=4)
     assert results.solution.states == example.solutions[0].states
 
@@ -398,9 +398,9 @@ def test_DDBN_CFNInference_weather_conin():
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 @pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
-def test_DDBN_CFNInference_weather():
+def test_DPGM_CFNInference_weather():
     example = conin.dynamic_bayesian_network.examples.weather2_pgmpy()
-    inf = DDBN_CFNInference(example.pgm)
+    inf = DPGM_CFNInference(example.pgm)
     results = inf.map_query(stop=4)
     assert results.solution.states == example.solutions[0].states
 
@@ -441,11 +441,11 @@ def test_DDBN_CFNInference_weather():
 
 
 @pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
-def Xtest_DDBN_CFNInference_weather_constrained_conin():
+def Xtest_DPGM_CFNInference_weather_constrained_conin():
     example = (
         conin.dynamic_bayesian_network.examples.weather_constrained_toulbar2_conin()
     )
-    inf = DDBN_CFNInference(example.pgm)
+    inf = DPGM_CFNInference(example.pgm)
     results = inf.map_query(stop=4)
     assert results.solution.states == example.solutions[0].states
 
@@ -481,11 +481,11 @@ def Xtest_DDBN_CFNInference_weather_constrained_conin():
 
 @pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 @pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
-def Xtest_DDBN_CFNInference_weather_constrained_pgmpy():
+def Xtest_DPGM_CFNInference_weather_constrained_pgmpy():
     example = (
         conin.dynamic_bayesian_network.examples.weather_constrained_toulbar2_pgmpy()
     )
-    inf = DDBN_CFNInference(example.pgm)
+    inf = DPGM_CFNInference(example.pgm)
     results = inf.map_query(stop=4)
     assert results.solution.states == example.solutions[0].states
 

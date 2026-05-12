@@ -1,30 +1,36 @@
 import munch
 import conin.markov_network
-from conin.dynamic_bayesian_network.dbn_to_bn import create_bn_from_dbn
-from conin.dynamic_bayesian_network import ConstrainedDynamicDiscreteBayesianNetwork
-from conin.inference.bn.inference_toulbar2 import (
-    create_toulbar2_map_query_model_BN,
+from conin.hidden_markov_model import ConstrainedHiddenMarkovModel
+from conin.hidden_markov_model.hmm_to_dbn import create_dbn_from_hmm
+from conin.inference.dbn.inference_toulbar2 import (
+    create_toulbar2_map_query_model_DDBN,
 )
 
 
 def create_toulbar2_map_query_model_HMM(
-    *, pgm, start=0, stop=1, variables=None, evidence=None, **options
+    *, pgm, start=0, stop=None, variables=None, evidence=None, **options
 ):
     pgm_ = (
-        pgm.pgm if isinstance(pgm, ConstrainedDynamicDiscreteBayesianNetwork) else pgm
+        pgm.hidden_markov_model if isinstance(pgm, ConstrainedHiddenMarkovModel) else pgm
     )
 
-    bn = create_bn_from_dbn(dbn=pgm_, start=start, stop=stop)
+    dbn = create_dbn_from_hmm(hmm=pgm_)
+    if type(evidence) is list:
+        evidence = {("E", i): evidence[i] for i in range(start, stop + 1)}
+    else:
+        evidence = {("E", k): v for k, v in evidence.items()}
 
-    model = create_toulbar2_map_query_model_DBBN(
-        pgm=bn,
+
+    model = create_toulbar2_map_query_model_DDBN(
+        pgm=dbn,
         variables=variables,
         evidence=evidence,
-        var_index_map=bn._pyomo_index_names,
+        start=start,
+        stop=stop,
         **options,
     )
 
-    if isinstance(pgm, ConstrainedDynamicDiscreteBayesianNetwork) and pgm.constraints:
+    if isinstance(pgm, ConstrainedHiddenMarkovModel) and pgm.constraints:
         data = munch.Munch(
             start=start,
             stop=stop,
@@ -42,11 +48,14 @@ def inference_toulbar2_map_query_HMM(
     *,
     pgm,
     start=0,
-    stop=1,
+    stop=None,
     variables=None,
     evidence=None,
     **options,
 ):
+    if stop is None and evidence is not None:
+        stop = len(evidence)-1
+
     model = create_toulbar2_map_query_model_HMM(
         pgm=pgm,
         start=start,
@@ -55,6 +64,16 @@ def inference_toulbar2_map_query_HMM(
         evidence=evidence,
         **options,
     )
-    return conin.inference.mn.inference_toulbar2.solve_toulbar2_map_query_model(
+    results = conin.inference.mn.inference_toulbar2.solve_toulbar2_map_query_model(
         model, **options
     )
+    if type(evidence) is list:
+        results.solution.states = [
+            results.solution.states["H", i] for i in range(start, stop + 1)
+        ]
+    else:
+        results.solution.states = {
+            i: results.solution.states["H", i] for i in range(start, stop + 1)
+        }
+    return results
+

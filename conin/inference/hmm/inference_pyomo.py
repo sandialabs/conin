@@ -77,7 +77,7 @@ def inference_pyomo_map_query_HMM(
                 results.solutions = solutions
                 return results
 
-        elif isinstance(pgm, ConstrainedHiddenMarkovModel) or isinstance(pgm, CHMM):
+        elif isinstance(pgm, ConstrainedHiddenMarkovModel):
             # TODO: warning about specifying 'variables'
             # TODO: warning about specifying timing
             if type(evidence) is list:

@@ -1,5 +1,10 @@
 from conin.util import try_import
 
+from conin.hidden_markov_model import (
+    HiddenMarkovModel,
+    ConstrainedHiddenMarkovModel,
+    CHMM,
+)
 from conin.markov_network import (
     DiscreteMarkovNetwork,
     ConstrainedDiscreteMarkovNetwork,
@@ -20,6 +25,9 @@ from conin.dynamic_bayesian_network import (
 )
 from .dbn import (
     inference_toulbar2_map_query_DDBN,
+)
+from .hmm import (
+    inference_toulbar2_map_query_HMM,
 )
 
 with try_import() as pgmpy_available:
@@ -99,23 +107,11 @@ class CFNInference:
                 **options,
             )
 
-        #
-        # TODO
-        #
-        # elif isinstance(pgm, HiddenMarkovModel):
-        #    pass
-
-        #
-        # TODO
-        #
-        # elif isinstance(pgm, ConstrainedHiddenMarkovModel) or isinstance(pgm, CHMM):
-        #    pass
-
         else:
             raise TypeError(f"Unexpected model type: {type(pgm)}")
 
 
-class DDBN_CFNInference:
+class DPGM_CFNInference:
 
     def __init__(self, pgm):
         if pgmpy_available and isinstance(pgm, pgmpy.models.DynamicBayesianNetwork):
@@ -127,7 +123,7 @@ class DDBN_CFNInference:
         self,
         *,
         start=0,
-        stop=1,
+        stop=None,
         variables=None,
         evidence=None,
         show_progress=False,
@@ -178,5 +174,17 @@ class DDBN_CFNInference:
                 timing=timing,
                 **options,
             )
+
+        elif isinstance(pgm, HiddenMarkovModel) or isinstance(pgm, ConstrainedHiddenMarkovModel) or isinstance(pgm, CHMM):
+            return inference_toulbar2_map_query_HMM(
+                pgm=pgm,
+                start=start,
+                stop=stop,
+                variables=variables,
+                evidence=evidence,
+                timing=timing,
+                **options,
+            )
+             
         else:
             raise TypeError(f"Unexpected model type: {type(pgm)}")
