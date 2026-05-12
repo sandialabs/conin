@@ -304,9 +304,9 @@ def create_MN_pyomo_map_query_model_from_factorial_repn(
         # If factor i is not in configuration j, then at least one of its
         # corresponding variables is not set to the values for configuration j
         def c4_(M, i, j):
-            return sum(M.x[r, v[i, j, r]] for r in model.V.get((i, j), [])) <= M.y[i, j] + (
-                len(model.V.get((i, j), [])) - 1
-            )
+            return sum(M.x[r, v[i, j, r]] for r in model.V.get((i, j), [])) <= M.y[
+                i, j
+            ] + (len(model.V.get((i, j), [])) - 1)
 
         model.c4 = pe.Constraint(IJ, rule=c4_)
 

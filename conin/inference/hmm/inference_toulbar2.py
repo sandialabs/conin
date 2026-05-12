@@ -11,7 +11,9 @@ def create_toulbar2_map_query_model_HMM(
     *, pgm, start=0, stop=None, variables=None, evidence=None, **options
 ):
     pgm_ = (
-        pgm.hidden_markov_model if isinstance(pgm, ConstrainedHiddenMarkovModel) else pgm
+        pgm.hidden_markov_model
+        if isinstance(pgm, ConstrainedHiddenMarkovModel)
+        else pgm
     )
 
     dbn = create_dbn_from_hmm(hmm=pgm_)
@@ -19,7 +21,6 @@ def create_toulbar2_map_query_model_HMM(
         evidence = {("E", i): evidence[i] for i in range(start, stop + 1)}
     else:
         evidence = {("E", k): v for k, v in evidence.items()}
-
 
     model = create_toulbar2_map_query_model_DDBN(
         pgm=dbn,
@@ -54,7 +55,7 @@ def inference_toulbar2_map_query_HMM(
     **options,
 ):
     if stop is None and evidence is not None:
-        stop = len(evidence)-1
+        stop = len(evidence) - 1
 
     model = create_toulbar2_map_query_model_HMM(
         pgm=pgm,
@@ -76,4 +77,3 @@ def inference_toulbar2_map_query_HMM(
             i: results.solution.states["H", i] for i in range(start, stop + 1)
         }
     return results
-

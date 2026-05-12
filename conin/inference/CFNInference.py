@@ -175,7 +175,11 @@ class DPGM_CFNInference:
                 **options,
             )
 
-        elif isinstance(pgm, HiddenMarkovModel) or isinstance(pgm, ConstrainedHiddenMarkovModel) or isinstance(pgm, CHMM):
+        elif (
+            isinstance(pgm, HiddenMarkovModel)
+            or isinstance(pgm, ConstrainedHiddenMarkovModel)
+            or isinstance(pgm, CHMM)
+        ):
             return inference_toulbar2_map_query_HMM(
                 pgm=pgm,
                 start=start,
@@ -185,6 +189,6 @@ class DPGM_CFNInference:
                 timing=timing,
                 **options,
             )
-             
+
         else:
             raise TypeError(f"Unexpected model type: {type(pgm)}")
