@@ -37,7 +37,10 @@ def create_toulbar2_map_query_model_HMM(
             stop=stop,
             variables=variables,
             evidence=evidence,
-            T=list(range(start, stop + 1)),
+            hmm=munch.Munch(
+                T=list(range(start, stop + 1)),
+                hidden_to_internal=pgm_.hidden_to_internal,
+            ),
         )
         for func in pgm.constraints:
             model = func(model, data)

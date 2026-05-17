@@ -1,150 +1,97 @@
-# from collections import defaultdict
-import os
+import os.path
 import tempfile
-
-# import pprint
 import munch
-from conin.util import try_import
 from pyomo.common.timing import TicTocTimer
+
+from conin.util import try_import
 
 with try_import() as pytoulbar2_available:
     import pytoulbar2
 
-from conin.markov_network import (
-    ConstrainedDiscreteMarkovNetwork,
-    # DiscreteMarkovNetwork,
-    # DiscreteFactor,
-)
-
-# from conin.inference.mn.factor_repn import extract_factor_representation_, State
 import conin.common
+from conin.markov_network import ConstrainedDiscreteMarkovNetwork
 
 
-def create_reduced_MN(
-    *,
-    pgm,
-    variables=None,
-    evidence=None,
-    var_index_map=None,
-    timing=False,
-    **options,
-):
-    """Create a reduced MN
+class VarWrapper(object):
+    def __init__(self, pgm):
+        self._V = {name: i for i, name in enumerate(pgm.nodes)}
+        self._V_state = {
+            (name, state): i
+            for name in pgm.nodes
+            for i, state in enumerate(pgm.states_of(name))
+        }
 
-    Parameters
-    ----------
-    pgm : DiscreteMarkovNetwork or ConstrainedDiscreteMarkovNetwork
-        The graphical model that is used to construct the Pyomo model.
-    variables : Iterable, optional
-        Nodes for which the MAP configuration is requested.
-    evidence : dict, optional
-        Observed states keyed by node.
-    timing : bool, optional
-        If ``True``, return inference statistics along with the MAP result.
-    var_index_map : dict, optional
-        A dictionary of that is used construct mapped varibles
-    **options
-        Additional keyword arguments forwarded to the inference backend.
-
-    Returns
-    -------
-    ConcreteModel
-        The pyomo optimization model that supports inference with MAP queries.
-    """
-    return pgm
-
-    """
-    if timing:  # pragma:nocover
-        timer = TicTocTimer()
-        timer.tic("create_MN_map_query_pyomo_model - START")
-    pgm_ = pgm.pgm if isinstance(pgm, ConstrainedDiscreteMarkovNetwork) else pgm
-
-    if variables or evidence:
-        variables_ = [] if variables is None else variables
-        evidence_ = {} if evidence is None else evidence
-        if not evidence_ and len(variables_) == len(pgm_.nodes):
-            factors = pgm_.factors
+    def __call__(self, *args, coef=1):
+        if len(args) == 2:
+            r, s = args
+        elif len(args) == 3:
+            r, i, s = args
+            r = (r, i)
         else:
-            raise RuntimeError("VariableElimination is not supported for CONIN models")
-        if variables_:
-            states = {var: pgm_.states[var] for var in variables_}
-        else:
-            states = {
-                var: pgm_.states[var] for var in pgm_.nodes() if var not in evidence_
-            }
-    else:
-        states = pgm_.states
-        factors = pgm_.factors
-    if timing:  # pragma:nocover
-        timer.toc("Setup states and factors")
+            raise ValueError("There must be either 2 or 3 arguments")
 
-    S, J, v, w = extract_factor_representation_(states, factors, var_index_map)
-    if timing:  # pragma:nocover
-        timer.toc("Created factor repn")
+        return (self._V[r], self._V_state[r, s], coef)
 
-    model = create_MN_map_query_model_from_factorial_repn(
-        S=S,
-        J=J,
-        v=v,
-        w=w,
-        var_index_map=var_index_map,
-        variables=variables,
-        timing=timing,
-    )
+    def __getitem__(self, r):
+        return self._V[r]
 
-    # if evidence:
-    #    for k, v in evidence.items():
-    #        model.V[k, State(v)].fix(1)
-
-
-    if timing:  # pragma:nocover
-        timer.toc("create_MN_map_query_model - STOP")
-    return model
-    """
+    def items(self):
+        for k, v in self._V.items():
+            yield k, v
 
 
 def create_toulbar2_map_query_model_MN(
-    pgm,
     *,
+    pgm,
     variables=None,
     evidence=None,
     timing=False,
+    **options,
 ):
-    # Ignoring variables and evidence for now
+    """
+    Ignoring variables for now
+    """
     if timing:  # pragma:nocover
         timer = TicTocTimer()
-        timer.toc("create_toulbar2_model - START")
+        timer.tic("create_toulbar2_map_query_model_MN - START")
+    verbose = options.pop("verbose", -1)
+
     cpgm = pgm if isinstance(pgm, ConstrainedDiscreteMarkovNetwork) else None
-    pgm = pgm.pgm if cpgm else pgm
+    pgm = cpgm.pgm if cpgm is not None else pgm
 
     with tempfile.TemporaryDirectory() as tempdir:
         filename = os.path.join(tempdir, "model.uai")
         conin.common.save_model(pgm, filename)
-
-        model = pytoulbar2.CFN()
+        model = pytoulbar2.CFN(verbose=verbose)
         model.Read(filename)
 
-    model.V = {name: i for i, name in enumerate(pgm.nodes)}
+    model.V = VarWrapper(pgm)
     model.states = {i: pgm.states_of(name) for i, name in enumerate(pgm.nodes)}
 
-    if cpgm and cpgm.constraints:
+    model.V_evidence = set()
+    if evidence:
+        for k, v in evidence.items():
+            model.Assign(model.V[k], pgm.states_of(k).index(v))
+            model.V_evidence.add(k)
+
+    if cpgm is not None and cpgm.constraints:
         data = munch.Munch(variables=variables, evidence=evidence)
         for func in cpgm.constraints:
             model = func(model, data)
 
     if timing:  # pragma:nocover
-        timer.toc("create_toulbar2_model - STOP")
+        timer.toc("create_toulbar2_map_query_model_MN - STOP")
     return model
 
 
 def solve_toulbar2_map_query_model(
     model,
     *,
-    # tee=False,
-    # with_fixed=False,
+    solution_with_fixed=False,
+    solution_with_evidence=False,
     timing=False,
-    # solver_options=None,
 ):
+    solution_with_evidence = solution_with_fixed or solution_with_evidence
     if timing:  # pragma:nocover
         timer = TicTocTimer()
         timer.tic("CFN_map_query - START")
@@ -154,7 +101,11 @@ def solve_toulbar2_map_query_model(
     res = model.Solve()
     solvetime = solver_timer.toc(None)
     solution, primal_bound, num_solutions = res
-    var = {name: model.states[i][solution[i]] for name, i in model.V.items()}
+    var = {
+        name: model.states[i][solution[i]]
+        for name, i in model.V.items()
+        if solution_with_evidence or name not in model.V_evidence
+    }
     soln = munch.Munch(states=var, log_factor_sum=None, primal_bound=primal_bound)
 
     if timing:  # pragma:nocover
@@ -176,7 +127,7 @@ def inference_toulbar2_map_query_MN(
     timing=False,
     **options,
 ):
-    if not pytoulbar2_available:
+    if not pytoulbar2_available:  # pragma:nocover
         return munch.Munch(
             solution=None,
             solutions=[],
@@ -185,9 +136,6 @@ def inference_toulbar2_map_query_MN(
         )
 
     model = create_toulbar2_map_query_model_MN(
-        pgm,
-        variables=variables,
-        evidence=evidence,
-        timing=timing,
+        pgm=pgm, variables=variables, evidence=evidence, timing=timing, **options
     )
     return solve_toulbar2_map_query_model(model, timing=timing, **options)
