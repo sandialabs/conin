@@ -84,7 +84,7 @@ def ABC_conin():
     return Munch(pgm=pgm, solutions=[MPESolution(states={"A": 2, "B": 2, "C": 1})])
 
 
-def ABC_conin_aos_2():
+def ABC2_conin():
     """
     Unconstrained AOS example for three variables with pair-wise interactions.
 
@@ -185,10 +185,10 @@ def ABC_constrained_pyomo_conin():
     return Munch(pgm=cpgm, solutions=[MPESolution(states={"A": 0, "B": 2, "C": 1})])
 
 
-def ABC_constrained_pyomo_conin_aos_2():
+def ABC2_constrained_pyomo_conin():
     """
     Constrained AOS example for three variables with pair-wise interactions.
-    Based off ABC_conin_aos_2.
+    Based off ABC2_conin.
     We add a constraint that excludes variable assignments to values that are equal.
 
     The edge interactions have equal weights, so the MPE solution is defined by the weights for the
@@ -198,7 +198,7 @@ def ABC_constrained_pyomo_conin_aos_2():
     Second best is A:1, B:2, C:0
     """
 
-    pgm = ABC_conin_aos_2()
+    pgm = ABC2_conin()
 
     @pyomo_constraint_fn()
     def constraint_fn(model):
@@ -231,7 +231,7 @@ def ABC_constrained_toulbar2_pgmpy():
     def constraint_fn(M):
         for i in [0, 1, 2]:
             M.AddGeneralizedLinearConstraint(
-                [(M.V["A"], i, 1), (M.V["B"], i, 1), (M.V["C"], i, 1)], "<=", 1
+                [M.V("A", i), M.V("B", i), M.V("C", i)], "<=", 1
             )
 
     import conin.common.pgmpy
@@ -256,7 +256,7 @@ def ABC_constrained_toulbar2_conin():
     def constraints(M):
         for i in [0, 1, 2]:
             M.AddGeneralizedLinearConstraint(
-                [(M.V["A"], i, 1), (M.V["B"], i, 1), (M.V["C"], i, 1)], "<=", 1
+                [M.V("A", i), M.V("B", i), M.V("C", i)], "<=", 1
             )
 
     cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=[constraints])
