@@ -1,6 +1,6 @@
 import pyomo.environ as pe
 import conin.hidden_markov_model
-from conin import pyomo_constraint_fn
+from conin.constraint import pyomo_constraint_fn, toulbar2_constraint_fn
 
 import munch
 import random
@@ -243,6 +243,26 @@ def create_chmm2_pyomo_aos():
         M.h0_upper = pe.Constraint(expr=sum(M.V("H", t, "h1") for t in D.hmm.T) <= 12)
 
     constraints = [num_ones_less_than_thirteen]
+
+    chmm = conin.hidden_markov_model.ConstrainedHiddenMarkovModel(
+        hmm=hmm, constraints=constraints
+    )
+    chmm.initialize_chmm()
+    return chmm
+
+
+def create_chmm1_toulbar2():
+    hmm = create_hmm1()
+
+    @toulbar2_constraint_fn()
+    def num_zeros_greater_than_nine(M, D):
+        M.AddGeneralizedLinearConstraint([M.V("H", t, "h0") for t in D.hmm.T], ">=", 10)
+
+    @toulbar2_constraint_fn()
+    def num_zeros_less_than_thirteen(M, D):
+        M.AddGeneralizedLinearConstraint([M.V("H", t, "h0") for t in D.hmm.T], "<=", 12)
+
+    constraints = [num_zeros_greater_than_nine, num_zeros_less_than_thirteen]
 
     chmm = conin.hidden_markov_model.ConstrainedHiddenMarkovModel(
         hmm=hmm, constraints=constraints
