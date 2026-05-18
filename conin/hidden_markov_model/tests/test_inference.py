@@ -354,19 +354,6 @@ class Test_Inference_a_star:
         # assert inferred1.termination_condition == "ok"
         assert inferred2.termination_condition == "ok"
 
-    def Xtest_a_star_deterministic_hmm(self):
-        hmm = tc.create_hmm0()
-
-        observed = ["o0", "o1", "o1", "o1"]
-
-        inference = Inference(hmm=hmm)
-        assert inference(observed).solutions[0].hidden == [
-            "h0",
-            "h1",
-            "h1",
-            "h1",
-        ]
-
 
 class Test_Inference_ip:
 
@@ -773,62 +760,6 @@ class Test_Inference_ip:
             "h0",
             "h0",
         ]
-
-    def Xtest_a_star_mult(self, chmm, recursive_app):
-        observed = [
-            "o1",
-            "o0",
-            "o0",
-            "o0",
-            "o0",
-            "o0",
-            "o0",
-            "o0",
-            "o0",
-            "o0",
-            "o0",
-        ]
-
-        inference1 = Inference(hmm=chmm, num_solutions=2)
-        inferred1 = inference1(observed)
-
-        inferred2 = recursive_a_star(
-            hmm_app=recursive_app, observed=observed, num_solutions=2
-        )
-
-        assert inferred1.termination_condition == "ok"
-        assert inferred2.termination_condition == "ok"
-        assert [sol.hidden for sol in inferred1.solutions] == [
-            ["h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"],
-            ["h1", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"],
-        ]
-        assert [sol.hidden for sol in inferred2.solutions] == [
-            ["h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"],
-            ["h1", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"],
-        ]
-
-    def Xtest_a_star_no_solution(self, chmm, recursive_app):
-        observed = ["o0"]
-
-        inference1 = Inference(hmm=chmm)
-        inferred1 = inference1(observed)
-
-        inferred2 = recursive_a_star(hmm_app=recursive_app, observed=observed)
-
-        assert inferred1.termination_condition == "error: no feasible solutions"
-
-        assert inferred2.termination_condition == "error: no feasible solutions"
-
-    def Xtest_a_star_not_enough_solutions(self, chmm, recursive_app):
-        observed = ["o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1"]
-        inference1 = Inference(hmm=chmm, num_solutions=2)
-        inferred1 = inference1(observed)
-
-        inferred2 = recursive_a_star(
-            hmm_app=recursive_app, observed=observed, num_solutions=2
-        )
-        assert inferred1.termination_condition == "ok"
-        assert inferred2.termination_condition == "ok"
 
     @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
     def test_ip_deterministic_hmm(self):

@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import pyomo.environ as pyo
 
-from conin.constraint import pyomo_constraint_fn
+from conin.constraint import pyomo_constraint_fn, toulbar2_constraint_fn
 from conin.util import try_import, MPESolution
 from conin.bayesian_network import (
     DiscreteBayesianNetwork,
@@ -67,7 +67,7 @@ def cancer1_BN_conin(debug=False):
     )
 
     # Step 3: Add the CPDs to the model.
-    if debug:
+    if debug:  # pragma:nocover
         print(cpd_poll)
         print(cpd_smoke)
         print(cpd_cancer)
@@ -137,7 +137,7 @@ def cancer1_BN_pgmpy(debug=False):
     )
 
     # Step 3: Add the CPDs to the model.
-    if debug:
+    if debug:  # pragma:nocover
         print(cpd_poll)
         print(cpd_smoke)
         print(cpd_cancer)
@@ -207,7 +207,7 @@ def cancer2_BN_pgmpy(debug=False):
     )
 
     # Step 3: Add the CPDs to the model.
-    if debug:
+    if debug:  # pragma:nocover
         print(cpd_poll)
         print(cpd_smoke)
         print(cpd_cancer)
@@ -244,8 +244,8 @@ def cancer1_BN_constrained_pyomo_conin(debug=False):
     @pyomo_constraint_fn()
     def constraints(model):
         model.c = pyo.ConstraintList()
-        model.c.add(model.X["Dyspnoea", 1] + model.X["Xray", 1] <= 1)
-        model.c.add(model.X["Dyspnoea", 0] + model.X["Xray", 0] <= 1)
+        model.c.add(model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1)
+        model.c.add(model.V("Dyspnoea", 0) + model.V("Xray", 0) <= 1)
 
     cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
     return Munch(
@@ -270,8 +270,8 @@ def cancer1_BN_constrained_pyomo_pgmpy(debug=False):
     @pyomo_constraint_fn()
     def constraints(model):
         model.c = pyo.ConstraintList()
-        model.c.add(model.X["Dyspnoea", 1] + model.X["Xray", 1] <= 1)
-        model.c.add(model.X["Dyspnoea", 0] + model.X["Xray", 0] <= 1)
+        model.c.add(model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1)
+        model.c.add(model.V("Dyspnoea", 0) + model.V("Xray", 0) <= 1)
 
     import conin.common.pgmpy
 
@@ -299,12 +299,37 @@ def cancer2_BN_constrained_pyomo_pgmpy(debug=False):
     @pyomo_constraint_fn()
     def constraints(model):
         model.c = pyo.ConstraintList()
-        model.c.add(model.X["Dyspnoea", 1] + model.X["Xray", 1] <= 1)
-        model.c.add(model.X["Dyspnoea", 0] + model.X["Xray", 0] <= 1)
+        model.c.add(model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1)
+        model.c.add(model.V("Dyspnoea", 0) + model.V("Xray", 0) <= 1)
 
     import conin.common.pgmpy
 
     pgm = conin.common.pgmpy.convert_pgmpy_to_conin(pgm)
+    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    return Munch(
+        pgm=cpgm,
+        solutions=[
+            MPESolution(
+                states={
+                    "Cancer": 1,
+                    "Dyspnoea": 0,
+                    "Pollution": 0,
+                    "Smoker": 1,
+                    "Xray": 1,
+                }
+            )
+        ],
+    )
+
+
+def cancer1_BN_constrained_toulbar2_conin(debug=False):
+    pgm = cancer1_BN_conin(debug=debug).pgm
+
+    @toulbar2_constraint_fn()
+    def constraints(M):
+        M.AddGeneralizedLinearConstraint([M.V("Dyspnoea", 1), M.V("Xray", 1)], "<=", 1)
+        M.AddGeneralizedLinearConstraint([M.V("Dyspnoea", 0), M.V("Xray", 0)], "<=", 1)
+
     cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
     return Munch(
         pgm=cpgm,
@@ -336,7 +361,7 @@ def simple1_BN_conin(debug=False):
         parents=["A"],
         values={0: [0.2, 0.8], 1: [0.9, 0.1]},
     )
-    if debug:
+    if debug:  # pragma:nocover
         print(cpd_A)
         print(cpd_B)
     G.cpds = [cpd_A, cpd_B]
@@ -356,7 +381,7 @@ def simple1_BN_pgmpy(debug=False):
         evidence=["A"],
         evidence_card=[2],
     )
-    if debug:
+    if debug:  # pragma:nocover
         print(cpd_A)
         print(cpd_B)
     G.add_cpds(cpd_A, cpd_B)
@@ -376,7 +401,7 @@ def simple2_BN_pgmpy(debug=False):
         evidence=["A"],
         values={0: [0.2, 0.8], 1: [0.9, 0.1]},
     )
-    if debug:
+    if debug:  # pragma:nocover
         print(cpd_A)
         print(cpd_B)
     G.add_cpds(cpd_A, cpd_B)
@@ -444,7 +469,7 @@ def DBDA_5_1_conin(debug=False):
     model.cpds = [disease_state_CPD, test_result_CPD_1, test_result_CPD_2]
     model.check_model()
 
-    if debug:
+    if debug:  # pragma:nocover
         print(disease_state_CPD)
         print(test_result_CPD_1)
         print(test_result_CPD_2)
@@ -516,7 +541,7 @@ def DBDA_5_1_pgmpy(debug=False):
     model.add_cpds(disease_state_CPD, test_result_CPD_1, test_result_CPD_2)
     model.check_model()
 
-    if debug:
+    if debug:  # pragma:nocover
         print(disease_state_CPD)
         print(test_result_CPD_1)
         print(test_result_CPD_2)
@@ -588,7 +613,7 @@ def holmes_conin(debug=False):
         values={"-a": {"g": 0.04, "-g": 0.96}, "a": {"g": 0.4, "-g": 0.6}},
     )
 
-    if debug:
+    if debug:  # pragma:nocover
         print(cpd_E)
         print(cpd_B)
         print(cpd_R)
@@ -657,7 +682,7 @@ def holmes_pgmpy(debug=False):
         evidence=["A"],
         values={"-a": {"g": 0.04, "-g": 0.96}, "a": {"g": 0.4, "-g": 0.6}},
     )
-    if debug:
+    if debug:  # pragma:nocover
         print(cpd_E)
         print(cpd_B)
         print(cpd_R)
@@ -756,7 +781,7 @@ def tb2_BN_conin(debug=False):
             (1, 3): [0.8, 0.0, 0.2],
         },
     )
-    if debug:
+    if debug:  # pragma:nocover
         print(cpd_A)
         print(cpd_B)
         print(cpd_C)
@@ -798,7 +823,7 @@ def tb2_BN_pgmpy(debug=False):
         evidence_card=[2, 2],
         state_names={"C": [4, 5, 6], "B": [2, 3], "A": [0, 1]},
     )
-    if debug:
+    if debug:  # pragma:nocover
         print(cpd_A)
         print(cpd_B)
         print(cpd_C)
@@ -831,7 +856,7 @@ def tb2_BN_pgmpy_mapcpd(debug=False):
             (1, 3): {4: 0.8, 5: 0.0, 6: 0.2},
         },
     )
-    if debug:
+    if debug:  # pragma:nocover
         print(cpd_A)
         print(cpd_B)
         print(cpd_C)

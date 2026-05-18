@@ -1,6 +1,6 @@
 import pyomo.environ as pe
 import conin.hidden_markov_model
-from conin import pyomo_constraint_fn
+from conin.constraint import pyomo_constraint_fn, toulbar2_constraint_fn
 
 import munch
 import random
@@ -183,13 +183,11 @@ def create_chmm1_pyomo():
 
     @conin.pyomo_constraint_fn()
     def num_zeros_greater_than_nine(M, D):
-        h0 = D.hmm.hidden_to_internal["h0"]
-        M.h0_lower = pe.Constraint(expr=sum(M.hmm.x[t, h0] for t in D.hmm.T) >= 10)
+        M.h0_lower = pe.Constraint(expr=sum(M.V("H", t, "h0") for t in D.hmm.T) >= 10)
 
     @conin.pyomo_constraint_fn()
     def num_zeros_less_than_thirteen(M, D):
-        h0 = D.hmm.hidden_to_internal["h0"]
-        M.h0_upper = pe.Constraint(expr=sum(M.hmm.x[t, h0] for t in D.hmm.T) <= 12)
+        M.h0_upper = pe.Constraint(expr=sum(M.V("H", t, "h0") for t in D.hmm.T) <= 12)
 
     constraints = [num_zeros_greater_than_nine, num_zeros_less_than_thirteen]
 
@@ -214,8 +212,7 @@ def create_chmm1_pyomo_aos():
 
     @conin.pyomo_constraint_fn()
     def num_zeros_less_than_thirteen(M, D):
-        h0 = D.hmm.hidden_to_internal["h0"]
-        M.h0_upper = pe.Constraint(expr=sum(M.hmm.x[t, h0] for t in D.hmm.T) <= 12)
+        M.h0_upper = pe.Constraint(expr=sum(M.V("H", t, "h0") for t in D.hmm.T) <= 12)
 
     constraints = [num_zeros_less_than_thirteen]
 
@@ -243,10 +240,29 @@ def create_chmm2_pyomo_aos():
 
     @conin.pyomo_constraint_fn()
     def num_ones_less_than_thirteen(M, D):
-        h1 = D.hmm.hidden_to_internal["h1"]
-        M.h0_upper = pe.Constraint(expr=sum(M.hmm.x[t, h1] for t in D.hmm.T) <= 12)
+        M.h0_upper = pe.Constraint(expr=sum(M.V("H", t, "h1") for t in D.hmm.T) <= 12)
 
     constraints = [num_ones_less_than_thirteen]
+
+    chmm = conin.hidden_markov_model.ConstrainedHiddenMarkovModel(
+        hmm=hmm, constraints=constraints
+    )
+    chmm.initialize_chmm()
+    return chmm
+
+
+def create_chmm1_toulbar2():
+    hmm = create_hmm1()
+
+    @toulbar2_constraint_fn()
+    def num_zeros_greater_than_nine(M, D):
+        M.AddGeneralizedLinearConstraint([M.V("H", t, "h0") for t in D.hmm.T], ">=", 10)
+
+    @toulbar2_constraint_fn()
+    def num_zeros_less_than_thirteen(M, D):
+        M.AddGeneralizedLinearConstraint([M.V("H", t, "h0") for t in D.hmm.T], "<=", 12)
+
+    constraints = [num_zeros_greater_than_nine, num_zeros_less_than_thirteen]
 
     chmm = conin.hidden_markov_model.ConstrainedHiddenMarkovModel(
         hmm=hmm, constraints=constraints
@@ -303,12 +319,11 @@ class Num_Zeros(conin.hidden_markov_model.HMMApplication):
     def get_pyomo_constraints(self):
         @pyomo_constraint_fn()
         def constraint(M, D):
-            h0 = D.hmm.hidden_to_internal["h0"]
             M.h0_lower = pe.Constraint(
-                expr=sum(M.hmm.x[t, h0] for t in D.hmm.T) >= self.lb
+                expr=sum(M.V("H", t, "h0") for t in D.hmm.T) >= self.lb
             )
             M.h0_upper = pe.Constraint(
-                expr=sum(M.hmm.x[t, h0] for t in D.hmm.T) <= self.ub
+                expr=sum(M.V("H", t, "h0") for t in D.hmm.T) <= self.ub
             )
 
         return [constraint]

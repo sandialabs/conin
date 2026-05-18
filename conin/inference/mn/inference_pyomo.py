@@ -47,11 +47,18 @@ class VarWrapper(dict):
     def __init__(self, *arg, **kw):
         super(VarWrapper, self).__init__(*arg, **kw)
 
-    def pprint(self):
+    def pprint(self):  # pragma:nocover
         pprint.pprint(self)
 
-    def __getitem__(self, index):
-        r, s = index
+    def __call__(self, *args):
+        if len(args) == 2:
+            r, s = args
+        elif len(args) == 3:
+            r, i, s = args
+            r = (r, i)
+        else:
+            raise ValueError("There must be either 2 or 3 arguments")
+
         if type(s) is not State:
             s = State(s)
         return dict.__getitem__(self, (r, s))
@@ -94,22 +101,12 @@ def create_pyomo_map_query_model_MN(
         timer.tic("create_map_query_pyomo_model_MN - START")
     pgm_ = pgm.pgm if isinstance(pgm, ConstrainedDiscreteMarkovNetwork) else pgm
 
-    if variables or evidence:
-        variables_ = [] if variables is None else variables
-        evidence_ = {} if evidence is None else evidence
-        if not evidence_ and len(variables_) == len(pgm_.nodes):
-            factors = pgm_.factors
-        else:
-            raise RuntimeError("VariableElimination is not supported for CONIN models")
-        if variables_:
-            states = {var: pgm_.states[var] for var in variables_}
-        else:
-            states = {
-                var: pgm_.states[var] for var in pgm_.nodes() if var not in evidence_
-            }
-    else:
-        states = pgm_.states
-        factors = pgm_.factors
+    if variables:  # pragma:nocover
+        raise RuntimeError("VariableElimination is not supported for CONIN models")
+
+    states = pgm_.states
+    factors = pgm_.factors
+
     if timing:  # pragma:nocover
         timer.toc("Setup states and factors")
 
@@ -127,9 +124,9 @@ def create_pyomo_map_query_model_MN(
         timing=timing,
     )
 
-    # if evidence:
-    #    for k, v in evidence.items():
-    #        model.X[k, State(v)].fix(1)
+    if evidence:
+        for k, v in evidence.items():
+            model.V(k, State(v)).fix(1)
 
     if isinstance(pgm, ConstrainedDiscreteMarkovNetwork) and pgm.constraints:
         data = munch.Munch(variables=variables, evidence=evidence)
@@ -185,10 +182,10 @@ def create_MN_pyomo_map_query_model_from_factorial_repn(
             if not (i, j) in IJset:
                 continue
             IRS[i, r, v[i, j, r]].add(j)
-    else:
-        V = {(i, j): [] for i, j in IJ}
+    else:  # pragma:nocover
+        v = {(i, j): [] for i, j in IJ}
         for i, j, r in v:
-            V[i, j].append(r)
+            v[i, j].append(r)
         IJR = list(v.keys())
 
     # TODO: Figure out how to marginalize everything except the specified
@@ -211,9 +208,9 @@ def create_MN_pyomo_map_query_model_from_factorial_repn(
     model.y = pe.Var(IJ, within=pe.Binary)
 
     if var_index_map is None:
-        model.X = VarWrapper({rs: model.x[rs] for rs in RS})
+        model.V = VarWrapper({rs: model.x[rs] for rs in RS})
     else:
-        model.X = VarWrapper(
+        model.V = VarWrapper(
             {
                 (r, s): model.x[index, s]
                 for r, index in var_index_map.items()
@@ -252,7 +249,7 @@ def create_MN_pyomo_map_query_model_from_factorial_repn(
         if timing:  # pragma:nocover
             timer.toc("c5")
 
-    else:
+    else:  # pragma:nocover
         # Factor i cannot assume configuration j unless its corresponding
         # variables are set to the correct values
         def c3_(M, i, j, r):
@@ -266,9 +263,9 @@ def create_MN_pyomo_map_query_model_from_factorial_repn(
         # If factor i is not in configuration j, then at least one of its
         # corresponding variables is not set to the values for configuration j
         def c4_(M, i, j):
-            return sum(M.x[r, v[i, j, r]] for r in V.get((i, j), [])) <= M.y[i, j] + (
-                len(V.get((i, j), [])) - 1
-            )
+            return sum(M.x[r, v[i, j, r]] for r in model.V.get((i, j), [])) <= M.y[
+                i, j
+            ] + (len(model.V.get((i, j), [])) - 1)
 
         model.c4 = pe.Constraint(IJ, rule=c4_)
 
@@ -291,16 +288,18 @@ def solve_pyomo_map_query_model(
     *,
     solver=default_mip_solver,
     tee=False,
-    with_fixed=False,
+    solution_with_fixed=False,
+    solution_with_evidence=False,
     timing=False,
     solver_options=None,
+    evidence=None,
 ):
     if timing:  # pragma:nocover
         timer = TicTocTimer()
         timer.tic("optimize_map_query_model - START")
 
     if solver == "or_topas":
-        if not or_topas_available:
+        if not or_topas_available:  # pragma:nocover
             raise RuntimeError("or_topas not installed")
 
         if solver_options is None:
@@ -315,7 +314,7 @@ def solve_pyomo_map_query_model(
             aos_pm = aos.enumerate_binary_solutions(model, **solver_options)
         elif topas_method == "gurobi_solution_pool":
             aos_pm = aos.gurobi_generate_solutions(model, tee=tee, **solver_options)
-        else:
+        else:  # pragma:nocover
             raise RuntimeError(f"Asked for {topas_method=}, which is not supported")
         solvetime = solver_timer.toc(None)
         if timing:  # pragma:nocover
@@ -323,7 +322,7 @@ def solve_pyomo_map_query_model(
 
         assert len(aos_pm.solutions) > 0, "No solutions found by 'or_topas' solver"
         solutions = [
-            parse_aos_solution_pyomo_map_query(model, aos_solution, with_fixed)
+            parse_aos_solution_pyomo_map_query(model, aos_solution, solution_with_fixed)
             for aos_solution in aos_pm.solutions
         ]
         soln = solutions[0]
@@ -343,9 +342,14 @@ def solve_pyomo_map_query_model(
             timer.toc("Completed optimization")
 
         pe.assert_optimal_termination(res)
-        soln = parse_model_solution_pyomo_map_query(model, with_fixed)
+        soln = parse_model_solution_pyomo_map_query(model, solution_with_fixed)
         solutions = [soln]
         termination_condition = "ok"
+
+    if evidence and solution_with_evidence and not solution_with_fixed:
+        for soln in solutions:
+            for k, v in evidence.items():
+                soln.states[k] = v
 
     if timing:  # pragma:nocover
         timer.toc("optimize_map_query_model - STOP")
@@ -357,17 +361,17 @@ def solve_pyomo_map_query_model(
     )
 
 
-def parse_model_solution_pyomo_map_query(model, with_fixed):
+def parse_model_solution_pyomo_map_query(model, solution_with_fixed):
     var = {}
     variables = set()
     fixed_variables = set()
-    for r, s in model.X:
+    for r, s in model.V:
         variables.add(r)
-        if model.X[r, s].is_fixed():
+        if model.V(r, s).is_fixed():
             fixed_variables.add(r)
-            if with_fixed and pe.value(model.X[r, s]) > 0.5:
+            if solution_with_fixed and pe.value(model.V(r, s)) > 0.5:
                 var[r] = s.value
-        elif pe.value(model.X[r, s]) > 0.5:
+        elif pe.value(model.V(r, s)) > 0.5:
             var[r] = s.value
     assert variables == set(var.keys()).union(
         fixed_variables
@@ -377,16 +381,16 @@ def parse_model_solution_pyomo_map_query(model, with_fixed):
     return soln
 
 
-def parse_aos_solution_pyomo_map_query(model, aos_solution, with_fixed):
+def parse_aos_solution_pyomo_map_query(model, aos_solution, solution_with_fixed):
     var = {}
     variables = set()
     fixed_variables = set()
-    for r, s in model.X:
+    for r, s in model.V:
         variables.add(r)
-        aos_var_X_r_s = aos_solution.variable(model.X[r, s].name)
+        aos_var_X_r_s = aos_solution.variable(model.V(r, s).name)
         if aos_var_X_r_s.fixed:
             fixed_variables.add(r)
-            if with_fixed and aos_var_X_r_s.value > 0.5:
+            if solution_with_fixed and aos_var_X_r_s.value > 0.5:
                 # N.B. this works the same between parse_aos and parse_model
                 #     because r and s are parameters not variables
                 var[r] = s.value
@@ -415,4 +419,6 @@ def inference_pyomo_map_query_MN(
     model = create_pyomo_map_query_model_MN(
         pgm=pgm, variables=variables, evidence=evidence, timing=timing, **options
     )
-    return solve_pyomo_map_query_model(model, timing=timing, **options)
+    return solve_pyomo_map_query_model(
+        model, timing=timing, evidence=evidence, **options
+    )

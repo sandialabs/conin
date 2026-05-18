@@ -34,6 +34,7 @@ def test_holmes0_pyomo_conin():
     example = examples.holmes_conin()
     variables = None
     evidence = None
+    q = example.solutions[0].states
 
     results = inference_pyomo_map_query_BN(
         pgm=example.pgm,
@@ -41,7 +42,7 @@ def test_holmes0_pyomo_conin():
         evidence=evidence,
         solver=mip_solver,
     )
-    assert results.solution.states == example.solutions[0].states
+    assert q == results.solution.states
 
 
 # ===============================================================================
@@ -52,7 +53,7 @@ def test_holmes0_pyomo_conin():
 
 
 @pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
-def Xtest_holmes0_toulbar2_conin():
+def test_holmes0_toulbar2_conin():
     example = examples.holmes_conin()
     variables = None
     evidence = None

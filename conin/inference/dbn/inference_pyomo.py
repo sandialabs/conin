@@ -55,5 +55,5 @@ def inference_pyomo_map_query_DDBN(
         **options,
     )
     return conin.inference.mn.inference_pyomo.solve_pyomo_map_query_model(
-        model, **options
+        model, evidence=evidence, **options
     )

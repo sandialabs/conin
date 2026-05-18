@@ -2,7 +2,7 @@ import copy
 from conin.bayesian_network import DiscreteCPD, DiscreteBayesianNetwork
 
 
-def all_cpds(*args):
+def _all_cpds(*args):
     for arg in args:
         if arg:
             for v in arg:
@@ -36,7 +36,7 @@ def create_bn_from_dbn(*, dbn, start, stop):
     cpds = []
     for cpd in dbn.cpds:
         dynamic = False
-        for v in all_cpds([cpd.node], cpd.parents):
+        for v in _all_cpds([cpd.node], cpd.parents):
             if (
                 type(v) is tuple
                 and v[0] in dbn.dynamic_states
@@ -62,7 +62,7 @@ def create_bn_from_dbn(*, dbn, start, stop):
 
             skip = False
             parents = []
-            for v in all_cpds(cpd.parents):
+            for v in _all_cpds(cpd.parents):
                 if type(v) is tuple:
                     curr = v[1].value()
                     if curr < start:

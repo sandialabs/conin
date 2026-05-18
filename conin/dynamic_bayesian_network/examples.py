@@ -1,7 +1,7 @@
 from munch import Munch
 import pyomo.environ as pyo
 
-from conin.constraint import pyomo_constraint_fn
+from conin.constraint import pyomo_constraint_fn, toulbar2_constraint_fn
 from conin.dynamic_bayesian_network import (
     DynamicDiscreteBayesianNetwork,
     ConstrainedDynamicDiscreteBayesianNetwork,
@@ -32,7 +32,7 @@ def simple0_DDBN_conin(debug=False):
     G.cpds = [z_start_cpd, z_trans_cpd]
     G.check_model()
 
-    if debug:
+    if debug:  # pragma:nocover
         for cpd in G.cpds:
             print(cpd)
     return Munch(pgm=G, solutions=[MPESolution(states={("Z", 0): 1, ("Z", 1): 0})])
@@ -54,7 +54,7 @@ def simple0_DDBN1_pgmpy(debug=False):
     G.initialize_initial_state()
     G.check_model()
 
-    if debug:
+    if debug:  # pragma:nocover
         for cpd in G.get_cpds():
             print(cpd)
     return Munch(pgm=G, solutions=[MPESolution(states={("Z", 0): 1, ("Z", 1): 0})])
@@ -76,7 +76,7 @@ def simple0_DDBN2_pgmpy(debug=False):
     G.initialize_initial_state()
     G.check_model()
 
-    if debug:
+    if debug:  # pragma:nocover
         for cpd in G.get_cpds():
             print(cpd)
     return Munch(pgm=G, solutions=[MPESolution(states={("Z", 0): 1, ("Z", 1): 0})])
@@ -105,7 +105,7 @@ def simple1_DDBN_conin(debug=False):
     G.cpds = [cpd_start_A, cpd_start_B, cpd_trans_A]
     G.check_model()
 
-    if debug:
+    if debug:  # pragma:nocover
         for cpd in G.cpds:
             print(cpd)
     return Munch(
@@ -147,7 +147,7 @@ def simple1_DDBN_pgmpy(debug=False):
     G.initialize_initial_state()
     G.check_model()
 
-    if debug:
+    if debug:  # pragma:nocover
         for cpd in G.get_cpds():
             print(cpd)
     return Munch(
@@ -171,8 +171,35 @@ def simple1_DDBN_constrained_pyomo_conin(debug=False):
     @pyomo_constraint_fn()
     def constraints(model):
         model.c = pyo.ConstraintList()
-        model.c.add(model.X[("A", 0), 0] == model.X[("A", 1), 0])
-        model.c.add(model.X[("B", 0), 0] == model.X[("B", 1), 0])
+        model.c.add(model.V("A", 0, 0) == model.V("A", 1, 0))
+        model.c.add(model.V("B", 0, 0) == model.V("B", 1, 0))
+
+    return Munch(
+        pgm=ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=[constraints]),
+        solutions=[
+            MPESolution(
+                states={
+                    ("A", 0): 0,
+                    ("A", 1): 0,
+                    ("B", 0): 1,
+                    ("B", 1): 1,
+                }
+            )
+        ],
+    )
+
+
+def simple1_DDBN_constrained_toulbar2_conin(debug=False):
+    pgm = simple1_DDBN_conin(debug=debug).pgm
+
+    @toulbar2_constraint_fn()
+    def constraints(M):
+        M.AddGeneralizedLinearConstraint(
+            [M.V("A", 0, 0), M.V("A", 1, 0, coef=-1)], "==", 0
+        )
+        M.AddGeneralizedLinearConstraint(
+            [M.V("B", 0, 0), M.V("B", 1, 0, coef=-1)], "==", 0
+        )
 
     return Munch(
         pgm=ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=[constraints]),
@@ -195,8 +222,38 @@ def simple1_DDBN_constrained_pyomo_pgmpy(debug=False):
     @pyomo_constraint_fn()
     def constraints(model):
         model.c = pyo.ConstraintList()
-        model.c.add(model.X[("A", 0), 0] == model.X[("A", 1), 0])
-        model.c.add(model.X[("B", 0), 0] == model.X[("B", 1), 0])
+        model.c.add(model.V("A", 0, 0) == model.V("A", 1, 0))
+        model.c.add(model.V("B", 0, 0) == model.V("B", 1, 0))
+
+    import conin.common.pgmpy
+
+    pgm = conin.common.pgmpy.convert_pgmpy_to_conin(pgm)
+    return Munch(
+        pgm=ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=[constraints]),
+        solutions=[
+            MPESolution(
+                states={
+                    ("A", 0): 0,
+                    ("A", 1): 0,
+                    ("B", 0): 1,
+                    ("B", 1): 1,
+                }
+            )
+        ],
+    )
+
+
+def simple1_DDBN_constrained_toulbar2_pgmpy(debug=False):
+    pgm = simple1_DDBN_pgmpy(debug=debug).pgm
+
+    @toulbar2_constraint_fn()
+    def constraints(M):
+        M.AddGeneralizedLinearConstraint(
+            [M.V("A", 0, 0), M.V("A", 1, 0, coef=-1)], "==", 0
+        )
+        M.AddGeneralizedLinearConstraint(
+            [M.V("B", 0, 0), M.V("B", 1, 0, coef=-1)], "==", 0
+        )
 
     import conin.common.pgmpy
 
@@ -358,7 +415,7 @@ def weather_conin(debug=False):
     # Add CPDs to the DDBN
     dbn.cpds = [cpd_w_0, cpd_w_1, cpd_t_0, cpd_t_1, cpd_o, cpd_h]
 
-    if debug:
+    if debug:  # pragma:nocover
         for cpd in dbn.cpds:
             print(cpd)
     return Munch(pgm=dbn, solutions=[MPESolution(states=q_weather_A)])
@@ -528,7 +585,7 @@ def weather1_pgmpy(debug=False):
     # Add CPDs to the DDBN
     dbn.add_cpds(cpd_w_0, cpd_w_1, cpd_t_0, cpd_t_1, cpd_o, cpd_h)
 
-    if debug:
+    if debug:  # pragma:nocover
         for cpd in dbn.get_cpds():
             print(cpd)
     return Munch(pgm=dbn, solutions=[MPESolution(states=q_weather_A)])
@@ -665,7 +722,7 @@ def weather2_pgmpy(debug=False):
     # Add CPDs to the DDBN
     dbn.add_cpds(cpd_w_0, cpd_w_1, cpd_t_0, cpd_t_1, cpd_o, cpd_h)
 
-    if debug:
+    if debug:  # pragma:nocover
         for cpd in dbn.get_cpds():
             print(cpd)
     return Munch(pgm=dbn, solutions=[MPESolution(states=q_weather_A)])
@@ -702,7 +759,7 @@ def weather_constrained_pyomo_conin(debug=False):
     def constraints(model, data):
         """2 rainy days"""
         model.c = pyo.Constraint(
-            expr=sum(model.X[("W", t), "Rainy"] for t in data.T) == 2
+            expr=sum(model.V("W", t, "Rainy") for t in data.T) == 2
         )
 
     return Munch(
@@ -718,7 +775,42 @@ def weather_constrained_pyomo_pgmpy(debug=False):
     def constraints(model, data):
         """2 rainy days"""
         model.c = pyo.Constraint(
-            expr=sum(model.X[("W", t), "Rainy"] for t in data.T) == 2
+            expr=sum(model.V("W", t, "Rainy") for t in data.T) == 2
+        )
+
+    import conin.common.pgmpy
+
+    pgm = conin.common.pgmpy.convert_pgmpy_to_conin(pgm)
+    return Munch(
+        pgm=ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=[constraints]),
+        solutions=[MPESolution(states=q_weather_A_constrained)],
+    )
+
+
+def weather_constrained_toulbar2_conin(debug=False):
+    pgm = weather_conin(debug).pgm
+
+    @pyomo_constraint_fn()
+    def constraints(M, data):
+        """2 rainy days"""
+        M.AddGeneralizedLinearConstraint(
+            [M.V("W", t, "Rainy") for t in data.T], "==", 2
+        )
+
+    return Munch(
+        pgm=ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=[constraints]),
+        solutions=[MPESolution(states=q_weather_A_constrained)],
+    )
+
+
+def weather_constrained_toulbar2_pgmpy(debug=False):
+    pgm = weather1_pgmpy(debug).pgm
+
+    @pyomo_constraint_fn()
+    def constraints(M, data):
+        """2 rainy days"""
+        M.AddGeneralizedLinearConstraint(
+            [M.V("W", t, "Rainy") for t in data.T], "==", 2
         )
 
     import conin.common.pgmpy

@@ -71,14 +71,14 @@ def create_pyomo_map_query_model_BN(
         # We continue with 'variables' set to None, which is a special case recognized below
         variables = None
 
-    if variables or evidence or create_MN:
+    if variables or create_MN:
         #
-        # We need to create a Markov network if (1) the user asks us to, or (2) we have 'variables' or
-        # 'evidence' specified.  In (2), we need to reduce the factors and apply variable elimination to
+        # We need to create a Markov network if (1) the user asks us to, or (2) we have 'variables'
+        # specified.  In (2), we need to reduce the factors and apply variable elimination to
         # eliminate unspecified variables.
         #
         raise RuntimeError(
-            "CONIN does not currently support the generation of discrete Markov networks using variable elimination to prune unspecified variables."
+            f"CONIN does not currently support the generation of discrete Markov networks using variable elimination to prune unspecified variables. {variables=} {evidence=} {create_MN=}"
         )
         MN = pgm_.to_markov_model()
         if timing:
@@ -124,5 +124,5 @@ def inference_pyomo_map_query_BN(
         pgm=pgm, variables=variables, evidence=evidence, timing=timing, **options
     )
     return conin.inference.mn.inference_pyomo.solve_pyomo_map_query_model(
-        model, timing=timing, **options
+        model, timing=timing, evidence=evidence, **options
     )
