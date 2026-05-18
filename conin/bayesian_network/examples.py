@@ -67,7 +67,7 @@ def cancer1_BN_conin(debug=False):
     )
 
     # Step 3: Add the CPDs to the model.
-    if debug:
+    if debug:  # pragma:nocover
         print(cpd_poll)
         print(cpd_smoke)
         print(cpd_cancer)
@@ -137,7 +137,7 @@ def cancer1_BN_pgmpy(debug=False):
     )
 
     # Step 3: Add the CPDs to the model.
-    if debug:
+    if debug:  # pragma:nocover
         print(cpd_poll)
         print(cpd_smoke)
         print(cpd_cancer)
@@ -207,7 +207,7 @@ def cancer2_BN_pgmpy(debug=False):
     )
 
     # Step 3: Add the CPDs to the model.
-    if debug:
+    if debug:  # pragma:nocover
         print(cpd_poll)
         print(cpd_smoke)
         print(cpd_cancer)
@@ -361,7 +361,7 @@ def simple1_BN_conin(debug=False):
         parents=["A"],
         values={0: [0.2, 0.8], 1: [0.9, 0.1]},
     )
-    if debug:
+    if debug:  # pragma:nocover
         print(cpd_A)
         print(cpd_B)
     G.cpds = [cpd_A, cpd_B]
@@ -381,7 +381,7 @@ def simple1_BN_pgmpy(debug=False):
         evidence=["A"],
         evidence_card=[2],
     )
-    if debug:
+    if debug:  # pragma:nocover
         print(cpd_A)
         print(cpd_B)
     G.add_cpds(cpd_A, cpd_B)
@@ -401,7 +401,7 @@ def simple2_BN_pgmpy(debug=False):
         evidence=["A"],
         values={0: [0.2, 0.8], 1: [0.9, 0.1]},
     )
-    if debug:
+    if debug:  # pragma:nocover
         print(cpd_A)
         print(cpd_B)
     G.add_cpds(cpd_A, cpd_B)
@@ -469,7 +469,7 @@ def DBDA_5_1_conin(debug=False):
     model.cpds = [disease_state_CPD, test_result_CPD_1, test_result_CPD_2]
     model.check_model()
 
-    if debug:
+    if debug:  # pragma:nocover
         print(disease_state_CPD)
         print(test_result_CPD_1)
         print(test_result_CPD_2)
@@ -541,7 +541,7 @@ def DBDA_5_1_pgmpy(debug=False):
     model.add_cpds(disease_state_CPD, test_result_CPD_1, test_result_CPD_2)
     model.check_model()
 
-    if debug:
+    if debug:  # pragma:nocover
         print(disease_state_CPD)
         print(test_result_CPD_1)
         print(test_result_CPD_2)
@@ -613,7 +613,7 @@ def holmes_conin(debug=False):
         values={"-a": {"g": 0.04, "-g": 0.96}, "a": {"g": 0.4, "-g": 0.6}},
     )
 
-    if debug:
+    if debug:  # pragma:nocover
         print(cpd_E)
         print(cpd_B)
         print(cpd_R)
@@ -682,7 +682,7 @@ def holmes_pgmpy(debug=False):
         evidence=["A"],
         values={"-a": {"g": 0.04, "-g": 0.96}, "a": {"g": 0.4, "-g": 0.6}},
     )
-    if debug:
+    if debug:  # pragma:nocover
         print(cpd_E)
         print(cpd_B)
         print(cpd_R)
@@ -781,7 +781,7 @@ def tb2_BN_conin(debug=False):
             (1, 3): [0.8, 0.0, 0.2],
         },
     )
-    if debug:
+    if debug:  # pragma:nocover
         print(cpd_A)
         print(cpd_B)
         print(cpd_C)
@@ -823,7 +823,7 @@ def tb2_BN_pgmpy(debug=False):
         evidence_card=[2, 2],
         state_names={"C": [4, 5, 6], "B": [2, 3], "A": [0, 1]},
     )
-    if debug:
+    if debug:  # pragma:nocover
         print(cpd_A)
         print(cpd_B)
         print(cpd_C)
@@ -856,7 +856,7 @@ def tb2_BN_pgmpy_mapcpd(debug=False):
             (1, 3): {4: 0.8, 5: 0.0, 6: 0.2},
         },
     )
-    if debug:
+    if debug:  # pragma:nocover
         print(cpd_A)
         print(cpd_B)
         print(cpd_C)

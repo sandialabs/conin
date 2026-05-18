@@ -32,7 +32,7 @@ def simple0_DDBN_conin(debug=False):
     G.cpds = [z_start_cpd, z_trans_cpd]
     G.check_model()
 
-    if debug:
+    if debug:  # pragma:nocover
         for cpd in G.cpds:
             print(cpd)
     return Munch(pgm=G, solutions=[MPESolution(states={("Z", 0): 1, ("Z", 1): 0})])
@@ -54,7 +54,7 @@ def simple0_DDBN1_pgmpy(debug=False):
     G.initialize_initial_state()
     G.check_model()
 
-    if debug:
+    if debug:  # pragma:nocover
         for cpd in G.get_cpds():
             print(cpd)
     return Munch(pgm=G, solutions=[MPESolution(states={("Z", 0): 1, ("Z", 1): 0})])
@@ -76,7 +76,7 @@ def simple0_DDBN2_pgmpy(debug=False):
     G.initialize_initial_state()
     G.check_model()
 
-    if debug:
+    if debug:  # pragma:nocover
         for cpd in G.get_cpds():
             print(cpd)
     return Munch(pgm=G, solutions=[MPESolution(states={("Z", 0): 1, ("Z", 1): 0})])
@@ -105,7 +105,7 @@ def simple1_DDBN_conin(debug=False):
     G.cpds = [cpd_start_A, cpd_start_B, cpd_trans_A]
     G.check_model()
 
-    if debug:
+    if debug:  # pragma:nocover
         for cpd in G.cpds:
             print(cpd)
     return Munch(
@@ -147,7 +147,7 @@ def simple1_DDBN_pgmpy(debug=False):
     G.initialize_initial_state()
     G.check_model()
 
-    if debug:
+    if debug:  # pragma:nocover
         for cpd in G.get_cpds():
             print(cpd)
     return Munch(
@@ -415,7 +415,7 @@ def weather_conin(debug=False):
     # Add CPDs to the DDBN
     dbn.cpds = [cpd_w_0, cpd_w_1, cpd_t_0, cpd_t_1, cpd_o, cpd_h]
 
-    if debug:
+    if debug:  # pragma:nocover
         for cpd in dbn.cpds:
             print(cpd)
     return Munch(pgm=dbn, solutions=[MPESolution(states=q_weather_A)])
@@ -585,7 +585,7 @@ def weather1_pgmpy(debug=False):
     # Add CPDs to the DDBN
     dbn.add_cpds(cpd_w_0, cpd_w_1, cpd_t_0, cpd_t_1, cpd_o, cpd_h)
 
-    if debug:
+    if debug:  # pragma:nocover
         for cpd in dbn.get_cpds():
             print(cpd)
     return Munch(pgm=dbn, solutions=[MPESolution(states=q_weather_A)])
@@ -722,7 +722,7 @@ def weather2_pgmpy(debug=False):
     # Add CPDs to the DDBN
     dbn.add_cpds(cpd_w_0, cpd_w_1, cpd_t_0, cpd_t_1, cpd_o, cpd_h)
 
-    if debug:
+    if debug:  # pragma:nocover
         for cpd in dbn.get_cpds():
             print(cpd)
     return Munch(pgm=dbn, solutions=[MPESolution(states=q_weather_A)])
