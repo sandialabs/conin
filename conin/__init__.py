@@ -1,6 +1,6 @@
 # conin.__init__.py
 
-__version__ = '1.1.0'
+__version__ = "1.1.0"
 
 # from .common_constraints import *
 from . import markov_network
