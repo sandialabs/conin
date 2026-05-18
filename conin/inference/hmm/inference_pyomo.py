@@ -106,7 +106,7 @@ def inference_pyomo_map_query_HMM(
             **options,
         )
         results = conin.inference.mn.inference_pyomo.solve_pyomo_map_query_model(
-            model, **options
+            model, evidence=evidence, **options
         )
         if type(evidence) is list:
             results.solution.states = [

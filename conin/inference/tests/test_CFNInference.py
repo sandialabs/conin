@@ -323,81 +323,99 @@ def test3_CFNInference_chmm1():
 #
 
 
+weather_evidence = {
+    ("O", 0): "Wet",
+    ("O", 1): "Wet",
+    ("O", 2): "Dry",
+    ("O", 3): "Dry",
+    ("O", 4): "Dry",
+    ("H", 0): "Medium",
+    ("H", 1): "Medium",
+    ("H", 2): "Medium",
+    ("H", 3): "Medium",
+    ("H", 4): "Medium",
+}
+
+q_unconstrained = {
+    ("H", 0): "Medium",
+    ("H", 1): "Medium",
+    ("H", 2): "Medium",
+    ("H", 3): "Medium",
+    ("H", 4): "Medium",
+    ("O", 0): "Wet",
+    ("O", 1): "Wet",
+    ("O", 2): "Dry",
+    ("O", 3): "Dry",
+    ("O", 4): "Dry",
+    ("T", 0): "Hot",
+    ("T", 1): "Hot",
+    ("T", 2): "Mild",
+    ("T", 3): "Hot",
+    ("T", 4): "Hot",
+    ("W", 0): "Cloudy",
+    ("W", 1): "Rainy",
+    ("W", 2): "Sunny",
+    ("W", 3): "Sunny",
+    ("W", 4): "Sunny",
+}
+
+q_constrained = {
+    ("H", 0): "Medium",
+    ("H", 1): "Medium",
+    ("H", 2): "Medium",
+    ("H", 3): "Medium",
+    ("H", 4): "Medium",
+    ("O", 0): "Wet",
+    ("O", 1): "Wet",
+    ("O", 2): "Dry",
+    ("O", 3): "Dry",
+    ("O", 4): "Dry",
+    ("T", 0): "Hot",
+    ("T", 1): "Mild",
+    ("T", 2): "Cold",
+    ("T", 3): "Hot",
+    ("T", 4): "Hot",
+    ("W", 0): "Rainy",
+    ("W", 1): "Rainy",
+    ("W", 2): "Sunny",
+    ("W", 3): "Sunny",
+    ("W", 4): "Sunny",
+}
+
+
 @skipif_toulbar2_not_available
 def test_DPGM_CFNInference_weather_conin():
     example = conin.dynamic_bayesian_network.examples.weather_conin()
+
+    # without evidence
     inf = DPGM_CFNInference(example.pgm)
     results = inf.map_query(stop=4)
     assert results.solution.states == example.solutions[0].states
 
-
-#    evidence = {
-#        ("O", 0): "Wet",
-#        ("O", 1): "Wet",
-#        ("O", 2): "Dry",
-#        ("O", 3): "Dry",
-#        ("O", 4): "Dry",
-#        ("H", 0): "Medium",
-#        ("H", 1): "Medium",
-#        ("H", 2): "Medium",
-#        ("H", 3): "Medium",
-#        ("H", 4): "Medium",
-#    }
-#
-#    with pytest.raises(RuntimeError):
-#        results = inf.map_query(stop=4, evidence=evidence)
-#        # TODO - Confirm that this result makes sense
-#        assert results.solution.states == {
-#            ("T", 0): "Hot",
-#            ("T", 1): "Hot",
-#            ("T", 2): "Hot",
-#            ("T", 3): "Hot",
-#            ("T", 4): "Hot",
-#            ("W", 0): "Cloudy",
-#            ("W", 1): "Cloudy",
-#            ("W", 2): "Cloudy",
-#            ("W", 3): "Cloudy",
-#            ("W", 4): "Cloudy",
-#        }
+    # with evidence
+    inf = DPGM_CFNInference(example.pgm)
+    results = inf.map_query(
+        stop=4, evidence=weather_evidence, solution_with_evidence=True
+    )
+    assert q_unconstrained == results.solution.states
 
 
 @skipif_pgmpy_not_available
 @skipif_toulbar2_not_available
 def test_DPGM_CFNInference_weather():
     example = conin.dynamic_bayesian_network.examples.weather2_pgmpy()
+
+    # without evidence
     inf = DPGM_CFNInference(example.pgm)
     results = inf.map_query(stop=4)
     assert results.solution.states == example.solutions[0].states
 
-
-#    evidence = {
-#        ("O", 0): "Wet",
-#        ("O", 1): "Wet",
-#        ("O", 2): "Dry",
-#        ("O", 3): "Dry",
-#        ("O", 4): "Dry",
-#        ("H", 0): "Medium",
-#        ("H", 1): "Medium",
-#        ("H", 2): "Medium",
-#        ("H", 3): "Medium",
-#        ("H", 4): "Medium",
-#    }
-#
-#    with pytest.raises(RuntimeError):
-#        results = inf.map_query(stop=4, evidence=evidence)
-#        # TODO - Confirm that this result makes sense
-#        assert results.solution.states == {
-#            ("T", 0): "Hot",
-#            ("T", 1): "Hot",
-#            ("T", 2): "Hot",
-#            ("T", 3): "Hot",
-#            ("T", 4): "Hot",
-#            ("W", 0): "Cloudy",
-#            ("W", 1): "Cloudy",
-#            ("W", 2): "Cloudy",
-#            ("W", 3): "Cloudy",
-#            ("W", 4): "Cloudy",
-#        }
+    # with evidence
+    inf = DPGM_CFNInference(example.pgm)
+    results = inf.map_query(
+        stop=4, evidence=weather_evidence, solution_with_evidence=True
+    )
+    assert q_unconstrained == results.solution.states
 
 
 #
@@ -406,79 +424,39 @@ def test_DPGM_CFNInference_weather():
 
 
 @skipif_toulbar2_not_available
-def Xtest_DPGM_CFNInference_weather_constrained_conin():
+def test_DPGM_CFNInference_weather_constrained_conin():
     example = (
         conin.dynamic_bayesian_network.examples.weather_constrained_toulbar2_conin()
     )
+
+    # without evidence
     inf = DPGM_CFNInference(example.pgm)
     results = inf.map_query(stop=4)
     assert results.solution.states == example.solutions[0].states
 
-
-#    evidence = {
-#        ("O", 0): "Wet",
-#        ("O", 1): "Wet",
-#        ("O", 2): "Dry",
-#        ("O", 3): "Dry",
-#        ("O", 4): "Dry",
-#        ("H", 0): "Medium",
-#        ("H", 1): "Medium",
-#        ("H", 2): "Medium",
-#        ("H", 3): "Medium",
-#        ("H", 4): "Medium",
-#    }
-#
-#    with pytest.raises(RuntimeError):
-#        results = inf.map_query(stop=4, evidence=evidence)
-#        assert results.solution.states == {
-#            ("T", 0): "Hot",
-#            ("T", 1): "Mild",
-#            ("T", 2): "Cold",
-#            ("T", 3): "Hot",
-#            ("T", 4): "Hot",
-#            ("W", 0): "Rainy",
-#            ("W", 1): "Rainy",
-#            ("W", 2): "Sunny",
-#            ("W", 3): "Sunny",
-#            ("W", 4): "Sunny",
-#        }
+    # with evidence
+    inf = DPGM_CFNInference(example.pgm)
+    results = inf.map_query(
+        stop=4, evidence=weather_evidence, solution_with_evidence=True
+    )
+    assert q_constrained == results.solution.states
 
 
 @skipif_pgmpy_not_available
 @skipif_toulbar2_not_available
-def Xtest_DPGM_CFNInference_weather_constrained_pgmpy():
+def test_DPGM_CFNInference_weather_constrained_pgmpy():
     example = (
         conin.dynamic_bayesian_network.examples.weather_constrained_toulbar2_pgmpy()
     )
+
+    # without evidence
     inf = DPGM_CFNInference(example.pgm)
     results = inf.map_query(stop=4)
     assert results.solution.states == example.solutions[0].states
 
-
-#    evidence = {
-#        ("O", 0): "Wet",
-#        ("O", 1): "Wet",
-#        ("O", 2): "Dry",
-#        ("O", 3): "Dry",
-#        ("O", 4): "Dry",
-#        ("H", 0): "Medium",
-#        ("H", 1): "Medium",
-#        ("H", 2): "Medium",
-#        ("H", 3): "Medium",
-#        ("H", 4): "Medium",
-#    }
-#
-#    with pytest.raises(RuntimeError):
-#        results = inf.map_query(stop=4, evidence=evidence)
-#        assert results.solution.states == {
-#            ("T", 0): "Hot",
-#            ("T", 1): "Mild",
-#            ("T", 2): "Cold",
-#            ("T", 3): "Hot",
-#            ("T", 4): "Hot",
-#            ("W", 0): "Rainy",
-#            ("W", 1): "Rainy",
-#            ("W", 2): "Sunny",
-#            ("W", 3): "Sunny",
-#            ("W", 4): "Sunny",
-#        }
+    # with evidence
+    inf = DPGM_CFNInference(example.pgm)
+    results = inf.map_query(
+        stop=4, evidence=weather_evidence, solution_with_evidence=True
+    )
+    assert q_constrained == results.solution.states

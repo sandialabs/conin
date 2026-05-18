@@ -124,5 +124,5 @@ def inference_pyomo_map_query_BN(
         pgm=pgm, variables=variables, evidence=evidence, timing=timing, **options
     )
     return conin.inference.mn.inference_pyomo.solve_pyomo_map_query_model(
-        model, timing=timing, **options
+        model, timing=timing, evidence=evidence, **options
     )
