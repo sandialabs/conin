@@ -4,14 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name="conin"
-version="1.1"
+version="1.1.1"
 dependencies = [
     "munch",
     "numpy",
     "pandas",
     "pyomo",
     ]
-readme = {file = "README.md", content-type = "text/plain"}
+readme = {file = "README.md", content-type = "text/markdown"}
 description="Clio supports constrained analysis and learning for stochastic models with latent variables"
 classifiers=[
         "Intended Audience :: End Users/Desktop",
