@@ -192,55 +192,6 @@ def compute_emitweights(obs,hmm):
         emit_weights[t] = np.array([hmm.eprob[k,obs[t]] for k in hmm.states])
     return emit_weights
 
-# def hmm2numpy(hmm, ix_list = None, return_ix = False):
-#     '''
-#     Converts/generates relevant parameters/weights into numpy arrays for Baum-Welch.
-#     By assumption, the update/emission parameters associated with the constraint are static.
-#     For now, fix the emission probabilities.
-#     Only the hmm paramters are being optimized.
-#     '''
-#     #Initialize and convert all quantities  to np.arrays
-
-#     if ix_list:
-#         state_ix, emit_ix = ix_list
-#     else:
-#         state_ix = {s: i for i, s in enumerate(hmm.states)}
-#         emit_ix = {s: i for i, s in enumerate(hmm.emits)}
-
-#     K = len(state_ix)
-#     M = len(emit_ix)
-#     #Compute the hmm parameters
-#     tmat = np.zeros((K,K))
-#     init_prob = np.zeros(K)
-
-#     emat = np.zeros((K,M))
-
-#     #Initial distribution. 
-#     for i in hmm.states:
-#         if i not in hmm.initprob:
-#             continue
-#         init_prob[state_ix[i]] = hmm.initprob[i]
-
-#     #Transition matrix
-#     for i in hmm.states:
-#         for j in hmm.states:
-#             if (i,j) not in hmm.tprob:
-#                 continue
-#             tmat[state_ix[i],state_ix[j]] = hmm.tprob[i,j]
-
-    
-#     #Emission matrix
-#     for i in hmm.states:
-#         for m in hmm.emits:
-#             if (i,m) not in hmm.eprob:
-#                 continue
-#             emat[state_ix[i],emit_ix[m]] = hmm.eprob[i,m]
-
-#     hmm_params = [init_prob, tmat, emat]
-
-#     if return_ix:
-#         return hmm_params, [state_ix, emit_ix] 
-#     return hmm_params
 
 def Viterbi_preprocess(hmm, cst_list, obs, dtype = torch.float32,  device = 'cpu', debug = False, hmm_params = None, cst_params = None):
     hmm = copy.deepcopy(hmm) #protect again in place modification
@@ -254,13 +205,16 @@ def Viterbi_preprocess(hmm, cst_list, obs, dtype = torch.float32,  device = 'cpu
 
     return [emit_weights, hmm_params, cst_params_list, state_ix]
 
-def Viterbi_torch_list(input_list, obs, dtype = torch.float32,  device = 'cpu', debug = False, num_corr = 0, hmm_params = None):
+# def Viterbi_torch_list(input_list, obs, dtype = torch.float32,  device = 'cpu', debug = False, num_corr = 0, hmm_params = None):
+def Viterbi_torch_list(hmm, cst_list, obs, dtype = torch.float32,  device = 'cpu', debug = False, num_corr = 0, hmm_params = None):
+
     '''
     more optimized torch implementation of Viterbi. The constraint all evolve independently (ie. factorial), so no need to create a big U_krjs matrix. Instead, just multiply along given dim. Still require computing V_{krjs}, but this should help.
     For numerica underflow, we normalize the value at each time. Also, we add a small constant num_corr when normalizing.
 
     For DNA, always assume that the promoter constraint is first.
     '''
+    input_list = Viterbi_preprocess(hmm, cst_list, obs = obs, dtype = dtype, device = device, hmm_params = hmm_params)
     emit_weights, hmm_params, cst_params_list, state_ix = input_list
     tmat, init_prob = hmm_params
     dims_list, init_ind_list,final_ind_list,ind_list = cst_params_list
