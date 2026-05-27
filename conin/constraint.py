@@ -1,5 +1,7 @@
+import itertools
 import inspect
 from conin.exceptions import InvalidInputError
+from conin.markov_network import DiscreteFactor
 
 # One could also create an inherited class for additional functionality
 # TODO think about partial_func semantics
@@ -76,6 +78,68 @@ def oracle_constraint_fn(*, name=None, same_partial_as_func=None):
         return OracleConstraint(
             func=func, name=name, same_partial_as_func=same_partial_as_func
         )
+
+    return decorator
+
+
+class FactorConstraint:
+
+    def __init__(
+        self,
+        *,
+        nodes,
+        func=None,
+        name=None,
+    ):
+        """
+        Initialize a FactorConstraint object.
+
+        Parameters:
+            func (callable, optional): The constraint function to be applied.
+            name (str, optional): The name of the constraint. If not provided, it will default to the function's name.
+            nodes (list): The nodes that are arguments for the constraint function.
+        """
+        self.nodes = nodes
+        self.func = func
+
+        # If no name is provided, use the function's name
+        if name is not None:
+            self.name = name
+        elif func is not None:
+            self.name = func.__name__
+        else:
+            self.name = "Unnamed constraint"  # Could also be none
+
+    def __call__(self, pgm):
+        """
+        Create a DiscreteFactor for the constraint function.
+
+        Returns:
+            The a DiscreteFactor object.
+
+        Raises:
+            InvalidInputError: If the constraint function is not defined.
+        """
+        if self.func is None:
+            raise InvalidInputError(
+                f"In constraint {self.name}, the actual constraint function is not defined."
+            )
+        values = {}
+        for states in itertools.product(pgm.states[name] for name in nodes):
+            values[states] = self.func(states)
+        return DiscreteFactor(nodes = self.nodes + [self.name], values=values)
+
+
+def factor_constraint_fn(*, nodes, name=None):
+    """
+    Decorator factory that takes the 'name' and returns a decorator function.
+    """
+
+    def decorator(func):
+        """
+        The actual decorator that wraps the user constraint function in a OracleConstraint class.
+        """
+        return FactorConstraint(nodes=nodes, func=func, name=name)
 
     return decorator
 
