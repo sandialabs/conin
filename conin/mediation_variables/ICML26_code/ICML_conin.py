@@ -52,10 +52,10 @@ def hmm_constrained_inference(
     emission_probs = {(k,m):math.exp(emit[k,m]) for k in range(K) for m in range(M)}
     transition_probs = {(k1,k2):math.exp(trans[k1,k2]) for k1 in range(K) for k2 in range(K)}
 
-    import pprint
-    pprint.pprint(start_probs)
-    pprint.pprint(emission_probs)
-    pprint.pprint(transition_probs)
+    #import pprint
+    #pprint.pprint(start_probs)
+    #pprint.pprint(emission_probs)
+    #pprint.pprint(transition_probs)
 
     hmm = HiddenMarkovModel()
     hmm.load_model(

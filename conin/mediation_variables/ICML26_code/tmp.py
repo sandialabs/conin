@@ -6,7 +6,7 @@ import ICML_conin
 # Simple example: 5 states, 2 observation symbols, sequence length 15
 K = 10  # number of states
 M = 5  # number of observation symbols
-T = 10  # sequence length
+T = 15  # sequence length
 N = 4  # require subsequence [0, 1, 2, 3] to occur
 
 # Create random HMM parameters (in log space)
