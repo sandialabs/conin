@@ -1,0 +1,40 @@
+network unknown {
+}
+variable Cancer {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable Dyspnoea {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable Pollution {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable Smoker {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable Xray {
+    type discrete [ 2 ] { 0, 1 };
+}
+probability ( Cancer | Smoker, Pollution ) {
+    ( 0, 0 ) 0.03, 0.97;
+    ( 0, 1 ) 0.05, 0.95;
+    ( 1, 0 ) 0.001, 0.999;
+    ( 1, 1 ) 0.02, 0.98;
+
+}
+probability ( Dyspnoea | Cancer ) {
+    ( 0 ) 0.65, 0.35;
+    ( 1 ) 0.3, 0.7;
+
+}
+probability ( Pollution ) {
+    table 0.9, 0.1 ;
+}
+probability ( Smoker ) {
+    table 0.3, 0.7 ;
+}
+probability ( Xray | Cancer ) {
+    ( 0 ) 0.9, 0.1;
+    ( 1 ) 0.2, 0.8;
+
+}
