@@ -58,7 +58,8 @@ def build_1d_emission_loglike(y_obs, centers, b, r):
     resid2 = (y_obs[:, None] - means) ** 2
     const = -0.5 * np.log(2.0 * np.pi * r)
     return const - 0.5 * resid2 / r
-    
+
+
 def build_1d_emission_loglike_partial(
     T,
     centers,
@@ -106,6 +107,7 @@ def build_1d_emission_loglike_partial(
 
     return emit_loglik
 
+
 def resource_map_scalar(x, resource_limit):
     if x >= 0:
         val = math.floor(x)
@@ -116,10 +118,14 @@ def resource_map_scalar(x, resource_limit):
 
 
 def build_resource_values(x_centers, resource_limit):
-    return np.array([resource_map_scalar(x, resource_limit) for x in x_centers], dtype=np.int64)
+    return np.array(
+        [resource_map_scalar(x, resource_limit) for x in x_centers], dtype=np.int64
+    )
 
 
-def build_resource_budget_tensors_simplified(resource_values, lower_bounds, upper_bounds):
+def build_resource_budget_tensors_simplified(
+    resource_values, lower_bounds, upper_bounds
+):
     resource_values = np.asarray(resource_values, dtype=np.int64)
     lower_bounds = np.asarray(lower_bounds, dtype=np.int64)
     upper_bounds = np.asarray(upper_bounds, dtype=np.int64)
@@ -307,6 +313,7 @@ def simulate_1d_ssm(T, a, q, b, r, x0=0.0, seed=0):
 
     return x, y
 
+
 def resource_value_to_interval(resource_value, resource_limit):
     """
     Map an integer resource value to the corresponding latent-state interval.
@@ -329,7 +336,9 @@ def resource_value_to_interval(resource_value, resource_limit):
     m = int(resource_value)
 
     if m < -R or m > R:
-        raise ValueError("resource_value must be within [-resource_limit, resource_limit].")
+        raise ValueError(
+            "resource_value must be within [-resource_limit, resource_limit]."
+        )
 
     if m == -R:
         return -np.inf, -R
@@ -359,7 +368,9 @@ def sample_truncated_normal_interval(mean, std, left, right, rng):
     cdf_right = norm.cdf(right, loc=mean, scale=std)
 
     if cdf_right <= cdf_left:
-        raise RuntimeError("Degenerate truncated-normal interval with zero probability mass.")
+        raise RuntimeError(
+            "Degenerate truncated-normal interval with zero probability mass."
+        )
 
     u = rng.uniform(cdf_left, cdf_right)
     return norm.ppf(u, loc=mean, scale=std)
@@ -519,6 +530,7 @@ def simulate_1d_ssm_budget_constrained_truncated(
         prev_cum_resource = cum_t
 
     return x, y, resource, cum_resource
+
 
 def viterbi_torch_unconstrained(
     init_prob,

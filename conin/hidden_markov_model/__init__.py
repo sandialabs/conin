@@ -1,0 +1,12 @@
+# conin.__init__.py
+
+from .hmm import HiddenMarkovModel
+from .hmm_util import random_hmm
+from .constrained_hmm import ConstrainedHiddenMarkovModel
+from .chmm import CHMM
+from .chmm_algebraic import *
+from .chmm_oracle import *
+from .hmm_application import HMMApplication
+from .learning import supervised_learning
+from .learning import *
+from .hmm_to_dbn import create_dbn_from_hmm
