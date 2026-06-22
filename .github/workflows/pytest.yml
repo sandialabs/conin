@@ -32,6 +32,8 @@ jobs:
           black .
 
       - name: Commit and push formatting changes
+        env:
+          HEAD_REF: ${{ github.head_ref }}
         run: |
           # Check if any files have been modified
           if [ -n "$(git status --porcelain)" ]; then
@@ -39,7 +41,7 @@ jobs:
             git config --global user.email "github-actions@github.com"
             git add .
             git commit -m "Auto apply black [skip ci]"
-            git push origin ${{ github.head_ref }}  # Push changes to the same PR branch
+            git push origin "$HEAD_REF"  # Push changes to the same PR branch
           else
             echo "No formatting changes detected."
           fi
