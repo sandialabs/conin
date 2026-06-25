@@ -7,7 +7,7 @@ with try_import() as pgmpy_available:
     from pgmpy.factors.discrete import TabularCPD as pgmpy_TabularCPD
 
 
-def convert_conin_to_pgmpy(conin_pgm, check_model=True):
+def convert_conin_to_pgmpy_bn(conin_pgm, check_model=True):
     """
     Convert a conin DiscreteBayesianNetwork to a pgmpy DiscreteBayesianNetwork.
 
