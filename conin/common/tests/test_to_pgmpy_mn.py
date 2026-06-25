@@ -382,3 +382,5 @@ def test_integration_with_bayesian_examples():
 
         # Verify all CPDs were converted
         assert len(pgmpy_pgm.get_factors()) == len(conin_mn.factors)
+
+        pgmpy_pgm.check_model()
