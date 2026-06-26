@@ -35,19 +35,7 @@ class VariableEliminationInference:
         assert (
             pgmpy_available
         ), "PGMPY must be installed to perform inference with VariableElimination"
-        if isinstance(pgm, pgmpy.models.DiscreteMarkovNetwork) or isinstance(
-            pgm, pgmpy.models.DiscreteBayesianNetwork
-        ):
-            self._pgm = pgm
-            self.pgm = pgm
-        elif isinstance(pgm, DiscreteBayesianNetwork):
-            self._pgm = pgm
-            self.pgm = convert_conin_to_pgmpy_bn(pgm)
-        elif isinstance(pgm, DiscreteMarkovNetwork):
-            self._pgm = pgm
-            self.pgm = convert_conin_to_pgmpy_mn(pgm)
-        else:
-            raise TypeError(f"Unexpected model type: {type(pgm)}")
+        self.pgm = pgm
 
     def map_query(
         self,
@@ -90,7 +78,24 @@ class VariableEliminationInference:
         if variables is None:
             variables = self.pgm.nodes
 
-        infer = pgmpy.inference.VariableElimination(self.pgm)
+        if isinstance(self.pgm, pgmpy.models.DiscreteMarkovNetwork) or isinstance(self.pgm, pgmpy.models.DiscreteBayesianNetwork):
+            pgmpy_pgm = self.pgm
+
+        elif isinstance(self.pgm, DiscreteBayesianNetwork):
+            pgmpy_pgm = convert_conin_to_pgmpy_bn(self.pgm)
+
+        elif isinstance(self.pgm, DiscreteMarkovNetwork):
+            pgmpy_pgm = convert_conin_to_pgmpy_mn(self.pgm)
+
+        elif isinstance(self.pgm, ConstrainedDiscreteMarkovNetwork):
+            for con in self.pgm.constraints:
+                factor = con(self.pgm.pgm)
+                self.pgm.pgm._factors.append( factor )
+            pgmpy_pgm = convert_conin_to_pgmpy_mn(self.pgm.pgm)
+        else:
+            raise TypeError(f"Unexpected model type: {type(self.pgm)}")
+
+        infer = pgmpy.inference.VariableElimination(pgmpy_pgm)
         map_states = infer.map_query(
             variables=variables, evidence=evidence, show_progress=show_progress
         )

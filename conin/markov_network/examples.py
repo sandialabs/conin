@@ -1,7 +1,7 @@
 from munch import Munch
 import numpy as np
 
-from conin.constraint import pyomo_constraint_fn, toulbar2_constraint_fn
+from conin.constraint import pyomo_constraint_fn, toulbar2_constraint_fn, factor_constraint_fn
 from conin.util import try_import, MPESolution
 from conin.markov_network import (
     DiscreteFactor,
@@ -261,3 +261,58 @@ def ABC_constrained_toulbar2_conin():
 
     cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=[constraints])
     return Munch(pgm=cpgm, solutions=[MPESolution(states={"A": 0, "B": 2, "C": 1})])
+
+
+def ABC_constrained_factor_conin():
+    """
+    Three variables with pair-wise interactions.
+
+    The interactions have equal weights.  The unconstrained MPE solution is A:2, B:2, C:1.
+    However, we include a constraint that excludes variable assignments to values that are equal.
+
+    The constrained MPE solution is A:0, B:2, C:1.
+    """
+    pgm = ABC_conin()
+
+    @factor_constraint_fn(nodes=["A", "B", "C"])
+    def constraint_fn(*states):
+        values = set(x for x in states)
+        if len(values) == 3:    # All r.v. values are different
+            return True         # Feasible
+        return False            # Infeasible
+
+    cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=[constraint_fn])
+    return Munch(pgm=cpgm, solutions=[MPESolution(states={"A": 0, "B": 2, "C": 1})])
+
+
+def ABC2_constrained_factor_conin():
+    """
+    Constrained AOS example for three variables with pair-wise interactions.
+    Based off ABC2_conin.
+    We add a constraint that excludes variable assignments to values that are equal.
+
+    The edge interactions have equal weights, so the MPE solution is defined by the weights for the
+    factors that describe the individual state variables.
+
+    The best solution is A:0, B:2, C:1.
+    Second best is A:1, B:2, C:0
+    """
+
+    pgm = ABC2_conin()
+
+    @factor_constraint_fn(nodes=["A", "B", "C"])
+    def constraint_fn(*states):
+        values = set(x for x in states)
+        if len(values) == 3:    # All r.v. values are different
+            return True         # Feasible
+        return False            # Infeasible
+
+    cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=[constraint_fn])
+    return Munch(
+        pgm=cpgm,
+        solutions=[
+            MPESolution(states={"A": 0, "B": 2, "C": 1}),
+            MPESolution(states={"A": 1, "B": 2, "C": 0}),
+        ],
+    )
+

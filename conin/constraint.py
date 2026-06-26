@@ -1,7 +1,8 @@
 import itertools
 import inspect
 from conin.exceptions import InvalidInputError
-from conin.markov_network import DiscreteFactor
+from conin.markov_network import DiscreteFactor, DiscreteMarkovNetwork
+from conin.bayesian_network import DiscreteCPD, DiscreteBayesianNetwork
 
 # One could also create an inherited class for additional functionality
 # TODO think about partial_func semantics
@@ -124,10 +125,25 @@ class FactorConstraint:
             raise InvalidInputError(
                 f"In constraint {self.name}, the actual constraint function is not defined."
             )
-        values = {}
-        for states in itertools.product(pgm.states[name] for name in nodes):
-            values[states] = self.func(states)
-        return DiscreteFactor(nodes = self.nodes + [self.name], values=values)
+
+        if type(pgm) == DiscreteMarkovNetwork:
+            M = 10**6
+            values = {}
+            for states in itertools.product(*(pgm.states[name] for name in self.nodes)):
+                feasible = self.func(*states) # True is yes, False is no
+                values[states] = 0 if feasible else M
+            return DiscreteFactor(nodes = self.nodes, values=values)
+
+        elif type(pgm) == DiscreteBayesianNetwork:
+            node = self.name
+            values = {}
+            for states in itertools.product(pgm.states[name] for name in self.nodes):
+                feasible = float(self.func(states)) # 1.0 is yes, 0.0 is no
+                values[states] = {1: feasible, 0: 1-feasible}
+            return DiscreteCPD(node=node, parents=self.nodes, values=values)
+
+        else:
+            raise ValueError(f"Unexpected pgm: {type(pgm)}")
 
 
 def factor_constraint_fn(*, nodes, name=None):
