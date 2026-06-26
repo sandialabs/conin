@@ -5,7 +5,7 @@ import numpy as np
 
 from conin.util import try_import
 from conin.bayesian_network import DiscreteBayesianNetwork, DiscreteCPD
-from conin.common.conin import convert_conin_to_pgmpy
+from conin.common.conin import convert_conin_to_pgmpy_bn
 
 with try_import() as pgmpy_available:
     import pgmpy
@@ -18,21 +18,21 @@ require_pgmpy = pytest.mark.skipif(not pgmpy_available, reason="pgmpy not instal
 
 def test_import_convert_function():
     """Test that the conversion function can be imported."""
-    from conin.common.conin import convert_conin_to_pgmpy
+    from conin.common.conin import convert_conin_to_pgmpy_bn
 
-    assert callable(convert_conin_to_pgmpy)
+    assert callable(convert_conin_to_pgmpy_bn)
 
 
 @require_pgmpy
 def test_convert_invalid_input():
     """Test error handling for invalid input types."""
-    from conin.common.conin import convert_conin_to_pgmpy
+    from conin.common.conin import convert_conin_to_pgmpy_bn
 
     with pytest.raises(ValueError, match="Expected conin DiscreteBayesianNetwork"):
-        convert_conin_to_pgmpy("not a model")
+        convert_conin_to_pgmpy_bn("not a model")
 
     with pytest.raises(ValueError, match="Expected conin DiscreteBayesianNetwork"):
-        convert_conin_to_pgmpy(None)
+        convert_conin_to_pgmpy_bn(None)
 
 
 @require_pgmpy
@@ -47,7 +47,7 @@ def test_simple_root_node_conversion():
     ]
 
     # Convert to pgmpy
-    pgmpy_pgm = convert_conin_to_pgmpy(conin_pgm)
+    pgmpy_pgm = convert_conin_to_pgmpy_bn(conin_pgm)
 
     # Verify structure
     assert isinstance(pgmpy_pgm, pgmpy_DiscreteBayesianNetwork)
@@ -86,7 +86,7 @@ def test_simple_parent_child_conversion():
     ]
 
     # Convert to pgmpy
-    pgmpy_pgm = convert_conin_to_pgmpy(conin_pgm)
+    pgmpy_pgm = convert_conin_to_pgmpy_bn(conin_pgm)
 
     # Verify structure
     assert isinstance(pgmpy_pgm, pgmpy_DiscreteBayesianNetwork)
@@ -126,7 +126,7 @@ def test_cancer_model_conversion():
     conin_pgm = cancer_data.pgm
 
     # Convert to pgmpy
-    pgmpy_pgm = convert_conin_to_pgmpy(conin_pgm)
+    pgmpy_pgm = convert_conin_to_pgmpy_bn(conin_pgm)
 
     # Verify structure
     expected_nodes = {"Cancer", "Dyspnoea", "Pollution", "Smoker", "Xray"}
@@ -194,7 +194,7 @@ def test_model_equivalence():
     ]
 
     # Convert to pgmpy
-    pgmpy_pgm = convert_conin_to_pgmpy(conin_pgm)
+    pgmpy_pgm = convert_conin_to_pgmpy_bn(conin_pgm)
 
     # Test various assignments
     test_cases = [
@@ -225,7 +225,7 @@ def test_single_node_model():
     conin_pgm.states = {"A": [0, 1, 2]}
     conin_pgm.cpds = [DiscreteCPD(node="A", values=[0.1, 0.2, 0.7])]
 
-    pgmpy_pgm = convert_conin_to_pgmpy(conin_pgm)
+    pgmpy_pgm = convert_conin_to_pgmpy_bn(conin_pgm)
 
     assert len(pgmpy_pgm.nodes()) == 1
     assert len(pgmpy_pgm.edges()) == 0
@@ -257,7 +257,7 @@ def test_model_with_multiple_parents():
         ),
     ]
 
-    pgmpy_pgm = convert_conin_to_pgmpy(conin_pgm)
+    pgmpy_pgm = convert_conin_to_pgmpy_bn(conin_pgm)
 
     # Verify structure
     assert len(pgmpy_pgm.nodes()) == 4
@@ -286,7 +286,7 @@ def test_integration_with_bayesian_examples():
         conin_pgm = example_data.pgm
 
         # Convert to pgmpy
-        pgmpy_pgm = convert_conin_to_pgmpy(conin_pgm)
+        pgmpy_pgm = convert_conin_to_pgmpy_bn(conin_pgm)
 
         # Verify basic properties
         assert len(pgmpy_pgm.nodes()) == len(conin_pgm.nodes)
