@@ -131,7 +131,7 @@ class FactorConstraint:
             values = {}
             for states in itertools.product(*(pgm.states[name] for name in self.nodes)):
                 feasible = self.func(*states) # True is yes, False is no
-                values[states] = 0 if feasible else M
+                values[states] = M if feasible else 0
             return DiscreteFactor(nodes = self.nodes, values=values)
 
         elif type(pgm) == DiscreteBayesianNetwork:
