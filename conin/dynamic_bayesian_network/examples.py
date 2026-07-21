@@ -1,7 +1,11 @@
 from munch import Munch
 import pyomo.environ as pyo
 
-from conin.constraint import pyomo_constraint_fn, toulbar2_constraint_fn, factor_constraint_fn
+from conin.constraint import (
+    pyomo_constraint_fn,
+    toulbar2_constraint_fn,
+    factor_constraint_fn,
+)
 from conin.dynamic_bayesian_network import (
     DynamicDiscreteBayesianNetwork,
     ConstrainedDynamicDiscreteBayesianNetwork,
@@ -194,12 +198,12 @@ def simple1_DDBN_constrained_factor_conin(debug=False):
 
     def nodes(data):
         for t in range(data.T):
-            yield ("A",t)
-            yield ("B",t)
+            yield ("A", t)
+            yield ("B", t)
 
     @factor_constraint_fn(nodes=nodes)
     def constraints(states):
-        if states["A",0] == states["A",1] and states["B",0] == states["B",1]:
+        if states["A", 0] == states["A", 1] and states["B", 0] == states["B", 1]:
             return True
         return False
 
@@ -821,12 +825,12 @@ def weather_constrained_factor_conin(debug=False):
 
     def nodes(data):
         for t in data.T:
-            yield ("W",t)
+            yield ("W", t)
 
     @factor_constraint_fn(nodes=nodes)
     def constraints(states, data):
         """2 rainy days"""
-        num = sum(states["W",t] == "Rainy" for t in data.T)
+        num = sum(states["W", t] == "Rainy" for t in data.T)
         if num == 2:
             return True
         return False
@@ -842,12 +846,12 @@ def weather_constrained_factor_pgmpy(debug=False):
 
     def nodes(data):
         for t in data.T:
-            yield ("W",t)
+            yield ("W", t)
 
     @factor_constraint_fn(nodes=nodes)
     def constraints(states, data):
         """2 rainy days"""
-        num = sum(states["W",t] == "Rainy" for t in data.T)
+        num = sum(states["W", t] == "Rainy" for t in data.T)
         if num == 2:
             return True
         return False

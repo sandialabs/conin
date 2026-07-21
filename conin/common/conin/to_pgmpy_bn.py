@@ -102,7 +102,10 @@ def _convert_conin_cpd_to_pgmpy_cpd(conin_cpd, conin_pgm):
         values = [[conin_cpd.values[p]] for p in variable_states]
 
         return pgmpy_TabularCPD(
-            variable=conin_cpd.node, variable_card=variable_card, values=values, state_names={conin_cpd.node:variable_states}
+            variable=conin_cpd.node,
+            variable_card=variable_card,
+            values=values,
+            state_names={conin_cpd.node: variable_states},
         )
 
     # Handle nodes with parents
@@ -117,7 +120,7 @@ def _convert_conin_cpd_to_pgmpy_cpd(conin_cpd, conin_pgm):
             len(conin_pgm.states_of(parent)) for parent in conin_cpd.parents
         ]
         variable = conin_cpd.node
-        evidence=conin_cpd.parents
+        evidence = conin_cpd.parents
         state_names = {variable: conin_pgm.states_of(conin_cpd.node)}
         for parent in evidence:
             state_names[parent] = conin_pgm.states_of(parent)

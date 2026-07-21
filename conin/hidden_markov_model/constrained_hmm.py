@@ -1,4 +1,9 @@
-from conin.constraint import OracleConstraint, PyomoConstraint, Toulbar2Constraint, FactorConstraint
+from conin.constraint import (
+    OracleConstraint,
+    PyomoConstraint,
+    Toulbar2Constraint,
+    FactorConstraint,
+)
 from conin.exceptions import InvalidInputError
 from .chmm import CHMM
 

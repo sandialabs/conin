@@ -38,8 +38,8 @@ def test_convert_invalid_input():
 
 
 def check_values(factor, values):
-    for i,assign in enumerate(factor.assignment(list(range(len(values))))):
-        kwargs = {k:v for k,v in assign}
+    for i, assign in enumerate(factor.assignment(list(range(len(values))))):
+        kwargs = {k: v for k, v in assign}
         assert factor.get_value(**kwargs) == values[i]
 
 
@@ -63,8 +63,8 @@ def test_ABC():
     assert pgmpy_pgm.factors[3].variables == ["A", "B"]
     assert pgmpy_pgm.factors[4].variables == ["B", "C"]
     assert pgmpy_pgm.factors[5].variables == ["A", "C"]
-   
-    # Check cardinality 
+
+    # Check cardinality
     assert pgmpy_pgm.factors[0].cardinality == [3]
     assert pgmpy_pgm.factors[1].cardinality == [3]
     assert pgmpy_pgm.factors[2].cardinality == [3]
@@ -72,10 +72,10 @@ def test_ABC():
     assert list(pgmpy_pgm.factors[4].cardinality) == [3, 3]
     assert list(pgmpy_pgm.factors[5].cardinality) == [3, 3]
 
-    # Check values 
-    check_values(pgmpy_pgm.factors[0], [1,1,2])
-    check_values(pgmpy_pgm.factors[1], [1,1,3])
-    check_values(pgmpy_pgm.factors[2], [1,2,1])
+    # Check values
+    check_values(pgmpy_pgm.factors[0], [1, 1, 2])
+    check_values(pgmpy_pgm.factors[1], [1, 1, 3])
+    check_values(pgmpy_pgm.factors[2], [1, 2, 1])
     check_values(pgmpy_pgm.factors[3], np.ones(9))
     check_values(pgmpy_pgm.factors[4], np.ones(9))
     check_values(pgmpy_pgm.factors[5], np.ones(9))
@@ -101,8 +101,8 @@ def test_ABC2():
     assert pgmpy_pgm.factors[3].variables == ["A", "B"]
     assert pgmpy_pgm.factors[4].variables == ["B", "C"]
     assert pgmpy_pgm.factors[5].variables == ["A", "C"]
-   
-    # Check cardinality 
+
+    # Check cardinality
     assert pgmpy_pgm.factors[0].cardinality == [3]
     assert pgmpy_pgm.factors[1].cardinality == [3]
     assert pgmpy_pgm.factors[2].cardinality == [3]
@@ -110,10 +110,10 @@ def test_ABC2():
     assert list(pgmpy_pgm.factors[4].cardinality) == [3, 3]
     assert list(pgmpy_pgm.factors[5].cardinality) == [3, 3]
 
-    # Check values 
-    check_values(pgmpy_pgm.factors[0], [10,19,20])
-    check_values(pgmpy_pgm.factors[1], [10,10,30])
-    check_values(pgmpy_pgm.factors[2], [10,20,10])
+    # Check values
+    check_values(pgmpy_pgm.factors[0], [10, 19, 20])
+    check_values(pgmpy_pgm.factors[1], [10, 10, 30])
+    check_values(pgmpy_pgm.factors[2], [10, 20, 10])
     check_values(pgmpy_pgm.factors[3], np.ones(9))
     check_values(pgmpy_pgm.factors[4], np.ones(9))
     check_values(pgmpy_pgm.factors[5], np.ones(9))
