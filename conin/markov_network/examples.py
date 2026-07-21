@@ -275,8 +275,8 @@ def ABC_constrained_factor_conin():
     pgm = ABC_conin()
 
     @factor_constraint_fn(nodes=["A", "B", "C"])
-    def constraint_fn(*states):
-        values = set(x for x in states)
+    def constraint_fn(states):
+        values = set(x for x in states.values())
         if len(values) == 3:    # All r.v. values are different
             return True         # Feasible
         return False            # Infeasible
@@ -301,8 +301,8 @@ def ABC2_constrained_factor_conin():
     pgm = ABC2_conin()
 
     @factor_constraint_fn(nodes=["A", "B", "C"])
-    def constraint_fn(*states):
-        values = set(x for x in states)
+    def constraint_fn(states):
+        values = set(x for x in states.values())
         if len(values) == 3:    # All r.v. values are different
             return True         # Feasible
         return False            # Infeasible
