@@ -55,6 +55,14 @@ def test_VariableEliminationInference_ABC_constrained():
     assert results.solution.states == example.solutions[0].states
 
 
+@skipif_pgmpy_not_available
+def test_VariableEliminationInference_ABC2_constrained():
+    example = conin.markov_network.examples.ABC2_constrained_factor_conin()
+    inf = VariableEliminationInference(example.pgm)
+    results = inf.map_query()
+    assert results.solution.states == example.solutions[0].states
+
+
 #
 # DiscreteBayesianNetwork tests
 #
