@@ -1,6 +1,10 @@
 import pyomo.environ as pe
 import conin.hidden_markov_model
-from conin.constraint import pyomo_constraint_fn, toulbar2_constraint_fn
+from conin.constraint import (
+    pyomo_constraint_fn,
+    toulbar2_constraint_fn,
+    factor_constraint_fn,
+)
 
 import munch
 import random
@@ -169,6 +173,36 @@ def create_chmm1_oracle():
         func=lambda seq: seq.count("h0") < 13,
         partial_func=lambda T, seq: seq.count("h0") < 13,
     )
+    constraints = [num_zeros_greater_than_nine, num_zeros_less_than_thirteen]
+
+    chmm = conin.hidden_markov_model.ConstrainedHiddenMarkovModel(
+        hmm=hmm, constraints=constraints
+    )
+    chmm.initialize_chmm()
+    return chmm
+
+
+def create_chmm1_factor():
+    hmm = create_hmm1()
+
+    def nodes(data):
+        for t in data.hmm.T:
+            yield ("H", t)
+
+    @factor_constraint_fn(nodes=nodes)
+    def num_zeros_greater_than_nine(states, D):
+        num = sum(1 for k, v in states.items() if v == "h0")
+        if num >= 10:
+            return True  # Feasible
+        return False  # Infeasible
+
+    @factor_constraint_fn(nodes=nodes)
+    def num_zeros_less_than_thirteen(states, D):
+        num = sum(1 for k, v in states.items() if v == "h0")
+        if num <= 12:
+            return True  # Feasible
+        return False  # Infeasible
+
     constraints = [num_zeros_greater_than_nine, num_zeros_less_than_thirteen]
 
     chmm = conin.hidden_markov_model.ConstrainedHiddenMarkovModel(

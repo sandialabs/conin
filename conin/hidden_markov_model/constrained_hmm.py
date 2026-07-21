@@ -1,4 +1,9 @@
-from conin.constraint import OracleConstraint, PyomoConstraint, Toulbar2Constraint
+from conin.constraint import (
+    OracleConstraint,
+    PyomoConstraint,
+    Toulbar2Constraint,
+    FactorConstraint,
+)
 from conin.exceptions import InvalidInputError
 from .chmm import CHMM
 
@@ -58,6 +63,10 @@ class ConstrainedHiddenMarkovModel:
         elif isinstance(constraint, Toulbar2Constraint):
             assert self.constraint_type is None or self.constraint_type == "toulbar2"
             self.constraint_type = "toulbar2"
+            self._constraints.append(constraint)
+        elif isinstance(constraint, FactorConstraint):
+            assert self.constraint_type is None or self.constraint_type == "factor"
+            self.constraint_type = "factor"
             self._constraints.append(constraint)
         else:
             raise ValueError(f"Unexpected constraint type: {type(constraint)=}")
