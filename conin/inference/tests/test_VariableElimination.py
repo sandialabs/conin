@@ -1,3 +1,4 @@
+import os
 import pyomo.opt
 
 import conin.markov_network.examples
@@ -20,6 +21,8 @@ skipif_pgmpy_not_available = pytest.mark.skipif(
     not pgmpy_available, reason="pgmpy not installed"
 )
 
+cwd = os.path.dirname(__file__)
+testfile_uai = os.path.join(cwd, "test.uai")
 
 #
 # DiscreteMarkovNetwork tests
@@ -32,6 +35,10 @@ def test_VariableEliminationInference_ABC_conin():
     inf = VariableEliminationInference(example.pgm)
     results = inf.map_query()
     assert results.solution.states == example.solutions[0].states
+
+    results = inf.map_query(write_uai_file=testfile_uai)
+    assert os.path.exists(testfile_uai)
+    os.remove(testfile_uai)
 
 
 @skipif_pgmpy_not_available
@@ -54,6 +61,10 @@ def test_VariableEliminationInference_ABC_constrained():
     results = inf.map_query()
     assert results.solution.states == example.solutions[0].states
 
+    results = inf.map_query(write_uai_file=testfile_uai)
+    assert os.path.exists(testfile_uai)
+    os.remove(testfile_uai)
+
 
 @skipif_pgmpy_not_available
 def test_VariableEliminationInference_ABC2_constrained():
@@ -74,6 +85,10 @@ def test_VariableEliminationInference_cancer1_BN_conin():
     inf = VariableEliminationInference(example.pgm)
     results = inf.map_query()
     assert results.solution.states == example.solutions[0].states
+
+    results = inf.map_query(write_uai_file=testfile_uai)
+    assert os.path.exists(testfile_uai)
+    os.remove(testfile_uai)
 
 
 #    with pytest.raises(RuntimeError):
@@ -152,6 +167,10 @@ def test_VariableEliminationInference_cancer1_BN_constrained_factor_conin():
     results = inf.map_query()
     assert results.solution.states == example.solutions[0].states
 
+    results = inf.map_query(write_uai_file=testfile_uai)
+    assert os.path.exists(testfile_uai)
+    os.remove(testfile_uai)
+
 
 #    with pytest.raises(RuntimeError):
 #        results = inf.map_query(
@@ -201,6 +220,10 @@ def test0_VariableEliminationInference_hmm1():
         evidence=observed,
     )
     assert results.solution.states == ["h0", "h0", "h0", "h0", "h0"]
+
+    results = inf.map_query(evidence=observed, write_uai_file=testfile_uai)
+    assert os.path.exists(testfile_uai)
+    os.remove(testfile_uai)
 
 
 @skipif_pgmpy_not_available
@@ -273,6 +296,10 @@ def test0_VariableEliminationInference_chmm1():
         "h0",
         "h0",
     ]
+
+    results = inf.map_query(evidence=observed, write_uai_file=testfile_uai)
+    assert os.path.exists(testfile_uai)
+    os.remove(testfile_uai)
 
 
 @skipif_pgmpy_not_available
@@ -440,6 +467,10 @@ def test_DPGM_VariableEliminationInference_weather_conin():
     )
     assert q_unconstrained == results.solution.states
 
+    results = inf.map_query(stop=4, write_uai_file=testfile_uai)
+    assert os.path.exists(testfile_uai)
+    os.remove(testfile_uai)
+
 
 @skipif_pgmpy_not_available
 def test_DPGM_VariableEliminationInference_weather2_pgmpy():
@@ -482,6 +513,10 @@ def test_DPGM_VariableEliminationInference_weather_constrained_factor_conin():
         stop=4, evidence=weather_evidence, solution_with_evidence=True
     )
     assert q_constrained == results.solution.states
+
+    results = inf.map_query(stop=4, write_uai_file=testfile_uai)
+    assert os.path.exists(testfile_uai)
+    os.remove(testfile_uai)
 
 
 @skipif_pgmpy_not_available

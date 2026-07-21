@@ -1,6 +1,8 @@
 import copy
 import munch
 from conin.util import try_import
+from conin.common.unified import save_model
+from pyomo.common.timing import TicTocTimer
 
 from conin.hidden_markov_model import (
     create_dbn_from_hmm,
@@ -46,6 +48,7 @@ class VariableEliminationInference:
         evidence=None,
         show_progress=False,
         timing=False,
+        write_uai_file=None,
         **options,
     ):
         """
@@ -77,6 +80,10 @@ class VariableEliminationInference:
         >>> inference = VariableElimination(model)
         >>> phi_query = inference.map_query(variables=['A', 'B'])
         """
+        if timing:
+            timer = TicTocTimer()
+            timer.tic("VariableEliminationInference.map_query - START")
+
         evidence = copy.copy(evidence) if evidence else {}
 
         if isinstance(
@@ -86,16 +93,21 @@ class VariableEliminationInference:
             pgmpy_pgm = self.pgm
 
         elif isinstance(self.pgm, DiscreteBayesianNetwork):
+            if write_uai_file:
+                save_model(self.pgm, write_uai_file)
             pgmpy_pgm = convert_conin_to_pgmpy_bn(self.pgm)
 
         elif isinstance(self.pgm, DiscreteMarkovNetwork):
+            if write_uai_file:
+                save_model(self.pgm, write_uai_file)
             pgmpy_pgm = convert_conin_to_pgmpy_mn(self.pgm)
 
         elif isinstance(self.pgm, ConstrainedDiscreteMarkovNetwork):
             for con in self.pgm.constraints:
                 factor = con(self.pgm.pgm)
                 self.pgm.pgm._factors.append(factor)
-                # evidence[factor.nodes[-1]] = 1    #Q: How fix a factor to a given state?
+            if write_uai_file:
+                save_model(self.pgm.pgm, write_uai_file)
             pgmpy_pgm = convert_conin_to_pgmpy_mn(self.pgm.pgm)
 
         elif isinstance(self.pgm, ConstrainedDiscreteBayesianNetwork):
@@ -103,22 +115,33 @@ class VariableEliminationInference:
                 cpd = con(self.pgm.pgm)
                 self.pgm.pgm.add_cpd(cpd)
                 evidence[cpd.node] = 1
+            if write_uai_file:
+                save_model(self.pgm.pgm, write_uai_file)
             pgmpy_pgm = convert_conin_to_pgmpy_bn(self.pgm.pgm)
 
         else:
             raise TypeError(f"Unexpected model type: {type(self.pgm)}")
 
+        if timing:
+            timer.tic("Created PGMPY model")
         infer = pgmpy.inference.VariableElimination(pgmpy_pgm)
         if variables is None:
             if evidence:
                 variables = [node for node in self.pgm.nodes if node not in evidence]
             else:
                 variables = self.pgm.nodes
+
+        solver_timer = TicTocTimer()
+        solver_timer.tic(None)
         map_states = infer.map_query(
             variables=variables, evidence=evidence, show_progress=show_progress
         )
+        solvetime = solver_timer.toc(None)
 
-        return munch.Munch(solution=munch.Munch(states=map_states))
+        if timing:
+            timer.tic("VariableEliminationInference.map_query - STOP")
+
+        return munch.Munch(solution=munch.Munch(states=map_states), solvetime=solvetime)
 
 
 class DPGM_VariableEliminationInference:
@@ -137,9 +160,14 @@ class DPGM_VariableEliminationInference:
             else:
                 variables = [node for node in pgmpy_bn.nodes]
 
-        return infer.map_query(
+        solver_timer = TicTocTimer()
+        solver_timer.tic(None)
+        map_states = infer.map_query(
             variables=variables, evidence=evidence, show_progress=show_progress
         )
+        solvetime = solver_timer.toc(None)
+
+        return map_states, solvetime
 
     def _hmm_evidence_to_pgmpy(self, evidence):
         if isinstance(evidence, list):
@@ -170,7 +198,9 @@ class DPGM_VariableEliminationInference:
         variables=None,
         evidence=None,
         show_progress=False,
+        timing=False,
         solution_with_evidence=False,
+        write_uai_file=None,
         **options,
     ):
         """
@@ -202,6 +232,10 @@ class DPGM_VariableEliminationInference:
         >>> inference = DPGM_VariableElimination(model)
         >>> phi_query = inference.map_query(variables=['A', 'B'])
         """
+        if timing:
+            timer = TicTocTimer()
+            timer.tic("DPGM_VariableEliminationInference.map_query - START")
+
         if isinstance(
             self.pgm,
             (DynamicDiscreteBayesianNetwork, pgmpy.models.DynamicBayesianNetwork),
@@ -213,17 +247,20 @@ class DPGM_VariableEliminationInference:
             if stop is None:
                 stop = 1
             conin_bn = create_bn_from_dbn(dbn=pgm, start=start, stop=stop)
+            if write_uai_file:
+                save_model(conin_bn, write_uai_file)
             pgmpy_bn = convert_conin_to_pgmpy_bn(conin_bn)
 
-            map_states = self._run_map_query(
+            if timing:
+                timer.tic("Created PGMPY model")
+            states, solvetime = self._run_map_query(
                 pgmpy_bn=pgmpy_bn,
                 variables=variables,
                 evidence=evidence,
                 show_progress=show_progress,
             )
             if solution_with_evidence and evidence:
-                map_states.update(evidence)
-            return munch.Munch(solution=munch.Munch(states=map_states))
+                states.update(evidence)
 
         elif isinstance(self.pgm, ConstrainedDynamicDiscreteBayesianNetwork):
             evidence_ = copy.copy(evidence) if evidence else {}
@@ -238,34 +275,39 @@ class DPGM_VariableEliminationInference:
                 data=data,
                 evidence=evidence_,
             )
+            if write_uai_file:
+                save_model(conin_bn, write_uai_file)
             pgmpy_bn = convert_conin_to_pgmpy_bn(conin_bn)
 
-            map_states = self._run_map_query(
+            if timing:
+                timer.tic("Created PGMPY model")
+            states, solvetime = self._run_map_query(
                 pgmpy_bn=pgmpy_bn,
                 variables=variables,
                 evidence=evidence_,
                 show_progress=show_progress,
             )
             if solution_with_evidence and evidence:
-                map_states.update(evidence)
-            return munch.Munch(solution=munch.Munch(states=map_states))
+                states.update(evidence)
 
         elif isinstance(self.pgm, HiddenMarkovModel):
             stop = len(evidence) - 1
             conin_dbn = create_dbn_from_hmm(self.pgm)
             conin_bn = create_bn_from_dbn(dbn=conin_dbn, start=start, stop=stop)
+            if write_uai_file:
+                save_model(conin_bn, write_uai_file)
             pgmpy_bn = convert_conin_to_pgmpy_bn(conin_bn)
 
+            if timing:
+                timer.tic("Created PGMPY model")
             evidence_ = self._hmm_evidence_to_pgmpy(evidence)
-            map_states = self._run_map_query(
+            map_states, solvetime = self._run_map_query(
                 pgmpy_bn=pgmpy_bn,
                 variables=variables,
                 evidence=evidence_,
                 show_progress=show_progress,
             )
             states = self._hmm_states_from_map(map_states, evidence)
-
-            return munch.Munch(solution=munch.Munch(states=states))
 
         elif isinstance(self.pgm, ConstrainedHiddenMarkovModel):
             evidence_ = self._hmm_evidence_to_pgmpy(evidence)
@@ -280,9 +322,13 @@ class DPGM_VariableEliminationInference:
                 data=data,
                 evidence=evidence_,
             )
+            if write_uai_file:
+                save_model(conin_bn, write_uai_file)
             pgmpy_bn = convert_conin_to_pgmpy_bn(conin_bn)
 
-            map_states = self._run_map_query(
+            if timing:
+                timer.tic("Created PGMPY model")
+            map_states, solvetime = self._run_map_query(
                 pgmpy_bn=pgmpy_bn,
                 variables=variables,
                 evidence=evidence_,
@@ -290,7 +336,9 @@ class DPGM_VariableEliminationInference:
             )
             states = self._hmm_states_from_map(map_states, evidence)
 
-            return munch.Munch(solution=munch.Munch(states=states))
-
         else:
             raise TypeError(f"Unexpected model type: {type(self.pgm)}")
+
+        if timing:
+            timer.tic("DPGM_VariableEliminationInference.map_query - STOP")
+        return munch.Munch(solution=munch.Munch(states=states), solvetime=solvetime)
