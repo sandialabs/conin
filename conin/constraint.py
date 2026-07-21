@@ -98,10 +98,15 @@ class FactorConstraint:
         Parameters:
             func (callable, optional): The constraint function to be applied.
             name (str, optional): The name of the constraint. If not provided, it will default to the function's name.
-            nodes (list): The nodes that are arguments for the constraint function.
+            nodes (list, callable): The nodes that are arguments for the constraint function.  If this is not a list, then this is assumed to be a function that accepts an argument that provides data for the constraint.
         """
         self.nodes = nodes
         self.func = func
+        self.num_args = len(inspect.signature(self.func).parameters)
+        if self.num_args > 2:
+            raise ValueError(
+                "FactorConstraint constraint defined with more than 2 arguments"
+            )
 
         # If no name is provided, use the function's name
         if name is not None:
@@ -111,7 +116,7 @@ class FactorConstraint:
         else:
             self.name = "Unnamed constraint"  # Could also be none
 
-    def __call__(self, pgm):
+    def __call__(self, pgm, data=None):
         """
         Create a DiscreteFactor for the constraint function.
 
@@ -126,27 +131,45 @@ class FactorConstraint:
                 f"In constraint {self.name}, the actual constraint function is not defined."
             )
 
+        if type(self.nodes) is list:
+            nodes = self.nodes
+        else:
+            nodes = list(self.nodes(data))
+
         if type(pgm) == DiscreteMarkovNetwork:
             M = 10**6
             values = {}
-            for states in itertools.product(*(pgm.states[name] for name in self.nodes)):
-                feasible = self.func(*states) # True is yes, False is no
+            for states in itertools.product(*(pgm.states[name] for name in nodes)):
+                args = {}
+                for i, name in enumerate(nodes):
+                    args[name] = states[i]
+                if self.num_args == 1:
+                    feasible = self.func(args)  # True is yes, False is no
+                else:
+                    feasible = self.func(args, data)  # True is yes, False is no
                 values[states] = M if feasible else 0
-            return DiscreteFactor(nodes = self.nodes, values=values)
+            return DiscreteFactor(nodes=nodes, values=values)
 
         elif type(pgm) == DiscreteBayesianNetwork:
             node = self.name
             values = {}
-            for states in itertools.product(pgm.states[name] for name in self.nodes):
-                feasible = float(self.func(states)) # 1.0 is yes, 0.0 is no
-                values[states] = {1: feasible, 0: 1-feasible}
-            return DiscreteCPD(node=node, parents=self.nodes, values=values)
+            for states in itertools.product(*(pgm.states[name] for name in nodes)):
+                args = {}
+                for i, name in enumerate(nodes):
+                    args[name] = states[i]
+                if self.num_args == 1:
+                    feasible = self.func(args)  # True is yes, False is no
+                else:
+                    feasible = self.func(args, data)  # True is yes, False is no
+                feasible = int(feasible)
+                values[states] = {1: feasible, 0: 1 - feasible}
+            return DiscreteCPD(node=node, parents=nodes, values=values)
 
         else:
             raise ValueError(f"Unexpected pgm: {type(pgm)}")
 
 
-def factor_constraint_fn(*, nodes, name=None):
+def factor_constraint_fn(*, nodes=None, name=None):
     """
     Decorator factory that takes the 'name' and returns a decorator function.
     """
