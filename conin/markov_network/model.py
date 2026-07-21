@@ -367,6 +367,13 @@ class DiscreteMarkovNetwork:
         """
         self._factors = [factor.normalize(self) for factor in factor_list]
 
+    def add_factor(self, factor):
+        self._factors.append(factor)
+        tmp = set(self._nodes)
+        for node in factor.nodes:
+            if not node in tmp:
+                self._nodes.append(node)
+
     def num_factor_parameters(self):
         return sum(len(f.values) for f in self.factors)
 
