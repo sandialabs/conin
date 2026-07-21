@@ -6,7 +6,7 @@ from conin.hidden_markov_model import ConstrainedHiddenMarkovModel
 from conin.util import try_import
 
 import pyomo.environ as pyo
-from pyomo.common.timing import tic, toc
+from pyomo.common.timing import tic, toc, TicTocTimer
 from pyomo.contrib.alternative_solutions.aos_utils import (
     get_model_variables,
 )
@@ -40,7 +40,12 @@ def lp_inference(
     if debug:
         tic("Optimizing Model - START")
     opt = pyo.SolverFactory(solver)
+
+    timer = TicTocTimer()
+    timer.tic(None)
     res = opt.solve(M, tee=not quiet)
+    solvetime = timer.toc(None)
+
     pyo.assert_optimal_termination(res)
     if debug:
         toc("Optimizing Model - STOP")
@@ -63,6 +68,7 @@ def lp_inference(
         solution=soln,
         solutions=[soln],
         termination_condition="ok",
+        solvetime=solvetime,
     )
     if debug:
         ans.hmm = hmm
@@ -99,16 +105,23 @@ def ip_inference(
         if solver_options is None:
             solver_options = dict()
         topas_method = solver_options.pop("topas_method", "balas")
+
         if debug:
             tic("Optimizing Model with OR_TOPAS - START")
+
+        timer = TicTocTimer()
+        timer.tic(None)
         if topas_method == "balas":
             aos_pm = aos.enumerate_binary_solutions(M, **solver_options)
         elif topas_method == "gurobi_solution_pool":
             aos_pm = aos.gurobi_generate_solutions(M, **solver_options)
         else:
             raise RuntimeError(f"Asked for {topas_method=}, which is not supported")
+        solvetime = timer.toc(None)
+
         if debug:
             toc("Optimizing Model with OR_TOPAS - STOP")
+
         assert len(aos_pm.solutions) > 0, "No solutions found for OR_TOPAS Solver use"
         solutions = []
         for index, aos_solution in enumerate(aos_pm.solutions):
@@ -124,7 +137,12 @@ def ip_inference(
         if debug:
             tic("Optimizing Model - START")
         opt = pyo.SolverFactory(solver)
+
+        timer = TicTocTimer()
+        timer.tic(None)
         res = opt.solve(M, tee=not quiet)
+        solvetime = timer.toc(None)
+
         pyo.assert_optimal_termination(res)
         if debug:
             toc("Optimizing Model - STOP")
@@ -154,6 +172,7 @@ def ip_inference(
         solution=soln,
         solutions=solutions,
         termination_condition="ok",
+        solvetime=solvetime,
     )
 
 

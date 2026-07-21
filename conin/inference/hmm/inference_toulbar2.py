@@ -55,6 +55,7 @@ def inference_toulbar2_map_query_HMM(
     stop=None,
     variables=None,
     evidence=None,
+    write_uai_file=None,
     **options,
 ):
     if stop is None and evidence is not None:
@@ -66,6 +67,7 @@ def inference_toulbar2_map_query_HMM(
         stop=stop,
         variables=variables,
         evidence=evidence,
+        write_uai_file=write_uai_file,
         **options,
     )
     results = conin.inference.mn.inference_toulbar2.solve_toulbar2_map_query_model(

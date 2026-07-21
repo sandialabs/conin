@@ -1,3 +1,4 @@
+import os
 import pyomo.opt
 
 import conin.markov_network.examples
@@ -29,6 +30,8 @@ ip_formulations = pytest.mark.parametrize(
     "ip_formulation", [None, "markov_network", "network_flow"]
 )
 
+cwd = os.path.dirname(__file__)
+testfile_lp = os.path.join(cwd, "test.lp")
 
 #
 # DiscreteMarkovNetwork tests
@@ -41,6 +44,11 @@ def test_IntegerProgrammingInference_ABC_conin():
     inf = IntegerProgrammingInference(example.pgm)
     results = inf.map_query(solver=mip_solver)
     assert results.solution.states == example.solutions[0].states
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
+
+    results = inf.map_query(solver=mip_solver, write_lp_file=testfile_lp)
+    assert os.path.exists(testfile_lp)
+    os.remove(testfile_lp)
 
 
 @skipif_pgmpy_not_available
@@ -63,6 +71,11 @@ def test_IntegerProgrammingInference_ABC_constrained():
     inf = IntegerProgrammingInference(example.pgm)
     results = inf.map_query(solver=mip_solver)
     assert results.solution.states == example.solutions[0].states
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
+
+    results = inf.map_query(solver=mip_solver, write_lp_file=testfile_lp)
+    assert os.path.exists(testfile_lp)
+    os.remove(testfile_lp)
 
 
 #
@@ -76,6 +89,11 @@ def test_IntegerProgrammingInference_cancer1_BN_conin():
     inf = IntegerProgrammingInference(example.pgm)
     results = inf.map_query(solver=mip_solver)
     assert results.solution.states == example.solutions[0].states
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
+
+    results = inf.map_query(solver=mip_solver, write_lp_file=testfile_lp)
+    assert os.path.exists(testfile_lp)
+    os.remove(testfile_lp)
 
 
 #    with pytest.raises(RuntimeError):
@@ -154,6 +172,11 @@ def test_IntegerProgrammingInference_cancer1_BN_constrained_pyomo_conin():
     inf = IntegerProgrammingInference(example.pgm)
     results = inf.map_query(solver=mip_solver)
     assert results.solution.states == example.solutions[0].states
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
+
+    results = inf.map_query(solver=mip_solver, write_lp_file=testfile_lp)
+    assert os.path.exists(testfile_lp)
+    os.remove(testfile_lp)
 
 
 #    with pytest.raises(RuntimeError):
@@ -206,6 +229,13 @@ def test0_IntegerProgrammingInference_hmm1(ip_formulation):
         evidence=observed, solver=mip_solver, ip_formulation=ip_formulation
     )
     assert results.solution.states == ["h0", "h0", "h0", "h0", "h0"]
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
+
+    results = inf.map_query(
+        evidence=observed, solver=mip_solver, write_lp_file=testfile_lp
+    )
+    assert os.path.exists(testfile_lp)
+    os.remove(testfile_lp)
 
 
 @skipif_no_mip_solver
@@ -282,6 +312,13 @@ def test0_IntegerProgrammingInference_chmm1(ip_formulation):
         "h0",
         "h0",
     ]
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
+
+    results = inf.map_query(
+        evidence=observed, solver=mip_solver, write_lp_file=testfile_lp
+    )
+    assert os.path.exists(testfile_lp)
+    os.remove(testfile_lp)
 
 
 @skipif_no_mip_solver
@@ -442,6 +479,7 @@ def test_DPGM_IntegerProgrammingInference_weather_conin():
     inf = DPGM_IntegerProgrammingInference(example.pgm)
     results = inf.map_query(stop=4, solver=mip_solver)
     assert results.solution.states == example.solutions[0].states
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
     # with evidence
     inf = DPGM_IntegerProgrammingInference(example.pgm)
@@ -449,6 +487,10 @@ def test_DPGM_IntegerProgrammingInference_weather_conin():
         stop=4, evidence=weather_evidence, solution_with_evidence=True
     )
     assert q_unconstrained == results.solution.states
+
+    results = inf.map_query(stop=4, solver=mip_solver, write_lp_file=testfile_lp)
+    assert os.path.exists(testfile_lp)
+    os.remove(testfile_lp)
 
 
 @skipif_pgmpy_not_available
@@ -482,6 +524,7 @@ def test_DPGM_IntegerProgrammingInference_weather_constrained_pyomo_conin():
     inf = DPGM_IntegerProgrammingInference(example.pgm)
     results = inf.map_query(stop=4, solver=mip_solver)
     assert results.solution.states == example.solutions[0].states
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
     # with evidence
     inf = DPGM_IntegerProgrammingInference(example.pgm)
@@ -489,6 +532,10 @@ def test_DPGM_IntegerProgrammingInference_weather_constrained_pyomo_conin():
         stop=4, evidence=weather_evidence, solution_with_evidence=True
     )
     assert q_constrained == results.solution.states
+
+    results = inf.map_query(stop=4, solver=mip_solver, write_lp_file=testfile_lp)
+    assert os.path.exists(testfile_lp)
+    os.remove(testfile_lp)
 
 
 @skipif_pgmpy_not_available

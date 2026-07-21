@@ -293,6 +293,7 @@ def solve_pyomo_map_query_model(
     timing=False,
     solver_options=None,
     evidence=None,
+    write_lp_file=None,
 ):
     if timing:  # pragma:nocover
         timer = TicTocTimer()
@@ -328,6 +329,9 @@ def solve_pyomo_map_query_model(
         soln = solutions[0]
         termination_condition = "ok"
     else:
+        if write_lp_file:
+            model.write(write_lp_file)
+
         opt = pe.SolverFactory(solver)
         if solver_options:
             opt.options = solver_options
