@@ -79,8 +79,9 @@ class VariableEliminationInference:
         """
         evidence = copy.copy(evidence) if evidence else {}
 
-        if isinstance(self.pgm, pgmpy.models.DiscreteMarkovNetwork) or isinstance(
-            self.pgm, pgmpy.models.DiscreteBayesianNetwork
+        if isinstance(
+            self.pgm,
+            (pgmpy.models.DiscreteMarkovNetwork, pgmpy.models.DiscreteBayesianNetwork),
         ):
             pgmpy_pgm = self.pgm
 
@@ -110,7 +111,7 @@ class VariableEliminationInference:
         infer = pgmpy.inference.VariableElimination(pgmpy_pgm)
         if variables is None:
             if evidence:
-                variables = [node for node in self.pgm.nodes if not node in evidence]
+                variables = [node for node in self.pgm.nodes if node not in evidence]
             else:
                 variables = self.pgm.nodes
         map_states = infer.map_query(
@@ -127,6 +128,39 @@ class DPGM_VariableEliminationInference:
             pgmpy_available
         ), "PGMPY must be installed to perform inference with DPGM_VariableElimination"
         self.pgm = pgm
+
+    def _run_map_query(self, pgmpy_bn, variables, evidence, show_progress):
+        infer = pgmpy.inference.VariableElimination(pgmpy_bn)
+        if variables is None:
+            if evidence:
+                variables = [node for node in pgmpy_bn.nodes if node not in evidence]
+            else:
+                variables = [node for node in pgmpy_bn.nodes]
+
+        return infer.map_query(
+            variables=variables, evidence=evidence, show_progress=show_progress
+        )
+
+    def _hmm_evidence_to_pgmpy(self, evidence):
+        if isinstance(evidence, list):
+            return {("E", i): v for i, v in enumerate(evidence)}
+        if isinstance(evidence, dict):
+            return {("E", i): v for i, v in evidence.items()}
+        return evidence
+
+    def _hmm_states_from_map(self, map_states, evidence):
+        if isinstance(evidence, list):
+            return [map_states["H", i] for i in range(len(map_states))]
+        if isinstance(evidence, dict):
+            return {i: map_states["H", i] for i in range(len(map_states))}
+        return map_states
+
+    def _add_constraints_as_evidence(self, conin_bn, constraints, data, evidence):
+        for con in constraints:
+            cpd = con(conin_bn, data)
+            cpd.node = (cpd.node, -1)
+            conin_bn.add_cpd(cpd)
+            evidence[cpd.node] = 1
 
     def map_query(
         self,
@@ -168,8 +202,9 @@ class DPGM_VariableEliminationInference:
         >>> inference = DPGM_VariableElimination(model)
         >>> phi_query = inference.map_query(variables=['A', 'B'])
         """
-        if isinstance(self.pgm, DynamicDiscreteBayesianNetwork) or isinstance(
-            self.pgm, pgmpy.models.DynamicBayesianNetwork
+        if isinstance(
+            self.pgm,
+            (DynamicDiscreteBayesianNetwork, pgmpy.models.DynamicBayesianNetwork),
         ):
             if isinstance(self.pgm, pgmpy.models.DynamicBayesianNetwork):
                 pgm = convert_pgmpy_to_conin(self.pgm)
@@ -180,18 +215,11 @@ class DPGM_VariableEliminationInference:
             conin_bn = create_bn_from_dbn(dbn=pgm, start=start, stop=stop)
             pgmpy_bn = convert_conin_to_pgmpy_bn(conin_bn)
 
-            infer = pgmpy.inference.VariableElimination(pgmpy_bn)
-
-            if variables is None:
-                if evidence:
-                    variables = [
-                        node for node in pgmpy_bn.nodes if node not in evidence
-                    ]
-                else:
-                    variables = [node for node in pgmpy_bn.nodes]
-
-            map_states = infer.map_query(
-                variables=variables, evidence=evidence, show_progress=show_progress
+            map_states = self._run_map_query(
+                pgmpy_bn=pgmpy_bn,
+                variables=variables,
+                evidence=evidence,
+                show_progress=show_progress,
             )
             if solution_with_evidence and evidence:
                 map_states.update(evidence)
@@ -204,25 +232,19 @@ class DPGM_VariableEliminationInference:
                 stop = 1
             conin_bn = create_bn_from_dbn(dbn=self.pgm.pgm, start=start, stop=stop)
             data = munch.Munch(T=list(range(start, stop + 1)))
-            for con in self.pgm.constraints:
-                cpd = con(conin_bn, data)
-                cpd.node = (cpd.node, -1)
-                conin_bn.add_cpd(cpd)
-                evidence_[cpd.node] = 1
+            self._add_constraints_as_evidence(
+                conin_bn=conin_bn,
+                constraints=self.pgm.constraints,
+                data=data,
+                evidence=evidence_,
+            )
             pgmpy_bn = convert_conin_to_pgmpy_bn(conin_bn)
 
-            infer = pgmpy.inference.VariableElimination(pgmpy_bn)
-
-            if variables is None:
-                if evidence_:
-                    variables = [
-                        node for node in pgmpy_bn.nodes if node not in evidence_
-                    ]
-                else:
-                    variables = [node for node in pgmpy_bn.nodes]
-
-            map_states = infer.map_query(
-                variables=variables, evidence=evidence_, show_progress=show_progress
+            map_states = self._run_map_query(
+                pgmpy_bn=pgmpy_bn,
+                variables=variables,
+                evidence=evidence_,
+                show_progress=show_progress,
             )
             if solution_with_evidence and evidence:
                 map_states.update(evidence)
@@ -234,56 +256,39 @@ class DPGM_VariableEliminationInference:
             conin_bn = create_bn_from_dbn(dbn=conin_dbn, start=start, stop=stop)
             pgmpy_bn = convert_conin_to_pgmpy_bn(conin_bn)
 
-            if type(evidence) is list:
-                evidence_ = {("E", i): v for i, v in enumerate(evidence)}
-            elif type(evidence) is dict:
-                evidence_ = {("E", i): v for i, v in evidence.items()}
-            if variables is None:
-                variables = [node for node in pgmpy_bn.nodes if node not in evidence_]
-
-            infer = pgmpy.inference.VariableElimination(pgmpy_bn)
-            map_states = infer.map_query(
-                variables=variables, evidence=evidence_, show_progress=show_progress
+            evidence_ = self._hmm_evidence_to_pgmpy(evidence)
+            map_states = self._run_map_query(
+                pgmpy_bn=pgmpy_bn,
+                variables=variables,
+                evidence=evidence_,
+                show_progress=show_progress,
             )
-            if type(evidence) is list:
-                states = [map_states["H", i] for i in range(len(map_states))]
-            elif type(evidence) is dict:
-                states = {i: map_states["H", i] for i in range(len(map_states))}
-            else:
-                states = map_states
+            states = self._hmm_states_from_map(map_states, evidence)
 
             return munch.Munch(solution=munch.Munch(states=states))
 
         elif isinstance(self.pgm, ConstrainedHiddenMarkovModel):
-            if type(evidence) is list:
-                evidence_ = {("E", i): v for i, v in enumerate(evidence)}
-            elif type(evidence) is dict:
-                evidence_ = {("E", i): v for i, v in evidence.items()}
+            evidence_ = self._hmm_evidence_to_pgmpy(evidence)
 
             stop = len(evidence) - 1
             conin_dbn = create_dbn_from_hmm(self.pgm.hidden_markov_model)
             conin_bn = create_bn_from_dbn(dbn=conin_dbn, start=start, stop=stop)
             data = munch.Munch(hmm=munch.Munch(T=list(range(len(evidence)))))
-            for con in self.pgm.constraints:
-                cpd = con(conin_bn, data)
-                cpd.node = (cpd.node, -1)
-                conin_bn.add_cpd(cpd)
-                evidence_[cpd.node] = 1
+            self._add_constraints_as_evidence(
+                conin_bn=conin_bn,
+                constraints=self.pgm.constraints,
+                data=data,
+                evidence=evidence_,
+            )
             pgmpy_bn = convert_conin_to_pgmpy_bn(conin_bn)
 
-            if variables is None:
-                variables = [node for node in pgmpy_bn.nodes if node not in evidence_]
-
-            infer = pgmpy.inference.VariableElimination(pgmpy_bn)
-            map_states = infer.map_query(
-                variables=variables, evidence=evidence_, show_progress=show_progress
+            map_states = self._run_map_query(
+                pgmpy_bn=pgmpy_bn,
+                variables=variables,
+                evidence=evidence_,
+                show_progress=show_progress,
             )
-            if type(evidence) is list:
-                states = [map_states["H", i] for i in range(len(map_states))]
-            elif type(evidence) is dict:
-                states = {i: map_states["H", i] for i in range(len(map_states))}
-            else:
-                states = map_states
+            states = self._hmm_states_from_map(map_states, evidence)
 
             return munch.Munch(solution=munch.Munch(states=states))
 
