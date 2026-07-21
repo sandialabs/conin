@@ -35,6 +35,7 @@ def test_VariableEliminationInference_ABC_conin():
     inf = VariableEliminationInference(example.pgm)
     results = inf.map_query()
     assert results.solution.states == example.solutions[0].states
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
     results = inf.map_query(write_uai_file=testfile_uai)
     assert os.path.exists(testfile_uai)
@@ -47,6 +48,7 @@ def test_VariableEliminationInference_ABC_pgmpy():
     inf = VariableEliminationInference(example.pgm)
     results = inf.map_query()
     assert results.solution.states == example.solutions[0].states
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
 
 #
@@ -60,6 +62,7 @@ def test_VariableEliminationInference_ABC_constrained():
     inf = VariableEliminationInference(example.pgm)
     results = inf.map_query()
     assert results.solution.states == example.solutions[0].states
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
     results = inf.map_query(write_uai_file=testfile_uai)
     assert os.path.exists(testfile_uai)
@@ -72,6 +75,7 @@ def test_VariableEliminationInference_ABC2_constrained():
     inf = VariableEliminationInference(example.pgm)
     results = inf.map_query()
     assert results.solution.states == example.solutions[0].states
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
 
 #
@@ -85,6 +89,7 @@ def test_VariableEliminationInference_cancer1_BN_conin():
     inf = VariableEliminationInference(example.pgm)
     results = inf.map_query()
     assert results.solution.states == example.solutions[0].states
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
     results = inf.map_query(write_uai_file=testfile_uai)
     assert os.path.exists(testfile_uai)
@@ -125,6 +130,7 @@ def test_VariableEliminationInference_cancer1_BN_pgmpy():
     inf = VariableEliminationInference(example.pgm)
     results = inf.map_query()
     assert results.solution.states == example.solutions[0].states
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
 
 #    with pytest.raises(RuntimeError):
@@ -166,6 +172,7 @@ def test_VariableEliminationInference_cancer1_BN_constrained_factor_conin():
     inf = VariableEliminationInference(example.pgm)
     results = inf.map_query()
     assert results.solution.states == example.solutions[0].states
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
     results = inf.map_query(write_uai_file=testfile_uai)
     assert os.path.exists(testfile_uai)
@@ -191,6 +198,7 @@ def test_VariableEliminationInference_cancer1_BN_constrained_factor_pgmpy():
     inf = VariableEliminationInference(example.pgm)
     results = inf.map_query()
     assert results.solution.states == example.solutions[0].states
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
 
 #    with pytest.raises(RuntimeError):
@@ -220,6 +228,7 @@ def test0_VariableEliminationInference_hmm1():
         evidence=observed,
     )
     assert results.solution.states == ["h0", "h0", "h0", "h0", "h0"]
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
     results = inf.map_query(evidence=observed, write_uai_file=testfile_uai)
     assert os.path.exists(testfile_uai)
@@ -235,6 +244,7 @@ def test1_VariableEliminationInference_hmm1():
         evidence=observed,
     )
     assert results.solution.states == ["h1", "h1", "h1", "h1", "h1"]
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
 
 @skipif_pgmpy_not_available
@@ -269,6 +279,7 @@ def test3_VariableEliminationInference_hmm1():
         3: "h1",
         4: "h1",
     }
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
 
 @skipif_pgmpy_not_available
@@ -296,6 +307,7 @@ def test0_VariableEliminationInference_chmm1():
         "h0",
         "h0",
     ]
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
     results = inf.map_query(evidence=observed, write_uai_file=testfile_uai)
     assert os.path.exists(testfile_uai)
@@ -327,6 +339,7 @@ def test1_VariableEliminationInference_chmm1():
         "h1",
         "h1",
     ]
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
 
 @skipif_pgmpy_not_available
@@ -354,6 +367,7 @@ def test2_VariableEliminationInference_chmm1():
         13: "h0",
         14: "h0",
     }
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
 
 @skipif_pgmpy_not_available
@@ -383,6 +397,7 @@ def test3_VariableEliminationInference_chmm1():
         13: "h1",
         14: "h1",
     }
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
 
 #
@@ -459,6 +474,7 @@ def test_DPGM_VariableEliminationInference_weather_conin():
         stop=4,
     )
     assert results.solution.states == example.solutions[0].states
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
     # with evidence
     inf = DPGM_VariableEliminationInference(example.pgm)
@@ -482,6 +498,7 @@ def test_DPGM_VariableEliminationInference_weather2_pgmpy():
         stop=4,
     )
     assert results.solution.states == example.solutions[0].states
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
     # with evidence
     inf = DPGM_VariableEliminationInference(example.pgm)
@@ -506,6 +523,7 @@ def test_DPGM_VariableEliminationInference_weather_constrained_factor_conin():
         stop=4,
     )
     assert results.solution.states == example.solutions[0].states
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
     # with evidence
     inf = DPGM_VariableEliminationInference(example.pgm)
@@ -529,6 +547,7 @@ def test_DPGM_VariableEliminationInference_weather_constrained_factor_pgmpy():
         stop=4,
     )
     assert results.solution.states == example.solutions[0].states
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
     # with evidence
     inf = DPGM_VariableEliminationInference(example.pgm)
