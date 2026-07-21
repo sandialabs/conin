@@ -466,6 +466,13 @@ class DiscreteBayesianNetwork:
         """
         self._cpds = [cpd.normalize(self) for cpd in cpd_list]
 
+    def add_cpd(self, cpd):
+        cpd = cpd.normalize(self)
+        self._nodes.append(cpd.node)
+        self._cpds.append(cpd)
+        tmp = next(iter(cpd.values.values()))
+        self._states[cpd.node] = list(sorted(tmp.keys()))
+
     def num_cpd_parameters(self):
         return sum(len(cpd.values) for cpd in self.cpds)
 
@@ -493,6 +500,7 @@ class ConstrainedDiscreteBayesianNetwork:
         """Validate the underlying Bayesian network."""
         self.pgm.check_model()
 
+    @property
     def nodes(self):
         """Return the nodes of the wrapped Bayesian network.
 
@@ -501,7 +509,7 @@ class ConstrainedDiscreteBayesianNetwork:
         list
             Nodes maintained by the underlying Bayesian network.
         """
-        return self.pgm.nodes()
+        return self.pgm.nodes
 
     @property
     def constraints(self):
