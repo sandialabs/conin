@@ -3,7 +3,11 @@ import pandas as pd
 import numpy as np
 import pyomo.environ as pyo
 
-from conin.constraint import pyomo_constraint_fn, toulbar2_constraint_fn, factor_constraint_fn
+from conin.constraint import (
+    pyomo_constraint_fn,
+    toulbar2_constraint_fn,
+    factor_constraint_fn,
+)
 from conin.util import try_import, MPESolution
 from conin.bayesian_network import (
     DiscreteBayesianNetwork,
@@ -298,9 +302,9 @@ def cancer1_BN_constrained_factor_conin(debug=False):
 
     @factor_constraint_fn(nodes=["Dyspnoea", "Xray"])
     def constraints(states):
-        if states['Dyspnoea'] != states['Xray']:
-            return True # Feasible
-        return False    # Infeasible
+        if states["Dyspnoea"] != states["Xray"]:
+            return True  # Feasible
+        return False  # Infeasible
 
     cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
     return Munch(
@@ -324,11 +328,12 @@ def cancer1_BN_constrained_factor_pgmpy(debug=False):
 
     @factor_constraint_fn(nodes=["Dyspnoea", "Xray"])
     def constraints(states):
-        if states['Dyspnoea'] != states['Xray']:
-            return True # Feasible
-        return False    # Infeasible
+        if states["Dyspnoea"] != states["Xray"]:
+            return True  # Feasible
+        return False  # Infeasible
 
     import conin.common.pgmpy
+
     pgm = conin.common.pgmpy.convert_pgmpy_to_conin(pgm)
     cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
     return Munch(

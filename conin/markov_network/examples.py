@@ -1,7 +1,11 @@
 from munch import Munch
 import numpy as np
 
-from conin.constraint import pyomo_constraint_fn, toulbar2_constraint_fn, factor_constraint_fn
+from conin.constraint import (
+    pyomo_constraint_fn,
+    toulbar2_constraint_fn,
+    factor_constraint_fn,
+)
 from conin.util import try_import, MPESolution
 from conin.markov_network import (
     DiscreteFactor,
@@ -277,9 +281,9 @@ def ABC_constrained_factor_conin():
     @factor_constraint_fn(nodes=["A", "B", "C"])
     def constraint_fn(states):
         values = set(x for x in states.values())
-        if len(values) == 3:    # All r.v. values are different
-            return True         # Feasible
-        return False            # Infeasible
+        if len(values) == 3:  # All r.v. values are different
+            return True  # Feasible
+        return False  # Infeasible
 
     cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=[constraint_fn])
     return Munch(pgm=cpgm, solutions=[MPESolution(states={"A": 0, "B": 2, "C": 1})])
@@ -303,9 +307,9 @@ def ABC2_constrained_factor_conin():
     @factor_constraint_fn(nodes=["A", "B", "C"])
     def constraint_fn(states):
         values = set(x for x in states.values())
-        if len(values) == 3:    # All r.v. values are different
-            return True         # Feasible
-        return False            # Infeasible
+        if len(values) == 3:  # All r.v. values are different
+            return True  # Feasible
+        return False  # Infeasible
 
     cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=[constraint_fn])
     return Munch(
@@ -315,4 +319,3 @@ def ABC2_constrained_factor_conin():
             MPESolution(states={"A": 1, "B": 2, "C": 0}),
         ],
     )
-
