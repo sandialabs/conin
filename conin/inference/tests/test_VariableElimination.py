@@ -487,6 +487,7 @@ def test_DPGM_VariableEliminationInference_weather2_pgmpy():
     )
     assert q_unconstrained == results.solution.states
 
+
 #
 # ConstrainedDynamicBayesianNetwork tests
 #
@@ -530,4 +531,3 @@ def test_DPGM_VariableEliminationInference_weather_constrained_factor_pgmpy():
         stop=4, evidence=weather_evidence, solution_with_evidence=True
     )
     assert q_constrained == results.solution.states
-
