@@ -23,6 +23,7 @@ def create_toulbar2_map_query_model_BN(
     evidence=None,
     var_index_map=None,
     timing=False,
+    write_uai_file=None,
     **options,
 ):
     """Create a MAP query model.
@@ -57,11 +58,16 @@ def create_toulbar2_map_query_model_BN(
     cpgm = pgm if isinstance(pgm, ConstrainedDiscreteBayesianNetwork) else None
     pgm = cpgm.pgm if cpgm is not None else pgm
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        filename = os.path.join(tempdir, "model.uai")
-        conin.common.save_model(pgm, filename)
+    if write_uai_file:
+        conin.common.save_model(pgm, write_uai_file)
         model = pytoulbar2.CFN(verbose=verbose)
-        model.Read(filename)
+        model.Read(write_uai_file)
+    else:
+        with tempfile.TemporaryDirectory() as tempdir:
+            filename = os.path.join(tempdir, "model.uai")
+            conin.common.save_model(pgm, filename)
+            model = pytoulbar2.CFN(verbose=verbose)
+            model.Read(filename)
 
     # TODO - do something different here?
     # if var_index_map:
@@ -90,6 +96,7 @@ def inference_toulbar2_map_query_BN(
     variables=None,
     evidence=None,
     timing=False,
+    write_uai_file=None,
     **options,
 ):
     if not pytoulbar2_available:
@@ -101,6 +108,11 @@ def inference_toulbar2_map_query_BN(
         )
 
     model = create_toulbar2_map_query_model_BN(
-        pgm=pgm, variables=variables, evidence=evidence, timing=timing, **options
+        pgm=pgm,
+        variables=variables,
+        evidence=evidence,
+        timing=timing,
+        write_uai_file=write_uai_file,
+        **options,
     )
     return solve_toulbar2_map_query_model(model, timing=timing, **options)

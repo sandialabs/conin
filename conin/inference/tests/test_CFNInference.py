@@ -1,3 +1,4 @@
+import os
 from conin.util import try_import
 from conin.inference.CFNInference import (
     CFNInference,
@@ -23,6 +24,9 @@ skipif_pgmpy_not_available = pytest.mark.skipif(
     not pgmpy_available, reason="pgmpy not installed"
 )
 
+cwd = os.path.dirname(__file__)
+testfile_uai = os.path.join(cwd, "test.uai")
+
 
 #
 # DiscreteMarkovNetwork tests
@@ -35,6 +39,11 @@ def test_CFNInference_ABC_conin():
     inf = CFNInference(example.pgm)
     results = inf.map_query()
     assert results.solution.states == example.solutions[0].states
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
+
+    results = inf.map_query(write_uai_file=testfile_uai)
+    assert os.path.exists(testfile_uai)
+    os.remove(testfile_uai)
 
 
 @skipif_pgmpy_not_available
@@ -57,6 +66,11 @@ def test_CFNInference_ABC_constrained_toulbar2_conin():
     inf = CFNInference(example.pgm)
     results = inf.map_query()
     assert results.solution.states == example.solutions[0].states
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
+
+    results = inf.map_query(write_uai_file=testfile_uai)
+    assert os.path.exists(testfile_uai)
+    os.remove(testfile_uai)
 
 
 #
@@ -70,6 +84,11 @@ def test_CFNInference_cancer1_BN_conin():
     inf = CFNInference(example.pgm)
     results = inf.map_query()
     assert results.solution.states == example.solutions[0].states
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
+
+    results = inf.map_query(write_uai_file=testfile_uai)
+    assert os.path.exists(testfile_uai)
+    os.remove(testfile_uai)
 
 
 #    with pytest.raises(RuntimeError):
@@ -148,6 +167,11 @@ def test_CFNInference_cancer1_BN_constrained_toulbar2_conin():
     inf = CFNInference(example.pgm)
     results = inf.map_query()
     assert results.solution.states == example.solutions[0].states
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
+
+    results = inf.map_query(write_uai_file=testfile_uai)
+    assert os.path.exists(testfile_uai)
+    os.remove(testfile_uai)
 
 
 #    with pytest.raises(RuntimeError):
@@ -175,6 +199,11 @@ def test0_CFNInference_hmm1():
     observed = ["o0", "o0", "o1", "o0", "o0"]
     results = inf.map_query(evidence=observed)
     assert results.solution.states == ["h0", "h0", "h0", "h0", "h0"]
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
+
+    results = inf.map_query(evidence=observed, write_uai_file=testfile_uai)
+    assert os.path.exists(testfile_uai)
+    os.remove(testfile_uai)
 
 
 @skipif_toulbar2_not_available
@@ -239,6 +268,11 @@ def test0_CFNInference_chmm1():
         "h0",
         "h0",
     ]
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
+
+    results = inf.map_query(evidence=observed, write_uai_file=testfile_uai)
+    assert os.path.exists(testfile_uai)
+    os.remove(testfile_uai)
 
 
 @skipif_toulbar2_not_available
@@ -391,6 +425,7 @@ def test_DPGM_CFNInference_weather_conin():
     inf = DPGM_CFNInference(example.pgm)
     results = inf.map_query(stop=4)
     assert results.solution.states == example.solutions[0].states
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
     # with evidence
     inf = DPGM_CFNInference(example.pgm)
@@ -398,6 +433,10 @@ def test_DPGM_CFNInference_weather_conin():
         stop=4, evidence=weather_evidence, solution_with_evidence=True
     )
     assert q_unconstrained == results.solution.states
+
+    results = inf.map_query(stop=4, write_uai_file=testfile_uai)
+    assert os.path.exists(testfile_uai)
+    os.remove(testfile_uai)
 
 
 @skipif_pgmpy_not_available
@@ -433,6 +472,7 @@ def test_DPGM_CFNInference_weather_constrained_conin():
     inf = DPGM_CFNInference(example.pgm)
     results = inf.map_query(stop=4)
     assert results.solution.states == example.solutions[0].states
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
     # with evidence
     inf = DPGM_CFNInference(example.pgm)
@@ -440,6 +480,10 @@ def test_DPGM_CFNInference_weather_constrained_conin():
         stop=4, evidence=weather_evidence, solution_with_evidence=True
     )
     assert q_constrained == results.solution.states
+
+    results = inf.map_query(stop=4, write_uai_file=testfile_uai)
+    assert os.path.exists(testfile_uai)
+    os.remove(testfile_uai)
 
 
 @skipif_pgmpy_not_available

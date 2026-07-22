@@ -45,6 +45,7 @@ def inference_toulbar2_map_query_DDBN(
     stop=1,
     variables=None,
     evidence=None,
+    write_uai_file=None,
     **options,
 ):
     model = create_toulbar2_map_query_model_DDBN(
@@ -53,6 +54,7 @@ def inference_toulbar2_map_query_DDBN(
         stop=stop,
         variables=variables,
         evidence=evidence,
+        write_uai_file=write_uai_file,
         **options,
     )
     return conin.inference.mn.inference_toulbar2.solve_toulbar2_map_query_model(

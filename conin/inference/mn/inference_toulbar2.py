@@ -1,6 +1,7 @@
 import os.path
 import tempfile
 import munch
+from conin.common.unified import save_model
 from pyomo.common.timing import TicTocTimer
 
 from conin.util import try_import
@@ -46,6 +47,7 @@ def create_toulbar2_map_query_model_MN(
     variables=None,
     evidence=None,
     timing=False,
+    write_uai_file=None,
     **options,
 ):
     """
@@ -59,11 +61,16 @@ def create_toulbar2_map_query_model_MN(
     cpgm = pgm if isinstance(pgm, ConstrainedDiscreteMarkovNetwork) else None
     pgm = cpgm.pgm if cpgm is not None else pgm
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        filename = os.path.join(tempdir, "model.uai")
-        conin.common.save_model(pgm, filename)
+    if write_uai_file:
+        conin.common.save_model(pgm, write_uai_file)
         model = pytoulbar2.CFN(verbose=verbose)
-        model.Read(filename)
+        model.Read(write_uai_file)
+    else:
+        with tempfile.TemporaryDirectory() as tempdir:
+            filename = os.path.join(tempdir, "model.uai")
+            conin.common.save_model(pgm, filename)
+            model = pytoulbar2.CFN(verbose=verbose)
+            model.Read(filename)
 
     model.V = VarWrapper(pgm)
     model.states = {i: pgm.states_of(name) for i, name in enumerate(pgm.nodes)}
@@ -125,6 +132,7 @@ def inference_toulbar2_map_query_MN(
     variables=None,
     evidence=None,
     timing=False,
+    write_uai_file=None,
     **options,
 ):
     if not pytoulbar2_available:  # pragma:nocover
@@ -136,6 +144,11 @@ def inference_toulbar2_map_query_MN(
         )
 
     model = create_toulbar2_map_query_model_MN(
-        pgm=pgm, variables=variables, evidence=evidence, timing=timing, **options
+        pgm=pgm,
+        variables=variables,
+        evidence=evidence,
+        timing=timing,
+        write_uai_file=write_uai_file,
+        **options,
     )
     return solve_toulbar2_map_query_model(model, timing=timing, **options)
