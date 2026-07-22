@@ -33,11 +33,9 @@ testfile_uai = os.path.join(cwd, "test.uai")
 def test_VariableEliminationInference_ABC_conin():
     example = conin.markov_network.examples.ABC_conin()
     inf = VariableEliminationInference(example.pgm)
-    results = inf.map_query()
+    results = inf.map_query(write_uai_file=testfile_uai)
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
-
-    results = inf.map_query(write_uai_file=testfile_uai)
     assert os.path.exists(testfile_uai)
     os.remove(testfile_uai)
 
@@ -60,11 +58,9 @@ def test_VariableEliminationInference_ABC_pgmpy():
 def test_VariableEliminationInference_ABC_constrained():
     example = conin.markov_network.examples.ABC_constrained_factor_conin()
     inf = VariableEliminationInference(example.pgm)
-    results = inf.map_query()
+    results = inf.map_query(write_uai_file=testfile_uai)
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
-
-    results = inf.map_query(write_uai_file=testfile_uai)
     assert os.path.exists(testfile_uai)
     os.remove(testfile_uai)
 
@@ -87,11 +83,9 @@ def test_VariableEliminationInference_ABC2_constrained():
 def test_VariableEliminationInference_cancer1_BN_conin():
     example = conin.bayesian_network.examples.cancer1_BN_conin()
     inf = VariableEliminationInference(example.pgm)
-    results = inf.map_query()
+    results = inf.map_query(write_uai_file=testfile_uai)
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
-
-    results = inf.map_query(write_uai_file=testfile_uai)
     assert os.path.exists(testfile_uai)
     os.remove(testfile_uai)
 
@@ -170,11 +164,9 @@ def test_VariableEliminationInference_cancer1_BN_pgmpy():
 def test_VariableEliminationInference_cancer1_BN_constrained_factor_conin():
     example = conin.bayesian_network.examples.cancer1_BN_constrained_factor_conin()
     inf = VariableEliminationInference(example.pgm)
-    results = inf.map_query()
+    results = inf.map_query(write_uai_file=testfile_uai)
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
-
-    results = inf.map_query(write_uai_file=testfile_uai)
     assert os.path.exists(testfile_uai)
     os.remove(testfile_uai)
 
@@ -224,13 +216,9 @@ def test0_VariableEliminationInference_hmm1():
     pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
     inf = DPGM_VariableEliminationInference(pgm)
     observed = ["o0", "o0", "o1", "o0", "o0"]
-    results = inf.map_query(
-        evidence=observed,
-    )
+    results = inf.map_query(evidence=observed, write_uai_file=testfile_uai)
     assert results.solution.states == ["h0", "h0", "h0", "h0", "h0"]
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
-
-    results = inf.map_query(evidence=observed, write_uai_file=testfile_uai)
     assert os.path.exists(testfile_uai)
     os.remove(testfile_uai)
 
@@ -287,9 +275,7 @@ def test0_VariableEliminationInference_chmm1():
     pgm = conin.hidden_markov_model.tests.examples.create_chmm1_factor()
     inf = DPGM_VariableEliminationInference(pgm)
     observed = ["o0"] * 15
-    results = inf.map_query(
-        evidence=observed,
-    )
+    results = inf.map_query(evidence=observed, write_uai_file=testfile_uai)
     assert results.solution.states == [
         "h1",
         "h1",
@@ -308,8 +294,6 @@ def test0_VariableEliminationInference_chmm1():
         "h0",
     ]
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
-
-    results = inf.map_query(evidence=observed, write_uai_file=testfile_uai)
     assert os.path.exists(testfile_uai)
     os.remove(testfile_uai)
 
@@ -470,11 +454,11 @@ def test_DPGM_VariableEliminationInference_weather_conin():
 
     # without evidence
     inf = DPGM_VariableEliminationInference(example.pgm)
-    results = inf.map_query(
-        stop=4,
-    )
+    results = inf.map_query(stop=4, write_uai_file=testfile_uai)
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
+    assert os.path.exists(testfile_uai)
+    os.remove(testfile_uai)
 
     # with evidence
     inf = DPGM_VariableEliminationInference(example.pgm)
@@ -482,10 +466,6 @@ def test_DPGM_VariableEliminationInference_weather_conin():
         stop=4, evidence=weather_evidence, solution_with_evidence=True
     )
     assert q_unconstrained == results.solution.states
-
-    results = inf.map_query(stop=4, write_uai_file=testfile_uai)
-    assert os.path.exists(testfile_uai)
-    os.remove(testfile_uai)
 
 
 @skipif_pgmpy_not_available
@@ -494,11 +474,11 @@ def test_DPGM_VariableEliminationInference_weather2_pgmpy():
 
     # without evidence
     inf = DPGM_VariableEliminationInference(example.pgm)
-    results = inf.map_query(
-        stop=4,
-    )
+    results = inf.map_query(stop=4, write_uai_file=testfile_uai)
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
+    assert os.path.exists(testfile_uai)
+    os.remove(testfile_uai)
 
     # with evidence
     inf = DPGM_VariableEliminationInference(example.pgm)
@@ -506,7 +486,6 @@ def test_DPGM_VariableEliminationInference_weather2_pgmpy():
         stop=4, evidence=weather_evidence, solution_with_evidence=True
     )
     assert q_unconstrained == results.solution.states
-
 
 #
 # ConstrainedDynamicBayesianNetwork tests
@@ -519,11 +498,11 @@ def test_DPGM_VariableEliminationInference_weather_constrained_factor_conin():
 
     # without evidence
     inf = DPGM_VariableEliminationInference(example.pgm)
-    results = inf.map_query(
-        stop=4,
-    )
+    results = inf.map_query(stop=4, write_uai_file=testfile_uai)
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
+    assert os.path.exists(testfile_uai)
+    os.remove(testfile_uai)
 
     # with evidence
     inf = DPGM_VariableEliminationInference(example.pgm)
@@ -531,10 +510,6 @@ def test_DPGM_VariableEliminationInference_weather_constrained_factor_conin():
         stop=4, evidence=weather_evidence, solution_with_evidence=True
     )
     assert q_constrained == results.solution.states
-
-    results = inf.map_query(stop=4, write_uai_file=testfile_uai)
-    assert os.path.exists(testfile_uai)
-    os.remove(testfile_uai)
 
 
 @skipif_pgmpy_not_available
@@ -543,11 +518,11 @@ def test_DPGM_VariableEliminationInference_weather_constrained_factor_pgmpy():
 
     # without evidence
     inf = DPGM_VariableEliminationInference(example.pgm)
-    results = inf.map_query(
-        stop=4,
-    )
+    results = inf.map_query(stop=4, write_uai_file=testfile_uai)
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
+    assert os.path.exists(testfile_uai)
+    os.remove(testfile_uai)
 
     # with evidence
     inf = DPGM_VariableEliminationInference(example.pgm)
@@ -555,3 +530,4 @@ def test_DPGM_VariableEliminationInference_weather_constrained_factor_pgmpy():
         stop=4, evidence=weather_evidence, solution_with_evidence=True
     )
     assert q_constrained == results.solution.states
+
