@@ -323,7 +323,9 @@ class DiscreteBayesianNetwork:
                     assert len(f.values) == len(self._states[f.node])
 
         # Note: We assert equality to ensure that all nodes are used in the model
-        assert model_nodes == cnodes, f"There are differences between the model nodes and the nodes used in the model\n{sorted(model_nodes)=}\n{sorted(cnodes)=}"
+        assert (
+            model_nodes == cnodes
+        ), f"There are differences between the model nodes and the nodes used in the model\n{sorted(model_nodes)=}\n{sorted(cnodes)=}"
 
     #
     # Nodes

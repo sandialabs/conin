@@ -134,7 +134,10 @@ class VariableEliminationInference:
         solver_timer = TicTocTimer()
         solver_timer.tic(None)
         map_states = infer.map_query(
-            variables=variables, evidence=evidence, show_progress=show_progress, **options,
+            variables=variables,
+            evidence=evidence,
+            show_progress=show_progress,
+            **options,
         )
         solvetime = solver_timer.toc(None)
 
@@ -163,7 +166,10 @@ class DPGM_VariableEliminationInference:
         solver_timer = TicTocTimer()
         solver_timer.tic(None)
         map_states = infer.map_query(
-            variables=variables, evidence=evidence, show_progress=show_progress, **options,
+            variables=variables,
+            evidence=evidence,
+            show_progress=show_progress,
+            **options,
         )
         solvetime = solver_timer.toc(None)
 
