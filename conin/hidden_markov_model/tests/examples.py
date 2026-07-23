@@ -192,16 +192,12 @@ def create_chmm1_factor():
     @factor_constraint_fn(nodes=nodes)
     def num_zeros_greater_than_nine(states, D):
         num = sum(1 for k, v in states.items() if v == "h0")
-        if num >= 10:
-            return True  # Feasible
-        return False  # Infeasible
+        return num >= 10
 
     @factor_constraint_fn(nodes=nodes)
     def num_zeros_less_than_thirteen(states, D):
         num = sum(1 for k, v in states.items() if v == "h0")
-        if num <= 12:
-            return True  # Feasible
-        return False  # Infeasible
+        return num <= 12
 
     constraints = [num_zeros_greater_than_nine, num_zeros_less_than_thirteen]
 
