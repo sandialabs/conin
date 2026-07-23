@@ -60,12 +60,12 @@ def convert_conin_to_pgmpy_bn(conin_pgm, check_model=True):
 
     # Add edges to pgmpy model
     def key_fn(x):
-        v,w = x
-        if isinstance(v,str):
+        v, w = x
+        if isinstance(v, str):
             v = (v,)
-        if isinstance(w,str):
+        if isinstance(w, str):
             w = (w,)
-        return v,w
+        return v, w
 
     for source, target in sorted(edges, key=key_fn):
         pgmpy_pgm.add_edge(source, target)
