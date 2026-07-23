@@ -134,7 +134,7 @@ class VariableEliminationInference:
         solver_timer = TicTocTimer()
         solver_timer.tic(None)
         map_states = infer.map_query(
-            variables=variables, evidence=evidence, show_progress=show_progress
+            variables=variables, evidence=evidence, show_progress=show_progress, **options,
         )
         solvetime = solver_timer.toc(None)
 
@@ -152,7 +152,7 @@ class DPGM_VariableEliminationInference:
         ), "PGMPY must be installed to perform inference with DPGM_VariableElimination"
         self.pgm = pgm
 
-    def _run_map_query(self, pgmpy_bn, variables, evidence, show_progress):
+    def _run_map_query(self, pgmpy_bn, variables, evidence, show_progress, **options):
         infer = pgmpy.inference.VariableElimination(pgmpy_bn)
         if variables is None:
             if evidence:
@@ -163,7 +163,7 @@ class DPGM_VariableEliminationInference:
         solver_timer = TicTocTimer()
         solver_timer.tic(None)
         map_states = infer.map_query(
-            variables=variables, evidence=evidence, show_progress=show_progress
+            variables=variables, evidence=evidence, show_progress=show_progress, **options,
         )
         solvetime = solver_timer.toc(None)
 
