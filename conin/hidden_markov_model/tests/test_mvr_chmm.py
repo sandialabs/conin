@@ -8,6 +8,7 @@ from conin.hidden_markov_model.hmm import HiddenMarkovModel
 from conin.hidden_markov_model.mvr import HomMVR
 from conin.hidden_markov_model.chmm_mvr import MVR_CHMM
 
+
 def normalize_vec(vec: np.ndarray) -> np.ndarray:
     return vec / vec.sum()
 
@@ -32,10 +33,7 @@ def make_random_hmm(
     transition_mat = normalize_rows(rng.random((num_hidden, num_hidden)))
     emission_mat = normalize_rows(rng.random((num_hidden, num_observed)))
 
-    start_probs = {
-        h: start_vec[i]
-        for i, h in enumerate(hidden_states)
-    }
+    start_probs = {h: start_vec[i] for i, h in enumerate(hidden_states)}
 
     transition_probs = {
         (h1, h2): transition_mat[i, j]
@@ -74,10 +72,7 @@ def make_forbid_state_mvr(
 
     mediation_states = ["ok", "violated"]
 
-    ini = {
-        h: "violated" if h == forbidden_state else "ok"
-        for h in hidden_states
-    }
+    ini = {h: "violated" if h == forbidden_state else "ok" for h in hidden_states}
 
     upd = {
         (m, h): "violated" if m == "violated" or h == forbidden_state else "ok"
