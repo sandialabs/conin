@@ -281,9 +281,7 @@ def ABC_constrained_factor_conin():
     @factor_constraint_fn(nodes=["A", "B", "C"])
     def constraint_fn(states):
         values = set(x for x in states.values())
-        if len(values) == 3:  # All r.v. values are different
-            return True  # Feasible
-        return False  # Infeasible
+        return len(values) == 3  # All r.v. values are different
 
     cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=[constraint_fn])
     return Munch(pgm=cpgm, solutions=[MPESolution(states={"A": 0, "B": 2, "C": 1})])
@@ -307,9 +305,7 @@ def ABC2_constrained_factor_conin():
     @factor_constraint_fn(nodes=["A", "B", "C"])
     def constraint_fn(states):
         values = set(x for x in states.values())
-        if len(values) == 3:  # All r.v. values are different
-            return True  # Feasible
-        return False  # Infeasible
+        return len(values) == 3  # All r.v. values are different
 
     cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=[constraint_fn])
     return Munch(

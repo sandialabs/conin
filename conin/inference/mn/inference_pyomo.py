@@ -110,6 +110,14 @@ def create_pyomo_map_query_model_MN(
     if timing:  # pragma:nocover
         timer.toc("Setup states and factors")
 
+    #
+    # Create a var_index_map if we have tuple states
+    #
+    if not var_index_map:
+        nodes_ = list(states.keys())
+        if type(nodes_[0]) is tuple:
+            var_index_map = {v: "_".join(str(i) for i in v) for v in nodes_}
+
     S, J, v, w = extract_factor_representation_(states, factors, var_index_map)
     if timing:  # pragma:nocover
         timer.toc("Created factor repn")

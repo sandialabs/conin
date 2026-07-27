@@ -203,9 +203,7 @@ def simple1_DDBN_constrained_factor_conin(debug=False):
 
     @factor_constraint_fn(nodes=nodes)
     def constraints(states):
-        if states["A", 0] == states["A", 1] and states["B", 0] == states["B", 1]:
-            return True
-        return False
+        return states["A", 0] == states["A", 1] and states["B", 0] == states["B", 1]
 
     return Munch(
         pgm=ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=[constraints]),

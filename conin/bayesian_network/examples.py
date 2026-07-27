@@ -302,9 +302,7 @@ def cancer1_BN_constrained_factor_conin(debug=False):
 
     @factor_constraint_fn(nodes=["Dyspnoea", "Xray"])
     def constraints(states):
-        if states["Dyspnoea"] != states["Xray"]:
-            return True  # Feasible
-        return False  # Infeasible
+        return states["Dyspnoea"] != states["Xray"]
 
     cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
     return Munch(
@@ -328,9 +326,7 @@ def cancer1_BN_constrained_factor_pgmpy(debug=False):
 
     @factor_constraint_fn(nodes=["Dyspnoea", "Xray"])
     def constraints(states):
-        if states["Dyspnoea"] != states["Xray"]:
-            return True  # Feasible
-        return False  # Infeasible
+        return states["Dyspnoea"] != states["Xray"]
 
     import conin.common.pgmpy
 
