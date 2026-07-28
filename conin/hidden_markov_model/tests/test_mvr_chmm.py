@@ -152,31 +152,31 @@ def make_valid_direct_mvr_repn_arrays():
 
     H = 2, M = 2.
 
-    init_array:
+    ini_array:
         hidden 0 -> mediation 0
         hidden 1 -> mediation 1
 
-    update_array:
+    upd_array:
         identity update on mediation state, independent of hidden state.
     """
 
-    init_array = np.array(
+    ini_array = np.array(
         [
             [1.0, 0.0],
             [0.0, 1.0],
         ]
     )
 
-    update_array = np.zeros((2, 2, 2), dtype=float)
+    upd_array = np.zeros((2, 2, 2), dtype=float)
 
-    # update_array[h, m_curr, m_prev]
+    # upd_array[h, m_curr, m_prev]
     # For both hidden states, m_curr = m_prev.
-    update_array[:, 0, 0] = 1.0
-    update_array[:, 1, 1] = 1.0
+    upd_array[:, 0, 0] = 1.0
+    upd_array[:, 1, 1] = 1.0
 
-    eval_array = np.array([1.0, 0.0])
+    evl_array = np.array([1.0, 0.0])
 
-    return init_array, update_array, eval_array
+    return ini_array, upd_array, evl_array
 
 
 def test_make_random_hmm_is_valid():
@@ -239,13 +239,13 @@ def test_hom_mvr_matvec_repn_for_forbid_state_mvr():
 
     assert isinstance(repn, MVR_MatVecRepn)
 
-    assert repn.init_array.shape == (3, 2)
-    assert repn.update_array.shape == (3, 2, 2)
-    assert repn.eval_array.shape == (2,)
+    assert repn.ini_array.shape == (3, 2)
+    assert repn.upd_array.shape == (3, 2, 2)
+    assert repn.evl_array.shape == (2,)
 
     # hidden order: A, B, C
     # mediation order: ok, violated
-    expected_init_array = np.array(
+    expected_ini_array = np.array(
         [
             [1.0, 0.0],  # A -> ok
             [0.0, 1.0],  # B -> violated
@@ -253,10 +253,10 @@ def test_hom_mvr_matvec_repn_for_forbid_state_mvr():
         ]
     )
 
-    expected_eval_array = np.array([1.0, 0.0])
+    expected_evl_array = np.array([1.0, 0.0])
 
-    assert np.array_equal(repn.init_array, expected_init_array)
-    assert np.array_equal(repn.eval_array, expected_eval_array)
+    assert np.array_equal(repn.ini_array, expected_ini_array)
+    assert np.array_equal(repn.evl_array, expected_evl_array)
 
     hidden_to_idx = {h: i for i, h in enumerate(hidden_states)}
 
@@ -276,8 +276,8 @@ def test_hom_mvr_matvec_repn_for_forbid_state_mvr():
             )
             expected_m_curr_idx = mediation_to_idx[expected_m_curr]
 
-            assert repn.update_array[h_idx, expected_m_curr_idx, m_prev_idx] == 1.0
-            assert np.isclose(repn.update_array[h_idx, :, m_prev_idx].sum(), 1.0)
+            assert repn.upd_array[h_idx, expected_m_curr_idx, m_prev_idx] == 1.0
+            assert np.isclose(repn.upd_array[h_idx, :, m_prev_idx].sum(), 1.0)
 
     assert repn.num_hidden_states == 3
     assert repn.num_mediation_states == 2
@@ -327,34 +327,34 @@ def test_inhom_mvr_matvec_repn_for_forbid_state_mvr():
 
     assert isinstance(repn, MVR_MatVecRepn)
 
-    assert repn.init_array.shape == (2, 2)
-    assert isinstance(repn.update_array, list)
-    assert isinstance(repn.eval_array, list)
+    assert repn.ini_array.shape == (2, 2)
+    assert isinstance(repn.upd_array, list)
+    assert isinstance(repn.evl_array, list)
 
-    assert len(repn.update_array) == time_horizon - 1
-    assert len(repn.eval_array) == time_horizon
+    assert len(repn.upd_array) == time_horizon - 1
+    assert len(repn.evl_array) == time_horizon
 
-    expected_init_array = np.array(
+    expected_ini_array = np.array(
         [
             [1.0, 0.0],  # A -> ok_0
             [0.0, 1.0],  # B -> violated_0
         ]
     )
 
-    assert np.array_equal(repn.init_array, expected_init_array)
+    assert np.array_equal(repn.ini_array, expected_ini_array)
 
     for t in range(time_horizon):
-        assert repn.eval_array[t].shape == (2,)
-        assert np.array_equal(repn.eval_array[t], np.array([1.0, 0.0]))
+        assert repn.evl_array[t].shape == (2,)
+        assert np.array_equal(repn.evl_array[t], np.array([1.0, 0.0]))
 
     for t in range(time_horizon - 1):
-        assert repn.update_array[t].shape == (2, 2, 2)
+        assert repn.upd_array[t].shape == (2, 2, 2)
 
     hidden_to_idx = {h: i for i, h in enumerate(hidden_states)}
 
     # At each time, mediation order is [ok_t, violated_t].
     for t in range(time_horizon - 1):
-        update_t = repn.update_array[t]
+        update_t = repn.upd_array[t]
 
         for h in hidden_states:
             h_idx = hidden_to_idx[h]
@@ -373,17 +373,17 @@ def test_inhom_mvr_matvec_repn_for_forbid_state_mvr():
 
 
 def test_direct_mvr_matvec_repn_valid_homogeneous_arrays():
-    init_array, update_array, eval_array = make_valid_direct_mvr_repn_arrays()
+    ini_array, upd_array, evl_array = make_valid_direct_mvr_repn_arrays()
 
     repn = MVR_MatVecRepn(
-        init_array=init_array,
-        update_array=update_array,
-        eval_array=eval_array,
+        ini_array=ini_array,
+        upd_array=upd_array,
+        evl_array=evl_array,
     )
 
-    assert np.array_equal(repn.init_array, init_array)
-    assert np.array_equal(repn.update_array, update_array)
-    assert np.array_equal(repn.eval_array, eval_array)
+    assert np.array_equal(repn.ini_array, ini_array)
+    assert np.array_equal(repn.upd_array, upd_array)
+    assert np.array_equal(repn.evl_array, evl_array)
 
     assert repn.num_hidden_states == 2
     assert repn.num_mediation_states == 2
@@ -391,10 +391,10 @@ def test_direct_mvr_matvec_repn_valid_homogeneous_arrays():
     assert list(repn.mediation_states) == [0, 1]
 
 
-def test_direct_mvr_matvec_repn_rejects_invalid_init_array_rows():
-    _, update_array, eval_array = make_valid_direct_mvr_repn_arrays()
+def test_direct_mvr_matvec_repn_rejects_invalid_ini_array_rows():
+    _, upd_array, evl_array = make_valid_direct_mvr_repn_arrays()
 
-    bad_init_array = np.array(
+    bad_ini_array = np.array(
         [
             [1.0, 0.0],
             [1.0, 1.0],
@@ -403,35 +403,35 @@ def test_direct_mvr_matvec_repn_rejects_invalid_init_array_rows():
 
     with pytest.raises(
         InvalidInputError,
-        match="init_array rows must sum to 1",
+        match="ini_array rows must sum to 1",
     ):
         MVR_MatVecRepn(
-            init_array=bad_init_array,
-            update_array=update_array,
-            eval_array=eval_array,
+            ini_array=bad_ini_array,
+            upd_array=upd_array,
+            evl_array=evl_array,
         )
 
 
-def test_direct_mvr_matvec_repn_rejects_invalid_update_array_sums():
-    init_array, _, eval_array = make_valid_direct_mvr_repn_arrays()
+def test_direct_mvr_matvec_repn_rejects_invalid_upd_array_sums():
+    ini_array, _, evl_array = make_valid_direct_mvr_repn_arrays()
 
-    bad_update_array = np.zeros((2, 2, 2), dtype=float)
+    bad_upd_array = np.zeros((2, 2, 2), dtype=float)
 
     with pytest.raises(
         InvalidInputError,
         match="must sum to 1 over the current mediation axis",
     ):
         MVR_MatVecRepn(
-            init_array=init_array,
-            update_array=bad_update_array,
-            eval_array=eval_array,
+            ini_array=ini_array,
+            upd_array=bad_upd_array,
+            evl_array=evl_array,
         )
 
 
-def test_direct_mvr_matvec_repn_rejects_invalid_eval_array_dimension():
-    init_array, update_array, _ = make_valid_direct_mvr_repn_arrays()
+def test_direct_mvr_matvec_repn_rejects_invalid_evl_array_dimension():
+    ini_array, upd_array, _ = make_valid_direct_mvr_repn_arrays()
 
-    bad_eval_array = np.array(
+    bad_evl_array = np.array(
         [
             [1.0, 0.0],
         ]
@@ -439,28 +439,28 @@ def test_direct_mvr_matvec_repn_rejects_invalid_eval_array_dimension():
 
     with pytest.raises(
         InvalidInputError,
-        match="eval_array at index 0 must be a 1D array",
+        match="evl_array at index 0 must be a 1D array",
     ):
         MVR_MatVecRepn(
-            init_array=init_array,
-            update_array=update_array,
-            eval_array=bad_eval_array,
+            ini_array=ini_array,
+            upd_array=upd_array,
+            evl_array=bad_evl_array,
         )
 
 
 def test_direct_mvr_matvec_repn_rejects_dimension_mismatch():
-    init_array, update_array, _ = make_valid_direct_mvr_repn_arrays()
+    ini_array, upd_array, _ = make_valid_direct_mvr_repn_arrays()
 
-    bad_eval_array = np.array([1.0, 0.0, 1.0])
+    bad_evl_array = np.array([1.0, 0.0, 1.0])
 
     with pytest.raises(
         InvalidInputError,
-        match="eval_array mediation dimension must match init_array mediation dimension",
+        match="evl_array mediation dimension must match ini_array mediation dimension",
     ):
         MVR_MatVecRepn(
-            init_array=init_array,
-            update_array=update_array,
-            eval_array=bad_eval_array,
+            ini_array=ini_array,
+            upd_array=upd_array,
+            evl_array=bad_evl_array,
         )
 
 
