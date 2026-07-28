@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import numpy as np
 
 from conin.exceptions import InvalidInputError
@@ -18,26 +20,33 @@ class BaseMVR:
 
     In the case where M and the above maps are constant over time, an MVR is a DFA.
     """
-
     hidden_states: Any
     mediation_states: Any
     ini: Any
     upd: Any
     evl: Any
 
+    _repn: MVR_MatVecRepn #numerical representation like HMM_MatVecRepn
+    _prefix: bool #prefix-free tag.
+
+    def __init__(self):
+        self._prefix = False
+    
+    @property
+    def prefix(self):
+        return self._prefix
+        
     @property
     def repn(self):
-        return self.initialize()
+        if self._repn is None:
+            self.initialize()
+        return self._repn
 
-    @repn.setter
-    def repn(self, mvr_repn):
-        self._repn = mvr_repn
-
-    def initialize(self, avoid_reinitialization=True):
+    def initialize(self):
         """
         Converts the MVR into an integer-indexed NumPy array representation.
         """
-        if avoid_reinitialization and getattr(self, "_repn", None) is not None:
+        if getattr(self, "_repn", None) is not None:
             return self._repn
 
         ini_array, upd_array, evl_array = self._build_array_repn()
@@ -69,7 +78,6 @@ class HomMVR(BaseMVR):
         ini: dict[str, str],
         upd: dict[tuple[str, str], str],
         evl: dict[str, bool],
-        initialize: bool = False,
     ):
         # Validation
         h_space = set(hidden_states)
@@ -116,10 +124,10 @@ class HomMVR(BaseMVR):
         self.upd = upd
         self.evl = evl
 
-        self._repn = None
+        #Build repn
+        self.initialize()
 
-        if initialize:
-            self.initialize(True)
+        super().__init__()
 
     def _build_array_repn(self):
         """
@@ -182,7 +190,6 @@ class InhomMVR(BaseMVR):
         ini: dict[str, str],
         upd: list[dict[tuple[str, str], str]],
         evl: list[dict[str, bool]],
-        initialize: bool = False,
     ):
         # Validation
         h_space = set(hidden_states)
@@ -260,10 +267,10 @@ class InhomMVR(BaseMVR):
         self.evl = evl
         self.time_horizon = time_horizon
 
-        self._repn = None
+        #Build repn
+        self.initialize()
 
-        if initialize:
-            self.initialize(True)
+        super().__init__()
 
     def _build_array_repn(self):
         """

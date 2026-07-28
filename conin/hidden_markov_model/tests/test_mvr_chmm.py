@@ -8,6 +8,9 @@ from conin.hidden_markov_model.hmm import HiddenMarkovModel
 from conin.hidden_markov_model.mvr import HomMVR, InhomMVR, MVR_MatVecRepn
 from conin.hidden_markov_model.chmm_mvr import MVR_CHMM
 
+# ===========================
+# Heplers
+# ===========================
 
 def normalize_vec(vec: np.ndarray) -> np.ndarray:
     return vec / vec.sum()
@@ -61,7 +64,6 @@ def make_forbid_state_mvr(
     *,
     hidden_states: list[str],
     forbidden_state: str,
-    initialize: bool = False,
 ) -> HomMVR:
     """
     Construct a homogeneous MVR/DFA that rejects paths visiting a forbidden_state.
@@ -90,7 +92,6 @@ def make_forbid_state_mvr(
         ini=ini,
         upd=upd,
         evl=evl,
-        initialize=initialize,
     )
 
 
@@ -99,10 +100,11 @@ def make_forbid_state_inhom_mvr(
     hidden_states: list[str],
     forbidden_state: str,
     time_horizon: int,
-    initialize: bool = False,
 ) -> InhomMVR:
     """
-    Construct an inhomogeneous MVR that rejects paths visiting forbidden_state. Essentially the same as above with dummy time dimension.
+    Construct an inhomogeneous MVR that rejects paths visiting forbidden_state.
+
+    Essentially the same as make_forbid_state_mvr, but with a dummy time dimension.
     """
 
     if forbidden_state not in hidden_states:
@@ -113,7 +115,10 @@ def make_forbid_state_inhom_mvr(
 
     mediation_states = [[f"ok_{t}", f"violated_{t}"] for t in range(time_horizon)]
 
-    ini = {h: f"violated_0" if h == forbidden_state else f"ok_0" for h in hidden_states}
+    ini = {
+        h: f"violated_0" if h == forbidden_state else f"ok_0"
+        for h in hidden_states
+    }
 
     upd = []
 
@@ -142,22 +147,12 @@ def make_forbid_state_inhom_mvr(
         ini=ini,
         upd=upd,
         evl=evl,
-        initialize=initialize,
     )
 
 
 def make_valid_direct_mvr_repn_arrays():
     """
-    Construct a simple valid homogeneous MVR_MatVecRepn.
-
-    H = 2, M = 2.
-
-    ini_array:
-        hidden 0 -> mediation 0
-        hidden 1 -> mediation 1
-
-    upd_array:
-        identity update on mediation state, independent of hidden state.
+    Construct a simple valid homogeneous MVR_MatVecRepn. H = 2, M = 2.
     """
 
     ini_array = np.array(
@@ -178,6 +173,9 @@ def make_valid_direct_mvr_repn_arrays():
 
     return ini_array, upd_array, evl_array
 
+# ===========================
+# Tests
+# ===========================
 
 def test_make_random_hmm_is_valid():
     hidden_states = ["A", "B", "C"]
@@ -224,6 +222,26 @@ def test_forbid_state_mvr_logic():
 
     assert mvr.evl["ok"] is True
     assert mvr.evl["violated"] is False
+
+
+def test_hom_mvr_prefix_defaults_to_false():
+    mvr = make_forbid_state_mvr(
+        hidden_states=["A", "B", "C"],
+        forbidden_state="B",
+    )
+
+    assert mvr.prefix is False
+    assert mvr._prefix is False
+
+
+def test_hom_mvr_prefix_property_is_read_only():
+    mvr = make_forbid_state_mvr(
+        hidden_states=["A", "B", "C"],
+        forbidden_state="B",
+    )
+
+    with pytest.raises(AttributeError):
+        mvr.prefix = True
 
 
 def test_hom_mvr_matvec_repn_for_forbid_state_mvr():
@@ -285,7 +303,7 @@ def test_hom_mvr_matvec_repn_for_forbid_state_mvr():
     assert list(repn.mediation_states) == [0, 1]
 
 
-def test_hom_mvr_repn_is_cached():
+def test_hom_mvr_repn_is_consistent():
     hidden_states = ["A", "B", "C"]
 
     mvr = make_forbid_state_mvr(
@@ -301,11 +319,10 @@ def test_hom_mvr_repn_is_cached():
     assert repn_1 is repn_3
 
 
-def test_hom_mvr_initialize_true_builds_repn_immediately():
+def test_hom_mvr_constructor_builds_repn_immediately():
     mvr = make_forbid_state_mvr(
         hidden_states=["A", "B", "C"],
         forbidden_state="B",
-        initialize=True,
     )
 
     assert mvr._repn is not None
