@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import numpy as np
 
 from conin.exceptions import InvalidInputError
@@ -25,27 +27,35 @@ class BaseMVR:
     upd: Any
     evl: Any
 
+    _repn: MVR_MatVecRepn  # numerical representation like HMM_MatVecRepn
+    _prefix: bool  # prefix-free tag.
+
+    def __init__(self):
+        self._prefix = False
+
+    @property
+    def prefix(self):
+        return self._prefix
+
     @property
     def repn(self):
-        return self.initialize()
+        if self._repn is None:
+            self.initialize()
+        return self._repn
 
-    @repn.setter
-    def repn(self, mvr_repn):
-        self._repn = mvr_repn
-
-    def initialize(self, avoid_reinitialization=True):
+    def initialize(self):
         """
         Converts the MVR into an integer-indexed NumPy array representation.
         """
-        if avoid_reinitialization and getattr(self, "_repn", None) is not None:
+        if getattr(self, "_repn", None) is not None:
             return self._repn
 
-        init_array, update_array, eval_array = self._build_array_repn()
+        ini_array, upd_array, evl_array = self._build_array_repn()
 
         self._repn = MVR_MatVecRepn(
-            init_array=init_array,
-            update_array=update_array,
-            eval_array=eval_array,
+            ini_array=ini_array,
+            upd_array=upd_array,
+            evl_array=evl_array,
         )
 
         return self._repn
@@ -69,7 +79,6 @@ class HomMVR(BaseMVR):
         ini: dict[str, str],
         upd: dict[tuple[str, str], str],
         evl: dict[str, bool],
-        initialize: bool = False,
     ):
         # Validation
         h_space = set(hidden_states)
@@ -116,18 +125,18 @@ class HomMVR(BaseMVR):
         self.upd = upd
         self.evl = evl
 
-        self._repn = None
+        # Build repn
+        self.initialize()
 
-        if initialize:
-            self.initialize(True)
+        super().__init__()
 
     def _build_array_repn(self):
         """
         Builds integer-indexed NumPy arrays for a homogeneous MVR.
 
-        init_array[h, m]
-        update_array[h_curr, m_curr, m_prev]
-        eval_array[m]
+        ini_array[h, m]
+        upd_array[h_curr, m_curr, m_prev]
+        evl_array[m]
         """
         hidden_to_internal = {h: i for i, h in enumerate(self.hidden_states)}
         mediation_to_internal = {m: i for i, m in enumerate(self.mediation_states)}
@@ -135,18 +144,18 @@ class HomMVR(BaseMVR):
         H = len(self.hidden_states)
         M = len(self.mediation_states)
 
-        init_array = np.zeros((H, M), dtype=float)
-        update_array = np.zeros((H, M, M), dtype=float)
-        eval_array = np.zeros((M,), dtype=float)
+        ini_array = np.zeros((H, M), dtype=float)
+        upd_array = np.zeros((H, M, M), dtype=float)
+        evl_array = np.zeros((M,), dtype=float)
 
-        # init_array[h, m]
+        # ini_array[h, m]
         for h in self.hidden_states:
             h_idx = hidden_to_internal[h]
             m = self.ini[h]
             m_idx = mediation_to_internal[m]
-            init_array[h_idx, m_idx] = 1.0
+            ini_array[h_idx, m_idx] = 1.0
 
-        # update_array[h_curr, m_curr, m_prev]
+        # upd_array[h_curr, m_curr, m_prev]
         for h_curr in self.hidden_states:
             h_idx = hidden_to_internal[h_curr]
 
@@ -156,14 +165,15 @@ class HomMVR(BaseMVR):
                 m_curr = self.upd[(m_prev, h_curr)]
                 m_curr_idx = mediation_to_internal[m_curr]
 
-                update_array[h_idx, m_curr_idx, m_prev_idx] = 1.0
+                upd_array[h_idx, m_curr_idx, m_prev_idx] = 1.0
 
-        # eval_array[m]
+        # evl_array[m]
         for m in self.mediation_states:
             m_idx = mediation_to_internal[m]
-            eval_array[m_idx] = float(self.evl[m])
+            evl_array[m_idx] = float(self.evl[m])
 
-        return init_array, update_array, eval_array
+        return ini_array, upd_array, evl_array
+
 
 
 class InhomMVR(BaseMVR):
@@ -182,7 +192,6 @@ class InhomMVR(BaseMVR):
         ini: dict[str, str],
         upd: list[dict[tuple[str, str], str]],
         evl: list[dict[str, bool]],
-        initialize: bool = False,
     ):
         # Validation
         h_space = set(hidden_states)
@@ -260,10 +269,10 @@ class InhomMVR(BaseMVR):
         self.evl = evl
         self.time_horizon = time_horizon
 
-        self._repn = None
+        # Build repn
+        self.initialize()
 
-        if initialize:
-            self.initialize(True)
+        super().__init__()
 
     def _build_array_repn(self):
         """
@@ -271,18 +280,18 @@ class InhomMVR(BaseMVR):
 
         Returns
         -------
-        init_array : np.ndarray
+        ini_array : np.ndarray
             Shape (H, M_0)
 
-        update_array : list[np.ndarray]
-            update_array[t] has shape (H, M_{t+1}, M_t)
+        upd_array : list[np.ndarray]
+            upd_array[t] has shape (H, M_{t+1}, M_t)
 
-            update_array[t][h_curr, m_curr, m_prev] = 1 iff
+            upd_array[t][h_curr, m_curr, m_prev] = 1 iff
 
                 upd[t][(m_prev, h_curr)] == m_curr
 
-        eval_array : list[np.ndarray]
-            eval_array[t] has shape (M_t,)
+        evl_array : list[np.ndarray]
+            evl_array[t] has shape (M_t,)
         """
         hidden_to_internal = {h: i for i, h in enumerate(self.hidden_states)}
 
@@ -294,11 +303,9 @@ class InhomMVR(BaseMVR):
         H = len(self.hidden_states)
         T = self.time_horizon
 
-        # ------------------------------------------------------------
-        # init_array[h, m_0]
-        # ------------------------------------------------------------
+        # ini_array[h, m_0]
         M0 = len(self.mediation_states[0])
-        init_array = np.zeros((H, M0), dtype=float)
+        ini_array = np.zeros((H, M0), dtype=float)
 
         for h in self.hidden_states:
             h_idx = hidden_to_internal[h]
@@ -306,12 +313,10 @@ class InhomMVR(BaseMVR):
             m0 = self.ini[h]
             m0_idx = mediation_to_internal[0][m0]
 
-            init_array[h_idx, m0_idx] = 1.0
+            ini_array[h_idx, m0_idx] = 1.0
 
-        # ------------------------------------------------------------
-        # eval_array[t][m_t]
-        # ------------------------------------------------------------
-        eval_array = []
+        # evl_array[t][m_t]
+        evl_array = []
 
         for t in range(T):
             Mt = len(self.mediation_states[t])
@@ -321,14 +326,10 @@ class InhomMVR(BaseMVR):
                 m_idx = mediation_to_internal[t][m]
                 eval_t[m_idx] = float(self.evl[t][m])
 
-            eval_array.append(eval_t)
+            evl_array.append(eval_t)
 
-        # ------------------------------------------------------------
-        # update_array[t][h_curr, m_curr, m_prev]
-        #
-        # t indexes the transition from time t to time t + 1.
-        # ------------------------------------------------------------
-        update_array = []
+        # upd_array[t][h_curr, m_curr, m_prev]. t indexes the transition from time t to time t + 1.
+        upd_array = []
 
         for t in range(T - 1):
             M_prev = len(self.mediation_states[t])
@@ -347,9 +348,10 @@ class InhomMVR(BaseMVR):
 
                     update_t[h_idx, m_curr_idx, m_prev_idx] = 1.0
 
-            update_array.append(update_t)
+            upd_array.append(update_t)
 
-        return init_array, update_array, eval_array
+        return ini_array, upd_array, evl_array
+
 
 
 class MVR_MatVecRepn:
@@ -359,239 +361,237 @@ class MVR_MatVecRepn:
 
     Homogeneous case
     ----------------
-    init_array:
+    ini_array:
         shape (H, M)
 
-    update_array:
+    upd_array:
         shape (H, M, M)
 
-    eval_array:
+    evl_array:
         shape (M,)
 
     Inhomogeneous case
     ------------------
-    init_array:
+    ini_array:
         shape (H, M_0)
 
-    update_array:
-        list of arrays where update_array[t] has shape (H, M_{t+1}, M_t)
+    upd_array:
+        list of arrays where upd_array[t] has shape (H, M_{t+1}, M_t)
 
-    eval_array:
-        list of arrays where eval_array[t] has shape (M_t,)
+    evl_array:
+        list of arrays where evl_array[t] has shape (M_t,)
     """
 
     def __init__(
         self,
         *,
-        init_array,
-        update_array,
-        eval_array,
+        ini_array,
+        upd_array,
+        evl_array,
         check_errors=True,
     ):
-        self.load_init_array(init_array, check_errors=check_errors)
-        self.load_update_array(update_array, check_errors=check_errors)
-        self.load_eval_array(eval_array, check_errors=check_errors)
+        self.load_ini_array(ini_array, check_errors=check_errors)
+        self.load_upd_array(upd_array, check_errors=check_errors)
+        self.load_evl_array(evl_array, check_errors=check_errors)
 
         if check_errors:
             self.check_dimensions()
 
         self.load_dimensions()
 
-    def load_init_array(self, init_array, check_errors=True):
+    def load_ini_array(self, ini_array, check_errors=True):
         """
         Loads the MVR initialization array.
 
         Homogeneous:
-            init_array[h, m] = 1 iff ini[h] = m
+            ini_array[h, m] = 1 iff ini[h] = m
 
         Inhomogeneous:
-            init_array[h, m_0] = 1 iff ini[h] = m_0
+            ini_array[h, m_0] = 1 iff ini[h] = m_0
         """
-        init_array = np.asarray(init_array)
+        ini_array = np.asarray(ini_array)
 
         if check_errors:
-            if init_array.ndim != 2:
-                raise InvalidInputError("init_array must be a 2D array.")
+            if ini_array.ndim != 2:
+                raise InvalidInputError("ini_array must be a 2D array.")
 
-            if not np.all(init_array >= 0):
-                raise InvalidInputError("init_array entries must be nonnegative.")
+            if not np.all(ini_array >= 0):
+                raise InvalidInputError("ini_array entries must be nonnegative.")
 
-            if not np.all(np.isclose(init_array, 0) | np.isclose(init_array, 1)):
-                raise InvalidInputError("init_array entries must be binary.")
+            if not np.all(np.isclose(ini_array, 0) | np.isclose(ini_array, 1)):
+                raise InvalidInputError("ini_array entries must be binary.")
 
-            row_sums = init_array.sum(axis=1)
+            row_sums = ini_array.sum(axis=1)
             if not np.all(np.isclose(row_sums, 1)):
-                raise InvalidInputError("init_array rows must sum to 1.")
+                raise InvalidInputError("ini_array rows must sum to 1.")
 
-        self.init_array = init_array
+        self.ini_array = ini_array
 
-    def load_update_array(self, update_array, check_errors=True):
+    def load_upd_array(self, upd_array, check_errors=True):
         """
         Loads the MVR update array.
 
         Homogeneous:
-            update_array[h_curr, m_curr, m_prev]
+            upd_array[h_curr, m_curr, m_prev]
 
         Inhomogeneous:
-            update_array[t][h_curr, m_curr, m_prev]
+            upd_array[t][h_curr, m_curr, m_prev]
         """
-        if isinstance(update_array, list):
-            update_array = [np.asarray(arr) for arr in update_array]
+        if isinstance(upd_array, list):
+            upd_array = [np.asarray(arr) for arr in upd_array]
         else:
-            update_array = np.asarray(update_array)
+            upd_array = np.asarray(upd_array)
 
         if check_errors:
-            update_arrays = (
-                update_array if isinstance(update_array, list) else [update_array]
-            )
+            upd_arrays = upd_array if isinstance(upd_array, list) else [upd_array]
 
-            for t, arr in enumerate(update_arrays):
+            for t, arr in enumerate(upd_arrays):
                 if arr.ndim != 3:
                     raise InvalidInputError(
-                        f"update_array at index {t} must be a 3D array."
+                        f"upd_array at index {t} must be a 3D array."
                     )
 
                 if not np.all(arr >= 0):
                     raise InvalidInputError(
-                        f"update_array at index {t} entries must be nonnegative."
+                        f"upd_array at index {t} entries must be nonnegative."
                     )
 
                 if not np.all(np.isclose(arr, 0) | np.isclose(arr, 1)):
                     raise InvalidInputError(
-                        f"update_array at index {t} entries must be binary."
+                        f"upd_array at index {t} entries must be binary."
                     )
 
                 # For every h_curr and m_prev, exactly one m_curr is selected.
                 sums = arr.sum(axis=1)
                 if not np.all(np.isclose(sums, 1)):
                     raise InvalidInputError(
-                        f"update_array at index {t} must sum to 1 over the current mediation axis."
+                        f"upd_array at index {t} must sum to 1 over the current mediation axis."
                     )
 
-        self.update_array = update_array
+        self.upd_array = upd_array
 
-    def load_eval_array(self, eval_array, check_errors=True):
+    def load_evl_array(self, evl_array, check_errors=True):
         """
         Loads the MVR evaluation array.
 
         Homogeneous:
-            eval_array[m]
+            evl_array[m]
 
         Inhomogeneous:
-            eval_array[t][m_t]
+            evl_array[t][m_t]
         """
-        if isinstance(eval_array, list):
-            eval_array = [np.asarray(arr) for arr in eval_array]
+        if isinstance(evl_array, list):
+            evl_array = [np.asarray(arr) for arr in evl_array]
         else:
-            eval_array = np.asarray(eval_array)
+            evl_array = np.asarray(evl_array)
 
         if check_errors:
-            eval_arrays = eval_array if isinstance(eval_array, list) else [eval_array]
+            evl_arrays = evl_array if isinstance(evl_array, list) else [evl_array]
 
-            for t, arr in enumerate(eval_arrays):
+            for t, arr in enumerate(evl_arrays):
                 if arr.ndim != 1:
                     raise InvalidInputError(
-                        f"eval_array at index {t} must be a 1D array."
+                        f"evl_array at index {t} must be a 1D array."
                     )
 
                 if not np.all(arr >= 0):
                     raise InvalidInputError(
-                        f"eval_array at index {t} entries must be nonnegative."
+                        f"evl_array at index {t} entries must be nonnegative."
                     )
 
                 if not np.all(np.isclose(arr, 0) | np.isclose(arr, 1)):
                     raise InvalidInputError(
-                        f"eval_array at index {t} entries must be binary."
+                        f"evl_array at index {t} entries must be binary."
                     )
 
-        self.eval_array = eval_array
+        self.evl_array = evl_array
 
     def check_dimensions(self):
         """
-        Checks that init_array, update_array, and eval_array have compatible dimensions.
+        Checks that ini_array, upd_array, and evl_array have compatible dimensions.
         """
-        if isinstance(self.eval_array, list) != isinstance(self.update_array, list):
+        if isinstance(self.evl_array, list) != isinstance(self.upd_array, list):
             raise InvalidInputError(
-                "eval_array and update_array must either both be lists or both be arrays."
+                "evl_array and upd_array must either both be lists or both be arrays."
             )
 
-        H_init, M_init = self.init_array.shape
+        H_init, M_init = self.ini_array.shape
 
         # Homogeneous case
-        if not isinstance(self.eval_array, list):
-            H_update, M_curr, M_prev = self.update_array.shape
-            M_eval = self.eval_array.shape[0]
+        if not isinstance(self.evl_array, list):
+            H_update, M_curr, M_prev = self.upd_array.shape
+            M_eval = self.evl_array.shape[0]
 
             if H_update != H_init:
                 raise InvalidInputError(
-                    "update_array hidden dimension must match init_array hidden dimension."
+                    "upd_array hidden dimension must match ini_array hidden dimension."
                 )
 
             if M_eval != M_init:
                 raise InvalidInputError(
-                    "eval_array mediation dimension must match init_array mediation dimension."
+                    "evl_array mediation dimension must match ini_array mediation dimension."
                 )
 
             if M_curr != M_init or M_prev != M_init:
                 raise InvalidInputError(
-                    "homogeneous update_array mediation dimensions must both match init_array mediation dimension."
+                    "homogeneous upd_array mediation dimensions must both match ini_array mediation dimension."
                 )
 
             return
 
         # Inhomogeneous case
-        if len(self.eval_array) == 0:
-            raise InvalidInputError("eval_array list must be nonempty.")
+        if len(self.evl_array) == 0:
+            raise InvalidInputError("evl_array list must be nonempty.")
 
-        if len(self.update_array) != len(self.eval_array) - 1:
+        if len(self.upd_array) != len(self.evl_array) - 1:
             raise InvalidInputError(
-                "update_array list length must be one less than eval_array list length."
+                "upd_array list length must be one less than evl_array list length."
             )
 
-        M_eval_0 = self.eval_array[0].shape[0]
+        M_eval_0 = self.evl_array[0].shape[0]
 
         if M_eval_0 != M_init:
             raise InvalidInputError(
-                "eval_array[0] mediation dimension must match init_array mediation dimension."
+                "evl_array[0] mediation dimension must match ini_array mediation dimension."
             )
 
-        for t, update_t in enumerate(self.update_array):
+        for t, update_t in enumerate(self.upd_array):
             H_update_t, M_curr, M_prev = update_t.shape
 
             if H_update_t != H_init:
                 raise InvalidInputError(
-                    f"update_array[{t}] hidden dimension must match init_array hidden dimension."
+                    f"upd_array[{t}] hidden dimension must match ini_array hidden dimension."
                 )
 
-            M_eval_prev = self.eval_array[t].shape[0]
-            M_eval_curr = self.eval_array[t + 1].shape[0]
+            M_eval_prev = self.evl_array[t].shape[0]
+            M_eval_curr = self.evl_array[t + 1].shape[0]
 
             if M_prev != M_eval_prev:
                 raise InvalidInputError(
-                    f"update_array[{t}] previous mediation dimension must match eval_array[{t}]."
+                    f"upd_array[{t}] previous mediation dimension must match evl_array[{t}]."
                 )
 
             if M_curr != M_eval_curr:
                 raise InvalidInputError(
-                    f"update_array[{t}] current mediation dimension must match eval_array[{t + 1}]."
+                    f"upd_array[{t}] current mediation dimension must match evl_array[{t + 1}]."
                 )
 
     def load_dimensions(self):
         """
         Updates dimension fields and integer-indexed state spaces.
         """
-        self.num_hidden_states = self.init_array.shape[0]
+        self.num_hidden_states = self.ini_array.shape[0]
         self.hidden_states = range(self.num_hidden_states)
 
         # Homogeneous case
-        if not isinstance(self.eval_array, list):
-            self.num_mediation_states = self.init_array.shape[1]
+        if not isinstance(self.evl_array, list):
+            self.num_mediation_states = self.ini_array.shape[1]
             self.mediation_states = range(self.num_mediation_states)
             return
 
         # Inhomogeneous case
-        self.time_horizon = len(self.eval_array)
-        self.num_mediation_states = [arr.shape[0] for arr in self.eval_array]
+        self.time_horizon = len(self.evl_array)
+        self.num_mediation_states = [arr.shape[0] for arr in self.evl_array]
         self.mediation_states = [
             range(num_states) for num_states in self.num_mediation_states
         ]
