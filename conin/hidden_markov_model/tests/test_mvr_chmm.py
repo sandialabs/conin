@@ -12,6 +12,7 @@ from conin.hidden_markov_model.chmm_mvr import MVR_CHMM
 # Heplers
 # ===========================
 
+
 def normalize_vec(vec: np.ndarray) -> np.ndarray:
     return vec / vec.sum()
 
@@ -115,10 +116,7 @@ def make_forbid_state_inhom_mvr(
 
     mediation_states = [[f"ok_{t}", f"violated_{t}"] for t in range(time_horizon)]
 
-    ini = {
-        h: f"violated_0" if h == forbidden_state else f"ok_0"
-        for h in hidden_states
-    }
+    ini = {h: f"violated_0" if h == forbidden_state else f"ok_0" for h in hidden_states}
 
     upd = []
 
@@ -173,9 +171,11 @@ def make_valid_direct_mvr_repn_arrays():
 
     return ini_array, upd_array, evl_array
 
+
 # ===========================
 # Tests
 # ===========================
+
 
 def test_make_random_hmm_is_valid():
     hidden_states = ["A", "B", "C"]

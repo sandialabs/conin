@@ -20,22 +20,23 @@ class BaseMVR:
 
     In the case where M and the above maps are constant over time, an MVR is a DFA.
     """
+
     hidden_states: Any
     mediation_states: Any
     ini: Any
     upd: Any
     evl: Any
 
-    _repn: MVR_MatVecRepn #numerical representation like HMM_MatVecRepn
-    _prefix: bool #prefix-free tag.
+    _repn: MVR_MatVecRepn  # numerical representation like HMM_MatVecRepn
+    _prefix: bool  # prefix-free tag.
 
     def __init__(self):
         self._prefix = False
-    
+
     @property
     def prefix(self):
         return self._prefix
-        
+
     @property
     def repn(self):
         if self._repn is None:
@@ -124,7 +125,7 @@ class HomMVR(BaseMVR):
         self.upd = upd
         self.evl = evl
 
-        #Build repn
+        # Build repn
         self.initialize()
 
         super().__init__()
@@ -267,7 +268,7 @@ class InhomMVR(BaseMVR):
         self.evl = evl
         self.time_horizon = time_horizon
 
-        #Build repn
+        # Build repn
         self.initialize()
 
         super().__init__()
@@ -440,9 +441,7 @@ class MVR_MatVecRepn:
             upd_array = np.asarray(upd_array)
 
         if check_errors:
-            upd_arrays = (
-                upd_array if isinstance(upd_array, list) else [upd_array]
-            )
+            upd_arrays = upd_array if isinstance(upd_array, list) else [upd_array]
 
             for t, arr in enumerate(upd_arrays):
                 if arr.ndim != 3:
