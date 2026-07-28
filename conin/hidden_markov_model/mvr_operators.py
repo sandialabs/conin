@@ -1025,3 +1025,457 @@ def mvr_reverse(
         evl=evl,
         initialize=initialize,
     )
+
+# ------------------------------------------------------------------
+# Precedence
+# ------------------------------------------------------------------
+def mvr_precedence(
+    mvrs: list[MVR],
+    relation: PrecedenceRelation,
+    *,
+    initialize: bool = False,
+) -> MVR:
+    """
+    IN:
+        list of 2 mvrs
+    OUR:
+        single MVR checking their precendence relation
+        
+    Constructs a binary precedence MVR.
+
+    Given mvrs = [mvr1, mvr2], compares theirs satisfaction times:
+        mvr1 is satisfied (relation) mvr2 is satisfied
+
+    The relation argument must be one of "<", "<=", ">", ">=".
+
+    NOTE: we do NOT require both MVRs to have been satisfied.
+    For eample, " mvr1 < mvr2" is satisfied if mvr1 has already been satisfied but mvr2 is not yet. 
+    """
+    if len(mvrs) != 2 or not all(isinstance(mvr, (HomMVR, InhomMVR)) for mvr in mvrs):
+        raise InvalidInputError(
+            "mvr_precedence expects a list of exactly two HomMVR/InhomMVR objects."
+        )
+
+    if relation not in ["<", "<=", ">", ">="]:
+        raise InvalidInputError('relation must be one of "<", "<=", ">", ">=".')
+
+    mvr1, mvr2 = mvrs
+
+    if set(mvr1.hidden_states) != set(mvr2.hidden_states):
+        raise InvalidInputError(
+            "mvr_precedence inputs must have the same hidden_states."
+        )
+
+    hidden_states = list(mvr1.hidden_states)
+    bool_states = [False, True]
+
+    def update_ok(
+        *,
+        seen1_prev: bool,
+        seen2_prev: bool,
+        event1_curr: bool,
+        event2_curr: bool,
+        ok_prev: bool,
+    ) -> bool:
+        """
+        Updates whether the requested precedence relation has been established.
+        """
+        if ok_prev:
+            return True
+
+        if relation == "<":
+            return (
+                seen1_prev and not seen2_prev
+            ) or (
+                event1_curr and not seen2_prev and not event2_curr
+            )
+
+        if relation == "<=":
+            return (
+                not seen2_prev
+            ) and (
+                seen1_prev or event1_curr
+            )
+
+        if relation == ">":
+            return (
+                seen2_prev and not seen1_prev
+            ) or (
+                event2_curr and not seen1_prev and not event1_curr
+            )
+
+        # relation == ">="
+        return (
+            not seen1_prev
+        ) and (
+            seen2_prev or event2_curr
+        )
+
+    # Homogeneous case
+    if isinstance(mvr1, HomMVR) and isinstance(mvr2, HomMVR):
+        mediation_states = list(
+            product(
+                mvr1.mediation_states,
+                mvr2.mediation_states,
+                bool_states,  # seen1
+                bool_states,  # seen2
+                bool_states,  # ok
+            )
+        )
+
+        ini = {}
+
+        for h in hidden_states:
+            m1 = mvr1.ini[h]
+            m2 = mvr2.ini[h]
+
+            event1 = mvr1.evl[m1]
+            event2 = mvr2.evl[m2]
+
+            seen1 = event1
+            seen2 = event2
+
+            ok = update_ok(
+                seen1_prev=False,
+                seen2_prev=False,
+                event1_curr=event1,
+                event2_curr=event2,
+                ok_prev=False,
+            )
+
+            ini[h] = (
+                m1,
+                m2,
+                seen1,
+                seen2,
+                ok,
+            )
+
+        upd = {}
+
+        for state_prev in mediation_states:
+            m1_prev, m2_prev, seen1_prev, seen2_prev, ok_prev = state_prev
+
+            for h_curr in hidden_states:
+                m1_curr = mvr1.upd[(m1_prev, h_curr)]
+                m2_curr = mvr2.upd[(m2_prev, h_curr)]
+
+                event1_curr = (not seen1_prev) and mvr1.evl[m1_curr]
+                event2_curr = (not seen2_prev) and mvr2.evl[m2_curr]
+
+                seen1_curr = seen1_prev or event1_curr
+                seen2_curr = seen2_prev or event2_curr
+
+                ok_curr = update_ok(
+                    seen1_prev=seen1_prev,
+                    seen2_prev=seen2_prev,
+                    event1_curr=event1_curr,
+                    event2_curr=event2_curr,
+                    ok_prev=ok_prev,
+                )
+
+                upd[(state_prev, h_curr)] = (
+                    m1_curr,
+                    m2_curr,
+                    seen1_curr,
+                    seen2_curr,
+                    ok_curr,
+                )
+
+        evl = {
+            state: state[4]
+            for state in mediation_states
+        }
+
+        return HomMVR(
+            hidden_states=hidden_states,
+            mediation_states=mediation_states,
+            ini=ini,
+            upd=upd,
+            evl=evl,
+            initialize=initialize,
+        )
+
+    # Inhomogeneous or mixed homogeneous/inhomogeneous case
+    horizons = [
+        mvr.time_horizon
+        for mvr in [mvr1, mvr2]
+        if isinstance(mvr, InhomMVR)
+    ]
+
+    time_horizon = min(horizons)
+
+    print(
+        f"Constructing inhomogeneous precedence MVR using minimum time_horizon {time_horizon}"
+    )
+
+    mediation_states = []
+
+    for t in range(time_horizon):
+        mvr1_states_t = (
+            mvr1.mediation_states
+            if isinstance(mvr1, HomMVR)
+            else mvr1.mediation_states[t]
+        )
+
+        mvr2_states_t = (
+            mvr2.mediation_states
+            if isinstance(mvr2, HomMVR)
+            else mvr2.mediation_states[t]
+        )
+
+        mediation_states_t = list(
+            product(
+                mvr1_states_t,
+                mvr2_states_t,
+                bool_states,  # seen1
+                bool_states,  # seen2
+                bool_states,  # ok
+            )
+        )
+
+        mediation_states.append(mediation_states_t)
+
+    ini = {}
+
+    for h in hidden_states:
+        m1 = mvr1.ini[h]
+        m2 = mvr2.ini[h]
+
+        event1 = (
+            mvr1.evl[m1]
+            if isinstance(mvr1, HomMVR)
+            else mvr1.evl[0][m1]
+        )
+
+        event2 = (
+            mvr2.evl[m2]
+            if isinstance(mvr2, HomMVR)
+            else mvr2.evl[0][m2]
+        )
+
+        seen1 = event1
+        seen2 = event2
+
+        ok = update_ok(
+            seen1_prev=False,
+            seen2_prev=False,
+            event1_curr=event1,
+            event2_curr=event2,
+            ok_prev=False,
+        )
+
+        ini[h] = (
+            m1,
+            m2,
+            seen1,
+            seen2,
+            ok,
+        )
+
+    upd = []
+
+    for t in range(time_horizon - 1):
+        upd_t = {}
+
+        for state_prev in mediation_states[t]:
+            m1_prev, m2_prev, seen1_prev, seen2_prev, ok_prev = state_prev
+
+            for h_curr in hidden_states:
+                m1_curr = (
+                    mvr1.upd[(m1_prev, h_curr)]
+                    if isinstance(mvr1, HomMVR)
+                    else mvr1.upd[t][(m1_prev, h_curr)]
+                )
+
+                m2_curr = (
+                    mvr2.upd[(m2_prev, h_curr)]
+                    if isinstance(mvr2, HomMVR)
+                    else mvr2.upd[t][(m2_prev, h_curr)]
+                )
+
+                evl1_curr = (
+                    mvr1.evl[m1_curr]
+                    if isinstance(mvr1, HomMVR)
+                    else mvr1.evl[t + 1][m1_curr]
+                )
+
+                evl2_curr = (
+                    mvr2.evl[m2_curr]
+                    if isinstance(mvr2, HomMVR)
+                    else mvr2.evl[t + 1][m2_curr]
+                )
+
+                event1_curr = (not seen1_prev) and evl1_curr
+                event2_curr = (not seen2_prev) and evl2_curr
+
+                seen1_curr = seen1_prev or event1_curr
+                seen2_curr = seen2_prev or event2_curr
+
+                ok_curr = update_ok(
+                    seen1_prev=seen1_prev,
+                    seen2_prev=seen2_prev,
+                    event1_curr=event1_curr,
+                    event2_curr=event2_curr,
+                    ok_prev=ok_prev,
+                )
+
+                upd_t[(state_prev, h_curr)] = (
+                    m1_curr,
+                    m2_curr,
+                    seen1_curr,
+                    seen2_curr,
+                    ok_curr,
+                )
+
+        upd.append(upd_t)
+
+    evl = []
+
+    for t in range(time_horizon):
+        evl_t = {
+            state: state[4]
+            for state in mediation_states[t]
+        }
+
+        evl.append(evl_t)
+
+    return InhomMVR(
+        hidden_states=hidden_states,
+        mediation_states=mediation_states,
+        ini=ini,
+        upd=upd,
+        evl=evl,
+        initialize=initialize,
+    )            else mvr2.mediation_states[t]
+        )
+
+        mediation_states_t = list(
+            product(
+                mvr1_states_t,
+                mvr2_states_t,
+                bool_states,  # seen1
+                bool_states,  # seen2
+                bool_states,  # ok
+            )
+        )
+
+        mediation_states.append(mediation_states_t)
+
+    ini = {}
+
+    for h in hidden_states:
+        m1 = mvr1.ini[h]
+        m2 = mvr2.ini[h]
+
+        event1 = (
+            mvr1.evl[m1]
+            if isinstance(mvr1, HomMVR)
+            else mvr1.evl[0][m1]
+        )
+
+        event2 = (
+            mvr2.evl[m2]
+            if isinstance(mvr2, HomMVR)
+            else mvr2.evl[0][m2]
+        )
+
+        seen1 = event1
+        seen2 = event2
+
+        ok = update_ok(
+            seen1_prev=False,
+            seen2_prev=False,
+            event1_curr=event1,
+            event2_curr=event2,
+            ok_prev=False,
+        )
+
+        ini[h] = (
+            m1,
+            m2,
+            seen1,
+            seen2,
+            ok,
+        )
+
+    upd = []
+
+    for t in range(time_horizon - 1):
+        upd_t = {}
+
+        for state_prev in mediation_states[t]:
+            m1_prev, m2_prev, seen1_prev, seen2_prev, ok_prev = state_prev
+
+            for h_curr in hidden_states:
+                m1_curr = (
+                    mvr1.upd[(m1_prev, h_curr)]
+                    if isinstance(mvr1, HomMVR)
+                    else mvr1.upd[t][(m1_prev, h_curr)]
+                )
+
+                m2_curr = (
+                    mvr2.upd[(m2_prev, h_curr)]
+                    if isinstance(mvr2, HomMVR)
+                    else mvr2.upd[t][(m2_prev, h_curr)]
+                )
+
+                evl1_curr = (
+                    mvr1.evl[m1_curr]
+                    if isinstance(mvr1, HomMVR)
+                    else mvr1.evl[t + 1][m1_curr]
+                )
+
+                evl2_curr = (
+                    mvr2.evl[m2_curr]
+                    if isinstance(mvr2, HomMVR)
+                    else mvr2.evl[t + 1][m2_curr]
+                )
+
+                event1_curr = (not seen1_prev) and evl1_curr
+                event2_curr = (not seen2_prev) and evl2_curr
+
+                seen1_curr = seen1_prev or event1_curr
+                seen2_curr = seen2_prev or event2_curr
+
+                ok_curr = update_ok(
+                    seen1_prev=seen1_prev,
+                    seen2_prev=seen2_prev,
+                    event1_curr=event1_curr,
+                    event2_curr=event2_curr,
+                    ok_prev=ok_prev,
+                )
+
+                upd_t[(state_prev, h_curr)] = (
+                    m1_curr,
+                    m2_curr,
+                    seen1_curr,
+                    seen2_curr,
+                    ok_curr,
+                )
+
+        upd.append(upd_t)
+
+    evl = []
+
+    for t in range(time_horizon):
+        evl_t = {
+            state: state[4]
+            for state in mediation_states[t]
+        }
+
+        evl.append(evl_t)
+
+    return InhomMVR(
+        hidden_states=hidden_states,
+        mediation_states=mediation_states,
+        ini=ini,
+        upd=upd,
+        evl=evl,
+        initialize=initialize,
+    )
+
+
+# ------------------------------------------------------------------
+# Counts
+# ------------------------------------------------------------------
