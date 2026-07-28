@@ -4,6 +4,7 @@ from conin.exceptions import InvalidInputError
 from typing import Any
 from itertools import product
 
+
 class BaseMVR:
     """
     Base class for a mediation variable representation (MVR).
@@ -69,20 +70,19 @@ class HomMVR(BaseMVR):
         upd: dict[tuple[str, str], str],
         evl: dict[str, bool],
         initialize: bool = False,
-
     ):
         # Validation
         h_space = set(hidden_states)
         m_space = set(mediation_states)
         mh_space = set(product(m_space, h_space))
 
-        #duplicates
+        # duplicates
         if len(hidden_states) != len(set(hidden_states)):
             raise InvalidInputError("hidden_states must not contain duplicates")
-        
+
         if len(mediation_states) != len(set(mediation_states)):
             raise InvalidInputError("mediation_states must not contain duplicates")
-        
+
         # ini
         if h_space != set(ini.keys()):
             raise InvalidInputError("domain(keys) of ini must match hidden_states")
@@ -115,7 +115,7 @@ class HomMVR(BaseMVR):
         self.ini = ini
         self.upd = upd
         self.evl = evl
-        
+
         self._repn = None
 
         if initialize:
@@ -129,12 +129,8 @@ class HomMVR(BaseMVR):
         update_array[h_curr, m_curr, m_prev]
         eval_array[m]
         """
-        hidden_to_internal = {
-            h: i for i, h in enumerate(self.hidden_states)
-        }
-        mediation_to_internal = {
-            m: i for i, m in enumerate(self.mediation_states)
-        }
+        hidden_to_internal = {h: i for i, h in enumerate(self.hidden_states)}
+        mediation_to_internal = {m: i for i, m in enumerate(self.mediation_states)}
 
         H = len(self.hidden_states)
         M = len(self.mediation_states)
@@ -169,6 +165,7 @@ class HomMVR(BaseMVR):
 
         return init_array, update_array, eval_array
 
+
 class InhomMVR(BaseMVR):
     """
     Class for time-inhomogeneous MVRs.
@@ -186,13 +183,12 @@ class InhomMVR(BaseMVR):
         upd: list[dict[tuple[str, str], str]],
         evl: list[dict[str, bool]],
         initialize: bool = False,
-
     ):
         # Validation
         h_space = set(hidden_states)
         time_horizon = len(mediation_states)
 
-        #duplicates in hidden space
+        # duplicates in hidden space
         if len(hidden_states) != len(set(hidden_states)):
             raise InvalidInputError("hidden_states must not contain duplicates")
 
@@ -208,7 +204,7 @@ class InhomMVR(BaseMVR):
             )
 
         for t, m_space in enumerate(mediation_states):
-            #duplicates in mediation space
+            # duplicates in mediation space
             if len(m_space) != len(set(m_space)):
                 raise InvalidInputError(
                     f"mediation_states at time {t} must not contain duplicates"
@@ -263,7 +259,7 @@ class InhomMVR(BaseMVR):
         self.upd = upd
         self.evl = evl
         self.time_horizon = time_horizon
-        
+
         self._repn = None
 
         if initialize:
@@ -288,9 +284,7 @@ class InhomMVR(BaseMVR):
         eval_array : list[np.ndarray]
             eval_array[t] has shape (M_t,)
         """
-        hidden_to_internal = {
-            h: i for i, h in enumerate(self.hidden_states)
-        }
+        hidden_to_internal = {h: i for i, h in enumerate(self.hidden_states)}
 
         mediation_to_internal = [
             {m: i for i, m in enumerate(m_states_t)}
@@ -356,6 +350,7 @@ class InhomMVR(BaseMVR):
             update_array.append(update_t)
 
         return init_array, update_array, eval_array
+
 
 class MVR_MatVecRepn:
     """
@@ -596,9 +591,7 @@ class MVR_MatVecRepn:
 
         # Inhomogeneous case
         self.time_horizon = len(self.eval_array)
-        self.num_mediation_states = [
-            arr.shape[0] for arr in self.eval_array
-        ]
+        self.num_mediation_states = [arr.shape[0] for arr in self.eval_array]
         self.mediation_states = [
             range(num_states) for num_states in self.num_mediation_states
         ]

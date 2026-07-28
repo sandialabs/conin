@@ -72,10 +72,7 @@ def make_forbid_state_mvr(
 
     mediation_states = ["ok", "violated"]
 
-    ini = {
-        h: "violated" if h == forbidden_state else "ok"
-        for h in hidden_states
-    }
+    ini = {h: "violated" if h == forbidden_state else "ok" for h in hidden_states}
 
     upd = {
         (m, h): "violated" if m == "violated" or h == forbidden_state else "ok"
@@ -114,15 +111,9 @@ def make_forbid_state_inhom_mvr(
     if time_horizon <= 0:
         raise ValueError("time_horizon must be positive")
 
-    mediation_states = [
-        [f"ok_{t}", f"violated_{t}"]
-        for t in range(time_horizon)
-    ]
+    mediation_states = [[f"ok_{t}", f"violated_{t}"] for t in range(time_horizon)]
 
-    ini = {
-        h: f"violated_0" if h == forbidden_state else f"ok_0"
-        for h in hidden_states
-    }
+    ini = {h: f"violated_0" if h == forbidden_state else f"ok_0" for h in hidden_states}
 
     upd = []
 
@@ -267,9 +258,7 @@ def test_hom_mvr_matvec_repn_for_forbid_state_mvr():
     assert np.array_equal(repn.init_array, expected_init_array)
     assert np.array_equal(repn.eval_array, expected_eval_array)
 
-    hidden_to_idx = {
-        h: i for i, h in enumerate(hidden_states)
-    }
+    hidden_to_idx = {h: i for i, h in enumerate(hidden_states)}
 
     mediation_to_idx = {
         "ok": 0,
@@ -283,9 +272,7 @@ def test_hom_mvr_matvec_repn_for_forbid_state_mvr():
             m_prev_idx = mediation_to_idx[m_prev]
 
             expected_m_curr = (
-                "violated"
-                if m_prev == "violated" or h == forbidden_state
-                else "ok"
+                "violated" if m_prev == "violated" or h == forbidden_state else "ok"
             )
             expected_m_curr_idx = mediation_to_idx[expected_m_curr]
 
@@ -363,9 +350,7 @@ def test_inhom_mvr_matvec_repn_for_forbid_state_mvr():
     for t in range(time_horizon - 1):
         assert repn.update_array[t].shape == (2, 2, 2)
 
-    hidden_to_idx = {
-        h: i for i, h in enumerate(hidden_states)
-    }
+    hidden_to_idx = {h: i for i, h in enumerate(hidden_states)}
 
     # At each time, mediation order is [ok_t, violated_t].
     for t in range(time_horizon - 1):
@@ -376,9 +361,7 @@ def test_inhom_mvr_matvec_repn_for_forbid_state_mvr():
 
             for m_prev_idx, m_prev_status in enumerate(["ok", "violated"]):
                 expected_m_curr_idx = (
-                    1
-                    if m_prev_status == "violated" or h == forbidden_state
-                    else 0
+                    1 if m_prev_status == "violated" or h == forbidden_state else 0
                 )
 
                 assert update_t[h_idx, expected_m_curr_idx, m_prev_idx] == 1.0
