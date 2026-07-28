@@ -413,6 +413,9 @@ def mvr_sattime(
     if not isinstance(mvr, (HomMVR, InhomMVR)):
         raise InvalidInputError("mvr_sattime expects a HomMVR or InhomMVR.")
 
+    if mvr.prefix: #if already prefix-free, then do nothing.
+        return mvr 
+
     # Create a fresh absorbing fail state.
     if isinstance(mvr, HomMVR):
         existing_states = set(mvr.mediation_states)
@@ -454,7 +457,7 @@ def mvr_sattime(
         evl = {m: mvr.evl[m] for m in mvr.mediation_states}
         evl[fail_state] = False
 
-        return HomMVR(
+        result =  HomMVR(
             hidden_states=hidden_states,
             mediation_states=mediation_states,
             ini=ini,
@@ -462,6 +465,9 @@ def mvr_sattime(
             evl=evl,
             initialize=initialize,
         )
+        result._prefix = True
+        
+        return result
 
     # Inhomogeneous case
     hidden_states = list(mvr.hidden_states)
@@ -499,7 +505,7 @@ def mvr_sattime(
 
         evl.append(evl_t)
 
-    return InhomMVR(
+    result =  InhomMVR(
         hidden_states=hidden_states,
         mediation_states=mediation_states,
         ini=ini,
@@ -507,6 +513,10 @@ def mvr_sattime(
         evl=evl,
         initialize=initialize,
     )
+
+    result._prefix = True
+    
+    return result
 
 
 # ------------------------------------------------------------------
