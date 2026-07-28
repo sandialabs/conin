@@ -1,3 +1,5 @@
+import re
+
 from collections.abc import Callable, Iterable
 from itertools import combinations, product
 from typing import Any
@@ -1489,3 +1491,282 @@ def mvr_precedence(
 # ------------------------------------------------------------------
 # Counts
 # ------------------------------------------------------------------
+
+import re
+
+from conin.exceptions import InvalidInputError
+from conin.mvr import HomMVR, InhomMVR
+
+
+MVR = HomMVR | InhomMVR
+
+
+def mvr_count(
+    mvr: MVR,
+    condition: str,
+) -> MVR:
+    """
+    Constructs a count MVR from a structured string condition.
+
+    Accepted condition patterns are exactly:
+
+        "k"                       counts == k
+        "[l,u]", "(l,u]", etc.    count ranges
+        "<k", ">=k", etc.         count inequalities
+
+    Note two cases are rejected:
+    - "<0". always false
+    - ">0". always true.
+
+    Counts are computed greedily left-to-right:
+        - run the input MVR on the current segment;
+        - whenever the current segment reaches an accepting state, increment the count;
+        - restart the input MVR on the next symbol;
+        - if the count exceeds the relevant upper bound, enter an absorbing fail state.
+    """
+    if not isinstance(mvr, (HomMVR, InhomMVR)):
+        raise InvalidInputError("mvr_count expects a HomMVR or InhomMVR.")
+
+    if not isinstance(condition, str):
+        raise InvalidInputError("condition must be a string.")
+
+    condition = condition.strip()
+
+    def count_range_mvr(
+        lower: int,
+        upper: int,
+    ) -> MVR:
+        """
+        Constructs the count-range MVR for counts in range [lower, upper].
+        """
+        if lower < 0 or upper < 0:
+            raise InvalidInputError("count bounds must be nonnegative.")
+
+        if upper < lower:
+            raise InvalidInputError("count range must be nonempty.")
+
+        fail_state = ("__count_fail__",)
+        count_states = list(range(upper + 1))
+
+        # Homogeneous case
+        if isinstance(mvr, HomMVR):
+            hidden_states = list(mvr.hidden_states)
+
+            mediation_states = [
+                (count, m)
+                for count in count_states
+                for m in mvr.mediation_states
+            ] + [
+                fail_state
+            ]
+
+            ini = {}
+
+            for h in hidden_states:
+                m0 = mvr.ini[h]
+                count0 = 1 if mvr.evl[m0] else 0
+
+                if count0 > upper:
+                    ini[h] = fail_state
+                else:
+                    ini[h] = (count0, m0)
+
+            upd = {}
+
+            for state_prev in mediation_states:
+                for h_curr in hidden_states:
+                    if state_prev == fail_state:
+                        upd[(state_prev, h_curr)] = fail_state
+                        continue
+
+                    count_prev, m_prev = state_prev
+
+                    # If the previous state was accepting, restart on the current symbol.
+                    if mvr.evl[m_prev]:
+                        m_curr = mvr.ini[h_curr]
+                    else:
+                        m_curr = mvr.upd[(m_prev, h_curr)]
+
+                    count_curr = (
+                        count_prev + 1
+                        if mvr.evl[m_curr]
+                        else count_prev
+                    )
+
+                    if count_curr > upper:
+                        upd[(state_prev, h_curr)] = fail_state
+                    else:
+                        upd[(state_prev, h_curr)] = (count_curr, m_curr)
+
+            evl = {}
+
+            for state in mediation_states:
+                if state == fail_state:
+                    evl[state] = False
+                else:
+                    count, _ = state
+                    evl[state] = lower <= count <= upper
+
+            return HomMVR(
+                hidden_states=hidden_states,
+                mediation_states=mediation_states,
+                ini=ini,
+                upd=upd,
+                evl=evl,
+            )
+
+        # Inhomogeneous case. The output time_horizon is the same as the input time_horizon.
+        hidden_states = list(mvr.hidden_states)
+        time_horizon = mvr.time_horizon
+
+        mediation_states = []
+
+        for t in range(time_horizon):
+            mediation_states_t = [
+                (count, age, m)
+                for count in count_states
+                for age in range(t + 1)
+                for m in mvr.mediation_states[age]
+            ] + [
+                fail_state
+            ]
+
+            mediation_states.append(mediation_states_t)
+
+        ini = {}
+
+        for h in hidden_states:
+            m0 = mvr.ini[h]
+            count0 = 1 if mvr.evl[0][m0] else 0
+
+            if count0 > upper:
+                ini[h] = fail_state
+            else:
+                ini[h] = (count0, 0, m0)
+
+        upd = []
+
+        for t in range(time_horizon - 1):
+            upd_t = {}
+
+            for state_prev in mediation_states[t]:
+                for h_curr in hidden_states:
+                    if state_prev == fail_state:
+                        upd_t[(state_prev, h_curr)] = fail_state
+                        continue
+
+                    count_prev, age_prev, m_prev = state_prev
+
+                    # If the previous local state was accepting, restart locally at age 0 on the current symbol.
+                    if mvr.evl[age_prev][m_prev]:
+                        age_curr = 0
+                        m_curr = mvr.ini[h_curr]
+                    else:
+                        age_curr = age_prev + 1
+                        m_curr = mvr.upd[age_prev][(m_prev, h_curr)]
+
+                    count_curr = (
+                        count_prev + 1
+                        if mvr.evl[age_curr][m_curr]
+                        else count_prev
+                    )
+
+                    if count_curr > upper:
+                        upd_t[(state_prev, h_curr)] = fail_state
+                    else:
+                        upd_t[(state_prev, h_curr)] = (
+                            count_curr,
+                            age_curr,
+                            m_curr,
+                        )
+
+            upd.append(upd_t)
+
+        evl = []
+
+        for t in range(time_horizon):
+            evl_t = {}
+
+            for state in mediation_states[t]:
+                if state == fail_state:
+                    evl_t[state] = False
+                else:
+                    count, _, _ = state
+                    evl_t[state] = lower <= count <= upper
+
+            evl.append(evl_t)
+
+        return InhomMVR(
+            hidden_states=hidden_states,
+            mediation_states=mediation_states,
+            ini=ini,
+            upd=upd,
+            evl=evl,
+        )
+
+    # ------------------------------------------------------------------
+    # Pattern 1: "k"
+    # ------------------------------------------------------------------
+    exact_match = re.fullmatch(r"\d+", condition)
+
+    if exact_match is not None:
+        k = int(condition)
+        return count_range_mvr(k, k)
+
+    # ------------------------------------------------------------------
+    # Pattern 2: "[l,u]" or "(l,u]"
+    # ------------------------------------------------------------------
+    range_match = re.fullmatch(
+        r"([\[\(])\s*(\d+)\s*,\s*(\d+)\s*\]",
+        condition,
+    )
+
+    if range_match is not None:
+        left_bracket = range_match.group(1)
+        left = int(range_match.group(2))
+        upper = int(range_match.group(3))
+
+        if left_bracket == "[":
+            lower = left
+        else:
+            lower = left + 1
+
+        return count_range_mvr(lower, upper)
+
+    # ------------------------------------------------------------------
+    # Pattern 3: ">k", ">=k", "<k", "<=k"
+    # ------------------------------------------------------------------
+    comparison_match = re.fullmatch(
+        r"(>=|<=|>|<)\s*(\d+)",
+        condition,
+    )
+
+    if comparison_match is not None:
+        op = comparison_match.group(1)
+        k = int(comparison_match.group(2))
+
+        if op == "<=":
+            return count_range_mvr(0, k)
+
+        if op == "<":
+            if k == 0:
+                raise InvalidInputError(
+                    'condition "<0" is degenerate because counts are nonnegative.'
+                )
+
+            return count_range_mvr(0, k - 1)
+
+        if op == ">":
+            return mvr_not(
+                count_range_mvr(0, k)
+            )
+
+        # op == ">="
+        if k == 0:
+            raise InvalidInputError(
+                'condition ">=0" is degenerate because counts are nonnegative.'
+            )
+
+        return mvr_not(
+            count_range_mvr(0, k - 1)
+        )
