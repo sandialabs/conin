@@ -211,6 +211,7 @@ class InhomMVR(BaseMVR):
                 f"upd length {len(upd)} must be one less than mediation_states length {time_horizon}"
             )
 
+        m_space_prev = None
         for t, m_space in enumerate(mediation_states):
             # duplicates in mediation space
             if len(m_space) != len(set(m_space)):
@@ -233,7 +234,6 @@ class InhomMVR(BaseMVR):
 
             # upd
             if t > 0:
-                raise RuntimeError("m_space_prev not defined!")
                 mh_space = set(product(m_space_prev, h_space))
                 upd_t_minus_1 = upd[t - 1]
 
