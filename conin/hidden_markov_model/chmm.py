@@ -3,6 +3,29 @@ from conin.hidden_markov_model.hmm import HMM_MatVecRepn
 
 
 class CHMM:
+    """Base container for constrained hidden Markov model variants.
+
+    Parameters
+    ----------
+    hmm : HMM_MatVecRepn, optional
+        Numeric matrix/vector representation of a hidden Markov model.
+    hidden_markov_model : HiddenMarkovModel, optional
+        High-level hidden Markov model object associated with the constrained
+        model.
+    constraints : list, optional
+        Constraint objects or functors used by derived constrained HMM
+        implementations.
+    data : munch.Munch or mapping, optional
+        Application-specific data made available to constrained HMM
+        implementations.
+
+    Raises
+    ------
+    ValueError
+        If ``hmm`` is provided but is not an ``HMM_MatVecRepn`` instance, or if
+        ``hidden_markov_model`` is provided but is not a
+        ``HiddenMarkovModel`` instance.
+    """
 
     def __init__(
         self, *, hmm=None, hidden_markov_model=None, constraints=None, data=None

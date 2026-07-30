@@ -4,18 +4,25 @@ from .mvr import BaseMVR
 
 
 class MVR_CHMM(chmm.CHMM):
-    """
-    Class for MVR augmentation on a Hidden Markov Model (HMM)
+    """Constrained HMM variant based on mediation variable representations.
+
+    Parameters
+    ----------
+    hidden_markov_model : HiddenMarkovModel
+        Hidden Markov model with an initialized numeric representation.
+    constraints : list of BaseMVR, optional
+        Mediation variable representation constraints to enforce.
+    data : optional
+        Application-specific data passed through to the base constrained HMM.
+
+    Raises
+    ------
+    InvalidInputError
+        If ``hidden_markov_model`` is missing, lacks a numeric
+        representation, or if any constraint is not a compatible ``BaseMVR``.
     """
 
     def __init__(self, *, hidden_markov_model=None, constraints=None, data=None):
-        """
-        Parameters:
-            hidden_markov_model(HiddenMarkovModel):
-                Requires a numeric representation.
-            constraints (list, optional):
-                A list of MVR objects.
-        """
         # Validation checks
         # Checking for missing arguments
         if hidden_markov_model is None:

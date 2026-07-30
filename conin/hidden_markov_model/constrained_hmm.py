@@ -9,17 +9,25 @@ from .chmm import CHMM
 
 
 class ConstrainedHiddenMarkovModel:
-    """
-    A class to represent a base Hidden Markov Model (HMM).
+    """Hidden Markov model wrapper with attached constraint functors.
+
+    Parameters
+    ----------
+    hmm : HiddenMarkovModel or HMM_MatVecRepn, optional
+        Hidden Markov model to wrap.
+    constraints : list[ConstraintFunctor], optional
+        Constraint functors used to build a constrained HMM solver.
     """
 
     def __init__(self, *, hmm=None, constraints=None):
-        """
-        Constructor.
+        """Initialize a constrained hidden Markov model wrapper.
 
-        Parameters:
-            hmm (HiddenMarkovModel or HMM, optional): An instance of the HiddenMarkovModel
-            or HMM class (default is None).
+        Parameters
+        ----------
+        hmm : HiddenMarkovModel or HMM_MatVecRepn, optional
+            Hidden Markov model to wrap.
+        constraints : list[ConstraintFunctor], optional
+            Constraint functors used to configure the constrained model.
         """
         self.hidden_markov_model = hmm
         self.constraint_type = None
@@ -55,6 +63,18 @@ class ConstrainedHiddenMarkovModel:
             self.add_constraint(con)
 
     def add_constraint(self, constraint):
+        """Add a single constraint functor to the model.
+
+        Parameters
+        ----------
+        constraint : ConstraintFunctor
+            Constraint functor to register.
+
+        Raises
+        ------
+        ValueError
+            If ``constraint`` is not a supported constraint functor type.
+        """
         if isinstance(constraint, OracleConstraint):
             assert self.constraint_type is None or self.constraint_type == "oracle"
             self.constraint_type = "oracle"
@@ -75,6 +95,18 @@ class ConstrainedHiddenMarkovModel:
             raise ValueError(f"Unexpected constraint type: {type(constraint)=}")
 
     def initialize_chmm(self, constraint_type=None, *, data=None, **kwargs):
+        """Initialize the internal constrained HMM solver.
+
+        Parameters
+        ----------
+        constraint_type : {"oracle", "pyomo", "toulbar2", "factor"}, optional
+            Explicit constraint backend to use.
+        data : optional
+            Application-specific data passed to the solver.
+        **kwargs
+            Additional keyword arguments forwarded to the selected solver
+            implementation.
+        """
         if constraint_type:
             self.constraint_type = constraint_type
         if self.constraint_type is None:
@@ -102,17 +134,17 @@ class ConstrainedHiddenMarkovModel:
             )
 
     def generate_hidden(self, time_steps):
-        """
-        Generates a feasible sequence of hidden states
+        """Generate a feasible sequence of hidden states.
 
-        Parameters:
-            time_steps (int): How long you want the sequence to be
+        Parameters
+        ----------
+        time_steps : int
+            Number of hidden states to generate.
 
-        Returns:
-            list: Feasible sequence of hidden indices
-
-        Raises:
-            InvalidInputError: If time_steps is negative.
+        Returns
+        -------
+        list
+            Feasible sequence of external hidden-state labels.
         """
         return [
             self.hidden_markov_model.hidden_to_external[h]
@@ -120,14 +152,22 @@ class ConstrainedHiddenMarkovModel:
         ]
 
     def generate_observed_from_hidden(self, hidden):
-        """
-        Generates random sequence of observed states from a sequence of hidden states.
+        """Generate observed states from a feasible hidden-state sequence.
 
-        Parameters:
-            hidden (list): What we wish to generate from
+        Parameters
+        ----------
+        hidden : list
+            External hidden-state labels from which to generate observations.
 
-        Returns:
-            list: Observations generated from hidden
+        Returns
+        -------
+        list
+            Observed-state labels sampled from the wrapped hidden Markov model.
+
+        Raises
+        ------
+        InvalidInputError
+            If ``hidden`` does not satisfy the configured constraints.
         """
         internal_hidden = [
             self.hidden_markov_model.hidden_to_internal[h] for h in hidden
@@ -144,17 +184,22 @@ class ConstrainedHiddenMarkovModel:
         ]
 
     def generate_observed(self, time_steps):
-        """
-        Generates random sequence of observed states.
+        """Generate a feasible hidden-state sequence and sample observations.
 
-        Parameters:
-            hidden (list): What we wish to generate from
+        Parameters
+        ----------
+        time_steps : int
+            Number of time steps to generate.
 
-        Returns:
-            list: Observations generated from hidden
+        Returns
+        -------
+        list
+            Observed-state labels sampled from a feasible hidden-state sequence.
 
-        Raises:
-            InvalidInputError: If time_steps is negative.
+        Raises
+        ------
+        InvalidInputError
+            If ``time_steps`` is negative.
         """
         if time_steps < 0:
             raise InvalidInputError("In generate_observed, time_steps must be >= 0.")
@@ -163,14 +208,17 @@ class ConstrainedHiddenMarkovModel:
         return self.generate_observed_from_hidden(hidden)
 
     def is_feasible(self, seq):
-        """
-        Checks if a given sequence satisfies all constraints.
+        """Check whether a sequence satisfies all configured constraints.
 
-        Parameters:
-            seq (list): A sequence to be checked against the constraints.
+        Parameters
+        ----------
+        seq : list
+            Sequence of external hidden-state labels.
 
-        Returns:
-            bool: True if the sequence satisfies all constraints, False otherwise.
+        Returns
+        -------
+        bool
+            ``True`` if every constraint is satisfied and ``False`` otherwise.
         """
         for constraint in self.constraints:
             if not constraint(seq):
@@ -178,15 +226,20 @@ class ConstrainedHiddenMarkovModel:
         return True
 
     def partial_is_feasible(self, *, T, seq):
-        """
-        Check if a partial sequence satisfies the constraints
-        E.g. returns false only if there is no possibility of extending the sequence to
-        being feasible.
+        """Check whether a partial sequence can still be extended feasibly.
 
-        Parameters:
-            seq (list): A sequence to be checked against the constraints.
-        Returns:
-            bool: True if the sequence satisfies all constraints, False otherwise.
+        Parameters
+        ----------
+        T : int
+            Target full sequence length.
+        seq : list
+            Partial sequence of external hidden-state labels.
+
+        Returns
+        -------
+        bool
+            ``True`` if the partial sequence admits a feasible completion and
+            ``False`` otherwise.
         """
         return self.chmm.partial_is_feasible(
             T=T, seq=[self.hidden_markov_model.hidden_to_internal[h] for h in seq]
