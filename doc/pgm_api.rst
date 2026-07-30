@@ -1,6 +1,12 @@
 API Reference
 =============
 
+.. autoclass:: conin.constraint.ConstraintFunctor
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 .. autoclass:: conin.markov_network.DiscreteFactor
    :members:
    :undoc-members:
