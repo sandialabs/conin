@@ -3,6 +3,7 @@ from conin.constraint import (
     PyomoConstraint,
     Toulbar2Constraint,
     FactorConstraint,
+    MVRConstraint,
 )
 from conin.exceptions import InvalidInputError
 from .chmm import CHMM
@@ -91,6 +92,10 @@ class ConstrainedHiddenMarkovModel:
             assert self.constraint_type is None or self.constraint_type == "factor"
             self.constraint_type = "factor"
             self._constraints.append(constraint)
+        elif isinstance(constraint, MVRConstraint):
+            assert self.constraint_type is None or self.constraint_type == "mvr"
+            self.constraint_type = "mvr"
+            self._constraints.append(constraint)
         else:
             raise ValueError(f"Unexpected constraint type: {type(constraint)=}")
 
@@ -99,7 +104,7 @@ class ConstrainedHiddenMarkovModel:
 
         Parameters
         ----------
-        constraint_type : {"oracle", "pyomo", "toulbar2", "factor"}, optional
+        constraint_type : {"oracle", "pyomo", "toulbar2", "factor", "mvr"}, optional
             Explicit constraint backend to use.
         data : optional
             Application-specific data passed to the solver.
@@ -130,6 +135,18 @@ class ConstrainedHiddenMarkovModel:
                 hidden_markov_model=self.hidden_markov_model,  # HiddenMarkovModel object
                 constraints=self.constraints,  # list of PyomoConstraint objects
                 data=data,  # Application-specific data
+                **kwargs,
+            )
+        elif self.constraint_type == "mvr":
+            from .chmm_mvr import MVR_CHMM
+
+            self.chmm = MVR_CHMM(
+                hidden_markov_model=self.hidden_markov_model,
+                constraints=[
+                    constraint(self.hidden_markov_model, data)
+                    for constraint in self.constraints
+                ],
+                data=data,
                 **kwargs,
             )
 
