@@ -233,6 +233,7 @@ class InhomMVR(BaseMVR):
 
             # upd
             if t > 0:
+                raise RuntimeError("m_space_prev not defined!")
                 mh_space = set(product(m_space_prev, h_space))
                 upd_t_minus_1 = upd[t - 1]
 
