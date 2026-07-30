@@ -89,7 +89,7 @@ class OracleConstraint(ConstraintFunctor):
 
 def oracle_constraint_fn(*, name=None, same_partial_as_func=None):
     """
-    Decorator factory that takes the 'name' and returns a decorator function.
+    Decorator factory that takes the 'name' and returns a decorator function that creates an instance of OracleConstraint.
     """
 
     def decorator(func):
@@ -191,7 +191,7 @@ class FactorConstraint(ConstraintFunctor):
 
 def factor_constraint_fn(*, nodes=None, name=None):
     """
-    Decorator factory that takes the 'name' and returns a decorator function.
+    Decorator factory that takes the 'name' and returns a decorator function that creates an instance of FactorConstraint.
     """
 
     def decorator(func):
@@ -227,7 +227,7 @@ class PyomoConstraint(ConstraintFunctor):
 
 def pyomo_constraint_fn(*, name=None):
     """
-    Decorator factory that takes the 'name' and returns a decorator function.
+    Decorator factory that takes the 'name' and returns a decorator function that creates an instance of PyomoConstraint.
     """
 
     def decorator(func):
@@ -263,7 +263,7 @@ class Toulbar2Constraint(ConstraintFunctor):
 
 def toulbar2_constraint_fn(*, name=None):
     """
-    Decorator factory that takes the 'name' and returns a decorator function.
+    Decorator factory that takes the 'name' and returns a decorator function that creates an instance of Toulbar2Constraint.
     """
 
     def decorator(func):
