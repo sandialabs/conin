@@ -4,9 +4,7 @@ from . import chmm
 
 
 class Oracle_CHMM(chmm.CHMM):
-    """
-    A class to represent a Hidden Markov Model (HMM) with additional constraints.
-    """
+    """Constrained HMM that enforces oracle-style sequence constraints."""
 
     def __init__(
         self,
@@ -17,13 +15,22 @@ class Oracle_CHMM(chmm.CHMM):
         data=None,
         make_internal_constraint=True,
     ):
-        """
-        Parameters:
-            hmm (HMM, optional):
-                An instance of the HMM class (default is None,
-                which initializes a new HMM instance).
-            constraints (list, optional):
-                A list of constraintsto be applied to the HMM (default is an empty list).
+        """Initialize an oracle-constrained HMM.
+
+        Parameters
+        ----------
+        hmm : HMM_MatVecRepn, optional
+            Numeric hidden Markov model representation used for sampling.
+        constraints : list of OracleConstraint, optional
+            Oracle constraints to apply to generated hidden-state sequences.
+        hidden_to_external : dict, optional
+            Mapping from internal hidden-state indices to external labels.
+        data : optional
+            Application-specific data passed through to the base constrained
+            HMM.
+        make_internal_constraint : bool, optional
+            If ``True``, wrap each oracle constraint so it operates on internal
+            hidden-state indices.
         """
         super().__init__(hmm=hmm, data=data)
         if constraints:
@@ -38,14 +45,19 @@ class Oracle_CHMM(chmm.CHMM):
             self.constraints = []
 
     def _make_internal_constraint(self, constraint, hidden_to_external):
-        """
-        Makes an internal version of the constraint that works on indices rather than keys
+        """Convert an external oracle constraint to internal index space.
 
-        Parameters:
-            constraint (OracleConstraint): The constraint we wish to make internal
+        Parameters
+        ----------
+        constraint : OracleConstraint
+            Constraint defined on external hidden-state labels.
+        hidden_to_external : dict
+            Mapping from internal hidden-state indices to external labels.
 
-        Returns:
-            OracleConstraint: An internalized version of constraint
+        Returns
+        -------
+        OracleConstraint
+            Constraint that accepts internal hidden-state indices.
         """
 
         def internal_func(internal_seq):
@@ -65,17 +77,24 @@ class Oracle_CHMM(chmm.CHMM):
         return internal_constraint
 
     def generate_hidden(self, time_steps, max_failures=1000):
-        """
-        Generates a sequence of hidden variables satisfying the internal constraints
+        """Generate a hidden-state sequence satisfying all oracle constraints.
 
-        Parameters:
-            time_steps (int): How long you want the sequence to be
+        Parameters
+        ----------
+        time_steps : int
+            Number of hidden states to generate.
+        max_failures : int, optional
+            Maximum number of rejected samples before raising an error.
 
-        Returns:
-            list: Feasible sequence of hidden indices
+        Returns
+        -------
+        list
+            Feasible sequence of internal hidden-state indices.
 
-        Raises:
-            InvalidInputError: If time_steps is negative.
+        Raises
+        ------
+        RuntimeError
+            If no feasible sequence is found within ``max_failures`` trials.
         """
         hidden = self.hmm.generate_hidden(time_steps)
         ctr = 0
@@ -89,14 +108,17 @@ class Oracle_CHMM(chmm.CHMM):
         return hidden
 
     def is_feasible(self, seq):
-        """
-        Checks if a given sequence satisfies all constraints.
+        """Check whether a sequence satisfies all oracle constraints.
 
-        Parameters:
-            seq (list): A sequence to be checked against the constraints.
+        Parameters
+        ----------
+        seq : list
+            Sequence of internal hidden-state indices.
 
-        Returns:
-            bool: True if the sequence satisfies all constraints, False otherwise.
+        Returns
+        -------
+        bool
+            ``True`` if every constraint is satisfied and ``False`` otherwise.
         """
         for constraint in self.constraints:
             if not constraint(seq):
@@ -104,16 +126,20 @@ class Oracle_CHMM(chmm.CHMM):
         return True
 
     def partial_is_feasible(self, *, T, seq):
-        """
-        Check if a partial sequence satisfies the constraints
-        E.g. returns false only if there is no possibility of extending the sequence to
-        being feasible.
+        """Check whether a partial sequence can still be extended feasibly.
 
-        Parameters:
-            seq (list): A sequence to be checked against the constraints.
+        Parameters
+        ----------
+        T : int
+            Target sequence length.
+        seq : list
+            Partial sequence of internal hidden-state indices.
 
-        Returns:
-            bool: True if the sequence satisfies all constraints, False otherwise.
+        Returns
+        -------
+        bool
+            ``True`` if every constraint allows some feasible completion of the
+            partial sequence and ``False`` otherwise.
         """
         for constraint in self.constraints:
             if not constraint.partial_func(T, seq):
