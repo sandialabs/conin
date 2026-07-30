@@ -1,34 +1,14 @@
 API Reference
 =============
 
-.. autoclass:: conin.markov_network.DiscreteFactor
-   :members:
-   :undoc-members:
-   :show-inheritance:
+The API reference is split into focused pages for the core model classes,
+constraint-related interfaces used to build constrained graphical models, and
+inference wrappers.
 
-.. autoclass:: conin.markov_network.DiscreteMarkovNetwork
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. toctree::
+   :maxdepth: 1
 
-.. autoclass:: conin.markov_network.ConstrainedDiscreteMarkovNetwork
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. autoclass:: conin.bayesian_network.DiscreteCPD
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. autoclass:: conin.bayesian_network.DiscreteBayesianNetwork
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. autoclass:: conin.bayesian_network.ConstrainedDiscreteBayesianNetwork
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
+   api_graphical_models
+   api_constrained_graphical_models
+   api_constraints
+   api_inference

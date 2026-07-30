@@ -8,17 +8,10 @@ from itertools import product
 
 
 class BaseMVR:
-    """
-    Base class for a mediation variable representation (MVR).
+    """Base class for mediation variable representations (MVRs).
 
-    An MVR consists of the following data:
-    1. X, the hidden space of the HMM
-    2. M_t, the state space of the MVR at time t
-    3. ini: X -> M. initialization
-    4. upd_t: M x X -> M. update at time t.
-    5. evl_t: M -> 0/1. eval at time t.
-
-    In the case where M and the above maps are constant over time, an MVR is a DFA.
+    An MVR augments a hidden Markov model with an auxiliary state process used to
+    track feasibility conditions over hidden-state sequences.
     """
 
     hidden_states: Any
@@ -31,21 +24,40 @@ class BaseMVR:
     _prefix: bool  # prefix-free tag.
 
     def __init__(self):
+        """Initialize the base MVR state."""
         self._prefix = False
 
     @property
     def prefix(self):
+        """Return whether the MVR is marked as prefix-free.
+
+        Returns
+        -------
+        bool
+            Prefix-free tag for the representation.
+        """
         return self._prefix
 
     @property
     def repn(self):
+        """Return the numeric array representation of the MVR.
+
+        Returns
+        -------
+        MVR_MatVecRepn
+            Integer-indexed array representation of the MVR.
+        """
         if self._repn is None:
             self.initialize()
         return self._repn
 
     def initialize(self):
-        """
-        Converts the MVR into an integer-indexed NumPy array representation.
+        """Convert the MVR into an integer-indexed NumPy array representation.
+
+        Returns
+        -------
+        MVR_MatVecRepn
+            Integer-indexed array representation of the MVR.
         """
         if getattr(self, "_repn", None) is not None:
             return self._repn
@@ -67,9 +79,7 @@ class BaseMVR:
 
 
 class HomMVR(BaseMVR):
-    """
-    Class for time-homogeneous MVRs, i.e. DFAs.
-    """
+    """Time-homogeneous mediation variable representation."""
 
     def __init__(
         self,
@@ -131,12 +141,13 @@ class HomMVR(BaseMVR):
         super().__init__()
 
     def _build_array_repn(self):
-        """
-        Builds integer-indexed NumPy arrays for a homogeneous MVR.
+        """Build integer-indexed NumPy arrays for a homogeneous MVR.
 
-        ini_array[h, m]
-        upd_array[h_curr, m_curr, m_prev]
-        evl_array[m]
+        Returns
+        -------
+        tuple
+            Tuple ``(ini_array, upd_array, evl_array)`` describing the homogeneous
+            MVR.
         """
         hidden_to_internal = {h: i for i, h in enumerate(self.hidden_states)}
         mediation_to_internal = {m: i for i, m in enumerate(self.mediation_states)}
@@ -176,11 +187,10 @@ class HomMVR(BaseMVR):
 
 
 class InhomMVR(BaseMVR):
-    """
-    Class for time-inhomogeneous MVRs.
+    """Time-inhomogeneous mediation variable representation.
 
-    mediation_states, upd, and evl are now lists of their time-homogeneous counterparts.
-    For example, mediation_states is a list of lists, each sublist the mediation space at that time.
+    ``mediation_states``, ``upd``, and ``evl`` vary over time instead of being
+    constant across the horizon.
     """
 
     def __init__(
@@ -275,23 +285,16 @@ class InhomMVR(BaseMVR):
         super().__init__()
 
     def _build_array_repn(self):
-        """
-        Builds integer-indexed NumPy arrays for an inhomogeneous MVR.
+        """Build integer-indexed NumPy arrays for an inhomogeneous MVR.
 
         Returns
         -------
         ini_array : np.ndarray
-            Shape (H, M_0)
-
+            Array of shape ``(H, M_0)``.
         upd_array : list[np.ndarray]
-            upd_array[t] has shape (H, M_{t+1}, M_t)
-
-            upd_array[t][h_curr, m_curr, m_prev] = 1 iff
-
-                upd[t][(m_prev, h_curr)] == m_curr
-
+            ``upd_array[t]`` has shape ``(H, M_{t+1}, M_t)``.
         evl_array : list[np.ndarray]
-            evl_array[t] has shape (M_t,)
+            ``evl_array[t]`` has shape ``(M_t,)``.
         """
         hidden_to_internal = {h: i for i, h in enumerate(self.hidden_states)}
 
@@ -354,31 +357,10 @@ class InhomMVR(BaseMVR):
 
 
 class MVR_MatVecRepn:
-    """
-    Integer-indexed NumPy array representation of an MVR, analgous to HMM_MatVecRepn
-    Handles both homogenoues and inhomogeneous cases.
+    """Integer-indexed NumPy array representation of an MVR.
 
-    Homogeneous case
-    ----------------
-    ini_array:
-        shape (H, M)
-
-    upd_array:
-        shape (H, M, M)
-
-    evl_array:
-        shape (M,)
-
-    Inhomogeneous case
-    ------------------
-    ini_array:
-        shape (H, M_0)
-
-    upd_array:
-        list of arrays where upd_array[t] has shape (H, M_{t+1}, M_t)
-
-    evl_array:
-        list of arrays where evl_array[t] has shape (M_t,)
+    Supports both homogeneous and inhomogeneous mediation variable
+    representations.
     """
 
     def __init__(
@@ -399,14 +381,19 @@ class MVR_MatVecRepn:
         self.load_dimensions()
 
     def load_ini_array(self, ini_array, check_errors=True):
-        """
-        Loads the MVR initialization array.
+        """Load the MVR initialization array.
 
-        Homogeneous:
-            ini_array[h, m] = 1 iff ini[h] = m
+        Parameters
+        ----------
+        ini_array : array-like
+            Initialization array for the MVR.
+        check_errors : bool, optional
+            If ``True``, validate dimensions and binary structure.
 
-        Inhomogeneous:
-            ini_array[h, m_0] = 1 iff ini[h] = m_0
+        Raises
+        ------
+        InvalidInputError
+            If ``ini_array`` has invalid shape or entries.
         """
         ini_array = np.asarray(ini_array)
 
@@ -427,14 +414,20 @@ class MVR_MatVecRepn:
         self.ini_array = ini_array
 
     def load_upd_array(self, upd_array, check_errors=True):
-        """
-        Loads the MVR update array.
+        """Load the MVR update array or arrays.
 
-        Homogeneous:
-            upd_array[h_curr, m_curr, m_prev]
+        Parameters
+        ----------
+        upd_array : array-like or list of array-like
+            Update array for a homogeneous MVR or time-indexed update arrays for an
+            inhomogeneous MVR.
+        check_errors : bool, optional
+            If ``True``, validate dimensions and binary structure.
 
-        Inhomogeneous:
-            upd_array[t][h_curr, m_curr, m_prev]
+        Raises
+        ------
+        InvalidInputError
+            If any update array has invalid shape or entries.
         """
         if isinstance(upd_array, list):
             upd_array = [np.asarray(arr) for arr in upd_array]
@@ -470,14 +463,20 @@ class MVR_MatVecRepn:
         self.upd_array = upd_array
 
     def load_evl_array(self, evl_array, check_errors=True):
-        """
-        Loads the MVR evaluation array.
+        """Load the MVR evaluation array or arrays.
 
-        Homogeneous:
-            evl_array[m]
+        Parameters
+        ----------
+        evl_array : array-like or list of array-like
+            Evaluation array for a homogeneous MVR or time-indexed evaluation arrays
+            for an inhomogeneous MVR.
+        check_errors : bool, optional
+            If ``True``, validate dimensions and binary structure.
 
-        Inhomogeneous:
-            evl_array[t][m_t]
+        Raises
+        ------
+        InvalidInputError
+            If any evaluation array has invalid shape or entries.
         """
         if isinstance(evl_array, list):
             evl_array = [np.asarray(arr) for arr in evl_array]
@@ -506,8 +505,12 @@ class MVR_MatVecRepn:
         self.evl_array = evl_array
 
     def check_dimensions(self):
-        """
-        Checks that ini_array, upd_array, and evl_array have compatible dimensions.
+        """Validate that the initialization, update, and evaluation arrays are compatible.
+
+        Raises
+        ------
+        InvalidInputError
+            If the supplied arrays are inconsistent with each other.
         """
         if isinstance(self.evl_array, list) != isinstance(self.upd_array, list):
             raise InvalidInputError(
@@ -576,9 +579,7 @@ class MVR_MatVecRepn:
                 )
 
     def load_dimensions(self):
-        """
-        Updates dimension fields and integer-indexed state spaces.
-        """
+        """Update cached dimension metadata for the numeric MVR representation."""
         self.num_hidden_states = self.ini_array.shape[0]
         self.hidden_states = range(self.num_hidden_states)
 

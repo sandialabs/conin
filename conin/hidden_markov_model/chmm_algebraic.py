@@ -13,6 +13,23 @@ def _create_index_sets(*, hmm, observed, Tmax=None):
     # trans_mat[i][j] - probability of transitioning from hidden state i to
     # hidden state j
 
+    """Create index sets and log-probability data for algebraic HMM models.
+
+    Parameters
+    ----------
+    hmm : HiddenMarkovModel
+        Hidden Markov model supplying probabilities and label mappings.
+    observed : sequence
+        Observed-state labels used to restrict feasible hidden states.
+    Tmax : int, optional
+        Number of time steps to model. If omitted, use ``len(observed)``.
+
+    Returns
+    -------
+    munch.Munch
+        Collection of index sets, feasible transitions, and cached log
+        probabilities for algebraic formulations.
+    """
     N = hmm.num_hidden_states
     obs = [hmm.observed_to_internal[o] for o in observed]
     start_probs = hmm.start_vec
@@ -109,6 +126,8 @@ def _create_index_sets(*, hmm, observed, Tmax=None):
 
 # Instances of this class can be called like a function
 class CallableDict(dict):
+    """Dictionary with callable lookup syntax for model variables."""
+
     def __call__(self, *args):
         if len(args) == 3:
             return self.get(((args[0], args[1]), args[2]))
@@ -119,8 +138,18 @@ class CallableDict(dict):
 
 
 class Algebraic_CHMM(chmm.CHMM):
-    """
-    A class to represent a Hidden Markov Model (HMM) with optimization equations.
+    """Constrained HMM base class for algebraic optimization formulations.
+
+    Parameters
+    ----------
+    hidden_markov_model : HiddenMarkovModel, optional
+        Hidden Markov model to convert into an algebraic formulation.
+    cache_indices : bool, optional
+        Whether to cache generated index sets on ``self.data``.
+    constraints : list, optional
+        Constraint functors applied to the optimization model.
+    data : optional
+        Application-specific data passed to constraint functors.
     """
 
     def __init__(
@@ -131,11 +160,18 @@ class Algebraic_CHMM(chmm.CHMM):
         constraints=None,
         data=None,
     ):
-        """
-        Constructor.
+        """Initialize an algebraic constrained HMM.
 
-        Parameters:
-            hidden_markov_model (HiddenMarkovModel, optional): An instance of the HMM class (default is None, which initializes a new HMM instance).
+        Parameters
+        ----------
+        hidden_markov_model : HiddenMarkovModel, optional
+            Hidden Markov model to convert into an algebraic formulation.
+        cache_indices : bool, optional
+            Whether to cache generated index sets on ``self.data``.
+        constraints : list, optional
+            Constraint functors applied to the optimization model.
+        data : optional
+            Application-specific data passed to constraint functors.
         """
         super().__init__(
             hidden_markov_model=hidden_markov_model,
@@ -146,6 +182,18 @@ class Algebraic_CHMM(chmm.CHMM):
         self.cache_indices = True if cache_indices is None else cache_indices
 
     def generate_model(self, *, observed):
+        """Generate a constrained algebraic model for an observed sequence.
+
+        Parameters
+        ----------
+        observed : sequence
+            Observed-state labels used to build the constrained model.
+
+        Returns
+        -------
+        pyomo.core.base.PyomoModel.ConcreteModel
+            Algebraic optimization model with all configured constraints applied.
+        """
         M = self.generate_unconstrained_model(observed=observed)
         for con in self.constraints:
             con(M, self.data)
@@ -153,6 +201,7 @@ class Algebraic_CHMM(chmm.CHMM):
 
 
 class PyomoAlgebraic_CHMM(Algebraic_CHMM):
+    """Pyomo-backed algebraic constrained HMM implementation."""
 
     def __init__(
         self,
@@ -167,6 +216,23 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
         # solver_options=None,
         # app=None,
     ):
+        """Initialize a Pyomo-based algebraic constrained HMM.
+
+        Parameters
+        ----------
+        hidden_markov_model : HiddenMarkovModel, optional
+            Hidden Markov model to convert into a Pyomo model.
+        cache_indices : bool, optional
+            Whether to cache generated index sets on ``self.data``.
+        y_binary : bool, optional
+            If ``True``, create binary transition-selection variables.
+        x_binary : bool, optional
+            If ``True``, create binary hidden-state selection variables.
+        constraints : list, optional
+            Constraint functors applied to the Pyomo model.
+        data : optional
+            Application-specific data passed to constraint functors.
+        """
         super().__init__(
             hidden_markov_model=hidden_markov_model,
             cache_indices=cache_indices,
@@ -179,6 +245,20 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
         self.x_binary = x_binary
 
     def generate_unconstrained_model(self, *, observed, Tmax=None):
+        """Generate an unconstrained Pyomo model for an observed sequence.
+
+        Parameters
+        ----------
+        observed : sequence
+            Observed-state labels used to build the optimization model.
+        Tmax : int, optional
+            Number of time steps to include. If omitted, use the observation length.
+
+        Returns
+        -------
+        pyomo.core.base.PyomoModel.ConcreteModel
+            Unconstrained Pyomo model encoding the HMM dynamics.
+        """
         self.observed = observed
         D = _create_index_sets(
             hmm=self.hidden_markov_model, observed=observed, Tmax=Tmax
@@ -269,10 +349,21 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
         return M
 
     def Xgenerate_hidden(self, *, observed, solver=None, solver_options=None):
-        """
-        This should probably be called something different
+        """Project sampled hidden states onto the feasible region.
 
-        Randomly generate hidden states using the HMM parameters
+        Parameters
+        ----------
+        observed : sequence
+            Observed-state labels conditioning the sampled trajectory.
+        solver : str, optional
+            Solver name passed to Pyomo.
+        solver_options : dict, optional
+            Solver options passed to the Pyomo solver.
+
+        Returns
+        -------
+        list
+            Feasible hidden-state labels closest to the sampled trajectory.
         """
         # TODO is this right?
         if "quiet" in solver_options:
@@ -333,6 +424,25 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
 
 
 def create_algebraic_chmm(aml, **kwds):
+    """Create an algebraic constrained HMM implementation.
+
+    Parameters
+    ----------
+    aml : str
+        Algebraic modeling layer identifier.
+    **kwds
+        Keyword arguments forwarded to the selected implementation.
+
+    Returns
+    -------
+    Algebraic_CHMM
+        Algebraic constrained HMM instance.
+
+    Raises
+    ------
+    NotImplementedError
+        If ``aml`` is not a supported algebraic modeling layer.
+    """
     if aml == "pyomo":
         return PyomoAlgebraic_CHMM(**kwds)
     raise NotImplementedError(  # pragma: nocover

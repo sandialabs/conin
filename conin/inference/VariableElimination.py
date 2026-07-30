@@ -34,8 +34,26 @@ with try_import() as pgmpy_available:
 
 
 class VariableEliminationInference:
+    """Run MAP inference with pgmpy's variable elimination implementation.
+
+    This wrapper supports static discrete Bayesian networks and Markov
+    networks, including constrained CONIN variants that are converted into a
+    pgmpy-compatible form before solving.
+    """
 
     def __init__(self, pgm):
+        """Store a model for subsequent variable elimination MAP queries.
+
+        Parameters
+        ----------
+        pgm : DiscreteMarkovNetwork or ConstrainedDiscreteMarkovNetwork or DiscreteBayesianNetwork or ConstrainedDiscreteBayesianNetwork or pgmpy.models.DiscreteMarkovNetwork or pgmpy.models.DiscreteBayesianNetwork
+            Graphical model to solve with pgmpy's variable elimination backend.
+
+        Raises
+        ------
+        AssertionError
+            If pgmpy is not installed.
+        """
         assert (
             pgmpy_available
         ), "PGMPY must be installed to perform inference with VariableElimination"
@@ -51,34 +69,45 @@ class VariableEliminationInference:
         write_uai_file=None,
         **options,
     ):
-        """
-        Computes the MAP Query over the variables given the evidence. Returns the
-        highest probable state in the joint distribution of `variables`.
+        """Compute a MAP assignment using pgmpy's variable elimination solver.
 
         Parameters
         ----------
-        variables: list
-            list of variables over which we want to compute the max-marginal.
+        variables : list, optional
+            Variables included in the MAP query. When omitted, the solver uses
+            all model variables not fixed by ``evidence``.
+        evidence : dict, optional
+            Observed variable assignments as ``{variable: state}``. Use ``None``
+            when no evidence is supplied.
+        show_progress : bool, optional
+            Whether to request progress reporting from pgmpy.
+        timing : bool, optional
+            If ``True``, collect setup timing information and include solver
+            runtime in the returned result.
+        write_uai_file : str, optional
+            Path where the converted CONIN model should be written in UAI format
+            before solving.
+        **options : dict, optional
+            Additional keyword arguments forwarded to
+            ``pgmpy.inference.VariableElimination.map_query``.
 
-        evidence: dict
-            a dict key, value pair as {var: state_of_var_observed}
-            None if no evidence
+        Returns
+        -------
+        munch.Munch
+            Result object with ``solution.states`` containing the MAP
+            assignment and ``solvetime`` containing the measured pgmpy solver
+            runtime.
 
-        show_progress: boolean
-            If True, shows a progress bar.
+        Raises
+        ------
+        TypeError
+            If ``self.pgm`` is not a supported static graphical model type.
 
-        Examples
-        --------
-        >>> from conin.inference import VariableElimination
-        >>> from pgmpy.models import DiscreteBayesianNetwork
-        >>> import numpy as np
-        >>> import pandas as pd
-        >>> values = pd.DataFrame(np.random.randint(low=0, high=2, size=(1000, 5)),
-        ...                       columns=['A', 'B', 'C', 'D', 'E'])
-        >>> model = DiscreteBayesianNetwork([('A', 'B'), ('C', 'B'), ('C', 'D'), ('B', 'E')])
-        >>> model = model.fit(values)
-        >>> inference = VariableElimination(model)
-        >>> phi_query = inference.map_query(variables=['A', 'B'])
+        Notes
+        -----
+        Constrained CONIN models are materialized by injecting their generated
+        factors or CPDs into the underlying unconstrained model prior to
+        conversion to pgmpy.
         """
         if timing:
             timer = TicTocTimer()
@@ -148,14 +177,56 @@ class VariableEliminationInference:
 
 
 class DPGM_VariableEliminationInference:
+    """Run pgmpy variable elimination for dynamic models and HMM-derived forms.
+
+    This wrapper expands dynamic Bayesian networks and hidden Markov models into
+    static Bayesian networks before solving them with pgmpy's variable
+    elimination backend.
+    """
 
     def __init__(self, pgm):
+        """Store a dynamic model for subsequent variable elimination MAP queries.
+
+        Parameters
+        ----------
+        pgm : DynamicDiscreteBayesianNetwork or ConstrainedDynamicDiscreteBayesianNetwork or HiddenMarkovModel or ConstrainedHiddenMarkovModel or pgmpy.models.DynamicBayesianNetwork
+            Dynamic graphical model to solve.
+
+        Raises
+        ------
+        AssertionError
+            If pgmpy is not installed.
+        """
         assert (
             pgmpy_available
         ), "PGMPY must be installed to perform inference with DPGM_VariableElimination"
         self.pgm = pgm
 
     def _run_map_query(self, pgmpy_bn, variables, evidence, show_progress, **options):
+        """Solve a pgmpy Bayesian network MAP query and time the solve phase.
+
+        Parameters
+        ----------
+        pgmpy_bn : pgmpy.models.DiscreteBayesianNetwork
+            Static Bayesian network supplied to pgmpy's variable elimination
+            solver.
+        variables : list, optional
+            Variables included in the MAP query. When ``None``, all nodes not
+            fixed by ``evidence`` are queried.
+        evidence : dict, optional
+            Observed node assignments in pgmpy naming conventions.
+        show_progress : bool
+            Whether to request progress reporting from pgmpy.
+        **options : dict, optional
+            Additional keyword arguments forwarded to
+            ``pgmpy.inference.VariableElimination.map_query``.
+
+        Returns
+        -------
+        tuple
+            Two-element tuple ``(map_states, solvetime)`` containing the MAP
+            assignment returned by pgmpy and the measured solver runtime.
+        """
         infer = pgmpy.inference.VariableElimination(pgmpy_bn)
         if variables is None:
             if evidence:
@@ -176,6 +247,21 @@ class DPGM_VariableEliminationInference:
         return map_states, solvetime
 
     def _hmm_evidence_to_pgmpy(self, evidence):
+        """Convert HMM evidence into the pgmpy-expanded DBN naming scheme.
+
+        Parameters
+        ----------
+        evidence : list or dict or None
+            HMM evidence supplied as a dense list of observations or a
+            dictionary keyed by time index.
+
+        Returns
+        -------
+        dict or None
+            Evidence keyed by pgmpy DBN variable names such as ``("E", t)``.
+            Inputs that are already ``None`` or in another format are returned
+            unchanged.
+        """
         if isinstance(evidence, list):
             return {("E", i): v for i, v in enumerate(evidence)}
         if isinstance(evidence, dict):
@@ -183,6 +269,23 @@ class DPGM_VariableEliminationInference:
         return evidence
 
     def _hmm_states_from_map(self, map_states, evidence):
+        """Project pgmpy MAP assignments back to HMM hidden-state outputs.
+
+        Parameters
+        ----------
+        map_states : dict
+            MAP assignment returned by the pgmpy solver on the expanded dynamic
+            Bayesian network.
+        evidence : list or dict or None
+            Original HMM evidence format used to decide whether to return a list
+            or dictionary of hidden states.
+
+        Returns
+        -------
+        list or dict
+            Hidden-state sequence formatted to match the evidence style when
+            possible.
+        """
         if isinstance(evidence, list):
             return [map_states["H", i] for i in range(len(map_states))]
         if isinstance(evidence, dict):
@@ -190,6 +293,22 @@ class DPGM_VariableEliminationInference:
         return map_states
 
     def _add_constraints_as_evidence(self, conin_bn, constraints, data, evidence):
+        """Inject generated constraint CPDs into a Bayesian network as evidence.
+
+        Parameters
+        ----------
+        conin_bn : DiscreteBayesianNetwork
+            Static Bayesian network that will receive additional CPDs encoding
+            the constraints.
+        constraints : iterable
+            Constraint callbacks that generate CPDs from ``conin_bn`` and
+            ``data``.
+        data : munch.Munch
+            Auxiliary data structure passed to each constraint callback.
+        evidence : dict
+            Evidence dictionary that is updated so each generated constraint CPD
+            node is fixed to state ``1``.
+        """
         for con in constraints:
             cpd = con(conin_bn, data)
             cpd.node = (cpd.node, -1)
@@ -209,34 +328,57 @@ class DPGM_VariableEliminationInference:
         write_uai_file=None,
         **options,
     ):
-        """
-        Computes the MAP Query over the variables given the evidence. Returns the
-        highest probable state in the joint distribution of `variables`.
+        """Compute a MAP assignment for a dynamic model with variable elimination.
 
         Parameters
         ----------
-        variables: list
-            list of variables over which we want to compute the max-marginal.
+        start : int, optional
+            Initial time index included in the unrolled dynamic model.
+        stop : int, optional
+            Final time index included in the unrolled dynamic model. For hidden
+            Markov models, the implementation derives this from the evidence
+            length when needed.
+        variables : list, optional
+            Variables included in the MAP query on the expanded static Bayesian
+            network. When omitted, all non-evidence nodes are queried.
+        evidence : dict or list, optional
+            Evidence for the selected model family. Dynamic Bayesian network
+            inputs use a dictionary keyed by time-expanded variable names, while
+            hidden Markov models accept either a dense list of observations or a
+            dictionary keyed by time index.
+        show_progress : bool, optional
+            Whether to request progress reporting from pgmpy.
+        timing : bool, optional
+            If ``True``, collect setup timing information and include solver
+            runtime in the returned result.
+        solution_with_evidence : bool, optional
+            If ``True`` and dictionary-valued evidence is supplied for dynamic
+            Bayesian network models, merge the evidence assignments into the
+            returned state dictionary.
+        write_uai_file : str, optional
+            Path where the expanded static Bayesian network should be written in
+            UAI format before solving.
+        **options : dict, optional
+            Additional keyword arguments forwarded to
+            ``pgmpy.inference.VariableElimination.map_query``.
 
-        evidence: dict
-            a dict key, value pair as {var: state_of_var_observed}
-            None if no evidence
+        Returns
+        -------
+        munch.Munch
+            Result object with ``solution.states`` containing the MAP
+            assignment and ``solvetime`` containing the measured pgmpy solver
+            runtime.
 
-        show_progress: boolean
-            If True, shows a progress bar.
+        Raises
+        ------
+        TypeError
+            If ``self.pgm`` is not a supported dynamic Bayesian network or
+            hidden Markov model type.
 
-        Examples
-        --------
-        >>> from conin.inference import DPGM_VariableElimination
-        >>> from pgmpy.models import DiscreteBayesianNetwork
-        >>> import numpy as np
-        >>> import pandas as pd
-        >>> values = pd.DataFrame(np.random.randint(low=0, high=2, size=(1000, 5)),
-        ...                       columns=['A', 'B', 'C', 'D', 'E'])
-        >>> model = DiscreteBayesianNetwork([('A', 'B'), ('C', 'B'), ('C', 'D'), ('B', 'E')])
-        >>> model = model.fit(values)
-        >>> inference = DPGM_VariableElimination(model)
-        >>> phi_query = inference.map_query(variables=['A', 'B'])
+        Notes
+        -----
+        Hidden Markov models are first converted to dynamic Bayesian networks
+        and then unrolled into static Bayesian networks before inference.
         """
         if timing:
             timer = TicTocTimer()

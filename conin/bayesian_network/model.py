@@ -12,11 +12,6 @@ from conin.markov_network import DiscreteFactor
 #
 @dataclass(slots=True)
 class DiscreteCPD:
-    node: str | int
-    values: list | dict
-    parents: list = None
-    default_value: float = 0  # NOTE: Note used yet
-
     """Define a discrete conditional probability distribution (CPD).
 
     The CPD describes the conditional distribution of ``node`` given its
@@ -26,7 +21,7 @@ class DiscreteCPD:
 
     Parameters
     ----------
-    node : str or int (any hashable python object)
+    node : str or int
         Node whose conditional distribution is defined.
     values : list or dict
         Conditional probability values for the node.
@@ -129,6 +124,11 @@ class DiscreteCPD:
     2
     """
 
+    node: str | int
+    values: list | dict
+    parents: list = None
+    default_value: float = 0  # NOTE: Note used yet
+
     def __str__(self):
         return "\n".join(
             [
@@ -204,7 +204,7 @@ class DiscreteCPD:
             )
 
     def to_factor(self):
-        """Convert the CPD into a :class:`~conin.markov_network.DiscreteFactor`.
+        """Convert the CPD into a ``DiscreteFactor``.
 
         The factor mirrors the semantics of the CPD while providing a uniform
         representation that can be combined with other factors during
@@ -480,17 +480,18 @@ class DiscreteBayesianNetwork:
 
 
 class ConstrainedDiscreteBayesianNetwork:
-    """Wrap a Bayesian network with optional constraint enforcement."""
+    """Wrap a Bayesian network with optional constraint functors."""
 
     def __init__(self, pgm, constraints=None):
-        """Initialise the constrained Bayesian network.
+        """Initialize the constrained Bayesian network.
 
         Parameters
         ----------
         pgm : DiscreteBayesianNetwork
             Underlying Bayesian network to be constrained.
-        constraints : callable, optional
-            Callable that augments a query model with constraints.
+        constraints : list[ConstraintFunctor], optional
+            Constraint functors that apply additional constraints during
+            inference.
         """
         self.pgm = pgm
         if constraints:
@@ -515,21 +516,25 @@ class ConstrainedDiscreteBayesianNetwork:
 
     @property
     def constraints(self):
-        """Get a list of constraint functors.
+        """Return the configured constraint functors.
 
-        :return: The constraint functor or ``None`` if not set.
-        :rtype: callable | None
+        Returns
+        -------
+        list
+            List of ``ConstraintFunctor`` instances that add constraints to a
+            query model.
         """
         return self._constraints
 
     @constraints.setter
     def constraints(self, constraint_list):
-        """Set a list of functions that are used to define model constraints.
+        """Set the functions that define model constraints.
 
         Parameters
         ----------
-        constraint_list : List[Callable]
-            List of functions that generate model constraints.
+        constraint_list : list of ConstraintFunctor
+            List of ``ConstraintFunctor`` instances that generate model
+            constraints.
         """
         assert type(constraint_list) is list
         self._constraints = constraint_list

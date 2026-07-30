@@ -1,5 +1,6 @@
 import itertools
 import inspect
+from abc import ABC, abstractmethod
 from conin.exceptions import InvalidInputError
 from conin.markov_network import DiscreteFactor, DiscreteMarkovNetwork
 from conin.bayesian_network import DiscreteCPD, DiscreteBayesianNetwork
@@ -8,7 +9,26 @@ from conin.bayesian_network import DiscreteCPD, DiscreteBayesianNetwork
 # TODO think about partial_func semantics
 
 
-class OracleConstraint:
+class ConstraintFunctor(ABC):
+    """
+    Abstract base class for all constraint functors.
+
+    A constraint functor is a callable object that encapsulates a constraint function
+    and provides a consistent interface for applying constraints in different contexts.
+    """
+
+    @abstractmethod
+    def __call__(self, *args, **kwargs):
+        """
+        Apply the constraint function.
+
+        This method should be implemented by concrete constraint classes
+        to define how the constraint is applied in their specific context.
+        """
+        pass
+
+
+class OracleConstraint(ConstraintFunctor):
 
     def __init__(
         self,
@@ -69,7 +89,7 @@ class OracleConstraint:
 
 def oracle_constraint_fn(*, name=None, same_partial_as_func=None):
     """
-    Decorator factory that takes the 'name' and returns a decorator function.
+    Decorator factory that takes the 'name' and returns a decorator function that creates an instance of OracleConstraint.
     """
 
     def decorator(func):
@@ -83,7 +103,7 @@ def oracle_constraint_fn(*, name=None, same_partial_as_func=None):
     return decorator
 
 
-class FactorConstraint:
+class FactorConstraint(ConstraintFunctor):
 
     def __init__(
         self,
@@ -171,7 +191,7 @@ class FactorConstraint:
 
 def factor_constraint_fn(*, nodes=None, name=None):
     """
-    Decorator factory that takes the 'name' and returns a decorator function.
+    Decorator factory that takes the 'name' and returns a decorator function that creates an instance of FactorConstraint.
     """
 
     def decorator(func):
@@ -183,7 +203,7 @@ def factor_constraint_fn(*, nodes=None, name=None):
     return decorator
 
 
-class PyomoConstraint:
+class PyomoConstraint(ConstraintFunctor):
 
     def __init__(self, func, name=None):
         self.func = func
@@ -207,7 +227,7 @@ class PyomoConstraint:
 
 def pyomo_constraint_fn(*, name=None):
     """
-    Decorator factory that takes the 'name' and returns a decorator function.
+    Decorator factory that takes the 'name' and returns a decorator function that creates an instance of PyomoConstraint.
     """
 
     def decorator(func):
@@ -219,7 +239,7 @@ def pyomo_constraint_fn(*, name=None):
     return decorator
 
 
-class Toulbar2Constraint:
+class Toulbar2Constraint(ConstraintFunctor):
 
     def __init__(self, func, name=None):
         self.func = func
@@ -243,7 +263,7 @@ class Toulbar2Constraint:
 
 def toulbar2_constraint_fn(*, name=None):
     """
-    Decorator factory that takes the 'name' and returns a decorator function.
+    Decorator factory that takes the 'name' and returns a decorator function that creates an instance of Toulbar2Constraint.
     """
 
     def decorator(func):
