@@ -9,10 +9,15 @@ from . import dynamic_bayesian_network
 from . import hidden_markov_model
 from .inference import *
 from .constraint import (
+    ConstraintFunctor,
+    FactorConstraint,
     OracleConstraint,
     PyomoConstraint,
+    Toulbar2Constraint,
+    factor_constraint_fn,
     pyomo_constraint_fn,
     oracle_constraint_fn,
+    toulbar2_constraint_fn,
 )
 from .exceptions import InvalidInputError, InsufficientSolutionsError
 from . import __about__

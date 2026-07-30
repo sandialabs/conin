@@ -7,23 +7,27 @@ from dataclasses import dataclass
 class DiscreteFactor:
     """A factor over one or more discrete variables.
 
-    Represents a non-negative function over random variables with finite state spaces. The
-    ``values`` can be provided either as a mapping from assignments to
-    weights or as a list of weights.  The :meth:`normalize` method is used to convert
-    the factor representation to a dictionary keyed by assignments.
+    Represents a non-negative function over random variables with finite state
+    spaces. The ``values`` can be provided either as a mapping from assignments
+    to weights or as a list of weights. The ``normalize`` method converts the
+    factor representation to a dictionary keyed by assignments.
 
-    :param list nodes: Ordered list of node identifiers that correspond to random variables over which the factor is defined.
-    :param values: Factor weights as a dictionary or a list. For a
-        dictionary, keys are node values. Use a single value for unary
-        factors (e.g., ``{"A_val": weight}``) and tuples for multi-variate
-        factors (e.g., ``{("A_val", "B_val"): weight}``). A list can be
-        used to specify factor weights, where factor weights are associated with
-        the Cartesian product of the node values.
-    :type values: list | dict
-    :param default_value: Optional fallback value that is used when a specific
-        assignment is missing. This data is only used when factor weights are specified
-        with a dictionary.  (default is 0)
-    :type default_value: int | str
+    Parameters
+    ----------
+    nodes : list
+        Ordered list of node identifiers that correspond to random variables
+        over which the factor is defined.
+    values : list or dict
+        Factor weights as a dictionary or a list. For a dictionary, keys are
+        node values. Use a single value for unary factors, such as
+        ``{"A_val": weight}``, and tuples for multivariate factors, such as
+        ``{("A_val", "B_val"): weight}``. A list can be used to specify
+        factor weights associated with the Cartesian product of the node
+        values.
+    default_value : int or str, optional
+        Optional fallback value used when a specific assignment is missing.
+        This value is only used when factor weights are specified with a
+        dictionary. Defaults to 0.
     """
 
     nodes: list
@@ -43,7 +47,7 @@ class DiscreteFactor:
         ------
         list of tuple
             A sequence of ``(node, value)`` pairs ordered consistently with
-            :attr:`nodes`.
+            ``nodes``.
         """
         if len(self.nodes) == 1:
             for node_value in states[self.nodes[0]]:
@@ -98,8 +102,6 @@ class DiscreteMarkovNetwork:
     dictionary keyed by assignments using the model's states.
     """
 
-    """Markov network with discrete variables and factor potentials."""
-
     def __init__(self, *, states={}, edges=None, factors=[]):
         """Initialize a discrete Markov network.
 
@@ -108,10 +110,8 @@ class DiscreteMarkovNetwork:
         states : dict or list, optional
             Mapping from node identifiers to ordered states or a list of node
             cardinalities. Defaults to an empty dictionary.
-
         edges : Iterable[tuple], optional
             Pairwise edges that connect nodes in the network.
-
         factors : Iterable[DiscreteFactor], optional
             Factors that encode the potential of each clique in the network.
         """
@@ -133,9 +133,13 @@ class DiscreteMarkovNetwork:
 
         Raises
         ------
+        RuntimeError
+            If an explicitly provided edge references a node that does not
+            appear in the model.
         AssertionError
-            If the states, edges, or factors are inconsistent with one
-            another, or if any factor value is negative.
+            If the states, edges, or factors are inconsistent with one another,
+            if any factor value is negative, or if a factor uses an invalid
+            node state.
         """
         model_nodes = set(self._states.keys())
 
@@ -215,9 +219,9 @@ class DiscreteMarkovNetwork:
         """Set node states from cardinalities or explicit values.
 
         If a list is provided, nodes are created as integers ``0..n-1`` and
-        each entry indicates a node's cardinality (values ``0..card-1``). If a
-        dictionary is provided, keys are node identifiers and values are the
-        explicit lists of allowed states.
+        each entry indicates a node's cardinality with state values
+        ``0..card-1``. If a dictionary is provided, keys are node identifiers
+        and values are the explicit lists of allowed states.
 
         Parameters
         ----------
@@ -347,8 +351,8 @@ class DiscreteMarkovNetwork:
     def factors(self, factor_list):
         """Attach a list of factors to the model.
 
-        Each factor is converted to the dictionary form via
-        :meth:`DiscreteFactor.normalize` using the current model states.
+        Each factor is converted to dictionary form via
+        ``DiscreteFactor.normalize`` using the current model states.
 
         Parameters
         ----------
@@ -381,8 +385,8 @@ class DiscreteMarkovNetwork:
 class ConstrainedDiscreteMarkovNetwork:
     """Markov network that supports custom constraints.
 
-    Wraps a :class:`DiscreteMarkovNetwork` and an optional constraint functor
-    that decorates a Pyomo model with additional feasibility constraints.
+    Wraps a ``DiscreteMarkovNetwork`` and optional ``ConstraintFunctor``
+    instances that apply additional feasibility constraints.
     """
 
     def __init__(self, pgm, constraints=None):
@@ -392,8 +396,9 @@ class ConstrainedDiscreteMarkovNetwork:
         ----------
         pgm : DiscreteMarkovNetwork
             Underlying probabilistic graphical model to constrain.
-        constraints : Callable or None, optional
-            Functor that applies additional restrictions during inference.
+        constraints : list[ConstraintFunctor] or None, optional
+            Constraint functors that apply additional restrictions during
+            inference.
         """
         self.pgm = pgm
         if constraints:
@@ -433,21 +438,25 @@ class ConstrainedDiscreteMarkovNetwork:
 
     @property
     def constraints(self):
-        """Get a list of constraint functors.
+        """Return the configured constraint functors.
 
-        :return: The constraint functor or ``None`` if not set.
-        :rtype: callable | None
+        Returns
+        -------
+        list
+            List of ``ConstraintFunctor`` instances that add constraints to an
+            inference model.
         """
         return self._constraints
 
     @constraints.setter
     def constraints(self, constraint_list):
-        """Set a list of functions that are used to define model constraints.
+        """Set the functions used to define model constraints.
 
         Parameters
         ----------
-        constraint_list : List[Callable]
-            List of functions that generate model constraints.
+        constraint_list : list of ConstraintFunctor
+            List of ``ConstraintFunctor`` instances that generate model
+            constraints.
         """
         assert type(constraint_list) is list
         self._constraints = constraint_list

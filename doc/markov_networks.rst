@@ -85,9 +85,10 @@ Example (two-node network, adapted from ``example6_conin``)
 Constrained Discrete Markov Networks
 ------------------------------------
 
-A thin wrapper that augments a base ``DiscreteMarkovNetwork`` with user-defined optimization
-constraints. The constraints are supplied as a functor that takes a Pyomo model and returns
-the same model with constraints attached.
+A thin wrapper that augments a base ``DiscreteMarkovNetwork`` with user-defined
+constraints. The constraints are supplied as a list of ``ConstraintFunctor``
+instances, each of which encapsulates constraint logic for the constrained
+network.
 
 Example (three nodes with pairwise interactions and a "values must differ" constraint)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -95,6 +96,7 @@ Example (three nodes with pairwise interactions and a "values must differ" const
 .. code-block:: python
 
    import numpy as np
+   from conin import pyomo_constraint_fn
    from conin.markov_network import (
        DiscreteMarkovNetwork,
        DiscreteFactor,
@@ -114,15 +116,16 @@ Example (three nodes with pairwise interactions and a "values must differ" const
    fAC = DiscreteFactor(nodes=["A", "C"], values=np.ones(9))
    base.factors = [fA, fB, fC, fAB, fBC, fAC]
 
-   # Constraint functor applied to the Pyomo model
+   # ConstraintFunctor instance applied to the Pyomo model
+   @pyomo_constraint_fn()
    def constraint_fn(model):
        @model.Constraint([0, 1, 2])
        def all_different(m, s):
            # At most one variable can take the value s
-           return m.X["A", s] + m.X["B", s] + m.X["C", s] <= 1
+           return m.V("A", s) + m.V("B", s) + m.V("C", s) <= 1
        return model
 
-   constrained = ConstrainedDiscreteMarkovNetwork(base, constraints=constraint_fn)
+   constrained = ConstrainedDiscreteMarkovNetwork(base, constraints=[constraint_fn])
 
    # Build the constrained MAP model
    # model = constrained.create_map_query_model()

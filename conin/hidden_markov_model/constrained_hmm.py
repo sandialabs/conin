@@ -30,21 +30,24 @@ class ConstrainedHiddenMarkovModel:
 
     @property
     def constraints(self):
-        """Get a list of constraint functors.
+        """Get the configured constraint functors.
 
-        :return: The constraint functor or ``None`` if not set.
-        :rtype: callable | None
+        Returns
+        -------
+        list
+            List of ``ConstraintFunctor`` instances.
         """
         return self._constraints
 
     @constraints.setter
     def constraints(self, constraint_list):
-        """Set a list of functions that are used to define model constraints.
+        """Set the list of constraint functors used to define model constraints.
 
         Parameters
         ----------
-        constraint_list : List[Callable]
-            List of functions that generate model constraints.
+        constraint_list : list[ConstraintFunctor]
+            List of ``ConstraintFunctor`` instances that generate model
+            constraints.
         """
         assert type(constraint_list) is list
         self._constraints = []
