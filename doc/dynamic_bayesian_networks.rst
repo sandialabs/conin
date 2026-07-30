@@ -1,13 +1,14 @@
-Dynamic Discrete Bayesian Networks
-==================================
+Creating a Dynamic Discrete Bayesian Network
+============================================
 
+This page describes how to create a ``DynamicDiscreteBayesianNetwork`` instance using
+``DiscreteCPD`` objects.
 ``DynamicDiscreteBayesianNetwork`` represents a two-slice dynamic Bayesian
 network whose conditional probability distributions can reference the symbolic
-time variable ``t``. The examples on this page come from
-``conin.dynamic_bayesian_network.examples``.
+time variable ``t``.
 
-Creating a ``DynamicDiscreteBayesianNetwork``
----------------------------------------------
+Dynamic Bayesian networks
+-------------------------
 
 The simplest example is ``simple0_DDBN_conin``, which contains one dynamic node
 with an initial distribution and one transition CPD.
@@ -59,7 +60,7 @@ Constrained dynamic Bayesian networks
 -------------------------------------
 
 ``ConstrainedDynamicDiscreteBayesianNetwork`` wraps a base dynamic Bayesian
-network together with a set of constraints. The examples in
+network together with a list of constraints. The examples in
 ``conin.dynamic_bayesian_network.examples`` use the same decorators as the
 other model families.
 

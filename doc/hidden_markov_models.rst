@@ -1,12 +1,11 @@
-Hidden Markov Models
-====================
+Creating a Hidden Markov Model
+==============================
 
-This page describes how to create ``HiddenMarkovModel`` instances and how to
-create constrained hidden Markov models. The examples are adapted from
-``conin.hidden_markov_model.tests.examples``.
+This page describes how to create a ``HiddenMarkovModel`` instance and how to
+create constrained hidden Markov models.
 
-Creating a ``HiddenMarkovModel``
---------------------------------
+Hidden Markov models
+--------------------
 
 The ``create_hmm1`` example is a compact starting point. It defines start,
 transition, and emission probabilities and then loads them into a

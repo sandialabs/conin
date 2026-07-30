@@ -1,12 +1,16 @@
-Discrete Bayesian Networks
-==========================
+Creating a Discrete Bayesian Network
+====================================
 
-This page describes how to create ``DiscreteBayesianNetwork`` instances using
-``DiscreteCPD`` objects. The examples are adapted from
-``conin.bayesian_network.examples``.
+This page describes how to create a ``DiscreteBayesianNetwork`` instance using
+``DiscreteCPD`` objects.
 
-Creating a ``DiscreteBayesianNetwork``
---------------------------------------
+Conditional Probability Distributions
+-------------------------------------
+
+TODO
+
+Bayesian networks
+-----------------
 
 The ``simple1_BN_conin`` example is a good starting point because it has only
 two nodes and one conditional dependency.

@@ -1,9 +1,8 @@
-Markov Networks
-===============
+Creating a Markov Network
+=========================
 
-This page describes how to create ``DiscreteMarkovNetwork`` instances and how
-to add constraints using the same simple examples that appear in
-``conin.markov_network.examples``.
+This page describes how to create a ``DiscreteMarkovNetwork`` instance and how
+to add constraints.
 
 Discrete Factors
 ----------------
@@ -27,8 +26,8 @@ flat list interpreted in the model's state order.
        },
    )
 
-Creating a ``DiscreteMarkovNetwork``
-------------------------------------
+Markov networks
+---------------
 
 The smallest complete example in ``conin.markov_network.examples`` is
 ``example6_conin``. It builds a two-node Markov network with one unary factor
