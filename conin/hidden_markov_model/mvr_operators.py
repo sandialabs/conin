@@ -54,8 +54,6 @@ def _combined_time_horizon(mvrs: list[MVR]) -> int | None:
 def _boolean_combine_mvrs(
     mvrs: list[MVR],
     bool_reducer: Callable[[list[bool]], bool],
-    *,
-    initialize: bool = False,
 ) -> MVR:
     """
     IN:
@@ -112,7 +110,6 @@ def _boolean_combine_mvrs(
             ini=ini,
             upd=upd,
             evl=evl,
-            initialize=initialize,
         )
 
     # Inhomogeneous case: at least one input is InhomMVR.
@@ -178,14 +175,11 @@ def _boolean_combine_mvrs(
         ini=ini,
         upd=upd,
         evl=evl,
-        initialize=initialize,
     )
 
 
 def mvr_and(
     mvrs: list[MVR],
-    *,
-    initialize: bool = False,
 ) -> MVR:
     """
     Constructs the logical AND of a nonempty iterable of MVRs.
@@ -198,14 +192,11 @@ def mvr_and(
     return _boolean_combine_mvrs(
         mvrs,
         all,
-        initialize=initialize,
     )
 
 
 def mvr_or(
     mvrs: list[MVR],
-    *,
-    initialize: bool = False,
 ) -> MVR:
     """
     Constructs the logical OR of a nonempty iterable of MVRs.
@@ -216,14 +207,11 @@ def mvr_or(
     return _boolean_combine_mvrs(
         mvrs,
         any,
-        initialize=initialize,
     )
 
 
 def mvr_not(
     mvr: MVR,
-    *,
-    initialize: bool = False,
 ) -> MVR:
     """
     Constructs the logical NOT/complement of a single MVR. Creates a copy with eval reversed.
@@ -235,7 +223,6 @@ def mvr_not(
             ini=dict(mvr.ini),
             upd=dict(mvr.upd),
             evl={m: not value for m, value in mvr.evl.items()},
-            initialize=initialize,
         )
 
     if isinstance(mvr, InhomMVR):
@@ -247,7 +234,6 @@ def mvr_not(
             ini=dict(mvr.ini),
             upd=[dict(upd_t) for upd_t in mvr.upd],
             evl=[{m: not value for m, value in evl_t.items()} for evl_t in mvr.evl],
-            initialize=initialize,
         )
 
     raise InvalidInputError("mvr must be an instance of HomMVR or InhomMVR.")
@@ -260,8 +246,6 @@ def mvr_not(
 
 def mvr_not_yet(
     mvr: MVR,
-    *,
-    initialize: bool = False,
 ) -> MVR:
     """
     IN/OUT:
@@ -309,7 +293,6 @@ def mvr_not_yet(
             ini=ini,
             upd=upd,
             evl=evl,
-            initialize=initialize,
         )
 
     if isinstance(mvr, InhomMVR):
@@ -368,7 +351,6 @@ def mvr_not_yet(
             ini=ini,
             upd=upd,
             evl=evl,
-            initialize=initialize,
         )
 
     raise InvalidInputError("mvr must be an instance of HomMVR or InhomMVR.")
@@ -376,8 +358,6 @@ def mvr_not_yet(
 
 def mvr_already_satisfied(
     mvr: MVR,
-    *,
-    initialize: bool = False,
 ) -> MVR:
     """
     IN/OUT:
@@ -389,9 +369,7 @@ def mvr_already_satisfied(
     return mvr_not(
         mvr_not_yet(
             mvr,
-            initialize=False,
         ),
-        initialize=initialize,
     )
 
 
@@ -402,12 +380,10 @@ def mvr_already_satisfied(
 
 def mvr_sattime(
     mvr: MVR,
-    *,
-    initialize: bool = False,
 ) -> MVR:
     """
     IN/OUT:
-        single MVR
+        single MVR, tagged with _prefix=True
 
     Constructs the satisfaction-time MVR. Essentially create a prefix-free version of the constraint.
     As soon as we hit an accepint state (any m where evl(m) = True) we transtiion to an absorbing fail state.
@@ -465,7 +441,6 @@ def mvr_sattime(
             ini=ini,
             upd=upd,
             evl=evl,
-            initialize=initialize,
         )
         result._prefix = True
         
@@ -513,7 +488,6 @@ def mvr_sattime(
         ini=ini,
         upd=upd,
         evl=evl,
-        initialize=initialize,
     )
 
     result._prefix = True
@@ -539,8 +513,6 @@ def _powerset_frozensets(states: list[Any]) -> list[frozenset[Any]]:
 
 def mvr_setdiff(
     mvrs: list[HomMVR],
-    *,
-    initialize: bool = False,
 ) -> HomMVR:
     """
     Constructs the set difference of two homogeneous MVRs.
@@ -556,7 +528,7 @@ def mvr_setdiff(
     if set(mvr1.hidden_states) != set(mvr2.hidden_states):
         raise InvalidInputError("mvr_setdiff inputs must have the same hidden_states.")
 
-    hidden_states = list(mvr1.hidden_states)
+    hidden_states = _common_hidden_states(mvrs)
 
     mediation_states = list(
         product(
@@ -598,14 +570,11 @@ def mvr_setdiff(
         ini=ini,
         upd=upd,
         evl=evl,
-        initialize=initialize,
     )
 
 
 def mvr_concatenate(
     mvrs: list[HomMVR],
-    *,
-    initialize: bool = False,
 ) -> HomMVR:
     """
     Constructs the (non-empty) concatenation of two homogeneous MVRs.
@@ -628,7 +597,7 @@ def mvr_concatenate(
             "mvr_concatenate inputs must have the same hidden_states."
         )
 
-    hidden_states = list(mvr1.hidden_states)
+    hidden_states = _common_hidden_states(mvrs)
 
     mvr2_subsets = _powerset_frozensets(list(mvr2.mediation_states))
 
@@ -681,14 +650,11 @@ def mvr_concatenate(
         ini=ini,
         upd=upd,
         evl=evl,
-        initialize=initialize,
     )
 
 
 def mvr_concatenate_prefix(
     mvrs: list[HomMVR],
-    *,
-    initialize: bool = False,
 ) -> HomMVR:
     """
     Constructs a prefix-free concatenation of two homogeneous MVRs.
@@ -714,10 +680,10 @@ def mvr_concatenate_prefix(
             "mvr_concatenate_prefix inputs must have the same hidden_states."
         )
 
-    mvr1 = mvr_sattime(mvr1, initialize=False)
-    mvr2 = mvr_sattime(mvr2, initialize=False)
+    mvr1 = mvr_sattime(mvr1)
+    mvr2 = mvr_sattime(mvr2)
 
-    hidden_states = list(mvr1.hidden_states)
+    hidden_states = _common_hidden_states(mvrs)
 
     mediation_states = [("first", m1) for m1 in mvr1.mediation_states] + [
         ("second", m2) for m2 in mvr2.mediation_states
@@ -753,15 +719,12 @@ def mvr_concatenate_prefix(
         ini=ini,
         upd=upd,
         evl=evl,
-        initialize=initialize,
     )
 
 
 def mvr_kfold_product(
     mvr: HomMVR,
     k: int,
-    *,
-    initialize: bool = False,
 ) -> HomMVR:
     """
     Constructs the k-fold concatenation/product of a homogeneous MVR with itself.
@@ -787,7 +750,6 @@ def mvr_kfold_product(
             ini=dict(mvr.ini),
             upd=dict(mvr.upd),
             evl=dict(mvr.evl),
-            initialize=initialize,
         )
 
     return mvr_concatenate(
@@ -795,19 +757,15 @@ def mvr_kfold_product(
             mvr_kfold_product(
                 mvr,
                 k - 1,
-                initialize=False,
             ),
             mvr,
         ],
-        initialize=initialize,
     )
 
 
 def mvr_kfold_product_prefix(
     mvr: HomMVR,
     k: int,
-    *,
-    initialize: bool = False,
 ) -> HomMVR:
     """
     Constructs the k-fold prefix concatenation/product of a homogeneous MVR.
@@ -827,7 +785,6 @@ def mvr_kfold_product_prefix(
     if k == 1:
         return mvr_sattime(
             mvr,
-            initialize=initialize,
         )
 
     return mvr_concatenate_prefix(
@@ -835,18 +792,14 @@ def mvr_kfold_product_prefix(
             mvr_kfold_product_prefix(
                 mvr,
                 k - 1,
-                initialize=False,
             ),
             mvr,
         ],
-        initialize=initialize,
     )
 
 
 def mvr_kleene_closure(
     mvr: HomMVR,
-    *,
-    initialize: bool = False,
 ) -> HomMVR:
     """
     Constructs the Kleene closure of a homogeneous MVR, excluding the empty string
@@ -854,7 +807,7 @@ def mvr_kleene_closure(
     if not isinstance(mvr, HomMVR):
         raise InvalidInputError("mvr_kleene_closure expects a HomMVR.")
 
-    hidden_states = list(mvr.hidden_states)
+    hidden_states = _common_hidden_states(mvrs)
 
     # Track all possible mediation states based on split points in the past.
     mediation_states = _powerset_frozensets(list(mvr.mediation_states))
@@ -889,14 +842,11 @@ def mvr_kleene_closure(
         ini=ini,
         upd=upd,
         evl=evl,
-        initialize=initialize,
     )
 
 
 def mvr_kleene_closure_prefix(
     mvr: HomMVR,
-    *,
-    initialize: bool = False,
 ) -> HomMVR:
     """
     Constructs a prefix-free (nonempty) Kleene closure of a homogeneous MVR.
@@ -913,12 +863,11 @@ def mvr_kleene_closure_prefix(
 
     mvr = mvr_sattime(
         mvr,
-        initialize=False,
     )
 
-    hidden_states = list(mvr.hidden_states)
-    mediation_states = list(mvr.mediation_states)
-
+    hidden_states = mvr.hidden_states
+    mediation_states = mvr.mediation_states
+    
     ini = {h: mvr.ini[h] for h in hidden_states}
 
     upd = {}
@@ -940,14 +889,11 @@ def mvr_kleene_closure_prefix(
         ini=ini,
         upd=upd,
         evl=evl,
-        initialize=initialize,
     )
 
 
 def mvr_reverse(
     mvr: HomMVR,
-    *,
-    initialize: bool = False,
 ) -> HomMVR:
     """
     Constructs the non-emtpy reversal of a homogeneous MVR.
@@ -959,8 +905,8 @@ def mvr_reverse(
     if not isinstance(mvr, HomMVR):
         raise InvalidInputError("mvr_reverse expects a HomMVR.")
 
-    hidden_states = list(mvr.hidden_states)
-    original_mediation_states = list(mvr.mediation_states)
+    hidden_states = mvr.hidden_states
+    mediation_states = mvr.mediation_states
 
     subsets = _powerset_frozensets(original_mediation_states)
 
@@ -1035,33 +981,34 @@ def mvr_reverse(
         ini=ini,
         upd=upd,
         evl=evl,
-        initialize=initialize,
     )
 
 # ------------------------------------------------------------------
 # Precedence
 # ------------------------------------------------------------------
+
 def mvr_precedence(
     mvrs: list[MVR],
     relation: PrecedenceRelation,
-    *,
-    initialize: bool = False,
 ) -> MVR:
     """
     IN:
-        list of 2 mvrs
-    OUR:
-        single MVR checking their precendence relation
-        
-    Constructs a binary precedence MVR.
+        mvrs: list of exactly two MVRs
+        relation: one of "<", "<=", ">", ">="
 
-    Given mvrs = [mvr1, mvr2], compares theirs satisfaction times:
-        mvr1 is satisfied (relation) mvr2 is satisfied
+    OUT:
+        single MVR checking the precedence relation between their first
+        satisfaction times.
 
-    The relation argument must be one of "<", "<=", ">", ">=".
+    Given mvrs = [mvr1, mvr2], compares their first satisfaction times:
 
-    NOTE: we do NOT require both MVRs to have been satisfied.
-    For eample, " mvr1 < mvr2" is satisfied if mvr1 has already been satisfied but mvr2 is not yet. 
+        first_sattime(mvr1) relation first_sattime(mvr2)
+
+    NOTE:
+        We do not require both MVRs to have been satisfied.
+
+        For example, "mvr1 < mvr2" is satisfied as soon as mvr1 has been
+        satisfied while mvr2 has not yet been satisfied.
     """
     if len(mvrs) != 2 or not all(isinstance(mvr, (HomMVR, InhomMVR)) for mvr in mvrs):
         raise InvalidInputError(
@@ -1078,12 +1025,11 @@ def mvr_precedence(
             "mvr_precedence inputs must have the same hidden_states."
         )
 
-    hidden_states = list(mvr1.hidden_states)
+    hidden_states = _common_hidden_states(mvrs)
     bool_states = [False, True]
 
     def update_ok(
-        *,
-        seen1_prev: bool,
+            seen1_prev: bool,
         seen2_prev: bool,
         event1_curr: bool,
         event2_curr: bool,
@@ -1091,6 +1037,18 @@ def mvr_precedence(
     ) -> bool:
         """
         Updates whether the requested precedence relation has been established.
+
+        seen1_prev:
+            mvr1 was satisfied before the current time.
+
+        seen2_prev:
+            mvr2 was satisfied before the current time.
+
+        event1_curr:
+            mvr1 is first satisfied at the current time.
+
+        event2_curr:
+            mvr2 is first satisfied at the current time.
         """
         if ok_prev:
             return True
@@ -1123,7 +1081,9 @@ def mvr_precedence(
             seen2_prev or event2_curr
         )
 
+    # ------------------------------------------------------------------
     # Homogeneous case
+    # ------------------------------------------------------------------
     if isinstance(mvr1, HomMVR) and isinstance(mvr2, HomMVR):
         mediation_states = list(
             product(
@@ -1205,10 +1165,11 @@ def mvr_precedence(
             ini=ini,
             upd=upd,
             evl=evl,
-            initialize=initialize,
         )
 
+    # ------------------------------------------------------------------
     # Inhomogeneous or mixed homogeneous/inhomogeneous case
+    # ------------------------------------------------------------------
     horizons = [
         mvr.time_horizon
         for mvr in [mvr1, mvr2]
@@ -1358,135 +1319,7 @@ def mvr_precedence(
         ini=ini,
         upd=upd,
         evl=evl,
-        initialize=initialize,
-    )            else mvr2.mediation_states[t]
-        )
-
-        mediation_states_t = list(
-            product(
-                mvr1_states_t,
-                mvr2_states_t,
-                bool_states,  # seen1
-                bool_states,  # seen2
-                bool_states,  # ok
-            )
-        )
-
-        mediation_states.append(mediation_states_t)
-
-    ini = {}
-
-    for h in hidden_states:
-        m1 = mvr1.ini[h]
-        m2 = mvr2.ini[h]
-
-        event1 = (
-            mvr1.evl[m1]
-            if isinstance(mvr1, HomMVR)
-            else mvr1.evl[0][m1]
-        )
-
-        event2 = (
-            mvr2.evl[m2]
-            if isinstance(mvr2, HomMVR)
-            else mvr2.evl[0][m2]
-        )
-
-        seen1 = event1
-        seen2 = event2
-
-        ok = update_ok(
-            seen1_prev=False,
-            seen2_prev=False,
-            event1_curr=event1,
-            event2_curr=event2,
-            ok_prev=False,
-        )
-
-        ini[h] = (
-            m1,
-            m2,
-            seen1,
-            seen2,
-            ok,
-        )
-
-    upd = []
-
-    for t in range(time_horizon - 1):
-        upd_t = {}
-
-        for state_prev in mediation_states[t]:
-            m1_prev, m2_prev, seen1_prev, seen2_prev, ok_prev = state_prev
-
-            for h_curr in hidden_states:
-                m1_curr = (
-                    mvr1.upd[(m1_prev, h_curr)]
-                    if isinstance(mvr1, HomMVR)
-                    else mvr1.upd[t][(m1_prev, h_curr)]
-                )
-
-                m2_curr = (
-                    mvr2.upd[(m2_prev, h_curr)]
-                    if isinstance(mvr2, HomMVR)
-                    else mvr2.upd[t][(m2_prev, h_curr)]
-                )
-
-                evl1_curr = (
-                    mvr1.evl[m1_curr]
-                    if isinstance(mvr1, HomMVR)
-                    else mvr1.evl[t + 1][m1_curr]
-                )
-
-                evl2_curr = (
-                    mvr2.evl[m2_curr]
-                    if isinstance(mvr2, HomMVR)
-                    else mvr2.evl[t + 1][m2_curr]
-                )
-
-                event1_curr = (not seen1_prev) and evl1_curr
-                event2_curr = (not seen2_prev) and evl2_curr
-
-                seen1_curr = seen1_prev or event1_curr
-                seen2_curr = seen2_prev or event2_curr
-
-                ok_curr = update_ok(
-                    seen1_prev=seen1_prev,
-                    seen2_prev=seen2_prev,
-                    event1_curr=event1_curr,
-                    event2_curr=event2_curr,
-                    ok_prev=ok_prev,
-                )
-
-                upd_t[(state_prev, h_curr)] = (
-                    m1_curr,
-                    m2_curr,
-                    seen1_curr,
-                    seen2_curr,
-                    ok_curr,
-                )
-
-        upd.append(upd_t)
-
-    evl = []
-
-    for t in range(time_horizon):
-        evl_t = {
-            state: state[4]
-            for state in mediation_states[t]
-        }
-
-        evl.append(evl_t)
-
-    return InhomMVR(
-        hidden_states=hidden_states,
-        mediation_states=mediation_states,
-        ini=ini,
-        upd=upd,
-        evl=evl,
-        initialize=initialize,
     )
-
 
 # ------------------------------------------------------------------
 # Counts
