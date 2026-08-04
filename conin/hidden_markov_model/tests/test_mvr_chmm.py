@@ -589,3 +589,235 @@ def test_constrained_hmm_initializes_mvr_backend_from_functor():
     assert isinstance(chmm.chmm, MVR_CHMM)
     assert len(chmm.chmm.constraints) == 1
     assert isinstance(chmm.chmm.constraints[0], HomMVR)
+    
+
+# ===========================
+# Subsequence tests
+# ===========================
+
+
+def _make_generated_hom_mvr_with_time_range(time_range=None):
+    base_mvr = make_forbid_state_mvr(
+        hidden_states=["A", "B", "C"],
+        forbidden_state="B",
+    )
+
+    return HomMVR(
+        hidden_states=base_mvr.hidden_states,
+        mediation_states=base_mvr.mediation_states,
+        ini=base_mvr.ini,
+        upd=base_mvr.upd,
+        evl=base_mvr.evl,
+        time_range=time_range,
+    )
+
+
+def _make_generated_inhom_mvr_with_time_range(time_range=None, time_horizon=3):
+    base_mvr = make_forbid_state_inhom_mvr(
+        hidden_states=["A", "B", "C"],
+        forbidden_state="B",
+        time_horizon=time_horizon,
+    )
+
+    return InhomMVR(
+        hidden_states=base_mvr.hidden_states,
+        mediation_states=base_mvr.mediation_states,
+        ini=base_mvr.ini,
+        upd=base_mvr.upd,
+        evl=base_mvr.evl,
+        time_range=time_range,
+    )
+
+
+def test_hom_mvr_time_range_defaults_to_none():
+    mvr = make_forbid_state_mvr(
+        hidden_states=["A", "B", "C"],
+        forbidden_state="B",
+    )
+
+    assert mvr._start_time is None
+    assert mvr._end_time is None
+
+
+def test_inhom_mvr_time_range_defaults_to_none():
+    mvr = make_forbid_state_inhom_mvr(
+        hidden_states=["A", "B", "C"],
+        forbidden_state="B",
+        time_horizon=3,
+    )
+
+    assert mvr._start_time is None
+    assert mvr._end_time is None
+
+
+@pytest.mark.parametrize(
+    "time_range",
+    [
+        [0, 0],
+        [0, 5],
+        [2, 7],
+        (0, 0),
+        (2, 7),
+    ],
+)
+def test_hom_mvr_accepts_valid_time_range_lists_and_tuples(time_range):
+    mvr = _make_generated_hom_mvr_with_time_range(time_range=time_range)
+
+    assert mvr._start_time == time_range[0]
+    assert mvr._end_time == time_range[1]
+
+
+@pytest.mark.parametrize(
+    "time_range",
+    [
+        [0, 0],  # inclusive width 1
+        [0, 1],  # inclusive width 2
+        [0, 2],  # inclusive width 3
+        (0, 2),  # tuple also accepted
+        [5, 7],  # inclusive width 3, not tied to absolute index
+    ],
+)
+def test_inhom_mvr_accepts_valid_time_range_lists_and_tuples(time_range):
+    mvr = _make_generated_inhom_mvr_with_time_range(
+        time_range=time_range,
+        time_horizon=3,
+    )
+
+    assert mvr._start_time == time_range[0]
+    assert mvr._end_time == time_range[1]
+
+
+@pytest.mark.parametrize(
+    "bad_time_range",
+    [
+        [],
+        [0],
+        [0, 1, 2],
+        (),
+        (0,),
+    ],
+)
+def test_hom_mvr_rejects_time_range_with_invalid_length(bad_time_range):
+    with pytest.raises(
+        InvalidInputError,
+        match="time range must be",
+    ):
+        _make_generated_hom_mvr_with_time_range(time_range=bad_time_range)
+
+
+@pytest.mark.parametrize(
+    "bad_time_range",
+    [
+        [],
+        [0],
+        [0, 1, 2],
+        (),
+        (0,),
+    ],
+)
+def test_inhom_mvr_rejects_time_range_with_invalid_length(bad_time_range):
+    with pytest.raises(
+        InvalidInputError,
+        match="time range must be",
+    ):
+        _make_generated_inhom_mvr_with_time_range(
+            time_range=bad_time_range,
+            time_horizon=3,
+        )
+
+
+@pytest.mark.parametrize(
+    "bad_time_range",
+    [
+        [-1, 1],
+        [0, -1],
+        [0.0, 1],
+        [True, 1],
+        ["0", 1],
+    ],
+)
+def test_hom_mvr_rejects_time_range_with_invalid_entries(bad_time_range):
+    with pytest.raises(
+        InvalidInputError,
+        match="time range must be",
+    ):
+        _make_generated_hom_mvr_with_time_range(time_range=bad_time_range)
+
+
+@pytest.mark.parametrize(
+    "bad_time_range",
+    [
+        (-1, 1),
+        (0, -1),
+        (0.0, 1),
+        (True, 1),
+        ("0", 1),
+    ],
+)
+def test_inhom_mvr_rejects_time_range_with_invalid_entries(bad_time_range):
+    with pytest.raises(
+        InvalidInputError,
+        match="time range must be",
+    ):
+        _make_generated_inhom_mvr_with_time_range(
+            time_range=bad_time_range,
+            time_horizon=3,
+        )
+
+
+@pytest.mark.parametrize(
+    "bad_time_range",
+    [
+        [1, 0],
+        [2, 1],
+        (1, 0),
+        (2, 1),
+    ],
+)
+def test_hom_mvr_rejects_time_range_with_start_greater_than_end(bad_time_range):
+    with pytest.raises(
+        InvalidInputError,
+        match="time range must be",
+    ):
+        _make_generated_hom_mvr_with_time_range(time_range=bad_time_range)
+
+
+@pytest.mark.parametrize(
+    "bad_time_range",
+    [
+        [1, 0],
+        [2, 1],
+        (1, 0),
+        (2, 1),
+    ],
+)
+def test_inhom_mvr_rejects_time_range_with_start_greater_than_end(bad_time_range):
+    with pytest.raises(
+        InvalidInputError,
+        match="time range must be",
+    ):
+        _make_generated_inhom_mvr_with_time_range(
+            time_range=bad_time_range,
+            time_horizon=3,
+        )
+
+
+@pytest.mark.parametrize(
+    "bad_time_range",
+    [
+        [0, 3],  # inclusive width 4 > time_horizon 3
+        [1, 4],  # inclusive width 4 > time_horizon 3
+        [0, 4],  # inclusive width 5 > time_horizon 3
+        (0, 3),
+        (1, 4),
+    ],
+)
+def test_inhom_mvr_rejects_time_range_width_exceeding_time_horizon(bad_time_range):
+    with pytest.raises(
+        InvalidInputError,
+        match="time range cannot be longer than the time horizon",
+    ):
+        _make_generated_inhom_mvr_with_time_range(
+            time_range=bad_time_range,
+            time_horizon=3,
+        )
