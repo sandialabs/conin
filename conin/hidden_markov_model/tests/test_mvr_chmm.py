@@ -3,7 +3,9 @@ from itertools import product
 import numpy as np
 import pytest
 
+from conin.constraint import mvr_constraint_fn
 from conin.exceptions import InvalidInputError
+from conin.hidden_markov_model import ConstrainedHiddenMarkovModel
 from conin.hidden_markov_model.hmm import HiddenMarkovModel
 from conin.hidden_markov_model.mvr import HomMVR, InhomMVR, MVR_MatVecRepn
 from conin.hidden_markov_model.chmm_mvr import MVR_CHMM
@@ -556,3 +558,34 @@ def test_mvr_chmm_rejects_non_mvr_constraint():
             constraints=[bad_constraint],
             data=None,
         )
+
+
+def test_constrained_hmm_initializes_mvr_backend_from_functor():
+    hidden_states = ["A", "B", "C"]
+    observed_states = ["o0", "o1"]
+    forbidden_state = "B"
+
+    hmm = make_random_hmm(
+        hidden_states=hidden_states,
+        observed_states=observed_states,
+    )
+
+    @mvr_constraint_fn(name="forbid_state")
+    def forbid_state_constraint(hidden_markov_model, data):
+        assert hidden_markov_model is hmm
+        assert data == {"forbidden_state": forbidden_state}
+        return make_forbid_state_mvr(
+            hidden_states=hidden_markov_model.hidden_states,
+            forbidden_state=data["forbidden_state"],
+        )
+
+    chmm = ConstrainedHiddenMarkovModel(
+        hmm=hmm,
+        constraints=[forbid_state_constraint],
+    )
+    chmm.initialize_chmm(data={"forbidden_state": forbidden_state})
+
+    assert chmm.constraint_type == "mvr"
+    assert isinstance(chmm.chmm, MVR_CHMM)
+    assert len(chmm.chmm.constraints) == 1
+    assert isinstance(chmm.chmm.constraints[0], HomMVR)
