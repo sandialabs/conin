@@ -1,37 +1,19 @@
 import re
+import warnings
 
-from collections.abc import Callable, Iterable
+from __future__ import annotations
+from collections.abc import Callable
 from itertools import combinations, product
-from typing import Any
+from typing import Any, Literal
 
 from conin.exceptions import InvalidInputError
 
 # Adjust this import path as needed.
-from conin.mvr import HomMVR, InhomMVR
+from conin.hidden_markov_model.mvr import HomMVR, InhomMVR
+from conin.operators import mvr_operator_fn
 
 MVR = HomMVR | InhomMVR
-
-
-# ------------------------------------------------------------------
-# Boolean Operators: AND/OR/NOT
-# ------------------------------------------------------------------
-
-
-def _common_hidden_states(mvrs: list[MVR]) -> list[Any]:
-    """
-    Checks that all MVRs have the same hidden state space.
-    NOTE: the returned ordering is taken from mvrs[0].
-    """
-    hidden_states = list(mvrs[0].hidden_states)
-    hidden_space = set(hidden_states)
-
-    for i, mvr in enumerate(mvrs[1:], start=1):
-        if set(mvr.hidden_states) != hidden_space:
-            raise InvalidInputError(
-                f"mvrs[{i}] must have the same hidden_states as mvrs[0]."
-            )
-
-    return hidden_states
+PrecedenceRelation = Literal["<", "<=", ">", ">="]
 
 
 def _combined_time_horizon(mvrs: list[MVR]) -> int | None:
@@ -46,10 +28,18 @@ def _combined_time_horizon(mvrs: list[MVR]) -> int | None:
 
     min_horizon = min(horizons)
 
-    print(f"Constructing inhomogeneous MVR using minimum time_horizon {min_horizon}")
+    if len(set(horizons)) > 1:
+        warnings.warn(
+            f"Combining inhomogeneous MVRs with unequal horizons; using minimum horizon {min_horizon}.",
+            UserWarning,
+        )
 
     return min_horizon
 
+
+# ------------------------------------------------------------------
+# Boolean Operators: AND/OR/NOT
+# ------------------------------------------------------------------
 
 def _boolean_combine_mvrs(
     mvrs: list[MVR],
@@ -75,7 +65,7 @@ def _boolean_combine_mvrs(
                 f"mvrs[{i}] must be an instance of HomMVR or InhomMVR."
             )
 
-    hidden_states = _common_hidden_states(mvrs)
+    hidden_states = mvrs[0].hidden_states
     time_horizon = _combined_time_horizon(mvrs)
     num_mvrs = len(mvrs)
 
@@ -178,28 +168,30 @@ def _boolean_combine_mvrs(
     )
 
 
+@mvr_operator_fn(arity = None)
 def mvr_and(
     mvrs: list[MVR],
 ) -> MVR:
     """
-    Constructs the logical AND of a nonempty iterable of MVRs.
+    Constructs the logical AND of a nonempty list of MVRs.
 
     The resulting MVR evaluates true exactly when every input MVR evaluates true.
     """
-    print(
-        "Use the AND operator sparingly. It's more efficient to provide a list of MVRs to downstream algorithms"
+    warnings.warn(
+        "Use the AND operator sparingly. It's generally more efficient to provide a list of MVRs to downstream algorithms.",
+        UserWarning,
     )
     return _boolean_combine_mvrs(
         mvrs,
         all,
     )
 
-
+@mvr_operator_fn(arity = None)
 def mvr_or(
     mvrs: list[MVR],
 ) -> MVR:
     """
-    Constructs the logical OR of a nonempty iterable of MVRs.
+    Constructs the logical OR of a nonempty list of MVRs.
 
     The resulting MVR evaluates true exactly when at least one input MVR
     evaluates true.
@@ -209,13 +201,14 @@ def mvr_or(
         any,
     )
 
-
+@mvr_operator_fn(arity = 1)
 def mvr_not(
-    mvr: MVR,
+    mvrs: list[MVR],
 ) -> MVR:
     """
     Constructs the logical NOT/complement of a single MVR. Creates a copy with eval reversed.
     """
+    mvr = mvrs[0] 
     if isinstance(mvr, HomMVR):
         return HomMVR(
             hidden_states=list(mvr.hidden_states),
@@ -243,17 +236,18 @@ def mvr_not(
 # Not Yet/ Already Satisfied
 # ------------------------------------------------------------------
 
-
+@mvr_operator_fn(arity = 1)
 def mvr_not_yet(
-    mvr: MVR,
+    mvrs: list[MVR],
 ) -> MVR:
     """
-    IN/OUT:
-        single MVR
-
+    Note: expects a singleton list as input.
+    
     Constructs the 'not yet satisfied' MVR.
     At time t, checks if the constraint has never been satisfied at times up to time t.
     """
+    mvr = mvrs[0]
+    
     if isinstance(mvr, HomMVR):
         mediation_states = [
             (m, not_yet_flag)
@@ -355,20 +349,17 @@ def mvr_not_yet(
 
     raise InvalidInputError("mvr must be an instance of HomMVR or InhomMVR.")
 
-
+@mvr_operator_fn(arity = 1)
 def mvr_already_satisfied(
-    mvr: MVR,
+    mvrs: list[MVR],
 ) -> MVR:
     """
-    IN/OUT:
-        single MVR
-
     Constructs the 'already satisfied' MVR.
     At time t, checks if the constraint has already satisfied at some time up to t.
     """
     return mvr_not(
         mvr_not_yet(
-            mvr,
+            mvrs,
         ),
     )
 
@@ -377,21 +368,24 @@ def mvr_already_satisfied(
 # Sat_Time: Prefix-Free
 # ------------------------------------------------------------------
 
-
+@mvr_operator_fn(arity = 1)
 def mvr_sattime(
-    mvr: MVR,
+    mvrs: list[MVR],
 ) -> MVR:
     """
-    IN/OUT:
+    OUT:
         single MVR, tagged with _prefix=True
 
     Constructs the satisfaction-time MVR. Essentially create a prefix-free version of the constraint.
     As soon as we hit an accepint state (any m where evl(m) = True) we transtiion to an absorbing fail state.
     """
+    mvr = mvrs[0]
+    
     if not isinstance(mvr, (HomMVR, InhomMVR)):
         raise InvalidInputError("mvr_sattime expects a HomMVR or InhomMVR.")
 
     if mvr.prefix: #if already prefix-free, then do nothing.
+        print('MVR is already prefix-free. Returning original MVR')
         return mvr 
 
     # Create a fresh absorbing fail state.
@@ -510,7 +504,7 @@ def _powerset_frozensets(states: list[Any]) -> list[frozenset[Any]]:
         for subset in combinations(states, r)
     ]
 
-
+@mvr_operator_fn(arity = 2)
 def mvr_setdiff(
     mvrs: list[HomMVR],
 ) -> HomMVR:
@@ -520,15 +514,15 @@ def mvr_setdiff(
     mvr_setdiff([mvr1, mvr2]) recognizes
         L(mvr1) \\ L(mvr2)
     """
-    if len(mvrs) != 2 or not all(isinstance(mvr, HomMVR) for mvr in mvrs):
+    if not all(isinstance(mvr, HomMVR) for mvr in mvrs):
         raise InvalidInputError("mvr_setdiff expects a list of exactly two HomMVRs.")
 
     mvr1, mvr2 = mvrs
 
-    if set(mvr1.hidden_states) != set(mvr2.hidden_states):
-        raise InvalidInputError("mvr_setdiff inputs must have the same hidden_states.")
+    # if set(mvr1.hidden_states) != set(mvr2.hidden_states):
+    #     raise InvalidInputError("mvr_setdiff inputs must have the same hidden_states.")
 
-    hidden_states = _common_hidden_states(mvrs)
+    hidden_states = mvrs[0].hidden_states
 
     mediation_states = list(
         product(
@@ -572,7 +566,7 @@ def mvr_setdiff(
         evl=evl,
     )
 
-
+@mvr_operator_fn(arity = 2)
 def mvr_concatenate(
     mvrs: list[HomMVR],
 ) -> HomMVR:
@@ -585,19 +579,17 @@ def mvr_concatenate(
 
     We assume neither mvr accepts the empty string.
     """
-    if len(mvrs) != 2 or not all(isinstance(mvr, HomMVR) for mvr in mvrs):
-        raise InvalidInputError(
-            "mvr_concatenate expects a list of exactly two HomMVRs."
-        )
+    if not all(isinstance(mvr, HomMVR) for mvr in mvrs):
+        raise InvalidInputError("mvr_concatenate expects a list of exactly two HomMVRs.")
 
     mvr1, mvr2 = mvrs
 
-    if set(mvr1.hidden_states) != set(mvr2.hidden_states):
-        raise InvalidInputError(
-            "mvr_concatenate inputs must have the same hidden_states."
-        )
+    # if set(mvr1.hidden_states) != set(mvr2.hidden_states):
+    #     raise InvalidInputError(
+    #         "mvr_concatenate inputs must have the same hidden_states."
+    #     )
 
-    hidden_states = _common_hidden_states(mvrs)
+    hidden_states = mvrs[0].hidden_states
 
     mvr2_subsets = _powerset_frozensets(list(mvr2.mediation_states))
 
@@ -652,7 +644,7 @@ def mvr_concatenate(
         evl=evl,
     )
 
-
+@mvr_operator_fn(arity = 2)
 def mvr_concatenate_prefix(
     mvrs: list[HomMVR],
 ) -> HomMVR:
@@ -664,26 +656,20 @@ def mvr_concatenate_prefix(
 
         sattime(L(mvr1)) sattime(L(mvr2))
     """
-    if (
-        not isinstance(mvrs, list)
-        or len(mvrs) != 2
-        or not all(isinstance(mvr, HomMVR) for mvr in mvrs)
-    ):
-        raise InvalidInputError(
-            "mvr_concatenate_prefix expects a list of exactly two HomMVRs."
-        )
+    if not all(isinstance(mvr, HomMVR) for mvr in mvrs):
+        raise InvalidInputError("mvr_concatenate_prefix expects a list of exactly two HomMVRs.")
 
     mvr1, mvr2 = mvrs
 
-    if set(mvr1.hidden_states) != set(mvr2.hidden_states):
-        raise InvalidInputError(
-            "mvr_concatenate_prefix inputs must have the same hidden_states."
-        )
+    # if set(mvr1.hidden_states) != set(mvr2.hidden_states):
+    #     raise InvalidInputError(
+    #         "mvr_concatenate_prefix inputs must have the same hidden_states."
+    #     )
 
     mvr1 = mvr_sattime(mvr1)
     mvr2 = mvr_sattime(mvr2)
 
-    hidden_states = _common_hidden_states(mvrs)
+    hidden_states = mvrs[0].hidden_states
 
     mediation_states = [("first", m1) for m1 in mvr1.mediation_states] + [
         ("second", m2) for m2 in mvr2.mediation_states
@@ -713,17 +699,20 @@ def mvr_concatenate_prefix(
 
     evl.update({("second", m2): mvr2.evl[m2] for m2 in mvr2.mediation_states})
 
-    return HomMVR(
+    result =  HomMVR(
         hidden_states=hidden_states,
         mediation_states=mediation_states,
         ini=ini,
         upd=upd,
         evl=evl,
     )
+    result._prefix = True
 
+    return result
 
+@mvr_operator_fn(arity = 1)
 def mvr_kfold_product(
-    mvr: HomMVR,
+    mvrs: list[HomMVR],
     k: int,
 ) -> HomMVR:
     """
@@ -737,6 +726,8 @@ def mvr_kfold_product(
 
     This is implemented recursively using mvr_concatenate.
     """
+    mvr = mvrs[0]
+    
     if not isinstance(mvr, HomMVR):
         raise InvalidInputError("mvr_kfold_product expects a HomMVR.")
 
@@ -762,9 +753,9 @@ def mvr_kfold_product(
         ],
     )
 
-
+@mvr_operator_fn(arity = 1)
 def mvr_kfold_product_prefix(
-    mvr: HomMVR,
+    mvrs: list[HomMVR],
     k: int,
 ) -> HomMVR:
     """
@@ -776,6 +767,8 @@ def mvr_kfold_product_prefix(
 
         sattime(L(mvr))^k
     """
+    mvr = mvrs[0]
+    
     if not isinstance(mvr, HomMVR):
         raise InvalidInputError("mvr_kfold_product_prefix expects a HomMVR.")
 
@@ -797,17 +790,19 @@ def mvr_kfold_product_prefix(
         ],
     )
 
-
+@mvr_operator_fn(arity = 1)
 def mvr_kleene_closure(
-    mvr: HomMVR,
+    mvrs: list[HomMVR],
 ) -> HomMVR:
     """
     Constructs the Kleene closure of a homogeneous MVR, excluding the empty string
     """
+    mvr = mvrs[0]
+    
     if not isinstance(mvr, HomMVR):
         raise InvalidInputError("mvr_kleene_closure expects a HomMVR.")
 
-    hidden_states = _common_hidden_states(mvrs)
+    hidden_states = mvrs[0].hidden_states
 
     # Track all possible mediation states based on split points in the past.
     mediation_states = _powerset_frozensets(list(mvr.mediation_states))
@@ -844,9 +839,9 @@ def mvr_kleene_closure(
         evl=evl,
     )
 
-
+@mvr_operator_fn(arity = 1)
 def mvr_kleene_closure_prefix(
-    mvr: HomMVR,
+    mvrs: list[HomMVR],
 ) -> HomMVR:
     """
     Constructs a prefix-free (nonempty) Kleene closure of a homogeneous MVR.
@@ -858,6 +853,8 @@ def mvr_kleene_closure_prefix(
 
         sattime(L(mvr))^+
     """
+    mvr = mvrs[0]
+    
     if not isinstance(mvr, HomMVR):
         raise InvalidInputError("mvr_kleene_closure_prefix expects a HomMVR.")
 
@@ -891,9 +888,9 @@ def mvr_kleene_closure_prefix(
         evl=evl,
     )
 
-
+@mvr_operator_fn(arity = 1)
 def mvr_reverse(
-    mvr: HomMVR,
+    mvrs: list[HomMVR],
 ) -> HomMVR:
     """
     Constructs the non-emtpy reversal of a homogeneous MVR.
@@ -902,11 +899,13 @@ def mvr_reverse(
 
         reverse(L)
     """
+    mvr = mvrs[0]
+    
     if not isinstance(mvr, HomMVR):
         raise InvalidInputError("mvr_reverse expects a HomMVR.")
 
     hidden_states = mvr.hidden_states
-    mediation_states = mvr.mediation_states
+    original_mediation_states  = mvr.mediation_states
 
     subsets = _powerset_frozensets(original_mediation_states)
 
@@ -986,7 +985,7 @@ def mvr_reverse(
 # ------------------------------------------------------------------
 # Precedence
 # ------------------------------------------------------------------
-
+@mvr_operator_fn(arity = 2)
 def mvr_precedence(
     mvrs: list[MVR],
     relation: PrecedenceRelation,
@@ -1010,26 +1009,26 @@ def mvr_precedence(
         For example, "mvr1 < mvr2" is satisfied as soon as mvr1 has been
         satisfied while mvr2 has not yet been satisfied.
     """
-    if len(mvrs) != 2 or not all(isinstance(mvr, (HomMVR, InhomMVR)) for mvr in mvrs):
-        raise InvalidInputError(
-            "mvr_precedence expects a list of exactly two HomMVR/InhomMVR objects."
-        )
+    # if len(mvrs) != 2 or not all(isinstance(mvr, (HomMVR, InhomMVR)) for mvr in mvrs):
+    #     raise InvalidInputError(
+    #         "mvr_precedence expects a list of exactly two HomMVR/InhomMVR objects."
+    #     )
 
     if relation not in ["<", "<=", ">", ">="]:
         raise InvalidInputError('relation must be one of "<", "<=", ">", ">=".')
 
     mvr1, mvr2 = mvrs
 
-    if set(mvr1.hidden_states) != set(mvr2.hidden_states):
-        raise InvalidInputError(
-            "mvr_precedence inputs must have the same hidden_states."
-        )
+    # if set(mvr1.hidden_states) != set(mvr2.hidden_states):
+    #     raise InvalidInputError(
+    #         "mvr_precedence inputs must have the same hidden_states."
+    #     )
 
-    hidden_states = _common_hidden_states(mvrs)
+    hidden_states = mvrs[0].hidden_states
     bool_states = [False, True]
 
     def update_ok(
-            seen1_prev: bool,
+        seen1_prev: bool,
         seen2_prev: bool,
         event1_curr: bool,
         event2_curr: bool,
@@ -1170,17 +1169,8 @@ def mvr_precedence(
     # ------------------------------------------------------------------
     # Inhomogeneous or mixed homogeneous/inhomogeneous case
     # ------------------------------------------------------------------
-    horizons = [
-        mvr.time_horizon
-        for mvr in [mvr1, mvr2]
-        if isinstance(mvr, InhomMVR)
-    ]
 
-    time_horizon = min(horizons)
-
-    print(
-        f"Constructing inhomogeneous precedence MVR using minimum time_horizon {time_horizon}"
-    )
+    time_horizon = _combined_time_horizon(mvrs)
 
     mediation_states = []
 
@@ -1325,17 +1315,9 @@ def mvr_precedence(
 # Counts
 # ------------------------------------------------------------------
 
-import re
-
-from conin.exceptions import InvalidInputError
-from conin.mvr import HomMVR, InhomMVR
-
-
-MVR = HomMVR | InhomMVR
-
-
+@mvr_operator_fn(arity = 1)
 def mvr_count(
-    mvr: MVR,
+    mvrs: list[MVR],
     condition: str,
 ) -> MVR:
     """
@@ -1349,7 +1331,7 @@ def mvr_count(
 
     Note two cases are rejected:
     - "<0". always false
-    - ">0". always true.
+    - ">=0". always true.
 
     Counts are computed greedily left-to-right:
         - run the input MVR on the current segment;
@@ -1357,6 +1339,8 @@ def mvr_count(
         - restart the input MVR on the next symbol;
         - if the count exceeds the relevant upper bound, enter an absorbing fail state.
     """
+    mvr = mvrs[0]
+    
     if not isinstance(mvr, (HomMVR, InhomMVR)):
         raise InvalidInputError("mvr_count expects a HomMVR or InhomMVR.")
 
@@ -1603,3 +1587,8 @@ def mvr_count(
         return mvr_not(
             count_range_mvr(0, k - 1)
         )
+        
+    raise InvalidInputError(
+        f"invalid count condition {condition!r}; expected an exact count like '2', "
+        "a range like '[1,3]' or '(1,3]', or an inequality like '<2', '<=2', '>2', '>=2'."
+    )

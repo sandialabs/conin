@@ -25,6 +25,7 @@ class BaseMVR:
 
     def __init__(self):
         """Initialize the base MVR state."""
+        self._repn = None
         self._prefix = False
 
     @property
@@ -84,11 +85,11 @@ class HomMVR(BaseMVR):
     def __init__(
         self,
         *,
-        hidden_states: list[str],
-        mediation_states: list[str],
-        ini: dict[str, str],
-        upd: dict[tuple[str, str], str],
-        evl: dict[str, bool],
+        hidden_states: list[Any],
+        mediation_states: list[Any],
+        ini: dict[Any, Any],
+        upd: dict[tuple[Any, Any], Any],
+        evl: dict[Any, bool],
     ):
         # Validation
         h_space = set(hidden_states)
@@ -129,16 +130,14 @@ class HomMVR(BaseMVR):
         if not all(isinstance(v, bool) for v in evl.values()):
             raise InvalidInputError("range(values) of evl must be boolean")
 
-        self.hidden_states = hidden_states
-        self.mediation_states = mediation_states
-        self.ini = ini
-        self.upd = upd
-        self.evl = evl
-
+        super().__init__()
+        self.hidden_states = list(hidden_states)
+        self.mediation_states = list(mediation_states)
+        self.ini = dict(ini)
+        self.upd = dict(upd)
+        self.evl = dict(evl)
         # Build repn
         self.initialize()
-
-        super().__init__()
 
     def _build_array_repn(self):
         """Build integer-indexed NumPy arrays for a homogeneous MVR.
@@ -197,11 +196,11 @@ class InhomMVR(BaseMVR):
     def __init__(
         self,
         *,
-        hidden_states: list[str],
-        mediation_states: list[list[str]],
-        ini: dict[str, str],
-        upd: list[dict[tuple[str, str], str]],
-        evl: list[dict[str, bool]],
+        hidden_states: list[Any],
+        mediation_states: list[list[Any]],
+        ini: dict[Any, Any],
+        upd: list[dict[tuple[Any, Any], Any]],
+        evl: list[dict[Any, bool]],
     ):
         # Validation
         h_space = set(hidden_states)
@@ -272,18 +271,26 @@ class InhomMVR(BaseMVR):
                 )
 
             m_space_prev = m_space
-
-        self.hidden_states = hidden_states
-        self.mediation_states = mediation_states
-        self.ini = ini
-        self.upd = upd
-        self.evl = evl
+            
+        super().__init__()
+        self.hidden_states = list(hidden_states)
+        self.mediation_states = [
+            list(mediation_states_t)
+            for mediation_states_t in mediation_states
+        ]
+        self.ini = dict(ini)
+        self.upd = [
+            dict(upd_t)
+            for upd_t in upd
+        ]
+        self.evl = [
+            dict(evl_t)
+            for evl_t in evl
+        ]
         self.time_horizon = time_horizon
-
+        
         # Build repn
         self.initialize()
-
-        super().__init__()
 
     def _build_array_repn(self):
         """Build integer-indexed NumPy arrays for an inhomogeneous MVR.
