@@ -9,6 +9,20 @@ from conin.util import Util
 
 
 class HMM_MatVecRepn:
+    """Matrix/vector representation of a hidden Markov model.
+
+    Parameters
+    ----------
+    start_vec : array-like
+        Starting probabilities for hidden states.
+    transition_mat : array-like
+        Transition probabilities between hidden states.
+    emission_mat : array-like
+        Emission probabilities from hidden states to observed states.
+    check_errors : bool, optional
+        If ``True``, validate probabilities and dimensions during
+        initialization.
+    """
 
     def __init__(self, *, start_vec, transition_mat, emission_mat, check_errors=True):
         self.load_start_vec(start_vec, check_errors=check_errors)
@@ -19,14 +33,19 @@ class HMM_MatVecRepn:
         self.load_dimensions()
 
     def load_start_vec(self, start_vec, check_errors=True):
-        """
-        Loads the start vec
+        """Load the starting probability vector.
 
-        Parameters:
-            start_vec (array): Starting Probabilities
+        Parameters
+        ----------
+        start_vec : array-like
+            Starting probabilities for hidden states.
+        check_errors : bool, optional
+            If ``True``, validate that entries are nonnegative and sum to 1.
 
-        Raises:
-            InvalidInputError: If any probabilities are negative or if the probabilities do not sum to 1
+        Raises
+        ------
+        InvalidInputError
+            If ``start_vec`` contains negative entries or does not sum to 1.
         """
         if check_errors:
             # Confirm that the start_vec is non-negative
@@ -42,14 +61,20 @@ class HMM_MatVecRepn:
         self.start_vec = start_vec
 
     def load_transition_mat(self, transition_mat, check_errors=True):
-        """
-        Loads the transition matrix
+        """Load the hidden-state transition matrix.
 
-        Parameters:
-            transition_mat (array): Transition Probabilities
+        Parameters
+        ----------
+        transition_mat : array-like
+            Transition probabilities between hidden states.
+        check_errors : bool, optional
+            If ``True``, validate that entries are nonnegative and each row sums to 1.
 
-        Raises:
-            InvalidInputError: If any probabilities are negative or if the rows do not sum to 1
+        Raises
+        ------
+        InvalidInputError
+            If ``transition_mat`` contains negative entries or rows that do not sum to
+            1.
         """
         if check_errors:
             # Non-negative transition probabilities
@@ -67,14 +92,20 @@ class HMM_MatVecRepn:
         self.transition_mat = transition_mat
 
     def load_emission_mat(self, emission_mat, check_errors=True):
-        """
-        Loads the emission matrix
+        """Load the emission probability matrix.
 
-        Parameters:
-            emission_mat (array): Emission Probabilities
+        Parameters
+        ----------
+        emission_mat : array-like
+            Emission probabilities from hidden states to observed states.
+        check_errors : bool, optional
+            If ``True``, validate that entries are nonnegative and each row sums to 1.
 
-        Raises:
-            InvalidInputError: If any probabilities are negative or if the rows do not sum to 1
+        Raises
+        ------
+        InvalidInputError
+            If ``emission_mat`` contains negative entries or rows that do not sum to
+            1.
         """
         if check_errors:
             # Non-negative emission probabilities
@@ -92,13 +123,13 @@ class HMM_MatVecRepn:
         self.emission_mat = emission_mat
 
     def check_dimensions(self):
-        """
-        TODO: do we actually need this if internal_hmm is only called by hmm?
+        """Validate that the model arrays have compatible dimensions.
 
-        Checks that the dimensions of the input matrices are appropriately sized
-
-        Raises:
-            InvalidInputError: If any dimensions do not line up correctly
+        Raises
+        ------
+        InvalidInputError
+            If the starting vector, transition matrix, and emission matrix do not have
+            compatible shapes.
         """
         correct_dimension = True
 
@@ -120,26 +151,29 @@ class HMM_MatVecRepn:
             )
 
     def load_dimensions(self):
-        """
-        Updates num_hidden and num_observed
-        """
+        """Update cached hidden-state and observed-state dimensions."""
         self.num_hidden_states = len(self.start_vec)
         self.num_observed_states = len(self.emission_mat[0])
         self.hidden_states = range(self.num_hidden_states)
         self.observed_states = range(self.num_observed_states)
 
     def generate_hidden(self, time_steps):
-        """
-        Generates a sequence of hidden states based on the model's parameters.
+        """Generate a sequence of hidden-state indices.
 
-        Parameters:
-            time_steps (int): The number of time steps for which to generate hidden states.
+        Parameters
+        ----------
+        time_steps : int
+            Number of time steps for which to generate hidden states.
 
-        Returns:
-            list: A list of indices representing the generated hidden states.
+        Returns
+        -------
+        list
+            Generated hidden-state indices.
 
-        Raises:
-            InvalidInputError: If time_steps is negative.
+        Raises
+        ------
+        InvalidInputError
+            If ``time_steps`` is negative.
         """
         if time_steps < 0:
             raise InvalidInputError("In generate_hidden time_steps > 0.")
@@ -155,14 +189,17 @@ class HMM_MatVecRepn:
         return hidden
 
     def generate_hidden_until_state(self, h):
-        """
-        Generates a sequence of hidden variables which stops at the first time step where we reach hidden state h.
+        """Generate hidden-state indices until a target state is reached.
 
-        Parameters:
-            h: stopping hidden state:
+        Parameters
+        ----------
+        h : int
+            Target hidden-state index at which sampling stops.
 
-        Returns:
-            list: Feasible sequence of hidden states, where last value is h
+        Returns
+        -------
+        list
+            Generated hidden-state indices ending in ``h``.
         """
         hidden = []
 
@@ -176,15 +213,17 @@ class HMM_MatVecRepn:
         return hidden
 
     def generate_observed_from_hidden(self, hidden):
-        """
-        Generates a sequence of observed states from a given sequence of hidden states.
+        """Generate observed-state indices from hidden-state indices.
 
-        Parameters:
-            hidden (list): A list of indices representing hidden states.
+        Parameters
+        ----------
+        hidden : list
+            Hidden-state indices used to sample observations.
 
-        Returns:
-            list: A list of indices representing the generated observed states.
-
+        Returns
+        -------
+        list
+            Generated observed-state indices.
         """
         observed = []
         time_steps = len(hidden)
@@ -195,17 +234,22 @@ class HMM_MatVecRepn:
         return observed
 
     def generate_observed(self, time_steps):
-        """
-        Generates a sequence of observed states based on the model's parameters.
+        """Generate observed-state indices from the model.
 
-        Parameters:
-            time_steps (int): The number of time steps for which to generate observed states.
+        Parameters
+        ----------
+        time_steps : int
+            Number of time steps for which to generate observed states.
 
-        Returns:
-            list: A list of indices representing the generated observed states.
+        Returns
+        -------
+        list
+            Generated observed-state indices.
 
-        Raises:
-            InvalidInputError: If time_steps is negative.
+        Raises
+        ------
+        InvalidInputError
+            If ``time_steps`` is negative.
         """
         if time_steps < 0:
             raise InvalidInputError("In generate_observed time_steps > 0.")
@@ -214,22 +258,32 @@ class HMM_MatVecRepn:
 
 
 class HiddenMarkovModel:
+    """Hidden Markov model with external-label and numeric representations.
+
+    Attributes
+    ----------
+    start_vec : list
+        Starting probabilities for hidden states in internal index order.
+    transition_mat : list
+        Transition probabilities between internal hidden states.
+    emission_mat : list
+        Emission probabilities from internal hidden states to observed states.
+    hidden_to_internal : dict
+        Mapping from external hidden-state labels to internal indices.
+    observed_to_internal : dict
+        Mapping from external observed-state labels to internal indices.
+    hidden_to_external : list
+        Mapping from internal hidden-state indices to external labels.
+    observed_to_external : list
+        Mapping from internal observed-state indices to external labels.
+    num_hidden_states : int or None
+        Number of hidden states.
+    num_observed_states : int or None
+        Number of observed states.
+    """
 
     def __init__(self):
-        """
-        Initializes the Hidden Markov Model with empty parameters.
-
-        Attributes:
-            start_vec (list): Vector of starting probabilities for hidden states.
-            transition_mat (list): Matrix of transition probabilities between hidden states.
-            emission_mat (list): Matrix of emission probabilities from hidden states to observed states.
-            hidden_to_internal (dict): Maps hidden state labels to indices.
-            observed_to_internal (dict): Maps observed state labels to indices.
-            hidden_to_external (list): Inverse mapping from indices to hidden state labels.
-            observed_to_external (list): Inverse mapping from indices to observed state labels.
-            num_hidden_states (int): Number of hidden states.
-            num_observed_states (int): Number of observed states.
-        """
+        """Initialize an empty hidden Markov model."""
         self._repn = None
         self.start_vec = []
         self.transition_mat = []
@@ -242,40 +296,75 @@ class HiddenMarkovModel:
         self.num_observed_states = None  # Number of observed variables
 
     def __str__(self):
-        """
-        Nice printing
-        """
+        """Return a readable dictionary-style representation of the model."""
         return pprint.pformat(self.to_dict(tolerance=1e-3), indent=4, sort_dicts=True)
 
     @property
     def repn(self):
+        """Return the numeric matrix/vector representation of the model.
+
+        Returns
+        -------
+        HMM_MatVecRepn or None
+            Numeric representation of the model, or ``None`` if the model has
+            not yet been populated.
+        """
         return self.initialize()
 
     @repn.setter
     def repn(self, hmm):
+        """Set the numeric matrix/vector representation of the model.
+
+        Parameters
+        ----------
+        hmm : HMM_MatVecRepn or None
+            Numeric representation to cache on the model.
+        """
         self._repn = hmm
 
     @property
     def hidden_states(self):
+        """Return the external hidden-state labels.
+
+        Returns
+        -------
+        list
+            Hidden-state labels in internal index order.
+        """
         return self.hidden_to_external
 
     @property
     def observed_states(self):
+        """Return the external observed-state labels.
+
+        Returns
+        -------
+        list
+            Observed-state labels in internal index order.
+        """
         return self.observed_to_external
 
     def load_model(
         self, *, start_probs, transition_probs, emission_probs, initialize=False
     ):
-        """
-        Loads the model parameters including starting probabilities, transition probabilities, and emission probabilities.
+        """Load model probabilities from dictionary-based inputs.
 
-        Parameters:
-            start_probs (dict): A dictionary mapping hidden states to their starting probabilities.
-            transition_probs (dict): A dictionary mapping pairs of hidden states to their transition probabilities.
-            emission_probs (dict): A dictionary mapping pairs of hidden states and observed states to their emission probabilities.
+        Parameters
+        ----------
+        start_probs : dict
+            Mapping from hidden-state labels to starting probabilities.
+        transition_probs : dict
+            Mapping from ``(from_state, to_state)`` pairs to transition probabilities.
+        emission_probs : dict
+            Mapping from ``(hidden_state, observed_state)`` pairs to emission
+            probabilities.
+        initialize : bool, optional
+            If ``True``, immediately construct the numeric representation.
 
-        Raises:
-            InvalidInputError: If any probabilities are negative or if the probabilities do not sum to 1.
+        Raises
+        ------
+        InvalidInputError
+            If the supplied probability dictionaries are inconsistent with each other.
         """
         self._repn = None
         self.start_vec = []
@@ -353,8 +442,19 @@ class HiddenMarkovModel:
             self.initialize(True)
 
     def initialize(self, avoid_reinitialization=True):
-        """
-        Used to conver the model into a vector/matrix representation
+        """Construct the numeric matrix/vector representation of the model.
+
+        Parameters
+        ----------
+        avoid_reinitialization : bool, optional
+            If ``True``, reuse an existing representation when one is already
+            available.
+
+        Returns
+        -------
+        HMM_MatVecRepn or None
+            Numeric representation of the model, or ``None`` if the model has not yet
+            been populated.
         """
         if avoid_reinitialization and self._repn is not None:
             return self._repn
@@ -369,60 +469,72 @@ class HiddenMarkovModel:
         return self._repn
 
     def is_valid_observed_state(self, o):
-        """
-        Check if the given observed state is allowed
+        """Check whether an observed-state label is valid.
 
-        Parameters:
-            o : Any: The observed state to be checked for validity.
+        Parameters
+        ----------
+        o : Any
+            Observed-state label to validate.
 
-        Returns:
-            bool: True if the hidden state `h` is valid (i.e., exists in the mapping),
-            False otherwise.
+        Returns
+        -------
+        bool
+            ``True`` if ``o`` is a known observed-state label and ``False`` otherwise.
         """
         return o in self.observed_to_internal
 
     def is_valid_hidden_state(self, h):
-        """
-        Check if the given hidden state is allowed
+        """Check whether a hidden-state label is valid.
 
-        Parameters:
-            h : Any: The hidden state to be checked for validity.
+        Parameters
+        ----------
+        h : Any
+            Hidden-state label to validate.
 
-        Returns:
-            bool: True if the hidden state `h` is valid (i.e., exists in the mapping),
-            False otherwise.
+        Returns
+        -------
+        bool
+            ``True`` if ``h`` is a known hidden-state label and ``False`` otherwise.
         """
         return h in self.hidden_to_internal
 
     def set_seed(self, seed):
-        """
-        Sets the random seed for reproducibility.
+        """Set the NumPy random seed used for model sampling.
 
-        Parameters:
-            seed (int): The seed value to set for the random number generator.
+        Parameters
+        ----------
+        seed : int
+            Seed value for the random number generator.
         """
         np.random.seed(seed)
 
     def get_hidden_states(self):
-        """
-        Returns:
-            set: hidden states
+        """Return the external hidden-state labels.
+
+        Returns
+        -------
+        list
+            Hidden-state labels in internal index order.
         """
         return self.hidden_to_external
 
     def get_observable_states(self):
-        """
-        Returns:
-            set: observable states
+        """Return the external observed-state labels.
+
+        Returns
+        -------
+        list
+            Observed-state labels in internal index order.
         """
         return self.observed_to_external
 
     def get_start_probs(self):
-        """
-        Retrieves the starting probabilities of the hidden states.
+        """Return the starting probabilities keyed by hidden-state label.
 
-        Returns:
-            dict: A dictionary mapping hidden states to their starting probabilities.
+        Returns
+        -------
+        dict
+            Mapping from hidden-state labels to starting probabilities.
         """
         # Same format as in load_model
         return {
@@ -432,11 +544,13 @@ class HiddenMarkovModel:
 
     def get_transition_probs(self):
         # Same format as in load_model
-        """
-        Retrieves the transition probabilities between hidden states.
+        """Return the transition probabilities keyed by hidden-state pairs.
 
-        Returns:
-            dict: A dictionary mapping pairs of hidden states to their transition probabilities.
+        Returns
+        -------
+        dict
+            Mapping from ``(from_state, to_state)`` pairs to transition
+            probabilities.
         """
         return {
             (
@@ -448,11 +562,13 @@ class HiddenMarkovModel:
         }
 
     def get_emission_probs(self):
-        """
-        Retrieves the emission probabilities from hidden states to observed states.
+        """Return the emission probabilities keyed by state pairs.
 
-        Returns:
-            dict: A dictionary mapping pairs of hidden states and observed states to their emission probabilities.
+        Returns
+        -------
+        dict
+            Mapping from ``(hidden_state, observed_state)`` pairs to emission
+            probabilities.
         """
         # Same format as in load_model
         return {
@@ -465,11 +581,17 @@ class HiddenMarkovModel:
         }
 
     def to_dict(self, tolerance=0.0):
-        """
-        Generate a dict representation of the model data.
+        """Return a dictionary representation of the model data.
 
-        Returns:
-            dict: A dictionary representaiton of this statistical model.
+        Parameters
+        ----------
+        tolerance : float, optional
+            Minimum probability value to include in the serialized representation.
+
+        Returns
+        -------
+        dict
+            Dictionary representation of the model data.
         """
 
         start_probs = [
@@ -500,27 +622,33 @@ class HiddenMarkovModel:
 
     # Generation
     def generate_hidden(self, time_steps):
-        """
-        Generates a sequence of hidden variables satisfying the internal constraints.
+        """Generate a sequence of hidden-state labels.
 
-        Parameters:
-            time_steps (int): How long you want the sequence to be.
+        Parameters
+        ----------
+        time_steps : int
+            Number of hidden states to generate.
 
-        Returns:
-            list: Feasible sequence of hidden states (labels).
+        Returns
+        -------
+        list
+            Generated hidden-state labels.
         """
         internal_hidden = self.repn.generate_hidden(time_steps)
         return [self.hidden_to_external[h] for h in internal_hidden]
 
     def generate_hidden_until_state(self, h):
-        """
-        Generates a sequence of hidden variables which stops at the first time step where we reach hidden state h.
+        """Generate hidden-state labels until a target state is reached.
 
-        Parameters:
-            h: stopping hidden state:
+        Parameters
+        ----------
+        h : Any
+            Target hidden-state label at which sampling stops.
 
-        Returns:
-            list: Feasible sequence of hidden states, where last value is h
+        Returns
+        -------
+        list
+            Generated hidden-state labels ending in ``h``.
         """
         internal_hidden = self.repn.generate_hidden_until_state(
             self.hidden_to_internal[h]
@@ -528,35 +656,52 @@ class HiddenMarkovModel:
         return [self.hidden_to_external[h] for h in internal_hidden]
 
     def generate_observed_from_hidden(self, hidden):
-        """
-        Generates a random observed sequence of states from a hidden sequence of states.
+        """Generate observed-state labels from hidden-state labels.
 
-        Parameters:
-            hidden (list): A list of hidden states from which to generate observed states.
+        Parameters
+        ----------
+        hidden : list
+            Hidden-state labels from which to generate observations.
 
-        Returns:
-            list: Observations generated from the hidden states.
+        Returns
+        -------
+        list
+            Generated observed-state labels.
         """
         internal_hidden = [self.hidden_to_internal[h] for h in hidden]
         internal_observed = self.repn.generate_observed_from_hidden(internal_hidden)
         return [self.observed_to_external[o] for o in internal_observed]
 
     def generate_observed(self, time_steps):
-        """
-        Generates a random observed sequence of states.
+        """Generate observed-state labels from the model.
 
-        Parameters:
-            time_steps (int): The number of time steps for which to generate observed states.
+        Parameters
+        ----------
+        time_steps : int
+            Number of time steps for which to generate observations.
 
-        Returns:
-            list: Observations generated from the hidden states.
+        Returns
+        -------
+        list
+            Generated observed-state labels.
         """
         internal_observed = self.repn.generate_observed(time_steps)
         return [self.observed_to_external[o] for o in internal_observed]
 
     def log_probability(self, observed, hidden):
-        """
-        Compute the log-probability of the observed states given the hidden state.
+        """Compute the joint log-probability of aligned observed and hidden states.
+
+        Parameters
+        ----------
+        observed : list
+            Observed-state labels.
+        hidden : list
+            Hidden-state labels aligned with ``observed``.
+
+        Returns
+        -------
+        float
+            Log-probability of the paired hidden and observed sequences.
         """
 
         h = [self.hidden_to_internal[hval] for hval in hidden]
@@ -571,11 +716,12 @@ class HiddenMarkovModel:
         return ans
 
     def make_non_zero(self, tol=1e-6):
-        """
-        Takes all nonzero parameters and sets them to tolerance, then renormalizing everything
+        """Floor small probabilities and renormalize the model.
 
-        Parameters:
-            tol: what we set the zero values to
+        Parameters
+        ----------
+        tol : float, optional
+            Minimum probability assigned before renormalization.
         """
         start_probs = self.get_start_probs()
         transition_probs = self.get_transition_probs()
@@ -602,11 +748,12 @@ class HiddenMarkovModel:
         )
 
     def write_to_file(self, file_name):
-        """
-        Writes the hmm to a file
+        """Write the model parameters to a JSON file.
 
-        Parameters:
-            file_name: Name of file we are writing to
+        Parameters
+        ----------
+        file_name : str or path-like
+            Destination file path.
         """
         start_probs = self.get_start_probs()
         transition_probs = self.get_transition_probs()
@@ -627,11 +774,12 @@ class HiddenMarkovModel:
             json.dump(data, json_file, indent=4)
 
     def read_from_file(self, file_name):
-        """
-        Reads the hmm from a file and returns the dictionaries.
+        """Load model parameters from a JSON file.
 
-        Parameters:
-            file_name: Name of the file we are reading from
+        Parameters
+        ----------
+        file_name : str or path-like
+            Source file path.
         """
 
         # Read the data from the JSON file

@@ -1,59 +1,37 @@
-Markov Networks
-===============
+Creating a Markov Network
+=========================
 
-This page documents classes that are used to define discrete Markov networks.
-The ``DiscreteFactor`` class is used to declare a discrete factor,
-which is added to a ``DiscreteMarkovNetwork`` instance.  Further, the
-``ConstrainedDiscreteMarkovNetwork`` class is used to augment a discrete
-Markov network with application-specific constraints.
-
+This page describes how to create a ``DiscreteMarkovNetwork`` instance and how
+to add constraints.
 
 Discrete Factors
 ----------------
 
-The ``DiscreteFactor`` class represents a factor defined over one or more discrete nodes. This class has the following public data members:
-
-- nodes: a list of node identifiers (e.g., strings like ``"A"`` or integers).
-- values: a dictionary or a list providing non-negative weights.
-  - dict form: keys are assignments, e.g. ``{("A_val", "B_val"): weight}`` or ``{"A_val": weight}``.
-  - list form: a list of weights that are associated with the Cartesian product of node states.
-- default_value: optional fallback value for missing assignments (float, defaults to ``0``).
-
-Example (unary and pairwise factors)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+A ``DiscreteFactor`` assigns non-negative weights to one or more nodes.
+Factors can be specified either with a dictionary keyed by assignments or with a
+flat list interpreted in the model's state order.
 
 .. code-block:: python
 
    from conin.markov_network import DiscreteFactor
 
-   # Unary factor on A with {0: 1, 1: 1}
-   fA = DiscreteFactor(["A"], {0: 1, 1: 1})
+   f_a = DiscreteFactor(["A"], {0: 1, 1: 1})
+   f_ab = DiscreteFactor(
+       ["A", "B"],
+       {
+           (0, 0): 1,
+           (0, 1): 3,
+           (1, 0): 1,
+           (1, 1): 1,
+       },
+   )
 
-   # Pairwise factor on (A, B)
-   fAB = DiscreteFactor(["A", "B"], {
-       (0, 0): 1,
-       (0, 1): 3,
-       (1, 0): 1,
-       (1, 1): 1,
-   })
+Markov networks
+---------------
 
-
-Discrete Markov Networks
-------------------------
-
-A discrete Markov network defined by a set of nodes, optional edges, and a list of factors.
-
-Construction
-^^^^^^^^^^^^
-
-- states: define node labels and their possible values, either as
-  - list: node cardinalities (nodes become ``0..n-1``), or
-  - dict: explicit mapping from node to list of values.
-- edges: optional list of undirected edges ``[(u, v), ...]``. If omitted, edges are derived from factors.
-- factors: list of ``DiscreteFactor`` instances. When set, they are normalized against the model's states.
-
-Example (two-node network, adapted from ``example6_conin``)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The smallest complete example in ``conin.markov_network.examples`` is
+``example6_conin``. It builds a two-node Markov network with one unary factor
+for each node and one pairwise factor.
 
 .. code-block:: python
 
@@ -63,78 +41,132 @@ Example (two-node network, adapted from ``example6_conin``)
    pgm.states = {"A": [0, 1], "B": [0, 1]}
    pgm.edges = [("A", "B")]
 
-   fA = DiscreteFactor(["A"], {0: 1, 1: 1})
-   fB = DiscreteFactor(["B"], {0: 1, 1: 2})
-   fAB = DiscreteFactor(["A", "B"], {
-       (0, 0): 1,
-       (0, 1): 3,
-       (1, 0): 1,
-       (1, 1): 1,
-   })
+   f_a = DiscreteFactor(["A"], {0: 1, 1: 1})
+   f_b = DiscreteFactor(["B"], {0: 1, 1: 2})
+   f_ab = DiscreteFactor(
+       ["A", "B"],
+       {
+           (0, 0): 1,
+           (0, 1): 3,
+           (1, 0): 1,
+           (1, 1): 1,
+       },
+   )
 
-   pgm.factors = [fA, fB, fAB]
-
-   # Optional: validate
+   pgm.factors = [f_a, f_b, f_ab]
    pgm.check_model()
 
-   # Optional: build a MAP optimization model
-   # model = pgm.create_map_query_model()
-   # Solve with your preferred Pyomo solver (e.g., glpk, highs).
-
-
-Constrained Discrete Markov Networks
-------------------------------------
-
-A thin wrapper that augments a base ``DiscreteMarkovNetwork`` with user-defined optimization
-constraints. The constraints are supplied as a functor that takes a Pyomo model and returns
-the same model with constraints attached.
-
-Example (three nodes with pairwise interactions and a "values must differ" constraint)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+For a slightly larger example, ``ABC_conin`` defines three variables with
+pairwise interactions:
 
 .. code-block:: python
 
    import numpy as np
-   from conin.markov_network import (
-       DiscreteMarkovNetwork,
-       DiscreteFactor,
-       ConstrainedDiscreteMarkovNetwork,
-   )
+   from conin.markov_network import DiscreteMarkovNetwork, DiscreteFactor
 
-   # Base PGM (adapted from ABC_conin)
-   base = DiscreteMarkovNetwork()
-   base.states = {"A": [0, 1, 2], "B": [0, 1, 2], "C": [0, 1, 2]}
-   base.edges = [("A", "B"), ("B", "C"), ("A", "C")]
+   pgm = DiscreteMarkovNetwork()
+   pgm.states = {"A": [0, 1, 2], "B": [0, 1, 2], "C": [0, 1, 2]}
+   pgm.edges = [("A", "B"), ("B", "C"), ("A", "C")]
 
-   fA = DiscreteFactor(nodes=["A"], values=[1, 1, 2])
-   fB = DiscreteFactor(nodes=["B"], values=[1, 1, 3])
-   fC = DiscreteFactor(nodes=["C"], values=[1, 2, 1])
-   fAB = DiscreteFactor(nodes=["A", "B"], values=np.ones(9))
-   fBC = DiscreteFactor(nodes=["B", "C"], values=np.ones(9))
-   fAC = DiscreteFactor(nodes=["A", "C"], values=np.ones(9))
-   base.factors = [fA, fB, fC, fAB, fBC, fAC]
+   f_a = DiscreteFactor(nodes=["A"], values=[1, 1, 2])
+   f_b = DiscreteFactor(nodes=["B"], values=[1, 1, 3])
+   f_c = DiscreteFactor(nodes=["C"], values=[1, 2, 1])
+   f_ab = DiscreteFactor(nodes=["A", "B"], values=np.ones(9))
+   f_bc = DiscreteFactor(nodes=["B", "C"], values=np.ones(9))
+   f_ac = DiscreteFactor(nodes=["A", "C"], values=np.ones(9))
 
-   # Constraint functor applied to the Pyomo model
+   pgm.factors = [f_a, f_b, f_c, f_ab, f_bc, f_ac]
+   pgm.check_model()
+
+Constrained Markov networks
+---------------------------
+
+``ConstrainedDiscreteMarkovNetwork`` wraps a base Markov network together with a
+list of constraint functors. The examples in
+``conin.markov_network.examples`` use the same three-variable ``ABC`` model and
+add an all-different constraint.
+
+Pyomo constraints
+^^^^^^^^^^^^^^^^^
+
+``ABC_constrained_pyomo_conin`` uses ``@pyomo_constraint_fn`` to add algebraic
+constraints to the optimization model:
+
+.. code-block:: python
+
+   from conin import pyomo_constraint_fn
+   from conin.markov_network import ConstrainedDiscreteMarkovNetwork
+   from conin.markov_network.examples import ABC_conin
+
+   base = ABC_conin().pgm
+
+   @pyomo_constraint_fn()
    def constraint_fn(model):
        @model.Constraint([0, 1, 2])
-       def all_different(m, s):
-           # At most one variable can take the value s
-           return m.X["A", s] + m.X["B", s] + m.X["C", s] <= 1
-       return model
+       def diff(m, s):
+           return m.V("A", s) + m.V("B", s) + m.V("C", s) <= 1
 
-   constrained = ConstrainedDiscreteMarkovNetwork(base, constraints=constraint_fn)
+   constrained = ConstrainedDiscreteMarkovNetwork(
+       base,
+       constraints=[constraint_fn],
+   )
 
-   # Build the constrained MAP model
-   # model = constrained.create_map_query_model()
-   # Solve with your preferred Pyomo solver.
+Toulbar2 constraints
+^^^^^^^^^^^^^^^^^^^^
 
+``ABC_constrained_toulbar2_conin`` expresses the same all-different constraint
+with the Toulbar2 interface:
 
-Notes and Behaviors
--------------------
+.. code-block:: python
 
-- Factors must have non-negative weights; ``check_model`` asserts this.
-- When factor ``values`` are provided as lists, they are normalized using the model's state order
-  to a dictionary keyed by assignments.
-- If ``edges`` are not set explicitly, they are inferred from factor scopes.
-- ``create_map_query_model`` relies on Pyomo; ensure a compatible solver is installed to optimize the model.
+   from conin import toulbar2_constraint_fn
+   from conin.markov_network import ConstrainedDiscreteMarkovNetwork
+   from conin.markov_network.examples import ABC_conin
 
+   base = ABC_conin().pgm
+
+   @toulbar2_constraint_fn()
+   def constraint_fn(model):
+       for value in [0, 1, 2]:
+           model.AddGeneralizedLinearConstraint(
+               [model.V("A", value), model.V("B", value), model.V("C", value)],
+               "<=",
+               1,
+           )
+
+   constrained = ConstrainedDiscreteMarkovNetwork(
+       base,
+       constraints=[constraint_fn],
+   )
+
+Factor constraints
+^^^^^^^^^^^^^^^^^^
+
+``ABC_constrained_factor_conin`` creates the constraint as an auxiliary factor:
+
+.. code-block:: python
+
+   from conin import factor_constraint_fn
+   from conin.markov_network import ConstrainedDiscreteMarkovNetwork
+   from conin.markov_network.examples import ABC_conin
+
+   base = ABC_conin().pgm
+
+   @factor_constraint_fn(nodes=["A", "B", "C"])
+   def constraint_fn(states):
+       values = set(states.values())
+       return len(values) == 3
+
+   constrained = ConstrainedDiscreteMarkovNetwork(
+       base,
+       constraints=[constraint_fn],
+   )
+
+Notes
+-----
+
+- ``states`` defines the allowed values for each random variable.
+- ``edges`` can be given explicitly or inferred from the factor scopes.
+- ``check_model()`` is a good final step after assigning states and factors.
+- Simpler examples such as ``example6_conin`` and ``ABC_conin`` are usually the
+  best starting point for custom models.

@@ -3,8 +3,21 @@ from conin.hidden_markov_model.inference import viterbi
 
 
 class ViterbiInference:
+    """Run Viterbi MAP inference for hidden Markov models.
+
+    This wrapper dispatches to :func:`conin.hidden_markov_model.inference.viterbi`
+    for CONIN hidden Markov model representations.
+    """
 
     def __init__(self, pgm):
+        """Store the model used for subsequent Viterbi MAP queries.
+
+        Parameters
+        ----------
+        pgm : HiddenMarkovModel or HMM_MatVecRepn
+            Hidden Markov model representation passed to the Viterbi inference
+            backend.
+        """
         self.pgm = pgm
 
     def map_query(
@@ -16,23 +29,44 @@ class ViterbiInference:
         timing=False,
         **options,
     ):
-        """
-        Computes the MAP Query over the variables given the evidence. Returns the
-        highest probable state in the joint distribution of `variables`.
+        """Compute the most likely hidden-state sequence for the observations.
 
         Parameters
         ----------
-        variables: list
-            list of variables over which we want to compute the max-marginal.
+        variables : list, optional
+            Accepted for API compatibility with other inference wrappers and
+            ignored by this implementation.
+        evidence : list or dict, optional
+            Observed emissions supplied either as a dense list ordered by time
+            step or as a dictionary keyed by consecutive integer time indices.
+            When a dictionary is provided, the returned solution states are also
+            converted to a dictionary keyed by time index.
+        show_progress : bool, optional
+            Accepted for API compatibility and ignored.
+        timing : bool, optional
+            Accepted for API compatibility and ignored.
+        **options : dict, optional
+            Additional keyword arguments accepted for API compatibility. They
+            are currently ignored because :func:`viterbi` does not consume extra
+            options.
 
-        evidence: dict or list
-            a list of observed states or dict key, value pair as {var: state_of_var_observed}
+        Returns
+        -------
+        munch.Munch
+            Result object returned by the Viterbi backend. The object contains a
+            ``solution`` entry for the best sequence and a ``solutions`` list
+            with the reported candidate solutions.
 
-        show_progress: boolean
-            If True, shows search progress. (ignored)
+        Raises
+        ------
+        TypeError
+            If ``self.pgm`` is not a supported hidden Markov model type.
 
-        timing: boolean
-            If True, shows timing information. (ignored)
+        Notes
+        -----
+        Dictionary-valued evidence is converted with
+        ``[evidence[i] for i in range(len(evidence))]`` before dispatch. The
+        keys are therefore expected to be dense, zero-based time indices.
         """
         pgm = self.pgm
 

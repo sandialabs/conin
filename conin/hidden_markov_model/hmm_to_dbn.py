@@ -3,6 +3,21 @@ from conin.bayesian_network import DiscreteCPD
 
 
 def create_dbn_from_hmm(hmm, debug=False):
+    """Create a dynamic Bayesian network representation of an HMM.
+
+    Parameters
+    ----------
+    hmm : HiddenMarkovModel
+        Hidden Markov model to convert.
+    debug : bool, optional
+        If ``True``, print the generated CPDs.
+
+    Returns
+    -------
+    DynamicDiscreteBayesianNetwork
+        Dynamic Bayesian network with hidden-state and emission-state CPDs
+        equivalent to the input HMM.
+    """
     dbn = DynamicDiscreteBayesianNetwork()
 
     hidden_states = list(sorted(hmm.hidden_states))

@@ -1,4 +1,4 @@
-# conin.__init__.py
+"""Public hidden Markov model interfaces and helpers."""
 
 from .hmm import HiddenMarkovModel
 from .hmm_util import random_hmm
