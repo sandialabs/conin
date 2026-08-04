@@ -1,7 +1,6 @@
 import re
 import warnings
 
-from __future__ import annotations
 from collections.abc import Callable
 from itertools import combinations, product
 from typing import Any, Literal
@@ -844,7 +843,7 @@ def mvr_kleene_closure_prefix(
     mvrs: list[HomMVR],
 ) -> HomMVR:
     """
-    Constructs a prefix-free (nonempty) Kleene closure of a homogeneous MVR.
+    Constructs the (nonempty) Kleene closure of the prefix-free version of a homogeneous MVR.
 
     First applies mvr_sattime to the input MVR.
     As resulting MVR is prefix-free, the Kleene construction avoid the powerset construction, only tracking the active segment.
