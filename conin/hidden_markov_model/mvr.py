@@ -185,7 +185,6 @@ class HomMVR(BaseMVR):
         return ini_array, upd_array, evl_array
 
 
-
 class InhomMVR(BaseMVR):
     """Time-inhomogeneous mediation variable representation.
 
@@ -271,24 +270,17 @@ class InhomMVR(BaseMVR):
                 )
 
             m_space_prev = m_space
-            
+
         super().__init__()
         self.hidden_states = list(hidden_states)
         self.mediation_states = [
-            list(mediation_states_t)
-            for mediation_states_t in mediation_states
+            list(mediation_states_t) for mediation_states_t in mediation_states
         ]
         self.ini = dict(ini)
-        self.upd = [
-            dict(upd_t)
-            for upd_t in upd
-        ]
-        self.evl = [
-            dict(evl_t)
-            for evl_t in evl
-        ]
+        self.upd = [dict(upd_t) for upd_t in upd]
+        self.evl = [dict(evl_t) for evl_t in evl]
         self.time_horizon = time_horizon
-        
+
         # Build repn
         self.initialize()
 
@@ -362,7 +354,6 @@ class InhomMVR(BaseMVR):
             upd_array.append(update_t)
 
         return ini_array, upd_array, evl_array
-
 
 
 class MVR_MatVecRepn:

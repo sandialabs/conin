@@ -22,13 +22,13 @@ from conin.hidden_markov_model.mvr_operators import (
     mvr_count,
 )
 
-
 ALPHABET = ["a", "b"]
 
 
 # ---------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------
+
 
 def eval_mvr(mvr, seq):
     """
@@ -75,10 +75,7 @@ def contains_symbol_mvr(symbol):
     hidden_states = list(ALPHABET)
     mediation_states = [False, True]
 
-    ini = {
-        h: h == symbol
-        for h in hidden_states
-    }
+    ini = {h: h == symbol for h in hidden_states}
 
     upd = {
         (seen_prev, h): seen_prev or h == symbol
@@ -107,10 +104,7 @@ def ends_symbol_mvr(symbol):
     hidden_states = list(ALPHABET)
     mediation_states = [False, True]
 
-    ini = {
-        h: h == symbol
-        for h in hidden_states
-    }
+    ini = {h: h == symbol for h in hidden_states}
 
     upd = {
         (last_was_symbol, h): h == symbol
@@ -167,10 +161,7 @@ def exact_word_mvr(word):
 
             upd[(state, h)] = next_state
 
-    evl = {
-        state: state == len(word)
-        for state in mediation_states
-    }
+    evl = {state: state == len(word) for state in mediation_states}
 
     return HomMVR(
         hidden_states=hidden_states,
@@ -184,6 +175,7 @@ def exact_word_mvr(word):
 # ---------------------------------------------------------------------
 # One test per decorated operator
 # ---------------------------------------------------------------------
+
 
 def test_mvr_and():
     contains_a = contains_symbol_mvr("a")
@@ -569,6 +561,7 @@ def test_mvr_precedence():
 
     with pytest.raises(InvalidInputError):
         mvr_precedence([contains_a, contains_b], "!=")
+
 
 def test_mvr_count():
     single_a = exact_word_mvr("a")

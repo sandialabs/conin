@@ -40,6 +40,7 @@ def _combined_time_horizon(mvrs: list[MVR]) -> int | None:
 # Boolean Operators: AND/OR/NOT
 # ------------------------------------------------------------------
 
+
 def _boolean_combine_mvrs(
     mvrs: list[MVR],
     bool_reducer: Callable[[list[bool]], bool],
@@ -167,7 +168,7 @@ def _boolean_combine_mvrs(
     )
 
 
-@mvr_operator_fn(arity = None)
+@mvr_operator_fn(arity=None)
 def mvr_and(
     mvrs: list[MVR],
 ) -> MVR:
@@ -185,7 +186,8 @@ def mvr_and(
         all,
     )
 
-@mvr_operator_fn(arity = None)
+
+@mvr_operator_fn(arity=None)
 def mvr_or(
     mvrs: list[MVR],
 ) -> MVR:
@@ -200,14 +202,15 @@ def mvr_or(
         any,
     )
 
-@mvr_operator_fn(arity = 1)
+
+@mvr_operator_fn(arity=1)
 def mvr_not(
     mvrs: list[MVR],
 ) -> MVR:
     """
     Constructs the logical NOT/complement of a single MVR. Creates a copy with eval reversed.
     """
-    mvr = mvrs[0] 
+    mvr = mvrs[0]
     if isinstance(mvr, HomMVR):
         return HomMVR(
             hidden_states=list(mvr.hidden_states),
@@ -235,18 +238,19 @@ def mvr_not(
 # Not Yet/ Already Satisfied
 # ------------------------------------------------------------------
 
-@mvr_operator_fn(arity = 1)
+
+@mvr_operator_fn(arity=1)
 def mvr_not_yet(
     mvrs: list[MVR],
 ) -> MVR:
     """
     Note: expects a singleton list as input.
-    
+
     Constructs the 'not yet satisfied' MVR.
     At time t, checks if the constraint has never been satisfied at times up to time t.
     """
     mvr = mvrs[0]
-    
+
     if isinstance(mvr, HomMVR):
         mediation_states = [
             (m, not_yet_flag)
@@ -348,7 +352,8 @@ def mvr_not_yet(
 
     raise InvalidInputError("mvr must be an instance of HomMVR or InhomMVR.")
 
-@mvr_operator_fn(arity = 1)
+
+@mvr_operator_fn(arity=1)
 def mvr_already_satisfied(
     mvrs: list[MVR],
 ) -> MVR:
@@ -367,7 +372,8 @@ def mvr_already_satisfied(
 # Sat_Time: Prefix-Free
 # ------------------------------------------------------------------
 
-@mvr_operator_fn(arity = 1)
+
+@mvr_operator_fn(arity=1)
 def mvr_sattime(
     mvrs: list[MVR],
 ) -> MVR:
@@ -379,13 +385,13 @@ def mvr_sattime(
     As soon as we hit an accepint state (any m where evl(m) = True) we transtiion to an absorbing fail state.
     """
     mvr = mvrs[0]
-    
+
     if not isinstance(mvr, (HomMVR, InhomMVR)):
         raise InvalidInputError("mvr_sattime expects a HomMVR or InhomMVR.")
 
-    if mvr.prefix: #if already prefix-free, then do nothing.
-        print('MVR is already prefix-free. Returning original MVR')
-        return mvr 
+    if mvr.prefix:  # if already prefix-free, then do nothing.
+        print("MVR is already prefix-free. Returning original MVR")
+        return mvr
 
     # Create a fresh absorbing fail state.
     if isinstance(mvr, HomMVR):
@@ -428,7 +434,7 @@ def mvr_sattime(
         evl = {m: mvr.evl[m] for m in mvr.mediation_states}
         evl[fail_state] = False
 
-        result =  HomMVR(
+        result = HomMVR(
             hidden_states=hidden_states,
             mediation_states=mediation_states,
             ini=ini,
@@ -436,7 +442,7 @@ def mvr_sattime(
             evl=evl,
         )
         result._prefix = True
-        
+
         return result
 
     # Inhomogeneous case
@@ -475,7 +481,7 @@ def mvr_sattime(
 
         evl.append(evl_t)
 
-    result =  InhomMVR(
+    result = InhomMVR(
         hidden_states=hidden_states,
         mediation_states=mediation_states,
         ini=ini,
@@ -484,7 +490,7 @@ def mvr_sattime(
     )
 
     result._prefix = True
-    
+
     return result
 
 
@@ -503,7 +509,8 @@ def _powerset_frozensets(states: list[Any]) -> list[frozenset[Any]]:
         for subset in combinations(states, r)
     ]
 
-@mvr_operator_fn(arity = 2)
+
+@mvr_operator_fn(arity=2)
 def mvr_setdiff(
     mvrs: list[HomMVR],
 ) -> HomMVR:
@@ -565,7 +572,8 @@ def mvr_setdiff(
         evl=evl,
     )
 
-@mvr_operator_fn(arity = 2)
+
+@mvr_operator_fn(arity=2)
 def mvr_concatenate(
     mvrs: list[HomMVR],
 ) -> HomMVR:
@@ -579,7 +587,9 @@ def mvr_concatenate(
     We assume neither mvr accepts the empty string.
     """
     if not all(isinstance(mvr, HomMVR) for mvr in mvrs):
-        raise InvalidInputError("mvr_concatenate expects a list of exactly two HomMVRs.")
+        raise InvalidInputError(
+            "mvr_concatenate expects a list of exactly two HomMVRs."
+        )
 
     mvr1, mvr2 = mvrs
 
@@ -643,7 +653,8 @@ def mvr_concatenate(
         evl=evl,
     )
 
-@mvr_operator_fn(arity = 2)
+
+@mvr_operator_fn(arity=2)
 def mvr_concatenate_prefix(
     mvrs: list[HomMVR],
 ) -> HomMVR:
@@ -656,7 +667,9 @@ def mvr_concatenate_prefix(
         sattime(L(mvr1)) sattime(L(mvr2))
     """
     if not all(isinstance(mvr, HomMVR) for mvr in mvrs):
-        raise InvalidInputError("mvr_concatenate_prefix expects a list of exactly two HomMVRs.")
+        raise InvalidInputError(
+            "mvr_concatenate_prefix expects a list of exactly two HomMVRs."
+        )
 
     mvr1, mvr2 = mvrs
 
@@ -698,7 +711,7 @@ def mvr_concatenate_prefix(
 
     evl.update({("second", m2): mvr2.evl[m2] for m2 in mvr2.mediation_states})
 
-    result =  HomMVR(
+    result = HomMVR(
         hidden_states=hidden_states,
         mediation_states=mediation_states,
         ini=ini,
@@ -709,7 +722,8 @@ def mvr_concatenate_prefix(
 
     return result
 
-@mvr_operator_fn(arity = 1)
+
+@mvr_operator_fn(arity=1)
 def mvr_kfold_product(
     mvrs: list[HomMVR],
     k: int,
@@ -726,7 +740,7 @@ def mvr_kfold_product(
     This is implemented recursively using mvr_concatenate.
     """
     mvr = mvrs[0]
-    
+
     if not isinstance(mvr, HomMVR):
         raise InvalidInputError("mvr_kfold_product expects a HomMVR.")
 
@@ -752,7 +766,8 @@ def mvr_kfold_product(
         ],
     )
 
-@mvr_operator_fn(arity = 1)
+
+@mvr_operator_fn(arity=1)
 def mvr_kfold_product_prefix(
     mvrs: list[HomMVR],
     k: int,
@@ -767,7 +782,7 @@ def mvr_kfold_product_prefix(
         sattime(L(mvr))^k
     """
     mvr = mvrs[0]
-    
+
     if not isinstance(mvr, HomMVR):
         raise InvalidInputError("mvr_kfold_product_prefix expects a HomMVR.")
 
@@ -789,7 +804,8 @@ def mvr_kfold_product_prefix(
         ],
     )
 
-@mvr_operator_fn(arity = 1)
+
+@mvr_operator_fn(arity=1)
 def mvr_kleene_closure(
     mvrs: list[HomMVR],
 ) -> HomMVR:
@@ -797,7 +813,7 @@ def mvr_kleene_closure(
     Constructs the Kleene closure of a homogeneous MVR, excluding the empty string
     """
     mvr = mvrs[0]
-    
+
     if not isinstance(mvr, HomMVR):
         raise InvalidInputError("mvr_kleene_closure expects a HomMVR.")
 
@@ -838,7 +854,8 @@ def mvr_kleene_closure(
         evl=evl,
     )
 
-@mvr_operator_fn(arity = 1)
+
+@mvr_operator_fn(arity=1)
 def mvr_kleene_closure_prefix(
     mvrs: list[HomMVR],
 ) -> HomMVR:
@@ -853,7 +870,7 @@ def mvr_kleene_closure_prefix(
         sattime(L(mvr))^+
     """
     mvr = mvrs[0]
-    
+
     if not isinstance(mvr, HomMVR):
         raise InvalidInputError("mvr_kleene_closure_prefix expects a HomMVR.")
 
@@ -863,7 +880,7 @@ def mvr_kleene_closure_prefix(
 
     hidden_states = mvr.hidden_states
     mediation_states = mvr.mediation_states
-    
+
     ini = {h: mvr.ini[h] for h in hidden_states}
 
     upd = {}
@@ -887,7 +904,8 @@ def mvr_kleene_closure_prefix(
         evl=evl,
     )
 
-@mvr_operator_fn(arity = 1)
+
+@mvr_operator_fn(arity=1)
 def mvr_reverse(
     mvrs: list[HomMVR],
 ) -> HomMVR:
@@ -899,12 +917,12 @@ def mvr_reverse(
         reverse(L)
     """
     mvr = mvrs[0]
-    
+
     if not isinstance(mvr, HomMVR):
         raise InvalidInputError("mvr_reverse expects a HomMVR.")
 
     hidden_states = mvr.hidden_states
-    original_mediation_states  = mvr.mediation_states
+    original_mediation_states = mvr.mediation_states
 
     subsets = _powerset_frozensets(original_mediation_states)
 
@@ -981,10 +999,11 @@ def mvr_reverse(
         evl=evl,
     )
 
+
 # ------------------------------------------------------------------
 # Precedence
 # ------------------------------------------------------------------
-@mvr_operator_fn(arity = 2)
+@mvr_operator_fn(arity=2)
 def mvr_precedence(
     mvrs: list[MVR],
     relation: PrecedenceRelation,
@@ -1052,32 +1071,20 @@ def mvr_precedence(
             return True
 
         if relation == "<":
-            return (
-                seen1_prev and not seen2_prev
-            ) or (
+            return (seen1_prev and not seen2_prev) or (
                 event1_curr and not seen2_prev and not event2_curr
             )
 
         if relation == "<=":
-            return (
-                not seen2_prev
-            ) and (
-                seen1_prev or event1_curr
-            )
+            return (not seen2_prev) and (seen1_prev or event1_curr)
 
         if relation == ">":
-            return (
-                seen2_prev and not seen1_prev
-            ) or (
+            return (seen2_prev and not seen1_prev) or (
                 event2_curr and not seen1_prev and not event1_curr
             )
 
         # relation == ">="
-        return (
-            not seen1_prev
-        ) and (
-            seen2_prev or event2_curr
-        )
+        return (not seen1_prev) and (seen2_prev or event2_curr)
 
     # ------------------------------------------------------------------
     # Homogeneous case
@@ -1152,10 +1159,7 @@ def mvr_precedence(
                     ok_curr,
                 )
 
-        evl = {
-            state: state[4]
-            for state in mediation_states
-        }
+        evl = {state: state[4] for state in mediation_states}
 
         return HomMVR(
             hidden_states=hidden_states,
@@ -1204,17 +1208,9 @@ def mvr_precedence(
         m1 = mvr1.ini[h]
         m2 = mvr2.ini[h]
 
-        event1 = (
-            mvr1.evl[m1]
-            if isinstance(mvr1, HomMVR)
-            else mvr1.evl[0][m1]
-        )
+        event1 = mvr1.evl[m1] if isinstance(mvr1, HomMVR) else mvr1.evl[0][m1]
 
-        event2 = (
-            mvr2.evl[m2]
-            if isinstance(mvr2, HomMVR)
-            else mvr2.evl[0][m2]
-        )
+        event2 = mvr2.evl[m2] if isinstance(mvr2, HomMVR) else mvr2.evl[0][m2]
 
         seen1 = event1
         seen2 = event2
@@ -1295,10 +1291,7 @@ def mvr_precedence(
     evl = []
 
     for t in range(time_horizon):
-        evl_t = {
-            state: state[4]
-            for state in mediation_states[t]
-        }
+        evl_t = {state: state[4] for state in mediation_states[t]}
 
         evl.append(evl_t)
 
@@ -1310,11 +1303,13 @@ def mvr_precedence(
         evl=evl,
     )
 
+
 # ------------------------------------------------------------------
 # Counts
 # ------------------------------------------------------------------
 
-@mvr_operator_fn(arity = 1)
+
+@mvr_operator_fn(arity=1)
 def mvr_count(
     mvrs: list[MVR],
     condition: str,
@@ -1339,7 +1334,7 @@ def mvr_count(
         - if the count exceeds the relevant upper bound, enter an absorbing fail state.
     """
     mvr = mvrs[0]
-    
+
     if not isinstance(mvr, (HomMVR, InhomMVR)):
         raise InvalidInputError("mvr_count expects a HomMVR or InhomMVR.")
 
@@ -1369,12 +1364,8 @@ def mvr_count(
             hidden_states = list(mvr.hidden_states)
 
             mediation_states = [
-                (count, m)
-                for count in count_states
-                for m in mvr.mediation_states
-            ] + [
-                fail_state
-            ]
+                (count, m) for count in count_states for m in mvr.mediation_states
+            ] + [fail_state]
 
             ini = {}
 
@@ -1403,11 +1394,7 @@ def mvr_count(
                     else:
                         m_curr = mvr.upd[(m_prev, h_curr)]
 
-                    count_curr = (
-                        count_prev + 1
-                        if mvr.evl[m_curr]
-                        else count_prev
-                    )
+                    count_curr = count_prev + 1 if mvr.evl[m_curr] else count_prev
 
                     if count_curr > upper:
                         upd[(state_prev, h_curr)] = fail_state
@@ -1443,9 +1430,7 @@ def mvr_count(
                 for count in count_states
                 for age in range(t + 1)
                 for m in mvr.mediation_states[age]
-            ] + [
-                fail_state
-            ]
+            ] + [fail_state]
 
             mediation_states.append(mediation_states_t)
 
@@ -1482,9 +1467,7 @@ def mvr_count(
                         m_curr = mvr.upd[age_prev][(m_prev, h_curr)]
 
                     count_curr = (
-                        count_prev + 1
-                        if mvr.evl[age_curr][m_curr]
-                        else count_prev
+                        count_prev + 1 if mvr.evl[age_curr][m_curr] else count_prev
                     )
 
                     if count_curr > upper:
@@ -1573,9 +1556,7 @@ def mvr_count(
             return count_range_mvr(0, k - 1)
 
         if op == ">":
-            return mvr_not(
-                count_range_mvr(0, k)
-            )
+            return mvr_not(count_range_mvr(0, k))
 
         # op == ">="
         if k == 0:
@@ -1583,10 +1564,8 @@ def mvr_count(
                 'condition ">=0" is degenerate because counts are nonnegative.'
             )
 
-        return mvr_not(
-            count_range_mvr(0, k - 1)
-        )
-        
+        return mvr_not(count_range_mvr(0, k - 1))
+
     raise InvalidInputError(
         f"invalid count condition {condition!r}; expected an exact count like '2', "
         "a range like '[1,3]' or '(1,3]', or an inequality like '<2', '<=2', '>2', '>=2'."
