@@ -106,23 +106,26 @@ def make_forbid_state_inhom_mvr(
 ) -> InhomMVR:
     """
     Construct an inhomogeneous MVR that rejects paths visiting forbidden_state.
-
-    Essentially the same as make_forbid_state_mvr, but with a dummy time dimension.
     """
 
     if forbidden_state not in hidden_states:
         raise ValueError("forbidden_state must be in hidden_states")
 
-    if time_horizon <= 0:
-        raise ValueError("time_horizon must be positive")
+    if time_horizon < 0:
+        raise ValueError("time_horizon must be nonnegative")
 
-    mediation_states = [[f"ok_{t}", f"violated_{t}"] for t in range(time_horizon)]
+    mediation_states = [
+        [f"ok_{t}", f"violated_{t}"] for t in range(time_horizon + 1)
+    ]
 
-    ini = {h: f"violated_0" if h == forbidden_state else f"ok_0" for h in hidden_states}
+    ini = {
+        h: f"violated_0" if h == forbidden_state else f"ok_0"
+        for h in hidden_states
+    }
 
     upd = []
 
-    for t in range(time_horizon - 1):
+    for t in range(time_horizon):
         upd_t = {}
 
         for m_prev, h in product(mediation_states[t], hidden_states):
@@ -138,7 +141,7 @@ def make_forbid_state_inhom_mvr(
             f"ok_{t}": True,
             f"violated_{t}": False,
         }
-        for t in range(time_horizon)
+        for t in range(time_horizon + 1)
     ]
 
     return InhomMVR(
@@ -148,7 +151,6 @@ def make_forbid_state_inhom_mvr(
         upd=upd,
         evl=evl,
     )
-
 
 def make_valid_direct_mvr_repn_arrays():
     """
@@ -335,6 +337,7 @@ def test_inhom_mvr_matvec_repn_for_forbid_state_mvr():
     hidden_states = ["A", "B"]
     forbidden_state = "B"
     time_horizon = 3
+    num_time_slices = time_horizon + 1
 
     mvr = make_forbid_state_inhom_mvr(
         hidden_states=hidden_states,
@@ -350,8 +353,8 @@ def test_inhom_mvr_matvec_repn_for_forbid_state_mvr():
     assert isinstance(repn.upd_array, list)
     assert isinstance(repn.evl_array, list)
 
-    assert len(repn.upd_array) == time_horizon - 1
-    assert len(repn.evl_array) == time_horizon
+    assert len(repn.upd_array) == time_horizon
+    assert len(repn.evl_array) == num_time_slices
 
     expected_ini_array = np.array(
         [
@@ -362,17 +365,17 @@ def test_inhom_mvr_matvec_repn_for_forbid_state_mvr():
 
     assert np.array_equal(repn.ini_array, expected_ini_array)
 
-    for t in range(time_horizon):
+    for t in range(num_time_slices):
         assert repn.evl_array[t].shape == (2,)
         assert np.array_equal(repn.evl_array[t], np.array([1.0, 0.0]))
 
-    for t in range(time_horizon - 1):
+    for t in range(time_horizon):
         assert repn.upd_array[t].shape == (2, 2, 2)
 
     hidden_to_idx = {h: i for i, h in enumerate(hidden_states)}
 
     # At each time, mediation order is [ok_t, violated_t].
-    for t in range(time_horizon - 1):
+    for t in range(time_horizon):
         update_t = repn.upd_array[t]
 
         for h in hidden_states:
@@ -388,8 +391,7 @@ def test_inhom_mvr_matvec_repn_for_forbid_state_mvr():
 
     assert repn.time_horizon == time_horizon
     assert repn.num_hidden_states == 2
-    assert repn.num_mediation_states == [2, 2, 2]
-
+    assert repn.num_mediation_states == [2, 2, 2, 2]
 
 def test_direct_mvr_matvec_repn_valid_homogeneous_arrays():
     ini_array, upd_array, evl_array = make_valid_direct_mvr_repn_arrays()
@@ -649,6 +651,7 @@ def test_mvr_time_range_defaults_to_none(mvr_type):
         [0, 0],  # inclusive width 1
         [0, 1],  # inclusive width 2
         [0, 2],  # inclusive width 3
+        [0, 3],  # inclusive width 4, valid when time_horizon == 3
         [1, 3],  # inclusive width 3
         [5, 7],  # inclusive width 3
     ],
@@ -759,11 +762,11 @@ def test_mvr_rejects_time_range_with_start_greater_than_end(
 @pytest.mark.parametrize(
     "bad_time_range",
     [
-        [0, 3],  # inclusive width 4 > time_horizon 3
-        [1, 4],  # inclusive width 4 > time_horizon 3
-        [2, 5],  # inclusive width 4 > time_horizon 3
-        [0, 4],  # inclusive width 5 > time_horizon 3
-        [5, 10],  # inclusive width 6 > time_horizon 3
+        [0, 4],  # inclusive width 5 > time_horizon + 1 == 4
+        [1, 5],  # inclusive width 5 > time_horizon + 1 == 4
+        [2, 6],  # inclusive width 5 > time_horizon + 1 == 4
+        [0, 5],  # inclusive width 6 > time_horizon + 1 == 4
+        [5, 10],  # inclusive width 6 > time_horizon + 1 == 4
     ],
 )
 def test_inhom_mvr_rejects_time_range_width_exceeding_time_horizon(
