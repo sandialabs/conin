@@ -142,12 +142,14 @@ class HomMVR(BaseMVR):
 
         if time_range is not None:
             if not (
-                isinstance(time_range,list)
+                isinstance(time_range, list)
                 and len(time_range) == 2
                 and all(type(time) is int and time >= 0 for time in time_range)
                 and time_range[0] <= time_range[1]
             ):
-                raise InvalidInputError("time range must be a list of two nonnegative integers, with start <= end")
+                raise InvalidInputError(
+                    "time range must be a list of two nonnegative integers, with start <= end"
+                )
             self._time_range = time_range
         # Build repn
         self.initialize()
@@ -297,15 +299,19 @@ class InhomMVR(BaseMVR):
 
         if time_range is not None:
             if not (
-                isinstance(time_range,list)
+                isinstance(time_range, list)
                 and len(time_range) == 2
                 and all(type(time) is int and time >= 0 for time in time_range)
                 and time_range[0] <= time_range[1]
             ):
-                raise InvalidInputError("time range must be a list of two nonnegative integers, with start <= end")
+                raise InvalidInputError(
+                    "time range must be a list of two nonnegative integers, with start <= end"
+                )
             time_diff = time_range[1] - time_range[0]
             if time_diff >= time_horizon:
-                raise InvalidInputError("time range cannot be longer than the time horizon of an Inhom MVR")
+                raise InvalidInputError(
+                    "time range cannot be longer than the time horizon of an Inhom MVR"
+                )
             self._time_range = time_range
         # Build repn
         self.initialize()

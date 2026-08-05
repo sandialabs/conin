@@ -589,7 +589,7 @@ def test_constrained_hmm_initializes_mvr_backend_from_functor():
     assert isinstance(chmm.chmm, MVR_CHMM)
     assert len(chmm.chmm.constraints) == 1
     assert isinstance(chmm.chmm.constraints[0], HomMVR)
-    
+
 
 # ===========================
 # time_range tests
