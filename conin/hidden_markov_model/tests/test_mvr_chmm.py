@@ -114,14 +114,9 @@ def make_forbid_state_inhom_mvr(
     if time_horizon < 0:
         raise ValueError("time_horizon must be nonnegative")
 
-    mediation_states = [
-        [f"ok_{t}", f"violated_{t}"] for t in range(time_horizon + 1)
-    ]
+    mediation_states = [[f"ok_{t}", f"violated_{t}"] for t in range(time_horizon + 1)]
 
-    ini = {
-        h: f"violated_0" if h == forbidden_state else f"ok_0"
-        for h in hidden_states
-    }
+    ini = {h: f"violated_0" if h == forbidden_state else f"ok_0" for h in hidden_states}
 
     upd = []
 
@@ -151,6 +146,7 @@ def make_forbid_state_inhom_mvr(
         upd=upd,
         evl=evl,
     )
+
 
 def make_valid_direct_mvr_repn_arrays():
     """
@@ -392,6 +388,7 @@ def test_inhom_mvr_matvec_repn_for_forbid_state_mvr():
     assert repn.time_horizon == time_horizon
     assert repn.num_hidden_states == 2
     assert repn.num_mediation_states == [2, 2, 2, 2]
+
 
 def test_direct_mvr_matvec_repn_valid_homogeneous_arrays():
     ini_array, upd_array, evl_array = make_valid_direct_mvr_repn_arrays()

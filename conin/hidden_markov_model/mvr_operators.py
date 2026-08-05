@@ -162,6 +162,7 @@ def _boolean_combine_mvrs(
         evl=evl,
     )
 
+
 @mvr_operator_fn(arity=None)
 def mvr_and(
     mvrs: list[MVR],
@@ -346,6 +347,7 @@ def mvr_not_yet(
 
     raise InvalidInputError("mvr must be an instance of HomMVR or InhomMVR.")
 
+
 @mvr_operator_fn(arity=1)
 def mvr_already_satisfied(
     mvrs: list[MVR],
@@ -485,6 +487,7 @@ def mvr_sattime(
     result._prefix = True
 
     return result
+
 
 # ------------------------------------------------------------------
 # Regular Language Operators: HomMVR ONLY
@@ -1288,6 +1291,7 @@ def mvr_precedence(
         evl=evl,
     )
 
+
 # ------------------------------------------------------------------
 # Counts
 # ------------------------------------------------------------------
@@ -1487,6 +1491,7 @@ def mvr_count(
             upd=upd,
             evl=evl,
         )
+
     # ------------------------------------------------------------------
     # Pattern 1: "k"
     # ------------------------------------------------------------------

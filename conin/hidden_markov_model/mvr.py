@@ -353,7 +353,7 @@ class InhomMVR(BaseMVR):
         # evl_array[t][m_t]
         evl_array = []
 
-        for t in range(T+1):
+        for t in range(T + 1):
             Mt = len(self.mediation_states[t])
             eval_t = np.zeros((Mt,), dtype=float)
 
@@ -614,13 +614,13 @@ class MVR_MatVecRepn:
         """Update cached dimension metadata for the numeric MVR representation."""
         self.num_hidden_states = self.ini_array.shape[0]
         self.hidden_states = range(self.num_hidden_states)
-    
+
         # Homogeneous case
         if not isinstance(self.evl_array, list):
             self.num_mediation_states = self.ini_array.shape[1]
             self.mediation_states = range(self.num_mediation_states)
             return
-    
+
         # Inhomogeneous case.
         self.time_horizon = len(self.evl_array) - 1
         self.num_mediation_states = [arr.shape[0] for arr in self.evl_array]
