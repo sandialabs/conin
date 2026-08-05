@@ -22,15 +22,13 @@ class BaseMVR:
 
     _repn: MVR_MatVecRepn  # numerical representation like HMM_MatVecRepn
     _prefix: bool  # prefix-free tag.
-    _start_time: int | None
-    _end_time: int | None
+    _time_range: list[int] | None
 
     def __init__(self):
         """Initialize the base MVR state."""
         self._repn = None
         self._prefix = False
-        self._start_time = None
-        self._end_time = None
+        self._time_range = None
 
     @property
     def prefix(self):
@@ -144,12 +142,13 @@ class HomMVR(BaseMVR):
 
         if time_range is not None:
             if not (
-                len(time_range) == 2
+                isinstance(time_range,list)
+                and len(time_range) == 2
                 and all(type(time) is int and time >= 0 for time in time_range)
                 and time_range[0] <= time_range[1]
             ):
                 raise InvalidInputError("time range must be a list of two nonnegative integers, with start <= end")
-            self._start_time, self._end_time = time_range
+            self._time_range = time_range
         # Build repn
         self.initialize()
 
@@ -298,7 +297,8 @@ class InhomMVR(BaseMVR):
 
         if time_range is not None:
             if not (
-                len(time_range) == 2
+                isinstance(time_range,list)
+                and len(time_range) == 2
                 and all(type(time) is int and time >= 0 for time in time_range)
                 and time_range[0] <= time_range[1]
             ):
@@ -306,7 +306,7 @@ class InhomMVR(BaseMVR):
             time_diff = time_range[1] - time_range[0]
             if time_diff >= time_horizon:
                 raise InvalidInputError("time range cannot be longer than the time horizon of an Inhom MVR")
-            self._start_time, self._end_time = time_range
+            self._time_range = time_range
         # Build repn
         self.initialize()
 
