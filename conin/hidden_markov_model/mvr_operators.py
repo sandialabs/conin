@@ -46,15 +46,10 @@ def _boolean_combine_mvrs(
     bool_reducer: Callable[[list[bool]], bool],
 ) -> MVR:
     """
-    IN:
-        list of HomMVR and InhomMVR
-        bool_reducer: generate function to aggregating a collection of booleans into a single value. ie. AND/OR/NOT
-    OUT:
-        single MVR, either HomMVR or InhomMVR depending on inputs
-
     Generic product construction for logical combinations of MVRs.
-    Handles time-inhomogeneous MVRs by creating another time-inhomogeneous MVR up to the minimum of the individual time horizons.
-    For mixes of inhomogeneous and homogeneous MVRs, homogeneous MVRs are treated as having infinite time horizon.
+
+    Handles time-inhomogeneous MVRs by creating another time-inhomogeneous MVR up
+    to the minimum of the individual time horizons.
     """
     if len(mvrs) == 0:
         raise InvalidInputError("mvrs must be a nonempty iterable of MVRs.")
@@ -105,7 +100,7 @@ def _boolean_combine_mvrs(
     # Inhomogeneous case: at least one input is InhomMVR.
     mediation_states = []
 
-    for t in range(time_horizon):
+    for t in range(time_horizon + 1):
         component_mediation_spaces_t = [
             (
                 list(mvr.mediation_states)
@@ -122,7 +117,7 @@ def _boolean_combine_mvrs(
 
     upd = []
 
-    for t in range(time_horizon - 1):
+    for t in range(time_horizon):
         upd_t = {}
 
         for m_prev_tuple in mediation_states[t]:
@@ -142,7 +137,7 @@ def _boolean_combine_mvrs(
 
     evl = []
 
-    for t in range(time_horizon):
+    for t in range(time_horizon + 1):
         evl_t = {}
 
         for m_tuple in mediation_states[t]:
@@ -244,10 +239,10 @@ def mvr_not_yet(
     mvrs: list[MVR],
 ) -> MVR:
     """
-    Note: expects a singleton list as input.
-
     Constructs the 'not yet satisfied' MVR.
-    At time t, checks if the constraint has never been satisfied at times up to time t.
+
+    At time t, checks if the constraint has never been satisfied at times up to
+    and including t.
     """
     mvr = mvrs[0]
 
@@ -295,7 +290,7 @@ def mvr_not_yet(
     if isinstance(mvr, InhomMVR):
         mediation_states = []
 
-        for t in range(mvr.time_horizon):
+        for t in range(mvr.time_horizon + 1):
             mediation_states_t = [
                 (m, not_yet_flag)
                 for m in mvr.mediation_states[t]
@@ -313,7 +308,7 @@ def mvr_not_yet(
 
         upd = []
 
-        for t in range(mvr.time_horizon - 1):
+        for t in range(mvr.time_horizon):
             upd_t = {}
 
             for m_prev in mvr.mediation_states[t]:
@@ -333,7 +328,7 @@ def mvr_not_yet(
 
         evl = []
 
-        for t in range(mvr.time_horizon):
+        for t in range(mvr.time_horizon + 1):
             evl_t = {
                 (m, not_yet_flag): not_yet_flag
                 for m in mvr.mediation_states[t]
@@ -457,7 +452,7 @@ def mvr_sattime(
 
     upd = []
 
-    for t in range(mvr.time_horizon - 1):
+    for t in range(mvr.time_horizon):
         upd_t = {}
 
         for m_prev in mediation_states[t]:
@@ -475,7 +470,7 @@ def mvr_sattime(
 
     evl = []
 
-    for t in range(mvr.time_horizon):
+    for t in range(mvr.time_horizon + 1):
         evl_t = {m: mvr.evl[t][m] for m in mvr.mediation_states[t]}
         evl_t[fail_state] = False
 
@@ -1086,9 +1081,7 @@ def mvr_precedence(
         # relation == ">="
         return (not seen1_prev) and (seen2_prev or event2_curr)
 
-    # ------------------------------------------------------------------
     # Homogeneous case
-    # ------------------------------------------------------------------
     if isinstance(mvr1, HomMVR) and isinstance(mvr2, HomMVR):
         mediation_states = list(
             product(
@@ -1169,15 +1162,12 @@ def mvr_precedence(
             evl=evl,
         )
 
-    # ------------------------------------------------------------------
     # Inhomogeneous or mixed homogeneous/inhomogeneous case
-    # ------------------------------------------------------------------
-
     time_horizon = _combined_time_horizon(mvrs)
 
     mediation_states = []
 
-    for t in range(time_horizon):
+    for t in range(time_horizon + 1):
         mvr1_states_t = (
             mvr1.mediation_states
             if isinstance(mvr1, HomMVR)
@@ -1209,7 +1199,6 @@ def mvr_precedence(
         m2 = mvr2.ini[h]
 
         event1 = mvr1.evl[m1] if isinstance(mvr1, HomMVR) else mvr1.evl[0][m1]
-
         event2 = mvr2.evl[m2] if isinstance(mvr2, HomMVR) else mvr2.evl[0][m2]
 
         seen1 = event1
@@ -1233,7 +1222,7 @@ def mvr_precedence(
 
     upd = []
 
-    for t in range(time_horizon - 1):
+    for t in range(time_horizon):
         upd_t = {}
 
         for state_prev in mediation_states[t]:
@@ -1290,9 +1279,8 @@ def mvr_precedence(
 
     evl = []
 
-    for t in range(time_horizon):
+    for t in range(time_horizon + 1):
         evl_t = {state: state[4] for state in mediation_states[t]}
-
         evl.append(evl_t)
 
     return InhomMVR(
@@ -1418,13 +1406,13 @@ def mvr_count(
                 evl=evl,
             )
 
-        # Inhomogeneous case. The output time_horizon is the same as the input time_horizon.
+        # Inhomogeneous case.
         hidden_states = list(mvr.hidden_states)
         time_horizon = mvr.time_horizon
 
         mediation_states = []
 
-        for t in range(time_horizon):
+        for t in range(time_horizon + 1):
             mediation_states_t = [
                 (count, age, m)
                 for count in count_states
@@ -1447,7 +1435,7 @@ def mvr_count(
 
         upd = []
 
-        for t in range(time_horizon - 1):
+        for t in range(time_horizon):
             upd_t = {}
 
             for state_prev in mediation_states[t]:
@@ -1458,7 +1446,8 @@ def mvr_count(
 
                     count_prev, age_prev, m_prev = state_prev
 
-                    # If the previous local state was accepting, restart locally at age 0 on the current symbol.
+                    # If the previous local state was accepting, restart locally
+                    # at age 0 on the current symbol.
                     if mvr.evl[age_prev][m_prev]:
                         age_curr = 0
                         m_curr = mvr.ini[h_curr]
@@ -1483,7 +1472,7 @@ def mvr_count(
 
         evl = []
 
-        for t in range(time_horizon):
+        for t in range(time_horizon + 1):
             evl_t = {}
 
             for state in mediation_states[t]:

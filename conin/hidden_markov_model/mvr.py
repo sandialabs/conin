@@ -219,19 +219,19 @@ class InhomMVR(BaseMVR):
     ):
         # Validation
         h_space = set(hidden_states)
-        time_horizon = len(mediation_states)
+        time_horizon = len(mediation_states) - 1
 
         # duplicates in hidden space
         if len(hidden_states) != len(set(hidden_states)):
             raise InvalidInputError("hidden_states must not contain duplicates")
 
-        if time_horizon == 0:
+        if len(mediation_states) == 0:
             raise InvalidInputError("mediation_states must be nonempty")
 
-        if time_horizon != len(evl):
+        if len(evl) != time_horizon + 1:
             raise InvalidInputError("evl and mediation_states must be the same length")
 
-        if len(upd) != time_horizon - 1:
+        if len(upd) != time_horizon:
             raise InvalidInputError(
                 f"upd length {len(upd)} must be one less than mediation_states length {time_horizon}"
             )
@@ -308,7 +308,7 @@ class InhomMVR(BaseMVR):
                     "time range must be a list of two nonnegative integers, with start <= end"
                 )
             time_diff = time_range[1] - time_range[0]
-            if time_diff >= time_horizon:
+            if time_diff > time_horizon:
                 raise InvalidInputError(
                     "time range cannot be longer than the time horizon of an Inhom MVR"
                 )
@@ -353,7 +353,7 @@ class InhomMVR(BaseMVR):
         # evl_array[t][m_t]
         evl_array = []
 
-        for t in range(T):
+        for t in range(T + 1):
             Mt = len(self.mediation_states[t])
             eval_t = np.zeros((Mt,), dtype=float)
 
@@ -366,7 +366,7 @@ class InhomMVR(BaseMVR):
         # upd_array[t][h_curr, m_curr, m_prev]. t indexes the transition from time t to time t + 1.
         upd_array = []
 
-        for t in range(T - 1):
+        for t in range(T):
             M_prev = len(self.mediation_states[t])
             M_curr = len(self.mediation_states[t + 1])
 
@@ -613,17 +613,17 @@ class MVR_MatVecRepn:
     def load_dimensions(self):
         """Update cached dimension metadata for the numeric MVR representation."""
         self.num_hidden_states = self.ini_array.shape[0]
-        self.hidden_states = range(self.num_hidden_states)
+        self.hidden_states = list(range(self.num_hidden_states))
 
         # Homogeneous case
         if not isinstance(self.evl_array, list):
             self.num_mediation_states = self.ini_array.shape[1]
-            self.mediation_states = range(self.num_mediation_states)
+            self.mediation_states = list(range(self.num_mediation_states))
             return
 
-        # Inhomogeneous case
-        self.time_horizon = len(self.evl_array)
+        # Inhomogeneous case.
+        self.time_horizon = len(self.evl_array) - 1
         self.num_mediation_states = [arr.shape[0] for arr in self.evl_array]
         self.mediation_states = [
-            range(num_states) for num_states in self.num_mediation_states
+            list(range(num_states)) for num_states in self.num_mediation_states
         ]
