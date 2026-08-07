@@ -142,9 +142,7 @@ def _hidden_permutation_for_mvr(mvr, hmm_hidden_order):
     mvr_hidden_order = list(mvr.hidden_states)
 
     if set(mvr_hidden_order) != set(hmm_hidden_order):
-        raise InvalidInputError(
-            "MVR hidden states do not match HMM hidden states."
-        )
+        raise InvalidInputError("MVR hidden states do not match HMM hidden states.")
 
     return [mvr_hidden_order.index(h) for h in hmm_hidden_order]
 
@@ -221,10 +219,7 @@ def _active_mvr_indices(mvr_infos, t):
     """
     Return indices of MVRs active at global time t.
     """
-    return [
-        i for i, info in enumerate(mvr_infos)
-        if info["a"] <= t <= info["b"]
-    ]
+    return [i for i, info in enumerate(mvr_infos) if info["a"] <= t <= info["b"]]
 
 
 def _mvr_dim_at_time(info, t):
@@ -246,12 +241,7 @@ def _shape_for_time(K, mvr_infos, active_indices, t):
     Shape convention:
         (K, mediation dims for active MVRs in active_indices order)
     """
-    return tuple(
-        [K] + [
-            _mvr_dim_at_time(mvr_infos[i], t)
-            for i in active_indices
-        ]
-    )
+    return tuple([K] + [_mvr_dim_at_time(mvr_infos[i], t) for i in active_indices])
 
 
 def _mvr_init_factor(info):
@@ -419,15 +409,9 @@ def viterbi_torch_mvr_chmm(
         for mvr in constraints
     ]
 
-    active_by_time = [
-        _active_mvr_indices(mvr_infos, t)
-        for t in range(T)
-    ]
+    active_by_time = [_active_mvr_indices(mvr_infos, t) for t in range(T)]
 
-    shapes = [
-        _shape_for_time(K, mvr_infos, active_by_time[t], t)
-        for t in range(T)
-    ]
+    shapes = [_shape_for_time(K, mvr_infos, active_by_time[t], t) for t in range(T)]
 
     # Each time step uses at most:
     #   current hidden + current active MVR axes
@@ -453,10 +437,7 @@ def viterbi_torch_mvr_chmm(
     curr_indices = list(range(1 + len(active0)))
     curr_h_label = curr_indices[0]
 
-    curr_m_label = {
-        mvr_i: curr_indices[pos + 1]
-        for pos, mvr_i in enumerate(active0)
-    }
+    curr_m_label = {mvr_i: curr_indices[pos + 1] for pos, mvr_i in enumerate(active0)}
 
     einsum_args = [
         start_vec,
@@ -527,13 +508,11 @@ def viterbi_torch_mvr_chmm(
         prev_h_label = prev_indices[0]
 
         curr_m_label = {
-            mvr_i: curr_indices[pos + 1]
-            for pos, mvr_i in enumerate(curr_active)
+            mvr_i: curr_indices[pos + 1] for pos, mvr_i in enumerate(curr_active)
         }
 
         prev_m_label = {
-            mvr_i: prev_indices[pos + 1]
-            for pos, mvr_i in enumerate(prev_active)
+            mvr_i: prev_indices[pos + 1] for pos, mvr_i in enumerate(prev_active)
         }
 
         einsum_args = [
@@ -636,9 +615,7 @@ def viterbi_torch_mvr_chmm(
         scale = V_curr.max()
 
         if scale.item() <= 0:
-            raise InvalidInputError(
-                f"No feasible augmented path at time {t}."
-            )
+            raise InvalidInputError(f"No feasible augmented path at time {t}.")
 
         if normalize:
             log_score += torch.log(scale).item()
@@ -655,9 +632,7 @@ def viterbi_torch_mvr_chmm(
         raise InvalidInputError("No feasible augmented path at final time.")
 
     final_flat = int(torch.argmax(V_prev).detach().cpu().item())
-    final_idx = tuple(
-        int(x) for x in np.unravel_index(final_flat, shapes[T - 1])
-    )
+    final_idx = tuple(int(x) for x in np.unravel_index(final_flat, shapes[T - 1]))
 
     if not normalize:
         log_score = torch.log(final_scale).item()
@@ -669,13 +644,9 @@ def viterbi_torch_mvr_chmm(
     curr_idx = final_idx
 
     for t in range(T - 1, 0, -1):
-        prev_flat = int(
-            backptr[t - 1][curr_idx].detach().cpu().item()
-        )
+        prev_flat = int(backptr[t - 1][curr_idx].detach().cpu().item())
 
-        prev_idx = tuple(
-            int(x) for x in np.unravel_index(prev_flat, shapes[t - 1])
-        )
+        prev_idx = tuple(int(x) for x in np.unravel_index(prev_flat, shapes[t - 1]))
 
         augmented_index_path.append(prev_idx)
         curr_idx = prev_idx
@@ -683,8 +654,7 @@ def viterbi_torch_mvr_chmm(
     augmented_index_path.reverse()
 
     hidden_path = [
-        hmm.hidden_to_external[aug_idx[0]]
-        for aug_idx in augmented_index_path
+        hmm.hidden_to_external[aug_idx[0]] for aug_idx in augmented_index_path
     ]
 
     if return_augmented:
