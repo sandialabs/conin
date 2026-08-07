@@ -12,7 +12,7 @@ NEG_INF = float("-inf")
 
 
 # ======================================================================
-# Model extraction and conversion
+# Helpers
 # ======================================================================
 
 
@@ -66,11 +66,6 @@ def _observations_to_emit_weights(hmm, emission_mat, observed):
     return emission_mat[:, obs_idx].T
 
 
-# ======================================================================
-# MVR preprocessing
-# ======================================================================
-
-
 def _validate_time_range(mvr, T):
     """
     Check an MVR's time range against the observation length and return it.
@@ -81,17 +76,14 @@ def _validate_time_range(mvr, T):
     else:
         active_start, active_end = mvr._time_range
 
-    # Nonnegativity and ordering are enforced by the MVR constructors. Only the
-    # fit against the observation length is checkable here.
+    # The window must fit inside the observation sequence.
     if active_end >= T:
         raise InvalidInputError(
             f"MVR time_range [{active_start}, {active_end}] exceeds "
             f"observation horizon T={T}."
         )
 
-    # The constructor checks this only for an explicit time_range. For a
-    # defaulted window it becomes "is the automaton long enough to span the
-    # whole sequence", which construction had no T to answer.
+    # The MVR must be long enough to run across the window.
     if isinstance(mvr, InhomMVR) and active_end - active_start > mvr.time_horizon:
         raise InvalidInputError(
             "InhomMVR time_horizon is too short for requested inference range. "
@@ -111,9 +103,7 @@ def _build_mvr_factor_info(
     device="cpu",
 ):
     """
-    Precompute the per-MVR tensors an inference recursion needs, by global time.
-    Keying by global time applies the local-time offset once, here, so no
-    consumer repeats it and homogeneous and inhomogeneous MVRs read alike.
+    Precompute the per-MVR tensors, indexed by global time.
     """
     repn = mvr.repn
     a, b = _validate_time_range(mvr, T)
@@ -126,9 +116,6 @@ def _build_mvr_factor_info(
         evl = torch.as_tensor(evl_array, dtype=dtype, device=device)
         return torch.log(evl) if log else evl
 
-    # MVR_CHMM aligned the hidden ordering and MVR_MatVecRepn already reduced
-    # the one-hot ini/upd arrays to index maps, so only a dtype/device
-    # conversion is left. A homogeneous MVR reuses one tensor across its window.
     if is_inhom:
         evl_at = {t: to_evl(repn.evl_array[t - a]) for t in range(a, b + 1)}
         next_at = {t: to_idx(repn.next_idx[t - a - 1]) for t in range(a + 1, b + 1)}
@@ -151,9 +138,7 @@ def _build_mvr_factor_info(
 
 def _c_strides(dims):
     """
-    Return the C-order strides of a shape tuple.
-    The order must match ``np.unravel_index``, which decodes the flat indices
-    these strides encode.
+    Return the C-order strides of a shape tuple, matching ``np.unravel_index``.
     """
     strides = []
     total = 1
@@ -165,11 +150,6 @@ def _c_strides(dims):
     strides.reverse()
 
     return strides
-
-
-# ======================================================================
-# Destination index construction
-# ======================================================================
 
 
 def _build_destination_index(
@@ -277,14 +257,8 @@ def viterbi_torch_mvr_chmm(
 ):
     """Log-space Viterbi for an MVR-augmented constrained HMM.
 
-    The recursion runs in the max-plus semiring: products of probabilities
-    become sums of log probabilities and the maximization is unchanged, so no
-    ``logsumexp`` is required and the decoded path is identical to what an
-    exact probability-space implementation would produce.
-
-    Augmented axes are dynamic. Rather than padding every MVR out to the full
-    horizon, the value tensor carries only the MVRs enforced at the current
-    time::
+    Augmented axes are dynamic. The value tensor carries only the MVRs enforced
+    at the current time::
 
         V[t].shape == (K,) + tuple(M_i(t) for i active at t)
 
@@ -294,7 +268,7 @@ def viterbi_torch_mvr_chmm(
 
     The MVR updates are deterministic, so each transition is a scatter rather
     than a dense mediation-space multiply. The MVRs are folded into a single
-    destination index one at a time, so no product automaton is constructed and
+    destination index one at a time, so no product MVR is constructed and
     the working tensors scale with the mediation space rather than its square.
 
     Parameters
@@ -324,12 +298,6 @@ def viterbi_torch_mvr_chmm(
         Returned when ``return_augmented`` is ``True``.
     best_logprob : float, optional
         Returned when ``return_score`` is ``True``.
-
-    Raises
-    ------
-    InvalidInputError
-        If the observed sequence is empty, contains an unknown label, or if the
-        constraints admit no feasible path.
     """
     if len(observed) == 0:
         raise InvalidInputError("observed sequence must be nonempty.")
@@ -378,8 +346,7 @@ def viterbi_torch_mvr_chmm(
     ]
     shapes = [(K,) + dims_by_time[t] for t in range(T)]
 
-    # log_transition_mat is indexed [h_prev, h_curr]; the recursion wants
-    # h_curr on the leading axis.
+    # log_transition_mat is indexed [h_prev, h_curr]
     log_transition_t = log_transition_mat.transpose(0, 1).contiguous()
 
     backptr = []
@@ -387,9 +354,6 @@ def viterbi_torch_mvr_chmm(
 
     # ------------------------------------------------------------------
     # Initialization at t = 0.
-    #
-    # Every MVR active at t = 0 starts there, so the joint mediation state is a
-    # function of the hidden state alone and V has exactly K finite entries.
     # ------------------------------------------------------------------
     active_0 = active_by_time[0]
     dims_0 = dims_by_time[0]
@@ -445,12 +409,7 @@ def viterbi_torch_mvr_chmm(
 
         V_prev_flat = V_prev.reshape(K, prev_total)
 
-        # Maximize over the predecessor hidden state first. This is valid
-        # because the mediation destination depends on h_curr and m_prev but
-        # never on h_prev, so the two maximizations commute. It removes a
-        # factor of K from every tensor built below.
-        #
-        # candidate[h_curr, h_prev, m_prev]
+        # Maximize over the predecessor hidden state first.
         candidate = V_prev_flat.unsqueeze(0) + log_transition_t.unsqueeze(-1)
 
         # best[h_curr, m_prev], best_h_prev[h_curr, m_prev]
@@ -477,9 +436,8 @@ def viterbi_torch_mvr_chmm(
         )
         V_curr_flat.scatter_reduce_(1, dest, best, reduce="amax", include_self=True)
 
-        # Recover the winning predecessor mediation state. The scattered value
-        # is copied verbatim from one source entry, so exact equality is the
-        # right test; ties are broken toward the smallest source index.
+        # Recover the best predecessor mediation state, breaking ties toward
+        # the smallest source index.
         sentinel = prev_total
         source = torch.arange(prev_total, device=device).unsqueeze(0).expand(K, -1)
 
@@ -505,14 +463,10 @@ def viterbi_torch_mvr_chmm(
             include_self=True,
         )
 
-        # Unreachable destinations hold the sentinel and are -inf valued, so
-        # their back pointer is never followed; clamp only to keep the gather
-        # in bounds.
+        # sentinel marks unreached destinations; clamp it back into range.
         m_prev_ptr = m_prev_ptr.clamp(max=prev_total - 1)
         h_prev_ptr = best_h_prev.gather(1, m_prev_ptr)
 
-        # Flat index into shapes[t - 1], whose C-order ravel is exactly
-        # h_prev * prev_total + m_prev.
         backptr.append((h_prev_ptr * prev_total + m_prev_ptr).reshape(shapes[t]))
 
         V_curr = V_curr_flat.reshape(shapes[t])
@@ -540,10 +494,6 @@ def viterbi_torch_mvr_chmm(
 
     # ------------------------------------------------------------------
     # Termination.
-    #
-    # With normalization the running total already holds the full log
-    # probability and the residual maximum is 0; without it, the residual
-    # maximum is the whole score.
     # ------------------------------------------------------------------
     final_scale = V_prev.max()
 
