@@ -337,8 +337,7 @@ def viterbi_torch_mvr_chmm(
     ]
 
     active_by_time = [
-        [i for i, info in enumerate(mvr_infos) if t in info["evl_at"]]
-        for t in range(T)
+        [i for i, info in enumerate(mvr_infos) if t in info["evl_at"]] for t in range(T)
     ]
     dims_by_time = [
         tuple(mvr_infos[i]["evl_at"][t].shape[0] for i in active_by_time[t])

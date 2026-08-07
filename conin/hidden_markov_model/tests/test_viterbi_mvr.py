@@ -15,7 +15,6 @@ from conin.hidden_markov_model.inference.viterbi_mvr import (  # noqa: E402
     viterbi_torch_mvr_chmm,
 )
 
-
 # ===========================
 # Helpers
 # ===========================
@@ -62,13 +61,9 @@ def make_forbid_mvr(*, hidden_states, forbidden_state, time_range=None):
     return HomMVR(
         hidden_states=hidden_states,
         mediation_states=mediation_states,
-        ini={
-            h: ("violated" if h == forbidden_state else "ok") for h in hidden_states
-        },
+        ini={h: ("violated" if h == forbidden_state else "ok") for h in hidden_states},
         upd={
-            (m, h): (
-                "violated" if m == "violated" or h == forbidden_state else "ok"
-            )
+            (m, h): ("violated" if m == "violated" or h == forbidden_state else "ok")
             for m in mediation_states
             for h in hidden_states
         },
@@ -105,22 +100,16 @@ def make_end_state_inhom_mvr(
     return InhomMVR(
         hidden_states=hidden_states,
         mediation_states=mediation_states,
-        ini={
-            h: ("t0_yes" if h == target_state else "t0_no") for h in hidden_states
-        },
+        ini={h: ("t0_yes" if h == target_state else "t0_no") for h in hidden_states},
         upd=[
             {
-                (m, h): (
-                    f"t{t + 1}_yes" if h == target_state else f"t{t + 1}_no"
-                )
+                (m, h): (f"t{t + 1}_yes" if h == target_state else f"t{t + 1}_no")
                 for m in mediation_states[t]
                 for h in hidden_states
             }
             for t in range(time_horizon)
         ],
-        evl=[
-            {f"t{t}_no": False, f"t{t}_yes": True} for t in range(time_horizon + 1)
-        ],
+        evl=[{f"t{t}_no": False, f"t{t}_yes": True} for t in range(time_horizon + 1)],
         time_range=time_range,
     )
 
@@ -459,9 +448,7 @@ def test_viterbi_return_shapes(hmm, observed):
     path, augmented = viterbi_torch_mvr_chmm(model, observed)
     assert len(augmented) == len(observed)
 
-    path, augmented, score = viterbi_torch_mvr_chmm(
-        model, observed, return_score=True
-    )
+    path, augmented, score = viterbi_torch_mvr_chmm(model, observed, return_score=True)
     assert isinstance(score, float)
 
 

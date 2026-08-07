@@ -415,7 +415,7 @@ class MVR_MatVecRepn:
 
     def load_index_maps(self):
         """Cache the deterministic successor maps implied by ``ini`` and ``upd``.
-        
+
         - ``ini_idx[h]`` is the mediation state entered when the MVR is started
           on hidden state ``h``;
         - ``next_idx[h_curr, m_prev]`` is the mediation state reached from
@@ -448,10 +448,10 @@ class MVR_MatVecRepn:
         self.ini_array = ini_array
 
     def load_upd_array(self, upd_array, check_errors=True):
-        '''
+        """
         check_errors = False only when permuting mediation states to match
         that of HMM, called by _align_hidden_states in MVR_CHMM.
-        '''
+        """
         if isinstance(upd_array, list):
             upd_array = [np.asarray(arr) for arr in upd_array]
         else:
