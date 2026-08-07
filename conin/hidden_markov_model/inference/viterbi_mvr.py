@@ -1,66 +1,54 @@
 from __future__ import annotations
 
+import math
+
 import numpy as np
 import torch
 
 from conin.exceptions import InvalidInputError
+from conin.hidden_markov_model.mvr import InhomMVR
+
+NEG_INF = float("-inf")
 
 
-def _get_mvr_chmm_parts(model):
+# ======================================================================
+# Model extraction and conversion
+# ======================================================================
+
+
+def _hmm_to_torch(hmm, *, log=False, dtype=torch.float32, device="cpu"):
     """
-    Extract hidden_markov_model and constraints from an MVR_CHMM-like object.
-
-    This is defensive because the exact parent CHMM attribute names were not shown.
-    """
-    hmm = getattr(model, "hidden_markov_model", None)
-    if hmm is None:
-        hmm = getattr(model, "hmm", None)
-    if hmm is None:
-        hmm = getattr(model, "_hidden_markov_model", None)
-
-    constraints = getattr(model, "constraints", None)
-    if constraints is None:
-        constraints = getattr(model, "_constraints", None)
-    if constraints is None:
-        constraints = []
-
-    if hmm is None:
-        raise InvalidInputError(
-            "Could not find hidden_markov_model on the supplied MVR_CHMM object."
-        )
-
-    return hmm, list(constraints)
-
-
-def _hmm_to_torch(hmm, *, dtype=torch.float32, device="cpu"):
-    """
-    Convert a HiddenMarkovModel into torch tensors.
-
-    Returns
-    -------
-    start_vec : torch.Tensor, shape (K,)
-    transition_mat : torch.Tensor, shape (K, K)
-    emission_mat : torch.Tensor, shape (K, O)
+    Convert a hidden Markov model into torch tensors, optionally in log space.
+    Zero probabilities map to ``-inf``, the max-plus absorbing element.
     """
     repn = hmm.repn
+
     if repn is None:
         raise InvalidInputError("hidden_markov_model.repn is missing.")
 
-    start_vec = torch.as_tensor(repn.start_vec, dtype=dtype, device=device)
-    transition_mat = torch.as_tensor(repn.transition_mat, dtype=dtype, device=device)
-    emission_mat = torch.as_tensor(repn.emission_mat, dtype=dtype, device=device)
+    def convert(array):
+        # Take the log in the source precision. Casting first would send any
+        # probability below the dtype's smallest subnormal to 0, and log(0) to
+        # -inf, silently reclassifying an unlikely transition as impossible.
+        array = np.asarray(array, dtype=np.float64)
 
-    return start_vec, transition_mat, emission_mat
+        if log:
+            with np.errstate(divide="ignore"):
+                array = np.log(array)
+
+        return torch.as_tensor(array, dtype=dtype, device=device)
+
+    return (
+        convert(repn.start_vec),
+        convert(repn.transition_mat),
+        convert(repn.emission_mat),
+    )
 
 
 def _observations_to_emit_weights(hmm, emission_mat, observed):
     """
-    Convert external observation labels to emission weights.
-
-    Returns
-    -------
-    emit_weights : torch.Tensor, shape (T, K)
-        emit_weights[t, h] = P(observed[t] | hidden[t] = h)
+    Convert external observation labels into per-time emission weights.
+    The result follows whichever space ``emission_mat`` is given in.
     """
     obs_idx = []
 
@@ -78,210 +66,169 @@ def _observations_to_emit_weights(hmm, emission_mat, observed):
     return emission_mat[:, obs_idx].T
 
 
-def _is_inhom_mvr(mvr):
+# ======================================================================
+# MVR preprocessing
+# ======================================================================
+
+
+def _validate_time_range(mvr, T):
     """
-    Return True if the MVR representation is time-inhomogeneous.
+    Check an MVR's time range against the observation length and return it.
+    An MVR without a ``_time_range`` is enforced over the whole sequence.
     """
-    return isinstance(mvr.repn.evl_array, list)
-
-
-def _mvr_active_range(mvr, T):
-    """
-    Return active global time range [a, b] for an MVR.
-
-    If mvr._time_range is None, default to [0, T - 1].
-
-    For an InhomMVR, require
-
-        b - a <= mvr.time_horizon
-
-    using the convention
-
-        time_horizon = len(mediation_states) - 1.
-    """
-    if T <= 0:
-        raise InvalidInputError("observed sequence must be nonempty.")
-
-    time_range = getattr(mvr, "_time_range", None)
-
-    if time_range is None:
-        active_start = 0
-        active_end = T - 1
+    if mvr._time_range is None:
+        active_start, active_end = 0, T - 1
     else:
-        active_start, active_end = time_range
+        active_start, active_end = mvr._time_range
 
-    if active_start < 0:
-        raise InvalidInputError("MVR active_start must be nonnegative.")
-
-    if active_end < active_start:
-        raise InvalidInputError("MVR active_end must be >= active_start.")
-
+    # Nonnegativity and ordering are enforced by the MVR constructors. Only the
+    # fit against the observation length is checkable here.
     if active_end >= T:
         raise InvalidInputError(
             f"MVR time_range [{active_start}, {active_end}] exceeds "
             f"observation horizon T={T}."
         )
 
-    if _is_inhom_mvr(mvr):
-        required_local_horizon = active_end - active_start
-        if required_local_horizon > mvr.time_horizon:
-            raise InvalidInputError(
-                "InhomMVR time_horizon is too short for requested inference range. "
-                f"Required local horizon {required_local_horizon}, "
-                f"but mvr.time_horizon is {mvr.time_horizon}."
-            )
+    # The constructor checks this only for an explicit time_range. For a
+    # defaulted window it becomes "is the automaton long enough to span the
+    # whole sequence", which construction had no T to answer.
+    if isinstance(mvr, InhomMVR) and active_end - active_start > mvr.time_horizon:
+        raise InvalidInputError(
+            "InhomMVR time_horizon is too short for requested inference range. "
+            f"Required local horizon {active_end - active_start}, "
+            f"but mvr.time_horizon is {mvr.time_horizon}."
+        )
 
     return active_start, active_end
-
-
-def _hidden_permutation_for_mvr(mvr, hmm_hidden_order):
-    """
-    Compute a permutation so that MVR arrays are reordered to match the HMM's
-    internal hidden-state order.
-    """
-    mvr_hidden_order = list(mvr.hidden_states)
-
-    if set(mvr_hidden_order) != set(hmm_hidden_order):
-        raise InvalidInputError("MVR hidden states do not match HMM hidden states.")
-
-    return [mvr_hidden_order.index(h) for h in hmm_hidden_order]
 
 
 def _build_mvr_factor_info(
     mvr,
     T,
-    hmm_hidden_order,
     *,
+    log=False,
     dtype=torch.float32,
     device="cpu",
 ):
     """
-    Build torch factors for one MVR without padding mediation dimensions.
-
-    Returns a dictionary containing:
-      - active interval [a, b]
-      - homogeneous/inhomogeneous flag
-      - ini tensor
-      - upd tensor or list of tensors
-      - evl tensor or list of tensors
-
-    Hidden axes are reordered to match HMM hidden-state order.
+    Precompute the per-MVR tensors an inference recursion needs, by global time.
+    Keying by global time applies the local-time offset once, here, so no
+    consumer repeats it and homogeneous and inhomogeneous MVRs read alike.
     """
     repn = mvr.repn
-    a, b = _mvr_active_range(mvr, T)
-    hidden_perm = _hidden_permutation_for_mvr(mvr, hmm_hidden_order)
-    is_inhom = _is_inhom_mvr(mvr)
+    a, b = _validate_time_range(mvr, T)
+    is_inhom = isinstance(mvr, InhomMVR)
 
-    ini_np = np.asarray(repn.ini_array)[hidden_perm, :]
-    ini = torch.as_tensor(ini_np, dtype=dtype, device=device)
+    def to_idx(array):
+        return torch.as_tensor(array, dtype=torch.long, device=device)
 
+    def to_evl(evl_array):
+        evl = torch.as_tensor(evl_array, dtype=dtype, device=device)
+        return torch.log(evl) if log else evl
+
+    # MVR_CHMM aligned the hidden ordering and MVR_MatVecRepn already reduced
+    # the one-hot ini/upd arrays to index maps, so only a dtype/device
+    # conversion is left. A homogeneous MVR reuses one tensor across its window.
     if is_inhom:
-        upd = [
-            torch.as_tensor(
-                np.asarray(upd_t)[hidden_perm, :, :],
-                dtype=dtype,
-                device=device,
-            )
-            for upd_t in repn.upd_array
-        ]
-        evl = [
-            torch.as_tensor(
-                np.asarray(evl_t),
-                dtype=dtype,
-                device=device,
-            )
-            for evl_t in repn.evl_array
-        ]
+        evl_at = {t: to_evl(repn.evl_array[t - a]) for t in range(a, b + 1)}
+        next_at = {t: to_idx(repn.next_idx[t - a - 1]) for t in range(a + 1, b + 1)}
+        labels_at = {t: mvr.mediation_states[t - a] for t in range(a, b + 1)}
     else:
-        upd = torch.as_tensor(
-            np.asarray(repn.upd_array)[hidden_perm, :, :],
-            dtype=dtype,
-            device=device,
-        )
-        evl = torch.as_tensor(
-            np.asarray(repn.evl_array),
-            dtype=dtype,
-            device=device,
-        )
+        evl, next_idx = to_evl(repn.evl_array), to_idx(repn.next_idx)
+        evl_at = {t: evl for t in range(a, b + 1)}
+        next_at = {t: next_idx for t in range(a + 1, b + 1)}
+        labels_at = {t: mvr.mediation_states for t in range(a, b + 1)}
 
     return {
-        "mvr": mvr,
         "a": a,
         "b": b,
-        "is_inhom": is_inhom,
-        "ini": ini,
-        "upd": upd,
-        "evl": evl,
+        "ini_idx": to_idx(repn.ini_idx),
+        "next_idx_at": next_at,
+        "evl_at": evl_at,
+        "labels_at": labels_at,
     }
 
 
-def _active_mvr_indices(mvr_infos, t):
+def _c_strides(dims):
     """
-    Return indices of MVRs active at global time t.
+    Return the C-order strides of a shape tuple.
+    The order must match ``np.unravel_index``, which decodes the flat indices
+    these strides encode.
     """
-    return [i for i, info in enumerate(mvr_infos) if info["a"] <= t <= info["b"]]
+    strides = []
+    total = 1
+
+    for dim in reversed(dims):
+        strides.append(total)
+        total *= dim
+
+    strides.reverse()
+
+    return strides
 
 
-def _mvr_dim_at_time(info, t):
+# ======================================================================
+# Destination index construction
+# ======================================================================
+
+
+def _build_destination_index(
+    K,
+    mvr_infos,
+    prev_active,
+    curr_active,
+    prev_dims,
+    curr_dims,
+    t,
+    device,
+):
     """
-    Return the mediation dimension of an active MVR at global time t.
+    Return the flat destination index of each predecessor mediation state.
+    The MVRs are folded in one at a time as strided terms, so no product
+    transition tensor is ever materialized.
     """
-    local_t = t - info["a"]
+    curr_strides = _c_strides(curr_dims)
+    prev_total = math.prod(prev_dims)
 
-    if info["is_inhom"]:
-        return int(info["evl"][local_t].shape[0])
+    prev_position = {mvr_i: pos for pos, mvr_i in enumerate(prev_active)}
 
-    return int(info["evl"].shape[0])
+    # MVRs active at t - 1 but not at t contribute no stride, so their
+    # predecessor states collapse onto a shared destination and the scatter
+    # maximizes over them. MVRs inactive at both times appear in neither space.
+    dest = torch.zeros((K,) + prev_dims, dtype=torch.long, device=device)
 
+    for pos, mvr_i in enumerate(curr_active):
+        info = mvr_infos[mvr_i]
+        stride = curr_strides[pos]
 
-def _shape_for_time(K, mvr_infos, active_indices, t):
-    """
-    Return augmented tensor shape at time t.
+        if mvr_i in prev_position:
+            # Active across the transition: follow the deterministic update.
+            next_idx = info["next_idx_at"][t]
 
-    Shape convention:
-        (K, mediation dims for active MVRs in active_indices order)
-    """
-    return tuple([K] + [_mvr_dim_at_time(mvr_infos[i], t) for i in active_indices])
+            view = [1] * (1 + len(prev_dims))
+            view[0] = K
+            view[1 + prev_position[mvr_i]] = next_idx.shape[1]
 
+            dest = dest + next_idx.reshape(view) * stride
+        else:
+            # Enters the lattice at t; this can only be its window start.
+            if t != info["a"]:
+                raise RuntimeError(
+                    "Internal active-set inconsistency: MVR appears in current "
+                    "but not previous at a non-start time."
+                )
 
-def _mvr_init_factor(info):
-    """
-    Return initialization factor for an MVR.
+            view = [1] * (1 + len(prev_dims))
+            view[0] = K
 
-    Shape:
-        (K, M_0)
-    """
-    return info["ini"]
+            dest = dest + info["ini_idx"].reshape(view) * stride
 
-
-def _mvr_update_factor(info, t):
-    """
-    Return update factor for an MVR active at both t - 1 and t.
-
-    Shape:
-        (K, M_curr, M_prev)
-
-    Here t is the global current time, i.e. the transition is t - 1 -> t.
-    """
-    if info["is_inhom"]:
-        local_update_index = t - info["a"] - 1
-        return info["upd"][local_update_index]
-
-    return info["upd"]
+    return dest.reshape(K, prev_total)
 
 
-def _mvr_eval_factor(info, t):
-    """
-    Return evaluation factor for an MVR at global time t.
-
-    Shape:
-        (M_t,)
-    """
-    if info["is_inhom"]:
-        local_t = t - info["a"]
-        return info["evl"][local_t]
-
-    return info["evl"]
+# ======================================================================
+# Decoding
+# ======================================================================
 
 
 def _decode_dynamic_augmented_path(
@@ -289,15 +236,7 @@ def _decode_dynamic_augmented_path(
     active_by_time,
     mvr_infos,
 ):
-    """
-    Decode dynamic augmented index tuples into dictionaries.
-
-    Each augmented index tuple has shape:
-
-        (hidden_index, active_mvr_0_state_index, active_mvr_1_state_index, ...)
-
-    where active MVRs vary by time.
-    """
+    """Decode augmented index tuples into per-time dictionaries."""
     decoded = []
 
     for t, aug_idx in enumerate(augmented_index_path):
@@ -312,19 +251,18 @@ def _decode_dynamic_augmented_path(
         for axis_pos, mvr_i in enumerate(active, start=1):
             m_idx = int(aug_idx[axis_pos])
             info = mvr_infos[mvr_i]
-            mvr = info["mvr"]
-            local_t = t - info["a"]
 
             entry["mvr_indices"][mvr_i] = m_idx
-
-            if info["is_inhom"]:
-                entry["mvr_states"][mvr_i] = mvr.mediation_states[local_t][m_idx]
-            else:
-                entry["mvr_states"][mvr_i] = mvr.mediation_states[m_idx]
+            entry["mvr_states"][mvr_i] = info["labels_at"][t][m_idx]
 
         decoded.append(entry)
 
     return decoded
+
+
+# ======================================================================
+# Viterbi
+# ======================================================================
 
 
 def viterbi_torch_mvr_chmm(
@@ -337,305 +275,285 @@ def viterbi_torch_mvr_chmm(
     return_augmented=True,
     return_score=False,
 ):
-    """
-    Einsum-based Viterbi for an MVR-augmented constrained HMM using dynamic
-    MVR axes.
+    """Log-space Viterbi for an MVR-augmented constrained HMM.
 
-    Unlike the older dna_algorithms.py implementation, this version does not
-    assume a fixed augmented tensor shape over time. Instead,
+    The recursion runs in the max-plus semiring: products of probabilities
+    become sums of log probabilities and the maximization is unchanged, so no
+    ``logsumexp`` is required and the decoded path is identical to what an
+    exact probability-space implementation would produce.
 
-        V[t].shape == (K, d_i(t) for i active at t)
+    Augmented axes are dynamic. Rather than padding every MVR out to the full
+    horizon, the value tensor carries only the MVRs enforced at the current
+    time::
 
-    where an MVR is active only over its time_range. If time_range is None,
-    the MVR is active over [0, T - 1].
+        V[t].shape == (K,) + tuple(M_i(t) for i active at t)
+
+    An MVR is active over ``[a_i, b_i]``, taken from its ``time_range`` and
+    defaulting to ``[0, T - 1]``. It is initialized at ``a_i``, evaluated at
+    ``b_i``, and absent otherwise.
+
+    The MVR updates are deterministic, so each transition is a scatter rather
+    than a dense mediation-space multiply. The MVRs are folded into a single
+    destination index one at a time, so no product automaton is constructed and
+    the working tensors scale with the mediation space rather than its square.
 
     Parameters
     ----------
-    model : MVR_CHMM-like
-        Object containing a hidden_markov_model and a list of MVR constraints.
+    model : MVR_CHMM
+        Constrained model carrying a hidden Markov model and MVR constraints.
     observed : list
-        Observed sequence using external observed-state labels.
+        Observed sequence in external observed-state labels.
     dtype : torch.dtype, optional
-        Floating dtype for torch tensors.
+        Floating dtype for torch tensors. ``float32`` is ample in log space.
     device : str or torch.device, optional
         Torch device.
     normalize : bool, optional
-        If True, divide each Viterbi slice by its maximum value.
+        If ``True``, shift each slice so its maximum is ``0``. Log space does
+        not require this for stability; it is retained for comparability and
+        costs one subtraction per step.
     return_augmented : bool, optional
-        If True, return decoded dynamic augmented path information.
+        If ``True``, also return the decoded augmented path.
     return_score : bool, optional
-        If True, return best-path log score estimate.
+        If ``True``, also return the log probability of the best path.
 
     Returns
     -------
     hidden_path : list
-        Best hidden-state path in external labels.
+        Most likely feasible hidden-state path in external labels.
+    augmented_path : list[dict], optional
+        Returned when ``return_augmented`` is ``True``.
+    best_logprob : float, optional
+        Returned when ``return_score`` is ``True``.
 
-    Optionally also returns:
-      - augmented_path : list[dict]
-      - best_logprob : float
+    Raises
+    ------
+    InvalidInputError
+        If the observed sequence is empty, contains an unknown label, or if the
+        constraints admit no feasible path.
     """
     if len(observed) == 0:
         raise InvalidInputError("observed sequence must be nonempty.")
 
-    hmm, constraints = _get_mvr_chmm_parts(model)
+    hmm = getattr(model, "hidden_markov_model", None) or getattr(model, "hmm", None)
+
+    if hmm is None:
+        raise InvalidInputError("Missing hidden_markov_model from MVR_CHMM")
+
+    constraints = list(getattr(model, "constraints", None) or [])
     T = len(observed)
 
-    hmm_hidden_order = list(hmm.hidden_to_external)
-
-    start_vec, transition_mat, emission_mat = _hmm_to_torch(
+    log_start_vec, log_transition_mat, log_emission_mat = _hmm_to_torch(
         hmm,
+        log=True,
         dtype=dtype,
         device=device,
     )
 
-    emit_weights = _observations_to_emit_weights(
+    log_emit_weights = _observations_to_emit_weights(
         hmm,
-        emission_mat,
+        log_emission_mat,
         observed,
     )
 
-    K = int(start_vec.shape[0])
-    C = len(constraints)
+    K = int(log_start_vec.shape[0])
 
     mvr_infos = [
         _build_mvr_factor_info(
             mvr,
             T,
-            hmm_hidden_order,
+            log=True,
             dtype=dtype,
             device=device,
         )
         for mvr in constraints
     ]
 
-    active_by_time = [_active_mvr_indices(mvr_infos, t) for t in range(T)]
+    active_by_time = [
+        [i for i, info in enumerate(mvr_infos) if t in info["evl_at"]]
+        for t in range(T)
+    ]
+    dims_by_time = [
+        tuple(mvr_infos[i]["evl_at"][t].shape[0] for i in active_by_time[t])
+        for t in range(T)
+    ]
+    shapes = [(K,) + dims_by_time[t] for t in range(T)]
 
-    shapes = [_shape_for_time(K, mvr_infos, active_by_time[t], t) for t in range(T)]
-
-    # Each time step uses at most:
-    #   current hidden + current active MVR axes
-    #   previous hidden + previous active MVR axes
-    #
-    # PyTorch integer einsum labels must be less than 52.
-    max_active = max(len(active) for active in active_by_time) if T > 0 else 0
-    if 2 * (1 + max_active) >= 52:
-        raise InvalidInputError(
-            "Too many simultaneously active MVR constraints for this einsum "
-            "implementation. PyTorch integer einsum subscripts must be < 52."
-        )
+    # log_transition_mat is indexed [h_prev, h_curr]; the recursion wants
+    # h_curr on the leading axis.
+    log_transition_t = log_transition_mat.transpose(0, 1).contiguous()
 
     backptr = []
     log_score = 0.0
 
     # ------------------------------------------------------------------
     # Initialization at t = 0.
+    #
+    # Every MVR active at t = 0 starts there, so the joint mediation state is a
+    # function of the hidden state alone and V has exactly K finite entries.
     # ------------------------------------------------------------------
-    active0 = active_by_time[0]
-    curr_shape = shapes[0]
+    active_0 = active_by_time[0]
+    dims_0 = dims_by_time[0]
+    strides_0 = _c_strides(dims_0)
+    total_0 = math.prod(dims_0)
 
-    curr_indices = list(range(1 + len(active0)))
-    curr_h_label = curr_indices[0]
+    flat_ini = torch.zeros(K, dtype=torch.long, device=device)
 
-    curr_m_label = {mvr_i: curr_indices[pos + 1] for pos, mvr_i in enumerate(active0)}
+    for pos, mvr_i in enumerate(active_0):
+        flat_ini = flat_ini + mvr_infos[mvr_i]["ini_idx"] * strides_0[pos]
 
-    einsum_args = [
-        start_vec,
-        [curr_h_label],
-        emit_weights[0],
-        [curr_h_label],
-    ]
+    V_prev = torch.full(
+        (K, total_0),
+        NEG_INF,
+        dtype=dtype,
+        device=device,
+    )
+    V_prev[torch.arange(K, device=device), flat_ini] = (
+        log_start_vec + log_emit_weights[0]
+    )
+    V_prev = V_prev.reshape(shapes[0])
 
-    for mvr_i in active0:
+    for pos, mvr_i in enumerate(active_0):
         info = mvr_infos[mvr_i]
-        m_label = curr_m_label[mvr_i]
 
-        # Since the MVR is active at t=0, it must have a == 0.
-        einsum_args.extend(
-            [
-                _mvr_init_factor(info),
-                [curr_h_label, m_label],
-            ]
-        )
-
-        # If the MVR evaluates at t=0, apply evl immediately.
         if info["b"] == 0:
-            einsum_args.extend(
-                [
-                    _mvr_eval_factor(info, 0),
-                    [m_label],
-                ]
-            )
-
-    einsum_args.append(curr_indices)
-
-    V_prev = torch.einsum(*einsum_args)
-
-    if tuple(V_prev.shape) != curr_shape:
-        raise RuntimeError(
-            f"Internal shape mismatch at t=0. "
-            f"Expected {curr_shape}, got {tuple(V_prev.shape)}."
-        )
+            log_evl = info["evl_at"][0]
+            view = [1] * len(shapes[0])
+            view[1 + pos] = log_evl.shape[0]
+            V_prev = V_prev + log_evl.reshape(view)
 
     scale = V_prev.max()
 
-    if scale.item() <= 0:
+    if not torch.isfinite(scale):
         raise InvalidInputError("No feasible augmented path at time 0.")
 
     if normalize:
-        log_score += torch.log(scale).item()
-        V_prev = V_prev / scale
+        log_score += scale.item()
+        V_prev = V_prev - scale
 
     # ------------------------------------------------------------------
-    # Forward Viterbi pass.
+    # Forward pass.
     # ------------------------------------------------------------------
     for t in range(1, T):
         prev_active = active_by_time[t - 1]
         curr_active = active_by_time[t]
 
-        prev_shape = shapes[t - 1]
-        curr_shape = shapes[t]
+        prev_dims = dims_by_time[t - 1]
+        curr_dims = dims_by_time[t]
 
-        # Current labels:
-        #   current hidden plus current active MVR axes.
-        curr_indices = list(range(1 + len(curr_active)))
-        curr_h_label = curr_indices[0]
+        prev_total = math.prod(prev_dims)
+        curr_total = math.prod(curr_dims)
 
-        # Previous labels:
-        #   previous hidden plus previous active MVR axes.
-        offset = len(curr_indices)
-        prev_indices = list(range(offset, offset + 1 + len(prev_active)))
-        prev_h_label = prev_indices[0]
+        V_prev_flat = V_prev.reshape(K, prev_total)
 
-        curr_m_label = {
-            mvr_i: curr_indices[pos + 1] for pos, mvr_i in enumerate(curr_active)
-        }
-
-        prev_m_label = {
-            mvr_i: prev_indices[pos + 1] for pos, mvr_i in enumerate(prev_active)
-        }
-
-        einsum_args = [
-            V_prev,
-            prev_indices,
-            transition_mat,
-            [prev_h_label, curr_h_label],
-            emit_weights[t],
-            [curr_h_label],
-        ]
-
-        # Add MVR factors.
+        # Maximize over the predecessor hidden state first. This is valid
+        # because the mediation destination depends on h_curr and m_prev but
+        # never on h_prev, so the two maximizations commute. It removes a
+        # factor of K from every tensor built below.
         #
-        # Cases:
-        #   1. MVR active at current but not previous: it starts at t.
-        #      Use ini[h_curr, m_curr].
-        #
-        #   2. MVR active at both previous and current: use upd.
-        #
-        #   3. MVR active at previous but not current: it ended at t - 1.
-        #      No factor is needed. Its previous axis remains in prev_indices
-        #      and will be maximized out by the Viterbi max.
-        #
-        #   4. MVR inactive at both: no axis and no factor.
-        for mvr_i, info in enumerate(mvr_infos):
-            in_prev = mvr_i in prev_m_label
-            in_curr = mvr_i in curr_m_label
+        # candidate[h_curr, h_prev, m_prev]
+        candidate = V_prev_flat.unsqueeze(0) + log_transition_t.unsqueeze(-1)
 
-            if in_curr and not in_prev:
-                # MVR starts at current time t.
-                # This can happen only when t == a_i.
-                if t != info["a"]:
-                    raise RuntimeError(
-                        "Internal active-set inconsistency: MVR appears in current "
-                        "but not previous at a non-start time."
-                    )
+        # best[h_curr, m_prev], best_h_prev[h_curr, m_prev]
+        best, best_h_prev = candidate.max(dim=1)
+        best = best + log_emit_weights[t].unsqueeze(-1)
 
-                einsum_args.extend(
-                    [
-                        _mvr_init_factor(info),
-                        [curr_h_label, curr_m_label[mvr_i]],
-                    ]
-                )
+        dest = _build_destination_index(
+            K,
+            mvr_infos,
+            prev_active,
+            curr_active,
+            prev_dims,
+            curr_dims,
+            t,
+            device,
+        )
 
-            elif in_curr and in_prev:
-                # MVR is active across transition t - 1 -> t.
-                einsum_args.extend(
-                    [
-                        _mvr_update_factor(info, t),
-                        [
-                            curr_h_label,
-                            curr_m_label[mvr_i],
-                            prev_m_label[mvr_i],
-                        ],
-                    ]
-                )
+        # Scatter-max the predecessor mediation states onto their successors.
+        V_curr_flat = torch.full(
+            (K, curr_total),
+            NEG_INF,
+            dtype=dtype,
+            device=device,
+        )
+        V_curr_flat.scatter_reduce_(1, dest, best, reduce="amax", include_self=True)
 
-            elif in_prev and not in_curr:
-                # MVR ended at t - 1.
-                # Evaluation was already applied at t - 1 if needed.
-                # No transition factor is needed; prev mediation state is
-                # simply part of the predecessor state maximized over.
-                pass
+        # Recover the winning predecessor mediation state. The scattered value
+        # is copied verbatim from one source entry, so exact equality is the
+        # right test; ties are broken toward the smallest source index.
+        sentinel = prev_total
+        source = torch.arange(prev_total, device=device).unsqueeze(0).expand(K, -1)
 
-            else:
-                # inactive in both
-                pass
+        is_winner = torch.isfinite(best) & (best == V_curr_flat.gather(1, dest))
 
-        # Apply evaluation factors for MVRs that end at current time.
-        for mvr_i in curr_active:
+        winner_source = torch.where(
+            is_winner,
+            source,
+            torch.full_like(source, sentinel),
+        )
+
+        m_prev_ptr = torch.full(
+            (K, curr_total),
+            sentinel,
+            dtype=torch.long,
+            device=device,
+        )
+        m_prev_ptr.scatter_reduce_(
+            1,
+            dest,
+            winner_source,
+            reduce="amin",
+            include_self=True,
+        )
+
+        # Unreachable destinations hold the sentinel and are -inf valued, so
+        # their back pointer is never followed; clamp only to keep the gather
+        # in bounds.
+        m_prev_ptr = m_prev_ptr.clamp(max=prev_total - 1)
+        h_prev_ptr = best_h_prev.gather(1, m_prev_ptr)
+
+        # Flat index into shapes[t - 1], whose C-order ravel is exactly
+        # h_prev * prev_total + m_prev.
+        backptr.append((h_prev_ptr * prev_total + m_prev_ptr).reshape(shapes[t]))
+
+        V_curr = V_curr_flat.reshape(shapes[t])
+
+        # Evaluate any MVR whose enforcement window closes here.
+        for pos, mvr_i in enumerate(curr_active):
             info = mvr_infos[mvr_i]
 
             if t == info["b"]:
-                einsum_args.extend(
-                    [
-                        _mvr_eval_factor(info, t),
-                        [curr_m_label[mvr_i]],
-                    ]
-                )
-
-        # Output contains current augmented state first, then previous
-        # augmented state. The previous part is flattened and maximized over.
-        output_indices = curr_indices + prev_indices
-        einsum_args.append(output_indices)
-
-        candidate = torch.einsum(*einsum_args)
-
-        expected_candidate_shape = curr_shape + prev_shape
-        if tuple(candidate.shape) != expected_candidate_shape:
-            raise RuntimeError(
-                f"Internal candidate shape mismatch at t={t}. "
-                f"Expected {expected_candidate_shape}, got {tuple(candidate.shape)}."
-            )
-
-        candidate = candidate.reshape(curr_shape + (-1,))
-
-        V_curr, max_prev_flat = torch.max(candidate, dim=-1)
-        backptr.append(max_prev_flat)
+                log_evl = info["evl_at"][t]
+                view = [1] * len(shapes[t])
+                view[1 + pos] = log_evl.shape[0]
+                V_curr = V_curr + log_evl.reshape(view)
 
         scale = V_curr.max()
 
-        if scale.item() <= 0:
+        if not torch.isfinite(scale):
             raise InvalidInputError(f"No feasible augmented path at time {t}.")
 
         if normalize:
-            log_score += torch.log(scale).item()
-            V_curr = V_curr / scale
+            log_score += scale.item()
+            V_curr = V_curr - scale
 
         V_prev = V_curr
 
     # ------------------------------------------------------------------
     # Termination.
+    #
+    # With normalization the running total already holds the full log
+    # probability and the residual maximum is 0; without it, the residual
+    # maximum is the whole score.
     # ------------------------------------------------------------------
     final_scale = V_prev.max()
 
-    if final_scale.item() <= 0:
+    if not torch.isfinite(final_scale):
         raise InvalidInputError("No feasible augmented path at final time.")
 
-    final_flat = int(torch.argmax(V_prev).detach().cpu().item())
-    final_idx = tuple(int(x) for x in np.unravel_index(final_flat, shapes[T - 1]))
+    log_score += final_scale.item()
 
-    if not normalize:
-        log_score = torch.log(final_scale).item()
+    final_flat = int(torch.argmax(V_prev).item())
+    final_idx = tuple(int(x) for x in np.unravel_index(final_flat, shapes[T - 1]))
 
     # ------------------------------------------------------------------
     # Backtracking.
@@ -644,8 +562,7 @@ def viterbi_torch_mvr_chmm(
     curr_idx = final_idx
 
     for t in range(T - 1, 0, -1):
-        prev_flat = int(backptr[t - 1][curr_idx].detach().cpu().item())
-
+        prev_flat = int(backptr[t - 1][curr_idx].item())
         prev_idx = tuple(int(x) for x in np.unravel_index(prev_flat, shapes[t - 1]))
 
         augmented_index_path.append(prev_idx)

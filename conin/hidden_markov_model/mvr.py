@@ -411,22 +411,24 @@ class MVR_MatVecRepn:
             self.check_dimensions()
 
         self.load_dimensions()
+        self.load_index_maps()
+
+    def load_index_maps(self):
+        """Cache the deterministic successor maps implied by ``ini`` and ``upd``.
+        
+        - ``ini_idx[h]`` is the mediation state entered when the MVR is started
+          on hidden state ``h``;
+        - ``next_idx[h_curr, m_prev]`` is the mediation state reached from
+          ``m_prev`` on hidden state ``h_curr``.
+        """
+        self.ini_idx = self.ini_array.argmax(axis=1)
+
+        if isinstance(self.upd_array, list):
+            self.next_idx = [upd_t.argmax(axis=1) for upd_t in self.upd_array]
+        else:
+            self.next_idx = self.upd_array.argmax(axis=1)
 
     def load_ini_array(self, ini_array, check_errors=True):
-        """Load the MVR initialization array.
-
-        Parameters
-        ----------
-        ini_array : array-like
-            Initialization array for the MVR.
-        check_errors : bool, optional
-            If ``True``, validate dimensions and binary structure.
-
-        Raises
-        ------
-        InvalidInputError
-            If ``ini_array`` has invalid shape or entries.
-        """
         ini_array = np.asarray(ini_array)
 
         if check_errors:
@@ -446,21 +448,10 @@ class MVR_MatVecRepn:
         self.ini_array = ini_array
 
     def load_upd_array(self, upd_array, check_errors=True):
-        """Load the MVR update array or arrays.
-
-        Parameters
-        ----------
-        upd_array : array-like or list of array-like
-            Update array for a homogeneous MVR or time-indexed update arrays for an
-            inhomogeneous MVR.
-        check_errors : bool, optional
-            If ``True``, validate dimensions and binary structure.
-
-        Raises
-        ------
-        InvalidInputError
-            If any update array has invalid shape or entries.
-        """
+        '''
+        check_errors = False only when permuting mediation states to match
+        that of HMM, called by _align_hidden_states in MVR_CHMM.
+        '''
         if isinstance(upd_array, list):
             upd_array = [np.asarray(arr) for arr in upd_array]
         else:
@@ -495,21 +486,6 @@ class MVR_MatVecRepn:
         self.upd_array = upd_array
 
     def load_evl_array(self, evl_array, check_errors=True):
-        """Load the MVR evaluation array or arrays.
-
-        Parameters
-        ----------
-        evl_array : array-like or list of array-like
-            Evaluation array for a homogeneous MVR or time-indexed evaluation arrays
-            for an inhomogeneous MVR.
-        check_errors : bool, optional
-            If ``True``, validate dimensions and binary structure.
-
-        Raises
-        ------
-        InvalidInputError
-            If any evaluation array has invalid shape or entries.
-        """
         if isinstance(evl_array, list):
             evl_array = [np.asarray(arr) for arr in evl_array]
         else:
