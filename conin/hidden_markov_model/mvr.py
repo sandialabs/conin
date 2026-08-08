@@ -23,12 +23,38 @@ class BaseMVR:
     _repn: MVR_MatVecRepn  # numerical representation like HMM_MatVecRepn
     _prefix: bool  # prefix-free tag.
     _time_range: list[int] | None
+    _name: str | None  # optional label for this instance.
 
     def __init__(self):
         """Initialize the base MVR state."""
         self._repn = None
         self._prefix = False
         self._time_range = None
+        self._name = None
+
+    @property
+    def name(self):
+        """Return this instance's label, or ``None`` if it is unnamed.
+
+        Names identify an individual MVR, which is what lets an algorithm select
+        one out of a constraint list. They carry no semantics and no uniqueness
+        guarantee, and operators do not propagate them: an operator builds a
+        fresh MVR, so its result is unnamed.
+
+        Returns
+        -------
+        str or None
+            Label for this MVR.
+        """
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        if value is not None and not isinstance(value, str):
+            raise InvalidInputError(
+                f"name must be a string or None, got {type(value).__name__}"
+            )
+        self._name = value
 
     @property
     def prefix(self):
@@ -93,6 +119,7 @@ class HomMVR(BaseMVR):
         upd: dict[tuple[Any, Any], Any],
         evl: dict[Any, bool],
         time_range: list[int] = None,
+        name: str = None,
     ):
         # Validation
         h_space = set(hidden_states)
@@ -151,6 +178,8 @@ class HomMVR(BaseMVR):
                     "time range must be a list of two nonnegative integers, with start <= end"
                 )
             self._time_range = time_range
+
+        self.name = name
         # Build repn
         self.initialize()
 
@@ -216,6 +245,7 @@ class InhomMVR(BaseMVR):
         upd: list[dict[tuple[Any, Any], Any]],
         evl: list[dict[Any, bool]],
         time_range: list[int] = None,
+        name: str = None,
     ):
         # Validation
         h_space = set(hidden_states)
@@ -313,6 +343,8 @@ class InhomMVR(BaseMVR):
                     "time range cannot be longer than the time horizon of an Inhom MVR"
                 )
             self._time_range = time_range
+
+        self.name = name
         # Build repn
         self.initialize()
 
