@@ -29,7 +29,7 @@ _STATIC_KEYS = ("mvr_infos", "active_by_time", "dims_by_time", "shapes", "dest_c
 
 
 # ======================================================================
-# Setup
+# Helpers
 # ======================================================================
 
 
@@ -91,12 +91,6 @@ def _detach_target(ctx, target):
     ctx["mvr_infos"] = infos
 
     return info["a"], info["b"]
-
-
-# ======================================================================
-# Recursions
-# ======================================================================
-
 
 def _split_on_target(ctx, log_P, t, target):
     """Split a forward message into ``(accepting at t, not accepting at t)``."""
@@ -196,7 +190,7 @@ def _satisfaction_weights(ctx, bctx, target, a, b, hits):
 
 
 # ======================================================================
-# Public interface
+# Satisfaction Time
 # ======================================================================
 
 
