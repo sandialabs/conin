@@ -33,7 +33,6 @@ from .mvr_common import (
     _resolve_emit_weights,
 )
 
-
 # ======================================================================
 # Helpers
 # ======================================================================
@@ -281,9 +280,7 @@ def _resolve_query_times(query_times, T):
         if not isinstance(t, (int, np.integer)):
             raise InvalidInputError(f"Query time must be an integer: {t!r}")
         if not 0 <= t < T:
-            raise InvalidInputError(
-                f"Query time {t} is outside the horizon [0, {T})."
-            )
+            raise InvalidInputError(f"Query time {t} is outside the horizon [0, {T}).")
 
     times = sorted({int(t) for t in times})
 
@@ -396,8 +393,7 @@ def marginal_map_torch_mvr_chmm(
     ]
 
     active_by_time = [
-        [i for i, info in enumerate(mvr_infos) if t in info["evl_at"]]
-        for t in range(T)
+        [i for i, info in enumerate(mvr_infos) if t in info["evl_at"]] for t in range(T)
     ]
     dims_by_time = [
         tuple(mvr_infos[i]["evl_at"][t].shape[0] for i in active_by_time[t])

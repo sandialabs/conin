@@ -25,7 +25,6 @@ from .test_viterbi_mvr import (  # noqa: E402
     score_path,
 )
 
-
 # ===========================
 # Reference implementation
 # ===========================
@@ -241,9 +240,10 @@ def test_marginal_map_differs_from_restricting_viterbi(hmm, observed):
     )
 
     assert marginal_path != restricted
-    assert marginal_path == brute_force_marginal_map(
-        hmm, [], observed, len(observed), query_times
-    )[0]
+    assert (
+        marginal_path
+        == brute_force_marginal_map(hmm, [], observed, len(observed), query_times)[0]
+    )
 
 
 # ===========================
@@ -311,9 +311,10 @@ def test_marginal_map_augmented_path_reports_query_times(hmm, observed):
     assert [entry["time"] for entry in augmented] == query_times
 
     for entry in augmented:
-        assert hmm.hidden_to_external[entry["hidden_index"]] == path[
-            query_times.index(entry["time"])
-        ]
+        assert (
+            hmm.hidden_to_external[entry["hidden_index"]]
+            == path[query_times.index(entry["time"])]
+        )
         # The MVR is inactive at time 0 and active from time 2 on.
         if entry["time"] == 0:
             assert entry["mvr_states"] == {}
@@ -402,8 +403,13 @@ def test_long_constrained_gap_does_not_underflow(gap):
     scores = {}
     for dt in (torch.float32, torch.float64):
         _, scores[dt] = marginal_map_torch_mvr_chmm(
-            model, {}, time_horizon=T, query_times=[0, T - 1],
-            dtype=dt, return_augmented=False, return_score=True,
+            model,
+            {},
+            time_horizon=T,
+            query_times=[0, T - 1],
+            dtype=dt,
+            return_augmented=False,
+            return_score=True,
         )
 
     # Well past every float32 floor: log(min subnormal) is about -103.
@@ -432,5 +438,3 @@ def test_gap_operator_propagates_non_allocation_errors(hmm, observed):
             )
     finally:
         mod._sum_step = original
-
-
