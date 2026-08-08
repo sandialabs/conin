@@ -545,5 +545,3 @@ def _resolve_time_horizons(observations, time_horizons):
         )
 
     return horizons
-
-
