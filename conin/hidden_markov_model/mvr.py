@@ -332,7 +332,7 @@ class InhomMVR(BaseMVR):
     def prune(self):
         reachable = [set(self.ini.values())]
 
-        for t in range(self.time_horizon - 1):
+        for t in range(self.time_horizon):
             reachable.append(
                 {
                     self.upd[t][(m, h)]
@@ -362,11 +362,11 @@ class InhomMVR(BaseMVR):
                     for m in mediation_states[t]
                     for h in self.hidden_states
                 }
-                for t in range(self.time_horizon - 1)
+                for t in range(self.time_horizon)
             ],
             evl=[
                 {m: self.evl[t][m] for m in mediation_states[t]}
-                for t in range(self.time_horizon)
+                for t in range(self.time_horizon + 1)
             ],
             time_range=self._time_range,
         )

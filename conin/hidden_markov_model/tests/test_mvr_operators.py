@@ -48,8 +48,9 @@ def eval_mvr(mvr, seq):
 
         return mvr.evl[state]
 
-    # Inhomogeneous case
-    if len(seq) > mvr.time_horizon:
+    # Inhomogeneous case. There are time_horizon + 1 slices, so that is the
+    # longest sequence the MVR can consume.
+    if len(seq) > mvr.time_horizon + 1:
         raise ValueError("sequence length exceeds inhomogeneous MVR time horizon.")
 
     state = mvr.ini[seq[0]]
@@ -198,7 +199,7 @@ def assert_fully_reachable(mvr):
     for t, m_states_t in enumerate(mvr.mediation_states):
         assert reachable == set(m_states_t), f"time {t}"
 
-        if t < mvr.time_horizon - 1:
+        if t < mvr.time_horizon:
             reachable = {
                 mvr.upd[t][(m, h)] for m in reachable for h in mvr.hidden_states
             }
