@@ -34,18 +34,6 @@ class BaseMVR:
 
     @property
     def name(self):
-        """Return this instance's label, or ``None`` if it is unnamed.
-
-        Names identify an individual MVR, which is what lets an algorithm select
-        one out of a constraint list. They carry no semantics and no uniqueness
-        guarantee, and operators do not propagate them: an operator builds a
-        fresh MVR, so its result is unnamed.
-
-        Returns
-        -------
-        str or None
-            Label for this MVR.
-        """
         return self._name
 
     @name.setter
