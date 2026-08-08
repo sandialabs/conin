@@ -185,6 +185,7 @@ class HomMVR(BaseMVR):
             },
             evl={m: self.evl[m] for m in mediation_states},
             time_range=self._time_range,
+            name=self._name,
         )
 
         pruned._prefix = self._prefix
@@ -385,6 +386,7 @@ class InhomMVR(BaseMVR):
                 for t in range(self.time_horizon + 1)
             ],
             time_range=self._time_range,
+            name=self._name,
         )
 
         pruned._prefix = self._prefix

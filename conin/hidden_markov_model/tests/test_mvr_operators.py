@@ -682,16 +682,18 @@ def test_prune_returns_self_when_fully_reachable():
     assert mvr.prune() is mvr
 
 
-def test_prune_preserves_prefix_and_time_range():
+def test_prune_preserves_prefix_and_time_range_and_name():
     mvr = orphan_state_mvr()
     mvr._prefix = True
     mvr._time_range = [1, 3]
+    mvr.name = "visit_a"
 
     pruned = mvr.prune()
 
     assert pruned is not mvr
     assert pruned.prefix is True
     assert pruned._time_range == [1, 3]
+    assert pruned.name == "visit_a"
 
 
 def test_prune_inhom_mvr():
