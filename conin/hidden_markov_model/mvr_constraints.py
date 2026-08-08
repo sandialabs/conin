@@ -4,6 +4,7 @@ from typing import Any
 
 from conin.exceptions import InvalidInputError
 from conin.hidden_markov_model.mvr import HomMVR
+from conin.hidden_markov_model.mvr_operators import mvr_already_satisfied, mvr_not_yet
 
 # Bare labels are not accepted where a collection is expected: strings are
 # iterable, and a label may itself be a sequence of labels, so allowing both
@@ -104,7 +105,7 @@ def mvr_current_state(
     )
 
 
-def mvr_transition(
+def mvr_current_transition(
     hidden_markov_model,
     transitions,
 ) -> HomMVR:
@@ -182,9 +183,175 @@ def mvr_transition(
     )
 
 
+def mvr_current_sequencelist(
+    hidden_markov_model,
+    sequences,
+) -> HomMVR:
+    """
+    MVR evaluates True iff the hidden state sequence ends on one of "sequences".
+    ie. If "sequences" = [('a','b','a')], at time t MVR will evaluate True iff
+    h_{t-2}, h_{t-1}, h_t = 'a', 'b', 'a'.
+    A sequence longer than t + 1 cannot have been completed, so the MVR evaluates False.
+
+    This implements the Aho-Corasick construction for a more efficient MVR.
+    """
+    hidden_states = _model_hidden_states(hidden_markov_model)
+    hidden_space = set(hidden_states)
+
+    if not isinstance(sequences, _COLLECTION_TYPES):
+        raise InvalidInputError(
+            "sequences must be a list, tuple, set, or frozenset of hidden state "
+            "sequences"
+        )
+
+    # A bare sequence is itself a collection of hidden states, so without this it
+    # would be read as a list of malformed entries.
+    if (
+        isinstance(sequences, (tuple, list))
+        and len(sequences) > 0
+        and all(h in hidden_space for h in sequences)
+    ):
+        raise InvalidInputError(
+            "sequences must be a list, tuple, set, or frozenset of hidden state "
+            "sequences, even when it holds a single sequence. Wrap it, e.g. "
+            f"[{tuple(sequences)!r}]"
+        )
+
+    patterns = set()
+
+    for i, sequence in enumerate(sequences):
+        if not isinstance(sequence, (tuple, list)):
+            raise InvalidInputError(
+                f"sequences entry {i} must be a tuple or list of hidden states"
+            )
+
+        if len(sequence) == 0:
+            raise InvalidInputError(
+                f"sequences entry {i} must be nonempty. Every sequence ends on the "
+                "empty sequence, so use mvr_constant(hidden_markov_model, True) for "
+                "the constantly true MVR"
+            )
+
+        unknown = set(sequence) - hidden_space
+
+        if unknown:
+            raise InvalidInputError(
+                f"sequences entry {i} contains labels that are not hidden states "
+                f"of hidden_markov_model: {sorted(unknown, key=repr)}"
+            )
+
+        patterns.add(tuple(sequence))
+
+    # Aho-Corasick: the mediation state is the longest suffix of the hidden states
+    # consumed so far that is a prefix of some sequence, so evl asks whether some
+    # sequence is a suffix of that prefix.
+    nodes = {()} | {
+        pattern[:n] for pattern in patterns for n in range(1, len(pattern) + 1)
+    }
+
+    # Sorted so the mediation index order does not depend on set iteration order.
+    mediation_states = sorted(nodes, key=lambda m: (len(m), tuple(map(repr, m))))
+
+    upd = {}
+
+    for m in mediation_states:
+        for h in hidden_states:
+            # Longest suffix of m + (h,) that is a node. Terminates because () is one.
+            candidate = m + (h,)
+
+            while candidate not in nodes:
+                candidate = candidate[1:]
+
+            upd[(m, h)] = candidate
+
+    # The automaton starts at the root and consumes the first hidden state.
+    ini = {h: upd[((), h)] for h in hidden_states}
+
+    # When len(p) > len(m) the slice clamps to all of m, which cannot equal p.
+    evl = {m: any(m[-len(p) :] == p for p in patterns) for m in mediation_states}
+
+    return HomMVR(
+        hidden_states=hidden_states,
+        mediation_states=mediation_states,
+        ini=ini,
+        upd=upd,
+        evl=evl,
+    )
+
+
 # ------------------------------------------------------------------
 # Convenience wrappers
 # ------------------------------------------------------------------
 #
 # Named compositions of the primitives above with the operators in
 # mvr_operators.py. Nothing here builds ini/upd/evl by hand.
+#
+# The primitives are predicates on the current time step, so each is lifted over
+# the whole chain by an operator: mvr_already_satisfied for "happens at least
+# once", mvr_not_yet for "never happens". Validation is left to the primitive.
+
+
+def mvr_visit_state(
+    hidden_markov_model,
+    states,
+) -> HomMVR:
+    """
+    MVR evaluates True iff some hidden state up to time t is in "states".
+    """
+    return mvr_already_satisfied(mvr_current_state(hidden_markov_model, states))
+
+
+def mvr_forbid_state(
+    hidden_markov_model,
+    states,
+) -> HomMVR:
+    """
+    MVR evaluates True iff no hidden state up to time t is in "states".
+    """
+    return mvr_not_yet(mvr_current_state(hidden_markov_model, states))
+
+
+def mvr_visit_transition(
+    hidden_markov_model,
+    transitions,
+) -> HomMVR:
+    """
+    MVR evaluates True iff some transition up to time t is in "transitions".
+    """
+    return mvr_already_satisfied(
+        mvr_current_transition(hidden_markov_model, transitions)
+    )
+
+
+def mvr_forbid_transition(
+    hidden_markov_model,
+    transitions,
+) -> HomMVR:
+    """
+    MVR evaluates True iff no transition up to time t is in "transitions".
+    """
+    return mvr_not_yet(mvr_current_transition(hidden_markov_model, transitions))
+
+
+def mvr_visit_sequencelist(
+    hidden_markov_model,
+    sequences,
+) -> HomMVR:
+    """
+    MVR evaluates True iff the hidden states up to time t contain one of
+    "sequences" as a contiguous subsequence.
+    """
+    return mvr_already_satisfied(
+        mvr_current_sequencelist(hidden_markov_model, sequences)
+    )
+
+
+def mvr_forbid_sequencelist(
+    hidden_markov_model,
+    sequences,
+) -> HomMVR:
+    """
+    MVR evaluates True iff the hidden states up to time t contain none of
+    "sequences" as a contiguous subsequence.
+    """
+    return mvr_not_yet(mvr_current_sequencelist(hidden_markov_model, sequences))

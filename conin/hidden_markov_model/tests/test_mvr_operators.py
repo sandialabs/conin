@@ -1,7 +1,7 @@
 import pytest
 
 from conin.exceptions import InvalidInputError
-from conin.hidden_markov_model.mvr import HomMVR
+from conin.hidden_markov_model.mvr import HomMVR, InhomMVR
 
 from conin.hidden_markov_model.mvr_operators import (
     mvr_and,
@@ -169,6 +169,55 @@ def exact_word_mvr(word):
         ini=ini,
         upd=upd,
         evl=evl,
+    )
+
+
+def assert_fully_reachable(mvr):
+    """
+    Check that every declared mediation state can actually be entered.
+    """
+    if isinstance(mvr, HomMVR):
+        reachable = set(mvr.ini.values())
+        frontier = list(reachable)
+
+        while frontier:
+            m_prev = frontier.pop()
+
+            for h in mvr.hidden_states:
+                m_curr = mvr.upd[(m_prev, h)]
+
+                if m_curr not in reachable:
+                    reachable.add(m_curr)
+                    frontier.append(m_curr)
+
+        assert reachable == set(mvr.mediation_states)
+        return
+
+    reachable = set(mvr.ini.values())
+
+    for t, m_states_t in enumerate(mvr.mediation_states):
+        assert reachable == set(m_states_t), f"time {t}"
+
+        if t < mvr.time_horizon - 1:
+            reachable = {
+                mvr.upd[t][(m, h)] for m in reachable for h in mvr.hidden_states
+            }
+
+
+def orphan_state_mvr():
+    """
+    Language: all nonempty words ending in "a". The mediation state "orphan" is
+    declared but entered by nothing.
+    """
+    hidden_states = list(ALPHABET)
+    mediation_states = [False, True, "orphan"]
+
+    return HomMVR(
+        hidden_states=hidden_states,
+        mediation_states=mediation_states,
+        ini={h: h == "a" for h in hidden_states},
+        upd={(m, h): h == "a" for m in mediation_states for h in hidden_states},
+        evl={False: False, True: True, "orphan": True},
     )
 
 
@@ -606,3 +655,95 @@ def test_mvr_count():
 
     with pytest.raises(InvalidInputError):
         mvr_count(single_a, "not a valid condition")
+
+
+# ---------------------------------------------------------------------
+# Pruning
+#
+# Product and subset constructions leave most of their mediation states
+# unreachable, so MVROperator.__call__ prunes every operator output.
+# ---------------------------------------------------------------------
+
+
+def test_prune_removes_unreachable_states():
+    mvr = orphan_state_mvr()
+    pruned = mvr.prune()
+
+    assert set(pruned.mediation_states) == {False, True}
+    assert_fully_reachable(pruned)
+
+
+def test_prune_preserves_the_language():
+    mvr = orphan_state_mvr()
+    pruned = mvr.prune()
+
+    for word in ["a", "b", "aa", "ab", "ba", "bb", "aba", "bab"]:
+        assert eval_mvr(pruned, list(word)) is eval_mvr(mvr, list(word)), word
+
+
+def test_prune_returns_self_when_fully_reachable():
+    mvr = contains_symbol_mvr("a")
+    assert mvr.prune() is mvr
+
+
+def test_prune_preserves_prefix_and_time_range():
+    mvr = orphan_state_mvr()
+    mvr._prefix = True
+    mvr._time_range = [1, 3]
+
+    pruned = mvr.prune()
+
+    assert pruned is not mvr
+    assert pruned.prefix is True
+    assert pruned._time_range == [1, 3]
+
+
+def test_prune_inhom_mvr():
+    hidden_states = list(ALPHABET)
+
+    # "orphan" at time 1 is entered by nothing.
+    mvr = InhomMVR(
+        hidden_states=hidden_states,
+        mediation_states=[[False, True], [False, True, "orphan"]],
+        ini={h: h == "a" for h in hidden_states},
+        upd=[{(m, h): h == "a" for m in [False, True] for h in hidden_states}],
+        evl=[
+            {False: False, True: True},
+            {False: False, True: True, "orphan": True},
+        ],
+    )
+
+    pruned = mvr.prune()
+
+    assert pruned.mediation_states == [[False, True], [False, True]]
+    assert pruned.time_horizon == mvr.time_horizon
+    assert len(pruned.upd) == len(pruned.mediation_states) - 1
+    assert_fully_reachable(pruned)
+
+    for word in ["a", "b", "aa", "ab", "ba", "bb"]:
+        assert eval_mvr(pruned, list(word)) is eval_mvr(mvr, list(word)), word
+
+
+@pytest.mark.parametrize(
+    "builder",
+    [
+        lambda: mvr_and([contains_symbol_mvr("a"), contains_symbol_mvr("b")]),
+        lambda: mvr_or([contains_symbol_mvr("a"), contains_symbol_mvr("b")]),
+        lambda: mvr_not(exact_word_mvr("ab")),
+        lambda: mvr_not_yet(exact_word_mvr("ab")),
+        lambda: mvr_already_satisfied(exact_word_mvr("ab")),
+        lambda: mvr_sattime(contains_symbol_mvr("a")),
+        lambda: mvr_setdiff([contains_symbol_mvr("a"), contains_symbol_mvr("b")]),
+        lambda: mvr_concatenate([exact_word_mvr("ab"), exact_word_mvr("ba")]),
+        lambda: mvr_concatenate_prefix([exact_word_mvr("ab"), exact_word_mvr("ba")]),
+        lambda: mvr_kfold_product(exact_word_mvr("ab"), 2),
+        lambda: mvr_kleene_closure(exact_word_mvr("ab")),
+        lambda: mvr_reverse(exact_word_mvr("ab")),
+        lambda: mvr_precedence(
+            [contains_symbol_mvr("a"), contains_symbol_mvr("b")], "<"
+        ),
+        lambda: mvr_count(exact_word_mvr("a"), ">=2"),
+    ],
+)
+def test_operator_outputs_are_fully_reachable(builder):
+    assert_fully_reachable(builder())

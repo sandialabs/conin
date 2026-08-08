@@ -80,6 +80,17 @@ class BaseMVR:
             "_build_array_repn must be implemented by subclasses."
         )
 
+    def prune(self):
+        """Return an equivalent MVR with unreachable mediation states removed.
+
+        Returns
+        -------
+        BaseMVR
+            An MVR accepting the same hidden-state sequences, or ``self`` if every
+            mediation state is already reachable.
+        """
+        raise NotImplementedError("prune must be implemented by subclasses.")
+
 
 class HomMVR(BaseMVR):
     """Time-homogeneous mediation variable representation."""
@@ -153,6 +164,53 @@ class HomMVR(BaseMVR):
             self._time_range = time_range
         # Build repn
         self.initialize()
+
+    def prune(self):
+        """Return an equivalent HomMVR with unreachable mediation states removed.
+
+        Forward reachability only: every successor of a reachable state is itself
+        reachable, so the restricted ini/upd/evl stay total and deterministic.
+        Unreachable states occur in no run, so the accepted language is unchanged.
+
+        Returns
+        -------
+        HomMVR
+            Pruned MVR, or ``self`` if every mediation state is reachable.
+        """
+        reachable = set(self.ini.values())
+        frontier = list(reachable)
+
+        while frontier:
+            m_prev = frontier.pop()
+
+            for h in self.hidden_states:
+                m_curr = self.upd[(m_prev, h)]
+
+                if m_curr not in reachable:
+                    reachable.add(m_curr)
+                    frontier.append(m_curr)
+
+        if len(reachable) == len(self.mediation_states):
+            return self
+
+        mediation_states = [m for m in self.mediation_states if m in reachable]
+
+        pruned = HomMVR(
+            hidden_states=list(self.hidden_states),
+            mediation_states=mediation_states,
+            ini=dict(self.ini),
+            upd={
+                (m, h): self.upd[(m, h)]
+                for m in mediation_states
+                for h in self.hidden_states
+            },
+            evl={m: self.evl[m] for m in mediation_states},
+            time_range=self._time_range,
+        )
+
+        pruned._prefix = self._prefix
+
+        return pruned
 
     def _build_array_repn(self):
         """Build integer-indexed NumPy arrays for a homogeneous MVR.
@@ -315,6 +373,62 @@ class InhomMVR(BaseMVR):
             self._time_range = time_range
         # Build repn
         self.initialize()
+
+    def prune(self):
+        """Return an equivalent InhomMVR with unreachable mediation states removed.
+
+        Reachability is computed per time slice, so the time horizon and the
+        upd/evl length conventions are unchanged.
+
+        Returns
+        -------
+        InhomMVR
+            Pruned MVR, or ``self`` if every mediation state is reachable.
+        """
+        reachable = [set(self.ini.values())]
+
+        for t in range(self.time_horizon - 1):
+            reachable.append(
+                {
+                    self.upd[t][(m, h)]
+                    for m in reachable[t]
+                    for h in self.hidden_states
+                }
+            )
+
+        if all(
+            len(reachable_t) == len(m_states_t)
+            for reachable_t, m_states_t in zip(reachable, self.mediation_states)
+        ):
+            return self
+
+        mediation_states = [
+            [m for m in m_states_t if m in reachable_t]
+            for m_states_t, reachable_t in zip(self.mediation_states, reachable)
+        ]
+
+        pruned = InhomMVR(
+            hidden_states=list(self.hidden_states),
+            mediation_states=mediation_states,
+            ini=dict(self.ini),
+            upd=[
+                {
+                    (m, h): self.upd[t][(m, h)]
+                    for m in mediation_states[t]
+                    for h in self.hidden_states
+                }
+                for t in range(self.time_horizon - 1)
+            ],
+            evl=[
+                {m: self.evl[t][m] for m in mediation_states[t]}
+                for t in range(self.time_horizon)
+            ],
+            time_range=self._time_range,
+        )
+
+        pruned._prefix = self._prefix
+
+        return pruned
 
     def _build_array_repn(self):
         """Build integer-indexed NumPy arrays for an inhomogeneous MVR.
