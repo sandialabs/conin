@@ -418,21 +418,6 @@ def test_viterbi_score_is_path_log_probability(hmm, observed):
     assert score == pytest.approx(hmm.log_probability(observed, path), abs=1e-4)
 
 
-def test_viterbi_normalize_does_not_change_result(hmm, observed):
-    mvr = make_parity_mvr(hidden_states=hmm.hidden_states, target_state="A")
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[mvr])
-
-    normalized = viterbi_torch_mvr_chmm(
-        model, observed, normalize=True, return_augmented=False, return_score=True
-    )
-    unnormalized = viterbi_torch_mvr_chmm(
-        model, observed, normalize=False, return_augmented=False, return_score=True
-    )
-
-    assert normalized[0] == unnormalized[0]
-    assert normalized[1] == pytest.approx(unnormalized[1], abs=1e-4)
-
-
 def test_viterbi_return_shapes(hmm, observed):
     mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="B")
     model = MVR_CHMM(hidden_markov_model=hmm, constraints=[mvr])
@@ -531,3 +516,217 @@ def test_viterbi_rejects_inhom_mvr_with_too_short_horizon(hmm, observed):
 
     with pytest.raises(InvalidInputError, match="time_horizon is too short"):
         viterbi_torch_mvr_chmm(model, observed, return_augmented=False)
+
+
+# ===========================
+# Horizon and sparse observations
+# ===========================
+
+
+def as_obs_map(observed):
+    """Normalize either observation form to a ``{time: label}`` map."""
+    if isinstance(observed, dict):
+        return dict(observed)
+    return dict(enumerate(observed))
+
+
+def score_path(hmm, path, obs_map):
+    """Log probability of a hidden path, scoring only the times that are observed."""
+    repn = hmm.repn
+    idx = [hmm.hidden_to_internal[h] for h in path]
+
+    score = math.log(repn.start_vec[idx[0]])
+
+    for t in range(1, len(idx)):
+        score += math.log(repn.transition_mat[idx[t - 1]][idx[t]])
+
+    for t, o in obs_map.items():
+        score += math.log(repn.emission_mat[idx[t]][hmm.observed_to_internal[o]])
+
+    return score
+
+
+def brute_force_general(hmm, mvrs, observed, T):
+    """Exhaustive search over a horizon, scoring only the times that are observed."""
+    obs_map = as_obs_map(observed)
+
+    best_path, best_score = None, -math.inf
+
+    for path in itertools.product(hmm.hidden_states, repeat=T):
+        if not all(mvr_accepts(mvr, path, T) for mvr in mvrs):
+            continue
+
+        score = score_path(hmm, path, obs_map)
+
+        if score > best_score:
+            best_path, best_score = list(path), score
+
+    return best_path, best_score
+
+
+def test_brute_force_general_agrees_with_dense_reference(hmm, observed):
+    # Guards the new reference implementation against the established one.
+    path, score = brute_force_general(hmm, [], observed, len(observed))
+    expected_path, expected_score = brute_force(hmm, [], observed)
+
+    assert path == expected_path
+    assert score == pytest.approx(expected_score, abs=1e-9)
+
+
+def test_viterbi_dict_observations_match_dense_list(hmm, observed):
+    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[])
+
+    dense = viterbi_torch_mvr_chmm(
+        model, observed, return_augmented=False, return_score=True
+    )
+    sparse = viterbi_torch_mvr_chmm(
+        model,
+        dict(enumerate(observed)),
+        time_horizon=len(observed),
+        return_augmented=False,
+        return_score=True,
+    )
+
+    assert dense == sparse
+
+
+def test_viterbi_horizon_longer_than_observations(hmm, observed):
+    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[])
+    T = len(observed) + 2
+
+    path, score = viterbi_torch_mvr_chmm(
+        model, observed, time_horizon=T, return_augmented=False, return_score=True
+    )
+    expected_path, expected_score = brute_force_general(hmm, [], observed, T)
+
+    assert len(path) == T
+    assert path == expected_path
+    assert score == pytest.approx(expected_score, abs=1e-4)
+
+
+def test_viterbi_sparse_observations_match_brute_force(hmm):
+    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[])
+    sparse = {0: "o0", 3: "o1", 4: "o1"}
+
+    path, score = viterbi_torch_mvr_chmm(
+        model, sparse, time_horizon=5, return_augmented=False, return_score=True
+    )
+    expected_path, expected_score = brute_force_general(hmm, [], sparse, 5)
+
+    # An absent observation drops the emission factor, never the time step.
+    assert len(path) == 5
+    assert path == expected_path
+    assert score == pytest.approx(expected_score, abs=1e-4)
+
+
+def test_viterbi_no_observations_is_prior_map(hmm):
+    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[])
+
+    from_map = viterbi_torch_mvr_chmm(
+        model, {}, time_horizon=4, return_augmented=False, return_score=True
+    )
+    from_list = viterbi_torch_mvr_chmm(
+        model, [], time_horizon=4, return_augmented=False, return_score=True
+    )
+    expected_path, expected_score = brute_force_general(hmm, [], {}, 4)
+
+    assert from_map == from_list
+    assert from_map[0] == expected_path
+    assert from_map[1] == pytest.approx(expected_score, abs=1e-4)
+
+
+def test_viterbi_unwindowed_mvr_covers_the_extended_horizon(hmm, observed):
+    # A time_range-less MVR defaults to [0, T-1], so extending the horizon
+    # extends enforcement past the observed span.
+    mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="A")
+    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[mvr])
+    T = len(observed) + 3
+
+    path = viterbi_torch_mvr_chmm(
+        model, observed, time_horizon=T, return_augmented=False
+    )
+
+    assert len(path) == T
+    assert "A" not in path
+
+
+@pytest.mark.parametrize("seed", range(6))
+def test_viterbi_random_sparse_instances_match_brute_force(seed):
+    rng = np.random.default_rng(1000 + seed)
+
+    hmm = make_random_hmm(
+        hidden_states=["A", "B", "C"],
+        observed_states=["o0", "o1"],
+        seed=seed,
+    )
+
+    T = int(rng.integers(2, 6))
+    times = rng.permutation(T)[: int(rng.integers(0, T + 1))]
+    sparse = {int(t): str(rng.choice(["o0", "o1"])) for t in times}
+
+    mvrs = []
+    if rng.random() < 0.6:
+        end = int(rng.integers(0, T))
+        start = int(rng.integers(0, end + 1))
+        mvrs.append(
+            make_forbid_mvr(
+                hidden_states=hmm.hidden_states,
+                forbidden_state=str(rng.choice(hmm.hidden_states)),
+                time_range=[start, end],
+            )
+        )
+
+    model = MVR_CHMM(hidden_markov_model=hmm, constraints=mvrs)
+    expected_path, expected_score = brute_force_general(hmm, mvrs, sparse, T)
+
+    if expected_path is None:
+        with pytest.raises(InvalidInputError):
+            viterbi_torch_mvr_chmm(
+                model, sparse, time_horizon=T, return_augmented=False
+            )
+        return
+
+    path, score = viterbi_torch_mvr_chmm(
+        model, sparse, time_horizon=T, return_augmented=False, return_score=True
+    )
+
+    # Compare on score rather than path: distinct paths can tie exactly.
+    assert score == pytest.approx(expected_score, abs=1e-4)
+    assert len(path) == T
+    assert all(mvr_accepts(mvr, path, T) for mvr in mvrs)
+    assert score_path(hmm, path, as_obs_map(sparse)) == pytest.approx(score, abs=1e-4)
+
+
+@pytest.mark.parametrize(
+    "observed_arg, horizon, message",
+    [
+        ({0: "o0"}, None, "time_horizon is required"),
+        (["o0", "o1"], 1, "shorter than the observed"),
+        ({7: "o0"}, 3, "outside the horizon"),
+        ({}, 0, "positive integer"),
+    ],
+)
+def test_viterbi_rejects_bad_horizon_or_observations(
+    hmm, observed_arg, horizon, message
+):
+    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[])
+
+    with pytest.raises(InvalidInputError, match=message):
+        viterbi_torch_mvr_chmm(model, observed_arg, time_horizon=horizon)
+
+
+def test_viterbi_rejects_inhom_mvr_too_short_for_extended_horizon(hmm, observed):
+    # Fits len(observed) == 5, but not the extended horizon.
+    mvr = make_end_state_inhom_mvr(
+        hidden_states=hmm.hidden_states,
+        target_state="A",
+        time_horizon=len(observed) - 1,
+    )
+    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[mvr])
+
+    viterbi_torch_mvr_chmm(model, observed, return_augmented=False)
+
+    with pytest.raises(InvalidInputError, match="time_horizon is too short"):
+        viterbi_torch_mvr_chmm(
+            model, observed, time_horizon=len(observed) + 1, return_augmented=False
+        )
