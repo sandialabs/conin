@@ -334,11 +334,7 @@ class InhomMVR(BaseMVR):
 
         for t in range(self.time_horizon):
             reachable.append(
-                {
-                    self.upd[t][(m, h)]
-                    for m in reachable[t]
-                    for h in self.hidden_states
-                }
+                {self.upd[t][(m, h)] for m in reachable[t] for h in self.hidden_states}
             )
 
         if all(

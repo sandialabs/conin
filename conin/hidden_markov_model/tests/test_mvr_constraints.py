@@ -399,9 +399,7 @@ def test_visit_and_forbid_state_match_reference(states):
     hmm = make_hmm()
 
     assert_matches(mvr_visit_state(hmm, states), lambda seq: bool(states & set(seq)))
-    assert_matches(
-        mvr_forbid_state(hmm, states), lambda seq: not (states & set(seq))
-    )
+    assert_matches(mvr_forbid_state(hmm, states), lambda seq: not (states & set(seq)))
 
 
 @pytest.mark.parametrize(
@@ -415,9 +413,7 @@ def test_visit_and_forbid_transition_match_reference(transitions):
         return any((seq[i], seq[i + 1]) in transitions for i in range(len(seq) - 1))
 
     assert_matches(mvr_visit_transition(hmm, transitions), takes)
-    assert_matches(
-        mvr_forbid_transition(hmm, transitions), lambda seq: not takes(seq)
-    )
+    assert_matches(mvr_forbid_transition(hmm, transitions), lambda seq: not takes(seq))
 
 
 @pytest.mark.parametrize(
