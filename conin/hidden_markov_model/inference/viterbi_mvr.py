@@ -7,15 +7,17 @@ import torch
 
 from conin.exceptions import InvalidInputError
 
-from .mvr_common import (
+from ..mvr_common import (
     ACCUM_DTYPE,
     NEG_INF,
     _apply_closing_evl,
+    _build_augmented_axes,
     _build_mvr_factor_info,
-    _c_strides,
     _decode_dynamic_augmented_path,
+    _flat_ini_index,
     _hmm_to_torch,
     _maxplus_step,
+    _model_parts,
     _resolve_emit_weights,
 )
 
@@ -91,12 +93,7 @@ def viterbi_torch_mvr_chmm(
     best_logprob : float, optional
         Returned when ``return_score`` is ``True``.
     """
-    hmm = getattr(model, "hidden_markov_model", None) or getattr(model, "hmm", None)
-
-    if hmm is None:
-        raise InvalidInputError("Missing hidden_markov_model from MVR_CHMM")
-
-    constraints = list(getattr(model, "constraints", None) or [])
+    hmm, constraints = _model_parts(model)
 
     log_start_vec, log_transition_mat, log_emission_mat = _hmm_to_torch(
         hmm,
@@ -126,14 +123,7 @@ def viterbi_torch_mvr_chmm(
         for mvr in constraints
     ]
 
-    active_by_time = [
-        [i for i, info in enumerate(mvr_infos) if t in info["evl_at"]] for t in range(T)
-    ]
-    dims_by_time = [
-        tuple(mvr_infos[i]["evl_at"][t].shape[0] for i in active_by_time[t])
-        for t in range(T)
-    ]
-    shapes = [(K,) + dims_by_time[t] for t in range(T)]
+    active_by_time, dims_by_time, shapes = _build_augmented_axes(K, T, mvr_infos)
 
     # log_transition_mat is indexed [h_prev, h_curr]
     log_transition_t = log_transition_mat.transpose(0, 1).contiguous()
@@ -148,13 +138,9 @@ def viterbi_torch_mvr_chmm(
     # ------------------------------------------------------------------
     active_0 = active_by_time[0]
     dims_0 = dims_by_time[0]
-    strides_0 = _c_strides(dims_0)
     total_0 = math.prod(dims_0)
 
-    flat_ini = torch.zeros(K, dtype=torch.long, device=device)
-
-    for pos, mvr_i in enumerate(active_0):
-        flat_ini = flat_ini + mvr_infos[mvr_i]["ini_idx"] * strides_0[pos]
+    flat_ini = _flat_ini_index(K, mvr_infos, active_0, dims_0, device)
 
     V_prev = torch.full(
         (K, total_0),

@@ -20,17 +20,15 @@ import torch
 
 from conin.exceptions import InvalidInputError
 
-from .mvr_common import (
+from ..mvr_common import (
     ACCUM_DTYPE,
     NEG_INF,
-    _apply_closing_evl,
-    _build_destination_index,
-    _build_mvr_factor_info,
-    _c_strides,
+    _build_sumprod_ctx,
     _decode_dynamic_augmented_path,
-    _hmm_to_torch,
+    _initial_sumprod_message,
     _maxplus_step,
-    _resolve_emit_weights,
+    _sum_step,
+    _sum_step_backward,
 )
 
 # ======================================================================
@@ -38,107 +36,9 @@ from .mvr_common import (
 # ======================================================================
 
 
-def _dest_at(ctx, t):
-    """Destination index for the ``t-1 -> t`` transition, cached across segments."""
-    cache = ctx["dest_cache"]
-
-    if t not in cache:
-        cache[t] = _build_destination_index(
-            ctx["K"],
-            ctx["mvr_infos"],
-            ctx["active_by_time"][t - 1],
-            ctx["active_by_time"][t],
-            ctx["dims_by_time"][t - 1],
-            ctx["dims_by_time"][t],
-            t,
-            ctx["device"],
-        )
-
-    return cache[t]
-
-
-def _safe_shift(values, dim, keepdim):
-    """
-    Largest entry along ``dim``, with an all ``-inf`` slice reported as ``0``.
-    Subtracting a ``-inf`` shift would turn that slice into ``NaN``.
-    """
-    shift = values.amax(dim=dim, keepdim=keepdim)
-
-    return torch.where(torch.isfinite(shift), shift, torch.zeros_like(shift))
-
-
-def _sum_step(ctx, log_P, t):
-    """Advance a batch of augmented log-weights one step, summing over predecessors."""
-    K = ctx["K"]
-    B = log_P.shape[0]
-
-    prev_dims = ctx["dims_by_time"][t - 1]
-    curr_dims = ctx["dims_by_time"][t]
-    prev_total = math.prod(prev_dims)
-    curr_total = math.prod(curr_dims)
-
-    # Contract the predecessor hidden state. Shifting by the per-(batch, mediation)
-    # maximum first makes this an ordinary contraction rather than a logsumexp, so
-    # the einsum keeps its (B, K, M) shape instead of growing a second hidden axis.
-    # These tensors are the memory bottleneck of the whole algorithm, so the
-    # arithmetic below is done in place wherever the operand is already a
-    # temporary of ours.
-    shift = _safe_shift(log_P, dim=1, keepdim=True)
-    log_contrib = torch.einsum(
-        "bhm,hg->bgm", (log_P - shift).exp(), ctx["transition_mat"]
-    )
-    log_contrib.log_().add_(shift).add_(ctx["log_emit_weights"][t].reshape(1, K, 1))
-
-    dest = _dest_at(ctx, t).unsqueeze(0).expand(B, K, prev_total)
-    flat = (B, K, curr_total)
-
-    # Log-domain scatter-add: take the max reaching each destination, add the
-    # shifted contributions there, and put the shift back.
-    peak = torch.full(flat, NEG_INF, dtype=ctx["dtype"], device=ctx["device"])
-    peak.scatter_reduce_(2, dest, log_contrib, reduce="amax", include_self=True)
-    peak.masked_fill_(peak == NEG_INF, 0.0)
-
-    out = torch.zeros(flat, dtype=ctx["dtype"], device=ctx["device"])
-    out.scatter_add_(2, dest, log_contrib.sub_(peak.gather(2, dest)).exp_())
-    out.log_().add_(peak)
-
-    return _apply_closing_evl(
-        out.reshape((B, K) + curr_dims),
-        t,
-        ctx["mvr_infos"],
-        ctx["active_by_time"][t],
-        log=True,
-        lead=2,
-    ).reshape(flat)
-
-
 def _forward_prefix(ctx, first_query):
     """Sum forward from ``t = 0``, giving the weight of every augmented state there."""
-    K = ctx["K"]
-    device = ctx["device"]
-
-    dims_0 = ctx["dims_by_time"][0]
-    total_0 = math.prod(dims_0)
-    strides_0 = _c_strides(dims_0)
-
-    flat_ini = torch.zeros(K, dtype=torch.long, device=device)
-
-    for pos, mvr_i in enumerate(ctx["active_by_time"][0]):
-        flat_ini = flat_ini + ctx["mvr_infos"][mvr_i]["ini_idx"] * strides_0[pos]
-
-    log_P = torch.full((1, K, total_0), NEG_INF, dtype=ctx["dtype"], device=device)
-    log_P[0, torch.arange(K, device=device), flat_ini] = (
-        ctx["log_start_vec"] + ctx["log_emit_weights"][0]
-    )
-
-    log_P = _apply_closing_evl(
-        log_P.reshape((1, K) + dims_0),
-        0,
-        ctx["mvr_infos"],
-        ctx["active_by_time"][0],
-        log=True,
-        lead=2,
-    ).reshape(1, K, total_0)
+    log_P = _initial_sumprod_message(ctx)
 
     for t in range(1, first_query + 1):
         log_P = _sum_step(ctx, log_P, t)
@@ -171,7 +71,7 @@ def _gap_is_bare(ctx, s, s_next):
     if any(ctx["active_by_time"][t] for t in range(s, s_next + 1)):
         return False
 
-    return not any(t in ctx["observed_times"] for t in range(s + 1, s_next))
+    return not any(t in ctx["observed_index"] for t in range(s + 1, s_next))
 
 
 def _gap_operator(ctx, s, s_next):
@@ -237,29 +137,7 @@ def _backward_suffix(ctx, last_query):
     )
 
     for t in range(T - 1, last_query, -1):
-        curr_dims = ctx["dims_by_time"][t]
-
-        log_beta = _apply_closing_evl(
-            log_beta.reshape((K,) + curr_dims),
-            t,
-            ctx["mvr_infos"],
-            ctx["active_by_time"][t],
-            log=True,
-            lead=1,
-        ).reshape(K, -1)
-
-        # The mediation update is deterministic, so pulling a message backward
-        # through it is a gather -- the transpose of the forward scatter.
-        followed = log_beta.gather(1, _dest_at(ctx, t))
-        term = followed + ctx["log_emit_weights"][t].reshape(K, 1)
-
-        shift = _safe_shift(term, dim=0, keepdim=True)
-        log_beta = torch.einsum(
-            "hg,gm->hm",
-            ctx["transition_mat"],
-            (term - shift).exp(),
-        )
-        log_beta = log_beta.log() + shift
+        log_beta, _ = _sum_step_backward(ctx, log_beta, t)
 
     return log_beta
 
@@ -356,27 +234,27 @@ def marginal_map_torch_mvr_chmm(
     best_logprob : float, optional
         Returned when ``return_score`` is ``True``.
     """
-    hmm = getattr(model, "hidden_markov_model", None) or getattr(model, "hmm", None)
-
-    if hmm is None:
-        raise InvalidInputError("Missing hidden_markov_model from MVR_CHMM")
-
-    constraints = list(getattr(model, "constraints", None) or [])
-
     # Everything runs in log space, including the sum-product gap eliminations.
     # Probability space is not viable for those: a gap operator holds the
     # probability of satisfying a constraint across the gap, which decays
     # exponentially in its length and silently flushes to zero.
-    _, transition_mat, _ = _hmm_to_torch(hmm, log=False, dtype=dtype, device=device)
-    log_start_vec, log_transition_mat, log_emission_mat = _hmm_to_torch(
-        hmm, log=True, dtype=dtype, device=device
+    ctx = _build_sumprod_ctx(
+        model,
+        observed,
+        time_horizon=time_horizon,
+        dtype=dtype,
+        device=device,
     )
 
-    T, log_emit_weights, observed_times = _resolve_emit_weights(
-        hmm, log_emission_mat, observed, time_horizon, log=True
-    )
+    hmm = ctx["hmm"]
+    K, T = ctx["K"], ctx["T"]
+    mvr_infos = ctx["mvr_infos"]
+    active_by_time = ctx["active_by_time"]
+    dims_by_time = ctx["dims_by_time"]
+    shapes = ctx["shapes"]
+    log_emit_weights = ctx["log_emit_weights"]
+    log_transition_t = ctx["log_transition_t"]
 
-    K = int(log_start_vec.shape[0])
     times = _resolve_query_times(query_times, T)
 
     if len(times) == T:
@@ -386,38 +264,6 @@ def marginal_map_torch_mvr_chmm(
             UserWarning,
             stacklevel=2,
         )
-
-    mvr_infos = [
-        _build_mvr_factor_info(mvr, T, log=True, dtype=dtype, device=device)
-        for mvr in constraints
-    ]
-
-    active_by_time = [
-        [i for i, info in enumerate(mvr_infos) if t in info["evl_at"]] for t in range(T)
-    ]
-    dims_by_time = [
-        tuple(mvr_infos[i]["evl_at"][t].shape[0] for i in active_by_time[t])
-        for t in range(T)
-    ]
-    shapes = [(K,) + dims_by_time[t] for t in range(T)]
-
-    ctx = {
-        "K": K,
-        "T": T,
-        "log_start_vec": log_start_vec,
-        "transition_mat": transition_mat,
-        "log_emit_weights": log_emit_weights,
-        "observed_times": observed_times,
-        "mvr_infos": mvr_infos,
-        "active_by_time": active_by_time,
-        "dims_by_time": dims_by_time,
-        "dtype": dtype,
-        "device": device,
-        "dest_cache": {},
-    }
-
-    # log_transition_mat is indexed [h_prev, h_curr]
-    log_transition_t = log_transition_mat.transpose(0, 1).contiguous()
 
     def check_feasible(V, where):
         if not torch.isfinite(V.max()):
