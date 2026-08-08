@@ -1,4 +1,4 @@
-from itertools import product
+from itertools import groupby, product
 
 import numpy as np
 import pytest
@@ -15,6 +15,7 @@ from conin.hidden_markov_model.mvr_constraints import (
     mvr_forbid_sequencelist,
     mvr_forbid_state,
     mvr_forbid_transition,
+    mvr_holdingtime,
     mvr_visit_sequencelist,
     mvr_visit_state,
     mvr_visit_transition,
@@ -475,6 +476,99 @@ def test_wrappers_delegate_validation_to_the_primitive(builder, argument):
 
 
 # ---------------------------------------------------------------------
+# mvr_holdingtime
+# ---------------------------------------------------------------------
+
+
+def holding_time_reference(seq, k, states):
+    """
+    Every run except the one still in progress must be at least k long.
+    """
+    runs = [(state, len(list(group))) for state, group in groupby(seq)]
+
+    return all(length >= k for state, length in runs[:-1] if state in states)
+
+
+@pytest.mark.filterwarnings("ignore:mvr_holdingtime is the constantly true MVR")
+@pytest.mark.parametrize("k", [1, 2, 3])
+# {"a", "b"} is not a duplicate of {"a"}: it is the only case where a
+# constrained run is left for another constrained state, so it alone reaches the
+# branch that starts a fresh counter at 1 rather than saturating it.
+@pytest.mark.parametrize("states", [None, set(), {"a"}, {"a", "b"}])
+def test_holdingtime_matches_reference(k, states):
+    hmm = make_hmm()
+    target = set(ALPHABET) if states is None else set(states)
+
+    assert_matches(
+        mvr_holdingtime(hmm, k, states),
+        lambda seq: holding_time_reference(seq, k, target),
+    )
+
+
+def test_holdingtime_boundary_conventions():
+    # Redundant with the sweep above, kept deliberately as the executable spec:
+    # these are the two conventions the constraint is built around, and nothing
+    # else in the file states them outright.
+    mvr = mvr_holdingtime(make_hmm(), 3)
+
+    assert eval_mvr(mvr, ["a", "a"]) is True  # trailing run is exempt
+    assert eval_mvr(mvr, ["a", "b"]) is False  # the run at t = 0 counts
+    assert eval_mvr(mvr, ["a", "a", "a", "b"]) is True
+
+
+@pytest.mark.parametrize(
+    "hmm_states,k,states,reason",
+    [
+        (ALPHABET, 3, set(), "states is empty"),
+        (ALPHABET, 1, None, "k = 1"),
+        (["a"], 3, None, "single hidden state"),
+    ],
+)
+def test_holdingtime_warns_when_constantly_true(hmm_states, k, states, reason):
+    # The three ways no run can ever end short. Accepted rather than rejected --
+    # each is a legitimate programmatic boundary -- but flagged, since a silently
+    # vacuous constraint is the failure mode worth catching.
+    hmm = make_hmm(hidden_states=hmm_states)
+
+    with pytest.warns(UserWarning, match=reason):
+        mvr = mvr_holdingtime(hmm, k, states)
+
+    assert all(mvr.evl.values())
+
+
+@pytest.mark.filterwarnings("ignore:mvr_holdingtime is the constantly true MVR")
+@pytest.mark.parametrize(
+    "states,expected",
+    [
+        (None, 10),  # 3 constrained states x k = 3, plus the fail state
+        ({"a"}, 6),  # 1 x 3, plus 2 unconstrained states, plus the fail state
+        (set(), 3),  # nothing constrained, so no run can end short: no fail state
+    ],
+)
+def test_holdingtime_mediation_space_is_minimal(states, expected):
+    mvr = mvr_holdingtime(make_hmm(), 3, states)
+
+    assert len(mvr.mediation_states) == expected
+    # prune returns self only when every mediation state is reachable.
+    assert mvr.prune() is mvr
+
+
+@pytest.mark.parametrize(
+    "k,states,match",
+    [
+        (0, None, "at least 1"),
+        # bool is an int subclass, which is why the check is on type(k).
+        (True, None, "must be an int"),
+        (2, "a", "must be a list, tuple, set, or frozenset"),
+        (2, {"z"}, "not hidden states"),
+    ],
+)
+def test_holdingtime_rejects_invalid_input(k, states, match):
+    with pytest.raises(InvalidInputError, match=match):
+        mvr_holdingtime(make_hmm(), k, states)
+
+
+# ---------------------------------------------------------------------
 # Numeric representation and CHMM integration
 # ---------------------------------------------------------------------
 
@@ -486,6 +580,7 @@ def test_wrappers_delegate_validation_to_the_primitive(builder, argument):
         lambda hmm: mvr_current_state(hmm, {"a"}),
         lambda hmm: mvr_current_transition(hmm, {("a", "b")}),
         lambda hmm: mvr_current_sequencelist(hmm, {("a", "b", "a")}),
+        lambda hmm: mvr_holdingtime(hmm, 2),
     ],
 )
 def test_primitives_build_a_valid_numeric_representation(builder):

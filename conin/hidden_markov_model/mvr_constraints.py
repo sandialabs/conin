@@ -1,13 +1,13 @@
 from __future__ import annotations
 
+import warnings
+
 from typing import Any
 
 from conin.exceptions import InvalidInputError
 from conin.hidden_markov_model.mvr import HomMVR
 from conin.hidden_markov_model.mvr_operators import mvr_already_satisfied, mvr_not_yet
 
-# Bare labels are rejected where a collection is expected: strings are iterable
-# and a label may itself be a sequence of labels, so both forms would be ambiguous.
 _COLLECTION_TYPES = (list, tuple, set, frozenset)
 
 
@@ -153,11 +153,8 @@ def mvr_current_transition(
 
         transition_collection.add((h_prev, h_curr))
 
-    # The mediation state pairs the hidden state just consumed -- the predecessor of
-    # the next transition -- with the predicate on the transition into it.
     mediation_states = [(h, taken) for h in hidden_states for taken in [False, True]]
 
-    # No transition has been taken when the first hidden state is consumed.
     ini = {h: (h, False) for h in hidden_states}
 
     upd = {
@@ -259,7 +256,6 @@ def mvr_current_sequencelist(
 
             upd[(m, h)] = candidate
 
-    # The automaton starts at the root and consumes the first hidden state.
     ini = {h: upd[((), h)] for h in hidden_states}
 
     # When len(p) > len(m) the slice clamps to all of m, which cannot equal p.
@@ -275,20 +271,20 @@ def mvr_current_sequencelist(
 
 
 # ------------------------------------------------------------------
-# Convenience wrappers
+# Common Constraint Classes
 # ------------------------------------------------------------------
-#
-# The primitives are predicates on the current time step. Each is lifted over the
-# whole chain by an operator: mvr_already_satisfied for "happens at least once",
-# mvr_not_yet for "never happens". Nothing here builds ini/upd/evl or validates.
 
+
+# ------------------------------------------------------------------
+# Visit/Forbidden
+# ------------------------------------------------------------------
 
 def mvr_visit_state(
     hidden_markov_model,
     states,
 ) -> HomMVR:
     """
-    MVR evaluates True iff some hidden state up to time t is in "states".
+    MVR evaluates True iff chain has hit "states" at some time up to the current time.
     """
     return mvr_already_satisfied(mvr_current_state(hidden_markov_model, states))
 
@@ -298,7 +294,7 @@ def mvr_forbid_state(
     states,
 ) -> HomMVR:
     """
-    MVR evaluates True iff no hidden state up to time t is in "states".
+    MVR evaluates True iff chain hasn't visited "states".
     """
     return mvr_not_yet(mvr_current_state(hidden_markov_model, states))
 
@@ -308,7 +304,7 @@ def mvr_visit_transition(
     transitions,
 ) -> HomMVR:
     """
-    MVR evaluates True iff some transition up to time t is in "transitions".
+    MVR evaluates True iff at least one transition up to time t is in "transition".
     """
     return mvr_already_satisfied(
         mvr_current_transition(hidden_markov_model, transitions)
@@ -330,8 +326,8 @@ def mvr_visit_sequencelist(
     sequences,
 ) -> HomMVR:
     """
-    MVR evaluates True iff the hidden states up to time t contain one of
-    "sequences" as a contiguous subsequence.
+    MVR evaluates True iff chain has hit at least one sequence in "sequences".
+    "sequences" is a general set of finite sequences, with possibly varying length.
     """
     return mvr_already_satisfied(
         mvr_current_sequencelist(hidden_markov_model, sequences)
@@ -343,7 +339,127 @@ def mvr_forbid_sequencelist(
     sequences,
 ) -> HomMVR:
     """
-    MVR evaluates True iff the hidden states up to time t contain none of
-    "sequences" as a contiguous subsequence.
+    MVR evaluates True iff chain has never hit a sequence in "sequences".
+    "sequences" is a general set of finite sequences, with possibly varying length.
     """
     return mvr_not_yet(mvr_current_sequencelist(hidden_markov_model, sequences))
+
+
+# ------------------------------------------------------------------
+# Holding Time
+# ------------------------------------------------------------------
+
+
+def mvr_holdingtime(
+    hidden_markov_model,
+    k: int,
+    states=None,
+) -> HomMVR:
+    """
+    MVR evaluates True iff the chain stays in each state in "states" for at least
+    k time steps, with a trailing run as the sole exception. If "states" is None, 
+    it defaults to the entire hidden space.
+
+    IMPORTANT: A trailing run is the final run in the hidden sequence. 
+    ie. "aaabb", the trailing run is "bb".
+
+    Here are examples of where ignoring the trailing run comes up:
+
+        1. k = 3, 'aa' evaluates True. Single run = trailing run. 
+        2. k = 3, 'ab' evaluates False. First run len('a')=1 < 3.
+        3. k = 3, 'aaab' evaluates True. First run len('aaa") >= 3, trailing 'b' ignored. 
+
+    Warns when no run can ever end short, which makes the MVR constantly true:
+    when "states" is empty, when k = 1, or when the model has a single hidden
+    state. These are accepted rather than rejected, but are degenerate enough to
+    be worth flagging.
+    """
+    hidden_states = _model_hidden_states(hidden_markov_model)
+    hidden_space = set(hidden_states)
+
+    if type(k) is not int:
+        # bool is an int subclass, so isinstance would admit True/False.
+        raise InvalidInputError("k must be an int")
+
+    if k < 1:
+        raise InvalidInputError("k must be at least 1")
+
+    if states is None:
+        target_states = set(hidden_states)
+    else:
+        if not isinstance(states, _COLLECTION_TYPES):
+            raise InvalidInputError(
+                "states must be a list, tuple, set, or frozenset of hidden states, "
+                "even when it holds a single state"
+            )
+
+        target_states = set(states)
+        unknown = target_states - hidden_space
+
+        if unknown:
+            raise InvalidInputError(
+                "states contains labels that are not hidden states of "
+                f"hidden_markov_model: {sorted(unknown, key=repr)}"
+            )
+
+    fail_state = ("__holdingtime_fail__",)
+
+    def run_start(h):
+        return (h, 1 if h in target_states else k)
+
+    mediation_states = [
+        (h, count)
+        for h in hidden_states
+        for count in (range(1, k + 1) if h in target_states else [k])
+    ]
+
+    # Checks if the constraint is trivial
+    can_fail = bool(target_states) and k > 1 and len(hidden_states) > 1
+
+    if can_fail:
+        mediation_states.append(fail_state)
+    else:
+        if not target_states:
+            reason = "states is empty, so no run is constrained"
+        elif k == 1:
+            reason = "k = 1, and every run has length >= 1"
+        else:
+            reason = (
+                "hidden_markov_model has a single hidden state, so no run ever ends"
+            )
+
+        warnings.warn(
+            f"mvr_holdingtime is the constantly true MVR here: {reason}. "
+            "Use mvr_constant(hidden_markov_model, True) if that is what you meant.",
+            UserWarning,
+        )
+
+    ini = {h: run_start(h) for h in hidden_states}
+
+    upd = {}
+
+    for m in mediation_states:
+        for h_curr in hidden_states:
+            if m == fail_state:
+                upd[(m, h_curr)] = fail_state
+                continue
+
+            h_prev, count = m
+
+            if h_curr == h_prev:
+                upd[(m, h_curr)] = (h_prev, min(count + 1, k))
+            elif count < k:
+                upd[(m, h_curr)] = fail_state
+            else:
+                upd[(m, h_curr)] = run_start(h_curr)
+
+    # exemption for the trailing run.
+    evl = {m: m != fail_state for m in mediation_states}
+
+    return HomMVR(
+        hidden_states=hidden_states,
+        mediation_states=mediation_states,
+        ini=ini,
+        upd=upd,
+        evl=evl,
+    )
