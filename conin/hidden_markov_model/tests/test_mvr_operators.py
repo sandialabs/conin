@@ -665,17 +665,12 @@ def test_mvr_count():
 # ---------------------------------------------------------------------
 
 
-def test_prune_removes_unreachable_states():
+def test_prune_removes_unreachable_states_and_keeps_the_language():
     mvr = orphan_state_mvr()
     pruned = mvr.prune()
 
     assert set(pruned.mediation_states) == {False, True}
     assert_fully_reachable(pruned)
-
-
-def test_prune_preserves_the_language():
-    mvr = orphan_state_mvr()
-    pruned = mvr.prune()
 
     for word in ["a", "b", "aa", "ab", "ba", "bb", "aba", "bab"]:
         assert eval_mvr(pruned, list(word)) is eval_mvr(mvr, list(word)), word

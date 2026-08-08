@@ -21,7 +21,6 @@ from conin.hidden_markov_model.mvr_constraints import (
 )
 
 from conin.hidden_markov_model.mvr_operators import (
-    mvr_already_satisfied,
     mvr_concatenate,
     mvr_count,
     mvr_not,
@@ -105,12 +104,9 @@ def assert_matches(mvr, reference, max_length=MAX_LENGTH):
 @pytest.mark.parametrize("value", [True, False])
 def test_constant_matches_reference(value):
     mvr = mvr_constant(make_hmm(), value)
-    assert_matches(mvr, lambda seq: value)
 
-
-def test_constant_has_a_single_mediation_state():
-    mvr = mvr_constant(make_hmm(), True)
     assert len(mvr.mediation_states) == 1
+    assert_matches(mvr, lambda seq: value)
 
 
 def test_constant_rejects_non_bool_value():
@@ -138,36 +134,23 @@ def test_current_state_accepts_any_collection_type(collection_type):
     assert_matches(mvr, lambda seq: seq[-1] == "a")
 
 
-def test_current_state_has_two_mediation_states():
-    mvr = mvr_current_state(make_hmm(), {"a"})
-    assert len(mvr.mediation_states) == 2
-
-
 def test_current_state_hidden_states_match_the_model():
     hmm = make_hmm()
     mvr = mvr_current_state(hmm, {"a"})
     assert mvr.hidden_states == hmm.hidden_states
 
 
-def test_current_state_rejects_unknown_state():
-    with pytest.raises(InvalidInputError, match="not hidden states"):
-        mvr_current_state(make_hmm(), {"z"})
-
-
-def test_current_state_rejects_bare_state():
-    # A bare label is ambiguous because strings are iterable.
-    with pytest.raises(InvalidInputError, match="must be a list, tuple, set"):
-        mvr_current_state(make_hmm(), "a")
-
-
-def test_current_state_rejects_unloaded_model():
-    with pytest.raises(InvalidInputError, match="no hidden states"):
-        mvr_current_state(HiddenMarkovModel(), {"a"})
-
-
-def test_current_state_rejects_missing_model():
-    with pytest.raises(InvalidInputError, match="required argument"):
-        mvr_current_state(None, {"a"})
+@pytest.mark.parametrize(
+    "states,match",
+    [
+        ({"z"}, "not hidden states"),
+        # A bare label is ambiguous because strings are iterable.
+        ("a", "must be a list, tuple, set"),
+    ],
+)
+def test_current_state_rejects_invalid_input(states, match):
+    with pytest.raises(InvalidInputError, match=match):
+        mvr_current_state(make_hmm(), states)
 
 
 # ---------------------------------------------------------------------
@@ -186,16 +169,12 @@ def test_current_state_rejects_missing_model():
     ],
 )
 def test_transition_matches_reference(transitions):
+    # The len >= 2 clause is what pins "no transition has been taken at t = 0".
     mvr = mvr_current_transition(make_hmm(), transitions)
     assert_matches(
         mvr,
         lambda seq: len(seq) >= 2 and (seq[-2], seq[-1]) in transitions,
     )
-
-
-def test_transition_rejects_length_one_sequences():
-    mvr = mvr_current_transition(make_hmm(), {("a", "a")})
-    assert eval_mvr(mvr, ["a"]) is False
 
 
 def test_transition_accepts_pairs_as_lists():
@@ -212,19 +191,17 @@ def test_transition_mediation_space_size():
     assert len(mvr.mediation_states) == 2 * len(hmm.hidden_states)
 
 
-def test_transition_rejects_unknown_state():
-    with pytest.raises(InvalidInputError, match="not hidden states"):
-        mvr_current_transition(make_hmm(), {("a", "z")})
-
-
-def test_transition_rejects_non_pair_entry():
-    with pytest.raises(InvalidInputError, match="must be a \\(h_prev, h_curr\\) pair"):
-        mvr_current_transition(make_hmm(), {("a", "b", "c")})
-
-
-def test_transition_rejects_bare_pair():
-    with pytest.raises(InvalidInputError, match="must be a list, tuple, set"):
-        mvr_current_transition(make_hmm(), ("a", "b"))
+@pytest.mark.parametrize(
+    "transitions,match",
+    [
+        ({("a", "z")}, "not hidden states"),
+        ({("a", "b", "c")}, "must be a \\(h_prev, h_curr\\) pair"),
+        (("a", "b"), "must be a list, tuple, set"),
+    ],
+)
+def test_transition_rejects_invalid_input(transitions, match):
+    with pytest.raises(InvalidInputError, match=match):
+        mvr_current_transition(make_hmm(), transitions)
 
 
 # ---------------------------------------------------------------------
@@ -242,6 +219,8 @@ def test_transition_rejects_bare_pair():
         {("a",), ("b", "c")},
         {("a", "b", "a")},
         {("a", "b"), ("a", "c")},
+        # Run-length: no other primitive can express "k consecutive a".
+        {("a", "a", "a")},
         # Longer than any sequence we enumerate, so it can never match.
         {("a", "b", "c", "a", "b")},
     ],
@@ -282,8 +261,15 @@ def test_sequencelist_generalizes_transition(transitions):
         assert eval_mvr(general, seq) is eval_mvr(specific, seq), f"seq={seq!r}"
 
 
-def test_sequencelist_mediation_space_is_prefix_trie():
-    sequences = {("a", "b", "a"), ("b", "c")}
+@pytest.mark.parametrize(
+    "sequences",
+    [
+        {("a", "b", "a"), ("b", "c")},
+        # Shared prefix: (), ("a",), ("a", "b"), ("a", "c") -- "a" is not duplicated.
+        {("a", "b"), ("a", "c")},
+    ],
+)
+def test_sequencelist_mediation_space_is_prefix_trie(sequences):
     mvr = mvr_current_sequencelist(make_hmm(), sequences)
 
     prefixes = {p[:i] for p in sequences for i in range(1, len(p) + 1)}
@@ -291,128 +277,65 @@ def test_sequencelist_mediation_space_is_prefix_trie():
     assert len(mvr.mediation_states) == 1 + len(prefixes)
 
 
-def test_sequencelist_shares_prefixes():
-    # (), ("a",), ("a", "b"), ("a", "c") -- the "a" is not duplicated.
-    mvr = mvr_current_sequencelist(make_hmm(), [("a", "b"), ("a", "c")])
-    assert len(mvr.mediation_states) == 4
+@pytest.mark.parametrize(
+    "sequences,match",
+    [
+        (("a", "b", "a"), "even when it holds a single sequence"),
+        (["a"], "even when it holds a single sequence"),
+        ("ab", "must be a list, tuple, set"),
+        ([{"a", "b"}], "must be a tuple or list"),
+        ([()], "mvr_constant"),
+        ([("a", "z")], "not hidden states"),
+    ],
+)
+def test_sequencelist_rejects_invalid_input(sequences, match):
+    with pytest.raises(InvalidInputError, match=match):
+        mvr_current_sequencelist(make_hmm(), sequences)
 
 
-def test_sequencelist_rejects_bare_sequence():
-    with pytest.raises(InvalidInputError, match="even when it holds a single sequence"):
-        mvr_current_sequencelist(make_hmm(), ("a", "b", "a"))
+# ---------------------------------------------------------------------
+# Shared model validation (_model_hidden_states)
+# ---------------------------------------------------------------------
 
 
-def test_sequencelist_rejects_bare_single_state():
-    with pytest.raises(InvalidInputError, match="even when it holds a single sequence"):
-        mvr_current_sequencelist(make_hmm(), ["a"])
-
-
-def test_sequencelist_rejects_non_collection():
-    with pytest.raises(InvalidInputError, match="must be a list, tuple, set"):
-        mvr_current_sequencelist(make_hmm(), "ab")
-
-
-def test_sequencelist_rejects_unordered_entry():
-    with pytest.raises(InvalidInputError, match="must be a tuple or list"):
-        mvr_current_sequencelist(make_hmm(), [{"a", "b"}])
-
-
-def test_sequencelist_rejects_empty_entry():
-    with pytest.raises(InvalidInputError, match="mvr_constant"):
-        mvr_current_sequencelist(make_hmm(), [()])
-
-
-def test_sequencelist_rejects_unknown_state():
-    with pytest.raises(InvalidInputError, match="not hidden states"):
-        mvr_current_sequencelist(make_hmm(), [("a", "z")])
-
-
-def test_sequencelist_rejects_unloaded_model():
+@pytest.mark.parametrize(
+    "builder",
+    [
+        lambda hmm: mvr_constant(hmm, True),
+        lambda hmm: mvr_current_state(hmm, {"a"}),
+        lambda hmm: mvr_current_transition(hmm, {("a", "b")}),
+        lambda hmm: mvr_current_sequencelist(hmm, [("a",)]),
+    ],
+)
+def test_primitives_reject_an_unusable_model(builder):
     with pytest.raises(InvalidInputError, match="no hidden states"):
-        mvr_current_sequencelist(HiddenMarkovModel(), [("a",)])
+        builder(HiddenMarkovModel())
 
-
-def test_sequencelist_rejects_missing_model():
     with pytest.raises(InvalidInputError, match="required argument"):
-        mvr_current_sequencelist(None, [("a",)])
+        builder(None)
 
 
 # ---------------------------------------------------------------------
 # Composition with operators
 #
-# These are the derivations the primitive layer exists to support. If one of
-# them breaks, the split between primitives and operators is wrong.
+# The derivations the primitive layer exists to support. Visit/forbid are
+# covered by the wrapper tests below; these are the operators the wrappers do
+# not use.
 # ---------------------------------------------------------------------
 
 
-def test_already_satisfied_of_current_state_is_visits_state():
-    mvr = mvr_already_satisfied(mvr_current_state(make_hmm(), {"a"}))
-    assert_matches(mvr, lambda seq: "a" in seq)
-
-
-def test_not_already_satisfied_of_current_state_is_forbidden_state():
-    mvr = mvr_not(mvr_already_satisfied(mvr_current_state(make_hmm(), {"a"})))
-    assert_matches(mvr, lambda seq: "a" not in seq)
-
-
-def test_forbidden_states_supports_a_collection_of_states():
-    forbidden = {"a", "c"}
-    mvr = mvr_not(mvr_already_satisfied(mvr_current_state(make_hmm(), forbidden)))
-    assert_matches(mvr, lambda seq: not (forbidden & set(seq)))
-
-
-@pytest.mark.parametrize("condition,reference", [("2", lambda n: n == 2)])
+@pytest.mark.parametrize(
+    "condition,reference",
+    [
+        ("2", lambda n: n == 2),
+        (">=1", lambda n: n >= 1),
+        (">=2", lambda n: n >= 2),
+        (">=3", lambda n: n >= 3),
+    ],
+)
 def test_count_of_current_state_counts_occurrences(condition, reference):
     mvr = mvr_count(mvr_current_state(make_hmm(), {"a"}), condition)
     assert_matches(mvr, lambda seq: reference(seq.count("a")))
-
-
-@pytest.mark.parametrize("k", [1, 2, 3])
-def test_count_at_least_k_of_current_state(k):
-    mvr = mvr_count(mvr_current_state(make_hmm(), {"a"}), f">={k}")
-    assert_matches(mvr, lambda seq: seq.count("a") >= k)
-
-
-def test_precedence_of_current_states_is_first_occurrence_order():
-    hmm = make_hmm()
-    mvr = mvr_precedence(
-        [mvr_current_state(hmm, {"a"}), mvr_current_state(hmm, {"b"})],
-        "<",
-    )
-
-    def reference(seq):
-        first_a = seq.index("a") if "a" in seq else len(seq) + 1
-        first_b = seq.index("b") if "b" in seq else len(seq) + 1
-        return first_a < first_b
-
-    assert_matches(mvr, reference)
-
-
-def test_concatenate_of_visits_is_always_appears_before():
-    hmm = make_hmm()
-    visits_a = mvr_already_satisfied(mvr_current_state(hmm, {"a"}))
-    visits_b = mvr_already_satisfied(mvr_current_state(hmm, {"b"}))
-
-    # No "a" occurs after any "b".
-    mvr = mvr_not(mvr_concatenate([visits_b, visits_a]))
-
-    def reference(seq):
-        return not any(seq[i] == "b" and "a" in seq[i + 1 :] for i in range(len(seq)))
-
-    assert_matches(mvr, reference)
-
-
-def test_already_satisfied_of_sequencelist_is_forbidden_substring():
-    mvr = mvr_not(
-        mvr_already_satisfied(mvr_current_sequencelist(make_hmm(), {("a", "b", "a")}))
-    )
-
-    def reference(seq):
-        return not any(
-            tuple(seq[i : i + 3]) == ("a", "b", "a") for i in range(len(seq) - 2)
-        )
-
-    assert_matches(mvr, reference)
 
 
 @pytest.mark.parametrize("pattern", [("a", "b"), ("a", "a")])
@@ -437,19 +360,31 @@ def test_count_of_sequencelist_counts_non_overlapping_matches(k, pattern):
     assert_matches(mvr, reference)
 
 
-@pytest.mark.parametrize("k", [2, 3])
-def test_sequencelist_expresses_consecutive_runs(k):
-    # Run-length constraints have no derivation from the narrower primitives.
-    mvr = mvr_current_sequencelist(make_hmm(), [("a",) * k])
-    assert_matches(mvr, lambda seq: seq[-k:] == ["a"] * k)
-
-
-def test_already_satisfied_of_transition_is_forbidden_transitions():
-    forbidden = {("a", "b"), ("b", "a")}
-    mvr = mvr_not(mvr_already_satisfied(mvr_current_transition(make_hmm(), forbidden)))
+def test_precedence_of_current_states_is_first_occurrence_order():
+    hmm = make_hmm()
+    mvr = mvr_precedence(
+        [mvr_current_state(hmm, {"a"}), mvr_current_state(hmm, {"b"})],
+        "<",
+    )
 
     def reference(seq):
-        return not any((seq[i], seq[i + 1]) in forbidden for i in range(len(seq) - 1))
+        first_a = seq.index("a") if "a" in seq else len(seq) + 1
+        first_b = seq.index("b") if "b" in seq else len(seq) + 1
+        return first_a < first_b
+
+    assert_matches(mvr, reference)
+
+
+def test_concatenate_of_visits_is_always_appears_before():
+    hmm = make_hmm()
+
+    # No "a" occurs after any "b".
+    mvr = mvr_not(
+        mvr_concatenate([mvr_visit_state(hmm, {"b"}), mvr_visit_state(hmm, {"a"})])
+    )
+
+    def reference(seq):
+        return not any(seq[i] == "b" and "a" in seq[i + 1 :] for i in range(len(seq)))
 
     assert_matches(mvr, reference)
 
@@ -581,9 +516,7 @@ def test_primitives_are_accepted_as_mvr_chmm_constraints():
 
     @mvr_constraint_fn(name="never_visits_a")
     def never_visits_a(hidden_markov_model):
-        return mvr_not(
-            mvr_already_satisfied(mvr_current_state(hidden_markov_model, {"a"}))
-        )
+        return mvr_forbid_state(hidden_markov_model, {"a"})
 
     chmm = ConstrainedHiddenMarkovModel(hmm=hmm, constraints=[never_visits_a])
     chmm.initialize_chmm()

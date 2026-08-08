@@ -6,9 +6,8 @@ from conin.exceptions import InvalidInputError
 from conin.hidden_markov_model.mvr import HomMVR
 from conin.hidden_markov_model.mvr_operators import mvr_already_satisfied, mvr_not_yet
 
-# Bare labels are not accepted where a collection is expected: strings are
-# iterable, and a label may itself be a sequence of labels, so allowing both
-# forms would be ambiguous.
+# Bare labels are rejected where a collection is expected: strings are iterable
+# and a label may itself be a sequence of labels, so both forms would be ambiguous.
 _COLLECTION_TYPES = (list, tuple, set, frozenset)
 
 
@@ -72,6 +71,7 @@ def mvr_current_state(
     ie. If "states" = ['a'], at time t MVR will evaluate True iff hidden state is 'a'.
     """
     hidden_states = _model_hidden_states(hidden_markov_model)
+    hidden_space = set(hidden_states)
 
     if not isinstance(states, _COLLECTION_TYPES):
         raise InvalidInputError(
@@ -80,7 +80,7 @@ def mvr_current_state(
         )
 
     states = set(states)
-    unknown = states - set(hidden_states)
+    unknown = states - hidden_space
 
     if unknown:
         raise InvalidInputError(
@@ -88,8 +88,7 @@ def mvr_current_state(
             f"hidden_markov_model: {sorted(unknown, key=repr)}"
         )
 
-    # The mediation state is the truth value of the predicate on the hidden
-    # state just consumed, so evl is the identity.
+    # The mediation state is the predicate on the hidden state just consumed.
     mediation_states = [False, True]
 
     ini = {h: h in states for h in hidden_states}
@@ -123,8 +122,7 @@ def mvr_current_transition(
             "(h_prev, h_curr) hidden state pairs"
         )
 
-    # A bare pair is itself a collection of length two, so without this it would
-    # be read as two malformed entries.
+    # A bare pair would otherwise be read as two malformed entries.
     if (
         isinstance(transitions, (tuple, list))
         and len(transitions) == 2
@@ -155,9 +153,8 @@ def mvr_current_transition(
 
         transition_collection.add((h_prev, h_curr))
 
-    # The mediation state pairs the hidden state just consumed -- needed as the
-    # predecessor of the next transition -- with the truth value of the
-    # predicate on the transition into it, so evl reads off the second entry.
+    # The mediation state pairs the hidden state just consumed -- the predecessor of
+    # the next transition -- with the predicate on the transition into it.
     mediation_states = [(h, taken) for h in hidden_states for taken in [False, True]]
 
     # No transition has been taken when the first hidden state is consumed.
@@ -204,8 +201,7 @@ def mvr_current_sequencelist(
             "sequences"
         )
 
-    # A bare sequence is itself a collection of hidden states, so without this it
-    # would be read as a list of malformed entries.
+    # A bare sequence would otherwise be read as a list of malformed entries.
     if (
         isinstance(sequences, (tuple, list))
         and len(sequences) > 0
@@ -242,9 +238,8 @@ def mvr_current_sequencelist(
 
         patterns.add(tuple(sequence))
 
-    # Aho-Corasick: the mediation state is the longest suffix of the hidden states
-    # consumed so far that is a prefix of some sequence, so evl asks whether some
-    # sequence is a suffix of that prefix.
+    # The mediation state is the longest suffix of the hidden states consumed so far
+    # that is a prefix of some sequence.
     nodes = {()} | {
         pattern[:n] for pattern in patterns for n in range(1, len(pattern) + 1)
     }
@@ -283,12 +278,9 @@ def mvr_current_sequencelist(
 # Convenience wrappers
 # ------------------------------------------------------------------
 #
-# Named compositions of the primitives above with the operators in
-# mvr_operators.py. Nothing here builds ini/upd/evl by hand.
-#
-# The primitives are predicates on the current time step, so each is lifted over
-# the whole chain by an operator: mvr_already_satisfied for "happens at least
-# once", mvr_not_yet for "never happens". Validation is left to the primitive.
+# The primitives are predicates on the current time step. Each is lifted over the
+# whole chain by an operator: mvr_already_satisfied for "happens at least once",
+# mvr_not_yet for "never happens". Nothing here builds ini/upd/evl or validates.
 
 
 def mvr_visit_state(

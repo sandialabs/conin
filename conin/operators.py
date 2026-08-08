@@ -92,11 +92,8 @@ class MVROperator(OperatorFunctor):
                 f"The output of operator {self.name} is not an MVR object."
             )
 
-        # Minimize here rather than in each operator body: the product and subset
-        # constructions routinely leave most of their mediation states unreachable,
-        # and downstream cost is K * prod(M_i) with the per-step candidate tensor
-        # the square of that. Pruning also compounds -- a smaller input shrinks the
-        # 2^|M| subset construction in mvr_concatenate exponentially.
+        # Minimize here rather than in each operator body: product and subset
+        # constructions leave most states unreachable, and cost is K * prod(M_i).
         return mvr.prune()
 
 
