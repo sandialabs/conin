@@ -279,6 +279,7 @@ def mvr_current_sequencelist(
 # Visit/Forbidden
 # ------------------------------------------------------------------
 
+
 def mvr_visit_state(
     hidden_markov_model,
     states,
@@ -357,17 +358,17 @@ def mvr_holdingtime(
 ) -> HomMVR:
     """
     MVR evaluates True iff the chain stays in each state in "states" for at least
-    k time steps, with a trailing run as the sole exception. If "states" is None, 
+    k time steps, with a trailing run as the sole exception. If "states" is None,
     it defaults to the entire hidden space.
 
-    IMPORTANT: A trailing run is the final run in the hidden sequence. 
+    IMPORTANT: A trailing run is the final run in the hidden sequence.
     ie. "aaabb", the trailing run is "bb".
 
     Here are examples of where ignoring the trailing run comes up:
 
-        1. k = 3, 'aa' evaluates True. Single run = trailing run. 
+        1. k = 3, 'aa' evaluates True. Single run = trailing run.
         2. k = 3, 'ab' evaluates False. First run len('a')=1 < 3.
-        3. k = 3, 'aaab' evaluates True. First run len('aaa") >= 3, trailing 'b' ignored. 
+        3. k = 3, 'aaab' evaluates True. First run len('aaa") >= 3, trailing 'b' ignored.
 
     Warns when no run can ever end short, which makes the MVR constantly true:
     when "states" is empty, when k = 1, or when the model has a single hidden
