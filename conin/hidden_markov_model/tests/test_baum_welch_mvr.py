@@ -463,7 +463,8 @@ def make_sparse_hmm(hidden_states, observed_states):
     hmm = HiddenMarkovModel()
 
     transition = {
-        (h1, h2): (0.0 if (h1, h2) == ("A", "C") else 0.5) for h1 in hidden_states
+        (h1, h2): (0.0 if (h1, h2) == ("A", "C") else 0.5)
+        for h1 in hidden_states
         for h2 in hidden_states
     }
     for h1 in hidden_states:
