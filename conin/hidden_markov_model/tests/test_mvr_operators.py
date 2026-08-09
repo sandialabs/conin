@@ -238,6 +238,9 @@ def orphan_state_mvr():
         ini={h: h == "a" for h in hidden_states},
         upd={(m, h): h == "a" for m in mediation_states for h in hidden_states},
         evl={False: False, True: True, "orphan": True},
+    )
+
+
 def trivial_inhom_mvr(time_horizon):
     """
     Language: every word within the horizon. Carries a horizon, unlike the rest.
@@ -689,7 +692,6 @@ def test_mvr_count():
         mvr_count(single_a, "not a valid condition")
 
 
-<<<<<<< HEAD
 # ---------------------------------------------------------------------
 # Pruning
 #
@@ -777,7 +779,8 @@ def test_prune_inhom_mvr():
 )
 def test_operator_outputs_are_fully_reachable(builder):
     assert_fully_reachable(builder())
-=======
+
+
 def test_mvr_timerange():
     contains_a = contains_symbol_mvr("a")
 
@@ -861,4 +864,3 @@ def test_prefix_propagation(case):
 
     # Deliberately redundant: the one check no edit to the table can defeat.
     assert not result.prefix or is_prefix_free(result)
->>>>>>> main

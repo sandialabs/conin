@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import warnings
 
 from typing import Any
@@ -75,8 +76,7 @@ def mvr_current_state(
 
     if not isinstance(states, _COLLECTION_TYPES):
         raise InvalidInputError(
-            "states must be a list, tuple, set, or frozenset of hidden states, "
-            "even when it holds a single state"
+            "states must be a list, tuple, set, or frozenset of hidden states"
         )
 
     states = set(states)
@@ -270,6 +270,51 @@ def mvr_current_sequencelist(
     )
 
 
+def mvr_jump(
+    hidden_markov_model,
+) -> HomMVR:
+    """
+    MVR evaluates True iff the current hidden state differs from the previous one.
+    ie. at time t MVR will evaluate True iff h_t != h_{t-1}.
+    At t = 0 no transition has been taken, so the MVR evaluates False.
+    """
+    hidden_states = _model_hidden_states(hidden_markov_model)
+
+    can_jump = len(hidden_states) > 1
+
+    if not can_jump:
+        warnings.warn(
+            "mvr_jump is constantly false: hidden_markov_model has a single "
+            "hidden state",
+            UserWarning,
+        )
+
+    # The mediation state is the hidden state just consumed, plus whether it jumped.
+    mediation_states = [
+        (h, jumped)
+        for h in hidden_states
+        for jumped in ([False, True] if can_jump else [False])
+    ]
+
+    ini = {h: (h, False) for h in hidden_states}
+
+    upd = {
+        ((h_prev, jumped), h_curr): (h_curr, h_curr != h_prev)
+        for h_prev, jumped in mediation_states
+        for h_curr in hidden_states
+    }
+
+    evl = {(h, jumped): jumped for h, jumped in mediation_states}
+
+    return HomMVR(
+        hidden_states=hidden_states,
+        mediation_states=mediation_states,
+        ini=ini,
+        upd=upd,
+        evl=evl,
+    )
+
+
 # ------------------------------------------------------------------
 # Common Constraint Classes
 # ------------------------------------------------------------------
@@ -390,8 +435,7 @@ def mvr_holdingtime(
     else:
         if not isinstance(states, _COLLECTION_TYPES):
             raise InvalidInputError(
-                "states must be a list, tuple, set, or frozenset of hidden states, "
-                "even when it holds a single state"
+                "states must be a list, tuple, set, or frozenset of hidden states"
             )
 
         target_states = set(states)
@@ -463,4 +507,142 @@ def mvr_holdingtime(
         ini=ini,
         upd=upd,
         evl=evl,
+    )
+
+
+# ------------------------------------------------------------------
+# Jump Counts
+# ------------------------------------------------------------------
+
+
+def mvr_jumpcounts(
+    hidden_markov_model,
+    condition: str,
+) -> HomMVR:
+    """
+    MVR evaluates True iff the number of jumps up to the current time satisfies
+    "condition", where a jump is a time t with h_t != h_{t-1}.
+
+    "condition" same as mvr_count: an exact count "k", a range
+    "[l,u]" or "(l,u]", or an inequality "<k", "<=k", ">k", ">=k". As there, "<0"
+    and ">=0" are rejected as degenerate.
+    """
+    hidden_states = _model_hidden_states(hidden_markov_model)
+
+    if not isinstance(condition, str):
+        raise InvalidInputError("condition must be a string.")
+
+    condition = condition.strip()
+
+    can_jump = len(hidden_states) > 1
+
+    if not can_jump:
+        warnings.warn(
+            "mvr_jumpcounts counts zero jumps: hidden_markov_model has a single "
+            "hidden state.",
+            UserWarning,
+        )
+
+    fail_state = ("__jumpcount_fail__",)
+
+    def jump_range_mvr(
+        lower: int,
+        upper: int,
+        negate: bool = False,
+    ) -> HomMVR:
+        """
+        The MVR for a jump count in [lower, upper], or its complement when negate.
+        """
+        if upper < lower:
+            raise InvalidInputError("count range must be nonempty.")
+
+        # With no jump possible the count never leaves 0, so the rest is unreachable.
+        max_count = upper if can_jump else 0
+
+        mediation_states = [
+            (h, count) for h in hidden_states for count in range(max_count + 1)
+        ]
+
+        if can_jump:
+            mediation_states.append(fail_state)
+
+        ini = {h: (h, 0) for h in hidden_states}
+
+        upd = {}
+
+        for m in mediation_states:
+            for h_curr in hidden_states:
+                if m == fail_state:
+                    upd[(m, h_curr)] = fail_state
+                    continue
+
+                h_prev, count = m
+                count_curr = count + (h_curr != h_prev)
+
+                if count_curr > upper:
+                    upd[(m, h_curr)] = fail_state
+                else:
+                    upd[(m, h_curr)] = (h_curr, count_curr)
+
+        evl = {}
+
+        for m in mediation_states:
+            in_range = m != fail_state and lower <= m[1] <= upper
+            evl[m] = in_range != negate
+
+        return HomMVR(
+            hidden_states=hidden_states,
+            mediation_states=mediation_states,
+            ini=ini,
+            upd=upd,
+            evl=evl,
+        )
+
+    # Deliberately duplicated from mvr_count rather than shared. See CLAUDE.md.
+    exact_match = re.fullmatch(r"\d+", condition)
+
+    if exact_match is not None:
+        k = int(condition)
+        return jump_range_mvr(k, k)
+
+    range_match = re.fullmatch(r"([\[\(])\s*(\d+)\s*,\s*(\d+)\s*\]", condition)
+
+    if range_match is not None:
+        left_bracket, left, upper = range_match.groups()
+        lower = int(left) if left_bracket == "[" else int(left) + 1
+
+        return jump_range_mvr(lower, int(upper))
+
+    comparison_match = re.fullmatch(r"(>=|<=|>|<)\s*(\d+)", condition)
+
+    if comparison_match is not None:
+        op, digits = comparison_match.groups()
+        k = int(digits)
+
+        if op == "<=":
+            return jump_range_mvr(0, k)
+
+        if op == "<":
+            if k == 0:
+                raise InvalidInputError(
+                    'condition "<0" is degenerate because counts are nonnegative.'
+                )
+
+            return jump_range_mvr(0, k - 1)
+
+        # ">" and ">=" are unbounded above, so complement a bounded range instead.
+        if op == ">":
+            return jump_range_mvr(0, k, negate=True)
+
+        if k == 0:
+            raise InvalidInputError(
+                'condition ">=0" is degenerate because counts are nonnegative.'
+            )
+
+        return jump_range_mvr(0, k - 1, negate=True)
+
+    raise InvalidInputError(
+        f"invalid count condition {condition!r}; expected an exact count like '2', "
+        "a range like '[1,3]' or '(1,3]', or an inequality like '<2', '<=2', '>2', "
+        "'>=2'."
     )

@@ -16,6 +16,8 @@ from conin.hidden_markov_model.mvr_constraints import (
     mvr_forbid_state,
     mvr_forbid_transition,
     mvr_holdingtime,
+    mvr_jump,
+    mvr_jumpcounts,
     mvr_visit_sequencelist,
     mvr_visit_state,
     mvr_visit_transition,
@@ -295,6 +297,25 @@ def test_sequencelist_rejects_invalid_input(sequences, match):
 
 
 # ---------------------------------------------------------------------
+# mvr_jump
+# ---------------------------------------------------------------------
+
+
+def test_jump_matches_reference():
+    mvr = mvr_jump(make_hmm())
+
+    assert_matches(mvr, lambda seq: len(seq) >= 2 and seq[-1] != seq[-2])
+
+
+def test_jump_mediation_space_is_minimal():
+    # (h_prev, jumped) over the 3-state alphabet.
+    mvr = mvr_jump(make_hmm())
+
+    assert len(mvr.mediation_states) == 6
+    assert mvr.prune() is mvr
+
+
+# ---------------------------------------------------------------------
 # Shared model validation (_model_hidden_states)
 # ---------------------------------------------------------------------
 
@@ -306,6 +327,8 @@ def test_sequencelist_rejects_invalid_input(sequences, match):
         lambda hmm: mvr_current_state(hmm, {"a"}),
         lambda hmm: mvr_current_transition(hmm, {("a", "b")}),
         lambda hmm: mvr_current_sequencelist(hmm, [("a",)]),
+        lambda hmm: mvr_jump(hmm),
+        lambda hmm: mvr_jumpcounts(hmm, "2"),
     ],
 )
 def test_primitives_reject_an_unusable_model(builder):
@@ -569,6 +592,94 @@ def test_holdingtime_rejects_invalid_input(k, states, match):
 
 
 # ---------------------------------------------------------------------
+# mvr_jumpcounts
+# ---------------------------------------------------------------------
+
+
+def num_jumps(seq):
+    """
+    Number of times the hidden state changes.
+    """
+    return sum(seq[i] != seq[i - 1] for i in range(1, len(seq)))
+
+
+@pytest.mark.parametrize(
+    "condition,reference",
+    [
+        ("0", lambda n: n == 0),
+        ("2", lambda n: n == 2),
+        ("[1,2]", lambda n: 1 <= n <= 2),
+        ("(1,2]", lambda n: n == 2),
+        ("<2", lambda n: n < 2),
+        ("<=1", lambda n: n <= 1),
+        (">1", lambda n: n > 1),
+        (">=2", lambda n: n >= 2),
+    ],
+)
+def test_jumpcounts_matches_reference(condition, reference):
+    # One case per arm of the condition grammar, which is duplicated from mvr_count.
+    mvr = mvr_jumpcounts(make_hmm(), condition)
+
+    assert_matches(mvr, lambda seq: reference(num_jumps(seq)))
+
+
+@pytest.mark.parametrize(
+    "condition,expected",
+    # (h_prev, count) over 3 hidden states, plus the fail state.
+    [("0", 4), ("2", 10), (">1", 7)],
+)
+def test_jumpcounts_mediation_space_is_minimal(condition, expected):
+    mvr = mvr_jumpcounts(make_hmm(), condition)
+
+    assert len(mvr.mediation_states) == expected
+    assert mvr.prune() is mvr
+
+
+@pytest.mark.parametrize(
+    "condition",
+    ["<0", ">=0", "[3,1]", "not a condition", 2],
+)
+def test_jumpcounts_rejects_what_mvr_count_rejects(condition):
+    # The grammar is duplicated, so pin it against the original.
+    with pytest.raises(InvalidInputError):
+        mvr_count(mvr_current_state(make_hmm(), {"a"}), condition)
+
+    with pytest.raises(InvalidInputError):
+        mvr_jumpcounts(make_hmm(), condition)
+
+
+@pytest.mark.parametrize(
+    "builder,constantly",
+    [
+        (lambda hmm: mvr_jump(hmm), False),
+        (lambda hmm: mvr_jumpcounts(hmm, ">=1"), False),
+        (lambda hmm: mvr_jumpcounts(hmm, "0"), True),
+    ],
+)
+def test_jump_warns_on_a_single_hidden_state(builder, constantly):
+    # No jump is possible, so both primitives collapse to a constant.
+    hmm = make_hmm(hidden_states=["a"])
+
+    with pytest.warns(UserWarning, match="single hidden state"):
+        mvr = builder(hmm)
+
+    assert len(mvr.mediation_states) == 1
+    assert all(v is constantly for v in mvr.evl.values())
+
+
+def test_jumpcounts_is_not_count_of_jump():
+    # Deliberately redundant, do not delete: why mvr_jumpcounts is a primitive and
+    # not a wrapper. "abc" has two jumps, but mvr_count restarts and reports one.
+    hmm = make_hmm()
+    seq = list("abc")
+
+    assert eval_mvr(mvr_jumpcounts(hmm, "2"), seq) is True
+
+    assert eval_mvr(mvr_count(mvr_jump(hmm), "2"), seq) is False
+    assert eval_mvr(mvr_count(mvr_jump(hmm), "1"), seq) is True
+
+
+# ---------------------------------------------------------------------
 # Numeric representation and CHMM integration
 # ---------------------------------------------------------------------
 
@@ -581,6 +692,8 @@ def test_holdingtime_rejects_invalid_input(k, states, match):
         lambda hmm: mvr_current_transition(hmm, {("a", "b")}),
         lambda hmm: mvr_current_sequencelist(hmm, {("a", "b", "a")}),
         lambda hmm: mvr_holdingtime(hmm, 2),
+        lambda hmm: mvr_jump(hmm),
+        lambda hmm: mvr_jumpcounts(hmm, "[1,2]"),
     ],
 )
 def test_primitives_build_a_valid_numeric_representation(builder):
