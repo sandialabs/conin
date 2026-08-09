@@ -8,7 +8,7 @@ from typing import Any, Literal
 from conin.exceptions import InvalidInputError
 
 # Adjust this import path as needed.
-from conin.hidden_markov_model.mvr import HomMVR, InhomMVR
+from conin.hidden_markov_model.mvr import HomMVR, InhomMVR, _normalize_time_range
 from conin.operators import mvr_operator_fn
 
 MVR = HomMVR | InhomMVR
@@ -34,6 +34,64 @@ def _combined_time_horizon(mvrs: list[MVR]) -> int | None:
         )
 
     return min_horizon
+
+
+# ------------------------------------------------------------------
+# Set TimeRange
+# ------------------------------------------------------------------
+
+# IMPORTANT: Every operator other than mvr_timerange drops "_time_range" silently.
+# Outside of initialization, mvr_timerange is the sole setter of "_time_range".
+# If operating on a subsequence constraint (MVR with time_range),
+# please call this at the end to regenerate time_range.
+
+@mvr_operator_fn(arity=1)
+def mvr_timerange(
+    mvrs: list[MVR],
+    time_range: list[int] = None,
+    inplace: bool = True,
+) -> MVR:
+    """
+    Sets the time range of an MVR for subsequence constraints.
+    Defaults to inplace=True, directly changing the MVR.
+
+    Also passes along the "prefix" tag.
+    """
+    mvr = mvrs[0]
+
+    if not isinstance(mvr, (HomMVR, InhomMVR)):
+        raise InvalidInputError("mvr must be an instance of HomMVR or InhomMVR.")
+
+    if inplace:
+        time_horizon = mvr.time_horizon if isinstance(mvr, InhomMVR) else None
+        mvr._time_range = _normalize_time_range(time_range, time_horizon)
+        return mvr
+
+    if isinstance(mvr, HomMVR):
+        result = HomMVR(
+            hidden_states=list(mvr.hidden_states),
+            mediation_states=list(mvr.mediation_states),
+            ini=dict(mvr.ini),
+            upd=dict(mvr.upd),
+            evl=dict(mvr.evl),
+            time_range=time_range,
+            name=mvr.name,
+        )
+    else:
+        result = InhomMVR(
+            hidden_states=list(mvr.hidden_states),
+            mediation_states=[
+                list(mediation_states_t) for mediation_states_t in mvr.mediation_states
+            ],
+            ini=dict(mvr.ini),
+            upd=[dict(upd_t) for upd_t in mvr.upd],
+            evl=[dict(evl_t) for evl_t in mvr.evl],
+            time_range=time_range,
+            name=mvr.name,
+        )
+
+    result._prefix = mvr._prefix
+    return result
 
 
 # ------------------------------------------------------------------

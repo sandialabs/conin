@@ -1,9 +1,10 @@
 import pytest
 
 from conin.exceptions import InvalidInputError
-from conin.hidden_markov_model.mvr import HomMVR
+from conin.hidden_markov_model.mvr import HomMVR, InhomMVR
 
 from conin.hidden_markov_model.mvr_operators import (
+    mvr_timerange,
     mvr_and,
     mvr_or,
     mvr_not,
@@ -169,6 +170,19 @@ def exact_word_mvr(word):
         ini=ini,
         upd=upd,
         evl=evl,
+    )
+
+
+def trivial_inhom_mvr(time_horizon):
+    """
+    Language: every word within the horizon. Carries a horizon, unlike the rest.
+    """
+    return InhomMVR(
+        hidden_states=list(ALPHABET),
+        mediation_states=[[0]] * (time_horizon + 1),
+        ini={h: 0 for h in ALPHABET},
+        upd=[{(0, h): 0 for h in ALPHABET} for _ in range(time_horizon)],
+        evl=[{0: True}] * (time_horizon + 1),
     )
 
 
@@ -606,3 +620,40 @@ def test_mvr_count():
 
     with pytest.raises(InvalidInputError):
         mvr_count(single_a, "not a valid condition")
+
+
+def test_mvr_timerange():
+    contains_a = contains_symbol_mvr("a")
+
+    time_range = [1, 3]
+    result = mvr_timerange(contains_a, time_range)
+
+    assert result is contains_a  # inplace=True mutates and returns the input
+    assert result.time_range == [1, 3]
+    assert result.time_range is not time_range  # the MVR owns its range
+
+    assert mvr_timerange(contains_a).time_range is None  # a bare call clears it
+
+    # The horizon check applies on the inplace path, which skips the constructor.
+    inhom = trivial_inhom_mvr(time_horizon=3)
+
+    assert mvr_timerange(inhom, [5, 7]).time_range == [5, 7]
+
+    with pytest.raises(InvalidInputError):
+        mvr_timerange(inhom, [0, 4])
+
+    # inplace=False rebuilds instead, leaving the input alone.
+    single_a = exact_word_mvr("a")
+    single_a.name = "single_a"
+    single_a._prefix = True
+
+    rebuilt = mvr_timerange(single_a, [1, 3], inplace=False)
+
+    assert rebuilt is not single_a
+    assert single_a.time_range is None
+
+    assert rebuilt.time_range == [1, 3]
+    assert rebuilt.name == "single_a"
+    assert rebuilt._prefix is True
+
+    assert_language(rebuilt, {"a": True, "b": False, "aa": False, "ab": False})
