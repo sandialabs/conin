@@ -7,6 +7,32 @@ from typing import Any
 from itertools import product
 
 
+def _normalize_time_range(
+    time_range: list[int] | None,
+    time_horizon: int | None = None,
+) -> list[int] | None:
+    """Validate a time range and return a copy the MVR owns, or None."""
+    if time_range is None:
+        return None
+
+    if not (
+        isinstance(time_range, list)
+        and len(time_range) == 2
+        and all(type(time) is int and time >= 0 for time in time_range)
+        and time_range[0] <= time_range[1]
+    ):
+        raise InvalidInputError(
+            "time range must be a list of two nonnegative integers, with start <= end"
+        )
+
+    if time_horizon is not None and time_range[1] - time_range[0] > time_horizon:
+        raise InvalidInputError(
+            "time range cannot be longer than the time horizon of an Inhom MVR"
+        )
+
+    return list(time_range)
+
+
 class BaseMVR:
     """Base class for mediation variable representations (MVRs).
 
@@ -21,9 +47,9 @@ class BaseMVR:
     evl: Any
 
     _repn: MVR_MatVecRepn  # numerical representation like HMM_MatVecRepn
-    _prefix: bool  # prefix-free tag.
+    _prefix: bool  # certifies if prefix-free
     _time_range: list[int] | None
-    _name: str | None  # optional label for this instance.
+    _name: str | None  # optional label for this instance
 
     def __init__(self):
         """Initialize the base MVR state."""
@@ -47,6 +73,14 @@ class BaseMVR:
     @property
     def prefix(self):
         return self._prefix
+
+    @property
+    def time_range(self):
+        """Return the ``[start, end]`` range attached to the MVR, or None.
+
+        Read-only; set it with the ``mvr_timerange`` operator.
+        """
+        return self._time_range
 
     @property
     def repn(self):
@@ -138,18 +172,7 @@ class HomMVR(BaseMVR):
         self.ini = dict(ini)
         self.upd = dict(upd)
         self.evl = dict(evl)
-
-        if time_range is not None:
-            if not (
-                isinstance(time_range, list)
-                and len(time_range) == 2
-                and all(type(time) is int and time >= 0 for time in time_range)
-                and time_range[0] <= time_range[1]
-            ):
-                raise InvalidInputError(
-                    "time range must be a list of two nonnegative integers, with start <= end"
-                )
-            self._time_range = time_range
+        self._time_range = _normalize_time_range(time_range)
 
         self.name = name
         # Build repn
@@ -328,23 +351,7 @@ class InhomMVR(BaseMVR):
         self.upd = [dict(upd_t) for upd_t in upd]
         self.evl = [dict(evl_t) for evl_t in evl]
         self.time_horizon = time_horizon
-
-        if time_range is not None:
-            if not (
-                isinstance(time_range, list)
-                and len(time_range) == 2
-                and all(type(time) is int and time >= 0 for time in time_range)
-                and time_range[0] <= time_range[1]
-            ):
-                raise InvalidInputError(
-                    "time range must be a list of two nonnegative integers, with start <= end"
-                )
-            time_diff = time_range[1] - time_range[0]
-            if time_diff > time_horizon:
-                raise InvalidInputError(
-                    "time range cannot be longer than the time horizon of an Inhom MVR"
-                )
-            self._time_range = time_range
+        self._time_range = _normalize_time_range(time_range, time_horizon)
 
         self.name = name
         # Build repn

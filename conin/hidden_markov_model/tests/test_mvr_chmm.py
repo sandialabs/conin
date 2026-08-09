@@ -661,7 +661,7 @@ def test_mvr_accepts_valid_time_range_list(mvr_type, time_range):
     )
 
     assert mvr._time_range == time_range
-    assert mvr._time_range is time_range
+    assert mvr._time_range is not time_range  # the MVR owns its range
 
 
 @pytest.mark.parametrize("mvr_type", ["hom", "inhom"])
