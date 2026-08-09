@@ -47,9 +47,9 @@ class BaseMVR:
     evl: Any
 
     _repn: MVR_MatVecRepn  # numerical representation like HMM_MatVecRepn
-    _prefix: bool  # prefix-free tag.
+    _prefix: bool  # certifies if prefix-free
     _time_range: list[int] | None
-    _name: str | None  # optional label for this instance.
+    _name: str | None  # optional label for this instance
 
     def __init__(self):
         """Initialize the base MVR state."""
