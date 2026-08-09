@@ -234,10 +234,14 @@ def mvr_and(
         "Use the AND operator sparingly. It's generally more efficient to provide a list of MVRs to downstream algorithms.",
         UserWarning,
     )
-    return _boolean_combine_mvrs(
+    result = _boolean_combine_mvrs(
         mvrs,
         all,
     )
+
+    # Respects prefix property: output has _prefix=True if any input does.
+    result._prefix = any(mvr.prefix for mvr in mvrs)
+    return result
 
 
 @mvr_operator_fn(arity=None)
@@ -442,8 +446,8 @@ def mvr_sattime(
     if not isinstance(mvr, (HomMVR, InhomMVR)):
         raise InvalidInputError("mvr_sattime expects a HomMVR or InhomMVR.")
 
-    if mvr.prefix:  # if already prefix-free, then do nothing.
-        print("MVR is already prefix-free. Returning original MVR")
+    # sattime(L) == L when L is prefix-free, so the input is already the answer.
+    if mvr.prefix:
         return mvr
 
     # Create a fresh absorbing fail state.
@@ -617,13 +621,17 @@ def mvr_setdiff(
         for m2 in mvr2.mediation_states
     }
 
-    return HomMVR(
+    result = HomMVR(
         hidden_states=hidden_states,
         mediation_states=mediation_states,
         ini=ini,
         upd=upd,
         evl=evl,
     )
+
+    # Respects prefix property: output has _prefix=True if mvr1 does.
+    result._prefix = mvr1.prefix
+    return result
 
 
 @mvr_operator_fn(arity=2)
@@ -698,13 +706,17 @@ def mvr_concatenate(
         for active_m2_states in mvr2_subsets
     }
 
-    return HomMVR(
+    result = HomMVR(
         hidden_states=hidden_states,
         mediation_states=mediation_states,
         ini=ini,
         upd=upd,
         evl=evl,
     )
+
+    # Respects prefix property: output has _prefix=True if both inputs do.
+    result._prefix = mvr1.prefix and mvr2.prefix
+    return result
 
 
 @mvr_operator_fn(arity=2)
@@ -801,13 +813,17 @@ def mvr_kfold_product(
         raise InvalidInputError("k must be an integer greater than or equal to 1.")
 
     if k == 1:
-        return HomMVR(
+        result = HomMVR(
             hidden_states=list(mvr.hidden_states),
             mediation_states=list(mvr.mediation_states),
             ini=dict(mvr.ini),
             upd=dict(mvr.upd),
             evl=dict(mvr.evl),
         )
+
+        # Respects prefix property: output has _prefix=True if input does.
+        result._prefix = mvr.prefix
+        return result
 
     return mvr_concatenate(
         [
