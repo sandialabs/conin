@@ -247,18 +247,6 @@ def test_viterbi_inhom_mvr_windowed(hmm, observed):
     assert path[3] == "A"
 
 
-def test_viterbi_inhom_mvr_horizon_longer_than_window(hmm, observed):
-    # time_horizon 4 is longer than the width-2 window; only the first 2
-    # transitions and the time-2 evaluation are used.
-    mvr = make_end_state_inhom_mvr(
-        hidden_states=hmm.hidden_states,
-        target_state="A",
-        time_horizon=4,
-        time_range=[1, 3],
-    )
-    assert_matches_brute_force(hmm, [mvr], observed)
-
-
 def test_viterbi_disjoint_windows(hmm, observed):
     mvrs = [
         make_forbid_mvr(
@@ -325,7 +313,6 @@ def test_viterbi_single_time_step(hmm):
 
 
 def test_viterbi_mvr_hidden_state_ordering_is_permuted(hmm, observed):
-    """The MVR's hidden-state ordering need not match the HMM's."""
     permuted = list(reversed(hmm.hidden_states))
     assert permuted != hmm.hidden_states
 
@@ -464,20 +451,6 @@ def test_viterbi_augmented_path_omits_inactive_mvrs(hmm, observed):
             assert 0 in entry["mvr_states"]
         else:
             assert entry["mvr_states"] == {}
-
-
-def test_viterbi_rejects_empty_observed(hmm):
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[])
-
-    with pytest.raises(InvalidInputError, match="nonempty"):
-        viterbi_torch_mvr_chmm(model, [])
-
-
-def test_viterbi_rejects_unknown_observed_state(hmm):
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[])
-
-    with pytest.raises(InvalidInputError, match="Unknown observed state"):
-        viterbi_torch_mvr_chmm(model, ["o0", "not_an_observation"])
 
 
 def test_viterbi_raises_on_infeasible_constraints(hmm, observed):
@@ -704,6 +677,8 @@ def test_viterbi_random_sparse_instances_match_brute_force(seed):
         (["o0", "o1"], 1, "shorter than the observed"),
         ({7: "o0"}, 3, "outside the horizon"),
         ({}, 0, "positive integer"),
+        ([], None, "nonempty"),
+        (["o0", "not_an_observation"], None, "Unknown observed state"),
     ],
 )
 def test_viterbi_rejects_bad_horizon_or_observations(

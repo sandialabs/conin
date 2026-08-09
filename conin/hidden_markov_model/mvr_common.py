@@ -10,27 +10,19 @@ from conin.hidden_markov_model.mvr import InhomMVR
 
 NEG_INF = float("-inf")
 
-# Running totals are held wider than the tensors they sum. Each step contributes
-# a value near 0, but the total grows with the horizon -- a few thousand nats over
-# a long run -- and in float32 every later addition would round at the ULP of that
-# total. Measured at T=20000 that is the difference between 3.4 and 0.0006 nats.
+# Running totals are held wider than the tensors they sum; see CLAUDE.md.
 ACCUM_DTYPE = torch.float64
 
 
 def _hmm_to_torch(hmm, *, log=False, dtype=torch.float32, device="cpu"):
-    """
-    Convert a hidden Markov model into torch tensors, optionally in log space.
-    Zero probabilities map to ``-inf``, the max-plus absorbing element.
-    """
+    """Convert a hidden Markov model into torch tensors, optionally in log space."""
     repn = hmm.repn
 
     if repn is None:
         raise InvalidInputError("hidden_markov_model.repn is missing.")
 
     def convert(array):
-        # Take the log in the source precision. Casting first would send any
-        # probability below the dtype's smallest subnormal to 0, and log(0) to
-        # -inf, silently reclassifying an unlikely transition as impossible.
+        # Log in the source precision: casting first would flush subnormals to -inf.
         array = np.asarray(array, dtype=np.float64)
 
         if log:
@@ -47,11 +39,7 @@ def _hmm_to_torch(hmm, *, log=False, dtype=torch.float32, device="cpu"):
 
 
 def _resolve_horizon(observed, time_horizon):
-    """
-    Resolve the inference horizon and return it with ``(time, label)`` pairs.
-    Need to handle both a list of observations or a dict of time:observation.
-    A dense list is implicitly timed by position; a map is explicitly timed.
-    """
+    """Resolve the inference horizon and return it with ``(time, label)`` pairs."""
     if isinstance(observed, dict):
         # For a dict {time:obs}, user-defined time_horizon is required
         if time_horizon is None:
@@ -84,13 +72,7 @@ def _resolve_horizon(observed, time_horizon):
 
 
 def _resolve_emit_weights(hmm, emission_mat, observed, time_horizon=None, *, log=False):
-    """
-    Resolve the horizon and build the dense ``(T, K)`` table of emission weights.
-    Times carrying no observation get the identity of the working space, so they
-    are scored by the transition alone rather than being dropped from the chain.
-    Also returns ``{time: observed index}``, which decides where that happens and
-    is what the emission counts are gathered by.
-    """
+    """Build the dense ``(T, K)`` emission-weight table and ``{time: observed index}``."""
     T, items = _resolve_horizon(observed, time_horizon)
     K = int(emission_mat.shape[0])
 
@@ -109,8 +91,7 @@ def _resolve_emit_weights(hmm, emission_mat, observed, time_horizon=None, *, log
         times.append(int(t))
         obs_idx.append(hmm.observed_to_internal[o])
 
-    # 0 and 1 are the additive and multiplicative identities respectively, so an
-    # unobserved time contributes nothing in whichever space the caller is using.
+    # The identity of the working space, so an unobserved time contributes nothing.
     identity = 0.0 if log else 1.0
     weights = torch.full(
         (T, K),
@@ -128,10 +109,7 @@ def _resolve_emit_weights(hmm, emission_mat, observed, time_horizon=None, *, log
 
 
 def _validate_time_range(mvr, T):
-    """
-    Check an MVR's time range against the inference horizon and return it.
-    An MVR without a ``_time_range`` is enforced over the whole horizon.
-    """
+    """Check an MVR's time range against the inference horizon and return it."""
     if mvr._time_range is None:
         active_start, active_end = 0, T - 1
     else:
@@ -198,11 +176,7 @@ def _build_mvr_factor_info(
 
 
 def _build_augmented_axes(K, T, mvr_infos):
-    """
-    Resolve which MVRs are enforced at each time and the shape that implies.
-    ``evl_at`` doubles as the activity oracle: an MVR has an entry exactly at
-    the times inside its window.
-    """
+    """Resolve which MVRs are enforced at each time and the shape that implies."""
     active_by_time = [
         [i for i, info in enumerate(mvr_infos) if t in info["evl_at"]] for t in range(T)
     ]
@@ -216,12 +190,7 @@ def _build_augmented_axes(K, T, mvr_infos):
 
 
 def _build_static_context(constraints, K, T, *, log, dtype, device):
-    """
-    Build the parts of an inference context that do not depend on the HMM's
-    parameters. An EM loop rebuilds its context every iteration but the MVR
-    factors, the augmented axes and the destination indices are all fixed by
-    the constraints and the horizon, so they are built once and passed back in.
-    """
+    """Build the parts of an inference context that do not depend on HMM parameters."""
     mvr_infos = [
         _build_mvr_factor_info(mvr, T, log=log, dtype=dtype, device=device)
         for mvr in constraints
@@ -258,15 +227,11 @@ def _build_sumprod_ctx(
     device="cpu",
     static=None,
 ):
-    """
-    Assemble the context the log-space sum-product steps read.
-
-    Both the transition matrix and its log are kept: ``_sum_step`` contracts the
-    exponentiated shifted values against the probability-space matrix, while
-    ``_maxplus_step`` and the transition posteriors want the log.
-    """
+    """Assemble the context the log-space sum-product steps read."""
     hmm, constraints = _model_parts(model)
 
+    # Both forms kept: _sum_step contracts against the probability-space matrix,
+    # while _maxplus_step and the transition posteriors want the log.
     _, transition_mat, _ = _hmm_to_torch(hmm, log=False, dtype=dtype, device=device)
     log_start_vec, log_transition_mat, log_emission_mat = _hmm_to_torch(
         hmm, log=True, dtype=dtype, device=device
@@ -336,19 +301,14 @@ def _build_destination_index(
     t,
     device,
 ):
-    """
-    Return the flat destination index of each predecessor mediation state.
-    The MVRs are folded in one at a time as strided terms, so no product
-    transition tensor is ever materialized.
-    """
+    """Return the flat destination index of each predecessor mediation state."""
     curr_strides = _c_strides(curr_dims)
     prev_total = math.prod(prev_dims)
 
     prev_position = {mvr_i: pos for pos, mvr_i in enumerate(prev_active)}
 
-    # MVRs active at t - 1 but not at t contribute no stride, so their
-    # predecessor states collapse onto a shared destination and the scatter
-    # maximizes over them. MVRs inactive at both times appear in neither space.
+    # An MVR active at t-1 but not t contributes no stride, so its states collapse
+    # onto a shared destination and the scatter reduces over them.
     dest = torch.zeros((K,) + prev_dims, dtype=torch.long, device=device)
 
     for pos, mvr_i in enumerate(curr_active):
@@ -394,10 +354,7 @@ def _flat_ini_index(K, mvr_infos, active, dims, device):
 
 
 def _apply_closing_evl(V, t, mvr_infos, curr_active, *, log, lead=1):
-    """
-    Fold in the acceptance factor of every MVR whose window closes at ``t``.
-    ``lead`` is the number of axes ahead of the mediation axes in ``V``.
-    """
+    """Fold in the acceptance factor of every MVR whose window closes at ``t``."""
     for pos, mvr_i in enumerate(curr_active):
         info = mvr_infos[mvr_i]
 
@@ -428,18 +385,14 @@ def _maxplus_step(
     dtype,
     device,
 ):
-    """
-    Advance one time step in the max-plus semiring without forming a product MVR.
-    Returns the new values and a flat backpointer into the predecessor space.
-    """
+    """Advance one max-plus step, returning the values and a flat backpointer."""
     prev_total = math.prod(prev_dims)
     curr_total = math.prod(curr_dims)
 
     V_prev_flat = V_prev.reshape(K, prev_total)
 
-    # Maximize over the predecessor hidden state first. The scatter destination
-    # depends on h_curr and m_prev but never on h_prev, so the two maximizations
-    # commute and this keeps a factor of K out of every tensor built below.
+    # Maximize over h_prev first: the destination never depends on it, so the two
+    # maximizations commute and this keeps a factor of K out of everything below.
     candidate = V_prev_flat.unsqueeze(0) + log_transition_t.unsqueeze(-1)
 
     # best[h_curr, m_prev], best_h_prev[h_curr, m_prev]
@@ -496,13 +449,8 @@ def _maxplus_step(
 # Sum-product
 # ======================================================================
 #
-# These run in log space, like the max-plus step above. That is deliberate and
-# is not the usual choice for a sum-product recursion -- see the semiring notes
-# in CLAUDE.md. A message here holds the probability of satisfying a constraint
-# over many steps, which decays exponentially and spans a range *within* a
-# single slice, so no per-step rescaling can compress it. Shifting by the slice
-# maximum turns each logsumexp into an ordinary contraction, which keeps the
-# tensors the same shape they would have in probability space.
+# In log space, which is not the usual choice here -- see the semiring notes in
+# CLAUDE.md before changing it.
 
 
 def _dest_at(ctx, t):
@@ -525,20 +473,14 @@ def _dest_at(ctx, t):
 
 
 def _safe_shift(values, dim, keepdim):
-    """
-    Largest entry along ``dim``, with an all ``-inf`` slice reported as ``0``.
-    Subtracting a ``-inf`` shift would turn that slice into ``NaN``.
-    """
+    """Largest entry along ``dim``, with an all ``-inf`` slice reported as ``0``."""
     shift = values.amax(dim=dim, keepdim=keepdim)
 
     return torch.where(torch.isfinite(shift), shift, torch.zeros_like(shift))
 
 
 def _initial_sumprod_message(ctx):
-    """
-    Batched ``(1, K, M_0)`` log-weights at ``t = 0``, carrying the start vector,
-    the emission and any ``evl`` closing there.
-    """
+    """Batched ``(1, K, M_0)`` log-weights at ``t = 0``, with every factor from that time."""
     K = ctx["K"]
     device = ctx["device"]
 
@@ -574,12 +516,8 @@ def _sum_step(ctx, log_P, t):
     prev_total = math.prod(prev_dims)
     curr_total = math.prod(curr_dims)
 
-    # Contract the predecessor hidden state. Shifting by the per-(batch, mediation)
-    # maximum first makes this an ordinary contraction rather than a logsumexp, so
-    # the einsum keeps its (B, K, M) shape instead of growing a second hidden axis.
-    # These tensors are the memory bottleneck of the whole algorithm, so the
-    # arithmetic below is done in place wherever the operand is already a
-    # temporary of ours.
+    # Shifting first makes this an ordinary contraction rather than a logsumexp, so
+    # the einsum keeps its (B, K, M) shape. In place below: these are the bottleneck.
     shift = _safe_shift(log_P, dim=1, keepdim=True)
     log_contrib = torch.einsum(
         "bhm,hg->bgm", (log_P - shift).exp(), ctx["transition_mat"]
@@ -610,20 +548,7 @@ def _sum_step(ctx, log_P, t):
 
 
 def _sum_step_backward(ctx, log_beta, t):
-    """
-    Pull a backward message from ``t`` to ``t - 1``, summing over successors.
-
-    ``log_beta`` carries no factor from time ``t`` itself. Both returned
-    messages are flat over the mediation axes:
-
-    ``log_beta_prev``
-        the message at ``t - 1``, again carrying no factor from its own time.
-    ``log_beta_tilde``
-        ``log_beta`` with the acceptance factor of any MVR closing at ``t``
-        folded in. Applying ``evl`` here rather than in the caller is what keeps
-        each factor applied exactly once; the transition posteriors need this
-        intermediate, and ``_backward_suffix`` discards it.
-    """
+    """Pull a message from ``t`` to ``t - 1``, also returning it ``evl``-applied at ``t``."""
     K = ctx["K"]
     curr_dims = ctx["dims_by_time"][t]
 
@@ -636,8 +561,7 @@ def _sum_step_backward(ctx, log_beta, t):
         lead=1,
     ).reshape(K, -1)
 
-    # The mediation update is deterministic, so pulling a message backward
-    # through it is a gather -- the transpose of the forward scatter.
+    # upd is deterministic, so pulling backward is a gather -- the forward scatter's transpose.
     followed = log_beta_tilde.gather(1, _dest_at(ctx, t))
     term = followed + ctx["log_emit_weights"][t].reshape(K, 1)
 
@@ -653,10 +577,7 @@ def _sum_step_backward(ctx, log_beta, t):
 
 
 def _forward_messages(ctx):
-    """
-    Log-space forward recursion, returning every message and the accumulated
-    shift. Messages are a list because the augmented shape varies with ``t``.
-    """
+    """Log-space forward recursion: every message, plus the accumulated shift."""
     log_P = _initial_sumprod_message(ctx)
 
     log_alpha = []

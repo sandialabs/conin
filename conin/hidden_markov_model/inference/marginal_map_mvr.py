@@ -1,13 +1,12 @@
 """
-Marginal-MAP inference over the HMM x MVR product for a subset of times. Finds
-the maximizing sequence X_times of P(X_times | Y), where times is a user-defined
-list of times. All other time-steps are marginalized out.
+Marginal-MAP inference over the HMM x MVR product for a subset of times. The
+product chain is itself an HMM, and this is plain marginal MAP over it: the
+augmented state (hidden x mediation) is maximized at a user-defined list of
+times and every other time-step is marginalized out.
 NOTE: Marginalized times can still have emissions.
 
-Runs entirely in log space, including the sum-product eliminations. Read the
-semiring notes in CLAUDE.md before changing that: a gap operator holds the
-probability of satisfying a constraint across the gap, which decays
-exponentially in its length and silently underflows in probability space.
+Runs entirely in log space, including the sum-product eliminations; read the
+semiring notes in CLAUDE.md before changing that.
 """
 
 from __future__ import annotations
@@ -47,11 +46,7 @@ def _forward_prefix(ctx, first_query):
 
 
 def _is_allocation_failure(exc):
-    """
-    Whether an exception is torch failing to allocate rather than a real bug.
-    Without this an ordinary ``RuntimeError`` would be relabelled as a memory
-    problem and send the reader after the wrong thing.
-    """
+    """Whether an exception is torch failing to allocate rather than a real bug."""
     if isinstance(exc, MemoryError):
         return True
 
@@ -75,19 +70,13 @@ def _gap_is_bare(ctx, s, s_next):
 
 
 def _gap_operator(ctx, s, s_next):
-    """
-    Sum out the interior of ``(s, s_next]`` into a transfer operator between its ends.
-    Propagating a batched identity is what makes the result a matrix rather than
-    a vector: the source is a maximized variable and so cannot be contracted.
-    """
+    """Sum out the interior of ``(s, s_next]`` into a transfer operator between its ends."""
     K = ctx["K"]
     src_total = K * math.prod(ctx["dims_by_time"][s])
     dst_total = K * math.prod(ctx["dims_by_time"][s_next])
 
     if _gap_is_bare(ctx, s, s_next):
-        # No mediation axis and nothing observed in between, so the whole
-        # interior collapses to a power of the transition matrix. That matrix is
-        # stochastic, so its powers stay stochastic and cannot underflow.
+        # A stochastic matrix stays stochastic under powering, so this cannot underflow.
         operator = torch.linalg.matrix_power(ctx["transition_mat"], s_next - s)
 
         return operator.log() + ctx["log_emit_weights"][s_next].reshape(1, K)
@@ -186,20 +175,18 @@ def marginal_map_torch_mvr_chmm(
 ):
     """Marginal-MAP decoding of an MVR-augmented constrained HMM at chosen times.
 
-    Returns the assignment to the hidden states at ``query_times`` that
-    maximizes their joint posterior, with the hidden states at all other times
-    summed out::
+    The HMM x MVR product is itself an HMM, and this is plain marginal MAP over
+    it: the augmented state ``z = (x, m)`` is maximized at ``query_times`` and
+    summed out everywhere else, with each constraint enforced by conditioning on
+    ``evl(m) == True`` at the end of its window. The mediation half is maximized
+    too, so the returned hidden path is the projection of an augmented argmax.
+    Marginalized times still transition, still emit and still drive their MVRs;
+    they simply do not commit to a value.
 
-        argmax over x_S of  sum over x_notS of  P(x, y) * 1[constraints hold]
-
-    **This maximizes a marginal rather than marginalizing a MAP.** The states
-    reported here are in general not the states the joint MAP path from Viterbi
-    takes at those times. Use ``viterbi_torch_mvr_chmm`` when the whole path is
-    wanted.
-
-    Marginalized times still consume a transition, still emit if they carry an
-    observation, and are still driven through every MVR active at that time.
-    What is dropped is only the requirement to commit to a single value there.
+    Two answers this deliberately does not give. It is **not** Viterbi restricted
+    to ``query_times`` -- maximizing a marginal is not marginalizing a maximum.
+    And it is **not** ``argmax_h gamma[t]`` from ``forward_backward_mvr_chmm``,
+    which sums the mediation out because a marginal is a sum.
 
     Parameters
     ----------
@@ -234,10 +221,6 @@ def marginal_map_torch_mvr_chmm(
     best_logprob : float, optional
         Returned when ``return_score`` is ``True``.
     """
-    # Everything runs in log space, including the sum-product gap eliminations.
-    # Probability space is not viable for those: a gap operator holds the
-    # probability of satisfying a constraint across the gap, which decays
-    # exponentially in its length and silently flushes to zero.
     ctx = _build_sumprod_ctx(
         model,
         observed,
@@ -275,9 +258,7 @@ def marginal_map_torch_mvr_chmm(
     V = _forward_prefix(ctx, times[0]).reshape(shapes[times[0]])
     check_feasible(V, f"at time {times[0]}")
 
-    # Held wider than the tensors it sums, and read once at the end. With one
-    # query time per step this accumulates T times, so float32 here would cost
-    # nats at long horizons.
+    # Wider than the tensors it sums: with one query time per step this accumulates T times.
     log_score = torch.zeros((), dtype=ACCUM_DTYPE, device=device)
 
     # ------------------------------------------------------------------

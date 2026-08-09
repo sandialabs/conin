@@ -73,12 +73,8 @@ def sat_prob_torch_mvr_chmm(
         w[True]  = P(observed, other constraints satisfied, target's evl holds at b)
         w[False] = P(observed, other constraints satisfied, target's evl fails at b)
 
-    where ``[a, b]`` is the target's ``time_range``. Every constraint other than the
-    target is enforced as usual. In other words:
-        1. ``time_range=None``: compute satisfaction probability at ``time_horizon``,
-            representing the global path's probability of satisfying ``target``.
-        2. ``time_range=[a,b]``: compute satisfaciton probability at ``b``,
-            representing the satisfaction probability of the subsequence constraint.
+    where ``b`` ends the target's ``time_range`` and defaults to the last time
+    step. Every constraint other than the target is enforced as usual.
 
     That is **not** "satisfied at some time in ``[a, b]``". For that, pass
     ``mvr_already_satisfied(target)``, whose accept state is absorbing.

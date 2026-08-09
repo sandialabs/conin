@@ -36,28 +36,14 @@ def viterbi_torch_mvr_chmm(
     return_augmented=True,
     return_score=False,
 ):
-    """Log-space Viterbi for an MVR-augmented constrained HMM.
+    """Most likely hidden path satisfying every MVR constraint.
 
-    Augmented axes are dynamic. The value tensor carries only the MVRs enforced
-    at the current time::
+    Each MVR is enforced over ``[a_i, b_i]``, taken from its ``time_range`` and
+    defaulting to ``[0, T - 1]``: initialized at ``a_i``, evaluated at ``b_i``,
+    and absent otherwise.
 
-        V[t].shape == (K,) + tuple(M_i(t) for i active at t)
-
-    An MVR is active over ``[a_i, b_i]``, taken from its ``time_range`` and
-    defaulting to ``[0, T - 1]``. It is initialized at ``a_i``, evaluated at
-    ``b_i``, and absent otherwise.
-
-    The MVR updates are deterministic, so each transition is a scatter rather
-    than a dense mediation-space multiply. The MVRs are folded into a single
-    destination index one at a time, so no product MVR is constructed and
-    the working tensors scale with the mediation space rather than its square.
-
-    Each slice is shifted so its maximum is ``0``, with the shift accumulated
-    into the score. This is not optional: log space rules out overflow, but the
-    ULP grows with the running magnitude, so without the shift every addition
-    rounds at the ULP of a value that keeps growing. Measured at ``T = 20000``
-    the score drifts by 5.49 nats unshifted against 0.0006 shifted, and because
-    the rounding differs per entry it can also reorder near-tied paths.
+    Raises ``InvalidInputError`` if no feasible path exists, naming the time at
+    which the lattice died.
 
     Parameters
     ----------
@@ -66,15 +52,13 @@ def viterbi_torch_mvr_chmm(
     observed : list or dict
         Observed sequence in external observed-state labels, either a dense
         list timed by position or a sparse ``{time: label}`` map. A time with
-        no observation is scored by its transition alone; it stays in the
-        chain rather than being dropped from it.
+        no observation stays in the chain, scored by its transition alone.
     time_horizon : int, optional
         Number of time steps to infer over. Defaults to ``len(observed)`` for a
-        dense list and is required for a map. May exceed the number of
-        observations, in which case the unobserved tail is inferred from the
-        transitions and the constraints. Note that an MVR with no
-        ``time_range`` then defaults to ``[0, time_horizon - 1]``, so it is
-        enforced over the extended horizon and not merely the observed span.
+        dense list and is required for a map. It may exceed the number of
+        observations -- but an MVR with no ``time_range`` then defaults to
+        ``[0, time_horizon - 1]``, so it is enforced over the extended horizon
+        rather than merely the observed span.
     dtype : torch.dtype, optional
         Floating dtype for torch tensors. ``float32`` is ample in log space.
     device : str or torch.device, optional
@@ -129,8 +113,7 @@ def viterbi_torch_mvr_chmm(
     log_transition_t = log_transition_mat.transpose(0, 1).contiguous()
 
     backptr = []
-    # Kept on device and read once at the end. The per-step host sync comes from
-    # the feasibility check below, not from here.
+    # Kept on device and read once at the end; the per-step host sync is the check below.
     log_score = torch.zeros((), dtype=ACCUM_DTYPE, device=device)
 
     # ------------------------------------------------------------------
@@ -193,14 +176,10 @@ def viterbi_torch_mvr_chmm(
         V_prev = V_curr - scale
 
     # ------------------------------------------------------------------
-    # Termination.
+    # Termination. V_prev is already shifted to a maximum of 0, so there is
+    # no residual scale to add and no feasibility left to test.
     # ------------------------------------------------------------------
-    final_scale = V_prev.max()
-
-    if not torch.isfinite(final_scale):
-        raise InvalidInputError("No feasible augmented path at final time.")
-
-    log_score = float(log_score + final_scale)
+    log_score = float(log_score)
 
     final_flat = int(torch.argmax(V_prev).item())
     final_idx = tuple(int(x) for x in np.unravel_index(final_flat, shapes[T - 1]))

@@ -209,7 +209,6 @@ def test_stopped_sampling_random_instances_match_brute_force(seed):
 
 
 def test_prefix_free_substitution_is_transparent(hmm, observed, target, capsys):
-    """The lattices are identical, so the draws are too -- bitwise, under one seed."""
     already = mvr_sattime(target)
     already._time_range = target._time_range
     already._name = target._name
@@ -292,7 +291,6 @@ def test_min_length_restricts_the_stopping_time(hmm, observed, target, min_lengt
 
 
 def test_min_length_below_the_window_is_vacuous(hmm, observed, target):
-    """``min_length`` counts the returned prefix, so 1 can never exclude anything."""
     model = MVR_CHMM(hidden_markov_model=hmm, constraints=[target])
 
     def draw(min_length):

@@ -206,17 +206,15 @@ def sat_time_torch_mvr_chmm(
 ):
     """First satisfaction time distribution for a target MVR.
 
-    Over the target's ``time_range = [a, b]`` (defaulting to the whole horizon 
-    if None) returns the distribution of the earliest time its ``evl``holds::
+    Over the target's window ``[a, b]`` -- its ``time_range``, defaulting to the
+    whole horizon -- returns the distribution of the earliest time its ``evl``
+    holds, normalized over that window::
 
         w[t] = P(observed, other constraints satisfied, target first accepts at t)
 
-    normalized over the window.
-    The unnormalized ``w[t]`` are also returned if ``return_log_weights``. 
-    Every constraint other than the target is enforced as usual.
-
-    IMPORTANT: ``time_range`` initializes the automaton at ``a`` rather than slicing 
-    the full-horizon answer: ``[5, T-1]`` starts fresh at ``t = 5``, never seeing
+    Every constraint other than the target is enforced as usual. Note that
+    ``time_range`` initializes the automaton at ``a`` rather than slicing the
+    full-horizon answer: ``[5, T-1]`` starts fresh at ``t = 5`` and never sees
     ``hidden[0..4]``.
 
     Parameters

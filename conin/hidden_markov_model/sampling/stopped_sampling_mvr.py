@@ -42,12 +42,10 @@ def stopped_sampling_torch_mvr_chmm(
     distribution, then draws the prefix from ``P(x[0..tau] | observed, all
     constraints, target first accepts at tau)``. The conditioning uses the **whole**
     observation set and every constraint over the whole horizon, so an observation
-    later than ``tau`` still informs the sampled path -- ie. sample a path with random
-    length ``tau``, using all information over the supplied time horizon. The target
-    is made prefix-free automatically, so conditioning during the path sampling
-    represents the first satisfaction of the target.
+    later than ``tau`` still informs the sampled prefix. The target is made
+    prefix-free automatically, which is what makes ``tau`` the *first* satisfaction.
 
-    ``min_length`` bounds the length of the returned path from below.
+    ``min_length`` bounds the length of the returned prefix from below.
 
     Parameters
     ----------

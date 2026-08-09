@@ -7,6 +7,7 @@ import pytest
 
 from conin.exceptions import InvalidInputError
 from conin.hidden_markov_model.chmm_mvr import MVR_CHMM
+from conin.hidden_markov_model.mvr import InhomMVR
 
 torch = pytest.importorskip("torch")
 
@@ -16,10 +17,13 @@ from conin.hidden_markov_model.inference.marginal_map_mvr import (  # noqa: E402
 from conin.hidden_markov_model.inference.viterbi_mvr import (  # noqa: E402
     viterbi_torch_mvr_chmm,
 )
+
+from .test_sat_time_mvr import make_reach_mvr, mvr_window  # noqa: E402
 from .test_viterbi_mvr import (  # noqa: E402
     as_obs_map,
     make_end_state_inhom_mvr,
     make_forbid_mvr,
+    make_parity_mvr,
     make_random_hmm,
     mvr_accepts,
     score_path,
@@ -30,10 +34,58 @@ from .test_viterbi_mvr import (  # noqa: E402
 # ===========================
 
 
+def mediation_at(mvr, hidden, T, s):
+    """Mediation label of ``mvr`` at global time ``s``, or ``None`` if outside its window."""
+    a, b = mvr_window(mvr, T)
+
+    if not a <= s <= b:
+        return None
+
+    is_inhom = isinstance(mvr, InhomMVR)
+    m = mvr.ini[hidden[a]]
+
+    for t in range(a + 1, s + 1):
+        m = mvr.upd[t - a - 1][(m, hidden[t])] if is_inhom else mvr.upd[(m, hidden[t])]
+
+    return m
+
+
+def make_constraint(shape, hidden_states, T, time_range=None):
+    """One of the four constraint shapes, over ``hidden_states``."""
+    if shape == "forbid":
+        return make_forbid_mvr(
+            hidden_states=hidden_states, forbidden_state="A", time_range=time_range
+        )
+
+    if shape == "parity":
+        return make_parity_mvr(
+            hidden_states=hidden_states, target_state="B", time_range=time_range
+        )
+
+    if shape == "reach":
+        return make_reach_mvr(
+            hidden_states=hidden_states, target_state="C", time_range=time_range
+        )
+
+    span = (T - 1) if time_range is None else (time_range[1] - time_range[0])
+
+    return make_end_state_inhom_mvr(
+        hidden_states=hidden_states,
+        target_state="C",
+        time_horizon=span,
+        time_range=time_range,
+    )
+
+
 def brute_force_marginal_map(hmm, mvrs, observed, T, query_times):
     """
-    Exhaustive marginal MAP: group feasible paths by their query-time states,
-    sum the probability within each group, and take the heaviest group.
+    Exhaustive marginal MAP: group feasible paths by their query-time **augmented**
+    states, sum the probability within each group, take the heaviest, and project
+    to hidden.
+
+    The mediation state is maximized alongside the hidden state, not summed out.
+    Grouping by hidden state alone is a different query -- see
+    ``test_marginal_map_maximizes_mediation_rather_than_summing_it``.
     """
     obs_map = as_obs_map(observed)
     groups = {}
@@ -42,7 +94,10 @@ def brute_force_marginal_map(hmm, mvrs, observed, T, query_times):
         if not all(mvr_accepts(mvr, path, T) for mvr in mvrs):
             continue
 
-        key = tuple(path[t] for t in query_times)
+        key = tuple(
+            (path[t], tuple(mediation_at(mvr, path, T, t) for mvr in mvrs))
+            for t in query_times
+        )
         groups[key] = groups.get(key, 0.0) + math.exp(score_path(hmm, path, obs_map))
 
     if not groups:
@@ -50,7 +105,7 @@ def brute_force_marginal_map(hmm, mvrs, observed, T, query_times):
 
     best = max(groups, key=groups.get)
 
-    return list(best), math.log(groups[best])
+    return [hidden for hidden, _ in best], math.log(groups[best])
 
 
 def assert_matches_brute_force(hmm, mvrs, observed, T, query_times):
@@ -101,19 +156,67 @@ def test_marginal_map_matches_brute_force(hmm, observed, query_times):
     assert_matches_brute_force(hmm, [], observed, len(observed), query_times)
 
 
-@pytest.mark.parametrize("query_times", [[0, 4], [0, 2, 4]])
-def test_marginal_map_with_constraint_matches_brute_force(hmm, observed, query_times):
-    mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="A")
+@pytest.mark.parametrize("shape", ["forbid", "parity", "reach", "end_state"])
+@pytest.mark.parametrize("query_times", [[0, 4], [1, 3], [0, 2, 4]])
+def test_marginal_map_with_constraint_matches_brute_force(
+    hmm, observed, shape, query_times
+):
+    # parity and reach are the shapes that pin the contract: they are the ones
+    # keeping two mediation values live at a query time, so they are the ones a
+    # hidden-only reference would disagree with.
+    mvr = make_constraint(shape, hmm.hidden_states, len(observed))
     assert_matches_brute_force(hmm, [mvr], observed, len(observed), query_times)
 
 
-def test_marginal_map_with_inhom_constraint(hmm, observed):
-    mvr = make_end_state_inhom_mvr(
-        hidden_states=hmm.hidden_states,
-        target_state="C",
-        time_horizon=len(observed) - 1,
+def hidden_only_marginal_map(hmm, mvrs, observed, T, query_times):
+    """The *other* query: group by hidden state alone, summing the mediation out."""
+    obs_map = as_obs_map(observed)
+    groups = {}
+
+    for path in itertools.product(hmm.hidden_states, repeat=T):
+        if not all(mvr_accepts(mvr, path, T) for mvr in mvrs):
+            continue
+
+        key = tuple(path[t] for t in query_times)
+        groups[key] = groups.get(key, 0.0) + math.exp(score_path(hmm, path, obs_map))
+
+    best = max(groups, key=groups.get)
+
+    return list(best), math.log(groups[best])
+
+
+@pytest.mark.parametrize("query_times", [[1, 3], [0, 2, 4]])
+def test_marginal_map_maximizes_mediation_rather_than_summing_it(
+    hmm, observed, query_times
+):
+    """
+    Deliberately redundant, and deliberately kept: the mediation state is
+    maximized at a query time rather than summed out, so the two groupings must
+    disagree. The sweep does not reliably draw the geometry that shows it.
+    """
+    mvrs = [make_parity_mvr(hidden_states=hmm.hidden_states, target_state="B")]
+    T = len(observed)
+    model = MVR_CHMM(hidden_markov_model=hmm, constraints=mvrs)
+
+    actual = marginal_map_torch_mvr_chmm(
+        model,
+        observed,
+        time_horizon=T,
+        query_times=query_times,
+        return_augmented=False,
+        return_score=True,
     )
-    assert_matches_brute_force(hmm, [mvr], observed, len(observed), [0, 2, 4])
+
+    augmented = brute_force_marginal_map(hmm, mvrs, observed, T, query_times)
+    hidden_only = hidden_only_marginal_map(hmm, mvrs, observed, T, query_times)
+
+    assert actual[0] == augmented[0]
+    assert actual[1] == pytest.approx(augmented[1], abs=1e-4)
+
+    # The two queries must not have collapsed into one another.
+    assert actual[0] != hidden_only[0] or actual[1] != pytest.approx(
+        hidden_only[1], abs=1e-4
+    )
 
 
 def test_marginal_map_mvr_window_entirely_inside_a_gap(hmm, observed):
@@ -182,9 +285,10 @@ def test_marginal_map_random_instances_match_brute_force(seed):
         end = int(rng.integers(0, T))
         start = int(rng.integers(0, end + 1))
         mvrs.append(
-            make_forbid_mvr(
-                hidden_states=hmm.hidden_states,
-                forbidden_state=str(rng.choice(hmm.hidden_states)),
+            make_constraint(
+                str(rng.choice(["forbid", "parity", "reach", "end_state"])),
+                hmm.hidden_states,
+                T,
                 time_range=[start, end],
             )
         )
@@ -388,10 +492,8 @@ def test_gap_operator_allocation_failure_names_the_cause(hmm, observed):
 @pytest.mark.parametrize("gap", [1500])
 def test_long_constrained_gap_does_not_underflow(gap):
     """
-    A constraint held across a long summed-out gap has exponentially small
-    satisfying mass. In probability space the gap operator flushes to subnormals
-    and the score silently saturates at ``log(smallest subnormal)``; in log space
-    float32 must still track float64.
+    Probability space would saturate silently at ``log(smallest subnormal)``;
+    in log space float32 must still track float64.
     """
     hmm = make_random_hmm(
         hidden_states=["A", "B", "C"], observed_states=["o0", "o1"], seed=7
@@ -422,7 +524,6 @@ def test_long_constrained_gap_does_not_underflow(gap):
 
 
 def test_gap_operator_propagates_non_allocation_errors(hmm, observed):
-    """A real bug must not be relabelled as a memory problem."""
     from conin.hidden_markov_model.inference import marginal_map_mvr as mod
 
     mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="A")

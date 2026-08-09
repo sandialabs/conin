@@ -31,12 +31,7 @@ ALPHABET = ["a", "b"]
 
 
 def eval_mvr(mvr, seq):
-    """
-    Evaluate a HomMVR/InhomMVR on a nonempty hidden-state sequence.
-
-    These tests primarily construct HomMVRs, but this helper also supports
-    InhomMVRs for convenience.
-    """
+    """Evaluate a HomMVR/InhomMVR on a nonempty hidden-state sequence."""
     if len(seq) == 0:
         raise ValueError("MVR evaluation helper expects a nonempty sequence.")
 

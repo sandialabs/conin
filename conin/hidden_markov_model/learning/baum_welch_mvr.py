@@ -37,21 +37,14 @@ from ..mvr_common import (
 
 
 def _normalized_exp(log_values):
-    """
-    Exponentiate log-weights, normalized to sum to ``1``. The total is always
-    finite: ``_forward_messages`` raises unless a complete feasible path exists.
-    """
+    """Exponentiate log-weights, normalized to sum to ``1``."""
     total = torch.logsumexp(log_values.reshape(-1), dim=0)
 
     return (log_values - total).exp()
 
 
 def _transition_posterior(ctx, log_alpha_prev, log_beta_tilde, t):
-    """
-    Posterior over ``(h_prev, h_curr)`` across ``t-1 -> t``, mediation summed out.
-    ``upd`` is deterministic, so ``m_curr`` is a function of ``m_prev`` and there
-    is no sum over it -- hence a gather rather than an augmented outer product.
-    """
+    """Posterior over ``(h_prev, h_curr)`` across ``t-1 -> t``, mediation summed out."""
     K = ctx["K"]
 
     # log_beta_tilde is [h_curr, m_curr]; dest is [h_curr, m_prev] -> m_curr.
@@ -68,12 +61,7 @@ def _transition_posterior(ctx, log_alpha_prev, log_beta_tilde, t):
 
 
 def _forward_backward(ctx, *, want_xi=False, want_augmented=False):
-    """
-    Constrained forward-backward, streaming the backward messages so only two
-    slices are live at a time. Returns
-    ``(gamma (T, K), trans_counts (K, K), loglik, xi, gamma_augmented)``, the
-    last two ``None`` unless asked for.
-    """
+    """Constrained forward-backward; returns gamma, counts, loglik, xi, gamma_aug."""
     K, T = ctx["K"], ctx["T"]
     dtype, device = ctx["dtype"], ctx["device"]
 
@@ -88,8 +76,7 @@ def _forward_backward(ctx, *, want_xi=False, want_augmented=False):
     xi_reversed = [] if want_xi else None
 
     def record(t, log_beta):
-        # gamma[t] normalizes to 1, so the arbitrary per-step rescalings of
-        # alpha and beta cancel here and never need to be tracked.
+        # gamma[t] normalizes to 1, so the alpha/beta rescalings cancel and go untracked.
         posterior = _normalized_exp(log_alpha[t] + log_beta)
 
         gamma[t] = posterior.sum(dim=1).to(ACCUM_DTYPE)
@@ -114,8 +101,7 @@ def _forward_backward(ctx, *, want_xi=False, want_augmented=False):
         if want_xi:
             xi_reversed.append(xi_t)
 
-        # Unlike the forward pass, an all -inf slice is not an error here: a
-        # state can simply have no feasible future.
+        # Not an error here, unlike the forward pass: a state may have no feasible future.
         shift = log_beta_prev.max()
         log_beta = log_beta_prev - shift if torch.isfinite(shift) else log_beta_prev
 
@@ -140,17 +126,13 @@ def _forward_backward(ctx, *, want_xi=False, want_augmented=False):
 
 
 def _e_step_counts(ctx):
-    """
-    Expected sufficient statistics for one sequence, as
-    ``(init_counts, trans_counts, emit_counts, loglik)``.
-    """
+    """Expected ``(init_counts, trans_counts, emit_counts, loglik)`` for one sequence."""
     K = ctx["K"]
     device = ctx["device"]
 
     gamma, trans_counts, loglik, _, _ = _forward_backward(ctx)
 
-    # Only observed times carry an emission statistic; an unobserved one still
-    # drives the chain and every MVR active there.
+    # Only observed times carry an emission statistic; the rest still drive the chain.
     num_observed = ctx["hmm"].num_observed_states
     emit_counts = torch.zeros((K, num_observed), dtype=ACCUM_DTYPE, device=device)
 
@@ -170,10 +152,7 @@ def _as_array(values):
 
 
 def _support_masks(hmm):
-    """
-    Binary masks of the entries an initial HMM puts positive mass on. Zeros are
-    permanent, so warn: an unlucky initialization looks like deliberate structure.
-    """
+    """Binary masks of the entries an initial HMM puts positive mass on."""
     masks = {
         "start": (_as_array(hmm.start_vec) > 0.0).astype(np.float64),
         "transition": (_as_array(hmm.transition_mat) > 0.0).astype(np.float64),
@@ -201,16 +180,10 @@ def _support_masks(hmm):
 
 
 def _normalize_on_support(counts, support, eps, fallback):
-    """
-    Normalize rows over their support, forcing off-support entries to zero. A row
-    that collects no mass -- an unreachable state emits and leaves nothing -- has
-    a flat objective, so it keeps its current value rather than going uniform.
-    """
+    """Normalize rows over their support; a row with no mass keeps its current value."""
     mat = counts * support
 
-    # Emptiness is a property of the counts, so it is decided before smoothing.
-    # Otherwise the pseudocount alone would carry the row and normalize it to
-    # uniform, which is exactly the outcome the fallback exists to avoid.
+    # Decided before smoothing, or the pseudocount alone would carry the row to uniform.
     empty = mat.sum(axis=1) <= 0
 
     if eps > 0:
@@ -247,10 +220,8 @@ def _m_step(hmm, counts, masks, pseudocount, update):
             emit_counts, masks["emission"], pseudocount, emission
         )
 
-    # Deliberately not load_model: that re-derives the hidden order from
-    # sorted(transition_probs) and the observed order from sorted(emission_probs),
-    # so a round trip can permute the internal indices and silently break the
-    # constraint alignment MVR_CHMM established.
+    # Deliberately not load_model: it re-derives the index order from sorted keys,
+    # which would break the constraint alignment MVR_CHMM established.
     hmm.start_vec = [float(x) for x in start]
     hmm.transition_mat = [[float(x) for x in row] for row in transition]
     hmm.emission_mat = [[float(x) for x in row] for row in emission]
@@ -290,9 +261,8 @@ def forward_backward_mvr_chmm(
         Number of time steps. Defaults to ``len(observed)`` for a dense list and
         is required for a map.
     dtype : torch.dtype, optional
-        Floating dtype for torch tensors. Defaults to ``float64``: unlike
-        Viterbi, this recursion carries constraint-satisfaction probabilities
-        whose spread grows with the horizon.
+        Floating dtype for torch tensors. Defaults to ``float64``, unlike
+        Viterbi: the spread within a message grows with the horizon.
     device : str or torch.device, optional
         Torch device.
     return_augmented : bool, optional
@@ -387,12 +357,10 @@ def baum_welch_mvr_chmm(
     hmm : HiddenMarkovModel
         Fitted model, with the label indexing of the input preserved.
     history : list[float]
-        Total log-likelihood at the **start** of each iteration, before that
-        iteration's update. So ``history[0]`` scores the model passed in. If EM
-        converged, no update followed the last entry and ``history[-1]`` scores
-        the returned model exactly; if it stopped at ``max_iter`` instead, one
-        further update was applied and the returned model is one step ahead of
-        ``history[-1]``.
+        Total log-likelihood at the **start** of each iteration, so ``history[0]``
+        scores the model passed in. On convergence ``history[-1]`` scores the
+        returned model exactly; if the loop hit ``max_iter`` instead, one further
+        update was applied and the model is a step ahead of ``history[-1]``.
     """
     unknown = set(update) - {"start", "transition", "emission"}
 
@@ -470,9 +438,7 @@ def baum_welch_mvr_chmm(
         if verbose:
             print(f"EM iter {iteration:3d}  loglik = {total_loglik:.10f}")
 
-        # Break before the M step. On this path the returned model is exactly
-        # the one whose likelihood is history[-1]; when the loop instead runs out
-        # of iterations, one more M step has been applied than history records.
+        # Break before the M step, so history[-1] scores exactly the model returned.
         if len(history) > 1 and abs(history[-1] - history[-2]) < tol:
             converged = True
             break
@@ -485,8 +451,7 @@ def baum_welch_mvr_chmm(
             update,
         )
 
-    # tol <= 0 is an explicit request for exactly max_iter iterations, so
-    # falling out of the loop is the intended outcome rather than a surprise.
+    # tol <= 0 asks for exactly max_iter iterations, so exhausting them is intended.
     if tol > 0 and not converged and len(history) > 1:
         warnings.warn(
             f"EM stopped at max_iter={max_iter} without reaching tol={tol}; the "
