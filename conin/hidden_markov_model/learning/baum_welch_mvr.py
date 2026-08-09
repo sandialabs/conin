@@ -25,44 +25,15 @@ from ..mvr_common import (
     _build_static_context,
     _build_sumprod_ctx,
     _dest_at,
-    _initial_sumprod_message,
+    _forward_messages,
     _model_parts,
     _resolve_horizon,
-    _sum_step,
     _sum_step_backward,
 )
 
 # ======================================================================
 # Forward-backward
 # ======================================================================
-
-
-def _forward_messages(ctx):
-    """
-    Log-space forward recursion, returning every message and the accumulated
-    shift. Messages are a list because the augmented shape varies with ``t``.
-    """
-    log_P = _initial_sumprod_message(ctx)
-
-    log_alpha = []
-    log_norm = torch.zeros((), dtype=ACCUM_DTYPE, device=ctx["device"])
-
-    for t in range(ctx["T"]):
-        if t:
-            log_P = _sum_step(ctx, log_P, t)
-
-        shift = log_P.max()
-
-        # Must run before the subtraction: -inf - -inf is NaN.
-        if not torch.isfinite(shift):
-            raise InvalidInputError(f"No feasible augmented path at time {t}.")
-
-        log_norm = log_norm + shift
-        log_P = log_P - shift
-
-        log_alpha.append(log_P[0])
-
-    return log_alpha, log_norm
 
 
 def _normalized_exp(log_values):
