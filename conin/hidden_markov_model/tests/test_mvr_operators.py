@@ -690,7 +690,11 @@ PREFIX_PROPAGATION = {
     "setdiff_first": (lambda cert, plain: mvr_setdiff([cert, plain]), True, True),
     "setdiff_second": (lambda cert, plain: mvr_setdiff([plain, cert]), False, False),
     "concatenate_both": (lambda cert, plain: mvr_concatenate([cert, cert]), True, True),
-    "concatenate_half": (lambda cert, plain: mvr_concatenate([cert, plain]), False, False),
+    "concatenate_half": (
+        lambda cert, plain: mvr_concatenate([cert, plain]),
+        False,
+        False,
+    ),
     "kfold_1": (lambda cert, plain: mvr_kfold_product(cert, 1), True, True),
     "kfold_3": (lambda cert, plain: mvr_kfold_product(cert, 3), True, True),
     "or": (

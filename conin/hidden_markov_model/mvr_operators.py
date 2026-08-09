@@ -45,6 +45,7 @@ def _combined_time_horizon(mvrs: list[MVR]) -> int | None:
 # If operating on a subsequence constraint (MVR with time_range),
 # please call this at the end to regenerate time_range.
 
+
 @mvr_operator_fn(arity=1)
 def mvr_timerange(
     mvrs: list[MVR],
