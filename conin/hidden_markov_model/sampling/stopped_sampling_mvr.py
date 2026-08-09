@@ -97,10 +97,9 @@ def stopped_sampling_torch_mvr_chmm(
     prefix_free = constraints[index]
 
     if not prefix_free.prefix:
-        # mvr_sattime sets the tag but, like every operator, drops these two.
+        # mvr_sattime sets the tag but, like every operator, drops the window.
         prefix_free = mvr_sattime(constraints[index])
         prefix_free._time_range = constraints[index]._time_range
-        prefix_free._name = constraints[index].name
 
     constraints = list(constraints)
     constraints[index] = prefix_free
