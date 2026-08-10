@@ -1,4 +1,12 @@
+import re
+
 from itertools import groupby, product
+from types import SimpleNamespace
+
+from conin.util import try_import
+
+with try_import() as greenery_available:
+    import greenery
 
 import numpy as np
 import pytest
@@ -18,6 +26,7 @@ from conin.hidden_markov_model.mvr_constraints import (
     mvr_holdingtime,
     mvr_jump,
     mvr_jumpcounts,
+    mvr_regex,
     mvr_visit_sequencelist,
     mvr_visit_state,
     mvr_visit_transition,
@@ -34,6 +43,10 @@ from conin.hidden_markov_model.mvr_operators import (
 ALPHABET = ["a", "b", "c"]
 NUMERIC_ALPHABET = [0, 1, 2, 3]
 MAX_LENGTH = 4
+
+skipif_no_greenery = pytest.mark.skipif(
+    not greenery_available, reason="greenery not installed"
+)
 
 
 # ---------------------------------------------------------------------
@@ -796,6 +809,87 @@ def test_withinbounds_warns_when_no_state_is_in_bounds(bounds):
 def test_withinbounds_rejects_invalid_input(hidden_states, bounds, time_horizon, match):
     with pytest.raises(InvalidInputError, match=match):
         mvr_withinbounds(make_hmm(hidden_states), bounds, time_horizon)
+
+
+# ---------------------------------------------------------------------
+# mvr_regex
+# ---------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "pattern,plain",
+    [
+        ("<a><b>*<c>", "ab*c"),
+        ("<a>|<b><c>", "a|bc"),
+        ("(<a>|<b>)+", "(a|b)+"),
+        ("<a>{2,3}", "a{2,3}"),
+        ("[^<a>]<c>", "[^a]c"),
+        ("[<a>-<b>]<c>", "[a-b]c"),
+        ("<a>.<c>", "a.c"),
+        ("(<a><b>)*<c>", "(ab)*c"),
+    ],
+)
+@skipif_no_greenery
+def test_regex_matches_python_re(pattern, plain):
+    mvr = mvr_regex(make_hmm(), pattern)
+
+    assert_matches(mvr, lambda seq: re.fullmatch(plain, "".join(seq)) is not None)
+
+
+@skipif_no_greenery
+def test_regex_translates_ambiguous_labels():
+    # One label is a prefix of another, and the quantifier digits are not labels.
+    hidden_states = [0, 1, 10]
+    mvr = mvr_regex(make_hmm(hidden_states), "(<10>|<1>){2,3}")
+
+    stand_in = {0: "x", 1: "y", 10: "z"}
+
+    assert_matches(
+        mvr,
+        lambda seq: re.fullmatch("(z|y){2,3}", "".join(stand_in[h] for h in seq))
+        is not None,
+        alphabet=hidden_states,
+    )
+
+
+@skipif_no_greenery
+def test_regex_mediation_space_is_minimal():
+    # Consumed an 'a', accepted, and the fail state.
+    mvr = mvr_regex(make_hmm(), "<a><b>*<c>")
+
+    assert len(mvr.mediation_states) == 3
+
+    assert mvr.prune() is mvr
+
+
+@skipif_no_greenery
+def test_regex_warns_when_no_sequence_matches():
+    with pytest.warns(UserWarning, match="no nonempty hidden sequence matches"):
+        mvr_regex(make_hmm(), "")
+
+
+@pytest.mark.parametrize(
+    "model,pattern,match",
+    [
+        (lambda: make_hmm(), "<z>", "not a hidden state"),
+        (lambda: make_hmm(), "<a", "unterminated"),
+        (lambda: make_hmm(), "<a>b", "not regex syntax here"),
+        # greenery reads each of these as a literal, so only these checks stop it.
+        (lambda: make_hmm(), "^<a>", "anchor"),
+        (lambda: make_hmm(), "<a>2", "not regex syntax here"),
+        (lambda: make_hmm(), "<a>-", "not regex syntax here"),
+        (lambda: make_hmm(), 5, "must be a string"),
+        (lambda: make_hmm(["a", "<b>"]), "<a>", "must not contain"),
+        # A model cannot sort mixed-type hidden states, so this needs a stub.
+        (lambda: SimpleNamespace(hidden_states=[0, "0"]), "<0>", "distinct string"),
+        # greenery requires the hyphen escaped even when it is leading.
+        (lambda: make_hmm(), "[-<a>]", "not a valid regular expression"),
+    ],
+)
+@skipif_no_greenery
+def test_regex_rejects_invalid_input(model, pattern, match):
+    with pytest.raises(InvalidInputError, match=match):
+        mvr_regex(model(), pattern)
 
 
 # ---------------------------------------------------------------------

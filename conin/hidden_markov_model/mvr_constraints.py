@@ -9,6 +9,11 @@ from typing import Any
 from conin.exceptions import InvalidInputError
 from conin.hidden_markov_model.mvr import HomMVR, InhomMVR
 from conin.hidden_markov_model.mvr_operators import mvr_already_satisfied, mvr_not_yet
+from conin.util import try_import
+
+with try_import() as greenery_available:
+    import greenery
+    from greenery.parse import NoMatch
 
 _COLLECTION_TYPES = (list, tuple, set, frozenset)
 
@@ -785,3 +790,156 @@ def mvr_withinbounds(
         upd=upd,
         evl=evl,
     )
+
+
+# ------------------------------------------------------------------
+# Regular Expressions
+# ------------------------------------------------------------------
+
+# A hidden state is written <label>; everything else is regex syntax.
+_REGEX_SYNTAX = set("()|*+?{}[].")
+_BOUND_SYNTAX = set("0123456789,")  # only inside {m,n}
+
+
+def _translate_pattern(pattern: str, char_of: dict[str, str]) -> str:
+    """
+    Rewrite each <label> to its assigned character, passing syntax through.
+    """
+    out = []
+    i = 0
+    in_class = False
+    in_bound = False
+
+    while i < len(pattern):
+        char = pattern[i]
+
+        if char == "<":
+            end = pattern.find(">", i)
+
+            if end < 0:
+                raise InvalidInputError(f"unterminated < at index {i} of pattern")
+
+            label = pattern[i + 1 : end]
+
+            if label not in char_of:
+                raise InvalidInputError(
+                    f"<{label}> is not a hidden state of hidden_markov_model"
+                )
+
+            out.append(char_of[label])
+            i = end + 1
+            continue
+
+        # greenery accepts a stray literal, so check each character where it sits.
+        allowed = (
+            char in _REGEX_SYNTAX
+            or (char == "^" and out and out[-1] == "[")
+            or (char == "-" and in_class)
+            or (char in _BOUND_SYNTAX and in_bound)
+        )
+
+        if not allowed and char in "^$":
+            raise InvalidInputError(
+                f"{char!r} at index {i} of pattern is an anchor, which is neither "
+                "supported nor needed: a pattern always matches the full sequence"
+            )
+
+        if not allowed:
+            raise InvalidInputError(
+                f"{char!r} at index {i} of pattern is not regex syntax here; write "
+                "every hidden state as <label>"
+            )
+
+        in_class = char == "[" or (in_class and char != "]")
+        in_bound = char == "{" or (in_bound and char != "}")
+
+        out.append(char)
+        i += 1
+
+    return "".join(out)
+
+
+def mvr_regex(
+    hidden_markov_model,
+    pattern: str,
+) -> HomMVR:
+    """
+    Regex to DFA/HomMVR: MVR evals true if the current path matches the regex.
+    
+    Hidden states are written <label> and everything else is regular-expression
+    syntax, so "<a><b>*" is one 'a' followed by any number of 'b'.
+
+    FLAG: Requires the greenery package. 
+    
+    Raises InvalidInputError on an unknown label, a stray literal, a regex greenery rejects, or a
+    hidden state whose name contains "<" or ">". Warns when nothing can match --
+    including a pattern accepting only the empty sequence, since an MVR always
+    consumes at least one hidden state.
+    """
+    hidden_states = _model_hidden_states(hidden_markov_model)
+
+    if not greenery_available:
+        raise ImportError(
+            "Missing import greenery, which is required to build an MVR from a "
+            "regular expression."
+        )
+
+    if not isinstance(pattern, str):
+        raise InvalidInputError("pattern must be a string")
+
+    labels = [str(h) for h in hidden_states]
+    delimiters = [label for label in labels if "<" in label or ">" in label]
+
+    if delimiters:
+        raise InvalidInputError(
+            "hidden states must not contain '<' or '>', which delimit a label in "
+            f"pattern: {sorted(delimiters)}"
+        )
+
+    if len(set(labels)) != len(labels):
+        raise InvalidInputError(
+            "hidden states must have distinct string forms, since a pattern names "
+            f"them as text: {sorted(labels)}"
+        )
+
+    # Private Use Area: never regex syntax, and ordered so <a>-<c> ranges work.
+    char_of = {label: chr(0xE000 + i) for i, label in enumerate(labels)}
+
+    try:
+        fsm = greenery.parse(_translate_pattern(pattern, char_of)).to_fsm().reduce()
+    except NoMatch as e:
+        raise InvalidInputError(f"pattern is not a valid regular expression: {e}")
+
+    # The alphabet partitions all of Unicode, so exactly one class accepts each.
+    symbol_of = {
+        h: next(c for c in fsm.alphabet if c.accepts(char_of[label]))
+        for h, label in zip(hidden_states, labels)
+    }
+
+    mediation_states = sorted(fsm.states)
+
+    ini = {h: fsm.map[fsm.initial][symbol_of[h]] for h in hidden_states}
+    upd = {
+        (m, h): fsm.map[m][symbol_of[h]]
+        for m in mediation_states
+        for h in hidden_states
+    }
+    evl = {m: m in fsm.finals for m in mediation_states}
+
+    # greenery's DFA also carries states reached only by unassigned characters.
+    mvr = HomMVR(
+        hidden_states=hidden_states,
+        mediation_states=mediation_states,
+        ini=ini,
+        upd=upd,
+        evl=evl,
+    ).prune()
+
+    if not any(mvr.evl.values()):
+        warnings.warn(
+            f"no nonempty hidden sequence matches pattern {pattern!r}, so "
+            "mvr_regex is constantly false here.",
+            UserWarning,
+        )
+
+    return mvr
