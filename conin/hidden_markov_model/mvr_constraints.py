@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import numbers
 import re
 import warnings
 
 from typing import Any
 
 from conin.exceptions import InvalidInputError
-from conin.hidden_markov_model.mvr import HomMVR
+from conin.hidden_markov_model.mvr import HomMVR, InhomMVR
 from conin.hidden_markov_model.mvr_operators import mvr_already_satisfied, mvr_not_yet
 
 _COLLECTION_TYPES = (list, tuple, set, frozenset)
@@ -645,4 +646,142 @@ def mvr_jumpcounts(
         f"invalid count condition {condition!r}; expected an exact count like '2', "
         "a range like '[1,3]' or '(1,3]', or an inequality like '<2', '<=2', '>2', "
         "'>=2'."
+    )
+
+
+# ------------------------------------------------------------------
+# Within Bounds
+# ------------------------------------------------------------------
+
+
+def _states_within_bounds(hidden_states, bounds, label: str) -> list[Any]:
+    """
+    The hidden states inside one [lower, upper] pair, inclusive.
+    """
+    if not isinstance(bounds, (list, tuple)) or len(bounds) != 2:
+        raise InvalidInputError(f"{label} must be a [lower, upper] list or tuple")
+
+    lower, upper = bounds
+
+    if any(not isinstance(v, numbers.Real) or isinstance(v, bool) for v in bounds):
+        raise InvalidInputError(f"{label} must hold two numbers")
+
+    if lower > upper:
+        raise InvalidInputError(
+            f"{label} must be in ascending order, got [{lower}, {upper}]"
+        )
+
+    within = [h for h in hidden_states if lower <= h <= upper]
+
+    if not within:
+        warnings.warn(
+            f"no hidden state lies within {label} [{lower}, {upper}], so "
+            "mvr_withinbounds is constantly false here.",
+            UserWarning,
+        )
+
+    return within
+
+
+def mvr_withinbounds(
+    hidden_markov_model,
+    bounds,
+    time_horizon: int = None,
+) -> HomMVR | InhomMVR:
+    """
+    MVR over numeric hidden states. Given a [lower, upper] pair, evaluates True
+    iff the current hidden state is within those inclusive bounds. Given a dict
+    of times to pairs, evaluates True iff the hidden state at every named time
+    so far is within that time's bounds; unnamed times are unconstrained.
+
+    The dict flavor returns an InhomMVR whose horizon defaults to the largest
+    named time and may be extended with "time_horizon". Raises if a hidden state
+    is not a real number or a pair is not ascending, and warns when a pair
+    admits no hidden state, which makes the MVR constantly false.
+    """
+    hidden_states = _model_hidden_states(hidden_markov_model)
+    # bool is an int subclass, so isinstance alone would admit True/False.
+    nonnumeric = [
+        h
+        for h in hidden_states
+        if not isinstance(h, numbers.Real) or isinstance(h, bool)
+    ]
+
+    if nonnumeric:
+        raise InvalidInputError(
+            "mvr_withinbounds requires numeric hidden states; hidden_markov_model "
+            f"has {sorted(nonnumeric, key=repr)}"
+        )
+
+    if not isinstance(bounds, dict):
+        if time_horizon is not None:
+            raise InvalidInputError(
+                "time_horizon applies only to the dict flavor of bounds"
+            )
+
+        return mvr_current_state(
+            hidden_markov_model,
+            _states_within_bounds(hidden_states, bounds, "bounds"),
+        )
+
+    if not bounds:
+        raise InvalidInputError("bounds must be nonempty")
+
+    for t in bounds:
+        if type(t) is not int:
+            raise InvalidInputError("bounds keys must be ints")
+
+        if t < 0:
+            raise InvalidInputError("bounds keys must be nonnegative")
+
+    within = {
+        t: set(_states_within_bounds(hidden_states, pair, f"bounds[{t}]"))
+        for t, pair in bounds.items()
+    }
+
+    last_time = max(within)
+
+    if time_horizon is None:
+        time_horizon = last_time
+    else:
+        if type(time_horizon) is not int:
+            raise InvalidInputError("time_horizon must be an int")
+
+        if time_horizon < last_time:
+            raise InvalidInputError(
+                f"time_horizon {time_horizon} is before the last bounds key {last_time}"
+            )
+
+    def ok_at(t, h):
+        return t not in within or h in within[t]
+
+    # The mediation state records whether every bound so far has been met.
+    mediation_states = []
+    can_fail = False
+
+    for t in range(time_horizon + 1):
+        if t in within and len(within[t]) < len(hidden_states):
+            can_fail = True
+
+        mediation_states.append([True, False] if can_fail else [True])
+
+    ini = {h: ok_at(0, h) for h in hidden_states}
+
+    upd = [
+        {
+            (m, h): bool(m and ok_at(t + 1, h))
+            for m in mediation_states[t]
+            for h in hidden_states
+        }
+        for t in range(time_horizon)
+    ]
+
+    evl = [{m: m for m in mediation_states[t]} for t in range(time_horizon + 1)]
+
+    return InhomMVR(
+        hidden_states=hidden_states,
+        mediation_states=mediation_states,
+        ini=ini,
+        upd=upd,
+        evl=evl,
     )

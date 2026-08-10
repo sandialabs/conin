@@ -21,6 +21,7 @@ from conin.hidden_markov_model.mvr_constraints import (
     mvr_visit_sequencelist,
     mvr_visit_state,
     mvr_visit_transition,
+    mvr_withinbounds,
 )
 
 from conin.hidden_markov_model.mvr_operators import (
@@ -31,6 +32,7 @@ from conin.hidden_markov_model.mvr_operators import (
 )
 
 ALPHABET = ["a", "b", "c"]
+NUMERIC_ALPHABET = [0, 1, 2, 3]
 MAX_LENGTH = 4
 
 
@@ -69,17 +71,29 @@ def make_hmm(hidden_states=ALPHABET, observed_states=("o1", "o2")):
 
 def eval_mvr(mvr, seq):
     """
-    Evaluate a HomMVR on a nonempty hidden-state sequence.
+    Evaluate an MVR on a nonempty hidden-state sequence.
     """
     if len(seq) == 0:
         raise ValueError("MVR evaluation helper expects a nonempty sequence.")
 
+    if isinstance(mvr, HomMVR):
+        state = mvr.ini[seq[0]]
+
+        for h in seq[1:]:
+            state = mvr.upd[(state, h)]
+
+        return mvr.evl[state]
+
+    # Inhomogeneous case: time_horizon + 1 slices bound the sequence length.
+    if len(seq) > mvr.time_horizon + 1:
+        raise ValueError("sequence length exceeds inhomogeneous MVR time horizon.")
+
     state = mvr.ini[seq[0]]
 
-    for h in seq[1:]:
-        state = mvr.upd[(state, h)]
+    for t, h in enumerate(seq[1:], start=0):
+        state = mvr.upd[t][(state, h)]
 
-    return mvr.evl[state]
+    return mvr.evl[len(seq) - 1][state]
 
 
 def all_sequences(max_length=MAX_LENGTH, alphabet=ALPHABET):
@@ -91,11 +105,11 @@ def all_sequences(max_length=MAX_LENGTH, alphabet=ALPHABET):
             yield list(seq)
 
 
-def assert_matches(mvr, reference, max_length=MAX_LENGTH):
+def assert_matches(mvr, reference, max_length=MAX_LENGTH, alphabet=ALPHABET):
     """
     Check an MVR against a reference predicate by brute force.
     """
-    for seq in all_sequences(max_length):
+    for seq in all_sequences(max_length, alphabet):
         assert eval_mvr(mvr, seq) is reference(seq), f"seq={seq!r}"
 
 
@@ -329,6 +343,7 @@ def test_jump_mediation_space_is_minimal():
         lambda hmm: mvr_current_sequencelist(hmm, [("a",)]),
         lambda hmm: mvr_jump(hmm),
         lambda hmm: mvr_jumpcounts(hmm, "2"),
+        lambda hmm: mvr_withinbounds(hmm, [0, 1]),
     ],
 )
 def test_primitives_reject_an_unusable_model(builder):
@@ -677,6 +692,110 @@ def test_jumpcounts_is_not_count_of_jump():
 
     assert eval_mvr(mvr_count(mvr_jump(hmm), "2"), seq) is False
     assert eval_mvr(mvr_count(mvr_jump(hmm), "1"), seq) is True
+
+
+# ---------------------------------------------------------------------
+# mvr_withinbounds
+# ---------------------------------------------------------------------
+
+
+def schedule_reference(seq, bounds):
+    """
+    True iff every named time within the sequence is inside its bounds.
+    """
+    return all(
+        lower <= seq[t] <= upper for t, (lower, upper) in bounds.items() if t < len(seq)
+    )
+
+
+@pytest.mark.parametrize(
+    "bounds",
+    [
+        [1, 2],
+        [0.5, 2.5],
+        (0, 3),
+        [-4, -1],
+    ],
+)
+@pytest.mark.filterwarnings("ignore:no hidden state lies within")
+def test_withinbounds_interval_matches_reference(bounds):
+    lower, upper = bounds
+    mvr = mvr_withinbounds(make_hmm(NUMERIC_ALPHABET), bounds)
+
+    assert_matches(
+        mvr,
+        lambda seq: lower <= seq[-1] <= upper,
+        alphabet=NUMERIC_ALPHABET,
+    )
+
+
+@pytest.mark.parametrize(
+    "bounds,time_horizon",
+    [
+        # A bound at t = 0, which the mediation state must carry from ini.
+        ({0: [1, 2]}, None),
+        # A gap: t = 1 is unconstrained between two constrained times.
+        ({0: [0, 2], 2: [2, 3]}, None),
+        # A named time that excludes nothing, so no fail state is ever needed.
+        ({1: [0, 3]}, None),
+        # A horizon past the last named time.
+        ({1: [2, 3]}, 3),
+        # A named time that excludes everything.
+        ({1: [5, 9]}, None),
+    ],
+)
+@pytest.mark.filterwarnings("ignore:no hidden state lies within")
+def test_withinbounds_schedule_matches_reference(bounds, time_horizon):
+    mvr = mvr_withinbounds(make_hmm(NUMERIC_ALPHABET), bounds, time_horizon)
+
+    assert_matches(
+        mvr,
+        lambda seq: schedule_reference(seq, bounds),
+        max_length=mvr.time_horizon + 1,
+        alphabet=NUMERIC_ALPHABET,
+    )
+
+
+def test_withinbounds_mediation_space_is_minimal():
+    # t = 0 excludes nothing, so a violation is first possible at t = 1.
+    mvr = mvr_withinbounds(
+        make_hmm(NUMERIC_ALPHABET), {0: [0, 3], 1: [1, 2]}, time_horizon=3
+    )
+
+    assert mvr.time_horizon == 3
+    assert mvr.mediation_states == [[True], [True, False], [True, False], [True, False]]
+
+    assert mvr.prune() is mvr
+
+
+@pytest.mark.parametrize("bounds", [[5, 9], {1: [5, 9]}])
+def test_withinbounds_warns_when_no_state_is_in_bounds(bounds):
+    with pytest.warns(UserWarning, match="no hidden state lies within"):
+        mvr_withinbounds(make_hmm(NUMERIC_ALPHABET), bounds)
+
+
+@pytest.mark.parametrize(
+    "hidden_states,bounds,time_horizon,match",
+    [
+        (ALPHABET, [0, 1], None, "numeric hidden states"),
+        # bool is an int subclass, so this is not a duplicate of the row above.
+        ([True, False], [0, 1], None, "numeric hidden states"),
+        (NUMERIC_ALPHABET, [2, 0], None, "ascending"),
+        (NUMERIC_ALPHABET, [0, 1, 2], None, r"\[lower, upper\]"),
+        (NUMERIC_ALPHABET, {0, 1}, None, r"\[lower, upper\]"),
+        (NUMERIC_ALPHABET, [0, "b"], None, "two numbers"),
+        (NUMERIC_ALPHABET, [0, 1], 3, "only to the dict flavor"),
+        (NUMERIC_ALPHABET, {}, None, "nonempty"),
+        (NUMERIC_ALPHABET, {-1: [0, 1]}, None, "keys must be nonnegative"),
+        (NUMERIC_ALPHABET, {"t": [0, 1]}, None, "keys must be ints"),
+        (NUMERIC_ALPHABET, {2: [0, 1]}, 1.0, "time_horizon must be an int"),
+        (NUMERIC_ALPHABET, {2: [0, 1]}, 1, "before the last bounds key"),
+        (NUMERIC_ALPHABET, {0: [2, 0]}, None, r"bounds\[0\]"),
+    ],
+)
+def test_withinbounds_rejects_invalid_input(hidden_states, bounds, time_horizon, match):
+    with pytest.raises(InvalidInputError, match=match):
+        mvr_withinbounds(make_hmm(hidden_states), bounds, time_horizon)
 
 
 # ---------------------------------------------------------------------
