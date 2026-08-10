@@ -1,14 +1,3 @@
-"""
-Marginal-MAP inference over the HMM x MVR product for a subset of times. The
-product chain is itself an HMM, and this is plain marginal MAP over it: the
-augmented state (hidden x mediation) is maximized at a user-defined list of
-times and every other time-step is marginalized out.
-NOTE: Marginalized times can still have emissions.
-
-Runs entirely in log space, including the sum-product eliminations; read the
-semiring notes in CLAUDE.md before changing that.
-"""
-
 from __future__ import annotations
 
 import math
@@ -175,18 +164,15 @@ def marginal_map_torch_mvr_chmm(
 ):
     """Marginal-MAP decoding of an MVR-augmented constrained HMM at chosen times.
 
-    The HMM x MVR product is itself an HMM, and this is plain marginal MAP over
-    it: the augmented state ``z = (x, m)`` is maximized at ``query_times`` and
-    summed out everywhere else, with each constraint enforced by conditioning on
-    ``evl(m) == True`` at the end of its window. The mediation half is maximized
-    too, so the returned hidden path is the projection of an augmented argmax.
-    Marginalized times still transition, still emit and still drive their MVRs;
-    they simply do not commit to a value.
+    Marginal-MAP inference over the augmented chain for a subset of times. The
+    augmented chain is itself an HMM, and this is plain marginal MAP over it: the
+    augmented state (hidden x mediation) is maximized at a user-defined list of
+    times and every other time-step is marginalized out. Then, projects just the
+    hidden part to return the marginal-MAP path in the original hidden space. Since
+    m_t is a deterministic function of h_{1:t}, this still returns the correct
+    marginal-MAP path.
 
-    Two answers this deliberately does not give. It is **not** Viterbi restricted
-    to ``query_times`` -- maximizing a marginal is not marginalizing a maximum.
-    And it is **not** ``argmax_h gamma[t]`` from ``forward_backward_mvr_chmm``,
-    which sums the mediation out because a marginal is a sum.
+    NOTE: Marginalized times can still have emissions.
 
     Parameters
     ----------

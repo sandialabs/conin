@@ -1,5 +1,5 @@
 """
-Satisfaction-probability inference over the HMM x MVR product. Computes the probability
+Satisfaction-probability inference over the augmented chain. Computes the probability
 that a designated target MVR is satisfied, conditioned on the observations and on every
 other constraint being satisfied.
 """
@@ -68,15 +68,18 @@ def sat_prob_torch_mvr_chmm(
 ):
     """Probability that a target MVR is satisfied.
 
-    Returns, normalized between the two branches::
-
-        w[True]  = P(observed, other constraints satisfied, target's evl holds at b)
-        w[False] = P(observed, other constraints satisfied, target's evl fails at b)
-
+    Computes the ``w`` array:
+    
+        w[True/False]  = P(observed, other constraints satisfied, target's evl is True/False at b)
+        
+    Then, normalizes ``w`` to return:
+    
+        ``probs``: P(evl is True/False | observed, other constraints satisfied)
+        
     where ``b`` ends the target's ``time_range`` and defaults to the last time
     step. Every constraint other than the target is enforced as usual.
 
-    That is **not** "satisfied at some time in ``[a, b]``". For that, pass
+    That is NOT "satisfied at some time in ``[a, b]``". For that, pass
     ``mvr_already_satisfied(target)``, whose accept state is absorbing.
 
     Parameters

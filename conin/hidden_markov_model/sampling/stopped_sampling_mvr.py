@@ -38,14 +38,13 @@ def stopped_sampling_torch_mvr_chmm(
 ):
     """Sample hidden-state prefixes that stop when a target MVR is first satisfied.
 
-    Draws a stopping time ``tau`` from the target's first-satisfaction-time
-    distribution, then draws the prefix from ``P(x[0..tau] | observed, all
-    constraints, target first accepts at tau)``. The conditioning uses the **whole**
+    Draws the satisfaction time ``tau`` of the ``target`` from its posterior distribution
+    using ``sat_time_mvr``, then samples a path from ``P(x[0..tau] | observed, all
+    constraints, target first accepts at tau)``. The conditioning uses the whole
     observation set and every constraint over the whole horizon, so an observation
-    later than ``tau`` still informs the sampled prefix. The target is made
-    prefix-free automatically, which is what makes ``tau`` the *first* satisfaction.
+    later than ``tau`` still informs the sampled path.
 
-    ``min_length`` bounds the length of the returned prefix from below.
+    ``min_length`` bounds the length of the sampled path(s) from below.
 
     Parameters
     ----------
@@ -77,7 +76,7 @@ def stopped_sampling_torch_mvr_chmm(
     Returns
     -------
     paths : list[list]
-        ``num_samples`` hidden-state prefixes in external labels, of varying length.
+        ``num_samples`` hidden-state paths in external labels, of varying length.
         ``len(paths[n]) - 1`` is the stopping time of sample ``n``.
     times : torch.Tensor, optional
         ``(num_samples,)`` sampled stopping times, returned when ``return_times``

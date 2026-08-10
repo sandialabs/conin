@@ -1,5 +1,5 @@
 """
-Forward-filtering backward-sampling over the HMM x MVR product. Draws hidden-state
+Forward-filtering backward-sampling over the augmented chain. Draws hidden-state
 paths from the posterior given the observations and the fact that the path satisfies
 every constraint.
 """

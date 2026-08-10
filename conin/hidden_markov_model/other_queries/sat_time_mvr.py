@@ -1,5 +1,5 @@
 """
-Satisfaction-time inference over the HMM x MVR product. Computes the distribution
+Satisfaction-time inference over the augmented chain. Computes the distribution
 over the time at which a designated target MVR **first** accepts, conditioned on the
 observations and on every other constraint being satisfied.
 """

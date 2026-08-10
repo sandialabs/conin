@@ -1,12 +1,10 @@
 """
 Baum-Welch / EM for an MVR-constrained hidden Markov model.
 
-The generative model is the **unconstrained** HMM; feasibility is an observed
+NOTE: The generative model is the unconstrained HMM! Feasibility is an observed
 fact about each realized hidden path. The complete-data likelihood is therefore
 ``P(x, y | theta) * 1[x feasible]`` Hence, maximizing ``E_q[log P(x, y | theta)]``
-is the ordinary exact, closed-form, monotone EM on
-
-    log P(y, constraints satisfied | theta)
+is the ordinary exact, closed-form, monotone EM on log P(y, constraints | theta)
 """
 
 from __future__ import annotations
@@ -243,7 +241,7 @@ def forward_backward_mvr_chmm(
     device="cpu",
     return_augmented=False,
 ):
-    """Constrained forward-backward over the HMM x MVR product.
+    """Constrained forward-backward on the augmented chain.
 
     Computes the posterior over hidden states given the observations **and** the
     fact that the hidden path satisfies every constraint.
