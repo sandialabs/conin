@@ -4,9 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name="conin"
-version="1.0"
-dependencies = ["pyomo", "munch", "numpy", "pytest", "black", "glpk", "pytest-cov"]
-readme = {file = "README.md", content-type = "text/plain"}
+version="1.1.1"
+dependencies = [
+    "munch",
+    "numpy",
+    "pandas",
+    "pyomo",
+    ]
+readme = {file = "README.md", content-type = "text/markdown"}
 description="Clio supports constrained analysis and learning for stochastic models with latent variables"
 classifiers=[
         "Intended Audience :: End Users/Desktop",
@@ -18,12 +23,41 @@ classifiers=[
         "Operating System :: Unix",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        #"Programming Language :: Python :: 3.7",
-        #"Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
         "Topic :: Scientific/Engineering :: Mathematics",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ]
 
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-cov",
+    ]
+pgmpy = ["pgmpy"]
+pyagrum = ["pyagrum"]
+pgmax = ["pgmax"]
+pomegranate = ["pomegranate"]
+pgm-all = ["pgmpy", "pyagrum", "pgmax", "pomegranate"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["conin*"]
+
+[tool.coverage.report]
+exclude_also = [
+  'if self.debug:',
+  'if debug:',
+  'raise AssertionError.*',
+  'raise NotImplementedError.*',
+  '@(abc.)?abstractmethod',
+  'if noisy:',
+  'if self.noisy:',
+  'pragma: no cover',
+  'pass',
+  'except Exception as e:',
+  'except BaseException:',
+  'except ImportError:',
+]

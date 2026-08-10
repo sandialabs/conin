@@ -1,0 +1,424 @@
+from collections import defaultdict
+import pprint
+import munch
+import pyomo.environ as pe
+from pyomo.common.timing import TicTocTimer
+
+from conin.config import default_mip_solver
+from conin.markov_network import ConstrainedDiscreteMarkovNetwork
+from conin.inference.mn.factor_repn import extract_factor_representation_, State
+
+from conin.util import try_import
+
+with try_import() as or_topas_available:
+    import or_topas.aos as aos
+
+
+"""
+Notes on this integer program:
+
+The equations for Example 6 in Obbens appear to have an error.
+Specifically, the constants associate with c4 are missing.
+
+The likelihood model needs to reference calX_c not X_c
+
+Need to define calX_r and calX_i
+
+Why use k_i?  Use r instead.
+"""
+
+"""
+Notes on the size of this integer program:
+
+Suppose we have N variables with at most k values, and M factors with at
+most l variables in each configuration.  I agree that the maximum number
+of variables is Nk + Mk^l.  But it might be more intuitive to characterize
+the number of variables w.r.t. the maximum number of configurations, c.
+This would give a maximum number of variables as Nk + Mc.  Clearly, c <=
+k^l, but in practice models may be more sparse and thus the original
+complexity analysis would be too pessimistic.
+
+Similarly, the number of constraints in c4 is O(Mc), so the total number
+of constraints is O(N + M + Mcl + Mc) = O(N + Mcl).
+"""
+
+
+class VarWrapper(dict):
+    def __init__(self, *arg, **kw):
+        super(VarWrapper, self).__init__(*arg, **kw)
+
+    def pprint(self):  # pragma:nocover
+        pprint.pprint(self)
+
+    def __call__(self, *args):
+        if len(args) == 2:
+            r, s = args
+        elif len(args) == 3:
+            r, i, s = args
+            r = (r, i)
+        else:
+            raise ValueError("There must be either 2 or 3 arguments")
+
+        if type(s) is not State:
+            s = State(s)
+        return dict.__getitem__(self, (r, s))
+
+
+def create_pyomo_map_query_model_MN(
+    *,
+    pgm,
+    variables=None,
+    evidence=None,
+    var_index_map=None,
+    timing=False,
+    **options,
+):
+    """Build a inference model for MAP queries.
+
+    Parameters
+    ----------
+    pgm : DiscreteMarkovNetwork or ConstrainedDiscreteMarkovNetwork
+        The graphical model that is used to construct the Pyomo model.
+    variables : Iterable, optional
+        Nodes for which the MAP configuration is requested.
+    evidence : dict, optional
+        Observed states keyed by node.
+    timing : bool, optional
+        If ``True``, return inference statistics along with the MAP result.
+    var_index_map : dict, optional
+        A dictionary of that is used construct mapped varibles
+    **options
+        Additional keyword arguments forwarded to the inference backend.
+
+    Returns
+    -------
+    ConcreteModel
+        The pyomo optimization model that supports inference with MAP queries.
+    """
+
+    if timing:  # pragma:nocover
+        timer = TicTocTimer()
+        timer.tic("create_map_query_pyomo_model_MN - START")
+    pgm_ = pgm.pgm if isinstance(pgm, ConstrainedDiscreteMarkovNetwork) else pgm
+
+    if variables:  # pragma:nocover
+        raise RuntimeError("VariableElimination is not supported for CONIN models")
+
+    states = pgm_.states
+    factors = pgm_.factors
+
+    if timing:  # pragma:nocover
+        timer.toc("Setup states and factors")
+
+    S, J, v, w = extract_factor_representation_(states, factors, var_index_map)
+    if timing:  # pragma:nocover
+        timer.toc("Created factor repn")
+
+    model = create_MN_pyomo_map_query_model_from_factorial_repn(
+        S=S,
+        J=J,
+        v=v,
+        w=w,
+        var_index_map=var_index_map,
+        variables=variables,
+        timing=timing,
+    )
+
+    if evidence:
+        for k, v in evidence.items():
+            model.V(k, State(v)).fix(1)
+
+    if isinstance(pgm, ConstrainedDiscreteMarkovNetwork) and pgm.constraints:
+        data = munch.Munch(variables=variables, evidence=evidence)
+        for func in pgm.constraints:
+            model = func(model, data)
+
+    if timing:  # pragma:nocover
+        timer.toc("create_pyomo_map_query_model_MN - STOP")
+    return model
+
+
+def create_MN_pyomo_map_query_model_from_factorial_repn(
+    *,
+    S=None,
+    J=None,
+    v=None,
+    w=None,
+    var_index_map=None,
+    variables=None,
+    timing=False,
+    tuple_repn=True,
+):
+    #
+    # S[r]: the (finite) set of possible values of variable X_r
+    #           Variable values s can be integers or strings
+    #
+    # J[i]: the (finite) set of possible configurations (rows) of factor i
+    #           J[i] contains the configuration ids for factor i
+    #
+    # v[i,j,r]: the value of variable r in row j of factor i
+    #           Note that v[i,j,r] \in S[r]
+    #           Note that j \in J[i]
+    #
+    # w[i,j]: the log-probability of factor i in configuration j
+    #           Note that j \in J[i]
+    #
+    # var_index_map[hr]: a dictionary that maps hashable value hr to variable name X_r
+    #
+    if timing:  # pragma:nocover
+        timer = TicTocTimer()
+        timer.tic("create_MN_map_query_model_from_factorial - START")
+    R = list(S.keys())
+    RS = [(r, s) for r, values in S.items() for s in values]
+
+    J_keys = list(J.keys())
+    # IJ = [(i, j) for i, values in J.items() for j in values]
+    IJ = sorted(w.keys())
+    IJset = set(w.keys())
+
+    if tuple_repn:
+        IRS = defaultdict(set)
+        for i, j, r in v:
+            if not (i, j) in IJset:
+                continue
+            IRS[i, r, v[i, j, r]].add(j)
+    else:  # pragma:nocover
+        v = {(i, j): [] for i, j in IJ}
+        for i, j, r in v:
+            v[i, j].append(r)
+        IJR = list(v.keys())
+
+    # TODO: Figure out how to marginalize everything except the specified
+    #           variables
+
+    # TODO: consistency checks on inputs
+    #   v[i,j,r] in S[r]
+    #   {(i,j) in w} == IJ
+    if timing:  # pragma:nocover
+        timer.toc("DATA")
+
+    #
+    # Integer programming formulation
+    #
+    model = pe.ConcreteModel()
+
+    # x[r,s] is 1 iff variable X_r = s
+    model.x = pe.Var(RS, within=pe.Binary)
+    # y[i,j] is 1 iff factor i is in configuration (row) j
+    model.y = pe.Var(IJ, within=pe.Binary)
+
+    if var_index_map is None:
+        model.V = VarWrapper({rs: model.x[rs] for rs in RS})
+    else:
+        model.V = VarWrapper(
+            {
+                (r, s): model.x[index, s]
+                for r, index in var_index_map.items()
+                for s in S.get(index, [])
+            }
+        )
+
+    if timing:  # pragma:nocover
+        timer.toc("VARIABLES")
+
+    # Each variable X_r only assumes one value
+    def c1_(M, r):
+        return sum(M.x[r, s] for s in S[r]) == 1
+
+    model.c1 = pe.Constraint(R, rule=c1_)
+
+    if timing:  # pragma:nocover
+        timer.toc("c1")
+
+    # Each factor i can only be in one configration for the joint distribution
+    def c2_(M, i):
+        return sum(M.y[i, j] for j in J[i] if (i, j) in IJset) == 1
+
+    model.c2 = pe.Constraint(J_keys, rule=c2_)
+
+    if timing:  # pragma:nocover
+        timer.toc("c2")
+
+    if tuple_repn:
+
+        def c5_(M, i, r, s):
+            return sum(M.y[i, j] for j in IRS[i, r, s]) == M.x[r, s]
+
+        model.c5 = pe.Constraint(sorted(IRS.keys()), rule=c5_)
+
+        if timing:  # pragma:nocover
+            timer.toc("c5")
+
+    else:  # pragma:nocover
+        # Factor i cannot assume configuration j unless its corresponding
+        # variables are set to the correct values
+        def c3_(M, i, j, r):
+            return M.y[i, j] <= M.x[r, v[i, j, r]]
+
+        model.c3 = pe.Constraint(IJR, rule=c3_)
+
+        if timing:  # pragma:nocover
+            timer.toc("c3")
+
+        # If factor i is not in configuration j, then at least one of its
+        # corresponding variables is not set to the values for configuration j
+        def c4_(M, i, j):
+            return sum(M.x[r, v[i, j, r]] for r in model.V.get((i, j), [])) <= M.y[
+                i, j
+            ] + (len(model.V.get((i, j), [])) - 1)
+
+        model.c4 = pe.Constraint(IJ, rule=c4_)
+
+        if timing:  # pragma:nocover
+            timer.toc("c4")
+
+    # Maximize the sum of log-values of all posible factors and configurations
+    model.o = pe.Objective(
+        expr=sum(w[i, j] * model.y[i, j] for i, j in IJ), sense=pe.maximize
+    )
+
+    if timing:  # pragma:nocover
+        timer.toc("create_MN_map_query_model_from_factorial - STOP")
+
+    return model
+
+
+def solve_pyomo_map_query_model(
+    model,
+    *,
+    solver=default_mip_solver,
+    tee=False,
+    solution_with_fixed=False,
+    solution_with_evidence=False,
+    timing=False,
+    solver_options=None,
+    evidence=None,
+):
+    if timing:  # pragma:nocover
+        timer = TicTocTimer()
+        timer.tic("optimize_map_query_model - START")
+
+    if solver == "or_topas":
+        if not or_topas_available:  # pragma:nocover
+            raise RuntimeError("or_topas not installed")
+
+        if solver_options is None:
+            solver_options = dict()
+        topas_method = solver_options.pop("topas_method", "balas")
+        if timing:  # pragma:nocover
+            timer.toc("Initialize solver")
+
+        solver_timer = TicTocTimer()
+        solver_timer.tic(None)
+        if topas_method == "balas":
+            aos_pm = aos.enumerate_binary_solutions(model, **solver_options)
+        elif topas_method == "gurobi_solution_pool":
+            aos_pm = aos.gurobi_generate_solutions(model, tee=tee, **solver_options)
+        else:  # pragma:nocover
+            raise RuntimeError(f"Asked for {topas_method=}, which is not supported")
+        solvetime = solver_timer.toc(None)
+        if timing:  # pragma:nocover
+            timer.toc("Completed optimization")
+
+        assert len(aos_pm.solutions) > 0, "No solutions found by 'or_topas' solver"
+        solutions = [
+            parse_aos_solution_pyomo_map_query(model, aos_solution, solution_with_fixed)
+            for aos_solution in aos_pm.solutions
+        ]
+        soln = solutions[0]
+        termination_condition = "ok"
+    else:
+        opt = pe.SolverFactory(solver)
+        if solver_options:
+            opt.options = solver_options
+        if timing:  # pragma:nocover
+            timer.toc("Initialize solver")
+
+        solver_timer = TicTocTimer()
+        solver_timer.tic(None)
+        res = opt.solve(model, tee=tee)
+        solvetime = solver_timer.toc(None)
+        if timing:  # pragma:nocover
+            timer.toc("Completed optimization")
+
+        pe.assert_optimal_termination(res)
+        soln = parse_model_solution_pyomo_map_query(model, solution_with_fixed)
+        solutions = [soln]
+        termination_condition = "ok"
+
+    if evidence and solution_with_evidence and not solution_with_fixed:
+        for soln in solutions:
+            for k, v in evidence.items():
+                soln.states[k] = v
+
+    if timing:  # pragma:nocover
+        timer.toc("optimize_map_query_model - STOP")
+    return munch.Munch(
+        solution=soln,
+        solutions=solutions,
+        termination_condition=termination_condition,
+        solvetime=solvetime,
+    )
+
+
+def parse_model_solution_pyomo_map_query(model, solution_with_fixed):
+    var = {}
+    variables = set()
+    fixed_variables = set()
+    for r, s in model.V:
+        variables.add(r)
+        if model.V(r, s).is_fixed():
+            fixed_variables.add(r)
+            if solution_with_fixed and pe.value(model.V(r, s)) > 0.5:
+                var[r] = s.value
+        elif pe.value(model.V(r, s)) > 0.5:
+            var[r] = s.value
+    assert variables == set(var.keys()).union(
+        fixed_variables
+    ), "Some variables do not have values."
+
+    soln = munch.Munch(states=var, log_factor_sum=pe.value(model.o))
+    return soln
+
+
+def parse_aos_solution_pyomo_map_query(model, aos_solution, solution_with_fixed):
+    var = {}
+    variables = set()
+    fixed_variables = set()
+    for r, s in model.V:
+        variables.add(r)
+        aos_var_X_r_s = aos_solution.variable(model.V(r, s).name)
+        if aos_var_X_r_s.fixed:
+            fixed_variables.add(r)
+            if solution_with_fixed and aos_var_X_r_s.value > 0.5:
+                # N.B. this works the same between parse_aos and parse_model
+                #     because r and s are parameters not variables
+                var[r] = s.value
+        elif aos_var_X_r_s.value > 0.5:
+            # N.B. this works the same between parse_aos and parse_model
+            #     because r and s are parameters not variables
+            var[r] = s.value
+    assert variables == set(var.keys()).union(
+        fixed_variables
+    ), "Some variables do not have values."
+
+    obj_list = aos_solution._objectives
+    assert len(obj_list) > 0, "Solution in parse_aos_solution has empty objective list"
+    soln = munch.Munch(states=var, log_factor_sum=obj_list[0].value)
+    return soln
+
+
+def inference_pyomo_map_query_MN(
+    *,
+    pgm,
+    variables=None,
+    evidence=None,
+    timing=False,
+    **options,
+):
+    model = create_pyomo_map_query_model_MN(
+        pgm=pgm, variables=variables, evidence=evidence, timing=timing, **options
+    )
+    return solve_pyomo_map_query_model(
+        model, timing=timing, evidence=evidence, **options
+    )

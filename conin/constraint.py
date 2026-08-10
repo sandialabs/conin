@@ -1,16 +1,22 @@
+import inspect
 from conin.exceptions import InvalidInputError
 
-
-# One could also create an inheirted class for additional functionality
+# One could also create an inherited class for additional functionality
 # TODO think about partial_func semantics
 
 
-class Constraint:
+class OracleConstraint:
+
     def __init__(
-        self, *, func=None, name=None, partial_func=None, same_partial_as_func=None
+        self,
+        *,
+        func=None,
+        name=None,
+        partial_func=None,
+        same_partial_as_func=None,
     ):
         """
-        Initialize a Constraint object.
+        Initialize a OracleConstraint object.
 
         Parameters:
             func (callable, optional): The constraint function to be applied.
@@ -33,12 +39,10 @@ class Constraint:
         # If no name is provided, use the function's name
         if name is not None:
             self.name = name
-
         elif func is not None:
             self.name = func.__name__
-
         else:
-            self.name = "Unnamed constraint."  # Could also be none
+            self.name = "Unnamed constraint"  # Could also be none
 
     def __call__(self, seq):
         """
@@ -58,3 +62,91 @@ class Constraint:
                 f"In constraint {self.name}, the actual constraint function is not defined."
             )
         return self.func(seq)
+
+
+def oracle_constraint_fn(*, name=None, same_partial_as_func=None):
+    """
+    Decorator factory that takes the 'name' and returns a decorator function.
+    """
+
+    def decorator(func):
+        """
+        The actual decorator that wraps the user constraint function in a OracleConstraint class.
+        """
+        return OracleConstraint(
+            func=func, name=name, same_partial_as_func=same_partial_as_func
+        )
+
+    return decorator
+
+
+class PyomoConstraint:
+
+    def __init__(self, func, name=None):
+        self.func = func
+        self.num_args = len(inspect.signature(self.func).parameters)
+        if self.num_args > 2:
+            raise ValueError("Pyomo constraint defined with more than 2 arguments")
+
+        # If no name is provided, use the function's name
+        if name is not None:
+            self.name = name
+        else:
+            self.name = func.__name__
+
+    def __call__(self, model, data):
+        if self.num_args == 1:
+            model_ = self.func(model)
+        else:
+            model_ = self.func(model, data)
+        return model if model_ is None else model_
+
+
+def pyomo_constraint_fn(*, name=None):
+    """
+    Decorator factory that takes the 'name' and returns a decorator function.
+    """
+
+    def decorator(func):
+        """
+        The actual decorator that wraps the user constraint function in a PyomoConstraint class.
+        """
+        return PyomoConstraint(func=func, name=name)
+
+    return decorator
+
+
+class Toulbar2Constraint:
+
+    def __init__(self, func, name=None):
+        self.func = func
+        self.num_args = len(inspect.signature(self.func).parameters)
+        if self.num_args > 2:
+            raise ValueError("Toulbar2 constraint defined with more than 2 arguments")
+
+        # If no name is provided, use the function's name
+        if name is not None:
+            self.name = name
+        else:
+            self.name = func.__name__
+
+    def __call__(self, model, data):
+        if self.num_args == 1:
+            model_ = self.func(model)
+        else:
+            model_ = self.func(model, data)
+        return model if model_ is None else model_
+
+
+def toulbar2_constraint_fn(*, name=None):
+    """
+    Decorator factory that takes the 'name' and returns a decorator function.
+    """
+
+    def decorator(func):
+        """
+        The actual decorator that wraps the user constraint function in a Toulbar2Constraint class.
+        """
+        return Toulbar2Constraint(func=func, name=name)
+
+    return decorator

@@ -1,0 +1,14 @@
+from .OptimizationInference import (
+    IntegerProgrammingInference,
+    DPGM_IntegerProgrammingInference,
+)
+from .ViterbiInference import ViterbiInference
+from .AStarInference import AStarInference
+from .CFNInference import (
+    CFNInference,
+    DPGM_CFNInference,
+)
+
+# import conin.inference.markov_network
+# import conin.inference.bayesian_network
+# import conin.inference.dynamic_bayesian_network

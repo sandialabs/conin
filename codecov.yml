@@ -1,0 +1,7 @@
+coverage:
+  status:
+    patch: false # Doesn't throw an error if you have less coverage than you started with
+    project:
+      default:
+        # This setting enforces that your total (absolute) coverage must be at least 80%.
+        target: "80%"

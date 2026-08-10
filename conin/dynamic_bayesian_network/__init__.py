@@ -1,2 +1,5 @@
-from .inference import create_DBN_map_query_model
-from conin.markov_network import optimize_map_query_model
+from .model import (
+    DynamicDiscreteBayesianNetwork,
+    ConstrainedDynamicDiscreteBayesianNetwork,
+)
+from .dbn_to_bn import create_bn_from_dbn
