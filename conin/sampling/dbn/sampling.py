@@ -2,7 +2,7 @@ from conin.util import Util
 from conin.dynamic_bayesian_network.expr import ExpressionNode
 
 
-class Sampler:
+class DBNSampler:
     '''
     Class to handle sampling functions for the DBN G
     '''
