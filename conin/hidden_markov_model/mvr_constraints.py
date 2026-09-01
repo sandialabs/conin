@@ -865,12 +865,12 @@ def mvr_regex(
 ) -> HomMVR:
     """
     Regex to DFA/HomMVR: MVR evals true if the current path matches the regex.
-    
+
     Hidden states are written <label> and everything else is regular-expression
     syntax, so "<a><b>*" is one 'a' followed by any number of 'b'.
 
-    FLAG: Requires the greenery package. 
-    
+    FLAG: Requires the greenery package.
+
     Raises InvalidInputError on an unknown label, a stray literal, a regex greenery rejects, or a
     hidden state whose name contains "<" or ">". Warns when nothing can match --
     including a pattern accepting only the empty sequence, since an MVR always
