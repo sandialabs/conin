@@ -72,13 +72,6 @@ class BaseMVR:
 
     @property
     def prefix(self):
-        """Return whether the MVR is marked as prefix-free.
-
-        Returns
-        -------
-        bool
-            Prefix-free tag for the representation.
-        """
         return self._prefix
 
     @property
@@ -91,25 +84,12 @@ class BaseMVR:
 
     @property
     def repn(self):
-        """Return the numeric array representation of the MVR.
-
-        Returns
-        -------
-        MVR_MatVecRepn
-            Integer-indexed array representation of the MVR.
-        """
         if self._repn is None:
             self.initialize()
         return self._repn
 
     def initialize(self):
-        """Convert the MVR into an integer-indexed NumPy array representation.
-
-        Returns
-        -------
-        MVR_MatVecRepn
-            Integer-indexed array representation of the MVR.
-        """
+        """Convert the MVR into an integer-indexed NumPy array representation."""
         if getattr(self, "_repn", None) is not None:
             return self._repn
 
@@ -127,6 +107,10 @@ class BaseMVR:
         raise NotImplementedError(
             "_build_array_repn must be implemented by subclasses."
         )
+
+    def prune(self):
+        """Return an equivalent MVR with unreachable mediation states removed."""
+        raise NotImplementedError("prune must be implemented by subclasses.")
 
 
 class HomMVR(BaseMVR):
@@ -194,15 +178,45 @@ class HomMVR(BaseMVR):
         # Build repn
         self.initialize()
 
-    def _build_array_repn(self):
-        """Build integer-indexed NumPy arrays for a homogeneous MVR.
+    def prune(self):
+        reachable = set(self.ini.values())
+        frontier = list(reachable)
 
-        Returns
-        -------
-        tuple
-            Tuple ``(ini_array, upd_array, evl_array)`` describing the homogeneous
-            MVR.
-        """
+        while frontier:
+            m_prev = frontier.pop()
+
+            for h in self.hidden_states:
+                m_curr = self.upd[(m_prev, h)]
+
+                if m_curr not in reachable:
+                    reachable.add(m_curr)
+                    frontier.append(m_curr)
+
+        if len(reachable) == len(self.mediation_states):
+            return self
+
+        mediation_states = [m for m in self.mediation_states if m in reachable]
+
+        pruned = HomMVR(
+            hidden_states=list(self.hidden_states),
+            mediation_states=mediation_states,
+            ini=dict(self.ini),
+            upd={
+                (m, h): self.upd[(m, h)]
+                for m in mediation_states
+                for h in self.hidden_states
+            },
+            evl={m: self.evl[m] for m in mediation_states},
+            time_range=self._time_range,
+            name=self._name,
+        )
+
+        pruned._prefix = self._prefix
+
+        return pruned
+
+    def _build_array_repn(self):
+        """Build integer-indexed NumPy arrays for a homogeneous MVR."""
         hidden_to_internal = {h: i for i, h in enumerate(self.hidden_states)}
         mediation_to_internal = {m: i for i, m in enumerate(self.mediation_states)}
 
@@ -343,18 +357,51 @@ class InhomMVR(BaseMVR):
         # Build repn
         self.initialize()
 
-    def _build_array_repn(self):
-        """Build integer-indexed NumPy arrays for an inhomogeneous MVR.
+    def prune(self):
+        reachable = [set(self.ini.values())]
 
-        Returns
-        -------
-        ini_array : np.ndarray
-            Array of shape ``(H, M_0)``.
-        upd_array : list[np.ndarray]
-            ``upd_array[t]`` has shape ``(H, M_{t+1}, M_t)``.
-        evl_array : list[np.ndarray]
-            ``evl_array[t]`` has shape ``(M_t,)``.
-        """
+        for t in range(self.time_horizon):
+            reachable.append(
+                {self.upd[t][(m, h)] for m in reachable[t] for h in self.hidden_states}
+            )
+
+        if all(
+            len(reachable_t) == len(m_states_t)
+            for reachable_t, m_states_t in zip(reachable, self.mediation_states)
+        ):
+            return self
+
+        mediation_states = [
+            [m for m in m_states_t if m in reachable_t]
+            for m_states_t, reachable_t in zip(self.mediation_states, reachable)
+        ]
+
+        pruned = InhomMVR(
+            hidden_states=list(self.hidden_states),
+            mediation_states=mediation_states,
+            ini=dict(self.ini),
+            upd=[
+                {
+                    (m, h): self.upd[t][(m, h)]
+                    for m in mediation_states[t]
+                    for h in self.hidden_states
+                }
+                for t in range(self.time_horizon)
+            ],
+            evl=[
+                {m: self.evl[t][m] for m in mediation_states[t]}
+                for t in range(self.time_horizon + 1)
+            ],
+            time_range=self._time_range,
+            name=self._name,
+        )
+
+        pruned._prefix = self._prefix
+
+        return pruned
+
+    def _build_array_repn(self):
+        """Build integer-indexed NumPy arrays for an inhomogeneous MVR."""
         hidden_to_internal = {h: i for i, h in enumerate(self.hidden_states)}
 
         mediation_to_internal = [
@@ -540,13 +587,6 @@ class MVR_MatVecRepn:
         self.evl_array = evl_array
 
     def check_dimensions(self):
-        """Validate that the initialization, update, and evaluation arrays are compatible.
-
-        Raises
-        ------
-        InvalidInputError
-            If the supplied arrays are inconsistent with each other.
-        """
         if isinstance(self.evl_array, list) != isinstance(self.upd_array, list):
             raise InvalidInputError(
                 "evl_array and upd_array must either both be lists or both be arrays."
@@ -614,7 +654,6 @@ class MVR_MatVecRepn:
                 )
 
     def load_dimensions(self):
-        """Update cached dimension metadata for the numeric MVR representation."""
         self.num_hidden_states = self.ini_array.shape[0]
         self.hidden_states = list(range(self.num_hidden_states))
 

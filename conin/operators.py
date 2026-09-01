@@ -92,7 +92,9 @@ class MVROperator(OperatorFunctor):
                 f"The output of operator {self.name} is not an MVR object."
             )
 
-        return mvr
+        # Minimize here rather than in each operator body: product and subset
+        # constructions leave most states unreachable, and cost is K * prod(M_i).
+        return mvr.prune()
 
 
 def mvr_operator_fn(*, name=None, arity=None):
