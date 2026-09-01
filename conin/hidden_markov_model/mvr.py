@@ -485,9 +485,24 @@ class MVR_MatVecRepn:
             self.check_dimensions()
 
         self.load_dimensions()
+        self.load_index_maps()
+
+    def load_index_maps(self):
+        """Cache the deterministic successor maps implied by ``ini`` and ``upd``.
+
+        - ``ini_idx[h]`` is the mediation state entered when the MVR is started
+          on hidden state ``h``;
+        - ``next_idx[h_curr, m_prev]`` is the mediation state reached from
+          ``m_prev`` on hidden state ``h_curr``.
+        """
+        self.ini_idx = self.ini_array.argmax(axis=1)
+
+        if isinstance(self.upd_array, list):
+            self.next_idx = [upd_t.argmax(axis=1) for upd_t in self.upd_array]
+        else:
+            self.next_idx = self.upd_array.argmax(axis=1)
 
     def load_ini_array(self, ini_array, check_errors=True):
-        """Load the MVR initialization array."""
         ini_array = np.asarray(ini_array)
 
         if check_errors:
@@ -507,7 +522,10 @@ class MVR_MatVecRepn:
         self.ini_array = ini_array
 
     def load_upd_array(self, upd_array, check_errors=True):
-        """Load the MVR update array or arrays."""
+        """
+        check_errors = False only when permuting mediation states to match
+        that of HMM, called by _align_hidden_states in MVR_CHMM.
+        """
         if isinstance(upd_array, list):
             upd_array = [np.asarray(arr) for arr in upd_array]
         else:
@@ -542,7 +560,6 @@ class MVR_MatVecRepn:
         self.upd_array = upd_array
 
     def load_evl_array(self, evl_array, check_errors=True):
-        """Load the MVR evaluation array or arrays."""
         if isinstance(evl_array, list):
             evl_array = [np.asarray(arr) for arr in evl_array]
         else:
