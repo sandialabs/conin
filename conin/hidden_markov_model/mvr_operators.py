@@ -255,6 +255,8 @@ def mvr_or(
     The resulting MVR evaluates true exactly when at least one input MVR
     evaluates true.
     """
+    # Deliberately does not propagate prefix, unlike mvr_and: union does not
+    # preserve prefix-freeness. {a} and {aa} are each prefix-free, {a, aa} is not.
     return _boolean_combine_mvrs(
         mvrs,
         any,
@@ -938,6 +940,8 @@ def mvr_kleene_closure_prefix(
     This recognizes approximately
 
         sattime(L(mvr))^+
+
+    Note: the Kleene closure of a prefix language is NOT prefix-free.
     """
     mvr = mvrs[0]
 
