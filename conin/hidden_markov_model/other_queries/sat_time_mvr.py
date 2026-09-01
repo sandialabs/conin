@@ -92,6 +92,7 @@ def _detach_target(ctx, target):
 
     return info["a"], info["b"]
 
+
 def _split_on_target(ctx, log_P, t, target):
     """Split a forward message into ``(accepting at t, not accepting at t)``."""
     dims = ctx["dims_by_time"][t]

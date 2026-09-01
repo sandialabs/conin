@@ -90,9 +90,7 @@ def assert_matches_brute_force(hmm, mvrs, target, observed, T=None, seed=0):
     # The returned prefix must be the one its reported stopping time describes.
     assert [len(path) - 1 for path in paths] == times.tolist()
 
-    counts = collections.Counter(
-        (len(path) - 1, tuple(path)) for path in paths
-    )
+    counts = collections.Counter((len(path) - 1, tuple(path)) for path in paths)
 
     assert set(counts) <= set(expected)
 
@@ -121,9 +119,7 @@ def observed():
 
 @pytest.fixture
 def target():
-    return make_reach_mvr(
-        hidden_states=["A", "B", "C"], target_state="C", name="hit"
-    )
+    return make_reach_mvr(hidden_states=["A", "B", "C"], target_state="C", name="hit")
 
 
 # ===========================
@@ -283,9 +279,7 @@ def test_min_length_restricts_the_stopping_time(hmm, observed, target, min_lengt
     expected = expected / expected.sum()
 
     counts = collections.Counter(times.tolist())
-    empirical = np.array(
-        [counts.get(t, 0) / NUM_SAMPLES for t in range(a, T)]
-    )
+    empirical = np.array([counts.get(t, 0) / NUM_SAMPLES for t in range(a, T)])
 
     assert 0.5 * np.abs(empirical - expected).sum() <= 5 * null_tv_mean(expected)
 

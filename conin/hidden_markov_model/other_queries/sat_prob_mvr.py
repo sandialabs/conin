@@ -19,7 +19,6 @@ from ..mvr_common import (
 )
 from .sat_time_mvr import _detach_target, _resolve_target, _split_on_target
 
-
 # ======================================================================
 # Helpers
 # ======================================================================
@@ -69,13 +68,13 @@ def sat_prob_torch_mvr_chmm(
     """Probability that a target MVR is satisfied.
 
     Computes the ``w`` array:
-    
+
         w[True/False]  = P(observed, other constraints satisfied, target's evl is True/False at b)
-        
+
     Then, normalizes ``w`` to return:
-    
+
         ``probs``: P(evl is True/False | observed, other constraints satisfied)
-        
+
     where ``b`` ends the target's ``time_range`` and defaults to the last time
     step. Every constraint other than the target is enforced as usual.
 
