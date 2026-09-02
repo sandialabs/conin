@@ -253,6 +253,8 @@ def test_transition_rejects_invalid_input(transitions, match):
         {("a", "a", "a")},
         # Longer than any sequence we enumerate, so it can never match.
         {("a", "b", "c", "a", "b")},
+        # List of lists: the bare-sequence guard used to raise TypeError here.
+        [["a", "b", "a"]],
     ],
 )
 def test_sequencelist_matches_reference(sequences):
@@ -260,7 +262,7 @@ def test_sequencelist_matches_reference(sequences):
 
     def reference(seq):
         return any(
-            tuple(seq[len(seq) - len(p) :]) == p
+            tuple(seq[len(seq) - len(p) :]) == tuple(p)
             for p in sequences
             if len(p) <= len(seq)
         )

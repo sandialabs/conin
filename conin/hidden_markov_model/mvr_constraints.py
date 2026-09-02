@@ -193,6 +193,9 @@ def mvr_current_sequencelist(
     h_{t-2}, h_{t-1}, h_t = 'a', 'b', 'a'.
     A sequence longer than t + 1 cannot have been completed, so the MVR evaluates False.
 
+    NOTE: For singletons, please pass them in a lists/tuples as well:
+    ie. [('a',), ('b'), ('c')]
+
     This implements the Aho-Corasick construction for a more efficient MVR.
     """
     hidden_states = _model_hidden_states(hidden_markov_model)
@@ -204,16 +207,17 @@ def mvr_current_sequencelist(
             "sequences"
         )
 
-    # A bare sequence would otherwise be read as a list of malformed entries.
     if (
         isinstance(sequences, (tuple, list))
         and len(sequences) > 0
-        and all(h in hidden_space for h in sequences)
+        and all(
+            not isinstance(h, _COLLECTION_TYPES) and h in hidden_space
+            for h in sequences
+        )
     ):
         raise InvalidInputError(
             "sequences must be a list, tuple, set, or frozenset of hidden state "
-            "sequences, even when it holds a single sequence. Wrap it, e.g. "
-            f"[{tuple(sequences)!r}]"
+            "sequences, even when it holds a single sequence."
         )
 
     patterns = set()
