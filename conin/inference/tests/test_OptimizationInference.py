@@ -6,10 +6,7 @@ import conin.bayesian_network.examples
 import conin.dynamic_bayesian_network.examples
 import conin.hidden_markov_model.tests.examples
 
-from conin.inference.OptimizationInference import (
-    IntegerProgrammingInference,
-    DPGM_IntegerProgrammingInference,
-)
+from conin.inference.map_query import map_query
 from conin.util import try_import
 
 with try_import() as pgmpy_available:
@@ -41,73 +38,28 @@ testfile_lp = os.path.join(cwd, "test.lp")
 @skipif_no_mip_solver
 def test_IntegerProgrammingInference_ABC_conin():
     example = conin.markov_network.examples.ABC_conin()
-    inf = IntegerProgrammingInference(example.pgm)
-    results = inf.map_query(solver=mip_solver)
+    results = map_query(example.pgm, method="integer_program", solver=mip_solver)
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
-    results = inf.map_query(solver=mip_solver, write_lp_file=testfile_lp)
+    results = map_query(
+        example.pgm,
+        method="integer_program",
+        solver=mip_solver,
+        write_lp_file=testfile_lp,
+    )
     assert os.path.exists(testfile_lp)
     os.remove(testfile_lp)
-
-
-@skipif_pgmpy_not_available
-@skipif_no_mip_solver
-def test_IntegerProgrammingInference_ABC_pgmpy():
-    example = conin.markov_network.examples.ABC_pgmpy()
-    inf = IntegerProgrammingInference(example.pgm)
-    results = inf.map_query(solver=mip_solver)
-    assert results.solution.states == example.solutions[0].states
 
 
 #
 # ConstrainedDiscreteMarkovNetwork tests
 #
 
-
-@skipif_no_mip_solver
-def test_IntegerProgrammingInference_ABC_constrained():
-    example = conin.markov_network.examples.ABC_constrained_pyomo_conin()
-    inf = IntegerProgrammingInference(example.pgm)
-    results = inf.map_query(solver=mip_solver)
-    assert results.solution.states == example.solutions[0].states
-    assert hasattr(results, "solvetime") and type(results.solvetime) is float
-
-    results = inf.map_query(solver=mip_solver, write_lp_file=testfile_lp)
-    assert os.path.exists(testfile_lp)
-    os.remove(testfile_lp)
-
-
 #
 # DiscreteBayesianNetwork tests
 #
 
-
-@skipif_no_mip_solver
-def test_IntegerProgrammingInference_cancer1_BN_conin():
-    example = conin.bayesian_network.examples.cancer1_BN_conin()
-    inf = IntegerProgrammingInference(example.pgm)
-    results = inf.map_query(solver=mip_solver)
-    assert results.solution.states == example.solutions[0].states
-    assert hasattr(results, "solvetime") and type(results.solvetime) is float
-
-    results = inf.map_query(solver=mip_solver, write_lp_file=testfile_lp)
-    assert os.path.exists(testfile_lp)
-    os.remove(testfile_lp)
-
-
-#    with pytest.raises(RuntimeError):
-#        results = inf.map_query(
-#            variables=["Dyspnoea", "Pollution", "Smoker", "Xray"],
-#            evidence={"Cancer": 0},
-#            solver=mip_solver,
-#        )
-#        assert results.solution.states == {
-#            "Dyspnoea": 0,
-#            "Pollution": 0,
-#            "Smoker": 0,
-#            "Xray": 0,
-#        }
 #
 #    # TODO - Confirm that these marginalized results are correct
 #
@@ -123,28 +75,6 @@ def test_IntegerProgrammingInference_cancer1_BN_conin():
 #            "Xray": 0,
 #        }
 
-
-@skipif_pgmpy_not_available
-@skipif_no_mip_solver
-def test_IntegerProgrammingInference_cancer1_BN_pgmpy():
-    example = conin.bayesian_network.examples.cancer1_BN_pgmpy()
-    inf = IntegerProgrammingInference(example.pgm)
-    results = inf.map_query(solver=mip_solver)
-    assert results.solution.states == example.solutions[0].states
-
-
-#    with pytest.raises(RuntimeError):
-#        results = inf.map_query(
-#            variables=["Dyspnoea", "Pollution", "Smoker", "Xray"],
-#            evidence={"Cancer": 0},
-#            solver=mip_solver,
-#        )
-#        assert results.solution.states == {
-#            "Dyspnoea": 0,
-#            "Pollution": 0,
-#            "Smoker": 0,
-#            "Xray": 0,
-#        }
 #
 #    # TODO - Confirm that these marginalized results are correct
 #
@@ -159,60 +89,10 @@ def test_IntegerProgrammingInference_cancer1_BN_pgmpy():
 #            "Pollution": 0,
 #            "Xray": 0,
 #        }
-
 
 #
 # ConstrainedBayesianNetwork tests
 #
-
-
-@skipif_no_mip_solver
-def test_IntegerProgrammingInference_cancer1_BN_constrained_pyomo_conin():
-    example = conin.bayesian_network.examples.cancer1_BN_constrained_pyomo_conin()
-    inf = IntegerProgrammingInference(example.pgm)
-    results = inf.map_query(solver=mip_solver)
-    assert results.solution.states == example.solutions[0].states
-    assert hasattr(results, "solvetime") and type(results.solvetime) is float
-
-    results = inf.map_query(solver=mip_solver, write_lp_file=testfile_lp)
-    assert os.path.exists(testfile_lp)
-    os.remove(testfile_lp)
-
-
-#    with pytest.raises(RuntimeError):
-#        results = inf.map_query(
-#            variables=["Dyspnoea", "Pollution", "Xray"],
-#            evidence={"Cancer": 0},
-#            solver=mip_solver,
-#        )
-#        assert results.solution.states == {
-#            "Dyspnoea": 1,
-#            "Pollution": 0,
-#            "Xray": 0,
-#        }
-
-
-@skipif_pgmpy_not_available
-@skipif_no_mip_solver
-def test_IntegerProgrammingInference_cancer1_BN_constrained_pyomo_pgmpy():
-    example = conin.bayesian_network.examples.cancer1_BN_constrained_pyomo_pgmpy()
-    inf = IntegerProgrammingInference(example.pgm)
-    results = inf.map_query(solver=mip_solver)
-    assert results.solution.states == example.solutions[0].states
-
-
-#    with pytest.raises(RuntimeError):
-#        results = inf.map_query(
-#            variables=["Dyspnoea", "Pollution", "Xray"],
-#            evidence={"Cancer": 0},
-#            solver=mip_solver,
-#        )
-#        assert results.solution.states == {
-#            "Dyspnoea": 1,
-#            "Pollution": 0,
-#            "Xray": 0,
-#        }
-
 
 #
 # HiddenMarkovModel tests
@@ -223,77 +103,39 @@ def test_IntegerProgrammingInference_cancer1_BN_constrained_pyomo_pgmpy():
 @ip_formulations
 def test0_IntegerProgrammingInference_hmm1(ip_formulation):
     pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
-    inf = DPGM_IntegerProgrammingInference(pgm)
     observed = ["o0", "o0", "o1", "o0", "o0"]
-    results = inf.map_query(
-        evidence=observed, solver=mip_solver, ip_formulation=ip_formulation
+    results = map_query(
+        pgm,
+        method="integer_program",
+        evidence=observed,
+        solver=mip_solver,
+        ip_formulation=ip_formulation,
     )
     assert results.solution.states == ["h0", "h0", "h0", "h0", "h0"]
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
-    results = inf.map_query(
-        evidence=observed, solver=mip_solver, write_lp_file=testfile_lp
+    results = map_query(
+        pgm,
+        method="integer_program",
+        evidence=observed,
+        solver=mip_solver,
+        write_lp_file=testfile_lp,
     )
     assert os.path.exists(testfile_lp)
     os.remove(testfile_lp)
-
-
-@skipif_no_mip_solver
-@ip_formulations
-def test1_IntegerProgrammingInference_hmm1(ip_formulation):
-    pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
-    inf = DPGM_IntegerProgrammingInference(pgm)
-    observed = ["o0", "o1", "o1", "o1", "o1"]
-    results = inf.map_query(
-        evidence=observed, solver=mip_solver, ip_formulation=ip_formulation
-    )
-    assert results.solution.states == ["h1", "h1", "h1", "h1", "h1"]
-
-
-@skipif_no_mip_solver
-@ip_formulations
-def test2_IntegerProgrammingInference_hmm1(ip_formulation):
-    pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
-    inf = DPGM_IntegerProgrammingInference(pgm)
-    observed = {0: "o0", 1: "o0", 2: "o1", 3: "o0", 4: "o0"}
-    results = inf.map_query(
-        evidence=observed, solver=mip_solver, ip_formulation=ip_formulation
-    )
-    assert results.solution.states == {
-        0: "h0",
-        1: "h0",
-        2: "h0",
-        3: "h0",
-        4: "h0",
-    }
-
-
-@skipif_no_mip_solver
-@ip_formulations
-def test3_IntegerProgrammingInference_hmm1(ip_formulation):
-    pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
-    inf = DPGM_IntegerProgrammingInference(pgm)
-    observed = {0: "o0", 1: "o1", 2: "o1", 3: "o1", 4: "o1"}
-    results = inf.map_query(
-        evidence=observed, solver=mip_solver, ip_formulation=ip_formulation
-    )
-    assert results.solution.states == {
-        0: "h1",
-        1: "h1",
-        2: "h1",
-        3: "h1",
-        4: "h1",
-    }
 
 
 @skipif_no_mip_solver
 @ip_formulations
 def test0_IntegerProgrammingInference_chmm1(ip_formulation):
     pgm = conin.hidden_markov_model.tests.examples.create_chmm1_pyomo()
-    inf = DPGM_IntegerProgrammingInference(pgm)
     observed = ["o0"] * 15
-    results = inf.map_query(
-        evidence=observed, solver=mip_solver, ip_formulation=ip_formulation
+    results = map_query(
+        pgm,
+        method="integer_program",
+        evidence=observed,
+        solver=mip_solver,
+        ip_formulation=ip_formulation,
     )
     assert results.solution.states == [
         "h1",
@@ -314,97 +156,15 @@ def test0_IntegerProgrammingInference_chmm1(ip_formulation):
     ]
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
-    results = inf.map_query(
-        evidence=observed, solver=mip_solver, write_lp_file=testfile_lp
+    results = map_query(
+        pgm,
+        method="integer_program",
+        evidence=observed,
+        solver=mip_solver,
+        write_lp_file=testfile_lp,
     )
     assert os.path.exists(testfile_lp)
     os.remove(testfile_lp)
-
-
-@skipif_no_mip_solver
-@ip_formulations
-def test1_IntegerProgrammingInference_chmm1(ip_formulation):
-    pgm = conin.hidden_markov_model.tests.examples.create_chmm1_pyomo()
-    inf = DPGM_IntegerProgrammingInference(pgm)
-    observed = ["o0"] + ["o1"] * 14
-    results = inf.map_query(
-        evidence=observed, solver=mip_solver, ip_formulation=ip_formulation
-    )
-    assert results.solution.states == [
-        "h0",
-        "h0",
-        "h0",
-        "h0",
-        "h0",
-        "h0",
-        "h0",
-        "h0",
-        "h0",
-        "h0",
-        "h1",
-        "h1",
-        "h1",
-        "h1",
-        "h1",
-    ]
-
-
-@skipif_no_mip_solver
-@ip_formulations
-def test2_IntegerProgrammingInference_chmm1(ip_formulation):
-    pgm = conin.hidden_markov_model.tests.examples.create_chmm1_pyomo()
-    inf = DPGM_IntegerProgrammingInference(pgm)
-    observed = {i: "o0" for i in range(15)}
-    results = inf.map_query(
-        evidence=observed, solver=mip_solver, ip_formulation=ip_formulation
-    )
-    assert results.solution.states == {
-        0: "h1",
-        1: "h1",
-        2: "h1",
-        3: "h0",
-        4: "h0",
-        5: "h0",
-        6: "h0",
-        7: "h0",
-        8: "h0",
-        9: "h0",
-        10: "h0",
-        11: "h0",
-        12: "h0",
-        13: "h0",
-        14: "h0",
-    }
-
-
-@skipif_no_mip_solver
-@ip_formulations
-def test3_IntegerProgrammingInference_chmm1(ip_formulation):
-    pgm = conin.hidden_markov_model.tests.examples.create_chmm1_pyomo()
-    inf = DPGM_IntegerProgrammingInference(pgm)
-    observed = {0: "o0"}
-    for i in range(14):
-        observed[i + 1] = "o1"
-    results = inf.map_query(
-        evidence=observed, solver=mip_solver, ip_formulation=ip_formulation
-    )
-    assert results.solution.states == {
-        0: "h0",
-        1: "h0",
-        2: "h0",
-        3: "h0",
-        4: "h0",
-        5: "h0",
-        6: "h0",
-        7: "h0",
-        8: "h0",
-        9: "h0",
-        10: "h1",
-        11: "h1",
-        12: "h1",
-        13: "h1",
-        14: "h1",
-    }
 
 
 #
@@ -476,81 +236,245 @@ def test_DPGM_IntegerProgrammingInference_weather_conin():
     example = conin.dynamic_bayesian_network.examples.weather_conin()
 
     # without evidence
-    inf = DPGM_IntegerProgrammingInference(example.pgm)
-    results = inf.map_query(stop=4, solver=mip_solver)
+    results = map_query(
+        example.pgm, method="integer_program", stop=4, solver=mip_solver
+    )
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
     # with evidence
-    inf = DPGM_IntegerProgrammingInference(example.pgm)
-    results = inf.map_query(
-        stop=4, evidence=weather_evidence, solution_with_evidence=True
+    results = map_query(
+        example.pgm,
+        method="integer_program",
+        stop=4,
+        evidence=weather_evidence,
+        solution_with_evidence=True,
     )
     assert q_unconstrained == results.solution.states
 
-    results = inf.map_query(stop=4, solver=mip_solver, write_lp_file=testfile_lp)
+    results = map_query(
+        example.pgm,
+        method="integer_program",
+        stop=4,
+        solver=mip_solver,
+        write_lp_file=testfile_lp,
+    )
     assert os.path.exists(testfile_lp)
     os.remove(testfile_lp)
-
-
-@skipif_pgmpy_not_available
-@skipif_no_mip_solver
-def test_DPGM_IntegerProgrammingInference_weather2_pgmpy():
-    example = conin.dynamic_bayesian_network.examples.weather2_pgmpy()
-
-    # without evidence
-    inf = DPGM_IntegerProgrammingInference(example.pgm)
-    results = inf.map_query(stop=4, solver=mip_solver)
-    assert results.solution.states == example.solutions[0].states
-
-    # with evidence
-    inf = DPGM_IntegerProgrammingInference(example.pgm)
-    results = inf.map_query(
-        stop=4, evidence=weather_evidence, solution_with_evidence=True
-    )
-    assert q_unconstrained == results.solution.states
 
 
 #
 # ConstrainedDynamicBayesianNetwork tests
 #
 
+#
+# Tests for map_query() dispatch function
+#
+
 
 @skipif_no_mip_solver
-def test_DPGM_IntegerProgrammingInference_weather_constrained_pyomo_conin():
-    example = conin.dynamic_bayesian_network.examples.weather_constrained_pyomo_conin()
-
-    # without evidence
-    inf = DPGM_IntegerProgrammingInference(example.pgm)
-    results = inf.map_query(stop=4, solver=mip_solver)
+@pytest.mark.parametrize(
+    "example_factory",
+    [
+        conin.markov_network.examples.ABC_conin,
+        conin.markov_network.examples.ABC_constrained_pyomo_conin,
+        conin.bayesian_network.examples.cancer1_BN_conin,
+        conin.bayesian_network.examples.cancer1_BN_constrained_pyomo_conin,
+    ],
+)
+def test_map_query_static_models(example_factory):
+    """Test map_query dispatch for static models (MN and BN)."""
+    example = example_factory()
+    results = map_query(example.pgm, method="integer_program", solver=mip_solver)
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
-
-    # with evidence
-    inf = DPGM_IntegerProgrammingInference(example.pgm)
-    results = inf.map_query(
-        stop=4, evidence=weather_evidence, solution_with_evidence=True
-    )
-    assert q_constrained == results.solution.states
-
-    results = inf.map_query(stop=4, solver=mip_solver, write_lp_file=testfile_lp)
-    assert os.path.exists(testfile_lp)
-    os.remove(testfile_lp)
 
 
 @skipif_pgmpy_not_available
 @skipif_no_mip_solver
-def test_DPGM_IntegerProgrammingInference_weather_constrained_pyomo_pgmpy():
-    example = conin.dynamic_bayesian_network.examples.weather_constrained_pyomo_pgmpy()
+@pytest.mark.parametrize(
+    "example_factory",
+    [
+        conin.markov_network.examples.ABC_pgmpy,
+        conin.bayesian_network.examples.cancer1_BN_pgmpy,
+    ],
+)
+def test_map_query_static_models_pgmpy(example_factory):
+    """Test map_query dispatch for pgmpy static models."""
+    example = example_factory()
+    results = map_query(example.pgm, method="integer_program", solver=mip_solver)
+    assert results.solution.states == example.solutions[0].states
+
+
+@skipif_no_mip_solver
+@ip_formulations
+@pytest.mark.parametrize(
+    "pgm_factory,evidence,expected",
+    [
+        (
+            lambda: conin.hidden_markov_model.tests.examples.create_hmm1(),
+            ["o0", "o0", "o1", "o0", "o0"],
+            ["h0", "h0", "h0", "h0", "h0"],
+        ),
+        (
+            lambda: conin.hidden_markov_model.tests.examples.create_hmm1(),
+            ["o0", "o1", "o1", "o1", "o1"],
+            ["h1", "h1", "h1", "h1", "h1"],
+        ),
+        (
+            lambda: conin.hidden_markov_model.tests.examples.create_hmm1(),
+            {0: "o0", 1: "o0", 2: "o1", 3: "o0", 4: "o0"},
+            {0: "h0", 1: "h0", 2: "h0", 3: "h0", 4: "h0"},
+        ),
+    ],
+)
+def test_map_query_hmm(pgm_factory, evidence, expected, ip_formulation):
+    """Test map_query dispatch for HMM models."""
+    pgm = pgm_factory()
+    results = map_query(
+        pgm,
+        method="integer_program",
+        evidence=evidence,
+        solver=mip_solver,
+        ip_formulation=ip_formulation,
+    )
+    assert results.solution.states == expected
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
+
+
+@skipif_no_mip_solver
+@ip_formulations
+@pytest.mark.parametrize(
+    "pgm_factory,evidence,expected",
+    [
+        (
+            lambda: conin.hidden_markov_model.tests.examples.create_chmm1_pyomo(),
+            ["o0"] * 15,
+            [
+                "h1",
+                "h1",
+                "h1",
+                "h0",
+                "h0",
+                "h0",
+                "h0",
+                "h0",
+                "h0",
+                "h0",
+                "h0",
+                "h0",
+                "h0",
+                "h0",
+                "h0",
+            ],
+        ),
+        (
+            lambda: conin.hidden_markov_model.tests.examples.create_chmm1_pyomo(),
+            ["o0"] + ["o1"] * 14,
+            [
+                "h0",
+                "h0",
+                "h0",
+                "h0",
+                "h0",
+                "h0",
+                "h0",
+                "h0",
+                "h0",
+                "h0",
+                "h1",
+                "h1",
+                "h1",
+                "h1",
+                "h1",
+            ],
+        ),
+    ],
+)
+def test_map_query_chmm(pgm_factory, evidence, expected, ip_formulation):
+    """Test map_query dispatch for constrained HMM models."""
+    pgm = pgm_factory()
+    results = map_query(
+        pgm,
+        method="integer_program",
+        evidence=evidence,
+        solver=mip_solver,
+        ip_formulation=ip_formulation,
+    )
+    assert results.solution.states == expected
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
+
+
+@skipif_no_mip_solver
+def test_map_query_dbn():
+    """Test map_query dispatch for dynamic Bayesian network."""
+    example = conin.dynamic_bayesian_network.examples.weather_conin()
 
     # without evidence
-    inf = DPGM_IntegerProgrammingInference(example.pgm)
-    results = inf.map_query(stop=4, solver=mip_solver)
+    results = map_query(
+        example.pgm, method="integer_program", stop=4, solver=mip_solver
+    )
+    assert results.solution.states == example.solutions[0].states
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
+
+    # with evidence
+    results = map_query(
+        example.pgm,
+        method="integer_program",
+        stop=4,
+        evidence=weather_evidence,
+        solution_with_evidence=True,
+    )
+    assert q_unconstrained == results.solution.states
+
+
+@skipif_no_mip_solver
+def test_map_query_constrained_dbn():
+    """Test map_query dispatch for constrained dynamic Bayesian network."""
+    example = conin.dynamic_bayesian_network.examples.weather_constrained_pyomo_conin()
+
+    # without evidence
+    results = map_query(
+        example.pgm, method="integer_program", stop=4, solver=mip_solver
+    )
+    assert results.solution.states == example.solutions[0].states
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
+
+    # with evidence
+    results = map_query(
+        example.pgm,
+        method="integer_program",
+        stop=4,
+        evidence=weather_evidence,
+        solution_with_evidence=True,
+    )
+    assert q_constrained == results.solution.states
+
+
+@skipif_pgmpy_not_available
+@skipif_no_mip_solver
+def test_map_query_dbn_pgmpy():
+    """Test map_query dispatch for pgmpy dynamic Bayesian network."""
+    example = conin.dynamic_bayesian_network.examples.weather2_pgmpy()
+
+    # without evidence
+    results = map_query(
+        example.pgm, method="integer_program", stop=4, solver=mip_solver
+    )
     assert results.solution.states == example.solutions[0].states
 
     # with evidence
-    inf = DPGM_IntegerProgrammingInference(example.pgm)
-    results = inf.map_query(
-        stop=4, evidence=weather_evidence, solution_with_evidence=True
+    results = map_query(
+        example.pgm,
+        method="integer_program",
+        stop=4,
+        evidence=weather_evidence,
+        solution_with_evidence=True,
     )
-    assert q_constrained == results.solution.states
+    assert q_unconstrained == results.solution.states
+
+
+def test_map_query_unsupported_type():
+    """Test that map_query raises TypeError for unsupported types."""
+    with pytest.raises(TypeError, match="Unsupported model type"):
+        map_query("not_a_model", method="integer_program")
