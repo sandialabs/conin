@@ -1,9 +1,10 @@
 """
 A formula language for MVR constraints.
 
-Parses a near-English formula string and lowers it onto the constructors in
-mvr_constraints.py and the operators in mvr_operators.py. It introduces no
-automaton construction of its own.
+Parses a formula string and calls the constructors in
+mvr_constraints.py and the operators in mvr_operators.py.
+
+It does NOT build MVRs - it merely calls the existing constructors/operators.
 """
 
 from __future__ import annotations
