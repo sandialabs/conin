@@ -1,9 +1,6 @@
 import os
 from conin.util import try_import
-from conin.inference.CFNInference import (
-    CFNInference,
-    DPGM_CFNInference,
-)
+from conin.inference.map_query import map_query
 import conin.markov_network.examples
 import conin.bayesian_network.examples
 import conin.hidden_markov_model.tests.examples
@@ -36,12 +33,11 @@ testfile_uai = os.path.join(cwd, "test.uai")
 @skipif_toulbar2_not_available
 def test_CFNInference_ABC_conin():
     example = conin.markov_network.examples.ABC_conin()
-    inf = CFNInference(example.pgm)
-    results = inf.map_query()
+    results = map_query(example.pgm, inference="toulbar2")
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
-    results = inf.map_query(write_uai_file=testfile_uai)
+    results = map_query(example.pgm, inference="toulbar2", write_uai_file=testfile_uai)
     assert os.path.exists(testfile_uai)
     os.remove(testfile_uai)
 
@@ -50,8 +46,7 @@ def test_CFNInference_ABC_conin():
 @skipif_toulbar2_not_available
 def test_CFNInference_ABC_pgmpy():
     example = conin.markov_network.examples.ABC_pgmpy()
-    inf = CFNInference(example.pgm)
-    results = inf.map_query()
+    results = map_query(example.pgm, inference="toulbar2")
     assert results.solution.states == example.solutions[0].states
 
 
@@ -63,12 +58,11 @@ def test_CFNInference_ABC_pgmpy():
 @skipif_toulbar2_not_available
 def test_CFNInference_ABC_constrained_toulbar2_conin():
     example = conin.markov_network.examples.ABC_constrained_toulbar2_conin()
-    inf = CFNInference(example.pgm)
-    results = inf.map_query()
+    results = map_query(example.pgm, inference="toulbar2")
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
-    results = inf.map_query(write_uai_file=testfile_uai)
+    results = map_query(example.pgm, inference="toulbar2", write_uai_file=testfile_uai)
     assert os.path.exists(testfile_uai)
     os.remove(testfile_uai)
 
@@ -81,12 +75,11 @@ def test_CFNInference_ABC_constrained_toulbar2_conin():
 @skipif_toulbar2_not_available
 def test_CFNInference_cancer1_BN_conin():
     example = conin.bayesian_network.examples.cancer1_BN_conin()
-    inf = CFNInference(example.pgm)
-    results = inf.map_query()
+    results = map_query(example.pgm, inference="toulbar2")
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
-    results = inf.map_query(write_uai_file=testfile_uai)
+    results = map_query(example.pgm, inference="toulbar2", write_uai_file=testfile_uai)
     assert os.path.exists(testfile_uai)
     os.remove(testfile_uai)
 
@@ -123,8 +116,7 @@ def test_CFNInference_cancer1_BN_conin():
 @skipif_toulbar2_not_available
 def test_CFNInference_cancer1_BN_pgmpy():
     example = conin.bayesian_network.examples.cancer1_BN_pgmpy()
-    inf = CFNInference(example.pgm)
-    results = inf.map_query()
+    results = map_query(example.pgm, inference="toulbar2")
     assert results.solution.states == example.solutions[0].states
 
 
@@ -164,12 +156,11 @@ def test_CFNInference_cancer1_BN_pgmpy():
 @skipif_toulbar2_not_available
 def test_CFNInference_cancer1_BN_constrained_toulbar2_conin():
     example = conin.bayesian_network.examples.cancer1_BN_constrained_toulbar2_conin()
-    inf = CFNInference(example.pgm)
-    results = inf.map_query()
+    results = map_query(example.pgm, inference="toulbar2")
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
-    results = inf.map_query(write_uai_file=testfile_uai)
+    results = map_query(example.pgm, inference="toulbar2", write_uai_file=testfile_uai)
     assert os.path.exists(testfile_uai)
     os.remove(testfile_uai)
 
@@ -195,13 +186,14 @@ def test_CFNInference_cancer1_BN_constrained_toulbar2_conin():
 @skipif_toulbar2_not_available
 def test0_CFNInference_hmm1():
     pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
-    inf = DPGM_CFNInference(pgm)
     observed = ["o0", "o0", "o1", "o0", "o0"]
-    results = inf.map_query(evidence=observed)
+    results = map_query(pgm, inference="toulbar2", evidence=observed)
     assert results.solution.states == ["h0", "h0", "h0", "h0", "h0"]
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
-    results = inf.map_query(evidence=observed, write_uai_file=testfile_uai)
+    results = map_query(
+        pgm, inference="toulbar2", evidence=observed, write_uai_file=testfile_uai
+    )
     assert os.path.exists(testfile_uai)
     os.remove(testfile_uai)
 
@@ -209,18 +201,16 @@ def test0_CFNInference_hmm1():
 @skipif_toulbar2_not_available
 def test1_CFNInference_hmm1():
     pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
-    inf = DPGM_CFNInference(pgm)
     observed = ["o0", "o1", "o1", "o1", "o1"]
-    results = inf.map_query(evidence=observed)
+    results = map_query(pgm, inference="toulbar2", evidence=observed)
     assert results.solution.states == ["h1", "h1", "h1", "h1", "h1"]
 
 
 @skipif_toulbar2_not_available
 def test2_CFNInference_hmm1():
     pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
-    inf = DPGM_CFNInference(pgm)
     observed = {0: "o0", 1: "o0", 2: "o1", 3: "o0", 4: "o0"}
-    results = inf.map_query(evidence=observed)
+    results = map_query(pgm, inference="toulbar2", evidence=observed)
     assert results.solution.states == {
         0: "h0",
         1: "h0",
@@ -233,9 +223,8 @@ def test2_CFNInference_hmm1():
 @skipif_toulbar2_not_available
 def test3_CFNInference_hmm1():
     pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
-    inf = DPGM_CFNInference(pgm)
     observed = {0: "o0", 1: "o1", 2: "o1", 3: "o1", 4: "o1"}
-    results = inf.map_query(evidence=observed)
+    results = map_query(pgm, inference="toulbar2", evidence=observed)
     assert results.solution.states == {
         0: "h1",
         1: "h1",
@@ -248,9 +237,8 @@ def test3_CFNInference_hmm1():
 @skipif_toulbar2_not_available
 def test0_CFNInference_chmm1():
     pgm = conin.hidden_markov_model.tests.examples.create_chmm1_toulbar2()
-    inf = DPGM_CFNInference(pgm)
     observed = ["o0"] * 15
-    results = inf.map_query(evidence=observed)
+    results = map_query(pgm, inference="toulbar2", evidence=observed)
     assert results.solution.states == [
         "h1",
         "h1",
@@ -270,7 +258,9 @@ def test0_CFNInference_chmm1():
     ]
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
-    results = inf.map_query(evidence=observed, write_uai_file=testfile_uai)
+    results = map_query(
+        pgm, inference="toulbar2", evidence=observed, write_uai_file=testfile_uai
+    )
     assert os.path.exists(testfile_uai)
     os.remove(testfile_uai)
 
@@ -278,9 +268,8 @@ def test0_CFNInference_chmm1():
 @skipif_toulbar2_not_available
 def test1_CFNInference_chmm1():
     pgm = conin.hidden_markov_model.tests.examples.create_chmm1_toulbar2()
-    inf = DPGM_CFNInference(pgm)
     observed = ["o0"] + ["o1"] * 14
-    results = inf.map_query(evidence=observed)
+    results = map_query(pgm, inference="toulbar2", evidence=observed)
     assert results.solution.states == [
         "h0",
         "h0",
@@ -303,9 +292,8 @@ def test1_CFNInference_chmm1():
 @skipif_toulbar2_not_available
 def test2_CFNInference_chmm1():
     pgm = conin.hidden_markov_model.tests.examples.create_chmm1_toulbar2()
-    inf = DPGM_CFNInference(pgm)
     observed = {i: "o0" for i in range(15)}
-    results = inf.map_query(evidence=observed)
+    results = map_query(pgm, inference="toulbar2", evidence=observed)
     assert results.solution.states == {
         0: "h1",
         1: "h1",
@@ -328,11 +316,10 @@ def test2_CFNInference_chmm1():
 @skipif_toulbar2_not_available
 def test3_CFNInference_chmm1():
     pgm = conin.hidden_markov_model.tests.examples.create_chmm1_toulbar2()
-    inf = DPGM_CFNInference(pgm)
     observed = {0: "o0"}
     for i in range(14):
         observed[i + 1] = "o1"
-    results = inf.map_query(evidence=observed)
+    results = map_query(pgm, inference="toulbar2", evidence=observed)
     assert results.solution.states == {
         0: "h0",
         1: "h0",
@@ -422,19 +409,23 @@ def test_DPGM_CFNInference_weather_conin():
     example = conin.dynamic_bayesian_network.examples.weather_conin()
 
     # without evidence
-    inf = DPGM_CFNInference(example.pgm)
-    results = inf.map_query(stop=4)
+    results = map_query(example.pgm, inference="toulbar2", stop=4)
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
     # with evidence
-    inf = DPGM_CFNInference(example.pgm)
-    results = inf.map_query(
-        stop=4, evidence=weather_evidence, solution_with_evidence=True
+    results = map_query(
+        example.pgm,
+        inference="toulbar2",
+        stop=4,
+        evidence=weather_evidence,
+        solution_with_evidence=True,
     )
     assert q_unconstrained == results.solution.states
 
-    results = inf.map_query(stop=4, write_uai_file=testfile_uai)
+    results = map_query(
+        example.pgm, inference="toulbar2", stop=4, write_uai_file=testfile_uai
+    )
     assert os.path.exists(testfile_uai)
     os.remove(testfile_uai)
 
@@ -445,14 +436,16 @@ def test_DPGM_CFNInference_weather():
     example = conin.dynamic_bayesian_network.examples.weather2_pgmpy()
 
     # without evidence
-    inf = DPGM_CFNInference(example.pgm)
-    results = inf.map_query(stop=4)
+    results = map_query(example.pgm, inference="toulbar2", stop=4)
     assert results.solution.states == example.solutions[0].states
 
     # with evidence
-    inf = DPGM_CFNInference(example.pgm)
-    results = inf.map_query(
-        stop=4, evidence=weather_evidence, solution_with_evidence=True
+    results = map_query(
+        example.pgm,
+        inference="toulbar2",
+        stop=4,
+        evidence=weather_evidence,
+        solution_with_evidence=True,
     )
     assert q_unconstrained == results.solution.states
 
@@ -469,19 +462,23 @@ def test_DPGM_CFNInference_weather_constrained_conin():
     )
 
     # without evidence
-    inf = DPGM_CFNInference(example.pgm)
-    results = inf.map_query(stop=4)
+    results = map_query(example.pgm, inference="toulbar2", stop=4)
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
     # with evidence
-    inf = DPGM_CFNInference(example.pgm)
-    results = inf.map_query(
-        stop=4, evidence=weather_evidence, solution_with_evidence=True
+    results = map_query(
+        example.pgm,
+        inference="toulbar2",
+        stop=4,
+        evidence=weather_evidence,
+        solution_with_evidence=True,
     )
     assert q_constrained == results.solution.states
 
-    results = inf.map_query(stop=4, write_uai_file=testfile_uai)
+    results = map_query(
+        example.pgm, inference="toulbar2", stop=4, write_uai_file=testfile_uai
+    )
     assert os.path.exists(testfile_uai)
     os.remove(testfile_uai)
 
@@ -494,13 +491,15 @@ def test_DPGM_CFNInference_weather_constrained_pgmpy():
     )
 
     # without evidence
-    inf = DPGM_CFNInference(example.pgm)
-    results = inf.map_query(stop=4)
+    results = map_query(example.pgm, inference="toulbar2", stop=4)
     assert results.solution.states == example.solutions[0].states
 
     # with evidence
-    inf = DPGM_CFNInference(example.pgm)
-    results = inf.map_query(
-        stop=4, evidence=weather_evidence, solution_with_evidence=True
+    results = map_query(
+        example.pgm,
+        inference="toulbar2",
+        stop=4,
+        evidence=weather_evidence,
+        solution_with_evidence=True,
     )
     assert q_constrained == results.solution.states
