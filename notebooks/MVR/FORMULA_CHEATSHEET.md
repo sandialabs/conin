@@ -11,13 +11,19 @@ build_mvr(hmm, "reach B before A[2]")     # -> list[BaseMVR],       for MVR_CHMM
 build_mvr_functor("reach B before A[2]")  # -> list[MVRConstraint], for ConstrainedHiddenMarkovModel(constraints=...)
 ```
 
-Both return a **list**, one entry per top-level `and` (more efficient to provide a list of active constraints than build a single big constraint). `build_mvr` requires an `hmm` object and builds a list of MVRs for that HMM. `build_mvr_functor` builds a list of `MVRFunctor`, factories that create `mvr` objects for a given `hmm`.
+Both return a **list**, one entry per top-level `and`. Downstream algorithms take
+a list of active constraints, and that is cheaper than building one big combined
+constraint. The two differ only in when the MVR is built:
+
+ - `build_mvr` takes an `hmm` and builds the MVRs for that HMM right away.
+ - `build_mvr_functor` takes no `hmm`. It builds `MVRConstraint` factories, each of
+   which constructs its MVR later, when `initialize_chmm` supplies an HMM.
 
 Each result is named after its own formula — `"never A and reach B[0]"` — unless
 you pass `name=`. That name is what `sat_time_mvr` and `sat_prob_mvr` accept as
 `target="..."`.
 
-## Atoms
+## 1. Atoms
 
 Examples show which of `a`, `ab`, `aab`, `aba` the formula accepts, over states `a b c`.
 
@@ -25,8 +31,8 @@ Examples show which of `a`, `ab`, `aab`, `aba` the formula accepts, over states 
 | --- | --- | --- |
 | `A` | current state is `A` | `mvr_current_state` |
 | `(A, B)` | current state is `A` or `B` | `mvr_current_state` |
-| `<A>` | same as `A`; protection if states contain special characters | `mvr_current_state` |
-| `(<A>, <B>)` | an escaped state set; escaped and bare labels can be mixed | `mvr_current_state` |
+| `<A>` | escape; same as `A` | `mvr_current_state` |
+| `(<A>, <B>)` | escaped state set | `mvr_current_state` |
 | `true` / `false` | constantly true / false | `mvr_constant` |
 | `A -> B` | the last transition was `A` to `B` | `mvr_current_transition` |
 | `seq(A, B, C)` | the path ends with `A B C`, adjacent | `mvr_current_sequencelist` |
@@ -39,19 +45,29 @@ Examples show which of `a`, `ab`, `aab`, `aba` the formula accepts, over states 
 | `match "<a><b>*"` | the path matches the regex — **needs `greenery`** | `mvr_regex` |
 | `(E)` | grouping | |
 
-**Escaping a label.** A bare label must look like a Python identifier
-(`A`, `wash_2`). Write it as `<label>` whenever it does not — because it is a
-keyword (`<count>`, `<then>`), a number (`<3>`), or contains punctuation
-(`<A-1>`, `<B.2>`, `<C$>`, `<pkt/sec>`). The escape works anywhere a label is
-accepted: in sets, `seq(...)`, `hold k in (...)` and `A -> B`.
+### 1a. Escaping a label 
+Sometimes, a state label might contain reserved characters in the syntax. For example, it might be a
+keyword (`<count>`, `<then>`), a number (`<3>`), or contain punctuation
+(`<A-1>`, `<B.2>`, `<C$>`, `<pkt/sec>`). Use `< >` as an escape in those cases. This works anywhere a label is
+accepted: in sets, `seq(...)`, `hold k in (...)` and `A -> B`. However, three characters cannot appear in a label named by a formula: 
 
-Three characters cannot appear in a label named by a formula: **whitespace**,
-**`<`** and **`>`**. Each is a syntax error rather than a silent misreading, but
-such a state is unreachable from the formula layer — build that constraint by
+ - whitespace
+ - `<`
+ - `>`
+
+Having one of the three in a state label will raise syntax error. Build that constraint by
 calling the constructors directly. (`mvr_regex` rejects `<` and `>` in labels for
 the same reason.)
 
-## Operators
+### 1b. Regex patterns
+
+`match "..."` hands its pattern straight to `mvr_regex`, which has a syntax of its
+own. Hidden states are written `<label>` there too, but for a different reason: in
+a pattern every bare character is regex syntax, so a state must always be bracketed
+rather than only when it would be ambiguous. See
+[`REGEX_CHEATSHEET.md`](REGEX_CHEATSHEET.md).
+
+## 2. Operators
 
 | Syntax | Means | Lowers to |
 | --- | --- | --- |
@@ -66,7 +82,7 @@ the same reason.)
 | `E cat F` | language concatenation | `mvr_concatenate` |
 | `E{k}` | `E` repeated `k` times | `mvr_kfold_product` |
 | `E+` | `E` repeated one or more times | `mvr_kleene_closure` |
-| `E[k]` | `E` has held exactly `k` times — sugar for `count(E) k` | `mvr_count` |
+| `E[k]` | `E` has held exactly `k` times — same as `count(E) k` | `mvr_count` |
 | `count(E) COND` | the number of times `E` has held satisfies `COND` | `mvr_count` |
 | `E then F`, `E before F` | `E` first holds strictly before `F` does | `mvr_precedence` `<` |
 | `E after F` | `E` first holds strictly after `F` | `mvr_precedence` `>` |
@@ -75,10 +91,11 @@ the same reason.)
 | `E between a and b` | enforce `E` only over times `a..b` | `mvr_timerange` |
 | `E over [a, b]` | same thing | `mvr_timerange` |
 
+### Temporal Semantics
 Neither operand of a temporal operator has to hold: `E before F` is satisfied as
-soon as `E` holds while `F` still does not.
+soon as `E` holds while `F` still does not. It merely enforces that the temporal order must hold. If one wants to enforce both `E` and `F` satisfied, with `E` satisfied first, then `(E before F) and F` suffices.
 
-## Count conditions
+### 2b. Count conditions
 
 Used by `count(E) ...` and `jumps ...`. This is `mvr_count`'s own mini-language,
 passed through unchanged.
@@ -92,28 +109,20 @@ passed through unchanged.
 
 `< 0` and `>= 0` are rejected as degenerate.
 
-## Operator Priority
+## 3. Operator Priority
 
-Highest priority first — the top of the list binds tightest and claims its
-operands first. Parenthesise to override.
+High priority listed first. Parentheses to override.
 
-```
-{k} · + · [k]                                (postfix)
-not · never · reach · first · reverse        (prefix)
-cat
-then · before · after · at or before · at or after
-between / over
-but not
-and
-or
-```
+1. `{k}`, `+`, `[k]` (postfix)
+2. `not`, `never`, `reach`, `first`, `reverse` (prefix)
+3. `cat`
+4. `then`, `before`, `after`, `at or before`, `at or after` (temporal)
+5. `between`, `over`
+6. `but not`
+7. `and`
+8. `or`
 
-The three set operators — `but not`, `and`, `or` (difference, intersection,
-union) — cluster at the bottom, below `cat`. That follows Ragel, which groups
-`-` with `&` and `|` beneath concatenation, and SVA, which puts `intersect`,
-`and` and `or` beneath `##`.
-
-## Common Pitfalls
+## 4. Common Pitfalls
 
 - **`not A` is not `never A`.** `not A` is about this instant; `never A` is about
   all of history. Over states `a b c`:
@@ -123,15 +132,13 @@ union) — cluster at the bottom, below `cat`. That follows Ragel, which groups
   | `not a` | ✗ | ✓ | ✓ | ✓ | ✗ |
   | `never a` | ✗ | ✓ | ✗ | ✗ | ✗ |
 
-- **A bare label means "currently in that state"**, not "visits that state". `a`
+- **A label means "currently in that state"**, not "visits that state". `a`
   accepts `a`, `ba`, `aa`, `aba` — every path *ending* in `a`. Wrap it in `reach`
-  for "visits at some point". This coercion is why `never` and `reach` work on any
-  expression rather than only on state names.
+  for "visits at some point". This is why `never` and `reach` work on any
+  expression.
 
 - **`then` is precedence, not concatenation.** Temporal words all name
-  `mvr_precedence`; the regular-language concatenation operator is `cat`. `a cat b`
-  accepts `ab`, `aab`, `bab`, `abab` — an `a` somewhere, then a `b`, ending at the
-  `b`.
+  `mvr_precedence`; the concatenation operator is `cat`: eg. `a cat b`.
 
 - **Temporal operators chain like Python comparisons.** `reach A then reach B then
   reach C` means `(A then B) and (B then C)`, so it splits into two constraints. A
@@ -142,26 +149,22 @@ union) — cluster at the bottom, below `cat`. That follows Ragel, which groups
   product automaton — downstream algorithms take a list of MVRs and are cheaper for
   it. A **nested** `and` does build the product.
 
-- **`between` binds tighter than `and`.** `never A and reach B between 2 and 5`
+- **`between` has higher priority than `and`.** `never A and reach B between 2 and 5`
   windows only `reach B`. Write `(never A and reach B) between 2 and 5` to window
-  both; the window is then pushed onto each conjunct.
+  both.
 
 - **A `time_range` is where the constraint is *enforced*, not a restart.** The
   automaton is initialized at `a` and evaluated at `b`, and contributes nothing
-  outside `[a, b]` — it never sees the states before `a`. So a windowed constraint
-  is not the same as slicing the result of an unwindowed one.
+  outside `[a, b]`.
 
 - **`E[k]` is exactly `k`, not at least `k`.** `a[2]` accepts `aa` but not `aaa`.
-  It reads as "the k-th occurrence" under a temporal operator because precedence
-  compares *first* satisfaction times, and `count == k` first holds at the k-th
-  occurrence — which is what makes `reach B before A[2]` mean "B before the 2nd A".
 
 - **Labels resolve by `str()`**, so numeric hidden states work. A label that
   collides with a keyword, is a number, or contains punctuation must be written
   `<label>`; see **Escaping a label** above for the three characters that cannot be
   escaped at all.
 
-## Examples
+## 5. Examples
 
 | Formula | Reading |
 | --- | --- |
