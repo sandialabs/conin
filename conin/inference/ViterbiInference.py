@@ -35,6 +35,7 @@ def _run_viterbi(pgm, variables, evidence):
     elif type(evidence) is list:
         return viterbi(observed=evidence, hmm=pgm)
 
+
 @ovld
 def _map_query_Viterbi(
     pgm: HiddenMarkovModel,

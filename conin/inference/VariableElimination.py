@@ -148,7 +148,11 @@ def _execute_simple_model_query(
 
 
 def _execute_pgmpy_model_query(
-    pgm, variables, evidence, show_progress, timing, 
+    pgm,
+    variables,
+    evidence,
+    show_progress,
+    timing,
 ):
     """Execute MAP query for native pgmpy models (no conversion needed)."""
 
