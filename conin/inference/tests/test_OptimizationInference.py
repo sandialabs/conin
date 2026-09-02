@@ -38,13 +38,13 @@ testfile_lp = os.path.join(cwd, "test.lp")
 @skipif_no_mip_solver
 def test_IntegerProgrammingInference_ABC_conin():
     example = conin.markov_network.examples.ABC_conin()
-    results = map_query(example.pgm, inference="integer_program", solver=mip_solver)
+    results = map_query(example.pgm, method="integer_program", solver=mip_solver)
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
     results = map_query(
         example.pgm,
-        inference="integer_program",
+        method="integer_program",
         solver=mip_solver,
         write_lp_file=testfile_lp,
     )
@@ -106,7 +106,7 @@ def test0_IntegerProgrammingInference_hmm1(ip_formulation):
     observed = ["o0", "o0", "o1", "o0", "o0"]
     results = map_query(
         pgm,
-        inference="integer_program",
+        method="integer_program",
         evidence=observed,
         solver=mip_solver,
         ip_formulation=ip_formulation,
@@ -116,7 +116,7 @@ def test0_IntegerProgrammingInference_hmm1(ip_formulation):
 
     results = map_query(
         pgm,
-        inference="integer_program",
+        method="integer_program",
         evidence=observed,
         solver=mip_solver,
         write_lp_file=testfile_lp,
@@ -132,7 +132,7 @@ def test0_IntegerProgrammingInference_chmm1(ip_formulation):
     observed = ["o0"] * 15
     results = map_query(
         pgm,
-        inference="integer_program",
+        method="integer_program",
         evidence=observed,
         solver=mip_solver,
         ip_formulation=ip_formulation,
@@ -158,7 +158,7 @@ def test0_IntegerProgrammingInference_chmm1(ip_formulation):
 
     results = map_query(
         pgm,
-        inference="integer_program",
+        method="integer_program",
         evidence=observed,
         solver=mip_solver,
         write_lp_file=testfile_lp,
@@ -237,7 +237,7 @@ def test_DPGM_IntegerProgrammingInference_weather_conin():
 
     # without evidence
     results = map_query(
-        example.pgm, inference="integer_program", stop=4, solver=mip_solver
+        example.pgm, method="integer_program", stop=4, solver=mip_solver
     )
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
@@ -245,7 +245,7 @@ def test_DPGM_IntegerProgrammingInference_weather_conin():
     # with evidence
     results = map_query(
         example.pgm,
-        inference="integer_program",
+        method="integer_program",
         stop=4,
         evidence=weather_evidence,
         solution_with_evidence=True,
@@ -254,7 +254,7 @@ def test_DPGM_IntegerProgrammingInference_weather_conin():
 
     results = map_query(
         example.pgm,
-        inference="integer_program",
+        method="integer_program",
         stop=4,
         solver=mip_solver,
         write_lp_file=testfile_lp,
@@ -285,7 +285,7 @@ def test_DPGM_IntegerProgrammingInference_weather_conin():
 def test_map_query_static_models(example_factory):
     """Test map_query dispatch for static models (MN and BN)."""
     example = example_factory()
-    results = map_query(example.pgm, inference="integer_program", solver=mip_solver)
+    results = map_query(example.pgm, method="integer_program", solver=mip_solver)
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
@@ -302,7 +302,7 @@ def test_map_query_static_models(example_factory):
 def test_map_query_static_models_pgmpy(example_factory):
     """Test map_query dispatch for pgmpy static models."""
     example = example_factory()
-    results = map_query(example.pgm, inference="integer_program", solver=mip_solver)
+    results = map_query(example.pgm, method="integer_program", solver=mip_solver)
     assert results.solution.states == example.solutions[0].states
 
 
@@ -333,7 +333,7 @@ def test_map_query_hmm(pgm_factory, evidence, expected, ip_formulation):
     pgm = pgm_factory()
     results = map_query(
         pgm,
-        inference="integer_program",
+        method="integer_program",
         evidence=evidence,
         solver=mip_solver,
         ip_formulation=ip_formulation,
@@ -396,7 +396,7 @@ def test_map_query_chmm(pgm_factory, evidence, expected, ip_formulation):
     pgm = pgm_factory()
     results = map_query(
         pgm,
-        inference="integer_program",
+        method="integer_program",
         evidence=evidence,
         solver=mip_solver,
         ip_formulation=ip_formulation,
@@ -412,7 +412,7 @@ def test_map_query_dbn():
 
     # without evidence
     results = map_query(
-        example.pgm, inference="integer_program", stop=4, solver=mip_solver
+        example.pgm, method="integer_program", stop=4, solver=mip_solver
     )
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
@@ -420,7 +420,7 @@ def test_map_query_dbn():
     # with evidence
     results = map_query(
         example.pgm,
-        inference="integer_program",
+        method="integer_program",
         stop=4,
         evidence=weather_evidence,
         solution_with_evidence=True,
@@ -435,7 +435,7 @@ def test_map_query_constrained_dbn():
 
     # without evidence
     results = map_query(
-        example.pgm, inference="integer_program", stop=4, solver=mip_solver
+        example.pgm, method="integer_program", stop=4, solver=mip_solver
     )
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
@@ -443,7 +443,7 @@ def test_map_query_constrained_dbn():
     # with evidence
     results = map_query(
         example.pgm,
-        inference="integer_program",
+        method="integer_program",
         stop=4,
         evidence=weather_evidence,
         solution_with_evidence=True,
@@ -459,14 +459,14 @@ def test_map_query_dbn_pgmpy():
 
     # without evidence
     results = map_query(
-        example.pgm, inference="integer_program", stop=4, solver=mip_solver
+        example.pgm, method="integer_program", stop=4, solver=mip_solver
     )
     assert results.solution.states == example.solutions[0].states
 
     # with evidence
     results = map_query(
         example.pgm,
-        inference="integer_program",
+        method="integer_program",
         stop=4,
         evidence=weather_evidence,
         solution_with_evidence=True,
@@ -477,4 +477,4 @@ def test_map_query_dbn_pgmpy():
 def test_map_query_unsupported_type():
     """Test that map_query raises TypeError for unsupported types."""
     with pytest.raises(TypeError, match="Unsupported model type"):
-        map_query("not_a_model", inference="integer_program")
+        map_query("not_a_model", method="integer_program")

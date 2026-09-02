@@ -1,16 +1,22 @@
 from . import OptimizationInference
 from . import CFNInference
+from . import AStarInference
+from . import ViterbiInference
+from . import VariableElimination
 
 _query_functions = {
     "integer_program": OptimizationInference._map_query_IntegerProgram,
     "toulbar2": CFNInference._map_query_Toulbar2,
+    "a_star": AStarInference._map_query_AStar,
+    "viterbi": ViterbiInference._map_query_Viterbi,
+    "variable_elimination": VariableElimination._map_query_VariableElimination,
 }
 
 
 def map_query(
     pgm,
     *,
-    inference,
+    method,
     variables=None,
     evidence=None,
     show_progress=False,
@@ -29,7 +35,7 @@ def map_query(
     pgm : Graphical model to solve.
         Compatible pgmpy models are converted to CONIN model objects if
         pgmpy is installed.
-    inference : string
+    method : string
         The string name of the inference method.
     variables : list, optional
         Variables included in the MAP query. Support for partial MAP queries
@@ -70,21 +76,22 @@ def map_query(
     >>> import conin.markov_network.examples
     >>> from conin.inference import map_query
     >>> example = conin.markov_network.examples.ABC_conin()
-    >>> results = map_query(example.pgm, inference="integer_program", solver=glpk)
+    >>> results = map_query(example.pgm, method="integer_program", solver=glpk)
 
     Dynamic model (Hidden Markov model):
 
     >>> import conin.hidden_markov_model.tests.examples
     >>> from conin.inference import map_query
     >>> pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
-    >>> results = map_query(pgm, inference="integer_program", evidence=["o0", "o1"], solver=glpk)
+    >>> results = map_query(pgm, method="integer_program", evidence=["o0", "o1"], solver=glpk)
     """
-    if inference not in _query_functions:
+    if method not in _query_functions:
         raise ValueError(
-            f"Unsupported inference type: {inference}. "
-            f"Expected one of: integer_program, toulbar2"
+            f"Unsupported inference type: {method}. "
+            f"Expected one of: integer_program, toulbar2, a_star, viterbi, "
+            f"variable_elimination"
         )
-    return _query_functions[inference](
+    return _query_functions[method](
         pgm,
         variables=variables,
         evidence=evidence,
