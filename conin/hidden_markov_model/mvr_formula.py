@@ -770,7 +770,9 @@ def _lower(node, hidden_markov_model, formula):
         return mvr_current_transition(hidden_markov_model, [(source, target)])
 
     if isinstance(node, _Sequence):
-        return mvr_current_sequencelist(hidden_markov_model, [list(labels(node.labels))])
+        return mvr_current_sequencelist(
+            hidden_markov_model, [list(labels(node.labels))]
+        )
 
     if isinstance(node, _Holding):
         states = None if node.labels is None else set(labels(node.labels))
@@ -806,7 +808,9 @@ def _lower(node, hidden_markov_model, formula):
         operand = _lower(node.operand, hidden_markov_model, formula)
 
         if node.op == "kleene":
-            builder = mvr_kleene_closure_prefix if operand.prefix else mvr_kleene_closure
+            builder = (
+                mvr_kleene_closure_prefix if operand.prefix else mvr_kleene_closure
+            )
 
             return builder(operand)
 

@@ -45,7 +45,6 @@ from conin.hidden_markov_model.tests.test_mvr_constraints import (
     make_hmm,
 )
 
-
 # ---------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------
@@ -129,25 +128,77 @@ FORMULAS = [
     # binary
     ("a cat b", lambda h: mvr_concatenate([cs(h, "a"), cs(h, "b")])),
     ("a but not b", lambda h: mvr_setdiff([cs(h, "a"), cs(h, "b")])),
-    ("never a and reach b", lambda h: [mvr_forbid_state(h, ["a"]), mvr_visit_state(h, ["b"])]),
-    ("never a or reach b", lambda h: mvr_or([mvr_forbid_state(h, ["a"]), mvr_visit_state(h, ["b"])])),
+    (
+        "never a and reach b",
+        lambda h: [mvr_forbid_state(h, ["a"]), mvr_visit_state(h, ["b"])],
+    ),
+    (
+        "never a or reach b",
+        lambda h: mvr_or([mvr_forbid_state(h, ["a"]), mvr_visit_state(h, ["b"])]),
+    ),
     # temporal: every relation
-    ("reach a then reach b", lambda h: mvr_precedence([mvr_visit_state(h, ["a"]), mvr_visit_state(h, ["b"])], "<")),
-    ("reach a before reach b", lambda h: mvr_precedence([mvr_visit_state(h, ["a"]), mvr_visit_state(h, ["b"])], "<")),
-    ("reach a after reach b", lambda h: mvr_precedence([mvr_visit_state(h, ["a"]), mvr_visit_state(h, ["b"])], ">")),
-    ("reach a at or before reach b", lambda h: mvr_precedence([mvr_visit_state(h, ["a"]), mvr_visit_state(h, ["b"])], "<=")),
-    ("reach a at or after reach b", lambda h: mvr_precedence([mvr_visit_state(h, ["a"]), mvr_visit_state(h, ["b"])], ">=")),
+    (
+        "reach a then reach b",
+        lambda h: mvr_precedence(
+            [mvr_visit_state(h, ["a"]), mvr_visit_state(h, ["b"])], "<"
+        ),
+    ),
+    (
+        "reach a before reach b",
+        lambda h: mvr_precedence(
+            [mvr_visit_state(h, ["a"]), mvr_visit_state(h, ["b"])], "<"
+        ),
+    ),
+    (
+        "reach a after reach b",
+        lambda h: mvr_precedence(
+            [mvr_visit_state(h, ["a"]), mvr_visit_state(h, ["b"])], ">"
+        ),
+    ),
+    (
+        "reach a at or before reach b",
+        lambda h: mvr_precedence(
+            [mvr_visit_state(h, ["a"]), mvr_visit_state(h, ["b"])], "<="
+        ),
+    ),
+    (
+        "reach a at or after reach b",
+        lambda h: mvr_precedence(
+            [mvr_visit_state(h, ["a"]), mvr_visit_state(h, ["b"])], ">="
+        ),
+    ),
     # the issue's example
-    ("reach b before a[3]", lambda h: mvr_precedence([mvr_visit_state(h, ["b"]), mvr_count(cs(h, "a"), "3")], "<")),
+    (
+        "reach b before a[3]",
+        lambda h: mvr_precedence(
+            [mvr_visit_state(h, ["b"]), mvr_count(cs(h, "a"), "3")], "<"
+        ),
+    ),
     # grouping: each row pins one precedence decision, so do not prune them
     ("a or b and c", lambda h: mvr_or([cs(h, "a"), mvr_and([cs(h, "b"), cs(h, "c")])])),
-    ("never a cat b", lambda h: mvr_concatenate([mvr_forbid_state(h, ["a"]), cs(h, "b")])),
-    ("a but not b cat c", lambda h: mvr_setdiff([cs(h, "a"), mvr_concatenate([cs(h, "b"), cs(h, "c")])])),
+    (
+        "never a cat b",
+        lambda h: mvr_concatenate([mvr_forbid_state(h, ["a"]), cs(h, "b")]),
+    ),
+    (
+        "a but not b cat c",
+        lambda h: mvr_setdiff([cs(h, "a"), mvr_concatenate([cs(h, "b"), cs(h, "c")])]),
+    ),
     ("never (a or b)", lambda h: mvr_not_yet(mvr_or([cs(h, "a"), cs(h, "b")]))),
     ("(a)", lambda h: cs(h, "a")),
-    ("reach a then reach b then reach c", lambda h: mvr_and([
-        mvr_precedence([mvr_visit_state(h, ["a"]), mvr_visit_state(h, ["b"])], "<"),
-        mvr_precedence([mvr_visit_state(h, ["b"]), mvr_visit_state(h, ["c"])], "<")])),
+    (
+        "reach a then reach b then reach c",
+        lambda h: mvr_and(
+            [
+                mvr_precedence(
+                    [mvr_visit_state(h, ["a"]), mvr_visit_state(h, ["b"])], "<"
+                ),
+                mvr_precedence(
+                    [mvr_visit_state(h, ["b"]), mvr_visit_state(h, ["c"])], "<"
+                ),
+            ]
+        ),
+    ),
 ]
 
 
