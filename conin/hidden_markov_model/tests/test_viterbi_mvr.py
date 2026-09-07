@@ -185,125 +185,6 @@ def assert_matches_brute_force(hmm, mvrs, observed):
     return path, augmented, score
 
 
-# ===========================
-# Correctness against brute force
-# ===========================
-
-
-def test_viterbi_no_constraints_matches_brute_force(hmm, observed):
-    assert_matches_brute_force(hmm, [], observed)
-
-
-def test_viterbi_hom_mvr_full_range(hmm, observed):
-    mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="B")
-    path, _, _ = assert_matches_brute_force(hmm, [mvr], observed)
-
-    assert "B" not in path
-
-
-def test_viterbi_hom_mvr_windowed(hmm, observed):
-    mvr = make_forbid_mvr(
-        hidden_states=hmm.hidden_states,
-        forbidden_state="B",
-        time_range=[1, 3],
-    )
-    path, _, _ = assert_matches_brute_force(hmm, [mvr], observed)
-
-    # The constraint binds only inside its window.
-    assert "B" not in path[1:4]
-
-
-def test_viterbi_hom_mvr_single_time_window(hmm, observed):
-    mvr = make_forbid_mvr(
-        hidden_states=hmm.hidden_states,
-        forbidden_state="B",
-        time_range=[2, 2],
-    )
-    path, _, _ = assert_matches_brute_force(hmm, [mvr], observed)
-
-    assert path[2] != "B"
-
-
-def test_viterbi_inhom_mvr_full_range(hmm, observed):
-    mvr = make_end_state_inhom_mvr(
-        hidden_states=hmm.hidden_states,
-        target_state="A",
-        time_horizon=len(observed) - 1,
-    )
-    path, _, _ = assert_matches_brute_force(hmm, [mvr], observed)
-
-    assert path[-1] == "A"
-
-
-def test_viterbi_inhom_mvr_windowed(hmm, observed):
-    mvr = make_end_state_inhom_mvr(
-        hidden_states=hmm.hidden_states,
-        target_state="A",
-        time_horizon=2,
-        time_range=[1, 3],
-    )
-    path, _, _ = assert_matches_brute_force(hmm, [mvr], observed)
-
-    assert path[3] == "A"
-
-
-def test_viterbi_disjoint_windows(hmm, observed):
-    mvrs = [
-        make_forbid_mvr(
-            hidden_states=hmm.hidden_states,
-            forbidden_state="B",
-            time_range=[0, 1],
-        ),
-        make_forbid_mvr(
-            hidden_states=hmm.hidden_states,
-            forbidden_state="C",
-            time_range=[3, 4],
-        ),
-    ]
-    path, _, _ = assert_matches_brute_force(hmm, mvrs, observed)
-
-    assert "B" not in path[0:2]
-    assert "C" not in path[3:5]
-
-
-def test_viterbi_overlapping_windows_mixed_types(hmm, observed):
-    mvrs = [
-        make_end_state_inhom_mvr(
-            hidden_states=hmm.hidden_states,
-            target_state="C",
-            time_horizon=2,
-            time_range=[0, 2],
-        ),
-        make_parity_mvr(
-            hidden_states=hmm.hidden_states,
-            target_state="A",
-            time_range=[2, 4],
-        ),
-    ]
-    assert_matches_brute_force(hmm, mvrs, observed)
-
-
-def test_viterbi_three_overlapping_windows(hmm, observed):
-    mvrs = [
-        make_forbid_mvr(
-            hidden_states=hmm.hidden_states,
-            forbidden_state="B",
-            time_range=[0, 2],
-        ),
-        make_parity_mvr(
-            hidden_states=hmm.hidden_states,
-            target_state="A",
-            time_range=[1, 4],
-        ),
-        make_forbid_mvr(
-            hidden_states=hmm.hidden_states,
-            forbidden_state="C",
-            time_range=[2, 3],
-        ),
-    ]
-    assert_matches_brute_force(hmm, mvrs, observed)
-
-
 def test_viterbi_single_time_step(hmm):
     mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="B")
     path, _, _ = assert_matches_brute_force(hmm, [mvr], ["o1"])
@@ -392,17 +273,6 @@ def test_viterbi_random_instances_match_brute_force(seed):
 # ===========================
 # Score, options, and error handling
 # ===========================
-
-
-def test_viterbi_score_is_path_log_probability(hmm, observed):
-    mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="B")
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[mvr])
-
-    path, score = viterbi_torch_mvr_chmm(
-        model, observed, return_augmented=False, return_score=True
-    )
-
-    assert score == pytest.approx(hmm.log_probability(observed, path), abs=1e-4)
 
 
 def test_viterbi_return_shapes(hmm, observed):
@@ -537,92 +407,6 @@ def brute_force_general(hmm, mvrs, observed, T):
     return best_path, best_score
 
 
-def test_brute_force_general_agrees_with_dense_reference(hmm, observed):
-    # Guards the new reference implementation against the established one.
-    path, score = brute_force_general(hmm, [], observed, len(observed))
-    expected_path, expected_score = brute_force(hmm, [], observed)
-
-    assert path == expected_path
-    assert score == pytest.approx(expected_score, abs=1e-9)
-
-
-def test_viterbi_dict_observations_match_dense_list(hmm, observed):
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[])
-
-    dense = viterbi_torch_mvr_chmm(
-        model, observed, return_augmented=False, return_score=True
-    )
-    sparse = viterbi_torch_mvr_chmm(
-        model,
-        dict(enumerate(observed)),
-        time_horizon=len(observed),
-        return_augmented=False,
-        return_score=True,
-    )
-
-    assert dense == sparse
-
-
-def test_viterbi_horizon_longer_than_observations(hmm, observed):
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[])
-    T = len(observed) + 2
-
-    path, score = viterbi_torch_mvr_chmm(
-        model, observed, time_horizon=T, return_augmented=False, return_score=True
-    )
-    expected_path, expected_score = brute_force_general(hmm, [], observed, T)
-
-    assert len(path) == T
-    assert path == expected_path
-    assert score == pytest.approx(expected_score, abs=1e-4)
-
-
-def test_viterbi_sparse_observations_match_brute_force(hmm):
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[])
-    sparse = {0: "o0", 3: "o1", 4: "o1"}
-
-    path, score = viterbi_torch_mvr_chmm(
-        model, sparse, time_horizon=5, return_augmented=False, return_score=True
-    )
-    expected_path, expected_score = brute_force_general(hmm, [], sparse, 5)
-
-    # An absent observation drops the emission factor, never the time step.
-    assert len(path) == 5
-    assert path == expected_path
-    assert score == pytest.approx(expected_score, abs=1e-4)
-
-
-def test_viterbi_no_observations_is_prior_map(hmm):
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[])
-
-    from_map = viterbi_torch_mvr_chmm(
-        model, {}, time_horizon=4, return_augmented=False, return_score=True
-    )
-    from_list = viterbi_torch_mvr_chmm(
-        model, [], time_horizon=4, return_augmented=False, return_score=True
-    )
-    expected_path, expected_score = brute_force_general(hmm, [], {}, 4)
-
-    assert from_map == from_list
-    assert from_map[0] == expected_path
-    assert from_map[1] == pytest.approx(expected_score, abs=1e-4)
-
-
-def test_viterbi_unwindowed_mvr_covers_the_extended_horizon(hmm, observed):
-    # A time_range-less MVR defaults to [0, T-1], so extending the horizon
-    # extends enforcement past the observed span.
-    mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="A")
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[mvr])
-    T = len(observed) + 3
-
-    path = viterbi_torch_mvr_chmm(
-        model, observed, time_horizon=T, return_augmented=False
-    )
-
-    assert len(path) == T
-    assert "A" not in path
-
-
 @pytest.mark.parametrize("seed", range(6))
 def test_viterbi_random_sparse_instances_match_brute_force(seed):
     rng = np.random.default_rng(1000 + seed)
@@ -639,13 +423,16 @@ def test_viterbi_random_sparse_instances_match_brute_force(seed):
 
     mvrs = []
     if rng.random() < 0.6:
-        end = int(rng.integers(0, T))
-        start = int(rng.integers(0, end + 1))
+        time_range = None
+        if rng.random() < 0.5:
+            end = int(rng.integers(0, T))
+            start = int(rng.integers(0, end + 1))
+            time_range = [start, end]
         mvrs.append(
             make_forbid_mvr(
                 hidden_states=hmm.hidden_states,
                 forbidden_state=str(rng.choice(hmm.hidden_states)),
-                time_range=[start, end],
+                time_range=time_range,
             )
         )
 

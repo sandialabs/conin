@@ -163,8 +163,7 @@ def test_sat_prob_random_instances_match_brute_force(seed):
 def test_sat_prob_answers_for_an_unsatisfiable_target_but_raises_for_the_rest(
     hmm, observed
 ):
-    """Deliberately redundant with the sweep: pins the fork against sat_time, which
-    raises for both. The sweep only covers it on the seeds that happen to land there."""
+    """Deliberate spec: an impossible target is an answer, unlike an impossible rest."""
     # No hidden state is named "Z", so this one can never accept.
     unreachable = make_reach_mvr(hidden_states=hmm.hidden_states, target_state="Z")
     other = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="B")

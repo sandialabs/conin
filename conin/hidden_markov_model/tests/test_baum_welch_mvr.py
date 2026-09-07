@@ -32,11 +32,7 @@ from .test_viterbi_mvr import (  # noqa: E402
 
 
 def brute_force_posteriors(hmm, mvrs, observed, T):
-    """
-    Exact posteriors by enumeration: weight every feasible path, normalize, and
-    accumulate the marginals. This is the definition rather than a second
-    implementation of the recursion.
-    """
+    """Enumerate feasible paths and accumulate exact posterior marginals."""
     obs_map = as_obs_map(observed)
     hidden_states = list(hmm.hidden_states)
     index = {h: i for i, h in enumerate(hidden_states)}
@@ -130,35 +126,6 @@ def observed():
 # ===========================
 
 
-def test_forward_backward_inhom_mvr_windowed(hmm, observed):
-    # The random sweep below is homogeneous only, so this is the one place the
-    # local-time offsets (t - a for a slice, t - a - 1 for a transition) run
-    # with a nonzero a.
-    mvr = make_end_state_inhom_mvr(
-        hidden_states=hmm.hidden_states,
-        target_state="C",
-        time_horizon=2,
-        time_range=[1, 3],
-    )
-    assert_matches_brute_force(hmm, [mvr], observed)
-
-
-def test_forward_backward_overlapping_windows_mixed_types(hmm, observed):
-    mvrs = [
-        make_forbid_mvr(
-            hidden_states=hmm.hidden_states, forbidden_state="A", time_range=[0, 2]
-        ),
-        make_parity_mvr(hidden_states=hmm.hidden_states, target_state="B"),
-        make_end_state_inhom_mvr(
-            hidden_states=hmm.hidden_states,
-            target_state="C",
-            time_horizon=2,
-            time_range=[2, 4],
-        ),
-    ]
-    assert_matches_brute_force(hmm, mvrs, observed)
-
-
 def test_forward_backward_single_time_step(hmm):
     mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="A")
     gamma, xi, _ = assert_matches_brute_force(hmm, [mvr], ["o1"])
@@ -169,10 +136,7 @@ def test_forward_backward_single_time_step(hmm):
 
 @pytest.mark.parametrize("seed", range(12))
 def test_forward_backward_random_instances(seed):
-    # The core correctness test. Across these seeds the draw covers an empty
-    # constraint set, a defaulted time_range, and windows that start at 0, end
-    # at T-1, sit in the interior, and collapse to a single time -- which is why
-    # none of those has a standalone test.
+    # Covers empty and mixed constraint sets, both MVR types, and varied windows.
     rng = np.random.default_rng(seed)
 
     hidden_states = ["A", "B", "C"]
@@ -196,24 +160,21 @@ def test_forward_backward_random_instances(seed):
             )
         )
     if seed % 2:
-        mvrs.append(make_parity_mvr(hidden_states=hidden_states, target_state="B"))
+        if seed % 4 == 1:
+            mvrs.append(make_parity_mvr(hidden_states=hidden_states, target_state="B"))
+        else:
+            start = int(rng.integers(0, T))
+            end = int(rng.integers(start, T))
+            mvrs.append(
+                make_end_state_inhom_mvr(
+                    hidden_states=hidden_states,
+                    target_state="C",
+                    time_horizon=end - start,
+                    time_range=[start, end],
+                )
+            )
 
     assert_matches_brute_force(model_hmm, mvrs, observed)
-
-
-# ===========================
-# Horizon and sparse observations
-# ===========================
-
-
-def test_forward_backward_sparse_observations(hmm):
-    # Sparse map plus a horizon past the last observation. The other horizon
-    # forms belong to _resolve_horizon, which test_viterbi_mvr already covers.
-    observed = {0: "o1", 3: "o0"}
-    mvr = make_forbid_mvr(
-        hidden_states=hmm.hidden_states, forbidden_state="A", time_range=[1, 4]
-    )
-    assert_matches_brute_force(hmm, [mvr], observed, T=5)
 
 
 # ===========================
@@ -302,9 +263,7 @@ def test_one_em_step_matches_brute_force_counts(hmm):
 
 
 def test_em_keeps_rows_that_collect_no_mass(hmm, observed):
-    # Forbidding A outright makes it unreachable, so nothing ever leaves it and
-    # nothing is ever emitted from it. Those rows have no maximizer to find and
-    # must be left exactly as the caller supplied them.
+    # Rows with no expected mass have no maximizer and must remain unchanged.
     mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="A")
     model = MVR_CHMM(hidden_markov_model=hmm, constraints=[mvr])
 

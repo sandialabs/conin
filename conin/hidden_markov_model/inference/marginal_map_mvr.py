@@ -238,18 +238,14 @@ def marginal_map_torch_mvr_chmm(
         if not torch.isfinite(V.max()):
             raise InvalidInputError(f"No feasible augmented path {where}.")
 
-    # ------------------------------------------------------------------
-    # Everything before the first query time is summed out.
-    # ------------------------------------------------------------------
+    # Sum out everything before the first query time.
     V = _forward_prefix(ctx, times[0]).reshape(shapes[times[0]])
     check_feasible(V, f"at time {times[0]}")
 
     # Wider than the tensors it sums: with one query time per step this accumulates T times.
     log_score = torch.zeros((), dtype=ACCUM_DTYPE, device=device)
 
-    # ------------------------------------------------------------------
     # Max-plus recursion over the coarse chain of query times.
-    # ------------------------------------------------------------------
     backptr = []
 
     for prev_time, curr_time in zip(times, times[1:]):
@@ -289,17 +285,13 @@ def marginal_map_torch_mvr_chmm(
         log_score = log_score + scale
         V = V - scale
 
-    # ------------------------------------------------------------------
-    # Everything after the last query time is summed out.
-    # ------------------------------------------------------------------
+    # Sum out everything after the last query time.
     V = V + _backward_suffix(ctx, times[-1]).reshape(shapes[times[-1]])
     check_feasible(V, "at the final query time")
 
     log_score = float(log_score + V.max())
 
-    # ------------------------------------------------------------------
     # Backtracking over the coarse chain.
-    # ------------------------------------------------------------------
     final_flat = int(torch.argmax(V).item())
     curr_idx = tuple(int(x) for x in np.unravel_index(final_flat, shapes[times[-1]]))
 

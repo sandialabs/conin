@@ -6,11 +6,7 @@ from .mvr import BaseMVR, MVR_MatVecRepn
 
 
 def _align_hidden_states(mvr, hidden_to_external):
-    """
-    Return an MVR whose hidden-state ordering matches the HMM's.
-    Only the hidden axis moves, so the arrays are permuted directly rather than
-    rebuilt from the label-keyed ``ini``/``upd``/``evl`` maps.
-    """
+    """Return an MVR with its numeric hidden axis aligned to the HMM."""
     if list(mvr.hidden_states) == hidden_to_external:
         return mvr
 
@@ -39,26 +35,9 @@ def _align_hidden_states(mvr, hidden_to_external):
 
 
 class MVR_CHMM(chmm.CHMM):
-    """Constrained HMM variant based on mediation variable representations.
-
-    Parameters
-    ----------
-    hidden_markov_model : HiddenMarkovModel
-        Hidden Markov model with an initialized numeric representation.
-    constraints : list of BaseMVR, optional
-        Mediation variable representation constraints to enforce.
-    data : optional
-        Application-specific data passed through to the base constrained HMM.
-
-    Notes
-    -----
-    Constraints are stored with their hidden-state ordering aligned to the
-    HMM's, so algorithms can index MVR arrays directly.
-    """
+    """Constrained HMM whose MVR hidden axes are aligned when built."""
 
     def __init__(self, *, hidden_markov_model=None, constraints=None, data=None):
-        # Validation checks
-        # Checking for missing arguments
         if hidden_markov_model is None:
             raise InvalidInputError("hidden_markov_model is a required argument")
         if hidden_markov_model.repn is None:
@@ -66,8 +45,7 @@ class MVR_CHMM(chmm.CHMM):
                 "hidden_markov_model.repn is missing "
                 "Please run Load_model() with the correct start/trans/emit probs"
             )
-        # Constraint consistency checks. Constraints that pass are realigned to
-        # the HMM's hidden-state ordering so downstream algorithms never have to.
+        # Align constraints once so algorithms can index their arrays directly.
         if constraints:
             hidden_to_external = list(hidden_markov_model.hidden_to_external)
             hidden_states = set(hidden_to_external)
