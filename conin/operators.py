@@ -4,6 +4,7 @@ from typing import Any
 from conin.exceptions import InvalidInputError
 from conin.hidden_markov_model.mvr import BaseMVR
 
+
 class OperatorFunctor(ABC):
     """Abstract callable interface for constraint operators."""
 

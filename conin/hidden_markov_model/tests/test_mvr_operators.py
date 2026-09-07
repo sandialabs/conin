@@ -665,11 +665,7 @@ def test_mvr_precedence_matches_first_hits_for_mixed_inputs():
             for word in product(ALPHABET, repeat=length):
                 first = [
                     next(
-                        (
-                            t
-                            for t in range(length)
-                            if eval_mvr(mvr, word[: t + 1])
-                        ),
+                        (t for t in range(length) if eval_mvr(mvr, word[: t + 1])),
                         None,
                     )
                     for mvr in inputs

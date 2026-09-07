@@ -1010,9 +1010,7 @@ def mvr_precedence(
 
     def states_at(mvr, t):
         return (
-            mvr.mediation_states
-            if isinstance(mvr, HomMVR)
-            else mvr.mediation_states[t]
+            mvr.mediation_states if isinstance(mvr, HomMVR) else mvr.mediation_states[t]
         )
 
     def evl_at(mvr, t, state):
