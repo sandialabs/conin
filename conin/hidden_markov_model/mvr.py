@@ -1,10 +1,17 @@
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 
 from conin.exceptions import InvalidInputError
-from typing import Any
-from itertools import product
+
+
+def _has_product_domain(mapping, first, second):
+    """Whether a mapping is defined on exactly ``first x second``."""
+    return len(mapping) == len(first) * len(second) and all(
+        (left, right) in mapping for left in first for right in second
+    )
 
 
 def _normalize_time_range(
@@ -34,11 +41,7 @@ def _normalize_time_range(
 
 
 class BaseMVR:
-    """Base class for mediation variable representations (MVRs).
-
-    An MVR augments a hidden Markov model with an auxiliary state process used to
-    track feasibility conditions over hidden-state sequences.
-    """
+    """Auxiliary state process tracking a constraint on hidden-state sequences."""
 
     hidden_states: Any
     mediation_states: Any
@@ -52,7 +55,6 @@ class BaseMVR:
     _name: str | None  # optional label for this instance
 
     def __init__(self):
-        """Initialize the base MVR state."""
         self._repn = None
         self._prefix = False
         self._time_range = None
@@ -76,10 +78,6 @@ class BaseMVR:
 
     @property
     def time_range(self):
-        """Return the ``[start, end]`` range attached to the MVR, or None.
-
-        Read-only; set it with the ``mvr_timerange`` operator.
-        """
         return self._time_range
 
     @property
@@ -130,7 +128,6 @@ class HomMVR(BaseMVR):
         # Validation
         h_space = set(hidden_states)
         m_space = set(mediation_states)
-        mh_space = set(product(m_space, h_space))
 
         # duplicates
         if len(hidden_states) != len(set(hidden_states)):
@@ -149,7 +146,7 @@ class HomMVR(BaseMVR):
             )
 
         # upd
-        if mh_space != set(upd.keys()):
+        if not _has_product_domain(upd, m_space, h_space):
             raise InvalidInputError(
                 "domain(keys) of upd must match mediation_states x hidden_states"
             )
@@ -255,11 +252,7 @@ class HomMVR(BaseMVR):
 
 
 class InhomMVR(BaseMVR):
-    """Time-inhomogeneous mediation variable representation.
-
-    ``mediation_states``, ``upd``, and ``evl`` vary over time instead of being
-    constant across the horizon.
-    """
+    """MVR whose mediation states, updates, and evaluations vary with time."""
 
     def __init__(
         self,
@@ -314,10 +307,9 @@ class InhomMVR(BaseMVR):
 
             # upd
             if t > 0:
-                mh_space = set(product(m_space_prev, h_space))
                 upd_t_minus_1 = upd[t - 1]
 
-                if mh_space != set(upd_t_minus_1.keys()):
+                if not _has_product_domain(upd_t_minus_1, m_space_prev, h_space):
                     raise InvalidInputError(
                         f"domain(keys) of upd at time {t - 1} must match mediation_states x hidden_states"
                     )
@@ -463,11 +455,7 @@ class InhomMVR(BaseMVR):
 
 
 class MVR_MatVecRepn:
-    """Integer-indexed NumPy array representation of an MVR.
-
-    Supports both homogeneous and inhomogeneous mediation variable
-    representations.
-    """
+    """Integer-indexed NumPy representation of a homogeneous or inhomogeneous MVR."""
 
     def __init__(
         self,
@@ -488,13 +476,7 @@ class MVR_MatVecRepn:
         self.load_index_maps()
 
     def load_index_maps(self):
-        """Cache the deterministic successor maps implied by ``ini`` and ``upd``.
-
-        - ``ini_idx[h]`` is the mediation state entered when the MVR is started
-          on hidden state ``h``;
-        - ``next_idx[h_curr, m_prev]`` is the mediation state reached from
-          ``m_prev`` on hidden state ``h_curr``.
-        """
+        """Cache deterministic initial and successor indices."""
         self.ini_idx = self.ini_array.argmax(axis=1)
 
         if isinstance(self.upd_array, list):
@@ -522,10 +504,7 @@ class MVR_MatVecRepn:
         self.ini_array = ini_array
 
     def load_upd_array(self, upd_array, check_errors=True):
-        """
-        check_errors = False only when permuting mediation states to match
-        that of HMM, called by _align_hidden_states in MVR_CHMM.
-        """
+        """Load updates; alignment may bypass validation with ``check_errors=False``."""
         if isinstance(upd_array, list):
             upd_array = [np.asarray(arr) for arr in upd_array]
         else:

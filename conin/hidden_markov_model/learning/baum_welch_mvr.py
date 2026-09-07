@@ -134,8 +134,11 @@ def _e_step_counts(ctx):
     num_observed = ctx["hmm"].num_observed_states
     emit_counts = torch.zeros((K, num_observed), dtype=ACCUM_DTYPE, device=device)
 
-    for t, o in ctx["observed_index"].items():
-        emit_counts[:, o] += gamma[t]
+    if ctx["observed_index"]:
+        times, observed = zip(*ctx["observed_index"].items())
+        times = torch.as_tensor(times, dtype=torch.long, device=device)
+        observed = torch.as_tensor(observed, dtype=torch.long, device=device)
+        emit_counts.index_add_(1, observed, gamma[times].T)
 
     return gamma[0], trans_counts, emit_counts, loglik
 

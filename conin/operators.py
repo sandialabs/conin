@@ -4,26 +4,12 @@ from typing import Any
 from conin.exceptions import InvalidInputError
 from conin.hidden_markov_model.mvr import BaseMVR
 
-# One could also create an inherited class for additional functionality
-# TODO think about partial_func semantics
-
-
 class OperatorFunctor(ABC):
-    """
-    Abstract base class for all operator functors.
-
-    A operator functor is a callable object that encapsulates an operator for combining
-    multiple constraints, providing a consistent interface across different contexts.
-    """
+    """Abstract callable interface for constraint operators."""
 
     @abstractmethod
     def __call__(self, *args, **kwargs):
-        """
-        Apply the operator function.
-
-        This method should be implemented by concrete operator classes
-        to define how the operator is applied in their specific context.
-        """
+        """Apply the operator."""
         pass
 
 
@@ -31,9 +17,8 @@ class MVROperator(OperatorFunctor):
 
     def __init__(self, func=None, name=None, arity=None):
         self.func = func
-        self.arity = arity  # interger or None, indicating arity of operator.
+        self.arity = arity
 
-        # If no name is provided, use the function's name
         if name is not None:
             self.name = name
         elif func is not None:
@@ -71,51 +56,46 @@ class MVROperator(OperatorFunctor):
         else:
             raise InvalidInputError("input must be an MVR or list of MVRs")
 
-        # arity check
         if self.arity is not None:
             if self.arity != input_arity:
                 raise InvalidInputError(
                     f"operator arity is {self.arity} but provided list has length {input_arity}"
                 )
 
-        # optional hidden state check
         if hidden_markov_model is not None:
             if hidden_markov_model.hidden_states != hidden_states:
                 raise InvalidInputError(
                     "The hidden states of the HMM and the (first) MVR do not exactly match"
                 )
 
-        mvr = self.func(mvrs, *op_args, **kwargs)
+        result = self.func(mvrs, *op_args, **kwargs)
 
-        if not isinstance(mvr, BaseMVR):
+        if not isinstance(result, BaseMVR):
             raise InvalidInputError(
                 f"The output of operator {self.name} is not an MVR object."
             )
 
+        # An operator returning one of its inputs is explicitly in-place or
+        # idempotent. Preserve that identity; there is no new state space to prune.
+        if any(result is mvr for mvr in mvrs):
+            return result
+
         # Minimize here rather than in each operator body: product and subset
         # constructions leave most states unreachable, and cost is K * prod(M_i).
-        return mvr.prune()
+        return result.prune()
 
 
 def mvr_operator_fn(*, name=None, arity=None):
-    """
-    Decorator factory that takes the 'name' and returns a decorator function that creates an instance of MVROperator.
-    """
+    """Decorate a function as an MVR operator with optional fixed arity."""
 
     def decorator(func):
-        """
-        The actual decorator that wraps the user operator function in a MVROperator class.
-        """
         return MVROperator(func=func, name=name, arity=arity)
 
     return decorator
 
 
 def _validate_hidden_states(mvrs: list[BaseMVR]) -> list[Any]:
-    """
-    Checks that all MVRs have the same hidden state space.
-    NOTE: the returned ordering is taken from mvrs[0].
-    """
+    """Validate a common hidden space and return the first MVR's ordering."""
     hidden_states = mvrs[0].hidden_states
     hidden_space = set(hidden_states)
 

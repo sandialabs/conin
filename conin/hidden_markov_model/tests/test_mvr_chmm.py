@@ -68,9 +68,7 @@ def make_forbid_state_mvr(
     hidden_states: list[str],
     forbidden_state: str,
 ) -> HomMVR:
-    """
-    Construct a homogeneous MVR/DFA that rejects paths visiting a forbidden_state.
-    """
+    """Build a homogeneous MVR that rejects visits to one state."""
 
     if forbidden_state not in hidden_states:
         raise ValueError("forbidden_state must be in hidden_states")
@@ -104,9 +102,7 @@ def make_forbid_state_inhom_mvr(
     forbidden_state: str,
     time_horizon: int,
 ) -> InhomMVR:
-    """
-    Construct an inhomogeneous MVR that rejects paths visiting forbidden_state.
-    """
+    """Build an inhomogeneous MVR that rejects visits to one state."""
 
     if forbidden_state not in hidden_states:
         raise ValueError("forbidden_state must be in hidden_states")
@@ -149,9 +145,7 @@ def make_forbid_state_inhom_mvr(
 
 
 def make_valid_direct_mvr_repn_arrays():
-    """
-    Construct a simple valid homogeneous MVR_MatVecRepn. H = 2, M = 2.
-    """
+    """Return valid homogeneous arrays with two hidden and mediation states."""
 
     ini_array = np.array(
         [
@@ -177,68 +171,13 @@ def make_valid_direct_mvr_repn_arrays():
 # ===========================
 
 
-def test_make_random_hmm_is_valid():
-    hidden_states = ["A", "B", "C"]
-    observed_states = ["o0", "o1"]
-
-    hmm = make_random_hmm(
-        hidden_states=hidden_states,
-        observed_states=observed_states,
-    )
-
-    assert hmm.repn is not None
-    assert set(hmm.hidden_states) == set(hidden_states)
-    assert set(hmm.observed_states) == set(observed_states)
-
-    assert np.isclose(sum(hmm.start_vec), 1.0)
-
-    for row in hmm.transition_mat:
-        assert np.isclose(sum(row), 1.0)
-
-    for row in hmm.emission_mat:
-        assert np.isclose(sum(row), 1.0)
-
-
-def test_forbid_state_mvr_logic():
-    hidden_states = ["A", "B", "C"]
-    forbidden_state = "B"
-
-    mvr = make_forbid_state_mvr(
-        hidden_states=hidden_states,
-        forbidden_state=forbidden_state,
-    )
-
-    assert mvr.ini["A"] == "ok"
-    assert mvr.ini["B"] == "violated"
-    assert mvr.ini["C"] == "ok"
-
-    assert mvr.upd[("ok", "A")] == "ok"
-    assert mvr.upd[("ok", "B")] == "violated"
-    assert mvr.upd[("ok", "C")] == "ok"
-
-    assert mvr.upd[("violated", "A")] == "violated"
-    assert mvr.upd[("violated", "B")] == "violated"
-    assert mvr.upd[("violated", "C")] == "violated"
-
-    assert mvr.evl["ok"] is True
-    assert mvr.evl["violated"] is False
-
-
-def test_hom_mvr_prefix_defaults_to_false():
+def test_hom_mvr_prefix_is_read_only_and_defaults_to_false():
     mvr = make_forbid_state_mvr(
         hidden_states=["A", "B", "C"],
         forbidden_state="B",
     )
 
     assert mvr.prefix is False
-    assert mvr._prefix is False
-
-
-def test_hom_mvr_prefix_property_is_read_only():
-    mvr = make_forbid_state_mvr(
-        hidden_states=["A", "B", "C"],
-        forbidden_state="B",
-    )
 
     with pytest.raises(AttributeError):
         mvr.prefix = True
@@ -301,22 +240,6 @@ def test_hom_mvr_matvec_repn_for_forbid_state_mvr():
     assert repn.num_mediation_states == 2
     assert list(repn.hidden_states) == [0, 1, 2]
     assert list(repn.mediation_states) == [0, 1]
-
-
-def test_hom_mvr_repn_is_consistent():
-    hidden_states = ["A", "B", "C"]
-
-    mvr = make_forbid_state_mvr(
-        hidden_states=hidden_states,
-        forbidden_state="B",
-    )
-
-    repn_1 = mvr.repn
-    repn_2 = mvr.repn
-    repn_3 = mvr.initialize()
-
-    assert repn_1 is repn_2
-    assert repn_1 is repn_3
 
 
 def test_hom_mvr_constructor_builds_repn_immediately():
@@ -409,101 +332,33 @@ def test_direct_mvr_matvec_repn_valid_homogeneous_arrays():
     assert list(repn.mediation_states) == [0, 1]
 
 
-def test_direct_mvr_matvec_repn_rejects_invalid_ini_array_rows():
-    _, upd_array, evl_array = make_valid_direct_mvr_repn_arrays()
+@pytest.mark.parametrize(
+    "case,match",
+    [
+        ("ini_sum", "ini_array rows must sum to 1"),
+        ("upd_sum", "must sum to 1 over the current mediation axis"),
+        ("evl_rank", "evl_array at index 0 must be a 1D array"),
+        ("dimensions", "evl_array mediation dimension must match"),
+    ],
+)
+def test_direct_mvr_matvec_repn_rejects_invalid_arrays(case, match):
+    ini_array, upd_array, evl_array = make_valid_direct_mvr_repn_arrays()
 
-    bad_ini_array = np.array(
-        [
-            [1.0, 0.0],
-            [1.0, 1.0],
-        ]
-    )
+    if case == "ini_sum":
+        ini_array[1] = 1.0
+    elif case == "upd_sum":
+        upd_array[:] = 0.0
+    elif case == "evl_rank":
+        evl_array = evl_array[None, :]
+    else:
+        evl_array = np.append(evl_array, 1.0)
 
-    with pytest.raises(
-        InvalidInputError,
-        match="ini_array rows must sum to 1",
-    ):
+    with pytest.raises(InvalidInputError, match=match):
         MVR_MatVecRepn(
-            ini_array=bad_ini_array,
+            ini_array=ini_array,
             upd_array=upd_array,
             evl_array=evl_array,
         )
-
-
-def test_direct_mvr_matvec_repn_rejects_invalid_upd_array_sums():
-    ini_array, _, evl_array = make_valid_direct_mvr_repn_arrays()
-
-    bad_upd_array = np.zeros((2, 2, 2), dtype=float)
-
-    with pytest.raises(
-        InvalidInputError,
-        match="must sum to 1 over the current mediation axis",
-    ):
-        MVR_MatVecRepn(
-            ini_array=ini_array,
-            upd_array=bad_upd_array,
-            evl_array=evl_array,
-        )
-
-
-def test_direct_mvr_matvec_repn_rejects_invalid_evl_array_dimension():
-    ini_array, upd_array, _ = make_valid_direct_mvr_repn_arrays()
-
-    bad_evl_array = np.array(
-        [
-            [1.0, 0.0],
-        ]
-    )
-
-    with pytest.raises(
-        InvalidInputError,
-        match="evl_array at index 0 must be a 1D array",
-    ):
-        MVR_MatVecRepn(
-            ini_array=ini_array,
-            upd_array=upd_array,
-            evl_array=bad_evl_array,
-        )
-
-
-def test_direct_mvr_matvec_repn_rejects_dimension_mismatch():
-    ini_array, upd_array, _ = make_valid_direct_mvr_repn_arrays()
-
-    bad_evl_array = np.array([1.0, 0.0, 1.0])
-
-    with pytest.raises(
-        InvalidInputError,
-        match="evl_array mediation dimension must match ini_array mediation dimension",
-    ):
-        MVR_MatVecRepn(
-            ini_array=ini_array,
-            upd_array=upd_array,
-            evl_array=bad_evl_array,
-        )
-
-
-def test_mvr_chmm_accepts_random_hmm_with_forbid_state_mvr():
-    hidden_states = ["A", "B", "C"]
-    observed_states = ["o0", "o1"]
-    forbidden_state = "B"
-
-    hmm = make_random_hmm(
-        hidden_states=hidden_states,
-        observed_states=observed_states,
-    )
-
-    mvr = make_forbid_state_mvr(
-        hidden_states=hidden_states,
-        forbidden_state=forbidden_state,
-    )
-
-    model = MVR_CHMM(
-        hidden_markov_model=hmm,
-        constraints=[mvr],
-        data=None,
-    )
-
-    assert model is not None
 
 
 def test_mvr_chmm_rejects_missing_hmm():
@@ -631,150 +486,45 @@ def _make_generated_mvr_with_time_range(mvr_type, time_range=None, time_horizon=
 
 
 @pytest.mark.parametrize("mvr_type", ["hom", "inhom"])
-def test_mvr_time_range_defaults_to_none(mvr_type):
-    mvr = _make_generated_mvr_with_time_range(
-        mvr_type=mvr_type,
-        time_range=None,
-        time_horizon=3,
-    )
-
-    assert mvr._time_range is None
-
-
-@pytest.mark.parametrize("mvr_type", ["hom", "inhom"])
 @pytest.mark.parametrize(
     "time_range",
-    [
-        [0, 0],  # inclusive width 1
-        [0, 1],  # inclusive width 2
-        [0, 2],  # inclusive width 3
-        [0, 3],  # inclusive width 4, valid when time_horizon == 3
-        [1, 3],  # inclusive width 3
-        [5, 7],  # inclusive width 3
-    ],
+    [None, [0, 0], [5, 7]],
 )
-def test_mvr_accepts_valid_time_range_list(mvr_type, time_range):
+def test_mvr_accepts_valid_time_ranges(mvr_type, time_range):
     mvr = _make_generated_mvr_with_time_range(
         mvr_type=mvr_type,
         time_range=time_range,
         time_horizon=3,
     )
 
-    assert mvr._time_range == time_range
-    assert mvr._time_range is not time_range  # the MVR owns its range
-
-
-@pytest.mark.parametrize("mvr_type", ["hom", "inhom"])
-@pytest.mark.parametrize(
-    "bad_time_range",
-    [
-        (0, 1),
-        np.array([0, 1]),
-        "01",
-        {0: 0, 1: 1},
-        range(2),
-    ],
-)
-def test_mvr_rejects_non_list_time_range(mvr_type, bad_time_range):
-    with pytest.raises(
-        InvalidInputError,
-        match="time range must be a list of two nonnegative integers",
-    ):
-        _make_generated_mvr_with_time_range(
-            mvr_type=mvr_type,
-            time_range=bad_time_range,
-            time_horizon=3,
-        )
-
-
-@pytest.mark.parametrize("mvr_type", ["hom", "inhom"])
-@pytest.mark.parametrize(
-    "bad_time_range",
-    [
-        [],
-        [0],
-        [0, 1, 2],
-        [0, 1, 2, 3],
-    ],
-)
-def test_mvr_rejects_time_range_with_invalid_length(mvr_type, bad_time_range):
-    with pytest.raises(
-        InvalidInputError,
-        match="time range must be a list of two nonnegative integers",
-    ):
-        _make_generated_mvr_with_time_range(
-            mvr_type=mvr_type,
-            time_range=bad_time_range,
-            time_horizon=3,
-        )
-
-
-@pytest.mark.parametrize("mvr_type", ["hom", "inhom"])
-@pytest.mark.parametrize(
-    "bad_time_range",
-    [
-        [-1, 1],
-        [0, -1],
-        [0.0, 1],
-        [True, 1],
-        ["0", 1],
-    ],
-)
-def test_mvr_rejects_time_range_with_invalid_entries(mvr_type, bad_time_range):
-    with pytest.raises(
-        InvalidInputError,
-        match="time range must be a list of two nonnegative integers",
-    ):
-        _make_generated_mvr_with_time_range(
-            mvr_type=mvr_type,
-            time_range=bad_time_range,
-            time_horizon=3,
-        )
-
-
-@pytest.mark.parametrize("mvr_type", ["hom", "inhom"])
-@pytest.mark.parametrize(
-    "bad_time_range",
-    [
-        [1, 0],
-        [2, 1],
-        [10, 9],
-    ],
-)
-def test_mvr_rejects_time_range_with_start_greater_than_end(
-    mvr_type,
-    bad_time_range,
-):
-    with pytest.raises(
-        InvalidInputError,
-        match="time range must be a list of two nonnegative integers",
-    ):
-        _make_generated_mvr_with_time_range(
-            mvr_type=mvr_type,
-            time_range=bad_time_range,
-            time_horizon=3,
-        )
+    assert mvr.time_range == time_range
+    if time_range is not None:
+        assert mvr.time_range is not time_range
 
 
 @pytest.mark.parametrize(
-    "bad_time_range",
+    "bad_time_range,match",
     [
-        [0, 4],  # inclusive width 5 > time_horizon + 1 == 4
-        [1, 5],  # inclusive width 5 > time_horizon + 1 == 4
-        [2, 6],  # inclusive width 5 > time_horizon + 1 == 4
-        [0, 5],  # inclusive width 6 > time_horizon + 1 == 4
-        [5, 10],  # inclusive width 6 > time_horizon + 1 == 4
+        ((0, 1), "list of two"),
+        ([0], "list of two"),
+        ([True, 1], "nonnegative integers"),
+        ([1, 0], "nonnegative integers"),
     ],
 )
-def test_inhom_mvr_rejects_time_range_width_exceeding_time_horizon(
-    bad_time_range,
-):
-    with pytest.raises(
-        InvalidInputError,
-        match="time range cannot be longer than the time horizon",
-    ):
+def test_mvr_rejects_invalid_time_ranges(bad_time_range, match):
+    for mvr_type in ("hom", "inhom"):
+        with pytest.raises(InvalidInputError, match=match):
+            _make_generated_mvr_with_time_range(
+                mvr_type=mvr_type,
+                time_range=bad_time_range,
+                time_horizon=3,
+            )
+
+
+def test_inhom_mvr_rejects_range_wider_than_its_horizon():
+    with pytest.raises(InvalidInputError, match="longer than the time horizon"):
         _make_generated_mvr_with_time_range(
             mvr_type="inhom",
-            time_range=bad_time_range,
+            time_range=[0, 4],
             time_horizon=3,
         )

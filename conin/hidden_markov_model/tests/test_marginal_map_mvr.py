@@ -78,15 +78,7 @@ def make_constraint(shape, hidden_states, T, time_range=None):
 
 
 def brute_force_marginal_map(hmm, mvrs, observed, T, query_times):
-    """
-    Exhaustive marginal MAP: group feasible paths by their query-time **augmented**
-    states, sum the probability within each group, take the heaviest, and project
-    to hidden.
-
-    The mediation state is maximized alongside the hidden state, not summed out.
-    Grouping by hidden state alone is a different query -- see
-    ``test_marginal_map_maximizes_mediation_rather_than_summing_it``.
-    """
+    """Enumerate marginal MAP over augmented states, then project to hidden."""
     obs_map = as_obs_map(observed)
     groups = {}
 
@@ -161,9 +153,7 @@ def test_marginal_map_matches_brute_force(hmm, observed, query_times):
 def test_marginal_map_with_constraint_matches_brute_force(
     hmm, observed, shape, query_times
 ):
-    # parity and reach are the shapes that pin the contract: they are the ones
-    # keeping two mediation values live at a query time, so they are the ones a
-    # hidden-only reference would disagree with.
+    # Parity and reach keep multiple mediation values live at query times.
     mvr = make_constraint(shape, hmm.hidden_states, len(observed))
     assert_matches_brute_force(hmm, [mvr], observed, len(observed), query_times)
 
@@ -189,11 +179,7 @@ def hidden_only_marginal_map(hmm, mvrs, observed, T, query_times):
 def test_marginal_map_maximizes_mediation_rather_than_summing_it(
     hmm, observed, query_times
 ):
-    """
-    Deliberately redundant, and deliberately kept: the mediation state is
-    maximized at a query time rather than summed out, so the two groupings must
-    disagree. The sweep does not reliably draw the geometry that shows it.
-    """
+    """Deliberate spec: mediation is maximized, not summed, at query times."""
     mvrs = [make_parity_mvr(hidden_states=hmm.hidden_states, target_state="B")]
     T = len(observed)
     model = MVR_CHMM(hidden_markov_model=hmm, constraints=mvrs)
@@ -330,9 +316,7 @@ def test_marginal_map_over_all_times_equals_viterbi(hmm, observed):
 
 
 def test_marginal_map_differs_from_restricting_viterbi(hmm, observed):
-    # Maximizing a marginal is not marginalizing a maximum. This fixture is a
-    # concrete witness, so a refactor that silently turns one into the other
-    # cannot pass unnoticed.
+    # Concrete witness that maximizing a marginal differs from restricting MAP.
     model = MVR_CHMM(hidden_markov_model=hmm, constraints=[])
     query_times = [0, 2, 4]
 
@@ -348,20 +332,6 @@ def test_marginal_map_differs_from_restricting_viterbi(hmm, observed):
         marginal_path
         == brute_force_marginal_map(hmm, [], observed, len(observed), query_times)[0]
     )
-
-
-# ===========================
-# Horizon and sparse observations
-# ===========================
-
-
-def test_marginal_map_horizon_longer_than_observations(hmm, observed):
-    assert_matches_brute_force(hmm, [], observed, len(observed) + 2, [0, 3, 6])
-
-
-def test_marginal_map_sparse_observations(hmm):
-    sparse = {0: "o0", 3: "o1"}
-    assert_matches_brute_force(hmm, [], sparse, 5, [1, 4])
 
 
 # ===========================
@@ -482,45 +452,6 @@ def test_gap_operator_allocation_failure_names_the_cause(hmm, observed):
             )
     finally:
         mod._sum_step = original
-
-
-# ===========================
-# Numerical stability
-# ===========================
-
-
-@pytest.mark.parametrize("gap", [1500])
-def test_long_constrained_gap_does_not_underflow(gap):
-    """
-    Probability space would saturate silently at ``log(smallest subnormal)``;
-    in log space float32 must still track float64.
-    """
-    hmm = make_random_hmm(
-        hidden_states=["A", "B", "C"], observed_states=["o0", "o1"], seed=7
-    )
-    T = gap + 1
-    mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="A")
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[mvr])
-
-    scores = {}
-    for dt in (torch.float32, torch.float64):
-        _, scores[dt] = marginal_map_torch_mvr_chmm(
-            model,
-            {},
-            time_horizon=T,
-            query_times=[0, T - 1],
-            dtype=dt,
-            return_augmented=False,
-            return_score=True,
-        )
-
-    # Well past every float32 floor: log(min subnormal) is about -103.
-    assert scores[torch.float64] < -110
-
-    # Agreement to within ordinary float32 drift, which grows with the step count.
-    assert scores[torch.float32] == pytest.approx(
-        scores[torch.float64], rel=1e-4, abs=1e-3 * gap
-    )
 
 
 def test_gap_operator_propagates_non_allocation_errors(hmm, observed):

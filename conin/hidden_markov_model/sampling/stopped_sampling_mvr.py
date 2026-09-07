@@ -132,11 +132,13 @@ def stopped_sampling_torch_mvr_chmm(
     sampled_times = torch.as_tensor(times, device=drawn.device)[drawn]
 
     paths = [None] * num_samples
+    rows_by_time = {}
+
+    for row, tau in enumerate(sampled_times.tolist()):
+        rows_by_time.setdefault(tau, []).append(row)
 
     # Narrowing to [a, tau] puts the target's evl exactly at tau and drops it after.
-    for tau in sorted(set(sampled_times.tolist())):
-        rows = [n for n, t in enumerate(sampled_times.tolist()) if t == tau]
-
+    for tau, rows in sorted(rows_by_time.items()):
         narrowed = copy.copy(prefix_free)
         narrowed._time_range = [int(times[0]), int(tau)]
 
