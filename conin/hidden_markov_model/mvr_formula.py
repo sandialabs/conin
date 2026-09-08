@@ -1,11 +1,4 @@
-"""
-A formula language for MVR constraints.
-
-Parses a formula string and calls the constructors in
-mvr_constraints.py and the operators in mvr_operators.py.
-
-It does NOT build MVRs - it merely calls the existing constructors/operators.
-"""
+"""Parse MVR formulas and lower them through existing primitives and operators."""
 
 from __future__ import annotations
 
@@ -55,6 +48,16 @@ _PRECEDENCE_RELATION = {
     "at or before": "<=",
     "at or after": ">=",
 }
+
+_UNARY_OPERATORS = {
+    "not": mvr_not,
+    "never": mvr_not_yet,
+    "reach": mvr_already_satisfied,
+    "first": mvr_sattime,
+    "reverse": mvr_reverse,
+}
+
+_BINARY_OPERATORS = {"and": mvr_and, "or": mvr_or, "but not": mvr_setdiff}
 
 _KEYWORDS = frozenset(
     {
@@ -110,9 +113,7 @@ class _Token:
 
 
 def _tokenize(formula: str) -> list[_Token]:
-    """
-    Split a formula into tokens, reporting the column of the first bad character.
-    """
+    """Tokenize a formula, reporting the column of the first bad character."""
     tokens = []
     position = 0
 
@@ -140,9 +141,7 @@ def _tokenize(formula: str) -> list[_Token]:
 
 
 def _formula_error(formula: str, column: int, message: str) -> InvalidInputError:
-    """
-    An error pointing a caret at the offending column of the formula.
-    """
+    """Point a caret at the offending column."""
     return InvalidInputError(
         f"{message} at column {column} of formula\n  {formula}\n  {' ' * column}^"
     )
@@ -252,9 +251,7 @@ class _Window:
 
 
 class _Parser:
-    """
-    Precedence-climbing parser over the token list. One method per level.
-    """
+    """Recursive-descent parser with one method per precedence level."""
 
     def __init__(self, formula: str):
         self.formula = formula
@@ -272,6 +269,9 @@ class _Parser:
         self.position += 1
         return token
 
+    def at_label(self) -> bool:
+        return self.token.kind in ("word", "qlabel", "number")
+
     def at(self, *texts: str) -> bool:
         return self.token.text in texts and self.token.kind in (
             "keyword",
@@ -281,9 +281,7 @@ class _Parser:
         )
 
     def at_words(self, *words: str) -> bool:
-        """
-        Whether the next tokens spell a multi-word keyword such as "at or before".
-        """
+        """Check for a multi-word keyword such as 'at or before'."""
         for offset, word in enumerate(words):
             index = self.position + offset
 
@@ -403,20 +401,13 @@ class _Parser:
         return node
 
     def match_temporal(self) -> str | None:
-        """
-        Consume a temporal operator if one is next, returning its relation.
-        """
-        for words in ("at or before", "at or after"):
-            if self.at_words(*words.split()):
-                self.position += 3
+        """Consume a temporal operator and return its relation, if present."""
+        for text, relation in _PRECEDENCE_RELATION.items():
+            words = text.split()
+            if self.at_words(*words):
+                self.position += len(words)
 
-                return _PRECEDENCE_RELATION[words]
-
-        for word in ("then", "before", "after"):
-            if self.at(word):
-                self.advance()
-
-                return _PRECEDENCE_RELATION[word]
+                return relation
 
         return None
 
@@ -430,11 +421,10 @@ class _Parser:
         return node
 
     def parse_unary(self) -> Any:
-        for word in ("not", "never", "reach", "first", "reverse"):
-            if self.at(word):
-                column = self.advance().column
+        if self.at(*_UNARY_OPERATORS):
+            token = self.advance()
 
-                return _Unary(word, self.parse_unary(), column)
+            return _Unary(token.text, self.parse_unary(), token.column)
 
         return self.parse_postfix()
 
@@ -492,7 +482,12 @@ class _Parser:
 
             if self.at("in"):
                 self.advance()
-                labels = self.parse_label_group()
+                if self.at("("):
+                    self.advance()
+                    labels = self.parse_label_list()
+                    self.expect(")")
+                else:
+                    labels = (self.parse_label(),)
 
             return _Holding(k, labels, token.column)
 
@@ -525,7 +520,7 @@ class _Parser:
         if self.at("("):
             return self.parse_parenthesized()
 
-        if token.kind in ("word", "qlabel", "number"):
+        if self.at_label():
             label = self.parse_label()
 
             if self.at("->"):
@@ -538,9 +533,7 @@ class _Parser:
         raise self.error(f"unexpected {token.text!r}")
 
     def parse_parenthesized(self) -> Any:
-        """
-        Either a state group "(A, B)" or a parenthesized expression "(never A)".
-        """
+        """Parse a state group or a parenthesized expression."""
         open_token = self.expect("(")
         start = self.position
         labels = self.try_parse_label_group_body()
@@ -555,19 +548,11 @@ class _Parser:
         return node
 
     def try_parse_label_group_body(self) -> tuple[str, ...] | None:
-        """
-        Read "A, B)" as a state group, or return None if it is not one.
-
-        A single parenthesized label is left to the expression branch, since
-        "(A)" and "A" lower identically.
-        """
+        """Read 'A, B)' as a group; leave '(A)' to expression parsing."""
         labels = []
 
         while True:
-            if self.token.kind not in ("word", "qlabel", "number"):
-                return None
-
-            if self.token.kind == "word" and self.token.text in _KEYWORDS:
+            if not self.at_label():
                 return None
 
             labels.append(self.parse_label())
@@ -586,20 +571,10 @@ class _Parser:
     def parse_label(self) -> str:
         token = self.token
 
-        if token.kind == "qlabel":
+        if self.at_label():
             self.advance()
 
-            return token.text[1:-1]
-
-        if token.kind == "number":
-            self.advance()
-
-            return token.text
-
-        if token.kind == "word" and token.text not in _KEYWORDS:
-            self.advance()
-
-            return token.text
+            return token.text[1:-1] if token.kind == "qlabel" else token.text
 
         raise self.error(
             f"expected a hidden state label, found {token.text or 'end'!r}; write a "
@@ -614,16 +589,6 @@ class _Parser:
             labels.append(self.parse_label())
 
         return tuple(labels)
-
-    def parse_label_group(self) -> tuple[str, ...]:
-        if self.at("("):
-            self.advance()
-            labels = self.parse_label_list()
-            self.expect(")")
-
-            return labels
-
-        return (self.parse_label(),)
 
     def parse_integer(self) -> int:
         token = self.token
@@ -646,9 +611,7 @@ class _Parser:
         return float(token.text) if "." in token.text else int(token.text)
 
     def parse_condition(self) -> str:
-        """
-        A count condition in mvr_count's existing mini-language.
-        """
+        """Parse a condition in mvr_count's mini-language."""
         if self.at("in"):
             self.advance()
 
@@ -685,9 +648,7 @@ class _Parser:
         )
 
     def parse_bounds(self) -> Any:
-        """
-        Either a "[lower, upper]" pair or a "{time: [lower, upper], ...}" map.
-        """
+        """Parse a bounds pair or a map of time to bounds pairs."""
         if self.at("{"):
             self.advance()
             bounds = {}
@@ -722,9 +683,7 @@ class _Parser:
 
 
 def _resolve_labels(hidden_markov_model, labels, formula, column):
-    """
-    Map parsed label text onto the model's hidden states, matching on str().
-    """
+    """Resolve label text against the model's hidden states by str()."""
     hidden_states = list(getattr(hidden_markov_model, "hidden_states", None) or [])
     by_text = {str(h): h for h in hidden_states}
 
@@ -748,9 +707,7 @@ def _resolve_labels(hidden_markov_model, labels, formula, column):
 
 
 def _lower(node, hidden_markov_model, formula):
-    """
-    Build the MVR for one syntax node.
-    """
+    """Lower one syntax node through the MVR algebra."""
     labels = lambda values: _resolve_labels(
         hidden_markov_model, values, formula, node.column
     )
@@ -788,25 +745,16 @@ def _lower(node, hidden_markov_model, formula):
     if isinstance(node, _Regex):
         return mvr_regex(hidden_markov_model, node.pattern)
 
-    if isinstance(node, _Unary):
+    if isinstance(node, (_Unary, _Count, _Repeat, _Window)):
         operand = _lower(node.operand, hidden_markov_model, formula)
 
-        return {
-            "not": mvr_not,
-            "never": mvr_not_yet,
-            "reach": mvr_already_satisfied,
-            "first": mvr_sattime,
-            "reverse": mvr_reverse,
-        }[node.op](operand)
+    if isinstance(node, _Unary):
+        return _UNARY_OPERATORS[node.op](operand)
 
     if isinstance(node, _Count):
-        operand = _lower(node.operand, hidden_markov_model, formula)
-
         return mvr_count(operand, node.condition)
 
     if isinstance(node, _Repeat):
-        operand = _lower(node.operand, hidden_markov_model, formula)
-
         if node.op == "kleene":
             builder = (
                 mvr_kleene_closure_prefix if operand.prefix else mvr_kleene_closure
@@ -819,8 +767,6 @@ def _lower(node, hidden_markov_model, formula):
         return builder(operand, node.k)
 
     if isinstance(node, _Window):
-        operand = _lower(node.operand, hidden_markov_model, formula)
-
         # Applied last and never in place. See CLAUDE.md.
         return mvr_timerange(operand, list(node.time_range), inplace=False)
 
@@ -828,14 +774,8 @@ def _lower(node, hidden_markov_model, formula):
         left = _lower(node.left, hidden_markov_model, formula)
         right = _lower(node.right, hidden_markov_model, formula)
 
-        if node.op == "and":
-            return mvr_and([left, right])
-
-        if node.op == "or":
-            return mvr_or([left, right])
-
-        if node.op == "but not":
-            return mvr_setdiff([left, right])
+        if node.op in _BINARY_OPERATORS:
+            return _BINARY_OPERATORS[node.op]([left, right])
 
         if node.op == "cat":
             builder = (
@@ -852,9 +792,7 @@ def _lower(node, hidden_markov_model, formula):
 
 
 def _conjuncts(node) -> list:
-    """
-    Split a top-level conjunction, pushing a window down onto each conjunct.
-    """
+    """Split a top-level conjunction, distributing its window to each part."""
     if isinstance(node, _Binary) and node.op == "and":
         return _conjuncts(node.left) + _conjuncts(node.right)
 
@@ -873,9 +811,7 @@ def _conjuncts(node) -> list:
 
 
 def _named_parts(formula: str, name: str = None) -> list:
-    """
-    Split a formula into (conjunct, name) pairs, parsing it in the process.
-    """
+    """Parse a formula into (conjunct, name) pairs."""
     if not isinstance(formula, str):
         raise InvalidInputError("formula must be a string")
 
@@ -889,9 +825,7 @@ def _named_parts(formula: str, name: str = None) -> list:
 
 
 def _build_named(part, hidden_markov_model, formula, name):
-    """
-    Lower one conjunct and label the result, since operators drop _name.
-    """
+    """Name the lowered conjunct after operators have dropped _name."""
     mvr = _lower(part, hidden_markov_model, formula)
     mvr.name = name
 
@@ -899,9 +833,7 @@ def _build_named(part, hidden_markov_model, formula, name):
 
 
 def _builder(part, formula, name):
-    """
-    Close over one conjunct. Not a default argument: see CLAUDE.md.
-    """
+    """Close over one conjunct without changing the factory's arity."""
 
     def build(hidden_markov_model):
         return _build_named(part, hidden_markov_model, formula, name)
@@ -910,13 +842,10 @@ def _builder(part, formula, name):
 
 
 def build_mvr(hidden_markov_model, formula: str, *, name: str = None) -> list:
-    """
-    Build the MVRs for a formula, one per top-level conjunct, for
-    MVR_CHMM(constraints=...).
+    """Build a list of MVRs, one per top-level conjunct, for MVR_CHMM.
 
-    Each is named after its own conjunct, indexed when there is more than one,
-    unless "name" is given. Raises InvalidInputError on a syntax error, an
-    unknown hidden state, or any argument a constructor rejects.
+    Names use the formula (or ``name``), indexed when there are multiple results.
+    Invalid syntax, unknown states, and invalid arguments raise InvalidInputError.
     """
     return [
         _build_named(part, hidden_markov_model, formula, part_name)
@@ -925,13 +854,10 @@ def build_mvr(hidden_markov_model, formula: str, *, name: str = None) -> list:
 
 
 def build_mvr_functor(formula: str, *, name: str = None) -> list:
-    """
-    Deferred form of build_mvr: MVRConstraint functors for
-    ConstrainedHiddenMarkovModel(constraints=...).
+    """Return MVRConstraint factories for ConstrainedHiddenMarkovModel.
 
-    The formula is parsed here, so a syntax error is raised at this call rather
-    than at initialize_chmm time. Naming follows build_mvr and applies to both
-    the functor and the MVR it builds.
+    Parse immediately; lower when an HMM is supplied. Naming follows build_mvr
+    and applies to both factories and their results.
     """
     return [
         mvr_constraint_fn(name=part_name)(_builder(part, formula, part_name))

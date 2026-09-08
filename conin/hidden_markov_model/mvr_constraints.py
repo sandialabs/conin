@@ -190,6 +190,7 @@ def mvr_current_sequencelist(
             "sequences"
         )
 
+    # A bare sequence would otherwise be read as a list of malformed entries.
     if (
         isinstance(sequences, (tuple, list))
         and len(sequences) > 0
@@ -200,7 +201,8 @@ def mvr_current_sequencelist(
     ):
         raise InvalidInputError(
             "sequences must be a list, tuple, set, or frozenset of hidden state "
-            "sequences, even when it holds a single sequence."
+            "sequences, even when it holds a single sequence. Wrap it, e.g. "
+            f"[{tuple(sequences)!r}]"
         )
 
     patterns = set()

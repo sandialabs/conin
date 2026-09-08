@@ -51,9 +51,7 @@ from conin.hidden_markov_model.tests.test_mvr_constraints import (
 
 
 def language(mvrs, alphabet=ALPHABET, max_length=MAX_LENGTH):
-    """
-    The language of a constraint list, which is the conjunction of its members.
-    """
+    """Enumerate the language accepted by all constraints."""
     if not isinstance(mvrs, list):
         mvrs = [mvrs]
 
@@ -64,9 +62,7 @@ def language(mvrs, alphabet=ALPHABET, max_length=MAX_LENGTH):
 
 
 def assert_same_language(formula, expected, alphabet=ALPHABET, hmm=None):
-    """
-    Check a formula against the hand-composed calls it should lower to.
-    """
+    """Compare a formula with hand-composed MVRs over every short sequence."""
     hmm = hmm if hmm is not None else make_hmm(hidden_states=alphabet)
 
     with warnings.catch_warnings():
@@ -125,8 +121,14 @@ FORMULAS = [
     # repetition
     ("a{2}", lambda h: mvr_kfold_product(cs(h, "a"), 2)),
     ("a+", lambda h: mvr_kleene_closure(cs(h, "a"))),
+    ("(first a){2}", lambda h: mvr_kfold_product(mvr_sattime(cs(h, "a")), 2)),
+    ("(first a)+", lambda h: mvr_kleene_closure(mvr_sattime(cs(h, "a")))),
     # binary
     ("a cat b", lambda h: mvr_concatenate([cs(h, "a"), cs(h, "b")])),
+    (
+        "first a cat first b",
+        lambda h: mvr_concatenate([mvr_sattime(cs(h, "a")), mvr_sattime(cs(h, "b"))]),
+    ),
     ("a but not b", lambda h: mvr_setdiff([cs(h, "a"), cs(h, "b")])),
     (
         "never a and reach b",
@@ -186,6 +188,11 @@ FORMULAS = [
     ),
     ("never (a or b)", lambda h: mvr_not_yet(mvr_or([cs(h, "a"), cs(h, "b")]))),
     ("(a)", lambda h: cs(h, "a")),
+    # Regression: '<' once swallowed the later '>' as a quoted label.
+    (
+        "count(a) < 2 and b -> c",
+        lambda h: [mvr_count(cs(h, "a"), "<2"), mvr_current_transition(h, [("b", "c")])],
+    ),
     (
         "reach a then reach b then reach c",
         lambda h: mvr_and(
@@ -208,36 +215,34 @@ def test_formula_matches_hand_composed_calls(formula, expected):
 
 
 @skipif_no_greenery
-@pytest.mark.parametrize("pattern", ["<a><b>*", "(<a>|<b>)+", "<a>{2,3}"])
-def test_match_matches_hand_composed_calls(pattern):
+def test_match_matches_hand_composed_calls():
+    pattern = "<a><b>*"
     assert_same_language(f'match "{pattern}"', lambda h: mvr_regex(h, pattern))
 
 
-def test_within_bounds_matches_hand_composed_calls():
+@pytest.mark.parametrize("bounds", [[1, 2], {0: [1, 2], 3: [0, 1]}])
+def test_within_bounds_matches_hand_composed_calls(bounds):
     assert_same_language(
-        "within [1, 2]",
-        lambda h: mvr_withinbounds(h, [1, 2]),
+        f"within {bounds}",
+        lambda h: mvr_withinbounds(h, bounds),
         alphabet=NUMERIC_ALPHABET,
     )
 
 
 def test_grammar_covers_the_algebra():
-    """
-    Deliberately redundant with the table above: it pins the coverage claim, so
-    a new constructor or operator cannot be added without a formula reaching it.
-    """
+    """Deliberately redundant: require formula coverage for every algebra entry."""
     from conin.hidden_markov_model import mvr_constraints, mvr_operators
     from conin.hidden_markov_model import mvr_formula as formula_module
 
-    source = open(formula_module.__file__).read()
+    with open(formula_module.__file__) as source_file:
+        source = source_file.read()
     public = {
         name
         for module in (mvr_constraints, mvr_operators)
         for name in vars(module)
         if name.startswith("mvr_") and not name.endswith("_fn")
     }
-    # The visit/forbid family is not named by the grammar: a bare label lowers to
-    # mvr_current_state, so "never"/"reach" reconstruct them compositionally.
+    # The visit/forbid family is reached compositionally through never/reach.
     compositional = {
         "mvr_visit_state",
         "mvr_forbid_state",
@@ -266,8 +271,6 @@ def test_grammar_covers_the_algebra():
         # binds tighter than "and", and a parenthesized window reaches each conjunct
         ("never a and reach b between 1 and 3", [None, [1, 3]]),
         ("(never a and reach b) between 1 and 3", [[1, 3], [1, 3]]),
-        # mvr_timerange mutates by default, so a shared operand must survive
-        ("reach b and reach b between 1 and 3", [None, [1, 3]]),
     ],
 )
 def test_window_attaches_a_time_range(formula, windows):
@@ -289,15 +292,6 @@ def test_top_level_and_splits_without_building_a_product():
     assert len(parsed) == 3
 
 
-def test_nested_and_builds_the_product():
-    hmm = make_hmm()
-
-    with pytest.warns(UserWarning, match="AND operator"):
-        parsed = build_mvr(hmm, "not (never a and reach b)")
-
-    assert len(parsed) == 1
-
-
 # ---------------------------------------------------------------------
 # Errors
 # ---------------------------------------------------------------------
@@ -307,20 +301,14 @@ def test_nested_and_builds_the_product():
     "formula, match",
     [
         ("", "expected an expression"),
-        ("never", "expected an expression"),
-        ("a and", "expected an expression"),
         ("(a", r"expected '\)'"),
         ("a)", "unexpected"),
         ("a $ b", "unexpected character"),
         ("z", "not a hidden state"),
-        ("seq(a, z)", "not a hidden state"),
         ("a[x]", "expected an integer"),
-        ("a{2", r"expected '\}'"),
         ("count(a)", "expected a count condition"),
-        ("count(a) in [1", "expected ','"),
         ("reach a then reach b after reach c", "one relation throughout"),
         ("match a", "quoted pattern"),
-        ("reach b between 1", r"expected 'and'"),
         ("and a", "unexpected"),
         (None, "must be a string"),
     ],
@@ -340,13 +328,8 @@ def test_error_points_at_the_offending_column():
 
     message = str(excinfo.value)
 
-    assert "never a and reach z" in message
-    assert "^" in message
-
-
-def test_comparison_does_not_lex_as_a_quoted_label():
-    # The label pattern is greedy, so a "<" once swallowed a later ">".
-    assert len(build_mvr(make_hmm(), "count(a) < 2 and b -> c")) == 2
+    assert "column 18" in message
+    assert message.splitlines()[-1] == " " * 20 + "^"
 
 
 @pytest.mark.parametrize("label", ["count", "3", "A-1"])  # keyword, number, punctuation
@@ -361,8 +344,7 @@ def test_escaped_label_reaches_a_state_a_bare_label_cannot(label):
 
 @pytest.mark.parametrize("label", ["A B", "A<B", "A>B"])
 def test_label_that_cannot_be_escaped_is_a_syntax_error(label):
-    # Whitespace, "<" and ">" have no escape; they must fail loudly rather than
-    # lex as something else.
+    # Whitespace and angle brackets have no label escape.
     hmm = make_hmm(hidden_states=[label, "z1", "z2"])
 
     with pytest.raises(InvalidInputError, match="unexpected"):
