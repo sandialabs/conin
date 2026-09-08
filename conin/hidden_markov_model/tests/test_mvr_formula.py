@@ -191,7 +191,10 @@ FORMULAS = [
     # Regression: '<' once swallowed the later '>' as a quoted label.
     (
         "count(a) < 2 and b -> c",
-        lambda h: [mvr_count(cs(h, "a"), "<2"), mvr_current_transition(h, [("b", "c")])],
+        lambda h: [
+            mvr_count(cs(h, "a"), "<2"),
+            mvr_current_transition(h, [("b", "c")]),
+        ],
     ),
     (
         "reach a then reach b then reach c",
