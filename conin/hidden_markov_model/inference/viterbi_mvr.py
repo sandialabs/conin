@@ -116,9 +116,7 @@ def viterbi_torch_mvr_chmm(
     # Kept on device and read once at the end; the per-step host sync is the check below.
     log_score = torch.zeros((), dtype=ACCUM_DTYPE, device=device)
 
-    # ------------------------------------------------------------------
     # Initialization at t = 0.
-    # ------------------------------------------------------------------
     active_0 = active_by_time[0]
     dims_0 = dims_by_time[0]
     total_0 = math.prod(dims_0)
@@ -146,9 +144,7 @@ def viterbi_torch_mvr_chmm(
     log_score = log_score + scale
     V_prev = V_prev - scale
 
-    # ------------------------------------------------------------------
     # Forward pass.
-    # ------------------------------------------------------------------
     for t in range(1, T):
         V_curr, step_backptr = _maxplus_step(
             V_prev,
@@ -175,18 +171,13 @@ def viterbi_torch_mvr_chmm(
         log_score = log_score + scale
         V_prev = V_curr - scale
 
-    # ------------------------------------------------------------------
-    # Termination. V_prev is already shifted to a maximum of 0, so there is
-    # no residual scale to add and no feasibility left to test.
-    # ------------------------------------------------------------------
+    # V_prev is shifted to a maximum of 0, leaving no residual scale.
     log_score = float(log_score)
 
     final_flat = int(torch.argmax(V_prev).item())
     final_idx = tuple(int(x) for x in np.unravel_index(final_flat, shapes[T - 1]))
 
-    # ------------------------------------------------------------------
     # Backtracking.
-    # ------------------------------------------------------------------
     augmented_index_path = [final_idx]
     curr_idx = final_idx
 

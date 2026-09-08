@@ -142,12 +142,7 @@ def ends_symbol_mvr(symbol):
 
 
 def exact_word_mvr(word):
-    """
-    Language: exactly the single nonempty word `word`.
-
-    State k means the prefix of length k has been matched.
-    DEAD means the input can no longer match exactly.
-    """
+    """Recognize exactly one nonempty word."""
     if len(word) == 0:
         raise ValueError("exact_word_mvr expects a nonempty word.")
 
@@ -220,10 +215,7 @@ def assert_fully_reachable(mvr):
 
 
 def orphan_state_mvr():
-    """
-    Language: all nonempty words ending in "a". The mediation state "orphan" is
-    declared but entered by nothing.
-    """
+    """Recognize words ending in ``a`` while declaring one unreachable state."""
     hidden_states = list(ALPHABET)
     mediation_states = [False, True, "orphan"]
 
@@ -642,6 +634,57 @@ def test_mvr_precedence():
         mvr_precedence([contains_a, contains_b], "!=")
 
 
+def test_mvr_precedence_matches_first_hits_for_mixed_inputs():
+    mediation_states = [[False, True] for _ in range(4)]
+
+    contains_b_inhom = InhomMVR(
+        hidden_states=list(ALPHABET),
+        mediation_states=mediation_states,
+        ini={h: h == "b" for h in ALPHABET},
+        upd=[
+            {
+                (seen, h): seen or h == "b"
+                for seen in mediation_states[t]
+                for h in ALPHABET
+            }
+            for t in range(3)
+        ],
+        evl=[{False: False, True: True} for _ in range(4)],
+    )
+
+    for inputs in (
+        [contains_symbol_mvr("a"), contains_b_inhom],
+        [contains_b_inhom, contains_symbol_mvr("a")],
+    ):
+        results = {
+            relation: mvr_precedence(inputs, relation)
+            for relation in ("<", "<=", ">", ">=")
+        }
+
+        for length in range(1, 5):
+            for word in product(ALPHABET, repeat=length):
+                first = [
+                    next(
+                        (t for t in range(length) if eval_mvr(mvr, word[: t + 1])),
+                        None,
+                    )
+                    for mvr in inputs
+                ]
+                expected = {
+                    "<": first[0] is not None
+                    and (first[1] is None or first[0] < first[1]),
+                    "<=": first[0] is not None
+                    and (first[1] is None or first[0] <= first[1]),
+                    ">": first[1] is not None
+                    and (first[0] is None or first[0] > first[1]),
+                    ">=": first[1] is not None
+                    and (first[0] is None or first[0] >= first[1]),
+                }
+
+                for relation, result in results.items():
+                    assert eval_mvr(result, word) is expected[relation]
+
+
 def test_mvr_count():
     single_a = exact_word_mvr("a")
     single_b = exact_word_mvr("b")
@@ -687,12 +730,7 @@ def test_mvr_count():
         mvr_count(single_a, "not a valid condition")
 
 
-# ---------------------------------------------------------------------
 # Pruning
-#
-# Product and subset constructions leave most of their mediation states
-# unreachable, so MVROperator.__call__ prunes every operator output.
-# ---------------------------------------------------------------------
 
 
 def test_prune_removes_unreachable_states_and_keeps_the_language():
@@ -788,7 +826,6 @@ def test_mvr_timerange():
 
     assert mvr_timerange(contains_a).time_range is None  # a bare call clears it
 
-    # The horizon check applies on the inplace path, which skips the constructor.
     inhom = trivial_inhom_mvr(time_horizon=3)
 
     assert mvr_timerange(inhom, [5, 7]).time_range == [5, 7]
@@ -796,7 +833,6 @@ def test_mvr_timerange():
     with pytest.raises(InvalidInputError):
         mvr_timerange(inhom, [0, 4])
 
-    # inplace=False rebuilds instead, leaving the input alone.
     single_a = exact_word_mvr("a")
     single_a.name = "single_a"
     single_a._prefix = True
@@ -811,6 +847,15 @@ def test_mvr_timerange():
     assert rebuilt._prefix is True
 
     assert_language(rebuilt, {"a": True, "b": False, "aa": False, "ab": False})
+
+
+def test_mvr_timerange_inplace_preserves_identity_before_pruning():
+    mvr = orphan_state_mvr()
+
+    result = mvr_timerange(mvr, [1, 3])
+
+    assert result is mvr
+    assert result.time_range == [1, 3]
 
 
 # ---------------------------------------------------------------------

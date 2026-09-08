@@ -73,10 +73,7 @@ def mvr_current_state(
     hidden_markov_model,
     states,
 ) -> HomMVR:
-    """
-    MVR evaluates True iff the current hidden state is in "states".
-    ie. If "states" = ['a'], at time t MVR will evaluate True iff hidden state is 'a'.
-    """
+    """Accept exactly when the current hidden state is in ``states``."""
     hidden_states = _model_hidden_states(hidden_markov_model)
     hidden_space = set(hidden_states)
 
@@ -114,11 +111,7 @@ def mvr_current_transition(
     hidden_markov_model,
     transitions,
 ) -> HomMVR:
-    """
-    MVR evaluates True iff the last transition is in "transitions".
-    ie. If "transitions" = [('a','b')], at time t MVR will evaluate True iff h_t = 'b' and h_{t-1} = 'a'
-    At t = 0 no transition has been taken, so the MVR evaluates False.
-    """
+    """Accept when the last transition is in ``transitions``; reject at time 0."""
     hidden_states = _model_hidden_states(hidden_markov_model)
     hidden_space = set(hidden_states)
 
@@ -187,17 +180,7 @@ def mvr_current_sequencelist(
     hidden_markov_model,
     sequences,
 ) -> HomMVR:
-    """
-    MVR evaluates True iff the hidden state sequence ends on one of "sequences".
-    ie. If "sequences" = [('a','b','a')], at time t MVR will evaluate True iff
-    h_{t-2}, h_{t-1}, h_t = 'a', 'b', 'a'.
-    A sequence longer than t + 1 cannot have been completed, so the MVR evaluates False.
-
-    NOTE: For singletons, please pass them in a lists/tuples as well:
-    ie. [('a',), ('b'), ('c')]
-
-    This implements the Aho-Corasick construction for a more efficient MVR.
-    """
+    """Accept a suffix in ``sequences`` via an Aho-Corasick-style automaton."""
     hidden_states = _model_hidden_states(hidden_markov_model)
     hidden_space = set(hidden_states)
 
@@ -283,11 +266,7 @@ def mvr_current_sequencelist(
 def mvr_jump(
     hidden_markov_model,
 ) -> HomMVR:
-    """
-    MVR evaluates True iff the current hidden state differs from the previous one.
-    ie. at time t MVR will evaluate True iff h_t != h_{t-1}.
-    At t = 0 no transition has been taken, so the MVR evaluates False.
-    """
+    """Accept when the hidden state changes; reject at time 0."""
     hidden_states = _model_hidden_states(hidden_markov_model)
 
     can_jump = len(hidden_states) > 1
@@ -339,9 +318,7 @@ def mvr_visit_state(
     hidden_markov_model,
     states,
 ) -> HomMVR:
-    """
-    MVR evaluates True iff chain has hit "states" at some time up to the current time.
-    """
+    """Accept once the chain has visited ``states``."""
     return mvr_already_satisfied(mvr_current_state(hidden_markov_model, states))
 
 
@@ -349,9 +326,7 @@ def mvr_forbid_state(
     hidden_markov_model,
     states,
 ) -> HomMVR:
-    """
-    MVR evaluates True iff chain hasn't visited "states".
-    """
+    """Accept while the chain has never visited ``states``."""
     return mvr_not_yet(mvr_current_state(hidden_markov_model, states))
 
 
@@ -359,9 +334,7 @@ def mvr_visit_transition(
     hidden_markov_model,
     transitions,
 ) -> HomMVR:
-    """
-    MVR evaluates True iff at least one transition up to time t is in "transition".
-    """
+    """Accept once the chain has taken one of ``transitions``."""
     return mvr_already_satisfied(
         mvr_current_transition(hidden_markov_model, transitions)
     )
@@ -371,9 +344,7 @@ def mvr_forbid_transition(
     hidden_markov_model,
     transitions,
 ) -> HomMVR:
-    """
-    MVR evaluates True iff no transition up to time t is in "transitions".
-    """
+    """Accept while the chain has taken none of ``transitions``."""
     return mvr_not_yet(mvr_current_transition(hidden_markov_model, transitions))
 
 
@@ -381,10 +352,7 @@ def mvr_visit_sequencelist(
     hidden_markov_model,
     sequences,
 ) -> HomMVR:
-    """
-    MVR evaluates True iff chain has hit at least one sequence in "sequences".
-    "sequences" is a general set of finite sequences, with possibly varying length.
-    """
+    """Accept once the chain contains an entry in ``sequences``."""
     return mvr_already_satisfied(
         mvr_current_sequencelist(hidden_markov_model, sequences)
     )
@@ -394,10 +362,7 @@ def mvr_forbid_sequencelist(
     hidden_markov_model,
     sequences,
 ) -> HomMVR:
-    """
-    MVR evaluates True iff chain has never hit a sequence in "sequences".
-    "sequences" is a general set of finite sequences, with possibly varying length.
-    """
+    """Accept while the chain contains no entry in ``sequences``."""
     return mvr_not_yet(mvr_current_sequencelist(hidden_markov_model, sequences))
 
 
@@ -411,24 +376,9 @@ def mvr_holdingtime(
     k: int,
     states=None,
 ) -> HomMVR:
-    """
-    MVR evaluates True iff the chain stays in each state in "states" for at least
-    k time steps, with a trailing run as the sole exception. If "states" is None,
-    it defaults to the entire hidden space.
+    """Require completed runs in ``states`` to last ``k`` steps.
 
-    IMPORTANT: A trailing run is the final run in the hidden sequence.
-    ie. "aaabb", the trailing run is "bb".
-
-    Here are examples of where ignoring the trailing run comes up:
-
-        1. k = 3, 'aa' evaluates True. Single run = trailing run.
-        2. k = 3, 'ab' evaluates False. First run len('a')=1 < 3.
-        3. k = 3, 'aaab' evaluates True. First run len('aaa") >= 3, trailing 'b' ignored.
-
-    Warns when no run can ever end short, which makes the MVR constantly true:
-    when "states" is empty, when k = 1, or when the model has a single hidden
-    state. These are accepted rather than rejected, but are degenerate enough to
-    be worth flagging.
+    The trailing run is exempt.
     """
     hidden_states = _model_hidden_states(hidden_markov_model)
     hidden_space = set(hidden_states)
@@ -529,14 +479,7 @@ def mvr_jumpcounts(
     hidden_markov_model,
     condition: str,
 ) -> HomMVR:
-    """
-    MVR evaluates True iff the number of jumps up to the current time satisfies
-    "condition", where a jump is a time t with h_t != h_{t-1}.
-
-    "condition" same as mvr_count: an exact count "k", a range
-    "[l,u]" or "(l,u]", or an inequality "<k", "<=k", ">k", ">=k". As there, "<0"
-    and ">=0" are rejected as degenerate.
-    """
+    """Count hidden-state changes and apply an ``mvr_count`` condition."""
     hidden_states = _model_hidden_states(hidden_markov_model)
 
     if not isinstance(condition, str):
@@ -697,17 +640,7 @@ def mvr_withinbounds(
     bounds,
     time_horizon: int = None,
 ) -> HomMVR | InhomMVR:
-    """
-    MVR over numeric hidden states. Given a [lower, upper] pair, evaluates True
-    iff the current hidden state is within those inclusive bounds. Given a dict
-    of times to pairs, evaluates True iff the hidden state at every named time
-    so far is within that time's bounds; unnamed times are unconstrained.
-
-    The dict flavor returns an InhomMVR whose horizon defaults to the largest
-    named time and may be extended with "time_horizon". Raises if a hidden state
-    is not a real number or a pair is not ascending, and warns when a pair
-    admits no hidden state, which makes the MVR constantly false.
-    """
+    """Constrain numeric states to a pair or a ``{time: pair}`` schedule."""
     hidden_states = _model_hidden_states(hidden_markov_model)
     # bool is an int subclass, so isinstance alone would admit True/False.
     nonnumeric = [
@@ -867,19 +800,7 @@ def mvr_regex(
     hidden_markov_model,
     pattern: str,
 ) -> HomMVR:
-    """
-    Regex to DFA/HomMVR: MVR evals true if the current path matches the regex.
-
-    Hidden states are written <label> and everything else is regular-expression
-    syntax, so "<a><b>*" is one 'a' followed by any number of 'b'.
-
-    FLAG: Requires the greenery package.
-
-    Raises InvalidInputError on an unknown label, a stray literal, a regex greenery rejects, or a
-    hidden state whose name contains "<" or ">". Warns when nothing can match --
-    including a pattern accepting only the empty sequence, since an MVR always
-    consumes at least one hidden state.
-    """
+    """Compile a full-sequence regex with ``<label>`` tokens; requires greenery."""
     hidden_states = _model_hidden_states(hidden_markov_model)
 
     if not greenery_available:

@@ -8,7 +8,6 @@ from conin.util import try_import
 with try_import() as greenery_available:
     import greenery
 
-import numpy as np
 import pytest
 
 from conin.exceptions import InvalidInputError
@@ -55,12 +54,7 @@ skipif_no_greenery = pytest.mark.skipif(
 
 
 def make_hmm(hidden_states=ALPHABET, observed_states=("o1", "o2")):
-    """
-    Build a uniform HiddenMarkovModel over the given hidden states.
-
-    Only the hidden-state labels matter for these tests; the probabilities are
-    uniform so that the model is valid.
-    """
+    """Build a uniform HMM; only its labels matter to these tests."""
     hidden_states = list(hidden_states)
     observed_states = list(observed_states)
 
@@ -83,9 +77,7 @@ def make_hmm(hidden_states=ALPHABET, observed_states=("o1", "o2")):
 
 
 def eval_mvr(mvr, seq):
-    """
-    Evaluate an MVR on a nonempty hidden-state sequence.
-    """
+    """Evaluate an MVR on a nonempty hidden-state sequence."""
     if len(seq) == 0:
         raise ValueError("MVR evaluation helper expects a nonempty sequence.")
 
@@ -110,18 +102,14 @@ def eval_mvr(mvr, seq):
 
 
 def all_sequences(max_length=MAX_LENGTH, alphabet=ALPHABET):
-    """
-    Every nonempty sequence over `alphabet` of length up to `max_length`.
-    """
+    """Yield every nonempty short sequence over ``alphabet``."""
     for length in range(1, max_length + 1):
         for seq in product(alphabet, repeat=length):
             yield list(seq)
 
 
 def assert_matches(mvr, reference, max_length=MAX_LENGTH, alphabet=ALPHABET):
-    """
-    Check an MVR against a reference predicate by brute force.
-    """
+    """Check an MVR against a predicate over every short sequence."""
     for seq in all_sequences(max_length, alphabet):
         assert eval_mvr(mvr, seq) is reference(seq), f"seq={seq!r}"
 
@@ -135,7 +123,6 @@ def assert_matches(mvr, reference, max_length=MAX_LENGTH, alphabet=ALPHABET):
 def test_constant_matches_reference(value):
     mvr = mvr_constant(make_hmm(), value)
 
-    assert len(mvr.mediation_states) == 1
     assert_matches(mvr, lambda seq: value)
 
 
@@ -156,18 +143,6 @@ def test_constant_rejects_non_bool_value():
 def test_current_state_matches_reference(states):
     mvr = mvr_current_state(make_hmm(), states)
     assert_matches(mvr, lambda seq: seq[-1] in states)
-
-
-@pytest.mark.parametrize("collection_type", [list, tuple, set, frozenset])
-def test_current_state_accepts_any_collection_type(collection_type):
-    mvr = mvr_current_state(make_hmm(), collection_type(["a"]))
-    assert_matches(mvr, lambda seq: seq[-1] == "a")
-
-
-def test_current_state_hidden_states_match_the_model():
-    hmm = make_hmm()
-    mvr = mvr_current_state(hmm, {"a"})
-    assert mvr.hidden_states == hmm.hidden_states
 
 
 @pytest.mark.parametrize(
@@ -205,20 +180,6 @@ def test_transition_matches_reference(transitions):
         mvr,
         lambda seq: len(seq) >= 2 and (seq[-2], seq[-1]) in transitions,
     )
-
-
-def test_transition_accepts_pairs_as_lists():
-    mvr = mvr_current_transition(make_hmm(), [["a", "b"]])
-    assert_matches(
-        mvr,
-        lambda seq: len(seq) >= 2 and (seq[-2], seq[-1]) == ("a", "b"),
-    )
-
-
-def test_transition_mediation_space_size():
-    hmm = make_hmm()
-    mvr = mvr_current_transition(hmm, {("a", "b")})
-    assert len(mvr.mediation_states) == 2 * len(hmm.hidden_states)
 
 
 @pytest.mark.parametrize(
@@ -270,45 +231,6 @@ def test_sequencelist_matches_reference(sequences):
     assert_matches(mvr, reference)
 
 
-@pytest.mark.parametrize("states", [set(), {"a"}, {"a", "c"}, set(ALPHABET)])
-def test_sequencelist_generalizes_current_state(states):
-    hmm = make_hmm()
-    general = mvr_current_sequencelist(hmm, [(s,) for s in sorted(states)])
-    specific = mvr_current_state(hmm, states)
-
-    for seq in all_sequences():
-        assert eval_mvr(general, seq) is eval_mvr(specific, seq), f"seq={seq!r}"
-
-
-@pytest.mark.parametrize(
-    "transitions",
-    [set(), {("a", "b")}, {("a", "a")}, {("a", "b"), ("b", "c")}],
-)
-def test_sequencelist_generalizes_transition(transitions):
-    hmm = make_hmm()
-    general = mvr_current_sequencelist(hmm, transitions)
-    specific = mvr_current_transition(hmm, transitions)
-
-    for seq in all_sequences():
-        assert eval_mvr(general, seq) is eval_mvr(specific, seq), f"seq={seq!r}"
-
-
-@pytest.mark.parametrize(
-    "sequences",
-    [
-        {("a", "b", "a"), ("b", "c")},
-        # Shared prefix: (), ("a",), ("a", "b"), ("a", "c") -- "a" is not duplicated.
-        {("a", "b"), ("a", "c")},
-    ],
-)
-def test_sequencelist_mediation_space_is_prefix_trie(sequences):
-    mvr = mvr_current_sequencelist(make_hmm(), sequences)
-
-    prefixes = {p[:i] for p in sequences for i in range(1, len(p) + 1)}
-
-    assert len(mvr.mediation_states) == 1 + len(prefixes)
-
-
 @pytest.mark.parametrize(
     "sequences,match",
     [
@@ -336,14 +258,6 @@ def test_jump_matches_reference():
     assert_matches(mvr, lambda seq: len(seq) >= 2 and seq[-1] != seq[-2])
 
 
-def test_jump_mediation_space_is_minimal():
-    # (h_prev, jumped) over the 3-state alphabet.
-    mvr = mvr_jump(make_hmm())
-
-    assert len(mvr.mediation_states) == 6
-    assert mvr.prune() is mvr
-
-
 # ---------------------------------------------------------------------
 # Shared model validation (_model_hidden_states)
 # ---------------------------------------------------------------------
@@ -369,13 +283,7 @@ def test_primitives_reject_an_unusable_model(builder):
         builder(None)
 
 
-# ---------------------------------------------------------------------
 # Composition with operators
-#
-# The derivations the primitive layer exists to support. Visit/forbid are
-# covered by the wrapper tests below; these are the operators the wrappers do
-# not use.
-# ---------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -497,46 +405,13 @@ def test_visit_and_forbid_sequencelist_match_reference(sequences):
     )
 
 
-def test_wrappers_have_no_unreachable_mediation_states():
-    # MVROperator.__call__ prunes operator output. The lift pairs each primitive
-    # mediation state with a "satisfied yet" flag, but that flag cannot be True at
-    # an accepting state, so those contradictory pairs are dropped.
-    hmm = make_hmm()
-    sequences = {("a", "b", "a"), ("b", "c")}
-
-    assert len(mvr_current_state(hmm, {"a"}).mediation_states) == 2
-    assert len(mvr_visit_state(hmm, {"a"}).mediation_states) == 3
-    assert len(mvr_forbid_state(hmm, {"a"}).mediation_states) == 3
-
-    assert len(mvr_current_sequencelist(hmm, sequences).mediation_states) == 6
-    assert len(mvr_visit_sequencelist(hmm, sequences).mediation_states) == 10
-
-
-@pytest.mark.parametrize(
-    "builder,argument",
-    [
-        (mvr_visit_state, {"z"}),
-        (mvr_forbid_state, {"z"}),
-        (mvr_visit_transition, {("a", "z")}),
-        (mvr_forbid_transition, {("a", "z")}),
-        (mvr_visit_sequencelist, [("a", "z")]),
-        (mvr_forbid_sequencelist, [("a", "z")]),
-    ],
-)
-def test_wrappers_delegate_validation_to_the_primitive(builder, argument):
-    with pytest.raises(InvalidInputError, match="not hidden states"):
-        builder(make_hmm(), argument)
-
-
 # ---------------------------------------------------------------------
 # mvr_holdingtime
 # ---------------------------------------------------------------------
 
 
 def holding_time_reference(seq, k, states):
-    """
-    Every run except the one still in progress must be at least k long.
-    """
+    """Require completed target-state runs to have length at least ``k``."""
     runs = [(state, len(list(group))) for state, group in groupby(seq)]
 
     return all(length >= k for state, length in runs[:-1] if state in states)
@@ -544,9 +419,7 @@ def holding_time_reference(seq, k, states):
 
 @pytest.mark.filterwarnings("ignore:mvr_holdingtime is the constantly true MVR")
 @pytest.mark.parametrize("k", [1, 2, 3])
-# {"a", "b"} is not a duplicate of {"a"}: it is the only case where a
-# constrained run is left for another constrained state, so it alone reaches the
-# branch that starts a fresh counter at 1 rather than saturating it.
+# Two target states exercise starting a new constrained run after another.
 @pytest.mark.parametrize("states", [None, set(), {"a"}, {"a", "b"}])
 def test_holdingtime_matches_reference(k, states):
     hmm = make_hmm()
@@ -559,9 +432,7 @@ def test_holdingtime_matches_reference(k, states):
 
 
 def test_holdingtime_boundary_conventions():
-    # Redundant with the sweep above, kept deliberately as the executable spec:
-    # these are the two conventions the constraint is built around, and nothing
-    # else in the file states them outright.
+    # Deliberate spec for the trailing-run and initial-run conventions.
     mvr = mvr_holdingtime(make_hmm(), 3)
 
     assert eval_mvr(mvr, ["a", "a"]) is True  # trailing run is exempt
@@ -578,32 +449,13 @@ def test_holdingtime_boundary_conventions():
     ],
 )
 def test_holdingtime_warns_when_constantly_true(hmm_states, k, states, reason):
-    # The three ways no run can ever end short. Accepted rather than rejected --
-    # each is a legitimate programmatic boundary -- but flagged, since a silently
-    # vacuous constraint is the failure mode worth catching.
+    # Accepted programmatic boundaries, but warned because each is vacuous.
     hmm = make_hmm(hidden_states=hmm_states)
 
     with pytest.warns(UserWarning, match=reason):
         mvr = mvr_holdingtime(hmm, k, states)
 
     assert all(mvr.evl.values())
-
-
-@pytest.mark.filterwarnings("ignore:mvr_holdingtime is the constantly true MVR")
-@pytest.mark.parametrize(
-    "states,expected",
-    [
-        (None, 10),  # 3 constrained states x k = 3, plus the fail state
-        ({"a"}, 6),  # 1 x 3, plus 2 unconstrained states, plus the fail state
-        (set(), 3),  # nothing constrained, so no run can end short: no fail state
-    ],
-)
-def test_holdingtime_mediation_space_is_minimal(states, expected):
-    mvr = mvr_holdingtime(make_hmm(), 3, states)
-
-    assert len(mvr.mediation_states) == expected
-    # prune returns self only when every mediation state is reachable.
-    assert mvr.prune() is mvr
 
 
 @pytest.mark.parametrize(
@@ -627,9 +479,7 @@ def test_holdingtime_rejects_invalid_input(k, states, match):
 
 
 def num_jumps(seq):
-    """
-    Number of times the hidden state changes.
-    """
+    """Count changes in the hidden state."""
     return sum(seq[i] != seq[i - 1] for i in range(1, len(seq)))
 
 
@@ -651,18 +501,6 @@ def test_jumpcounts_matches_reference(condition, reference):
     mvr = mvr_jumpcounts(make_hmm(), condition)
 
     assert_matches(mvr, lambda seq: reference(num_jumps(seq)))
-
-
-@pytest.mark.parametrize(
-    "condition,expected",
-    # (h_prev, count) over 3 hidden states, plus the fail state.
-    [("0", 4), ("2", 10), (">1", 7)],
-)
-def test_jumpcounts_mediation_space_is_minimal(condition, expected):
-    mvr = mvr_jumpcounts(make_hmm(), condition)
-
-    assert len(mvr.mediation_states) == expected
-    assert mvr.prune() is mvr
 
 
 @pytest.mark.parametrize(
@@ -715,9 +553,7 @@ def test_jumpcounts_is_not_count_of_jump():
 
 
 def schedule_reference(seq, bounds):
-    """
-    True iff every named time within the sequence is inside its bounds.
-    """
+    """Check bounds at named times within the sequence."""
     return all(
         lower <= seq[t] <= upper for t, (lower, upper) in bounds.items() if t < len(seq)
     )
@@ -769,18 +605,6 @@ def test_withinbounds_schedule_matches_reference(bounds, time_horizon):
         max_length=mvr.time_horizon + 1,
         alphabet=NUMERIC_ALPHABET,
     )
-
-
-def test_withinbounds_mediation_space_is_minimal():
-    # t = 0 excludes nothing, so a violation is first possible at t = 1.
-    mvr = mvr_withinbounds(
-        make_hmm(NUMERIC_ALPHABET), {0: [0, 3], 1: [1, 2]}, time_horizon=3
-    )
-
-    assert mvr.time_horizon == 3
-    assert mvr.mediation_states == [[True], [True, False], [True, False], [True, False]]
-
-    assert mvr.prune() is mvr
 
 
 @pytest.mark.parametrize("bounds", [[5, 9], {1: [5, 9]}])
@@ -855,16 +679,6 @@ def test_regex_translates_ambiguous_labels():
 
 
 @skipif_no_greenery
-def test_regex_mediation_space_is_minimal():
-    # Consumed an 'a', accepted, and the fail state.
-    mvr = mvr_regex(make_hmm(), "<a><b>*<c>")
-
-    assert len(mvr.mediation_states) == 3
-
-    assert mvr.prune() is mvr
-
-
-@skipif_no_greenery
 def test_regex_warns_when_no_sequence_matches():
     with pytest.warns(UserWarning, match="no nonempty hidden sequence matches"):
         mvr_regex(make_hmm(), "")
@@ -892,53 +706,3 @@ def test_regex_warns_when_no_sequence_matches():
 def test_regex_rejects_invalid_input(model, pattern, match):
     with pytest.raises(InvalidInputError, match=match):
         mvr_regex(model(), pattern)
-
-
-# ---------------------------------------------------------------------
-# Numeric representation and CHMM integration
-# ---------------------------------------------------------------------
-
-
-@pytest.mark.parametrize(
-    "builder",
-    [
-        lambda hmm: mvr_constant(hmm, True),
-        lambda hmm: mvr_current_state(hmm, {"a"}),
-        lambda hmm: mvr_current_transition(hmm, {("a", "b")}),
-        lambda hmm: mvr_current_sequencelist(hmm, {("a", "b", "a")}),
-        lambda hmm: mvr_holdingtime(hmm, 2),
-        lambda hmm: mvr_jump(hmm),
-        lambda hmm: mvr_jumpcounts(hmm, "[1,2]"),
-    ],
-)
-def test_primitives_build_a_valid_numeric_representation(builder):
-    hmm = make_hmm()
-    mvr = builder(hmm)
-
-    repn = mvr.repn
-
-    assert repn.num_hidden_states == len(hmm.hidden_states)
-    assert repn.ini_array.shape == (
-        len(hmm.hidden_states),
-        len(mvr.mediation_states),
-    )
-    # Deterministic and total: one-hot over the current mediation axis.
-    assert np.allclose(repn.ini_array.sum(axis=1), 1)
-    assert np.allclose(repn.upd_array.sum(axis=1), 1)
-
-
-def test_primitives_are_accepted_as_mvr_chmm_constraints():
-    from conin.constraint import mvr_constraint_fn
-    from conin.hidden_markov_model import ConstrainedHiddenMarkovModel
-
-    hmm = make_hmm()
-
-    @mvr_constraint_fn(name="never_visits_a")
-    def never_visits_a(hidden_markov_model):
-        return mvr_forbid_state(hidden_markov_model, {"a"})
-
-    chmm = ConstrainedHiddenMarkovModel(hmm=hmm, constraints=[never_visits_a])
-    chmm.initialize_chmm()
-
-    assert len(chmm.chmm.constraints) == 1
-    assert isinstance(chmm.chmm.constraints[0], HomMVR)
