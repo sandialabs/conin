@@ -3,6 +3,7 @@ import numpy as np
 import torch
 from itertools import chain
 import copy
+import warnings
 from munch import Munch
 
 #=====================================
@@ -1069,7 +1070,7 @@ def baum_welch_unconstrained(
 ):
     """
     Optimized Baum-Welch / EM for a batch of sequences.
-    Uses count-only E-step.
+    History includes initialization and every completed update.
     """
     hmm = copy.deepcopy(hmm)
 
@@ -1084,7 +1085,7 @@ def baum_welch_unconstrained(
     history = []
     ix_list = [state_ix, emit_ix]
 
-    for it in range(max_iter):
+    for it in range(max_iter + 1):
         init_counts_total = torch.zeros(K, dtype=dtype, device=device)
         trans_counts_total = torch.zeros((K, K), dtype=dtype, device=device)
         emit_counts_total = torch.zeros((K, M), dtype=dtype, device=device)
@@ -1107,7 +1108,7 @@ def baum_welch_unconstrained(
         if verbose:
             print(f"EM iter {it:3d}  loglik = {total_loglik:.10f}")
 
-        if it > 0 and abs(history[-1] - history[-2]) < tol:
+        if it == max_iter or (it > 0 and abs(history[-1] - history[-2]) < tol):
             break
 
         init_prob_new = _normalize_probvec(
@@ -1146,205 +1147,263 @@ def baum_welch_unconstrained(
 # Constrained Learning
 # =====================================
 
-def _prepare_constrained_static_params(hmm, cst_list, dtype=torch.float64, device='cpu'):
-    """
-    Build static constraint tensors once.
-    """
-    hmm_params, cst_params_list, state_ix = convertTensor_list(
-        hmm,
-        cst_list,
-        dtype=dtype,
-        device=device,
-        return_ix=True,
-        hmm_params=None,
-    )
-    _, _ = hmm_params
-    dims_list, init_list, eval_list, upd_list = cst_params_list
-    return cst_params_list, state_ix
+class _ConstrainedChain:
+    """Cached deterministic legacy constraints, with flattened mediation axes."""
 
+    def __init__(self, hmm, cst_list, horizon, pro_before, dtype, device):
+        if not isinstance(horizon, (int, np.integer)) or horizon < 1:
+            raise ValueError('time_horizon must be a positive integer')
+        if cst_list and not 1 <= pro_before <= horizon:
+            raise ValueError('promoter evaluation must lie within time_horizon')
+        self.horizon = horizon
+        self.emit_ix = {e: i for i, e in enumerate(hmm.emits)}
+        k = len(hmm.states)
+        dims = tuple(len(c.m_states) for c in cst_list)
+        size = int(np.prod(dims))
+        coords = np.array(np.unravel_index(np.arange(size), dims)) if dims else []
+        initial = np.zeros((k, size))
+        destination = np.zeros((k, size), dtype=np.int64)
+        valid = np.ones((k, size), dtype=bool)
+        evaluations = {}
+        stride = size
+        for i, cst in enumerate(cst_list):
+            ini, evl, upd = create_cst_params(cst, hmm.states, dtype=torch.float64)
+            ini, evl, upd = (v.numpy() for v in (ini, evl, upd))
+            if any(np.any((v != 0) & (v != 1)) for v in (ini, evl, upd)):
+                raise ValueError('constraint factors must be Boolean')
+            if np.any(ini.sum(axis=1) > 1) or np.any(upd.sum(axis=1) > 1):
+                raise ValueError('constraint updates must be deterministic')
+            initial += np.where(ini[:, coords[i]] > 0, 0., -np.inf)
+            stride //= dims[i]
+            destination += upd.argmax(axis=1)[:, coords[i]] * stride
+            valid &= upd.sum(axis=1)[:, coords[i]] > 0
+            t = pro_before - 1 if i == 0 else horizon - 1
+            evaluations.setdefault(t, np.zeros((k, size)))
+            evaluations[t] += np.where(evl[:, coords[i]] > 0, 0., -np.inf)
+        self.initial = torch.as_tensor(initial, dtype=dtype, device=device)
+        self.destination = torch.as_tensor(destination, device=device)
+        self.valid = torch.as_tensor(valid, device=device)
+        self.evaluations = {t: torch.as_tensor(v, dtype=dtype, device=device)
+                            for t, v in evaluations.items()}
 
-def _current_hmm_torch_params_only(hmm, state_ix, dtype=torch.float64, device='cpu'):
-    """
-    Rebuild only the learned HMM params in torch form:
-      tmat: (K,K)
-      init_prob: (K,)
-    """
-    K = len(hmm.states)
-    tmat = torch.zeros((K, K), dtype=dtype, device=device)
-    init_prob = torch.zeros(K, dtype=dtype, device=device)
+    def evidence(self, log_params, obs):
+        if obs is None:
+            return log_params[0].new_zeros((self.horizon, len(log_params[0])))
+        if len(obs) != self.horizon:
+            raise ValueError('observations must match time_horizon')
+        return log_params[2][:, [self.emit_ix[e] for e in obs]].T
 
-    for s in hmm.states:
-        i = state_ix[s]
-        init_prob[i] = hmm.initprob[s]
-        for t in hmm.states:
-            j = state_ix[t]
-            tmat[i, j] = hmm.tprob[s, t]
+    def forward(self, log_params, obs=None, retain=False):
+        """Alpha includes current emissions/evaluations; beta excludes them."""
+        evidence = self.evidence(log_params, obs)
+        a = self.initial + log_params[0][:, None] + evidence[0, :, None]
+        a = a + self.evaluations.get(0, 0.)
+        messages = [a] if retain else None
+        for t in range(1, self.horizon):
+            incoming = torch.logsumexp(a[:, None, :] + log_params[1][:, :, None], dim=0)
+            incoming = incoming.masked_fill(~self.valid, -torch.inf)
+            # Shift each destination separately, preserving rare feasible paths.
+            maxima = torch.full_like(a, -torch.inf)
+            maxima.scatter_reduce_(1, self.destination, incoming, reduce='amax')
+            shifts = maxima.gather(1, self.destination)
+            weights = torch.where(torch.isfinite(incoming),
+                                  (incoming - shifts).exp(), 0.)
+            sums = torch.zeros_like(a).scatter_add_(1, self.destination, weights)
+            a = maxima + sums.log() + evidence[t, :, None]
+            a = a + self.evaluations.get(t, 0.)
+            if retain:
+                messages.append(a)
+        return torch.logsumexp(a.flatten(), dim=0), messages
 
-    return tmat, init_prob
+    def counts(self, log_params, obs=None):
+        loglik, alpha = self.forward(log_params, obs, retain=True)
+        if not torch.isfinite(loglik):
+            raise ValueError('constraints and observations have zero probability')
+        evidence = self.evidence(log_params, obs)
+        counts = [torch.zeros_like(p) for p in log_params]
+        beta = torch.zeros_like(alpha[-1])
+        for t in range(self.horizon - 1, -1, -1):
+            gamma = torch.softmax((alpha[t] + beta).flatten(), dim=0)
+            gamma = gamma.reshape_as(beta).sum(dim=1)
+            if obs is not None:
+                counts[2][:, self.emit_ix[obs[t]]] += gamma
+            if t == 0:
+                counts[0] = gamma
+                break
+            right = beta + evidence[t, :, None] + self.evaluations.get(t, 0.)
+            right = right.gather(1, self.destination).masked_fill(~self.valid, -torch.inf)
+            edge = log_params[1][:, :, None] + right[None, :, :]
+            log_xi = torch.logsumexp(alpha[t - 1][:, None, :] + edge, dim=2)
+            counts[1] += torch.softmax(log_xi.flatten(), dim=0).reshape_as(log_xi)
+            beta = torch.logsumexp(edge, dim=1)
+        return counts, loglik
 
 
 def constrained_e_step_counts(
-    hmm,
-    cst_list,
-    obs,
-    pro_before=30,
-    dtype=torch.float64,
-    device='cpu',
-    static_cst=None,
+    hmm, cst_list, obs=None, pro_before=30, dtype=torch.float64,
+    device='cpu', static_cst=None, *, time_horizon=None,
 ):
+    """Return initial, transition, emission counts and log P(observations, C).
+
+    With obs=None, time_horizon is required and the score is log P(C).
+    The first constraint is evaluated at pro_before; the rest at the horizon.
     """
-    Count-only forward-backward for the constrained augmented HMM.
+    horizon = len(obs) if time_horizon is None and obs is not None else time_horizon
+    ctx = static_cst if static_cst is not None else _ConstrainedChain(
+        hmm, cst_list, horizon, pro_before, dtype, device)
+    params = _hmm_to_torch_params(hmm, dtype=dtype, device=device)[:3]
+    counts, loglik = ctx.counts([p.log() for p in params], obs)
+    return *counts, loglik.item()
 
-    Returns
-    -------
-    init_counts : torch.Tensor, shape (K,)
-    trans_counts : torch.Tensor, shape (K,K)
-    emit_counts : torch.Tensor, shape (K,M)
-    loglik : float
-    """
-    if static_cst is None:
-        cst_params_list, state_ix = _prepare_constrained_static_params(
-            hmm, cst_list, dtype=dtype, device=device
-        )
-    else:
-        cst_params_list, state_ix = static_cst
 
-    tmat, init_prob = _current_hmm_torch_params_only(
-        hmm, state_ix, dtype=dtype, device=device
-    )
+def sample_constrained_fixed_length(
+    hmm, cst_list, time_horizon, num_samples=1, *, pro_before=30,
+    rng=None, dtype=torch.float64, device='cpu',
+):
+    """Draw (latent path, emissions) pairs exactly at a fixed constrained horizon."""
+    rng = np.random.default_rng() if rng is None else rng
+    ctx = _ConstrainedChain(hmm, cst_list, time_horizon, pro_before, dtype, device)
+    params = _hmm_to_torch_params(hmm, dtype=dtype, device=device)[:3]
+    log_params = [p.log() for p in params]
+    loglik, alpha = ctx.forward(log_params, retain=True)
+    if not torch.isfinite(loglik):
+        raise ValueError('constraints have zero probability at time_horizon')
+    # Sampling many paths reuses one forward pass; backward draws run on CPU.
+    alpha = [a.cpu() for a in alpha]
+    destination, valid = ctx.destination.cpu(), ctx.valid.cpu()
+    transition = log_params[1].cpu()
+    emission = params[2].cpu().numpy()
+    size = alpha[0].shape[1]
+    samples = []
+    for _ in range(num_samples):
+        probabilities = torch.softmax(alpha[-1].flatten(), dim=0).numpy()
+        flat = rng.choice(len(probabilities), p=probabilities)
+        state, memory = divmod(flat, size)
+        path = [state]
+        for t in range(time_horizon - 2, -1, -1):
+            allowed = valid[state] & (destination[state] == memory)
+            weights = (alpha[t] + transition[:, state, None]).masked_fill(
+                ~allowed[None, :], -torch.inf)
+            probabilities = torch.softmax(weights.flatten(), dim=0).numpy()
+            flat = rng.choice(len(probabilities), p=probabilities)
+            state, memory = divmod(flat, size)
+            path.append(state)
+        path.reverse()
+        emits = [hmm.emits[rng.choice(len(hmm.emits), p=emission[k])] for k in path]
+        samples.append(([hmm.states[k] for k in path], emits))
+    return samples
 
-    dims_list, init_list, eval_list, upd_list = cst_params_list
 
-    emit_weights = compute_emitweights(obs, hmm)
-    emit_weights = torch.from_numpy(emit_weights).to(device=device, dtype=dtype)
-
-    T = emit_weights.shape[0]
-    K = tmat.shape[0]
-    C = len(dims_list)
-    M = len(hmm.emits)
-
-    emit_ix = {m: i for i, m in enumerate(hmm.emits)}
-    obs_idx = torch.tensor([emit_ix[o] for o in obs], dtype=torch.long, device=device)
-
-    kr_indices = list(range(C + 1))
-    js_indices = [i + C + 1 for i in kr_indices]
-    aug_shape = (K,) + tuple(dims_list)
-
-    alpha = torch.empty((T,) + aug_shape, dtype=dtype, device=device)
-    beta = torch.empty((T,) + aug_shape, dtype=dtype, device=device)
-    scales = torch.empty(T, dtype=dtype, device=device)
-
-    def apply_eval_factors_current(tensor, t):
-        if t == pro_before - 1 and len(eval_list) >= 2:
-            tensor = torch.einsum(tensor, kr_indices, *eval_list[:2], kr_indices)
-        if t == T - 1 and len(eval_list) > 2:
-            tensor = torch.einsum(tensor, kr_indices, *eval_list[2:], kr_indices)
-        return tensor
-
-    # Forward
-    a0 = torch.einsum(
-        emit_weights[0], [0],
-        init_prob, [0],
-        *init_list,
-        kr_indices
-    )
-    a0 = apply_eval_factors_current(a0, 0)
-
-    s0 = a0.sum()
-    if s0.item() <= 0:
-        raise ValueError("Forward message at t=0 sums to 0.")
-    alpha[0] = a0 / s0
-    scales[0] = s0
-
-    for t in range(1, T):
-        V = torch.einsum(
-            alpha[t - 1], js_indices,
-            tmat, [C + 1, 0],
-            emit_weights[t], [0],
-            *upd_list,
-            kr_indices
-        )
-        V = apply_eval_factors_current(V, t)
-
-        st = V.sum()
-        if st.item() <= 0:
-            raise ValueError(f"Forward message at t={t} sums to 0.")
-        alpha[t] = V / st
-        scales[t] = st
-
-    loglik = torch.log(scales).sum().item()
-
-    # Backward
-    beta[-1] = torch.ones(aug_shape, dtype=dtype, device=device)
-
-    for t in range(T - 2, -1, -1):
-        next_msg = torch.einsum(
-            beta[t + 1], kr_indices,
-            emit_weights[t + 1], [0],
-            kr_indices
-        )
-        next_msg = apply_eval_factors_current(next_msg, t + 1)
-
-        B = torch.einsum(
-            next_msg, kr_indices,
-            tmat, [C + 1, 0],
-            *upd_list,
-            js_indices
-        )
-        beta[t] = B / scales[t + 1]
-
-    # gamma over augmented states
-    gamma = alpha * beta
-    gamma /= gamma.reshape(T, -1).sum(dim=1).reshape((T,) + (1,) * (C + 1))
-
-    # Marginal gamma over hidden state only: (T,K)
-    if gamma.ndim > 2:
-        gamma_x = gamma.sum(dim=tuple(range(2, gamma.ndim)))
-    else:
-        gamma_x = gamma
-
-    init_counts = gamma_x[0]
-    trans_counts = torch.zeros((K, K), dtype=dtype, device=device)
-    emit_counts = torch.zeros((K, M), dtype=dtype, device=device)
-
-    # Accumulate emissions directly from gamma_x
-    for t in range(T):
-        emit_counts[:, obs_idx[t]] += gamma_x[t]
-
-    # Accumulate hidden-state transition counts directly without storing full xi
-    for t in range(T - 1):
-        right_msg = torch.einsum(
-            beta[t + 1], kr_indices,
-            emit_weights[t + 1], [0],
-            kr_indices
-        )
-        right_msg = apply_eval_factors_current(right_msg, t + 1)
-
-        Xi_t = torch.einsum(
-            alpha[t], js_indices,
-            tmat, [C + 1, 0],
-            right_msg, kr_indices,
-            *upd_list,
-            js_indices + kr_indices
-        )
-
-        denom = Xi_t.sum()
-        if denom.item() <= 0:
-            raise ValueError(f"Xi tensor at t={t} sums to 0.")
-        Xi_t = Xi_t / denom
-
-        # Sum out all auxiliary dimensions, leaving (K,K)
-        n_aux = len(dims_list)
-        if n_aux > 0:
-            left_aux_axes = tuple(range(1, 1 + n_aux))
-            right_aux_axes = tuple(range(2 + n_aux, 2 + 2 * n_aux))
-            xi_x_t = Xi_t.sum(dim=left_aux_axes + right_aux_axes)
+def _constraint_statistics(log_params, contexts, multiplicities, counts=False):
+    normalizer = log_params[0].new_zeros(())
+    total = [torch.zeros_like(p) for p in log_params]
+    for horizon, ctx in contexts.items():
+        if counts:
+            moments, score = ctx.counts(log_params)
+            for dest, source in zip(total, moments):
+                dest += multiplicities[horizon] * source
         else:
-            xi_x_t = Xi_t
+            score, _ = ctx.forward(log_params)
+        normalizer += multiplicities[horizon] * score
+    return total, normalizer
 
-        trans_counts += xi_x_t
 
-    return init_counts, trans_counts, emit_counts, loglik
+def _surrogate(log_params, data_counts, normalizer):
+    return sum((p[c > 0] * c[c > 0]).sum()
+               for p, c in zip(log_params, data_counts)) - normalizer
+
+
+def _logit_gradient(log_params, data_counts, prior_counts):
+    differences = [data_counts[0] - prior_counts[0],
+                   data_counts[1] - prior_counts[1], data_counts[2]]
+    return [d - p.exp() * d.sum(dim=-1, keepdim=True)
+            for p, d in zip(log_params, differences)]
+
+
+def generalized_em_constrained(
+    hmm, cst_list, obs_batch, pro_before=30, max_iter=50, tol=1e-6,
+    dtype=torch.float64, device='cpu', verbose=False, *,
+    inner_max_iter=10, inner_tol=1e-6, step_size=1., max_backtracks=30,
+):
+    """Fit log P(y | C) with exact moments and backtracked logit GEM steps.
+
+    Input zeros are structural. No pseudocounts are used. Returns a copied HMM
+    and batch likelihood history including initialization and every update.
+    """
+    if not obs_batch or any(len(obs) == 0 for obs in obs_batch):
+        raise ValueError('obs_batch must contain nonempty sequences')
+    if max_iter < 0 or inner_max_iter < 1 or max_backtracks < 1 or step_size <= 0:
+        raise ValueError('iteration budgets and step_size must be valid')
+    hmm = copy.deepcopy(hmm)
+    params = _hmm_to_torch_params(hmm, dtype=dtype, device=device)[:3]
+    for p in params:
+        if (not torch.isfinite(p).all() or (p < 0).any()
+                or not torch.allclose(p.sum(dim=-1), torch.ones_like(p.sum(dim=-1)))):
+            raise ValueError('HMM parameters must be normalized probabilities')
+    if 'end' in hmm.states and 'N' in hmm.emits:
+        mask = torch.as_tensor(_build_emission_support_mask(hmm)[0], device=device)
+        if (params[2][mask == 0] != 0).any():
+            raise ValueError('emission support must reserve N for end')
+    log_params = [p.log() for p in params]
+    multiplicities = {t: sum(len(obs) == t for obs in obs_batch)
+                      for t in set(map(len, obs_batch))}
+    contexts = {t: _ConstrainedChain(hmm, cst_list, t, pro_before, dtype, device)
+                for t in multiplicities}
+    n = len(obs_batch)
+    history = []
+    failed = False
+    for iteration in range(max_iter + 1):
+        data_counts = [torch.zeros_like(p) for p in log_params]
+        joint = log_params[0].new_zeros(())
+        for obs in obs_batch:
+            counts, score = contexts[len(obs)].counts(log_params, obs)
+            for dest, source in zip(data_counts, counts):
+                dest += source
+            joint += score
+        _, normalizer = _constraint_statistics(log_params, contexts, multiplicities)
+        likelihood = (joint - normalizer).item()
+        history.append(likelihood)
+        if verbose:
+            print(f'GEM iter {iteration:3d}  constrained loglik = {likelihood:.10f}')
+        if iteration == max_iter or failed:
+            break
+        if iteration > 0 and history[-1] - history[-2] < tol:
+            break
+        data_counts = [c / n for c in data_counts]
+        for _ in range(inner_max_iter):
+            prior_counts, normalizer = _constraint_statistics(
+                log_params, contexts, multiplicities, counts=True)
+            prior_counts = [c / n for c in prior_counts]
+            value = _surrogate(log_params, data_counts, normalizer / n)
+            gradient = _logit_gradient(log_params, data_counts, prior_counts)
+            if max(g.abs().max().item() for g in gradient) <= inner_tol:
+                break
+            norm_sq = sum(g.square().sum() for g in gradient)
+            step = step_size
+            for _ in range(max_backtracks):
+                candidate = [torch.log_softmax(p + step * g, dim=-1)
+                             for p, g in zip(log_params, gradient)]
+                _, candidate_z = _constraint_statistics(candidate, contexts, multiplicities)
+                candidate_value = _surrogate(candidate, data_counts, candidate_z / n)
+                if (torch.isfinite(candidate_value)
+                        and candidate_value >= value + 1e-4 * step * norm_sq):
+                    break
+                step *= .5
+            else:
+                warnings.warn('GEM backtracking failed; retaining last accepted parameters',
+                              RuntimeWarning)
+                failed = True
+                break
+            log_params = candidate
+            if (candidate_value - value).item() <= inner_tol * max(1., abs(value.item())):
+                break
+    init, trans, emit = [p.exp().cpu().numpy() for p in log_params]
+    hmm.initprob = {s: float(init[i]) for i, s in enumerate(hmm.states)}
+    hmm.tprob = {(s, u): float(trans[i, j]) for i, s in enumerate(hmm.states)
+                 for j, u in enumerate(hmm.states)}
+    hmm.eprob = {(s, e): float(emit[i, j]) for i, s in enumerate(hmm.states)
+                 for j, e in enumerate(hmm.emits)}
+    return hmm, history
 
 
 def constrained_forward_backward_augmented(
@@ -1469,102 +1528,3 @@ def constrained_forward_backward_augmented(
         xi[t] = Xi_t / denom
 
     return gamma.detach().cpu(), xi.detach().cpu(), loglik, state_ix, dims_list
-
-
-def baum_welch_constrained(
-    hmm,
-    cst_list,
-    obs_batch,
-    pro_before=30,
-    max_iter=50,
-    tol=1e-6,
-    pseudocount=1e-8,
-    dtype=torch.float64,
-    device='cpu',
-    verbose=False,
-):
-    """
-    Optimized constrained Baum-Welch / EM.
-    Uses count-only constrained E-step and caches static constraint tensors.
-    """
-    hmm = copy.deepcopy(hmm)
-
-    state_ix = {s: i for i, s in enumerate(hmm.states)}
-    emit_ix = {m: i for i, m in enumerate(hmm.emits)}
-    inv_state_ix = {i: s for s, i in state_ix.items()}
-    inv_emit_ix = {i: m for m, i in emit_ix.items()}
-
-    K = len(hmm.states)
-    M = len(hmm.emits)
-
-    history = []
-
-    # Constraint tensors are static across EM iterations
-    static_cst = _prepare_constrained_static_params(
-        hmm,
-        cst_list,
-        dtype=dtype,
-        device=device,
-    )
-
-    for it in range(max_iter):
-        init_counts_total = torch.zeros(K, dtype=dtype, device=device)
-        trans_counts_total = torch.zeros((K, K), dtype=dtype, device=device)
-        emit_counts_total = torch.zeros((K, M), dtype=dtype, device=device)
-        total_loglik = 0.0
-
-        for obs in obs_batch:
-            init_counts, trans_counts, emit_counts, loglik = constrained_e_step_counts(
-                hmm,
-                cst_list,
-                obs,
-                pro_before=pro_before,
-                dtype=dtype,
-                device=device,
-                static_cst=static_cst,
-            )
-            init_counts_total += init_counts
-            trans_counts_total += trans_counts
-            emit_counts_total += emit_counts
-            total_loglik += loglik
-
-        history.append(total_loglik)
-        if verbose:
-            print(f"EM iter {it:3d}  loglik = {total_loglik:.10f}")
-
-        if it > 0 and abs(history[-1] - history[-2]) < tol:
-            break
-
-        init_prob_new = _normalize_probvec(
-            init_counts_total.detach().cpu().numpy(),
-            eps=pseudocount
-        )
-        tmat_new = _normalize_rows(
-            trans_counts_total.detach().cpu().numpy(),
-            eps=pseudocount
-        )
-        emat_new = _update_emission_matrix_with_end_constraint(
-            emit_counts_total.detach().cpu().numpy(),
-            hmm,
-            pseudocount=pseudocount,
-            end_state='end',
-            end_emission='N',
-        )
-
-        hmm.initprob = {
-            inv_state_ix[i]: float(init_prob_new[i])
-            for i in range(K)
-        }
-        hmm.tprob = {
-            (inv_state_ix[i], inv_state_ix[j]): float(tmat_new[i, j])
-            for i in range(K) for j in range(K)
-        }
-        hmm.eprob = {
-            (inv_state_ix[i], inv_emit_ix[m]): float(emat_new[i, m])
-            for i in range(K) for m in range(M)
-        }
-
-    return hmm, history
-
-
-    
