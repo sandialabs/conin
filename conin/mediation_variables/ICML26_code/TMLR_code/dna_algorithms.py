@@ -1315,7 +1315,7 @@ def _surrogate(log_params, data_counts, normalizer):
 
 def _logit_gradient(log_params, data_counts, prior_counts):
     differences = [data_counts[0] - prior_counts[0],
-                   data_counts[1] - prior_counts[1], data_counts[2]]
+                   data_counts[1] - prior_counts[1]]
     return [d - p.exp() * d.sum(dim=-1, keepdim=True)
             for p, d in zip(log_params, differences)]
 
@@ -1325,10 +1325,11 @@ def generalized_em_constrained(
     dtype=torch.float64, device='cpu', verbose=False, *,
     inner_max_iter=10, inner_tol=1e-6, step_size=1., max_backtracks=30,
 ):
-    """Fit log P(y | C) with exact moments and backtracked logit GEM steps.
+    """Fit log P(y | C) with closed-form emissions and logit GEM steps for the chain.
 
     Input zeros are structural. No pseudocounts are used. Returns a copied HMM
     and batch likelihood history including initialization and every update.
+    Emission rows with no expected observations retain their previous values.
     """
     if not obs_batch or any(len(obs) == 0 for obs in obs_batch):
         raise ValueError('obs_batch must contain nonempty sequences')
@@ -1370,6 +1371,11 @@ def generalized_em_constrained(
         if iteration > 0 and history[-1] - history[-2] < tol:
             break
         data_counts = [c / n for c in data_counts]
+        emit_totals = data_counts[2].sum(dim=-1, keepdim=True)
+        occupied = emit_totals[:, 0] > 0
+        log_params[2] = log_params[2].clone()
+        log_params[2][occupied] = (
+            data_counts[2][occupied].log() - emit_totals[occupied].log())
         for _ in range(inner_max_iter):
             prior_counts, normalizer = _constraint_statistics(
                 log_params, contexts, multiplicities, counts=True)
@@ -1383,6 +1389,7 @@ def generalized_em_constrained(
             for _ in range(max_backtracks):
                 candidate = [torch.log_softmax(p + step * g, dim=-1)
                              for p, g in zip(log_params, gradient)]
+                candidate.append(log_params[2])
                 _, candidate_z = _constraint_statistics(candidate, contexts, multiplicities)
                 candidate_value = _surrogate(candidate, data_counts, candidate_z / n)
                 if (torch.isfinite(candidate_value)
