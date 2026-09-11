@@ -1320,6 +1320,26 @@ def _logit_gradient(log_params, data_counts, prior_counts):
             for p, d in zip(log_params, differences)]
 
 
+def _normalize_log_counts(previous, counts):
+    """Normalize expected counts, retaining rows with no expected occupancy."""
+    totals = counts.sum(dim=-1, keepdim=True)
+    return torch.where(totals > 0, counts.log() - totals.log(), previous)
+
+
+def baum_welch_joint(
+    hmm, cst_list, obs_batch, pro_before=30, max_iter=50, tol=1e-6,
+    dtype=torch.float64, device='cpu', verbose=False,
+):
+    """Fit log P(y, C) by Baum–Welch on the augmented chain.
+
+    Input zeros are structural; zero-count rows retain their previous values.
+    Returns a copied HMM and total batch history including initialization.
+    """
+    return _fit_constrained(
+        hmm, cst_list, obs_batch, pro_before, max_iter, tol, dtype, device,
+        verbose, joint_objective=True)
+
+
 def generalized_em_constrained(
     hmm, cst_list, obs_batch, pro_before=30, max_iter=50, tol=1e-6,
     dtype=torch.float64, device='cpu', verbose=False, *,
@@ -1331,6 +1351,18 @@ def generalized_em_constrained(
     and batch likelihood history including initialization and every update.
     Emission rows with no expected observations retain their previous values.
     """
+    return _fit_constrained(
+        hmm, cst_list, obs_batch, pro_before, max_iter, tol, dtype, device,
+        verbose, inner_max_iter=inner_max_iter, inner_tol=inner_tol,
+        step_size=step_size, max_backtracks=max_backtracks)
+
+
+def _fit_constrained(
+    hmm, cst_list, obs_batch, pro_before, max_iter, tol, dtype, device, verbose, *,
+    joint_objective=False, inner_max_iter=10, inner_tol=1e-6,
+    step_size=1., max_backtracks=30,
+):
+    """Shared constrained E-step with joint BW or conditional GEM updates."""
     if not obs_batch or any(len(obs) == 0 for obs in obs_batch):
         raise ValueError('obs_batch must contain nonempty sequences')
     if max_iter < 0 or inner_max_iter < 1 or max_backtracks < 1 or step_size <= 0:
@@ -1361,21 +1393,24 @@ def generalized_em_constrained(
             for dest, source in zip(data_counts, counts):
                 dest += source
             joint += score
-        _, normalizer = _constraint_statistics(log_params, contexts, multiplicities)
+        normalizer = 0.
+        if not joint_objective:
+            _, normalizer = _constraint_statistics(log_params, contexts, multiplicities)
         likelihood = (joint - normalizer).item()
         history.append(likelihood)
         if verbose:
-            print(f'GEM iter {iteration:3d}  constrained loglik = {likelihood:.10f}')
+            method = 'Joint BW' if joint_objective else 'Conditional GEM'
+            print(f'{method} iter {iteration:3d}  loglik = {likelihood:.10f}')
         if iteration == max_iter or failed:
             break
-        if iteration > 0 and history[-1] - history[-2] < tol:
+        if iteration > 0 and tol > 0 and history[-1] - history[-2] < tol:
             break
+        if joint_objective:
+            log_params = [_normalize_log_counts(p, c)
+                          for p, c in zip(log_params, data_counts)]
+            continue
         data_counts = [c / n for c in data_counts]
-        emit_totals = data_counts[2].sum(dim=-1, keepdim=True)
-        occupied = emit_totals[:, 0] > 0
-        log_params[2] = log_params[2].clone()
-        log_params[2][occupied] = (
-            data_counts[2][occupied].log() - emit_totals[occupied].log())
+        log_params[2] = _normalize_log_counts(log_params[2], data_counts[2])
         for _ in range(inner_max_iter):
             prior_counts, normalizer = _constraint_statistics(
                 log_params, contexts, multiplicities, counts=True)
