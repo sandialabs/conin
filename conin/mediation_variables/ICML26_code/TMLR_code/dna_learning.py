@@ -163,14 +163,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, default=DEFAULT_OUTPUT,
                         help='JSON destination (default: next to this script)')
-    for name, default in [('seed', 23), ('num-trials', 20), ('num-samples', 30),
-                          ('time-horizon', 30), ('pro-before', 10), ('max-iter', 500),
-                          ('inner-max-iter', 10), ('max-backtracks', 30)]:
+    for name, default in [('seed', 23), ('num-trials', 20), ('num-samples', 50),
+                          ('time-horizon', 60), ('pro-before', 10), ('max-iter', 500),
+                          ('inner-max-iter', 30), ('max-backtracks', 30)]:
         parser.add_argument('--' + name, type=int, default=default)
-    parser.add_argument('--tol', type=float, default=1e-5,
+    parser.add_argument('--tol', type=float, default=1e-3,
                         help='total batch log-likelihood improvement threshold')
     parser.add_argument('--inner-tol', type=float, default=1e-6)
-    parser.add_argument('--step-size', type=float, default=1.)
+    parser.add_argument('--step-size', type=float, default=.8)
     parser.add_argument('--device', default='auto', help='auto, cpu, or a CUDA device such as cuda:0')
     parser.add_argument('--verbose', action='store_true', help='print per-iteration likelihoods')
     run_experiment(**vars(parser.parse_args()))
