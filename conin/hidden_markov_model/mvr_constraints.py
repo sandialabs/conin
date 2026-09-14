@@ -194,7 +194,10 @@ def mvr_current_sequencelist(
     if (
         isinstance(sequences, (tuple, list))
         and len(sequences) > 0
-        and all(h in hidden_space for h in sequences)
+        and all(
+            not isinstance(h, _COLLECTION_TYPES) and h in hidden_space
+            for h in sequences
+        )
     ):
         raise InvalidInputError(
             "sequences must be a list, tuple, set, or frozenset of hidden state "
