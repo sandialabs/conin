@@ -58,7 +58,6 @@ def _constraint_statistics(log_params, contexts, multiplicities, *, counts=False
 
 
 def _surrogate(log_params, counts, normalizer):
-    """Expected complete-data log likelihood minus the constraint normalizer."""
     return (
         sum((p[c > 0] * c[c > 0]).sum() for p, c in zip(log_params, counts))
         - normalizer
@@ -95,16 +94,56 @@ def generalized_em_mvr_chmm(
 ):
     """Fit ``sum log P(observations | constraints)`` with constrained GEM.
 
-    Accepts the same batch of dense lists or partial ``{time: label}`` maps as
-    Baum–Welch; maps require explicit ``time_horizons``. Missing times still
-    drive transitions and constraints. Fits a copy and returns ``(hmm, history)``
-    with Baum–Welch's start-of-iteration history convention: on budget exhaustion
-    the returned model is one update ahead of the last score.
+    Emissions use exact count normalization without pseudocounts; start and
+    transition probabilities use backtracked logit steps. Initial zeros are
+    structural and raise a ``UserWarning``. Failed backtracking warns and returns
+    the last accepted parameters.
 
-    Initial zeros are structural and warn. Enabled emission rows use exact count
-    normalization without pseudocounts; chain parameters use backtracked logit
-    steps. Inner tolerances apply to the batch-mean surrogate. Failed backtracking
-    warns and returns the last accepted parameters, with their score recorded.
+    Parameters
+    ----------
+    model : MVR_CHMM
+        Constrained model. The fit runs on a copy, preserving constraint alignment.
+    observations : sequence
+        Batch of dense lists or partial ``{time: label}`` maps in external labels.
+        Missing times still drive transitions and constraints, but contribute no
+        emission counts. Emission rows with no counts retain their current values.
+    time_horizons : int or sequence of int, optional
+        Horizon per sequence; a single int applies to all. Required for maps,
+        including empty maps. Defaults to the sequence length for dense lists.
+    max_iter : int, optional
+        Maximum outer iterations, each an E-step followed by a generalized M-step.
+    tol : float, optional
+        Stop when the total conditional log-likelihood changes by less than this.
+        Exhausting the budget warns; ``tol <= 0`` requests a fixed iteration count.
+    update : tuple of str, optional
+        Parameter blocks to update: ``"start"``, ``"transition"``, and/or
+        ``"emission"``. Other blocks are unchanged.
+    dtype : torch.dtype, optional
+        Floating dtype for torch tensors; defaults to ``torch.float64``.
+    device : str or torch.device, optional
+        Torch device.
+    verbose : bool, optional
+        Print the total conditional log-likelihood each iteration.
+    inner_max_iter : int, optional
+        Maximum chain-gradient steps per M-step.
+    inner_tol : float, optional
+        Stop inner steps when the largest absolute logit gradient is at most this,
+        or improvement is at most this times ``max(1, abs(surrogate))``. Both use
+        the batch-mean surrogate.
+    step_size : float, optional
+        Initial positive step size for each chain-gradient step.
+    max_backtracks : int, optional
+        Maximum candidate steps per line search, halving the step on rejection.
+
+    Returns
+    -------
+    hmm : HiddenMarkovModel
+        Fitted model, with the input's label indexing preserved.
+    history : list[float]
+        Total conditional log-likelihood at the start of each outer iteration.
+        On convergence or failed backtracking, the last entry scores the returned
+        model. On budget exhaustion the model is one update ahead of that entry.
+        With ``max_iter=0``, returns an unchanged copy and an empty history.
     """
     update = tuple(update)
     unknown = set(update) - {"start", "transition", "emission"}
@@ -134,28 +173,37 @@ def generalized_em_mvr_chmm(
     hmm, constraints = _model_parts(working)
     _support_masks(hmm)
     log_params = list(_hmm_to_torch(hmm, log=True, dtype=dtype, device=device))
-    contexts, prior_contexts, resolved = [], {}, []
+
+    contexts, prior_contexts = [], {}
     for index, (observed, horizon) in enumerate(zip(observations, horizons)):
         try:
             T, _ = _resolve_horizon(observed, horizon)
             if T not in prior_contexts:
                 static = _build_static_context(
-                    constraints, hmm.num_hidden_states, T,
-                    log=True, dtype=dtype, device=device,
+                    constraints,
+                    hmm.num_hidden_states,
+                    T,
+                    log=True,
+                    dtype=dtype,
+                    device=device,
                 )
                 prior_contexts[T] = _build_sumprod_ctx(
                     working, {}, time_horizon=T, dtype=dtype, device=device, static=static
                 )
             contexts.append(
                 _build_sumprod_ctx(
-                    working, observed, time_horizon=T, dtype=dtype, device=device,
+                    working,
+                    observed,
+                    time_horizon=T,
+                    dtype=dtype,
+                    device=device,
                     static=prior_contexts[T],
                 )
             )
-            resolved.append(T)
         except InvalidInputError as exc:
             raise InvalidInputError(f"Sequence {index}: {exc}") from exc
-    multiplicities = Counter(resolved)
+    multiplicities = Counter(ctx["T"] for ctx in contexts)
+
     n = len(observations)
     history = []
     converged = failed = False
@@ -188,12 +236,14 @@ def generalized_em_mvr_chmm(
         if len(history) > 1 and abs(history[-1] - history[-2]) < tol:
             converged = True
             break
+
         data_counts = [c / n for c in data_counts]
         if "emission" in update:
             totals = data_counts[2].sum(dim=-1, keepdim=True)
             log_params[2] = torch.where(
                 totals > 0, data_counts[2].log() - totals.log(), log_params[2]
             ).to(dtype)
+
         for _ in range(inner_max_iter):
             prior_counts, normalizer = _constraint_statistics(
                 log_params, prior_contexts, multiplicities, counts=True
@@ -235,6 +285,7 @@ def generalized_em_mvr_chmm(
             log_params = candidate
             if float(candidate_value - value) <= inner_tol * max(1.0, abs(float(value))):
                 break
+
     if tol > 0 and not converged and not failed and len(history) > 1:
         warnings.warn(
             f"GEM stopped at max_iter={max_iter} without reaching tol={tol}; "
