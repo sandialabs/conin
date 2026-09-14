@@ -72,7 +72,9 @@ def _chain_gradient(log_params, data_counts, prior_counts, update):
     ):
         difference = data - prior
         gradient = difference - p.exp() * difference.sum(dim=-1, keepdim=True)
-        gradients.append(gradient.to(p.dtype) if name in update else torch.zeros_like(p))
+        gradients.append(
+            gradient.to(p.dtype) if name in update else torch.zeros_like(p)
+        )
     return gradients
 
 
@@ -152,9 +154,7 @@ def generalized_em_mvr_chmm(
     if (
         any(
             not isinstance(v, int) or v < minimum
-            for v, minimum in (
-                (max_iter, 0), (inner_max_iter, 1), (max_backtracks, 1)
-            )
+            for v, minimum in ((max_iter, 0), (inner_max_iter, 1), (max_backtracks, 1))
         )
         or not math.isfinite(step_size)
         or step_size <= 0
@@ -188,7 +188,12 @@ def generalized_em_mvr_chmm(
                     device=device,
                 )
                 prior_contexts[T] = _build_sumprod_ctx(
-                    working, {}, time_horizon=T, dtype=dtype, device=device, static=static
+                    working,
+                    {},
+                    time_horizon=T,
+                    dtype=dtype,
+                    device=device,
+                    static=static,
                 )
             contexts.append(
                 _build_sumprod_ctx(
@@ -220,7 +225,9 @@ def generalized_em_mvr_chmm(
             for dest, source in zip(data_counts, counts[:3]):
                 dest += source
             joint += counts[3]
-        _, normalizer = _constraint_statistics(log_params, prior_contexts, multiplicities)
+        _, normalizer = _constraint_statistics(
+            log_params, prior_contexts, multiplicities
+        )
         likelihood = joint - float(normalizer)
         if history and likelihood < history[-1] - 1e-6 * max(1.0, abs(history[-1])):
             warnings.warn(
@@ -265,7 +272,9 @@ def generalized_em_mvr_chmm(
                     _, candidate_z = _constraint_statistics(
                         candidate, prior_contexts, multiplicities
                     )
-                    candidate_value = _surrogate(candidate, data_counts, candidate_z / n)
+                    candidate_value = _surrogate(
+                        candidate, data_counts, candidate_z / n
+                    )
                 except InvalidInputError:
                     candidate_value = value.new_tensor(-torch.inf)
                 if (
@@ -283,7 +292,9 @@ def generalized_em_mvr_chmm(
                 failed = True
                 break
             log_params = candidate
-            if float(candidate_value - value) <= inner_tol * max(1.0, abs(float(value))):
+            if float(candidate_value - value) <= inner_tol * max(
+                1.0, abs(float(value))
+            ):
                 break
 
     if tol > 0 and not converged and not failed and len(history) > 1:

@@ -16,7 +16,10 @@ from conin.hidden_markov_model.learning.generalized_em_mvr import (  # noqa: E40
     _constraint_statistics,
     generalized_em_mvr_chmm,
 )
-from conin.hidden_markov_model.mvr_common import _build_sumprod_ctx, _hmm_to_torch  # noqa: E402
+from conin.hidden_markov_model.mvr_common import (
+    _build_sumprod_ctx,
+    _hmm_to_torch,
+)  # noqa: E402
 from .test_viterbi_mvr import (  # noqa: E402
     as_obs_map,
     make_end_state_inhom_mvr,
@@ -29,7 +32,9 @@ from .test_viterbi_mvr import (  # noqa: E402
 def enumerate_objectives(hmm, constraints, observations, horizons, posterior=None):
     likelihood, surrogate, weights = 0.0, 0.0, []
     log_z = 0.0
-    counts = [np.zeros_like(p) for p in (hmm.start_vec, hmm.transition_mat, hmm.emission_mat)]
+    counts = [
+        np.zeros_like(p) for p in (hmm.start_vec, hmm.transition_mat, hmm.emission_mat)
+    ]
 
     def score(path, observed):
         try:
@@ -106,7 +111,9 @@ def test_gem_matches_enumeration(seed):
         for t in set(horizons)
     }
     multiplicities = {t: horizons.count(t) for t in set(horizons)}
-    prior, normalizer = _constraint_statistics(logs, contexts, multiplicities, counts=True)
+    prior, normalizer = _constraint_statistics(
+        logs, contexts, multiplicities, counts=True
+    )
     reference = enumerate_objectives(hmm, constraints, [{}, {}, {}], horizons)
     assert float(normalizer) == pytest.approx(reference[4], abs=1e-9)
     for actual, expected in zip(prior, reference[3][:2]):
@@ -130,7 +137,8 @@ def test_gem_matches_enumeration(seed):
                 values.append(
                     enumerate_objectives(
                         perturbed, constraints, observations, horizons, posterior
-                    )[1] / 3
+                    )[1]
+                    / 3
                 )
             assert float(gradients[block][index]) == pytest.approx(
                 (values[1] - values[0]) / 2e-5, abs=1e-8
@@ -141,7 +149,9 @@ def test_gem_matches_enumeration(seed):
             hmm, constraints, observations, horizons
         )
         with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", message="Initial model has zero-probability")
+            warnings.filterwarnings(
+                "ignore", message="Initial model has zero-probability"
+            )
             fitted, history = generalized_em_mvr_chmm(
                 MVR_CHMM(hidden_markov_model=hmm, constraints=constraints),
                 observations,
@@ -167,7 +177,9 @@ def test_gem_matches_enumeration(seed):
             ("start", "transition", "emission"),
             ("start_vec", "transition_mat", "emission_mat"),
         ):
-            before, after = np.asarray(getattr(hmm, attr)), np.asarray(getattr(fitted, attr))
+            before, after = np.asarray(getattr(hmm, attr)), np.asarray(
+                getattr(fitted, attr)
+            )
             assert after[before == 0] == pytest.approx(0)
             if name not in update:
                 assert np.array_equal(before, after)
@@ -200,4 +212,6 @@ def test_gem_history_and_backtracking():
         )
     assert history == pytest.approx([history[0], history[0]])
     assert fitted.start_vec == pytest.approx(hmm.start_vec)
-    assert np.asarray(fitted.transition_mat) == pytest.approx(np.asarray(hmm.transition_mat))
+    assert np.asarray(fitted.transition_mat) == pytest.approx(
+        np.asarray(hmm.transition_mat)
+    )
