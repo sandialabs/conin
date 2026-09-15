@@ -103,7 +103,9 @@ Examples:
             if args.uai == "":
                 output_file = generate_output_filename(args.input_file, ".uai")
             else:
-                output_file = args.uai if args.uai.endswith(".uai") else args.uai + ".uai"
+                output_file = (
+                    args.uai if args.uai.endswith(".uai") else args.uai + ".uai"
+                )
 
             if not args.quiet:
                 print(f"Saving model to UAI format: {output_file}")
@@ -119,7 +121,9 @@ Examples:
             if args.bif == "":
                 output_file = generate_output_filename(args.input_file, ".bif")
             else:
-                output_file = args.bif if args.bif.endswith(".bif") else args.bif + ".bif"
+                output_file = (
+                    args.bif if args.bif.endswith(".bif") else args.bif + ".bif"
+                )
 
             if not args.quiet:
                 print(f"Saving model to BIF format: {output_file}")

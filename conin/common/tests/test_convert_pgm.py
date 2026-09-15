@@ -307,7 +307,9 @@ class TestConvertPGMBIF:
         temp_input, cleanup = make_temp_copy(source_file)
 
         try:
-            exit_code, stdout, stderr = run_convert_pgm([temp_input, "--bif", "--quiet"])
+            exit_code, stdout, stderr = run_convert_pgm(
+                [temp_input, "--bif", "--quiet"]
+            )
             assert exit_code == 0, f"Unexpected failure {stdout=} {stderr=}"
 
             # Calculate expected output filename
