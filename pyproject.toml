@@ -32,6 +32,9 @@ classifiers=[
         "Topic :: Software Development :: Libraries :: Python Modules",
     ]
 
+[project.scripts]
+convert_pgm = "conin.common.bin.convert_pgm:main"
+
 [project.optional-dependencies]
 test = [
     "pytest",
