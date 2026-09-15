@@ -181,9 +181,7 @@ class TestConvertPGMUAI:
         source_file = os.path.join(cwd, "asia.uai")
         temp_input, cleanup_input = make_temp_copy(source_file)
 
-        with tempfile.NamedTemporaryFile(
-            suffix=".uai", delete=False
-        ) as tmp_output:
+        with tempfile.NamedTemporaryFile(suffix=".uai", delete=False) as tmp_output:
             output_file = tmp_output.name
 
         try:
@@ -208,9 +206,7 @@ class TestConvertPGMUAI:
         source_file = os.path.join(cwd, "asia.uai")
         temp_input, cleanup_input = make_temp_copy(source_file)
 
-        with tempfile.NamedTemporaryFile(
-            suffix=".uai", delete=False
-        ) as tmp_output:
+        with tempfile.NamedTemporaryFile(suffix=".uai", delete=False) as tmp_output:
             output_file = tmp_output.name
 
         try:
@@ -230,9 +226,7 @@ class TestConvertPGMUAI:
         source_file = os.path.join(cwd, "asia.uai")
         temp_input, cleanup_input = make_temp_copy(source_file)
 
-        with tempfile.NamedTemporaryFile(
-            suffix="_test", delete=False
-        ) as tmp_output:
+        with tempfile.NamedTemporaryFile(suffix="_test", delete=False) as tmp_output:
             output_file = tmp_output.name
 
         try:
@@ -257,9 +251,7 @@ class TestConvertPGMUAI:
         source_file = os.path.join(cwd, "asia_compressed.uai.gz")
         temp_input, cleanup_input = make_temp_copy(source_file)
 
-        with tempfile.NamedTemporaryFile(
-            suffix=".uai", delete=False
-        ) as tmp_output:
+        with tempfile.NamedTemporaryFile(suffix=".uai", delete=False) as tmp_output:
             output_file = tmp_output.name
 
         try:
@@ -285,9 +277,7 @@ class TestConvertPGMUAI:
         source_file = os.path.join(cwd, "barley.uai")
         temp_input, cleanup_input = make_temp_copy(source_file)
 
-        with tempfile.NamedTemporaryFile(
-            suffix=".uai", delete=False
-        ) as tmp_output:
+        with tempfile.NamedTemporaryFile(suffix=".uai", delete=False) as tmp_output:
             output_file = tmp_output.name
 
         try:
@@ -365,9 +355,7 @@ class TestConvertPGMBIF:
         source_file = os.path.join(cwd, "cancer_mn.uai")
         temp_input, cleanup_input = make_temp_copy(source_file)
 
-        with tempfile.NamedTemporaryFile(
-            suffix=".bif", delete=False
-        ) as tmp_output:
+        with tempfile.NamedTemporaryFile(suffix=".bif", delete=False) as tmp_output:
             output_file = tmp_output.name
 
         try:
@@ -389,9 +377,7 @@ class TestConvertPGMBIF:
         source_file = os.path.join(cwd, "deer.uai")
         temp_input, cleanup_input = make_temp_copy(source_file)
 
-        with tempfile.NamedTemporaryFile(
-            suffix=".bif", delete=False
-        ) as tmp_output:
+        with tempfile.NamedTemporaryFile(suffix=".bif", delete=False) as tmp_output:
             output_file = tmp_output.name
 
         try:
@@ -412,9 +398,7 @@ class TestConvertPGMBIF:
         source_file = os.path.join(cwd, "asia.bif")
         temp_input, cleanup_input = make_temp_copy(source_file)
 
-        with tempfile.NamedTemporaryFile(
-            suffix=".uai", delete=False
-        ) as tmp_output:
+        with tempfile.NamedTemporaryFile(suffix=".uai", delete=False) as tmp_output:
             output_file = tmp_output.name
 
         try:
@@ -438,9 +422,7 @@ class TestConvertPGMBIF:
         source_file = os.path.join(cwd, "cancer_bn.uai")
         temp_input, cleanup_input = make_temp_copy(source_file)
 
-        with tempfile.NamedTemporaryFile(
-            suffix=".bif", delete=False
-        ) as tmp_output:
+        with tempfile.NamedTemporaryFile(suffix=".bif", delete=False) as tmp_output:
             output_file = tmp_output.name
 
         try:
@@ -464,9 +446,7 @@ class TestConvertPGMBIF:
         source_file = os.path.join(cwd, "asia.bif")
         temp_input, cleanup_input = make_temp_copy(source_file)
 
-        with tempfile.NamedTemporaryFile(
-            suffix=".bif", delete=False
-        ) as tmp_output:
+        with tempfile.NamedTemporaryFile(suffix=".bif", delete=False) as tmp_output:
             output_file = tmp_output.name
 
         try:
@@ -491,9 +471,7 @@ class TestConvertPGMBIF:
         source_file = os.path.join(cwd, "asia_compressed.bif.gz")
         temp_input, cleanup_input = make_temp_copy(source_file)
 
-        with tempfile.NamedTemporaryFile(
-            suffix=".uai", delete=False
-        ) as tmp_output:
+        with tempfile.NamedTemporaryFile(suffix=".uai", delete=False) as tmp_output:
             output_file = tmp_output.name
 
         try:
@@ -616,9 +594,7 @@ class TestConvertPGMRoundTrip:
         source_file = os.path.join(cwd, "cancer_bn.uai")
         temp_input, cleanup_input = make_temp_copy(source_file)
 
-        with tempfile.NamedTemporaryFile(
-            suffix=".uai", delete=False
-        ) as tmp_output:
+        with tempfile.NamedTemporaryFile(suffix=".uai", delete=False) as tmp_output:
             output_file = tmp_output.name
 
         try:
