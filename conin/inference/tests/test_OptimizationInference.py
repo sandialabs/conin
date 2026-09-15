@@ -51,6 +51,13 @@ def test_IntegerProgrammingInference_ABC_conin():
     assert os.path.exists(testfile_lp)
     os.remove(testfile_lp)
 
+@skipif_pgmpy_not_available
+@skipif_no_mip_solver
+def test_IntegerProgrammingInference_ABC_pgmpy():
+    example = conin.markov_network.examples.ABC_pgmpy()
+    results = map_query(example.pgm, method="integer_program", solver=mip_solver)
+    assert results.solution.states == example.solutions[0].states
+
 
 #
 # ConstrainedDiscreteMarkovNetwork tests
@@ -266,11 +273,6 @@ def test_DPGM_IntegerProgrammingInference_weather_conin():
 #
 # ConstrainedDynamicBayesianNetwork tests
 #
-
-#
-# Tests for map_query() dispatch function
-#
-
 
 @skipif_no_mip_solver
 @pytest.mark.parametrize(
