@@ -87,9 +87,7 @@ class TestConvertPGMUAI:
         """Test converting UAI to UAI (identity conversion)"""
         input_file = os.path.join(cwd, "asia.uai")
 
-        with tempfile.NamedTemporaryFile(
-            suffix=".uai", delete=False
-        ) as tmp_output:
+        with tempfile.NamedTemporaryFile(suffix=".uai", delete=False) as tmp_output:
             output_file = tmp_output.name
 
         try:
@@ -112,9 +110,7 @@ class TestConvertPGMUAI:
         """Test quiet mode suppresses output"""
         input_file = os.path.join(cwd, "asia.uai")
 
-        with tempfile.NamedTemporaryFile(
-            suffix=".uai", delete=False
-        ) as tmp_output:
+        with tempfile.NamedTemporaryFile(suffix=".uai", delete=False) as tmp_output:
             output_file = tmp_output.name
 
         try:
@@ -132,9 +128,7 @@ class TestConvertPGMUAI:
         """Test that .uai extension is added automatically"""
         input_file = os.path.join(cwd, "asia.uai")
 
-        with tempfile.NamedTemporaryFile(
-            suffix="_test", delete=False
-        ) as tmp_output:
+        with tempfile.NamedTemporaryFile(suffix="_test", delete=False) as tmp_output:
             output_file = tmp_output.name
 
         try:
@@ -157,9 +151,7 @@ class TestConvertPGMUAI:
         """Test converting compressed UAI to UAI"""
         input_file = os.path.join(cwd, "asia_compressed.uai.gz")
 
-        with tempfile.NamedTemporaryFile(
-            suffix=".uai", delete=False
-        ) as tmp_output:
+        with tempfile.NamedTemporaryFile(suffix=".uai", delete=False) as tmp_output:
             output_file = tmp_output.name
 
         try:
@@ -183,9 +175,7 @@ class TestConvertPGMUAI:
         """Test converting a larger model (barley)"""
         input_file = os.path.join(cwd, "barley.uai")
 
-        with tempfile.NamedTemporaryFile(
-            suffix=".uai", delete=False
-        ) as tmp_output:
+        with tempfile.NamedTemporaryFile(suffix=".uai", delete=False) as tmp_output:
             output_file = tmp_output.name
 
         try:
@@ -212,9 +202,7 @@ class TestConvertPGMBIF:
         """Test that converting Markov network to BIF raises an error"""
         input_file = os.path.join(cwd, "cancer_mn.uai")
 
-        with tempfile.NamedTemporaryFile(
-            suffix=".bif", delete=False
-        ) as tmp_output:
+        with tempfile.NamedTemporaryFile(suffix=".bif", delete=False) as tmp_output:
             output_file = tmp_output.name
 
         try:
@@ -234,9 +222,7 @@ class TestConvertPGMBIF:
         """Test that converting deer Markov network to BIF raises an error"""
         input_file = os.path.join(cwd, "deer.uai")
 
-        with tempfile.NamedTemporaryFile(
-            suffix=".bif", delete=False
-        ) as tmp_output:
+        with tempfile.NamedTemporaryFile(suffix=".bif", delete=False) as tmp_output:
             output_file = tmp_output.name
 
         try:
@@ -255,9 +241,7 @@ class TestConvertPGMBIF:
         """Test converting BIF to UAI"""
         input_file = os.path.join(cwd, "asia.bif")
 
-        with tempfile.NamedTemporaryFile(
-            suffix=".uai", delete=False
-        ) as tmp_output:
+        with tempfile.NamedTemporaryFile(suffix=".uai", delete=False) as tmp_output:
             output_file = tmp_output.name
 
         try:
@@ -279,9 +263,7 @@ class TestConvertPGMBIF:
         """Test converting UAI to BIF"""
         input_file = os.path.join(cwd, "cancer_bn.uai")
 
-        with tempfile.NamedTemporaryFile(
-            suffix=".bif", delete=False
-        ) as tmp_output:
+        with tempfile.NamedTemporaryFile(suffix=".bif", delete=False) as tmp_output:
             output_file = tmp_output.name
 
         try:
@@ -303,9 +285,7 @@ class TestConvertPGMBIF:
         """Test converting BIF to BIF (identity conversion)"""
         input_file = os.path.join(cwd, "asia.bif")
 
-        with tempfile.NamedTemporaryFile(
-            suffix=".bif", delete=False
-        ) as tmp_output:
+        with tempfile.NamedTemporaryFile(suffix=".bif", delete=False) as tmp_output:
             output_file = tmp_output.name
 
         try:
@@ -328,9 +308,7 @@ class TestConvertPGMBIF:
         """Test converting compressed BIF to UAI"""
         input_file = os.path.join(cwd, "asia_compressed.bif.gz")
 
-        with tempfile.NamedTemporaryFile(
-            suffix=".uai", delete=False
-        ) as tmp_output:
+        with tempfile.NamedTemporaryFile(suffix=".uai", delete=False) as tmp_output:
             output_file = tmp_output.name
 
         try:
@@ -445,9 +423,7 @@ class TestConvertPGMRoundTrip:
         """Test UAI -> save -> load produces identical model"""
         input_file = os.path.join(cwd, "cancer_bn.uai")
 
-        with tempfile.NamedTemporaryFile(
-            suffix=".uai", delete=False
-        ) as tmp_output:
+        with tempfile.NamedTemporaryFile(suffix=".uai", delete=False) as tmp_output:
             output_file = tmp_output.name
 
         try:
