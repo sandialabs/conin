@@ -131,6 +131,7 @@ class TestConvertPGMBasic:
 class TestConvertPGMUAI:
     """Test UAI format conversions"""
 
+    @pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
     def test_uai_auto_filename(self):
         """Test auto-generated filename for UAI output"""
         source_file = os.path.join(cwd, "asia.bif")
