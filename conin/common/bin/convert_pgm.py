@@ -24,13 +24,16 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Convert BIF to UAI format
+  # Convert BIF to UAI format with explicit output filename
   %(prog)s input.bif --uai output.uai
 
-  # Convert UAI to BIF format
-  %(prog)s input.uai --bif output.bif
+  # Convert UAI to BIF format with auto-generated filename (input.bif)
+  %(prog)s input.uai --bif
 
-  # Specify output format with --uai or --bif
+  # Convert to both formats with auto-generated filenames
+  %(prog)s model.uai --uai --bif
+
+  # Convert with explicit output filename
   %(prog)s model.bif --uai model.uai
         """,
     )
@@ -42,14 +45,18 @@ Examples:
 
     parser.add_argument(
         "--uai",
+        nargs="?",
+        const="",
         metavar="OUTPUT_FILE",
-        help="Output file in UAI format (.uai)",
+        help="Output file in UAI format (.uai). If no filename is specified, generates one from the input filename.",
     )
 
     parser.add_argument(
         "--bif",
+        nargs="?",
+        const="",
         metavar="OUTPUT_FILE",
-        help="Output file in BIF format (.bif)",
+        help="Output file in BIF format (.bif). If no filename is specified, generates one from the input filename.",
     )
 
     parser.add_argument(
@@ -67,12 +74,21 @@ Examples:
         sys.exit(1)
 
     # Check that at least one output format is specified
-    if not args.uai and not args.bif:
+    if args.uai is None and args.bif is None:
         print(
             "Error: At least one output format must be specified (--uai or --bif)",
             file=sys.stderr,
         )
         sys.exit(1)
+
+    # Helper function to generate output filename
+    def generate_output_filename(input_file, new_extension):
+        """Generate output filename by replacing input extension with new extension"""
+        base = os.path.splitext(input_file)[0]
+        # Handle compressed files (.uai.gz, .bif.gz)
+        if base.endswith(".uai") or base.endswith(".bif"):
+            base = os.path.splitext(base)[0]
+        return base + new_extension
 
     try:
         # Load the input model
@@ -82,21 +98,31 @@ Examples:
         pgm = load_model(args.input_file, model_type="conin", quiet=args.quiet)
 
         # Save to UAI format if requested
-        if args.uai:
-            if not args.quiet:
-                print(f"Saving model to UAI format: {args.uai}")
+        if args.uai is not None:
+            # Generate filename if not provided
+            if args.uai == "":
+                output_file = generate_output_filename(args.input_file, ".uai")
+            else:
+                output_file = args.uai if args.uai.endswith(".uai") else args.uai + ".uai"
 
-            # Ensure the output file has .uai extension
-            output_file = args.uai if args.uai.endswith(".uai") else args.uai + ".uai"
+            if not args.quiet:
+                print(f"Saving model to UAI format: {output_file}")
+
             save_model(pgm, output_file, quiet=args.quiet)
 
             if not args.quiet:
                 print(f"Successfully saved to: {output_file}")
 
         # Save to BIF format if requested
-        if args.bif:
+        if args.bif is not None:
+            # Generate filename if not provided
+            if args.bif == "":
+                output_file = generate_output_filename(args.input_file, ".bif")
+            else:
+                output_file = args.bif if args.bif.endswith(".bif") else args.bif + ".bif"
+
             if not args.quiet:
-                print(f"Saving model to BIF format: {args.bif}")
+                print(f"Saving model to BIF format: {output_file}")
 
             # BIF format only supports Bayesian networks, not Markov networks
             if isinstance(pgm, DiscreteMarkovNetwork):
@@ -105,9 +131,6 @@ Examples:
                     "BIF format only supports Bayesian networks. "
                     "Use --uai to save in UAI format instead."
                 )
-
-            # Ensure the output file has .bif extension
-            output_file = args.bif if args.bif.endswith(".bif") else args.bif + ".bif"
 
             # Convert conin model to pgmpy before saving
             if isinstance(pgm, DiscreteBayesianNetwork):
