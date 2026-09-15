@@ -51,6 +51,7 @@ def test_IntegerProgrammingInference_ABC_conin():
     assert os.path.exists(testfile_lp)
     os.remove(testfile_lp)
 
+
 @skipif_pgmpy_not_available
 @skipif_no_mip_solver
 def test_IntegerProgrammingInference_ABC_pgmpy():
@@ -273,6 +274,7 @@ def test_DPGM_IntegerProgrammingInference_weather_conin():
 #
 # ConstrainedDynamicBayesianNetwork tests
 #
+
 
 @skipif_no_mip_solver
 @pytest.mark.parametrize(
