@@ -44,9 +44,15 @@ testfile_lp = os.path.join(cwd, "test.lp")
 @pytest.mark.parametrize(
     "method,solver,write_file",
     [
-        pytest.param("toulbar2", None, testfile_uai, marks=skipif_toulbar2_not_available),
-        pytest.param("integer_program", mip_solver, testfile_lp, marks=skipif_no_mip_solver),
-        pytest.param("variable_elimination", None, testfile_uai, marks=skipif_pgmpy_not_available),
+        pytest.param(
+            "toulbar2", None, testfile_uai, marks=skipif_toulbar2_not_available
+        ),
+        pytest.param(
+            "integer_program", mip_solver, testfile_lp, marks=skipif_no_mip_solver
+        ),
+        pytest.param(
+            "variable_elimination", None, testfile_uai, marks=skipif_pgmpy_not_available
+        ),
     ],
 )
 def test_ABC_conin(method, solver, write_file):
@@ -97,19 +103,25 @@ def test_ABC_pgmpy(method, solver):
     "method,solver,write_file,example_factory",
     [
         pytest.param(
-            "toulbar2", None, testfile_uai,
+            "toulbar2",
+            None,
+            testfile_uai,
             conin.markov_network.examples.ABC_constrained_toulbar2_conin,
-            marks=skipif_toulbar2_not_available
+            marks=skipif_toulbar2_not_available,
         ),
         pytest.param(
-            "integer_program", mip_solver, testfile_lp,
+            "integer_program",
+            mip_solver,
+            testfile_lp,
             conin.markov_network.examples.ABC_constrained_pyomo_conin,
-            marks=skipif_no_mip_solver
+            marks=skipif_no_mip_solver,
         ),
         pytest.param(
-            "variable_elimination", None, testfile_uai,
+            "variable_elimination",
+            None,
+            testfile_uai,
             conin.markov_network.examples.ABC_constrained_factor_conin,
-            marks=skipif_pgmpy_not_available
+            marks=skipif_pgmpy_not_available,
         ),
     ],
 )
@@ -151,9 +163,15 @@ def test_ABC2_constrained_factor_conin():
 @pytest.mark.parametrize(
     "method,solver,write_file",
     [
-        pytest.param("toulbar2", None, testfile_uai, marks=skipif_toulbar2_not_available),
-        pytest.param("integer_program", mip_solver, testfile_lp, marks=skipif_no_mip_solver),
-        pytest.param("variable_elimination", None, testfile_uai, marks=skipif_pgmpy_not_available),
+        pytest.param(
+            "toulbar2", None, testfile_uai, marks=skipif_toulbar2_not_available
+        ),
+        pytest.param(
+            "integer_program", mip_solver, testfile_lp, marks=skipif_no_mip_solver
+        ),
+        pytest.param(
+            "variable_elimination", None, testfile_uai, marks=skipif_pgmpy_not_available
+        ),
     ],
 )
 def test_cancer1_BN_conin(method, solver, write_file):
@@ -204,19 +222,25 @@ def test_cancer1_BN_pgmpy(method, solver):
     "method,solver,write_file,example_factory",
     [
         pytest.param(
-            "toulbar2", None, testfile_uai,
+            "toulbar2",
+            None,
+            testfile_uai,
             conin.bayesian_network.examples.cancer1_BN_constrained_toulbar2_conin,
-            marks=skipif_toulbar2_not_available
+            marks=skipif_toulbar2_not_available,
         ),
         pytest.param(
-            "integer_program", mip_solver, testfile_lp,
+            "integer_program",
+            mip_solver,
+            testfile_lp,
             conin.bayesian_network.examples.cancer1_BN_constrained_pyomo_conin,
-            marks=skipif_no_mip_solver
+            marks=skipif_no_mip_solver,
         ),
         pytest.param(
-            "variable_elimination", None, testfile_uai,
+            "variable_elimination",
+            None,
+            testfile_uai,
             conin.bayesian_network.examples.cancer1_BN_constrained_factor_conin,
-            marks=skipif_pgmpy_not_available
+            marks=skipif_pgmpy_not_available,
         ),
     ],
 )
@@ -258,11 +282,33 @@ def test_cancer1_BN_constrained_factor_pgmpy():
 @pytest.mark.parametrize(
     "method,solver,write_file,ip_formulation",
     [
-        pytest.param("toulbar2", None, testfile_uai, None, marks=skipif_toulbar2_not_available),
-        pytest.param("integer_program", mip_solver, testfile_lp, None, marks=skipif_no_mip_solver),
-        pytest.param("integer_program", mip_solver, testfile_lp, "markov_network", marks=skipif_no_mip_solver),
-        pytest.param("integer_program", mip_solver, testfile_lp, "network_flow", marks=skipif_no_mip_solver),
-        pytest.param("variable_elimination", None, testfile_uai, None, marks=skipif_pgmpy_not_available),
+        pytest.param(
+            "toulbar2", None, testfile_uai, None, marks=skipif_toulbar2_not_available
+        ),
+        pytest.param(
+            "integer_program", mip_solver, testfile_lp, None, marks=skipif_no_mip_solver
+        ),
+        pytest.param(
+            "integer_program",
+            mip_solver,
+            testfile_lp,
+            "markov_network",
+            marks=skipif_no_mip_solver,
+        ),
+        pytest.param(
+            "integer_program",
+            mip_solver,
+            testfile_lp,
+            "network_flow",
+            marks=skipif_no_mip_solver,
+        ),
+        pytest.param(
+            "variable_elimination",
+            None,
+            testfile_uai,
+            None,
+            marks=skipif_pgmpy_not_available,
+        ),
     ],
 )
 def test0_hmm1(method, solver, write_file, ip_formulation):
@@ -295,9 +341,15 @@ def test0_hmm1(method, solver, write_file, ip_formulation):
     [
         pytest.param("toulbar2", None, None, marks=skipif_toulbar2_not_available),
         pytest.param("integer_program", mip_solver, None, marks=skipif_no_mip_solver),
-        pytest.param("integer_program", mip_solver, "markov_network", marks=skipif_no_mip_solver),
-        pytest.param("integer_program", mip_solver, "network_flow", marks=skipif_no_mip_solver),
-        pytest.param("variable_elimination", None, None, marks=skipif_pgmpy_not_available),
+        pytest.param(
+            "integer_program", mip_solver, "markov_network", marks=skipif_no_mip_solver
+        ),
+        pytest.param(
+            "integer_program", mip_solver, "network_flow", marks=skipif_no_mip_solver
+        ),
+        pytest.param(
+            "variable_elimination", None, None, marks=skipif_pgmpy_not_available
+        ),
     ],
 )
 def test1_hmm1(method, solver, ip_formulation):
@@ -372,29 +424,44 @@ def test3_hmm1(method, solver):
     "method,solver,write_file,pgm_factory,ip_formulation",
     [
         pytest.param(
-            "toulbar2", None, testfile_uai,
-            conin.hidden_markov_model.tests.examples.create_chmm1_toulbar2, None,
-            marks=skipif_toulbar2_not_available
+            "toulbar2",
+            None,
+            testfile_uai,
+            conin.hidden_markov_model.tests.examples.create_chmm1_toulbar2,
+            None,
+            marks=skipif_toulbar2_not_available,
         ),
         pytest.param(
-            "integer_program", mip_solver, testfile_lp,
-            conin.hidden_markov_model.tests.examples.create_chmm1_pyomo, None,
-            marks=skipif_no_mip_solver
+            "integer_program",
+            mip_solver,
+            testfile_lp,
+            conin.hidden_markov_model.tests.examples.create_chmm1_pyomo,
+            None,
+            marks=skipif_no_mip_solver,
         ),
         pytest.param(
-            "integer_program", mip_solver, testfile_lp,
-            conin.hidden_markov_model.tests.examples.create_chmm1_pyomo, "markov_network",
-            marks=skipif_no_mip_solver
+            "integer_program",
+            mip_solver,
+            testfile_lp,
+            conin.hidden_markov_model.tests.examples.create_chmm1_pyomo,
+            "markov_network",
+            marks=skipif_no_mip_solver,
         ),
         pytest.param(
-            "integer_program", mip_solver, testfile_lp,
-            conin.hidden_markov_model.tests.examples.create_chmm1_pyomo, "network_flow",
-            marks=skipif_no_mip_solver
+            "integer_program",
+            mip_solver,
+            testfile_lp,
+            conin.hidden_markov_model.tests.examples.create_chmm1_pyomo,
+            "network_flow",
+            marks=skipif_no_mip_solver,
         ),
         pytest.param(
-            "variable_elimination", None, testfile_uai,
-            conin.hidden_markov_model.tests.examples.create_chmm1_factor, None,
-            marks=skipif_pgmpy_not_available
+            "variable_elimination",
+            None,
+            testfile_uai,
+            conin.hidden_markov_model.tests.examples.create_chmm1_factor,
+            None,
+            marks=skipif_pgmpy_not_available,
         ),
     ],
 )
@@ -443,29 +510,39 @@ def test0_chmm1(method, solver, write_file, pgm_factory, ip_formulation):
     "method,solver,pgm_factory,ip_formulation",
     [
         pytest.param(
-            "toulbar2", None,
-            conin.hidden_markov_model.tests.examples.create_chmm1_toulbar2, None,
-            marks=skipif_toulbar2_not_available
+            "toulbar2",
+            None,
+            conin.hidden_markov_model.tests.examples.create_chmm1_toulbar2,
+            None,
+            marks=skipif_toulbar2_not_available,
         ),
         pytest.param(
-            "integer_program", mip_solver,
-            conin.hidden_markov_model.tests.examples.create_chmm1_pyomo, None,
-            marks=skipif_no_mip_solver
+            "integer_program",
+            mip_solver,
+            conin.hidden_markov_model.tests.examples.create_chmm1_pyomo,
+            None,
+            marks=skipif_no_mip_solver,
         ),
         pytest.param(
-            "integer_program", mip_solver,
-            conin.hidden_markov_model.tests.examples.create_chmm1_pyomo, "markov_network",
-            marks=skipif_no_mip_solver
+            "integer_program",
+            mip_solver,
+            conin.hidden_markov_model.tests.examples.create_chmm1_pyomo,
+            "markov_network",
+            marks=skipif_no_mip_solver,
         ),
         pytest.param(
-            "integer_program", mip_solver,
-            conin.hidden_markov_model.tests.examples.create_chmm1_pyomo, "network_flow",
-            marks=skipif_no_mip_solver
+            "integer_program",
+            mip_solver,
+            conin.hidden_markov_model.tests.examples.create_chmm1_pyomo,
+            "network_flow",
+            marks=skipif_no_mip_solver,
         ),
         pytest.param(
-            "variable_elimination", None,
-            conin.hidden_markov_model.tests.examples.create_chmm1_factor, None,
-            marks=skipif_pgmpy_not_available
+            "variable_elimination",
+            None,
+            conin.hidden_markov_model.tests.examples.create_chmm1_factor,
+            None,
+            marks=skipif_pgmpy_not_available,
         ),
     ],
 )
@@ -502,19 +579,22 @@ def test1_chmm1(method, solver, pgm_factory, ip_formulation):
     "method,solver,pgm_factory",
     [
         pytest.param(
-            "toulbar2", None,
+            "toulbar2",
+            None,
             conin.hidden_markov_model.tests.examples.create_chmm1_toulbar2,
-            marks=skipif_toulbar2_not_available
+            marks=skipif_toulbar2_not_available,
         ),
         pytest.param(
-            "integer_program", mip_solver,
+            "integer_program",
+            mip_solver,
             conin.hidden_markov_model.tests.examples.create_chmm1_pyomo,
-            marks=skipif_no_mip_solver
+            marks=skipif_no_mip_solver,
         ),
         pytest.param(
-            "variable_elimination", None,
+            "variable_elimination",
+            None,
             conin.hidden_markov_model.tests.examples.create_chmm1_factor,
-            marks=skipif_pgmpy_not_available
+            marks=skipif_pgmpy_not_available,
         ),
     ],
 )
@@ -549,19 +629,22 @@ def test2_chmm1(method, solver, pgm_factory):
     "method,solver,pgm_factory",
     [
         pytest.param(
-            "toulbar2", None,
+            "toulbar2",
+            None,
             conin.hidden_markov_model.tests.examples.create_chmm1_toulbar2,
-            marks=skipif_toulbar2_not_available
+            marks=skipif_toulbar2_not_available,
         ),
         pytest.param(
-            "integer_program", mip_solver,
+            "integer_program",
+            mip_solver,
             conin.hidden_markov_model.tests.examples.create_chmm1_pyomo,
-            marks=skipif_no_mip_solver
+            marks=skipif_no_mip_solver,
         ),
         pytest.param(
-            "variable_elimination", None,
+            "variable_elimination",
+            None,
             conin.hidden_markov_model.tests.examples.create_chmm1_factor,
-            marks=skipif_pgmpy_not_available
+            marks=skipif_pgmpy_not_available,
         ),
     ],
 )
@@ -661,9 +744,15 @@ q_constrained = {
 @pytest.mark.parametrize(
     "method,solver,write_file",
     [
-        pytest.param("toulbar2", None, testfile_uai, marks=skipif_toulbar2_not_available),
-        pytest.param("integer_program", mip_solver, testfile_lp, marks=skipif_no_mip_solver),
-        pytest.param("variable_elimination", None, testfile_uai, marks=skipif_pgmpy_not_available),
+        pytest.param(
+            "toulbar2", None, testfile_uai, marks=skipif_toulbar2_not_available
+        ),
+        pytest.param(
+            "integer_program", mip_solver, testfile_lp, marks=skipif_no_mip_solver
+        ),
+        pytest.param(
+            "variable_elimination", None, testfile_uai, marks=skipif_pgmpy_not_available
+        ),
     ],
 )
 def test_DPGM_weather_conin(method, solver, write_file):
@@ -731,19 +820,25 @@ def test_DPGM_weather_pgmpy(method, solver):
     "method,solver,write_file,example_factory",
     [
         pytest.param(
-            "toulbar2", None, testfile_uai,
+            "toulbar2",
+            None,
+            testfile_uai,
             conin.dynamic_bayesian_network.examples.weather_constrained_toulbar2_conin,
-            marks=skipif_toulbar2_not_available
+            marks=skipif_toulbar2_not_available,
         ),
         pytest.param(
-            "integer_program", mip_solver, testfile_lp,
+            "integer_program",
+            mip_solver,
+            testfile_lp,
             conin.dynamic_bayesian_network.examples.weather_constrained_pyomo_conin,
-            marks=skipif_no_mip_solver
+            marks=skipif_no_mip_solver,
         ),
         pytest.param(
-            "variable_elimination", None, testfile_uai,
+            "variable_elimination",
+            None,
+            testfile_uai,
             conin.dynamic_bayesian_network.examples.weather_constrained_factor_conin,
-            marks=skipif_pgmpy_not_available
+            marks=skipif_pgmpy_not_available,
         ),
     ],
 )
@@ -782,12 +877,14 @@ def test_DPGM_weather_constrained_conin(method, solver, write_file, example_fact
     "method,solver,example_factory",
     [
         pytest.param(
-            "toulbar2", None,
+            "toulbar2",
+            None,
             conin.dynamic_bayesian_network.examples.weather_constrained_toulbar2_pgmpy,
-            marks=skipif_toulbar2_not_available
+            marks=skipif_toulbar2_not_available,
         ),
         pytest.param(
-            "variable_elimination", None,
+            "variable_elimination",
+            None,
             conin.dynamic_bayesian_network.examples.weather_constrained_factor_pgmpy,
         ),
     ],
