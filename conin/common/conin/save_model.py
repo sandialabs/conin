@@ -1,14 +1,36 @@
+from conin.util import try_import
 from conin.bayesian_network.model import DiscreteBayesianNetwork
 from conin.dynamic_bayesian_network.model import DynamicDiscreteBayesianNetwork
 from conin.markov_network.model import DiscreteMarkovNetwork
+
+with try_import() as pgmpy_available:
+    from pgmpy.models import DiscreteBayesianNetwork as pgmpy_DiscreteBayesianNetwork
+    from pgmpy.models import DiscreteMarkovNetwork as pgmpy_DiscreteMarkovNetwork
+
+if pgmpy_available:
+    from .to_pgmpy_bn import convert_conin_to_pgmpy_bn
+    from .to_pgmpy_mn import convert_conin_to_pgmpy_mn
+    from conin.common.pgmpy.save_model import save_model as pgmpy_save_model
 
 
 def save_model(pgm, name, quiet=True):
     if name.endswith(".uai"):
         return save_model_uai(pgm, name, quiet)
 
+    if name.endswith(".bif") and pgmpy_available:
+        if isinstance(pgm, DiscreteBayesianNetwork):
+            _pgm = convert_conin_to_pgmpy_bn(pgm)
+            pgmpy_save_model(_pgm, name, quiet)
+        elif isinstance(pgm, DiscreteMarkovNetwork):
+            _pgm = convert_conin_to_pgmpy_mn(pgm)
+            pgmpy_save_model(_pgm, name, quiet)
+        else:
+            raise RuntimeError(
+                f"Cannot save conin model.  Unexpected conin model type {type(pgm)}"
+            )
+
     raise RuntimeError(
-        f"Cannot save conin model.  Uknown format specified by filename suffix: {name}"
+        f"Cannot save conin model.  Unknown format specified by filename suffix: {name}"
     )
 
 
