@@ -4,6 +4,10 @@ Inference
 This page illustrates the main inference wrappers on small Markov network and
 hidden Markov model examples.
 
+Some wrappers require optional backend packages or external solvers. The Viterbi
+and A* HMM examples run with the base package dependencies. See :doc:`backends`
+for backend-specific installation and solver requirements.
+
 Markov network inference
 ------------------------
 
@@ -30,14 +34,14 @@ Markov network with three variables and pairwise interactions.
    print(ip_results.solution.states)
    print(ve_results.solution.states)
 
-``CFNInference`` dispatches to the Toulbar2 backend, ``IntegerProgrammingInference``
-creates a Pyomo optimization model, and ``VariableEliminationInference`` uses
-pgmpy's variable elimination solver.
+``CFNInference`` dispatches to the Toulbar2 backend,
+``IntegerProgrammingInference`` creates a Pyomo optimization model, and
+``VariableEliminationInference`` uses pgmpy's variable elimination solver.
 
 Hidden Markov model inference
 -----------------------------
 
-The ``create_hmm1`` example from ``conin.hidden_markov_model.tests.examples`` is
+The ``create_hmm1`` example from ``conin.hidden_markov_model.examples`` is
 small enough to use throughout the documentation.
 
 Viterbi and A* inference
@@ -46,7 +50,7 @@ Viterbi and A* inference
 .. code-block:: python
 
    from conin.inference import AStarInference, ViterbiInference
-   from conin.hidden_markov_model.tests.examples import create_hmm1
+   from conin.hidden_markov_model.examples import create_hmm1
 
    hmm = create_hmm1()
    observed = ["o0", "o0", "o1", "o0", "o0"]
@@ -64,12 +68,13 @@ when you want the returned hidden states keyed by time index.
 Optimization and Toulbar2 inference on HMMs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The dynamic-programming-style HMM wrappers use the ``DPGM_*`` classes.
+Dynamic Bayesian networks and HMMs use the ``DPGM_*`` wrappers for Pyomo,
+Toulbar2, and variable-elimination inference.
 
 .. code-block:: python
 
    from conin.inference import DPGM_CFNInference, DPGM_IntegerProgrammingInference
-   from conin.hidden_markov_model.tests.examples import create_hmm1
+   from conin.hidden_markov_model.examples import create_hmm1
 
    hmm = create_hmm1()
    observed = ["o0", "o0", "o1", "o0", "o0"]
@@ -92,7 +97,7 @@ Bayesian network and then unrolls it into a static Bayesian network for pgmpy.
 .. code-block:: python
 
    from conin.inference import DPGM_VariableEliminationInference
-   from conin.hidden_markov_model.tests.examples import create_hmm1
+   from conin.hidden_markov_model.examples import create_hmm1
 
    hmm = create_hmm1()
    observed = ["o0", "o0", "o1", "o0", "o0"]
@@ -104,7 +109,7 @@ Constrained HMM inference
 -------------------------
 
 The constrained examples from
-``conin.hidden_markov_model.tests.examples`` can be used with the same wrappers.
+``conin.hidden_markov_model.examples`` can be used with the same wrappers.
 For example, the Pyomo-constrained model ``create_chmm1_pyomo()`` works with
 ``DPGM_IntegerProgrammingInference``, and the Toulbar2-constrained model
 ``create_chmm1_toulbar2()`` works with ``DPGM_CFNInference``.
@@ -112,7 +117,7 @@ For example, the Pyomo-constrained model ``create_chmm1_pyomo()`` works with
 .. code-block:: python
 
    from conin.inference import DPGM_CFNInference, DPGM_IntegerProgrammingInference
-   from conin.hidden_markov_model.tests.examples import (
+   from conin.hidden_markov_model.examples import (
        create_chmm1_pyomo,
        create_chmm1_toulbar2,
    )
@@ -134,9 +139,4 @@ For example, the Pyomo-constrained model ``create_chmm1_pyomo()`` works with
 Notes
 -----
 
-- ``CFNInference`` and ``DPGM_CFNInference`` rely on Toulbar2.
-- ``IntegerProgrammingInference`` and ``DPGM_IntegerProgrammingInference``
-  require a Pyomo-compatible solver such as ``glpk``, ``highs``, or ``gurobi``.
-- ``VariableEliminationInference`` and ``DPGM_VariableEliminationInference``
-  require pgmpy.
-- ``ViterbiInference`` and ``AStarInference`` are HMM-specific wrappers.
+Backend requirements for these wrappers are maintained in :doc:`backends`.

@@ -11,4 +11,5 @@ inference wrappers.
    api_graphical_models
    api_constrained_graphical_models
    api_constraints
+   api_oracle_constraints
    api_inference

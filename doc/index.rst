@@ -13,6 +13,11 @@ behavior in the codebase.
    :maxdepth: 2
    :caption: Contents:
 
+   quickstart
    probabilistic_graphical_models
    inference
+   examples
+   model_conversion_io
+   hmm_learning
+   backends
    pgm_api

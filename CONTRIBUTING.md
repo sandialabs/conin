@@ -4,6 +4,22 @@ Contributing to Conin
 Online Documentation
 --------------------
 
+The user-facing documentation is built from the files in ``doc/`` and published
+at https://conin.readthedocs.io/en/latest/.
+
+To build it locally from the repository root:
+
+```
+python -m pip install -e .[docs]
+python -m sphinx -b html doc doc/_build/html
+```
+
+When documentation examples change, also run the Sphinx doctest builder:
+
+```
+python -m sphinx -b doctest doc doc/_build/doctest
+```
+
 Pull Requests
 -------------
 
