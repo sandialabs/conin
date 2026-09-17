@@ -4,6 +4,7 @@ from conin.inference.CFNInference import (
     CFNInference,
     DPGM_CFNInference,
 )
+from conin.constraint import Toulbar2Constraint
 import conin.markov_network.examples
 import conin.bayesian_network.examples
 import conin.hidden_markov_model.tests.examples
@@ -460,6 +461,17 @@ def test_DPGM_CFNInference_weather():
 #
 # ConstrainedDynamicBayesianNetwork tests
 #
+
+
+def test_weather_constrained_toulbar2_conin_uses_toulbar2_constraint():
+    example = conin.dynamic_bayesian_network.examples.weather_constrained_toulbar2_conin()
+    assert isinstance(example.pgm.constraints[0], Toulbar2Constraint)
+
+
+@skipif_pgmpy_not_available
+def test_weather_constrained_toulbar2_pgmpy_uses_toulbar2_constraint():
+    example = conin.dynamic_bayesian_network.examples.weather_constrained_toulbar2_pgmpy()
+    assert isinstance(example.pgm.constraints[0], Toulbar2Constraint)
 
 
 @skipif_toulbar2_not_available

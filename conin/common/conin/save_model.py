@@ -13,12 +13,16 @@ def save_model(pgm, name, quiet=True):
 
 
 def save_model_uai(pgm, name, quiet=True):
-    """
-    Function to serialize the parameters of a DBN in UAI format
-    Inputs:  pgm (<Dynamic>DiscreteBayesianNetwork, DiscreteMarkovNetwork) - model to be converted
-             name  (str) - filename of output (will end in .uai)
-             quiet (bool) - unused
-    Outputs: <name>.uai - written UAI file
+    """Serialize a CONIN model in UAI format.
+
+    Parameters
+    ----------
+    pgm : DiscreteBayesianNetwork or DynamicDiscreteBayesianNetwork or DiscreteMarkovNetwork
+        Model to write.
+    name : str
+        Output filename. The saved file uses the ``.uai`` suffix.
+    quiet : bool, optional
+        Accepted for API compatibility and currently unused.
     """
     if isinstance(pgm, DiscreteBayesianNetwork):
         case = "BAYES"

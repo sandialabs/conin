@@ -104,8 +104,10 @@ class ConstrainedHiddenMarkovModel:
 
         Parameters
         ----------
-        constraint_type : {"oracle", "pyomo", "toulbar2", "factor", "mvr"}, optional
-            Explicit constraint backend to use.
+        constraint_type : {"oracle", "pyomo", "mvr"}, optional
+            Explicit standalone constrained-HMM backend to initialize. Factor and
+            Toulbar2 constraints are consumed by the corresponding inference
+            wrappers instead of creating an internal ``chmm`` object here.
         data : optional
             Application-specific data passed to the solver.
         **kwargs

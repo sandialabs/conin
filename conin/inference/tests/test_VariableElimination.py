@@ -494,6 +494,15 @@ def test_DPGM_VariableEliminationInference_weather2_pgmpy():
 
 
 @skipif_pgmpy_not_available
+def test_DPGM_VariableEliminationInference_simple1_DDBN_constrained_factor_conin():
+    example = conin.dynamic_bayesian_network.examples.simple1_DDBN_constrained_factor_conin()
+
+    inf = DPGM_VariableEliminationInference(example.pgm)
+    results = inf.map_query(stop=1)
+    assert results.solution.states == example.solutions[0].states
+
+
+@skipif_pgmpy_not_available
 def test_DPGM_VariableEliminationInference_weather_constrained_factor_conin():
     example = conin.dynamic_bayesian_network.examples.weather_constrained_factor_conin()
 

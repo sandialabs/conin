@@ -1,7 +1,7 @@
 Constraint Declarations
 =======================
 
-The following classes define constraint functors that used to create constraints in graphical models.
+The following classes define constraint functors used to create constraints in graphical models.
 These classes are created using the constraint decorators below.
 
 Constraint classes

@@ -7,7 +7,28 @@ This page describes how to create a ``DiscreteBayesianNetwork`` instance using
 Conditional Probability Distributions
 -------------------------------------
 
-TODO
+``DiscreteCPD`` stores the conditional distribution for one node. Root-node CPDs
+can be supplied as a list ordered by the node's state list, while CPDs with
+parents can be supplied as a dictionary keyed by parent assignments.
+
+.. code-block:: python
+
+   from conin.bayesian_network import DiscreteBayesianNetwork, DiscreteCPD
+
+   pgm = DiscreteBayesianNetwork()
+   pgm.states = {"A": [0, 1], "B": [0, 1]}
+
+   cpd_a = DiscreteCPD(node="A", values=[0.9, 0.1])
+   cpd_b = DiscreteCPD(
+       node="B",
+       parents=["A"],
+       values={0: [0.2, 0.8], 1: [0.9, 0.1]},
+   )
+
+   pgm.cpds = [cpd_a, cpd_b]
+
+When CPDs are attached to a ``DiscreteBayesianNetwork``, list-valued entries are
+normalized into dictionaries keyed by the model's states.
 
 Bayesian networks
 -----------------
@@ -86,6 +107,10 @@ Constrained Bayesian networks
 ``ConstrainedDiscreteBayesianNetwork`` uses the same constraint decorators as
 other model families. The examples in ``conin.bayesian_network.examples`` apply
 constraints to the cancer network.
+
+The Pyomo and Toulbar2 snippets below require their respective solver backends.
+Factor constraints are converted into auxiliary CPDs and can also be used by the
+variable-elimination backend when ``pgmpy`` is installed.
 
 Pyomo constraints
 ^^^^^^^^^^^^^^^^^
@@ -167,4 +192,6 @@ Notes
   declarations.
 - ``check_model()`` verifies that the CPDs are consistent with the network
   structure and state definitions.
+- See :doc:`model_conversion_io` for converting Bayesian networks to Markov
+  networks and saving/loading UAI files.
 - For introductory work, ``simple1_BN_conin`` is the easiest example to adapt.
