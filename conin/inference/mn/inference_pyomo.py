@@ -4,7 +4,9 @@ import munch
 import pyomo.environ as pe
 from pyomo.common.timing import TicTocTimer
 
+import smoek as smk
 from conin.config import default_mip_solver
+from conin.constraint import PyomoConstraint, AlgebraicConstraint
 from conin.markov_network import ConstrainedDiscreteMarkovNetwork
 from conin.inference.mn.factor_repn import extract_factor_representation_, State
 
@@ -62,6 +64,32 @@ class VarWrapper(dict):
         if type(s) is not State:
             s = State(s)
         return dict.__getitem__(self, (r, s))
+
+
+def add_constraints(*, pgm, model, data):
+    if isinstance(pgm.constraints[0], PyomoConstraint):
+        for func in pgm.constraints:
+            assert isinstance(
+                func, PyomoConstraint
+            ), f"Unexpected constraint type ({type(func)}) when performing inference with an integer program. If the first constraint is a pyomo constraint, then all subsequent contraints must be the same."
+            model = func(model, data)
+
+    elif isinstance(pgm.constraints[0], AlgebraicConstraint):
+        smoek_model = smk.model()
+        for func in pgm.constraints:
+            func(smoek_model, data)
+        smoek_model._update_smoek_components()
+        smk.pymodel.pyomo.generate(
+            model=smoek_model,
+            pyomo_model=model,
+            data=data,
+            component_map=dict(V=model.V),
+        )
+
+    else:
+        raise TypeError(
+            f"Unexpected constraint type ({type(func)}) when performing inference with an integer program."
+        )
 
 
 def create_pyomo_map_query_model_MN(
@@ -138,8 +166,7 @@ def create_pyomo_map_query_model_MN(
 
     if isinstance(pgm, ConstrainedDiscreteMarkovNetwork) and pgm.constraints:
         data = munch.Munch(variables=variables, evidence=evidence)
-        for func in pgm.constraints:
-            model = func(model, data)
+        add_constraints(pgm=pgm, model=model, data=data)
 
     if timing:  # pragma:nocover
         timer.toc("create_pyomo_map_query_model_MN - STOP")
