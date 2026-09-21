@@ -45,9 +45,9 @@ of constraints is O(N + M + Mcl + Mc) = O(N + Mcl).
 """
 
 
-class VarWrapper(dict):
+class PyomoVarWrapper(dict):
     def __init__(self, *arg, **kw):
-        super(VarWrapper, self).__init__(*arg, **kw)
+        super(PyomoVarWrapper, self).__init__(*arg, **kw)
 
     def pprint(self):  # pragma:nocover
         pprint.pprint(self)
@@ -66,25 +66,28 @@ class VarWrapper(dict):
         return dict.__getitem__(self, (r, s))
 
 
-def add_constraints(*, pgm, model, data):
-    if isinstance(pgm.constraints[0], PyomoConstraint):
-        for func in pgm.constraints:
+def add_constraints(*, pgm, constraints, model, data):
+    if isinstance(constraints[0], PyomoConstraint):
+        for func in constraints:
             assert isinstance(
                 func, PyomoConstraint
             ), f"Unexpected constraint type ({type(func)}) when performing inference with an integer program. If the first constraint is a pyomo constraint, then all subsequent contraints must be the same."
             model = func(model, data)
 
-    elif isinstance(pgm.constraints[0], AlgebraicConstraint):
+    elif isinstance(constraints[0], AlgebraicConstraint):
         smoek_model = smk.model()
-        for func in pgm.constraints:
+        for func in constraints:
+            print("HERE",func)
             func(smoek_model, data)
         smoek_model._update_smoek_components()
+        print(smoek_model.constraints)
         smk.pymodel.pyomo.generate(
             model=smoek_model,
             pyomo_model=model,
             data=data,
             component_map=dict(V=model.V),
         )
+        #model.pprint()
 
     else:
         raise TypeError(
@@ -166,7 +169,7 @@ def create_pyomo_map_query_model_MN(
 
     if isinstance(pgm, ConstrainedDiscreteMarkovNetwork) and pgm.constraints:
         data = munch.Munch(variables=variables, evidence=evidence)
-        add_constraints(pgm=pgm, model=model, data=data)
+        add_constraints(pgm=pgm, constraints=pgm.constraints, model=model, data=data)
 
     if timing:  # pragma:nocover
         timer.toc("create_pyomo_map_query_model_MN - STOP")
@@ -243,9 +246,9 @@ def create_MN_pyomo_map_query_model_from_factorial_repn(
     model.y = pe.Var(IJ, within=pe.Binary)
 
     if var_index_map is None:
-        model.V = VarWrapper({rs: model.x[rs] for rs in RS})
+        model.V = PyomoVarWrapper({rs: model.x[rs] for rs in RS})
     else:
-        model.V = VarWrapper(
+        model.V = PyomoVarWrapper(
             {
                 (r, s): model.x[index, s]
                 for r, index in var_index_map.items()

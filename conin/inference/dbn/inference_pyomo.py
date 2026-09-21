@@ -31,8 +31,7 @@ def create_pyomo_map_query_model_DDBN(
             evidence=evidence,
             T=list(range(start, stop + 1)),
         )
-        for func in pgm.constraints:
-            model = func(model, data)
+        conin.inference.mn.inference_pyomo.add_constraints(pgm=bn, constraints=pgm.constraints, model=model, data=data)
 
     return model
 
