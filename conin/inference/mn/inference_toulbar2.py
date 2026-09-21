@@ -11,6 +11,7 @@ with try_import() as pytoulbar2_available:
 
 import conin.common
 from conin.markov_network import ConstrainedDiscreteMarkovNetwork
+from conin.constraints.constraint import Toulbar2Constraint
 
 
 class VarWrapper(object):
@@ -39,6 +40,37 @@ class VarWrapper(object):
     def items(self):
         for k, v in self._V.items():
             yield k, v
+
+
+def add_constraints(*, pgm, model, data):
+    """Add constraints to a Toulbar2 model.
+
+    Parameters
+    ----------
+    pgm : ConstrainedDiscreteMarkovNetwork
+        The constrained graphical model.
+    model : pytoulbar2.CFN
+        The Toulbar2 constraint satisfaction network model.
+    data : munch.Munch
+        Data dictionary containing variables and evidence.
+
+    Returns
+    -------
+    pytoulbar2.CFN
+        The model with constraints added.
+    """
+    if isinstance(pgm.constraints[0], Toulbar2Constraint):
+        for func in pgm.constraints:
+            assert isinstance(
+                func, Toulbar2Constraint
+            ), f"Unexpected constraint type ({type(func)}) when performing inference with Toulbar2. If the first constraint is a Toulbar2 constraint, then all subsequent constraints must be the same."
+            model = func(model, data)
+    else:
+        raise TypeError(
+            f"Unexpected constraint type ({type(pgm.constraints[0])}) when performing inference with Toulbar2. Only Toulbar2Constraint is supported."
+        )
+
+    return model
 
 
 def create_toulbar2_map_query_model_MN(
@@ -83,8 +115,7 @@ def create_toulbar2_map_query_model_MN(
 
     if cpgm is not None and cpgm.constraints:
         data = munch.Munch(variables=variables, evidence=evidence)
-        for func in cpgm.constraints:
-            model = func(model, data)
+        add_constraints(pgm=cpgm, model=model, data=data)
 
     if timing:  # pragma:nocover
         timer.toc("create_toulbar2_map_query_model_MN - STOP")

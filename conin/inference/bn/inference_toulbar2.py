@@ -7,6 +7,7 @@ from conin.util import try_import
 from conin.inference.mn.inference_toulbar2 import (
     solve_toulbar2_map_query_model,
     VarWrapper,
+    add_constraints,
 )
 
 with try_import() as pytoulbar2_available:
@@ -82,8 +83,7 @@ def create_toulbar2_map_query_model_BN(
 
     if cpgm is not None and cpgm.constraints:
         data = munch.Munch(variables=variables, evidence=evidence)
-        for func in cpgm.constraints:
-            model = func(model, data)
+        add_constraints(pgm=cpgm, model=model, data=data)
 
     if timing:  # pragma:nocover
         timer.toc("create_toulbar2_map_query_model_BN - STOP")
