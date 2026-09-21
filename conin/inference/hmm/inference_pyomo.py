@@ -44,8 +44,7 @@ def create_pyomo_map_query_model_HMM(
                 hidden_to_internal=pgm_.hidden_to_internal,
             ),
         )
-        for func in pgm.constraints:
-            model = func(model, data)
+        conin.inference.mn.inference_pyomo.add_constraints(pgm=dbn, constraints=pgm.constraints, model=model, data=data)
 
     return model
 

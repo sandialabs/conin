@@ -13,6 +13,14 @@ from conin.bayesian_network.examples import cancer1_BN_conin
 from conin.bayesian_network import ConstrainedDiscreteBayesianNetwork
 from conin.inference import map_query
 from conin import pyomo_constraint_fn, algebraic_constraint_fn
+from conin.util import try_import
+
+with try_import() as pytoulbar2_available:
+    import pytoulbar2
+
+skipif_toulbar2_not_available = pytest.mark.skipif(
+    not pytoulbar2_available, reason="pytoulbar2 not installed"
+)
 
 
 class TestBasicAlgebraicConstraints:
@@ -236,6 +244,224 @@ class TestDataUsage:
         evidence = {"Pollution": 0, "Smoker": 1}
         result = map_query(cpgm, method="integer_program", evidence=evidence)
         assert result is not None
+
+
+class TestToulbar2BasicAlgebraicConstraints:
+    """Test basic algebraic constraint functionality with Toulbar2."""
+
+    @skipif_toulbar2_not_available
+    def test_simple_algebraic_constraint_toulbar2(self):
+        """Test that a simple algebraic constraint works with Toulbar2."""
+        pgm = cancer1_BN_conin().pgm
+
+        @algebraic_constraint_fn()
+        def algebraic_constraint(model, data):
+            # Simple constraint: V("Dyspnoea", 1) + V("Xray", 1) <= 1
+            return model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1
+
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[algebraic_constraint])
+
+        # Should be able to create inference model
+        evidence = {"Pollution": 0, "Smoker": 1}
+        result = map_query(cpgm, method="toulbar2", evidence=evidence)
+
+        # Verify we got a valid result
+        assert result is not None
+        assert "Cancer" in result.solution.states
+
+    @skipif_toulbar2_not_available
+    def test_comparison_pyomo_toulbar2(self):
+        """Test that integer_program and toulbar2 produce same results for algebraic constraints."""
+        pgm = cancer1_BN_conin().pgm
+
+        @algebraic_constraint_fn()
+        def algebraic_constraint(model, data):
+            return model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1
+
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[algebraic_constraint])
+        evidence = {"Pollution": 0, "Smoker": 1}
+
+        # Solve with both methods
+        result_pyomo = map_query(cpgm, method="integer_program", evidence=evidence)
+        result_toulbar2 = map_query(cpgm, method="toulbar2", evidence=evidence)
+
+        # Results should be identical
+        assert result_pyomo.solution.states == result_toulbar2.solution.states
+
+
+class TestToulbar2ArithmeticOperations:
+    """Test various arithmetic operations with both solvers."""
+
+    @skipif_toulbar2_not_available
+    def test_addition_toulbar2(self):
+        """Test addition operation with Toulbar2."""
+        pgm = cancer1_BN_conin().pgm
+
+        @algebraic_constraint_fn()
+        def constraint(model, data):
+            return model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1
+
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraint])
+        evidence = {"Pollution": 0, "Smoker": 1}
+
+        result_pyomo = map_query(cpgm, method="integer_program", evidence=evidence)
+        result_toulbar2 = map_query(cpgm, method="toulbar2", evidence=evidence)
+
+        assert result_pyomo is not None
+        assert result_toulbar2 is not None
+        assert result_pyomo.solution.states == result_toulbar2.solution.states
+
+    @skipif_toulbar2_not_available
+    def test_multiplication_by_constant_toulbar2(self):
+        """Test multiplication by constant with Toulbar2."""
+        pgm = cancer1_BN_conin().pgm
+
+        @algebraic_constraint_fn()
+        def constraint(model, data):
+            return 2 * model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 2
+
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraint])
+        evidence = {"Pollution": 0, "Smoker": 1}
+
+        result_pyomo = map_query(cpgm, method="integer_program", evidence=evidence)
+        result_toulbar2 = map_query(cpgm, method="toulbar2", evidence=evidence)
+
+        assert result_pyomo is not None
+        assert result_toulbar2 is not None
+        assert result_pyomo.solution.states == result_toulbar2.solution.states
+
+    @skipif_toulbar2_not_available
+    def test_complex_expression_toulbar2(self):
+        """Test complex arithmetic expression with Toulbar2."""
+        pgm = cancer1_BN_conin().pgm
+
+        @algebraic_constraint_fn()
+        def constraint(model, data):
+            return (
+                2 * model.V("Dyspnoea", 1) + 3 * model.V("Xray", 1) - model.V("Cancer", 0)
+                <= 3
+            )
+
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraint])
+        evidence = {"Pollution": 0, "Smoker": 1}
+
+        result_pyomo = map_query(cpgm, method="integer_program", evidence=evidence)
+        result_toulbar2 = map_query(cpgm, method="toulbar2", evidence=evidence)
+
+        assert result_pyomo is not None
+        assert result_toulbar2 is not None
+        assert result_pyomo.solution.states == result_toulbar2.solution.states
+
+
+class TestToulbar2ComparisonOperators:
+    """Test different comparison operators with both solvers."""
+
+    @skipif_toulbar2_not_available
+    def test_less_than_or_equal_toulbar2(self):
+        """Test <= operator with Toulbar2."""
+        pgm = cancer1_BN_conin().pgm
+
+        @algebraic_constraint_fn()
+        def constraint(model, data):
+            return model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1
+
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraint])
+        evidence = {"Pollution": 0, "Smoker": 1}
+
+        result_pyomo = map_query(cpgm, method="integer_program", evidence=evidence)
+        result_toulbar2 = map_query(cpgm, method="toulbar2", evidence=evidence)
+
+        assert result_pyomo is not None
+        assert result_toulbar2 is not None
+        assert result_pyomo.solution.states == result_toulbar2.solution.states
+
+    @skipif_toulbar2_not_available
+    def test_greater_than_or_equal_toulbar2(self):
+        """Test >= operator with Toulbar2."""
+        pgm = cancer1_BN_conin().pgm
+
+        @algebraic_constraint_fn()
+        def constraint(model, data):
+            return model.V("Dyspnoea", 1) + model.V("Xray", 1) >= 0
+
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraint])
+        evidence = {"Pollution": 0, "Smoker": 1}
+
+        result_pyomo = map_query(cpgm, method="integer_program", evidence=evidence)
+        result_toulbar2 = map_query(cpgm, method="toulbar2", evidence=evidence)
+
+        assert result_pyomo is not None
+        assert result_toulbar2 is not None
+        assert result_pyomo.solution.states == result_toulbar2.solution.states
+
+    @skipif_toulbar2_not_available
+    def test_equality_toulbar2(self):
+        """Test == operator with Toulbar2."""
+        pgm = cancer1_BN_conin().pgm
+
+        @algebraic_constraint_fn()
+        def constraint(model, data):
+            return model.V("Dyspnoea", 1) == 0
+
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraint])
+        evidence = {"Pollution": 0, "Smoker": 1}
+
+        result_pyomo = map_query(cpgm, method="integer_program", evidence=evidence)
+        result_toulbar2 = map_query(cpgm, method="toulbar2", evidence=evidence)
+
+        assert result_pyomo is not None
+        assert result_toulbar2 is not None
+        assert result_pyomo.solution.states == result_toulbar2.solution.states
+
+
+class TestToulbar2MultipleConstraints:
+    """Test multiple algebraic constraints with both solvers."""
+
+    @skipif_toulbar2_not_available
+    def test_multiple_constraints_toulbar2(self):
+        """Test multiple algebraic constraints work with Toulbar2."""
+        pgm = cancer1_BN_conin().pgm
+
+        @algebraic_constraint_fn()
+        def algebraic_constraint(model, data):
+            return [
+                model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1,
+                model.V("Dyspnoea", 0) + model.V("Xray", 0) <= 1,
+            ]
+
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[algebraic_constraint])
+        evidence = {"Pollution": 0, "Smoker": 1}
+
+        result_pyomo = map_query(cpgm, method="integer_program", evidence=evidence)
+        result_toulbar2 = map_query(cpgm, method="toulbar2", evidence=evidence)
+
+        assert result_pyomo is not None
+        assert result_toulbar2 is not None
+        print(f"HERE {result_pyomo.solution.states=}")
+        print(f"HERE {result_toulbar2.solution.states=}")
+        assert result_pyomo.solution.states == result_toulbar2.solution.states
+
+    @skipif_toulbar2_not_available
+    def test_complex_multiple_constraints_toulbar2(self):
+        """Test complex multiple algebraic constraints with Toulbar2."""
+        pgm = cancer1_BN_conin().pgm
+
+        @algebraic_constraint_fn()
+        def algebraic_constraint(model, data):
+            return [
+                2 * model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 2,
+                model.V("Dyspnoea", 0) + model.V("Xray", 0) >= 0,
+            ]
+
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[algebraic_constraint])
+        evidence = {"Pollution": 0, "Smoker": 1}
+
+        result_pyomo = map_query(cpgm, method="integer_program", evidence=evidence)
+        result_toulbar2 = map_query(cpgm, method="toulbar2", evidence=evidence)
+
+        assert result_pyomo is not None
+        assert result_toulbar2 is not None
+        assert result_pyomo.solution.states == result_toulbar2.solution.states
 
 
 if __name__ == "__main__":
