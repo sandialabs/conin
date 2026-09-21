@@ -2,13 +2,12 @@
 
 __version__ = "1.1.1"
 
-# from .common_constraints import *
 from . import markov_network
 from . import bayesian_network
 from . import dynamic_bayesian_network
 from . import hidden_markov_model
 from .inference import map_query
-from .constraint import (
+from .constraints import (
     ConstraintFunctor,
     factor_constraint_fn,
     mvr_constraint_fn,

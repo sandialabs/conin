@@ -1,4 +1,4 @@
-from conin.constraint import (
+from conin.constraints.constraint import (
     OracleConstraint,
     PyomoConstraint,
     Toulbar2Constraint,

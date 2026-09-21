@@ -1,6 +1,6 @@
 import pyomo.environ as pe
 import conin.hidden_markov_model
-from conin.constraint import (
+from conin.constraints.constraint import (
     pyomo_constraint_fn,
     toulbar2_constraint_fn,
     factor_constraint_fn,

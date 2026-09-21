@@ -7,11 +7,9 @@ which are then translated to Pyomo or Toulbar2 constraint declarations.
 """
 
 import inspect
-from conin.constraint import ConstraintFunctor
-from conin.smoek.bridge import ConinVarNode
-#from conin.smoek.walkers.pyomo import translate_expression_to_pyomo
-#from conin.smoek.walkers.toulbar2 import translate_expression_to_toulbar2
 import smoek
+from conin.constraints import ConstraintFunctor
+from conin.constraints.smoek.bridge import ConinVarNode
 
 
 class ConinV:
@@ -141,7 +139,7 @@ def algebraic_constraint_fn(*, name=None):
         Decorator function that wraps user function in AlgebraicConstraint
 
     Example:
-        >>> from conin.constraint import algebraic_constraint_fn
+        >>> from conin import algebraic_constraint_fn
         >>>
         >>> # Single constraints
         >>> @algebraic_constraint_fn()

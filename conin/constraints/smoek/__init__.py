@@ -5,7 +5,7 @@ This package provides decorators and utilities for defining conin constraints
 using natural algebraic syntax powered by smoek's expression system.
 
 Example:
-    >>> from conin.smoek import algebraic_pyomo_constraint_fn
+    >>> from conin import algebraic_pyomo_constraint_fn
     >>>
     >>> @algebraic_pyomo_constraint_fn()
     >>> def my_constraint(model, data):
@@ -21,7 +21,7 @@ from .bridge import ConinVarNode
 
 # Re-export smoek components for user convenience
 from smoek.core.model.set_components import RangeSet, SequenceSet, Set
-from smoek.core.expr.functions import sum as sum_, prod as prod
+#from smoek.core.expr.functions import sum as sum_, prod as prod
 
 __all__ = [
     # Decorator
@@ -33,8 +33,8 @@ __all__ = [
     'RangeSet',
     'SequenceSet',
     'Set',
-    'sum_',
-    'prod',
+#    'sum_',
+#    'prod',
 ]
 
 __version__ = '0.1.0'

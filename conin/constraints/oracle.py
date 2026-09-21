@@ -1,5 +1,5 @@
 import inspect
-from conin.constraint import OracleConstraint, oracle_constraint_fn
+from .constraint import OracleConstraint, oracle_constraint_fn
 
 
 def constraint_name():

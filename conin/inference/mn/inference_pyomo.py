@@ -6,7 +6,8 @@ from pyomo.common.timing import TicTocTimer
 
 import smoek as smk
 from conin.config import default_mip_solver
-from conin.constraint import PyomoConstraint, AlgebraicConstraint
+from conin.constraints.constraint import PyomoConstraint 
+from conin.constraints.smoek import AlgebraicConstraint
 from conin.markov_network import ConstrainedDiscreteMarkovNetwork
 from conin.inference.mn.factor_repn import extract_factor_representation_, State
 

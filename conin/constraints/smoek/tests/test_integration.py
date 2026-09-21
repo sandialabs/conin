@@ -12,7 +12,7 @@ from munch import Munch
 from conin.bayesian_network.examples import cancer1_BN_conin
 from conin.bayesian_network import ConstrainedDiscreteBayesianNetwork
 from conin.inference import map_query
-from conin.constraint import pyomo_constraint_fn, algebraic_constraint_fn
+from conin import pyomo_constraint_fn, algebraic_constraint_fn
 
 
 class TestBasicAlgebraicConstraints:

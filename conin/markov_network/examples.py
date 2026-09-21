@@ -1,7 +1,7 @@
 from munch import Munch
 import numpy as np
 
-from conin.constraint import (
+from conin.constraints import (
     pyomo_constraint_fn,
     toulbar2_constraint_fn,
     factor_constraint_fn,

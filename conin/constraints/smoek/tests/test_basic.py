@@ -12,16 +12,16 @@ def test_imports():
     """Test that all modules can be imported."""
     print("Testing imports...")
 
-    from conin.constraint import algebraic_constraint_fn
-    print("✓ Imported algebraic_constraint_fn from conin.constraint")
+    from conin import algebraic_constraint_fn
+    print("✓ Imported algebraic_constraint_fn from conin")
 
-    from conin.smoek import algebraic_constraint_fn as smoek_algebraic_constraint_fn
-    print("✓ Imported algebraic_constraint_fn from conin.smoek")
+    from conin import algebraic_constraint_fn as smoek_algebraic_constraint_fn
+    print("✓ Imported algebraic_constraint_fn from conin")
 
-    from conin.smoek import ConinVarNode
+    from conin.constraints.smoek import ConinVarNode
     print("✓ Imported ConinVarNode")
 
-    from conin.smoek import RangeSet, SequenceSet, sum_
+    from conin.constraints.smoek import RangeSet, SequenceSet
     print("✓ Imported smoek components")
 
     print("\n✅ All imports successful!")
@@ -31,7 +31,7 @@ def test_coninvarnode():
     """Test ConinVarNode basic functionality."""
     print("\nTesting ConinVarNode...")
 
-    from conin.smoek.bridge import ConinVarNode
+    from conin.constraints.smoek.bridge import ConinVarNode
 
     # Test 2-arg form
     var1 = ConinVarNode("A", 0)
@@ -58,7 +58,7 @@ def test_expression_building():
     """Test building simple algebraic expressions."""
     print("\nTesting expression building...")
 
-    from conin.smoek.bridge import ConinVarNode
+    from conin.constraints.smoek.bridge import ConinVarNode
 
     # Build expression: V("A", 0) + V("B", 1) <= 10
     a = ConinVarNode("A", 0)
@@ -82,7 +82,7 @@ def test_decorator_creation():
     """Test that decorators can be created."""
     print("\nTesting decorator creation...")
 
-    from conin.constraint import algebraic_constraint_fn
+    from conin import algebraic_constraint_fn
 
     @algebraic_constraint_fn()
     def test_constraint(model, data):
@@ -92,7 +92,7 @@ def test_decorator_creation():
     print(f"  Type: {type(test_constraint)}")
     print(f"  Name: {test_constraint.name}")
 
-    from conin.smoek.decorators import AlgebraicConstraint
+    from conin.constraints.smoek.decorators import AlgebraicConstraint
     assert isinstance(test_constraint, AlgebraicConstraint)
     print("✓ Constraint is correct type (AlgebraicConstraint)")
 

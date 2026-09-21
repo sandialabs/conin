@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import pyomo.environ as pyo
 
-from conin.constraint import (
+from conin.constraints import (
     pyomo_constraint_fn,
     toulbar2_constraint_fn,
     factor_constraint_fn,

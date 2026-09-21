@@ -1,9 +1,9 @@
 import itertools
 import inspect
 from abc import ABC, abstractmethod
-from conin.exceptions import InvalidInputError
-from conin.markov_network import DiscreteFactor, DiscreteMarkovNetwork
-from conin.bayesian_network import DiscreteCPD, DiscreteBayesianNetwork
+from ..exceptions import InvalidInputError
+from ..markov_network import DiscreteFactor, DiscreteMarkovNetwork
+from ..bayesian_network import DiscreteCPD, DiscreteBayesianNetwork
 
 # One could also create an inherited class for additional functionality
 # TODO think about partial_func semantics
@@ -233,7 +233,7 @@ class MVRConstraint(ConstraintFunctor):
         else:
             mvr = self.func(hidden_markov_model, data)
 
-        from conin.hidden_markov_model.mvr import BaseMVR
+        from ..hidden_markov_model.mvr import BaseMVR
 
         if not isinstance(mvr, BaseMVR):
             raise InvalidInputError(
@@ -327,5 +327,3 @@ def toulbar2_constraint_fn(*, name=None):
         return Toulbar2Constraint(func=func, name=name)
 
     return decorator
-
-from conin.smoek import algebraic_constraint_fn, AlgebraicConstraint
