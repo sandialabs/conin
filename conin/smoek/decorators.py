@@ -9,31 +9,23 @@ which are then translated to Pyomo or Toulbar2 constraint declarations.
 import inspect
 from conin.constraint import ConstraintFunctor
 from conin.smoek.bridge import ConinVarNode
-from conin.smoek.walkers.pyomo import translate_expression_to_pyomo
-from conin.smoek.walkers.toulbar2 import translate_expression_to_toulbar2
+#from conin.smoek.walkers.pyomo import translate_expression_to_pyomo
+#from conin.smoek.walkers.toulbar2 import translate_expression_to_toulbar2
+import smoek
 
 
-class WrappedModel:
+class ConinV:
     """
-    Proxy that wraps a model to intercept V() calls and return ConinVarNode.
+    A callable class that provides the V() interface for accessing conin variables.
 
-    This allows user constraint functions to build smoek expression trees
-    by calling model.V(...) which returns expression nodes instead of actual
-    variables.
+    This class defines the V attribute that can be called to return
+    ConinVarNode instances, allowing users to write constraint functions
+    using smoek's algebraic syntax.
     """
 
-    def __init__(self, original):
+    def __call__(self, *args):
         """
-        Initialize the wrapped model.
-
-        Args:
-            original: The original conin/pyomo/toulbar2 model to wrap
-        """
-        self._original = original
-
-    def V(self, *args):
-        """
-        Intercept V() calls and return ConinVarNode instead of actual variable.
+        Access conin variables as smoek expression nodes.
 
         Supports both 2-arg form V(node, state) and 3-arg form V(node, time, state).
 
@@ -55,17 +47,12 @@ class WrappedModel:
         else:
             raise ValueError(f"V() requires 2 or 3 arguments, got {len(args)}")
 
-    def __getattr__(self, name):
-        """Forward all other attribute access to the original model."""
-        return getattr(self._original, name)
 
-
-class AlgebraicPyomoConstraint(ConstraintFunctor):
+class AlgebraicConstraint(ConstraintFunctor):
     """
-    Constraint functor for algebraic Pyomo constraints.
+    Unified constraint functor for algebraic constraints.
 
-    Wraps a user function that returns smoek expression trees and translates
-    them to Pyomo constraints.
+    Wraps a user function that adds constraints to a Smoek model.
     """
 
     def __init__(self, func, name=None):
@@ -88,98 +75,47 @@ class AlgebraicPyomoConstraint(ConstraintFunctor):
         Apply the constraint to the model.
 
         Args:
-            model: Pyomo model being constructed
+            model: Pyomo or Toulbar2 model being constructed
             data: Optional data for constraint
 
         Returns:
             Modified model
         """
-        # Wrap model so V() returns ConinVarNode
-        wrapped_model = WrappedModel(model)
+        # Create a smoek model with V() method
+        if hasattr(model, "V"):
+            assert isinstance(model.V, ConinV), f"A model attribute 'V' exists (type={type(model.V)}). Smoek constraints reserve the 'V' attribute for access to Conin nodes"
+        else:
+            model.V = ConinV()
 
         # Call user function to get expression tree(s)
         if self.num_args == 1:
-            result = self.func(wrapped_model)
+            result = self.func(model)
         else:
-            result = self.func(wrapped_model, data)
+            result = self.func(model, data)
 
-        # Handle single expression or list of expressions
-        if isinstance(result, (list, tuple)):
-            exprs = result
+        if hasattr(model, "_conin_con_count"):
+            count = model._conin_con_count
         else:
-            exprs = [result]
+            count = model._conin_con_count = 0
 
-        # Translate each expression to Pyomo and add to model
-        try:
-            import pyomo.environ as pyo
-        except ImportError:
-            raise ImportError("Pyomo is required for algebraic_pyomo_constraint_fn")
+        if isinstance(result, smoek.core.model.constr_components.Constraint):
+            result = [result]
 
-        # Create constraint list if not exists
-        if not hasattr(model, self.name):
-            setattr(model, self.name, pyo.ConstraintList())
+        if isinstance(result, list):
+            for expr in result:
+                count = count + 1
+                if type(expr) is smoek.core.expr.nodes.BinaryLogicalExprNode:
+                    con = smoek.constraint().expr(expr)
+                else:
+                    con = expr
+                setattr(model, f"c_conin_{count}", con)
+                _name = f"c_conin_{count}"
+                _val = getattr(model,_name)
 
-        constraint_list = getattr(model, self.name)
+        model._conin_con_count = count
 
-        for expr in exprs:
-            # Translate smoek expression to Pyomo
-            pyomo_expr = translate_expression_to_pyomo(expr, model, model)
-            # Add to constraint list
-            constraint_list.add(pyomo_expr)
-
-        return model
-
-
-class AlgebraicToulbar2Constraint(ConstraintFunctor):
-    """
-    Constraint functor for algebraic Toulbar2 constraints.
-
-    Wraps a user function that returns smoek expression trees and translates
-    them to Toulbar2 linear constraints.
-    """
-
-    def __init__(self, func, name=None):
-        """
-        Initialize the constraint.
-
-        Args:
-            func: User function that returns expression(s)
-            name: Optional constraint name (defaults to function name)
-        """
-        self.func = func
-        self.num_args = len(inspect.signature(self.func).parameters)
-        if self.num_args > 2:
-            raise ValueError("Algebraic constraint defined with more than 2 arguments")
-
-        self.name = name if name else func.__name__
-
-    def __call__(self, model, data):
-        """
-        Apply the constraint to the model.
-
-        Args:
-            model: Toulbar2 model being constructed
-            data: Optional data for constraint
-
-        Returns:
-            Modified model
-        """
-        # Wrap model so V() returns ConinVarNode
-        wrapped_model = WrappedModel(model)
-
-        # Call user function to get expression tree(s)
-        if self.num_args == 1:
-            result = self.func(wrapped_model)
-        else:
-            result = self.func(wrapped_model, data)
-
-        # Handle single expression or list of expressions
-        if isinstance(result, (list, tuple)):
-            exprs = result
-        else:
-            exprs = [result]
-
-        # Translate each expression to Toulbar2 and add to model
+    def _apply_toulbar2(self, model, exprs):
+        """Translate expressions to Toulbar2 and add to model."""
         for expr in exprs:
             # Translate smoek expression to toulbar2 format
             var_terms, operator, rhs = translate_expression_to_toulbar2(expr, model)
@@ -189,72 +125,43 @@ class AlgebraicToulbar2Constraint(ConstraintFunctor):
         return model
 
 
-def algebraic_pyomo_constraint_fn(*, name=None):
+def algebraic_constraint_fn(*, name=None):
     """
-    Decorator for defining algebraic Pyomo constraints.
+    Decorator for defining algebraic constraints.
 
     Allows users to define constraints using natural algebraic syntax with
     smoek expressions. The constraint function should return a smoek expression
-    or list of expressions that will be translated to Pyomo constraints.
+    or list of expressions. The inference backend automatically determines
+    whether to translate to Pyomo or Toulbar2 format.
 
     Args:
         name: Optional name for the constraint (defaults to function name)
 
     Returns:
-        Decorator function that wraps user function in AlgebraicPyomoConstraint
+        Decorator function that wraps user function in AlgebraicConstraint
 
     Example:
-        >>> from conin.smoek import algebraic_pyomo_constraint_fn
+        >>> from conin.constraint import algebraic_constraint_fn
         >>>
-        >>> @algebraic_pyomo_constraint_fn()
+        >>> # Single constraints
+        >>> @algebraic_constraint_fn()
         >>> def my_constraint(model, data):
-        >>>     # Natural algebraic syntax
+        >>>     # Natural algebraic syntax - works with both Pyomo and Toulbar2
         >>>     return model.V("A", 0) + model.V("B", 0) <= 1
         >>>
-        >>> # Or multiple constraints
-        >>> @algebraic_pyomo_constraint_fn()
+        >>> # Multiple constraints in a list
+        >>> @algebraic_constraint_fn()
         >>> def multi_constraint(model, data):
         >>>     return [
         >>>         model.V("A", s) + model.V("B", s) <= 1
         >>>         for s in [0, 1, 2]
         >>>     ]
+        >>>
+        >>> # Use with either inference method
+        >>> cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[my_constraint])
+        >>> result = map_query(cpgm, method="integer_program", evidence=...)  # Uses Pyomo
+        >>> result = map_query(cpgm, method="toulbar2", evidence=...)  # Uses Toulbar2
     """
     def decorator(func):
-        return AlgebraicPyomoConstraint(func=func, name=name)
-    return decorator
-
-
-def algebraic_toulbar2_constraint_fn(*, name=None):
-    """
-    Decorator for defining algebraic Toulbar2 constraints.
-
-    Allows users to define constraints using natural algebraic syntax with
-    smoek expressions. The constraint function should return a smoek expression
-    or list of expressions that will be translated to Toulbar2 linear constraints.
-
-    Args:
-        name: Optional name for the constraint (defaults to function name)
-
-    Returns:
-        Decorator function that wraps user function in AlgebraicToulbar2Constraint
-
-    Example:
-        >>> from conin.smoek import algebraic_toulbar2_constraint_fn
-        >>>
-        >>> @algebraic_toulbar2_constraint_fn()
-        >>> def my_constraint(model, data):
-        >>>     # Natural algebraic syntax
-        >>>     return model.V("A", 0) + model.V("B", 0) <= 1
-        >>>
-        >>> # With data
-        >>> @algebraic_toulbar2_constraint_fn()
-        >>> def budget_constraint(model, data):
-        >>>     return sum(
-        >>>         data.costs[s] * model.V(node, s)
-        >>>         for node in data.nodes
-        >>>         for s in [0, 1, 2]
-        >>>     ) <= data.budget
-    """
-    def decorator(func):
-        return AlgebraicToulbar2Constraint(func=func, name=name)
+        return AlgebraicConstraint(func=func, name=name)
     return decorator

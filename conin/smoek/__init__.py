@@ -16,10 +16,7 @@ capabilities, allowing users to write constraints with operator overloading
 instead of imperative Pyomo/Toulbar2 code.
 """
 
-from .decorators import (
-    algebraic_pyomo_constraint_fn,
-    algebraic_toulbar2_constraint_fn,
-)
+from .decorators import algebraic_constraint_fn, AlgebraicConstraint
 from .bridge import ConinVarNode
 
 # Re-export smoek components for user convenience
@@ -27,9 +24,9 @@ from smoek.core.model.set_components import RangeSet, SequenceSet, Set
 from smoek.core.expr.functions import sum as sum_, prod as prod
 
 __all__ = [
-    # Decorators
-    'algebraic_pyomo_constraint_fn',
-    'algebraic_toulbar2_constraint_fn',
+    # Decorator
+    'algebraic_constraint_fn',
+    'AlgebraicConstriant',
     # Bridge
     'ConinVarNode',
     # Smoek components
