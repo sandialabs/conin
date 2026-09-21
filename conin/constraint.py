@@ -327,3 +327,5 @@ def toulbar2_constraint_fn(*, name=None):
         return Toulbar2Constraint(func=func, name=name)
 
     return decorator
+
+from conin.smoek import algebraic_constraint_fn, AlgebraicConstraint
