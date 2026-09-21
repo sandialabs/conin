@@ -59,10 +59,14 @@ class ConinVarNode(ExprLeaf):
             index = f'"{self.node}"'
         else:
             index = self.node
-        if self.time is None:
-            return f"m_.V({index}, {self.state})"
+        if type(self.state) is str:
+            state = f'"{self.state}"'
         else:
-            return f"m_.V({index}, {self.time}, {self.state})"
+            state = self.state
+        if self.time is None:
+            return f"m_.V({index}, {state})"
+        else:
+            return f"m_.V({index}, {self.time}, {state})"
 
     def to_string(self):
         """Return string representation for smoek walkers."""
