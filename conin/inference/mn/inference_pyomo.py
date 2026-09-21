@@ -77,7 +77,7 @@ def add_constraints(*, pgm, constraints, model, data):
     elif isinstance(constraints[0], AlgebraicConstraint):
         smoek_model = smk.model()
         for func in constraints:
-            print("HERE",func)
+            print("HERE", func)
             func(smoek_model, data)
         smoek_model._update_smoek_components()
         print(smoek_model.constraints)
@@ -87,7 +87,7 @@ def add_constraints(*, pgm, constraints, model, data):
             data=data,
             component_map=dict(V=model.V),
         )
-        #model.pprint()
+        # model.pprint()
 
     else:
         raise TypeError(

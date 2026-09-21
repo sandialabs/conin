@@ -81,7 +81,9 @@ class AlgebraicConstraint(ConstraintFunctor):
         """
         # Create a smoek model with V() method
         if hasattr(model, "V"):
-            assert isinstance(model.V, ConinV), f"A model attribute 'V' exists (model_type={type(model)} V_type={type(model.V)}). Smoek constraints reserve the 'V' attribute for access to Conin nodes"
+            assert isinstance(
+                model.V, ConinV
+            ), f"A model attribute 'V' exists (model_type={type(model)} V_type={type(model.V)}). Smoek constraints reserve the 'V' attribute for access to Conin nodes"
         else:
             model.V = ConinV()
 
@@ -96,7 +98,10 @@ class AlgebraicConstraint(ConstraintFunctor):
         else:
             count = model._conin_con_count = 0
 
-        if isinstance(result, smoek.core.model.constr_components.Constraint) or type(result) is smoek.core.expr.nodes.BinaryLogicalExprNode:
+        if (
+            isinstance(result, smoek.core.model.constr_components.Constraint)
+            or type(result) is smoek.core.expr.nodes.BinaryLogicalExprNode
+        ):
             result = [result]
 
         if isinstance(result, list):
@@ -108,7 +113,7 @@ class AlgebraicConstraint(ConstraintFunctor):
                     con = expr
                 setattr(model, f"c_conin_{count}", con)
                 _name = f"c_conin_{count}"
-                _val = getattr(model,_name)
+                _val = getattr(model, _name)
 
         model._conin_con_count = count
 
@@ -160,6 +165,8 @@ def algebraic_constraint_fn(*, name=None):
         >>> result = map_query(cpgm, method="integer_program", evidence=...)  # Uses Pyomo
         >>> result = map_query(cpgm, method="toulbar2", evidence=...)  # Uses Toulbar2
     """
+
     def decorator(func):
         return AlgebraicConstraint(func=func, name=name)
+
     return decorator

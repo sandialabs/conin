@@ -282,8 +282,7 @@ def ABC_constrained_algebraic_conin():
     @algebraic_constraint_fn()
     def constraint_fn(model):
         return [
-            model.V("A", s) + model.V("B", s) + model.V("C", s) <= 1
-            for s in [0, 1, 2]
+            model.V("A", s) + model.V("B", s) + model.V("C", s) <= 1 for s in [0, 1, 2]
         ]
 
     cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=[constraint_fn])
@@ -304,8 +303,7 @@ def ABC_constrained_algebraic_pgmpy():
     @algebraic_constraint_fn()
     def constraint_fn(model):
         return [
-            model.V("A", s) + model.V("B", s) + model.V("C", s) <= 1
-            for s in [0, 1, 2]
+            model.V("A", s) + model.V("B", s) + model.V("C", s) <= 1 for s in [0, 1, 2]
         ]
 
     import conin.common.pgmpy
@@ -333,8 +331,7 @@ def ABC2_constrained_algebraic_conin():
     @algebraic_constraint_fn()
     def constraint_fn(model):
         return [
-            model.V("A", s) + model.V("B", s) + model.V("C", s) <= 1
-            for s in [0, 1, 2]
+            model.V("A", s) + model.V("B", s) + model.V("C", s) <= 1 for s in [0, 1, 2]
         ]
 
     cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=[constraint_fn])
