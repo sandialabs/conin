@@ -482,7 +482,3 @@ class TestToulbar2MultipleConstraints:
         assert result_pyomo is not None
         assert result_toulbar2 is not None
         assert result_pyomo.solution.states == result_toulbar2.solution.states
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])

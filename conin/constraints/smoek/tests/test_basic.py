@@ -103,33 +103,3 @@ def test_decorator_creation():
     print("✓ Constraint is correct type (AlgebraicConstraint)")
 
     print("\n✅ Decorator tests passed!")
-
-
-def main():
-    """Run all tests."""
-    print("=" * 60)
-    print("SMOEK ALGEBRAIC MODELING EXTENSION - BASIC TESTS")
-    print("=" * 60)
-
-    try:
-        test_imports()
-        test_coninvarnode()
-        test_expression_building()
-        test_decorator_creation()
-        test_smoek_model_with_v()
-
-        print("\n" + "=" * 60)
-        print("✅ ALL TESTS PASSED!")
-        print("=" * 60)
-        return 0
-
-    except Exception as e:
-        print(f"\n❌ TEST FAILED: {e}")
-        import traceback
-
-        traceback.print_exc()
-        return 1
-
-
-if __name__ == "__main__":
-    sys.exit(main())
