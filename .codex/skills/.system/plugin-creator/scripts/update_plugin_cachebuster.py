@@ -14,7 +14,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from identifier_validation import validate_plugin_identifier
 
-
 CACHEBUSTER_PREFIX = "codex"
 
 
@@ -62,6 +61,8 @@ def load_manifest(manifest_path: Path) -> dict[str, object]:
     if not isinstance(payload, dict):
         raise ValueError(f"{manifest_path} must contain a JSON object.")
     return payload
+
+
 def sanitize_cachebuster(value: str) -> str:
     sanitized = re.sub(r"[^a-z0-9-]+", "-", value.strip().lower())
     sanitized = re.sub(r"-{2,}", "-", sanitized).strip("-")
@@ -82,6 +83,8 @@ def with_cachebuster(version: str, cachebuster: str) -> str:
 if __name__ == "__main__":
     try:
         main()
-    except Exception as err:  # noqa: BLE001 - CLI should surface a single clear message.
+    except (
+        Exception
+    ) as err:  # noqa: BLE001 - CLI should surface a single clear message.
         print(str(err), file=sys.stderr)
         raise SystemExit(1) from err

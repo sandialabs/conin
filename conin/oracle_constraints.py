@@ -230,6 +230,7 @@ def has_maximum_number_of_occurences_constraint(*, val, count):
 
     The misspelling in this function name is preserved for API compatibility.
     """
+
     @oracle_constraint_fn(name=constraint_name(), same_partial_as_func=True)
     def constraint(seq):
         return has_maximum_number_of_occurences(seq, val=val, count=count)
