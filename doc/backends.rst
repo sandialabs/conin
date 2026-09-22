@@ -32,7 +32,7 @@ Viterbi/A* inference.
      - Yes
    * - HMM supervised learning
      - Yes
-   * - HMM ``ViterbiInference`` and ``AStarInference`` wrappers
+   * - HMM ``map_query`` with ``method="viterbi"`` or ``method="a_star"``
      - Yes
 
 Pyomo Solvers
@@ -46,20 +46,17 @@ its default MIP solver:
 - ``highs``
 - ``glpk``
 
-Pyomo-backed wrappers include:
-
-- ``IntegerProgrammingInference``
-- ``DPGM_IntegerProgrammingInference``
+Use ``map_query(..., method="integer_program")`` for Pyomo-backed inference.
 
 You can also pass a solver explicitly to ``map_query``:
 
 .. code-block:: python
 
-   from conin.inference import IntegerProgrammingInference
+   from conin.inference import map_query
    from conin.markov_network.examples import ABC_conin
 
    pgm = ABC_conin().pgm
-   results = IntegerProgrammingInference(pgm).map_query(solver="highs")
+   results = map_query(pgm, method="integer_program", solver="highs")
 
 If no supported solver is installed, Pyomo model construction may still work,
 but optimization-based inference will not be able to solve the model.
@@ -72,10 +69,7 @@ installation. The conda environment files include ``pytoulbar2`` as a pip
 dependency, but it is not currently exposed as a Python package extra in
 ``pyproject.toml``.
 
-Toulbar2-backed wrappers include:
-
-- ``CFNInference``
-- ``DPGM_CFNInference``
+Use ``map_query(..., method="toulbar2")`` for Toulbar2-backed inference.
 
 When ``pytoulbar2`` is unavailable, some static-model Toulbar2 helpers return
 an empty result object with a termination condition indicating that
@@ -93,8 +87,7 @@ pgmpy
 
 Features requiring ``pgmpy`` include:
 
-- ``VariableEliminationInference``
-- ``DPGM_VariableEliminationInference``
+- ``map_query(..., method="variable_elimination")``
 - Loading BIF files through ``conin.common.load_model(..., model_type="conin")``
 - ``conin.common.load_model(..., model_type="pgmpy")``
 - ``conin.common.save_model(..., model_type="pgmpy")``
@@ -157,11 +150,11 @@ Quick Selection Guide
      - Dependency
    * - Build CONIN models and examples
      - Base package
-   * - Run HMM Viterbi/A* wrappers
+   * - Run HMM Viterbi/A* inference
      - Base package
    * - Run supervised HMM learning
      - Base package
-   * - Run variable elimination wrappers
+   * - Run variable elimination inference
      - ``pgmpy``
    * - Convert to/from pgmpy models
      - ``pgmpy``

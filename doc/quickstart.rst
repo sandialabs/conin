@@ -69,23 +69,24 @@ native CONIN Bayesian network or Markov network.
 Run Inference
 -------------
 
-For MAP inference on Bayesian networks, use one of the high-level inference
-wrappers. Backend-specific requirements are listed in :doc:`backends`.
+For MAP inference on Bayesian networks, use the high-level ``map_query`` entry
+point with the desired backend method. Backend-specific requirements are listed
+in :doc:`backends`.
 
 For example, with ``pgmpy`` installed:
 
 .. code-block:: python
 
-   from conin.inference import VariableEliminationInference
+   from conin.inference import map_query
 
-   result = VariableEliminationInference(pgm).map_query()
+   result = map_query(pgm, method="variable_elimination")
    print(result.solution.states)
 
 Next Steps
 ----------
 
 - See :doc:`probabilistic_graphical_models` for model-building guides.
-- See :doc:`inference` for inference wrappers.
+- See :doc:`inference` for inference methods.
 - See :doc:`examples` for selected example factories.
 - See :doc:`model_conversion_io` for model conversion and file I/O.
 - See :doc:`hmm_learning` for HMM parameter learning.

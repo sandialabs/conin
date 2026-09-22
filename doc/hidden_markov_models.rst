@@ -92,8 +92,8 @@ constraints.
 
 ``initialize_chmm()`` constructs an internal constrained HMM object for oracle,
 Pyomo, and MVR constraints. Factor and Toulbar2 constraints are consumed by the
-corresponding inference wrappers instead of initializing a standalone CHMM
-object directly.
+corresponding inference methods instead of initializing a standalone CHMM object
+directly.
 
 Oracle constraints
 ^^^^^^^^^^^^^^^^^^
@@ -193,8 +193,8 @@ Toulbar2 constraints
        constraints=[num_zeros_greater_than_nine, num_zeros_less_than_thirteen],
    )
 
-The ``DPGM_CFNInference`` wrapper applies these constraints when building the
-Toulbar2 model.
+``map_query(..., method="toulbar2")`` applies these constraints when building
+the Toulbar2 model.
 
 Factor constraints
 ^^^^^^^^^^^^^^^^^^
@@ -228,7 +228,7 @@ Factor constraints
        constraints=[num_zeros_greater_than_nine, num_zeros_less_than_thirteen],
    )
 
-The ``DPGM_VariableEliminationInference`` wrapper can consume factor
+``map_query(..., method="variable_elimination")`` can consume factor
 constraints by expanding them into auxiliary factors.
 
 Notes

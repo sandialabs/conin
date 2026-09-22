@@ -1,12 +1,12 @@
 Inference
 =========
 
-This page illustrates the main inference wrappers on small Markov network and
-hidden Markov model examples.
+This page illustrates the main ``map_query`` inference entry point on small
+Markov network and hidden Markov model examples.
 
-Some wrappers require optional backend packages or external solvers. The Viterbi
-and A* HMM examples run with the base package dependencies. See :doc:`backends`
-for backend-specific installation and solver requirements.
+Some methods require optional backend packages or external solvers. The
+``viterbi`` and ``a_star`` HMM examples run with the base package dependencies.
+See :doc:`backends` for backend-specific installation and solver requirements.
 
 Markov network inference
 ------------------------
@@ -16,27 +16,23 @@ Markov network with three variables and pairwise interactions.
 
 .. code-block:: python
 
-   from conin.inference import (
-       CFNInference,
-       IntegerProgrammingInference,
-       VariableEliminationInference,
-   )
+   from conin.inference import map_query
    from conin.markov_network.examples import ABC_conin
 
    example = ABC_conin()
    pgm = example.pgm
 
-   cfn_results = CFNInference(pgm).map_query()
-   ip_results = IntegerProgrammingInference(pgm).map_query(solver="glpk")
-   ve_results = VariableEliminationInference(pgm).map_query()
+   cfn_results = map_query(pgm, method="toulbar2")
+   ip_results = map_query(pgm, method="integer_program", solver="glpk")
+   ve_results = map_query(pgm, method="variable_elimination")
 
    print(cfn_results.solution.states)
    print(ip_results.solution.states)
    print(ve_results.solution.states)
 
-``CFNInference`` dispatches to the Toulbar2 backend,
-``IntegerProgrammingInference`` creates a Pyomo optimization model, and
-``VariableEliminationInference`` uses pgmpy's variable elimination solver.
+The ``method`` argument selects the backend: ``toulbar2`` dispatches to the
+Toulbar2 backend, ``integer_program`` creates a Pyomo optimization model, and
+``variable_elimination`` uses pgmpy's variable elimination solver.
 
 Hidden Markov model inference
 -----------------------------
@@ -49,38 +45,40 @@ Viterbi and A* inference
 
 .. code-block:: python
 
-   from conin.inference import AStarInference, ViterbiInference
+   from conin.inference import map_query
    from conin.hidden_markov_model.examples import create_hmm1
 
    hmm = create_hmm1()
    observed = ["o0", "o0", "o1", "o0", "o0"]
 
-   a_star_results = AStarInference(hmm).map_query(evidence=observed)
-   viterbi_results = ViterbiInference(hmm).map_query(evidence=observed)
+   a_star_results = map_query(hmm, method="a_star", evidence=observed)
+   viterbi_results = map_query(hmm, method="viterbi", evidence=observed)
 
    print(a_star_results.solution.states)
    print(viterbi_results.solution.states)
 
-Both wrappers accept dense evidence lists. For HMM wrappers that also support a
-dictionary form, a mapping such as ``{0: "o0", 1: "o0", 2: "o1"}`` can be used
-when you want the returned hidden states keyed by time index.
+Both methods accept dense evidence lists. Methods that also support a dictionary
+form can use a mapping such as ``{0: "o0", 1: "o0", 2: "o1"}`` when you want the
+returned hidden states keyed by time index.
 
 Optimization and Toulbar2 inference on HMMs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Dynamic Bayesian networks and HMMs use the ``DPGM_*`` wrappers for Pyomo,
-Toulbar2, and variable-elimination inference.
+Dynamic Bayesian networks and HMMs use the same ``map_query`` function. The
+input model type and selected ``method`` determine the backend dispatch.
 
 .. code-block:: python
 
-   from conin.inference import DPGM_CFNInference, DPGM_IntegerProgrammingInference
+   from conin.inference import map_query
    from conin.hidden_markov_model.examples import create_hmm1
 
    hmm = create_hmm1()
    observed = ["o0", "o0", "o1", "o0", "o0"]
 
-   cfn_results = DPGM_CFNInference(hmm).map_query(evidence=observed)
-   ip_results = DPGM_IntegerProgrammingInference(hmm).map_query(
+   cfn_results = map_query(hmm, method="toulbar2", evidence=observed)
+   ip_results = map_query(
+       hmm,
+       method="integer_program",
        evidence=observed,
        solver="glpk",
    )
@@ -91,32 +89,33 @@ Toulbar2, and variable-elimination inference.
 Variable elimination on HMMs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-``DPGM_VariableEliminationInference`` first converts the HMM into a dynamic
+The ``variable_elimination`` method first converts the HMM into a dynamic
 Bayesian network and then unrolls it into a static Bayesian network for pgmpy.
 
 .. code-block:: python
 
-   from conin.inference import DPGM_VariableEliminationInference
+   from conin.inference import map_query
    from conin.hidden_markov_model.examples import create_hmm1
 
    hmm = create_hmm1()
    observed = ["o0", "o0", "o1", "o0", "o0"]
 
-   results = DPGM_VariableEliminationInference(hmm).map_query(evidence=observed)
+   results = map_query(hmm, method="variable_elimination", evidence=observed)
    print(results.solution.states)
 
 Constrained HMM inference
 -------------------------
 
 The constrained examples from
-``conin.hidden_markov_model.examples`` can be used with the same wrappers.
+``conin.hidden_markov_model.examples`` can be used with the same ``map_query``
+entry point.
 For example, the Pyomo-constrained model ``create_chmm1_pyomo()`` works with
-``DPGM_IntegerProgrammingInference``, and the Toulbar2-constrained model
-``create_chmm1_toulbar2()`` works with ``DPGM_CFNInference``.
+``method="integer_program"``, and the Toulbar2-constrained model
+``create_chmm1_toulbar2()`` works with ``method="toulbar2"``.
 
 .. code-block:: python
 
-   from conin.inference import DPGM_CFNInference, DPGM_IntegerProgrammingInference
+   from conin.inference import map_query
    from conin.hidden_markov_model.examples import (
        create_chmm1_pyomo,
        create_chmm1_toulbar2,
@@ -125,13 +124,19 @@ For example, the Pyomo-constrained model ``create_chmm1_pyomo()`` works with
    observed = ["o0"] * 15
 
    pyomo_hmm = create_chmm1_pyomo()
-   pyomo_results = DPGM_IntegerProgrammingInference(pyomo_hmm).map_query(
+   pyomo_results = map_query(
+       pyomo_hmm,
+       method="integer_program",
        evidence=observed,
        solver="glpk",
    )
 
    toulbar2_hmm = create_chmm1_toulbar2()
-   toulbar2_results = DPGM_CFNInference(toulbar2_hmm).map_query(evidence=observed)
+   toulbar2_results = map_query(
+       toulbar2_hmm,
+       method="toulbar2",
+       evidence=observed,
+   )
 
    print(pyomo_results.solution.states)
    print(toulbar2_results.solution.states)
@@ -139,4 +144,4 @@ For example, the Pyomo-constrained model ``create_chmm1_pyomo()`` works with
 Notes
 -----
 
-Backend requirements for these wrappers are maintained in :doc:`backends`.
+Backend requirements for these methods are maintained in :doc:`backends`.

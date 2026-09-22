@@ -2,7 +2,7 @@ Creating Probabilistic Graphical Models
 =======================================
 
 This section introduces the core modeling objects in ``conin`` and shows how to
-use the main inference wrappers on small examples.
+use the main inference methods on small examples.
 
 .. toctree::
    :maxdepth: 2

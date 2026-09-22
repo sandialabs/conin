@@ -3,7 +3,7 @@ API Reference
 
 The API reference is split into focused pages for the core model classes,
 constraint-related interfaces used to build constrained graphical models, and
-inference wrappers.
+inference methods.
 
 .. toctree::
    :maxdepth: 1
