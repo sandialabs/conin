@@ -1,9 +1,10 @@
-#import itertools
+# import itertools
 import inspect
 from abc import ABC, abstractmethod
 from ..exceptions import InvalidInputError
-#from ..markov_network import DiscreteFactor, DiscreteMarkovNetwork
-#from ..bayesian_network import DiscreteCPD, DiscreteBayesianNetwork
+
+# from ..markov_network import DiscreteFactor, DiscreteMarkovNetwork
+# from ..bayesian_network import DiscreteCPD, DiscreteBayesianNetwork
 
 # One could also create an inherited class for additional functionality
 # TODO think about partial_func semantics

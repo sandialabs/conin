@@ -26,7 +26,11 @@ from conin.dynamic_bayesian_network import (
     ConstrainedDynamicDiscreteBayesianNetwork,
 )
 
-from conin.constraints import create_FactorConstraint, FactorConstraint, AlgebraicConstraint
+from conin.constraints import (
+    create_FactorConstraint,
+    FactorConstraint,
+    AlgebraicConstraint,
+)
 from conin.common.conin import convert_conin_to_pgmpy_mn, convert_conin_to_pgmpy_bn
 
 with try_import() as pgmpy_available:
@@ -84,7 +88,9 @@ def _add_constraints_as_evidence(conin_bn, constraints, data, evidence):
             conin_bn.add_cpd(cpd)
             evidence[cpd.node] = 1
         else:
-            raise TypeError("Unexpected constraint type {type(con)} for VariableElimination")
+            raise TypeError(
+                "Unexpected constraint type {type(con)} for VariableElimination"
+            )
 
 
 def _prepare_evidence(evidence):

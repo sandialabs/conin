@@ -6,6 +6,7 @@ from ..bayesian_network import DiscreteCPD, DiscreteBayesianNetwork
 
 from .constraint import ConstraintFunctor
 
+
 class FactorConstraint(ConstraintFunctor):
 
     def __init__(
