@@ -15,7 +15,6 @@ with try_import() as smoek_available:
     import smoek
 
 
-
 class ConinV:
     """
     A callable class that provides the V() interface for accessing conin variables.

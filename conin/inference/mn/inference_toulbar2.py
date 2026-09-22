@@ -78,7 +78,9 @@ def add_constraints(*, pgm, constraints, model, data):
 
     elif isinstance(constraints[0], AlgebraicConstraint):
         if not smoek_available:
-            raise TypeError(f"The smoek package must be installed to use algebraic constraints.")
+            raise TypeError(
+                f"The smoek package must be installed to use algebraic constraints."
+            )
         smoek_model = smoek.model()
         for func in constraints:
             func(smoek_model, data)
