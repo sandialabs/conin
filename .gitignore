@@ -177,3 +177,8 @@ cython_debug/
 
 .vscode/
 lcov.info
+
+
+# LLM stuff
+.claude/
+.codex/
