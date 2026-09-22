@@ -1,0 +1,28 @@
+{
+  "cleanupPeriodDays": 3650,
+  "env": {
+    "ANTHROPIC_BASE_URL": "http://proxy:4000",
+    "ANTHROPIC_MODEL": "google/gemma-4-31B-it",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "google/gemma-4-31B-it",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "google/gemma-4-31B-it",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "google/gemma-4-31B-it",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "google/gemma-4-31B-it",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "API_TIMEOUT_MS": "3000000",
+    "ANTHROPIC_COMPANY_ANNOUNCEMENT": "SANDIA-CODE SANDBOX | Vendor: Shirty | Approved for: Non-sensitive, UUR, FISMA Low Sensitivity, CUI (Other), ECI (Other than ITAR), ITAR, PII, PHI, Sandia Proprietary, 3rd Party Proprietary, UCNI | Project: (no project config) | Data: Non-sensitive, UUR, FISMA Low Sensitivity, CUI (Other), ECI (Other than ITAR), ITAR, PII, PHI, Sandia Proprietary, 3rd Party Proprietary, UCNI | Mounted: /projects (/Users/clmatte/Desktop/CONIN/conin) | Internet: none | Do NOT process data above the approved classification level. No internet/web access; do not attempt web fetches or installs from public registries."
+  },
+  "permissions": {
+    "allow": [
+      "Bash",
+      "Read",
+      "Write",
+      "Edit"
+    ],
+    "deny": [
+      "WebFetch"
+    ]
+  },
+  "sandbox": {
+    "enabled": false
+  }
+}

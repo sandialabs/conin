@@ -1,0 +1,84 @@
+{
+  "models": [
+    {
+      "slug": "google/gemma-4-31B-it",
+      "display_name": "Gemma 4 31B It (Local)",
+      "description": "Google Gemma 4 31B instruction-tuned reasoning model routed via local proxy.",
+      "context_window": 262144,
+      "max_context_window": 262144,
+      "supported_in_api": true,
+      "visibility": "list",
+      "shell_type": "shell_command",
+      "priority": 2,
+      "base_instructions": "You are Codex, a highly capable coding assistant operating in a secure, sandboxed environment.",
+      "default_reasoning_level": "medium",
+      "supported_reasoning_levels": [
+        {
+          "effort": "low",
+          "description": "Fast generation with concise step-by-step thinking logic."
+        },
+        {
+          "effort": "medium",
+          "description": "Balanced agentic analysis and deeper code path validation."
+        },
+        {
+          "effort": "high",
+          "description": "Maximized reasoning depth for complex multi-file debugging tasks."
+        }
+      ],
+      "supports_reasoning_summaries": true,
+      "support_verbosity": true,
+      "default_verbosity": "medium",
+      "apply_patch_tool_type": "freeform",
+      "truncation_policy": {
+        "mode": "tokens",
+        "limit": 262144
+      },
+      "supports_parallel_tool_calls": true,
+      "experimental_supported_tools": [],
+      "supported_languages": ["python", "javascript", "typescript", "html", "css", "go", "rust", "cpp"],
+      "availability_nux": null,
+      "upgrade": null
+    },
+    {
+      "slug": "meta-llama/Llama-3.3-70B-Instruct",
+      "display_name": "Llama 3.3 70B (Reasoning Enabled)",
+      "description": "Llama 3.3 70B model with adaptive reasoning step boundaries mapped via LiteLLM.",
+      "context_window": 131072,
+      "max_context_window": 131072,
+      "supported_in_api": true,
+      "visibility": "list",
+      "shell_type": "shell_command",
+      "priority": 4,
+      "base_instructions": "You are Codex, a highly capable coding assistant operating in a secure, sandboxed environment.",
+      "default_reasoning_level": "medium",
+      "supported_reasoning_levels": [
+        {
+          "effort": "low",
+          "description": "Quick check optimization logic."
+        },
+        {
+          "effort": "medium",
+          "description": "Deep architecture multi-step validation checks."
+        },
+        {
+          "effort": "high",
+          "description": "Full mathematical block code tracing."
+        }
+      ],
+      "supports_reasoning_summaries": true,
+      "support_verbosity": false,
+      "default_verbosity": "low",
+      "truncation_policy": {
+        "mode": "tokens",
+        "limit": 131072
+      },
+      "supports_parallel_tool_calls": true,
+      "apply_patch_tool_type": "freeform",
+      "experimental_supported_tools": [],
+      "supported_languages": [],
+      "availability_nux": null,
+      "upgrade": null
+    }
+  ]
+}
