@@ -76,7 +76,7 @@ def _hmm_states_from_map(map_states, evidence):
 def _add_constraints_as_evidence(conin_bn, constraints, data, evidence):
     """Inject generated constraint CPDs into a Bayesian network as evidence."""
     if isinstance(constraints[0], AlgebraicConstraint):
-        constraints = [create_FactorConstraint(con)]
+        constraints = [create_FactorConstraint(constraints, data)]
     for con in constraints:
         if isinstance(con, FactorConstraint):
             cpd = con(conin_bn, data)
