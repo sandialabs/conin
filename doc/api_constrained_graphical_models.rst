@@ -19,8 +19,8 @@ Discrete Bayesian networks
    :undoc-members:
    :show-inheritance:
 
-Hidden Markov networks
-----------------------
+Hidden Markov models
+--------------------
 
 .. autoclass:: conin.hidden_markov_model.ConstrainedHiddenMarkovModel
    :members:

@@ -1,7 +1,7 @@
 import pytest
 import pyomo.opt
 
-import conin.hidden_markov_model.tests.examples
+import conin.hidden_markov_model.examples
 from conin.util import try_import
 from conin.inference.map_query import map_query
 
@@ -11,7 +11,7 @@ from conin.inference.map_query import map_query
 
 
 def test_map_query_AStar_hmm1_list_evidence():
-    pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
+    pgm = conin.hidden_markov_model.examples.create_hmm1()
     observed = ["o0", "o0", "o1", "o0", "o0"]
     results = map_query(
         pgm,
@@ -27,7 +27,7 @@ def test_map_query_AStar_hmm1_list_evidence():
 
 
 def test_map_query_AStar_hmm1_dict_evidence():
-    pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
+    pgm = conin.hidden_markov_model.examples.create_hmm1()
     observed = {0: "o0", 1: "o0", 2: "o1", 3: "o0", 4: "o0"}
     results = map_query(
         pgm,
@@ -49,7 +49,7 @@ def test_map_query_AStar_hmm1_dict_evidence():
 
 
 def test_map_query_AStar_chmm1_list_evidence():
-    pgm = conin.hidden_markov_model.tests.examples.create_chmm1_oracle()
+    pgm = conin.hidden_markov_model.examples.create_chmm1_oracle()
     observed = ["o0"] * 15
     results = map_query(
         pgm,

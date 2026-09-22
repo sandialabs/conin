@@ -13,7 +13,7 @@ dependencies = [
     "ovld",
     ]
 readme = {file = "README.md", content-type = "text/markdown"}
-description="Clio supports constrained analysis and learning for stochastic models with latent variables"
+description="Conin supports constrained analysis and learning for probabilistic graphical models"
 classifiers=[
         "Intended Audience :: End Users/Desktop",
         "Intended Audience :: Science/Research",
@@ -36,15 +36,19 @@ classifiers=[
 convert_pgm = "conin.common.bin.convert_pgm:main"
 
 [project.optional-dependencies]
+docs = [
+    "sphinx",
+    "sphinx-rtd-theme",
+    ]
 test = [
     "pytest",
     "pytest-cov",
     ]
 regex = ["greenery"]
 pgmpy = ["pgmpy"]
-pyagrum = ["pyagrum"]
-pgmax = ["pgmax"]
-pomegranate = ["pomegranate"]
+pyagrum = ["pgmpy", "pyagrum"]
+pgmax = ["pgmpy", "pgmax"]
+pomegranate = ["pgmpy", "pomegranate"]
 pgm-all = ["pgmpy", "pyagrum", "pgmax", "pomegranate"]
 
 [tool.setuptools.packages.find]

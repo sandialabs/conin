@@ -20,5 +20,5 @@ from .decorators import algebraic_constraint_fn, AlgebraicConstraint
 
 __all__ = [
     "algebraic_constraint_fn",
-    "AlgebraicConstriant",
+    "AlgebraicConstraint",
 ]

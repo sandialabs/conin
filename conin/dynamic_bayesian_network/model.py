@@ -32,12 +32,16 @@ class DynamicDiscreteBayesianNetwork:
         self.t = ExpressionVariable()
 
     def check_model(self):
-        """Validate the dynamic model structure.
+        """Return ``True`` for the current dynamic model placeholder check.
+
+        Full structural validation is not implemented for dynamic Bayesian
+        networks yet. Static Bayesian networks produced by unrolling a dynamic
+        model are validated before inference.
 
         Returns
         -------
         bool
-            Always returns ``True``.
+            Always ``True``.
         """
         return True
 
@@ -326,7 +330,7 @@ class ConstrainedDynamicDiscreteBayesianNetwork:
         list
             Nodes maintained by the underlying dynamic Bayesian network.
         """
-        return self.pgm.nodes()
+        return self.pgm.nodes
 
     @property
     def constraints(self):
