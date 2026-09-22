@@ -44,12 +44,8 @@ def add_toulbar2_constraints(model, pyomo_model):
     for constraint_component in pyomo_model.component_objects(
         pyo.Constraint, active=True
     ):
-        print(f"HERE {constraint_component=}")
-
         # Iterate through each constraint data object (handles indexed constraints)
         for index in constraint_component:
-            print(f"HERE {index=}")
-
             constraint_data = constraint_component[index]
 
             # Skip inactive constraints
@@ -252,7 +248,6 @@ def _add_toulbar2_linear_constraint(
         index, value, _ = v
         variables_.append((index, value, int_coefficients[i]))
 
-    print(f"HERE {variables_=}")
     try:
         model.AddGeneralizedLinearConstraint(variables_, operator, int_rhs)
     except AttributeError:
