@@ -9,6 +9,7 @@ from math import gcd
 from functools import reduce
 from conin.constraints.toulbar2 import _scale_to_integers
 
+
 def test_examples():
     """Test various coefficient scaling scenarios."""
 

@@ -83,7 +83,9 @@ def create_toulbar2_map_query_model_BN(
 
     if cpgm is not None and cpgm.constraints:
         data = munch.Munch(variables=variables, evidence=evidence)
-        add_constraints(pgm=cpgm.pgm, constraints=cpgm.constraints, model=model, data=data)
+        add_constraints(
+            pgm=cpgm.pgm, constraints=cpgm.constraints, model=model, data=data
+        )
 
     if timing:  # pragma:nocover
         timer.toc("create_toulbar2_map_query_model_BN - STOP")

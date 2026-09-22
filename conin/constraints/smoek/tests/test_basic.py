@@ -6,22 +6,27 @@ import sys
 import os
 
 # Add project to path
-sys.path.insert(0, '/projects/conin')
+sys.path.insert(0, "/projects/conin")
+
 
 def test_imports():
     """Test that all modules can be imported."""
     print("Testing imports...")
 
     from conin import algebraic_constraint_fn
+
     print("✓ Imported algebraic_constraint_fn from conin")
 
     from conin import algebraic_constraint_fn as smoek_algebraic_constraint_fn
+
     print("✓ Imported algebraic_constraint_fn from conin")
 
     from conin.constraints.smoek import ConinVarNode
+
     print("✓ Imported ConinVarNode")
 
     from conin.constraints.smoek import RangeSet, SequenceSet
+
     print("✓ Imported smoek components")
 
     print("\n✅ All imports successful!")
@@ -93,6 +98,7 @@ def test_decorator_creation():
     print(f"  Name: {test_constraint.name}")
 
     from conin.constraints.smoek.decorators import AlgebraicConstraint
+
     assert isinstance(test_constraint, AlgebraicConstraint)
     print("✓ Constraint is correct type (AlgebraicConstraint)")
 
@@ -120,6 +126,7 @@ def main():
     except Exception as e:
         print(f"\n❌ TEST FAILED: {e}")
         import traceback
+
         traceback.print_exc()
         return 1
 

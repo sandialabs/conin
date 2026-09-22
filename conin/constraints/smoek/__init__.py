@@ -21,20 +21,21 @@ from .bridge import ConinVarNode
 
 # Re-export smoek components for user convenience
 from smoek.core.model.set_components import RangeSet, SequenceSet, Set
-#from smoek.core.expr.functions import sum as sum_, prod as prod
+
+# from smoek.core.expr.functions import sum as sum_, prod as prod
 
 __all__ = [
     # Decorator
-    'algebraic_constraint_fn',
-    'AlgebraicConstriant',
+    "algebraic_constraint_fn",
+    "AlgebraicConstriant",
     # Bridge
-    'ConinVarNode',
+    "ConinVarNode",
     # Smoek components
-    'RangeSet',
-    'SequenceSet',
-    'Set',
-#    'sum_',
-#    'prod',
+    "RangeSet",
+    "SequenceSet",
+    "Set",
+    #    'sum_',
+    #    'prod',
 ]
 
-__version__ = '0.1.0'
+__version__ = "0.1.0"

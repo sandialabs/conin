@@ -831,9 +831,9 @@ q_constrained = {
         pytest.param(
             "integer_program", mip_solver, testfile_lp, marks=skipif_no_mip_solver
         ),
-        #pytest.param(
+        # pytest.param(
         #    "variable_elimination", None, testfile_uai, marks=skipif_pgmpy_not_available
-        #),
+        # ),
     ],
 )
 def test_DPGM_weather_conin(method, solver, write_file):
@@ -872,7 +872,7 @@ def test_DPGM_weather_conin(method, solver, write_file):
     [
         pytest.param("toulbar2", None, marks=skipif_toulbar2_not_available),
         pytest.param("integer_program", mip_solver, marks=skipif_no_mip_solver),
-        #pytest.param("variable_elimination", None),
+        # pytest.param("variable_elimination", None),
     ],
 )
 def test_DPGM_weather_pgmpy(method, solver):
@@ -928,13 +928,13 @@ def test_DPGM_weather_pgmpy(method, solver):
             conin.dynamic_bayesian_network.examples.weather_constrained_algebraic_conin,
             marks=skipif_no_mip_solver,
         ),
-        #pytest.param(
+        # pytest.param(
         #    "variable_elimination",
         #    None,
         #    testfile_uai,
         #    conin.dynamic_bayesian_network.examples.weather_constrained_factor_conin,
         #    marks=skipif_pgmpy_not_available,
-        #),
+        # ),
     ],
 )
 def test_DPGM_weather_constrained_conin(method, solver, write_file, example_factory):
@@ -983,11 +983,11 @@ def test_DPGM_weather_constrained_conin(method, solver, write_file, example_fact
             conin.dynamic_bayesian_network.examples.weather_constrained_algebraic_pgmpy,
             marks=skipif_toulbar2_not_available,
         ),
-        #pytest.param(
+        # pytest.param(
         #    "variable_elimination",
         #    None,
         #    conin.dynamic_bayesian_network.examples.weather_constrained_factor_pgmpy,
-        #),
+        # ),
     ],
 )
 def test_DPGM_weather_constrained_pgmpy(method, solver, example_factory):

@@ -112,8 +112,6 @@ class AlgebraicConstraint(ConstraintFunctor):
                 else:
                     con = expr
                 setattr(model, f"c_conin_{count}", con)
-                #_name = f"c_conin_{count}"
-                #_val = getattr(model, _name)
 
         model._conin_con_count = count
 
