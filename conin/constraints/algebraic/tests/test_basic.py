@@ -2,6 +2,15 @@
 Basic smoke test for the smoek algebraic modeling extension.
 """
 
+import pytest
+from conin.util import try_import
+
+with try_import() as smoek_available:
+    import smoek
+
+if not smoek_available:
+    pytestmark = pytest.mark.skip(reason="Smoek not installed")
+
 import sys
 import os
 
@@ -21,14 +30,6 @@ def test_imports():
 
     print("✓ Imported algebraic_constraint_fn from conin")
 
-    from conin.constraints.smoek import ConinVarNode
-
-    print("✓ Imported ConinVarNode")
-
-    from conin.constraints.smoek import RangeSet, SequenceSet
-
-    print("✓ Imported smoek components")
-
     print("\n✅ All imports successful!")
 
 
@@ -36,7 +37,7 @@ def test_coninvarnode():
     """Test ConinVarNode basic functionality."""
     print("\nTesting ConinVarNode...")
 
-    from conin.constraints.smoek.bridge import ConinVarNode
+    from conin.constraints.algebraic.bridge import ConinVarNode
 
     # Test 2-arg form
     var1 = ConinVarNode("A", 0)
@@ -63,7 +64,7 @@ def test_expression_building():
     """Test building simple algebraic expressions."""
     print("\nTesting expression building...")
 
-    from conin.constraints.smoek.bridge import ConinVarNode
+    from conin.constraints.algebraic.bridge import ConinVarNode
 
     # Build expression: V("A", 0) + V("B", 1) <= 10
     a = ConinVarNode("A", 0)
@@ -97,7 +98,7 @@ def test_decorator_creation():
     print(f"  Type: {type(test_constraint)}")
     print(f"  Name: {test_constraint.name}")
 
-    from conin.constraints.smoek.decorators import AlgebraicConstraint
+    from conin.constraints.algebraic.decorators import AlgebraicConstraint
 
     assert isinstance(test_constraint, AlgebraicConstraint)
     print("✓ Constraint is correct type (AlgebraicConstraint)")

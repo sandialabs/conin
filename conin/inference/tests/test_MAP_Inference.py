@@ -13,6 +13,9 @@ with try_import() as pgmpy_available:
 with try_import() as pytoulbar2_available:
     import pytoulbar2
 
+with try_import() as smoek_available:
+    import smoek
+
 import pytest
 
 # Check for available MIP solver
@@ -22,6 +25,9 @@ mip_solver = mip_solver[0] if mip_solver else None
 # Skip conditions
 skipif_toulbar2_not_available = pytest.mark.skipif(
     not pytoulbar2_available, reason="pytoulbar2 not installed"
+)
+skipif_smoek_not_available = pytest.mark.skipif(
+    not smoek_available, reason="smoek not installed"
 )
 skipif_no_mip_solver = pytest.mark.skipif(
     not mip_solver, reason="No mip solver installed"
@@ -121,14 +127,14 @@ def test_ABC_pgmpy(method, solver):
             None,
             testfile_uai,
             conin.markov_network.examples.ABC_constrained_algebraic_conin,
-            marks=skipif_toulbar2_not_available,
+            marks=[skipif_toulbar2_not_available, skipif_smoek_not_available],
         ),
         pytest.param(
             "integer_program",
             mip_solver,
             testfile_lp,
             conin.markov_network.examples.ABC_constrained_algebraic_conin,
-            marks=skipif_no_mip_solver,
+            marks=[skipif_no_mip_solver, skipif_smoek_not_available],
         ),
         pytest.param(
             "variable_elimination",
@@ -254,14 +260,14 @@ def test_cancer1_BN_pgmpy(method, solver):
             None,
             testfile_uai,
             conin.bayesian_network.examples.cancer1_BN_constrained_algebraic_conin,
-            marks=skipif_toulbar2_not_available,
+            marks=[skipif_toulbar2_not_available, skipif_smoek_not_available],
         ),
         pytest.param(
             "integer_program",
             mip_solver,
             testfile_lp,
             conin.bayesian_network.examples.cancer1_BN_constrained_algebraic_conin,
-            marks=skipif_no_mip_solver,
+            marks=[skipif_no_mip_solver, skipif_smoek_not_available],
         ),
         pytest.param(
             "variable_elimination",
@@ -465,6 +471,7 @@ def test3_hmm1(method, solver):
             testfile_lp,
             conin.hidden_markov_model.tests.examples.create_chmm1_algebraic,
             None,
+            marks=[skipif_no_mip_solver, skipif_smoek_not_available],
         ),
         pytest.param(
             "toulbar2",
@@ -472,7 +479,7 @@ def test3_hmm1(method, solver):
             testfile_uai,
             conin.hidden_markov_model.tests.examples.create_chmm1_algebraic,
             None,
-            marks=skipif_toulbar2_not_available,
+            marks=[skipif_toulbar2_not_available, skipif_smoek_not_available],
         ),
         pytest.param(
             "integer_program",
@@ -564,14 +571,14 @@ def test0_chmm1(method, solver, write_file, pgm_factory, ip_formulation):
             mip_solver,
             conin.hidden_markov_model.tests.examples.create_chmm1_algebraic,
             None,
-            marks=skipif_no_mip_solver,
+            marks=[skipif_no_mip_solver, skipif_smoek_not_available],
         ),
         pytest.param(
             "toulbar2",
             None,
             conin.hidden_markov_model.tests.examples.create_chmm1_algebraic,
             None,
-            marks=skipif_toulbar2_not_available,
+            marks=[skipif_toulbar2_not_available, skipif_smoek_not_available],
         ),
         pytest.param(
             "integer_program",
@@ -651,13 +658,13 @@ def test1_chmm1(method, solver, pgm_factory, ip_formulation):
             "toulbar2",
             None,
             conin.hidden_markov_model.tests.examples.create_chmm1_algebraic,
-            marks=skipif_toulbar2_not_available,
+            marks=[skipif_toulbar2_not_available, skipif_smoek_not_available],
         ),
         pytest.param(
             "integer_program",
             mip_solver,
             conin.hidden_markov_model.tests.examples.create_chmm1_algebraic,
-            marks=skipif_no_mip_solver,
+            marks=[skipif_no_mip_solver, skipif_smoek_not_available],
         ),
         pytest.param(
             "variable_elimination",
@@ -713,13 +720,13 @@ def test2_chmm1(method, solver, pgm_factory):
             "toulbar2",
             None,
             conin.hidden_markov_model.tests.examples.create_chmm1_algebraic,
-            marks=skipif_toulbar2_not_available,
+            marks=[skipif_toulbar2_not_available, skipif_smoek_not_available],
         ),
         pytest.param(
             "integer_program",
             mip_solver,
             conin.hidden_markov_model.tests.examples.create_chmm1_algebraic,
-            marks=skipif_no_mip_solver,
+            marks=[skipif_no_mip_solver, skipif_smoek_not_available],
         ),
         pytest.param(
             "variable_elimination",
@@ -919,14 +926,14 @@ def test_DPGM_weather_pgmpy(method, solver):
             None,
             testfile_uai,
             conin.dynamic_bayesian_network.examples.weather_constrained_algebraic_conin,
-            marks=skipif_toulbar2_not_available,
+            marks=[skipif_toulbar2_not_available, skipif_smoek_not_available],
         ),
         pytest.param(
             "integer_program",
             mip_solver,
             testfile_lp,
             conin.dynamic_bayesian_network.examples.weather_constrained_algebraic_conin,
-            marks=skipif_no_mip_solver,
+            marks=[skipif_no_mip_solver, skipif_smoek_not_available],
         ),
         # pytest.param(
         #    "variable_elimination",
@@ -981,7 +988,7 @@ def test_DPGM_weather_constrained_conin(method, solver, write_file, example_fact
             "toulbar2",
             None,
             conin.dynamic_bayesian_network.examples.weather_constrained_algebraic_pgmpy,
-            marks=skipif_toulbar2_not_available,
+            marks=[skipif_toulbar2_not_available, skipif_smoek_not_available],
         ),
         # pytest.param(
         #    "variable_elimination",

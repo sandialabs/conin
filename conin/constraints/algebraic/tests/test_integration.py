@@ -6,6 +6,15 @@ and comparing results with the traditional constraint syntax.
 """
 
 import pytest
+from conin.util import try_import
+
+with try_import() as smoek_available:
+    import smoek
+
+if not smoek_available:
+    pytestmark = pytest.mark.skip(reason="Smoek not installed")
+
+
 import pyomo.environ as pyo
 from munch import Munch
 
