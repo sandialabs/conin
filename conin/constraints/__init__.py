@@ -2,8 +2,6 @@
 
 from .constraint import (
     ConstraintFunctor,
-    FactorConstraint,
-    factor_constraint_fn,
     MVRConstraint,
     mvr_constraint_fn,
     PyomoConstraint,
@@ -14,4 +12,5 @@ from .constraint import (
     toulbar2_constraint_fn,
 )
 from .algebraic import algebraic_constraint_fn, AlgebraicConstraint
+from .factor import factor_constraint_fn, FactorConstraint, create_FactorConstraint
 from .oracle import *
