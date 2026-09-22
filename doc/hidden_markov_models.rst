@@ -107,7 +107,7 @@ Oracle constraints
        HiddenMarkovModel,
        ConstrainedHiddenMarkovModel,
    )
-   from conin.constraint import OracleConstraint
+   from conin.constraints import OracleConstraint
    from conin.hidden_markov_model.examples import create_hmm1
 
    hmm = create_hmm1()
@@ -156,8 +156,8 @@ Pyomo constraints
    chmm = ConstrainedHiddenMarkovModel(
        hmm=hmm,
        constraints=[num_zeros_greater_than_nine, num_zeros_less_than_thirteen],
-   )
-   chmm.initialize_chmm()
+    )
+    chmm.initialize_chmm()
 
 Toulbar2 constraints
 ^^^^^^^^^^^^^^^^^^^^

@@ -16,8 +16,9 @@ The base package dependencies are declared in ``pyproject.toml``:
 - ``pyomo``
 
 With only the base dependencies, users can create native CONIN models, work with
-HMM utilities, use oracle and factor constraint declarations, and run HMM
-Viterbi/A* inference.
+HMM utilities, use oracle, factor, Pyomo, and Toulbar2 constraint declarations,
+and run HMM Viterbi/A* inference. Algebraic constraints additionally require
+``smoek``.
 
 .. list-table:: Base functionality
    :header-rows: 1
@@ -28,6 +29,8 @@ Viterbi/A* inference.
      - Yes
    * - Oracle and factor constraint declaration
      - Yes
+   * - Algebraic constraint declaration with ``algebraic_constraint_fn``
+     - Requires ``smoek``
    * - HMM generation with ``random_hmm``
      - Yes
    * - HMM supervised learning
@@ -75,6 +78,32 @@ When ``pytoulbar2`` is unavailable, some static-model Toulbar2 helpers return
 an empty result object with a termination condition indicating that
 ``pytoulbar2`` is not available. Dynamic Bayesian network and HMM Toulbar2
 inference paths should be treated as requiring ``pytoulbar2`` at runtime.
+
+Smoek Algebraic Constraints
+---------------------------
+
+The ``algebraic_constraint_fn`` decorator uses ``smoek`` to let users write
+linear constraints with normal algebraic syntax. For example, an HMM constraint
+can return expressions such as ``sum(model.V("H", t, "h0") for t in data.hmm.T)
+<= 12`` instead of mutating a Pyomo model or Toulbar2 model directly.
+
+``smoek`` is required when algebraic constraints are applied by the inference
+backends. The conda environment files install it from the Sandia GitHub
+repository:
+
+.. code-block:: shell
+
+   python -m pip install -e git+https://github.com/sandialabs/smoek.git#egg=smoek
+
+Algebraic constraints can be used with:
+
+- ``map_query(..., method="integer_program")``, which translates them to Pyomo.
+- ``map_query(..., method="toulbar2")``, which translates supported linear
+  constraints to Toulbar2.
+
+The selected inference method still needs its own backend dependencies, such as
+a Pyomo-supported MIP solver for ``integer_program`` or ``pytoulbar2`` for
+``toulbar2``.
 
 pgmpy
 -----
@@ -156,6 +185,8 @@ Quick Selection Guide
      - Base package
    * - Run variable elimination inference
      - ``pgmpy``
+   * - Use algebraic constraints
+     - ``smoek`` plus the selected inference backend
    * - Convert to/from pgmpy models
      - ``pgmpy``
    * - Run integer-programming inference
