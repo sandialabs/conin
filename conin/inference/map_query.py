@@ -80,9 +80,9 @@ def map_query(
 
     Dynamic model (Hidden Markov model):
 
-    >>> import conin.hidden_markov_model.tests.examples
+    >>> import conin.hidden_markov_model.examples
     >>> from conin.inference import map_query
-    >>> pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
+    >>> pgm = conin.hidden_markov_model.examples.create_hmm1()
     >>> results = map_query(pgm, method="integer_program", evidence=["o0", "o1"], solver=glpk)
     """
     if method not in _query_functions:

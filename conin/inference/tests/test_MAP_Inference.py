@@ -4,7 +4,7 @@ from conin.util import try_import
 from conin.inference.map_query import map_query
 import conin.markov_network.examples
 import conin.bayesian_network.examples
-import conin.hidden_markov_model.tests.examples
+import conin.hidden_markov_model.examples
 import conin.dynamic_bayesian_network.examples
 
 with try_import() as pgmpy_available:
@@ -312,7 +312,7 @@ def test_cancer1_BN_constrained_factor_pgmpy():
     ],
 )
 def test0_hmm1(method, solver, write_file, ip_formulation):
-    pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
+    pgm = conin.hidden_markov_model.examples.create_hmm1()
     observed = ["o0", "o0", "o1", "o0", "o0"]
 
     # Test without file writing
@@ -353,7 +353,7 @@ def test0_hmm1(method, solver, write_file, ip_formulation):
     ],
 )
 def test1_hmm1(method, solver, ip_formulation):
-    pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
+    pgm = conin.hidden_markov_model.examples.create_hmm1()
     observed = ["o0", "o1", "o1", "o1", "o1"]
 
     kwargs = {"method": method, "evidence": observed}
@@ -374,7 +374,7 @@ def test1_hmm1(method, solver, ip_formulation):
     ],
 )
 def test2_hmm1(method, solver):
-    pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
+    pgm = conin.hidden_markov_model.examples.create_hmm1()
     observed = {0: "o0", 1: "o0", 2: "o1", 3: "o0", 4: "o0"}
 
     kwargs = {"method": method, "evidence": observed}
@@ -399,7 +399,7 @@ def test2_hmm1(method, solver):
     ],
 )
 def test3_hmm1(method, solver):
-    pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
+    pgm = conin.hidden_markov_model.examples.create_hmm1()
     observed = {0: "o0", 1: "o1", 2: "o1", 3: "o1", 4: "o1"}
 
     kwargs = {"method": method, "evidence": observed}
@@ -427,7 +427,7 @@ def test3_hmm1(method, solver):
             "toulbar2",
             None,
             testfile_uai,
-            conin.hidden_markov_model.tests.examples.create_chmm1_toulbar2,
+            conin.hidden_markov_model.examples.create_chmm1_toulbar2,
             None,
             marks=skipif_toulbar2_not_available,
         ),
@@ -435,7 +435,7 @@ def test3_hmm1(method, solver):
             "integer_program",
             mip_solver,
             testfile_lp,
-            conin.hidden_markov_model.tests.examples.create_chmm1_pyomo,
+            conin.hidden_markov_model.examples.create_chmm1_pyomo,
             None,
             marks=skipif_no_mip_solver,
         ),
@@ -443,7 +443,7 @@ def test3_hmm1(method, solver):
             "integer_program",
             mip_solver,
             testfile_lp,
-            conin.hidden_markov_model.tests.examples.create_chmm1_pyomo,
+            conin.hidden_markov_model.examples.create_chmm1_pyomo,
             "markov_network",
             marks=skipif_no_mip_solver,
         ),
@@ -451,7 +451,7 @@ def test3_hmm1(method, solver):
             "integer_program",
             mip_solver,
             testfile_lp,
-            conin.hidden_markov_model.tests.examples.create_chmm1_pyomo,
+            conin.hidden_markov_model.examples.create_chmm1_pyomo,
             "network_flow",
             marks=skipif_no_mip_solver,
         ),
@@ -459,7 +459,7 @@ def test3_hmm1(method, solver):
             "variable_elimination",
             None,
             testfile_uai,
-            conin.hidden_markov_model.tests.examples.create_chmm1_factor,
+            conin.hidden_markov_model.examples.create_chmm1_factor,
             None,
             marks=skipif_pgmpy_not_available,
         ),
@@ -512,35 +512,35 @@ def test0_chmm1(method, solver, write_file, pgm_factory, ip_formulation):
         pytest.param(
             "toulbar2",
             None,
-            conin.hidden_markov_model.tests.examples.create_chmm1_toulbar2,
+            conin.hidden_markov_model.examples.create_chmm1_toulbar2,
             None,
             marks=skipif_toulbar2_not_available,
         ),
         pytest.param(
             "integer_program",
             mip_solver,
-            conin.hidden_markov_model.tests.examples.create_chmm1_pyomo,
+            conin.hidden_markov_model.examples.create_chmm1_pyomo,
             None,
             marks=skipif_no_mip_solver,
         ),
         pytest.param(
             "integer_program",
             mip_solver,
-            conin.hidden_markov_model.tests.examples.create_chmm1_pyomo,
+            conin.hidden_markov_model.examples.create_chmm1_pyomo,
             "markov_network",
             marks=skipif_no_mip_solver,
         ),
         pytest.param(
             "integer_program",
             mip_solver,
-            conin.hidden_markov_model.tests.examples.create_chmm1_pyomo,
+            conin.hidden_markov_model.examples.create_chmm1_pyomo,
             "network_flow",
             marks=skipif_no_mip_solver,
         ),
         pytest.param(
             "variable_elimination",
             None,
-            conin.hidden_markov_model.tests.examples.create_chmm1_factor,
+            conin.hidden_markov_model.examples.create_chmm1_factor,
             None,
             marks=skipif_pgmpy_not_available,
         ),
@@ -581,19 +581,19 @@ def test1_chmm1(method, solver, pgm_factory, ip_formulation):
         pytest.param(
             "toulbar2",
             None,
-            conin.hidden_markov_model.tests.examples.create_chmm1_toulbar2,
+            conin.hidden_markov_model.examples.create_chmm1_toulbar2,
             marks=skipif_toulbar2_not_available,
         ),
         pytest.param(
             "integer_program",
             mip_solver,
-            conin.hidden_markov_model.tests.examples.create_chmm1_pyomo,
+            conin.hidden_markov_model.examples.create_chmm1_pyomo,
             marks=skipif_no_mip_solver,
         ),
         pytest.param(
             "variable_elimination",
             None,
-            conin.hidden_markov_model.tests.examples.create_chmm1_factor,
+            conin.hidden_markov_model.examples.create_chmm1_factor,
             marks=skipif_pgmpy_not_available,
         ),
     ],
@@ -631,19 +631,19 @@ def test2_chmm1(method, solver, pgm_factory):
         pytest.param(
             "toulbar2",
             None,
-            conin.hidden_markov_model.tests.examples.create_chmm1_toulbar2,
+            conin.hidden_markov_model.examples.create_chmm1_toulbar2,
             marks=skipif_toulbar2_not_available,
         ),
         pytest.param(
             "integer_program",
             mip_solver,
-            conin.hidden_markov_model.tests.examples.create_chmm1_pyomo,
+            conin.hidden_markov_model.examples.create_chmm1_pyomo,
             marks=skipif_no_mip_solver,
         ),
         pytest.param(
             "variable_elimination",
             None,
-            conin.hidden_markov_model.tests.examples.create_chmm1_factor,
+            conin.hidden_markov_model.examples.create_chmm1_factor,
             marks=skipif_pgmpy_not_available,
         ),
     ],

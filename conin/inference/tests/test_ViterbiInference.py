@@ -3,7 +3,7 @@ import pyomo.opt
 
 from conin.util import try_import
 from conin.inference.map_query import map_query
-import conin.hidden_markov_model.tests.examples
+import conin.hidden_markov_model.examples
 
 #
 # map_query with method="viterbi" tests
@@ -11,7 +11,7 @@ import conin.hidden_markov_model.tests.examples
 
 
 def test_map_query_Viterbi_hmm1_list_evidence():
-    pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
+    pgm = conin.hidden_markov_model.examples.create_hmm1()
     observed = ["o0", "o0", "o1", "o0", "o0"]
     results = map_query(
         pgm,
@@ -27,7 +27,7 @@ def test_map_query_Viterbi_hmm1_list_evidence():
 
 
 def test_map_query_Viterbi_hmm1_dict_evidence():
-    pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
+    pgm = conin.hidden_markov_model.examples.create_hmm1()
     observed = {0: "o0", 1: "o0", 2: "o1", 3: "o0", 4: "o0"}
     results = map_query(
         pgm,
@@ -49,7 +49,7 @@ def test_map_query_Viterbi_hmm1_dict_evidence():
 
 
 def test_map_query_Viterbi_hmm1_test1_list():
-    pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
+    pgm = conin.hidden_markov_model.examples.create_hmm1()
     observed = ["o0", "o1", "o1", "o1", "o1"]
     results = map_query(
         pgm,
@@ -65,7 +65,7 @@ def test_map_query_Viterbi_hmm1_test1_list():
 
 
 def test_map_query_Viterbi_hmm1_test1_dict():
-    pgm = conin.hidden_markov_model.tests.examples.create_hmm1()
+    pgm = conin.hidden_markov_model.examples.create_hmm1()
     observed = {0: "o0", 1: "o1", 2: "o1", 3: "o1", 4: "o1"}
     results = map_query(
         pgm,
