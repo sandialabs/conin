@@ -5,7 +5,7 @@ from conin.hidden_markov_model import *
 from conin.hidden_markov_model.chmm_oracle import Oracle_CHMM
 
 import conin.hidden_markov_model.tests.examples as tc
-import conin.oracle_constraints as oc
+import conin.constraints.oracle as oc
 
 
 class Test_Oracle_CHMM:

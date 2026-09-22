@@ -1,9 +1,10 @@
-from conin.constraint import (
+from conin.constraints import (
     OracleConstraint,
     PyomoConstraint,
     Toulbar2Constraint,
     FactorConstraint,
     MVRConstraint,
+    AlgebraicConstraint,
 )
 from conin.exceptions import InvalidInputError
 from .chmm import CHMM
@@ -79,6 +80,10 @@ class ConstrainedHiddenMarkovModel:
         if isinstance(constraint, OracleConstraint):
             assert self.constraint_type is None or self.constraint_type == "oracle"
             self.constraint_type = "oracle"
+            self._constraints.append(constraint)
+        elif isinstance(constraint, AlgebraicConstraint):
+            assert self.constraint_type is None or self.constraint_type == "algebraic"
+            self.constraint_type = "algebraic"
             self._constraints.append(constraint)
         elif isinstance(constraint, PyomoConstraint):
             assert self.constraint_type is None or self.constraint_type == "pyomo"

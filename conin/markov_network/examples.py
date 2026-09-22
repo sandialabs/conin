@@ -1,10 +1,11 @@
 from munch import Munch
 import numpy as np
 
-from conin.constraint import (
+from conin.constraints import (
     pyomo_constraint_fn,
     toulbar2_constraint_fn,
     factor_constraint_fn,
+    algebraic_constraint_fn,
 )
 from conin.util import try_import, MPESolution
 from conin.markov_network import (
@@ -265,6 +266,82 @@ def ABC_constrained_toulbar2_conin():
 
     cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=[constraints])
     return Munch(pgm=cpgm, solutions=[MPESolution(states={"A": 0, "B": 2, "C": 1})])
+
+
+def ABC_constrained_algebraic_conin():
+    """
+    Three variables with pair-wise interactions.
+
+    The interactions have equal weights.  The unconstrained MPE solution is A:2, B:2, C:1.
+    However, we include a constraint that excludes variable assignments to values that are equal.
+
+    The constrained MPE solution is A:0, B:2, C:1.
+    """
+    pgm = ABC_conin()
+
+    @algebraic_constraint_fn()
+    def constraint_fn(model):
+        return [
+            model.V("A", s) + model.V("B", s) + model.V("C", s) <= 1 for s in [0, 1, 2]
+        ]
+
+    cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=[constraint_fn])
+    return Munch(pgm=cpgm, solutions=[MPESolution(states={"A": 0, "B": 2, "C": 1})])
+
+
+def ABC_constrained_algebraic_pgmpy():
+    """
+    Three variables with pair-wise interactions.
+
+    The interactions have equal weights.  The unconstrained MPE solution is A:2, B:2, C:1.
+    However, we include a constraint that excludes variable assignments to values that are equal.
+
+    The constrained MPE solution is A:0, B:2, C:1.
+    """
+    pgm = ABC_pgmpy()
+
+    @algebraic_constraint_fn()
+    def constraint_fn(model):
+        return [
+            model.V("A", s) + model.V("B", s) + model.V("C", s) <= 1 for s in [0, 1, 2]
+        ]
+
+    import conin.common.pgmpy
+
+    pgm = conin.common.pgmpy.convert_pgmpy_to_conin(pgm.pgm)
+    cpgm = ConstrainedDiscreteMarkovNetwork(pgm, constraints=[constraint_fn])
+    return Munch(pgm=cpgm, solutions=[MPESolution(states={"A": 0, "B": 2, "C": 1})])
+
+
+def ABC2_constrained_algebraic_conin():
+    """
+    Constrained AOS example for three variables with pair-wise interactions.
+    Based off ABC2_conin.
+    We add a constraint that excludes variable assignments to values that are equal.
+
+    The edge interactions have equal weights, so the MPE solution is defined by the weights for the
+    factors that describe the individual state variables.
+
+    The best solution is A:0, B:2, C:1.
+    Second best is A:1, B:2, C:0
+    """
+
+    pgm = ABC2_conin()
+
+    @algebraic_constraint_fn()
+    def constraint_fn(model):
+        return [
+            model.V("A", s) + model.V("B", s) + model.V("C", s) <= 1 for s in [0, 1, 2]
+        ]
+
+    cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=[constraint_fn])
+    return Munch(
+        pgm=cpgm,
+        solutions=[
+            MPESolution(states={"A": 0, "B": 2, "C": 1}),
+            MPESolution(states={"A": 1, "B": 2, "C": 0}),
+        ],
+    )
 
 
 def ABC_constrained_factor_conin():
