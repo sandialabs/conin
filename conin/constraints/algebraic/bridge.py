@@ -6,8 +6,12 @@ allowing conin model.V() variable references to participate in smoek's
 algebraic expression building.
 """
 
-from smoek.core.expr.nodes import ExprLeaf
+from conin.util import try_import
 
+with try_import() as smoek_available:
+    from smoek.core.expr.nodes import ExprLeaf
+if not smoek_available:
+    class ExprLeaf(objecti): pass
 
 class ConinVarNode(ExprLeaf):
     """

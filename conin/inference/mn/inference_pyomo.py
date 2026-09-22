@@ -4,7 +4,6 @@ import munch
 import pyomo.environ as pe
 from pyomo.common.timing import TicTocTimer
 
-import smoek as smk
 from conin.config import default_mip_solver
 from conin.constraints import PyomoConstraint, AlgebraicConstraint
 from conin.markov_network import ConstrainedDiscreteMarkovNetwork
@@ -14,6 +13,8 @@ from conin.util import try_import
 
 with try_import() as or_topas_available:
     import or_topas.aos as aos
+with try_import() as smoek_available:
+    import smoek
 
 
 """
@@ -75,19 +76,18 @@ def add_constraints(*, pgm, constraints, model, data):
             model = func(model, data)
 
     elif isinstance(constraints[0], AlgebraicConstraint):
-        smoek_model = smk.model()
+        if not smoek_available:
+            raise TypeError(f"The smoek package must be installed to use algebraic constraints.")
+        smoek_model = smoek.model()
         for func in constraints:
-            print("HERE", func)
             func(smoek_model, data)
         smoek_model._update_smoek_components()
-        print(smoek_model.constraints)
-        smk.pymodel.pyomo.generate(
+        smoek.pymodel.pyomo.generate(
             model=smoek_model,
             pyomo_model=model,
             data=data,
             component_map=dict(V=model.V),
         )
-        # model.pprint()
 
     else:
         raise TypeError(

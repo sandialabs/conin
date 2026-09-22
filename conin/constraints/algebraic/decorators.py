@@ -7,9 +7,13 @@ which are then translated to Pyomo or Toulbar2 constraint declarations.
 """
 
 import inspect
-import smoek
 from conin.constraints import ConstraintFunctor
-from conin.constraints.smoek.bridge import ConinVarNode
+from conin.constraints.algebraic.bridge import ConinVarNode
+from conin.util import try_import
+
+with try_import() as smoek_available:
+    import smoek
+
 
 
 class ConinV:

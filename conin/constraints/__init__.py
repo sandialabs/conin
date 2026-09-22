@@ -13,5 +13,5 @@ from .constraint import (
     Toulbar2Constraint,
     toulbar2_constraint_fn,
 )
-from .smoek import algebraic_constraint_fn, AlgebraicConstraint
+from .algebraic import algebraic_constraint_fn, AlgebraicConstraint
 from .oracle import *

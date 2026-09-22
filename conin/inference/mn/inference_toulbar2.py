@@ -4,13 +4,14 @@ import munch
 import pyomo.environ as pyo
 from pyomo.common.timing import TicTocTimer
 from pyomo.common.collections import ComponentMap
-import smoek
 
 from conin.util import try_import
 from conin.common.unified import save_model
 
 with try_import() as pytoulbar2_available:
     import pytoulbar2
+with try_import() as smoek_available:
+    import smoek
 
 import conin.common
 from conin.markov_network import ConstrainedDiscreteMarkovNetwork
@@ -76,6 +77,8 @@ def add_constraints(*, pgm, constraints, model, data):
             model = func(model, data)
 
     elif isinstance(constraints[0], AlgebraicConstraint):
+        if not smoek_available:
+            raise TypeError(f"The smoek package must be installed to use algebraic constraints.")
         smoek_model = smoek.model()
         for func in constraints:
             func(smoek_model, data)
