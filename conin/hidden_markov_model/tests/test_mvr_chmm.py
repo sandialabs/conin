@@ -3,7 +3,7 @@ from itertools import product
 import numpy as np
 import pytest
 
-from conin.constraint import mvr_constraint_fn
+from conin import mvr_constraint_fn
 from conin.exceptions import InvalidInputError
 from conin.hidden_markov_model import ConstrainedHiddenMarkovModel
 from conin.hidden_markov_model.hmm import HiddenMarkovModel

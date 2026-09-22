@@ -1,19 +1,27 @@
 import os.path
 import tempfile
 import munch
-from conin.common.unified import save_model
+import pyomo.environ as pyo
 from pyomo.common.timing import TicTocTimer
+from pyomo.common.collections import ComponentMap
 
 from conin.util import try_import
+from conin.common.unified import save_model
 
 with try_import() as pytoulbar2_available:
     import pytoulbar2
+with try_import() as smoek_available:
+    import smoek
 
 import conin.common
 from conin.markov_network import ConstrainedDiscreteMarkovNetwork
+from conin.constraints import Toulbar2Constraint, AlgebraicConstraint
+from conin.constraints.toulbar2 import add_toulbar2_constraints
+from conin.inference.mn.inference_pyomo import PyomoVarWrapper
+from conin.inference.mn.factor_repn import State
 
 
-class VarWrapper(object):
+class Toulbar2VarWrapper(object):
     def __init__(self, pgm):
         self._V = {name: i for i, name in enumerate(pgm.nodes)}
         self._V_state = {
@@ -21,6 +29,9 @@ class VarWrapper(object):
             for name in pgm.nodes
             for i, state in enumerate(pgm.states_of(name))
         }
+
+    def __len__(self):
+        return len(self._V)
 
     def __call__(self, *args, coef=1):
         if len(args) == 2:
@@ -39,6 +50,69 @@ class VarWrapper(object):
     def items(self):
         for k, v in self._V.items():
             yield k, v
+
+
+def add_constraints(*, pgm, constraints, model, data):
+    """Add constraints to a Toulbar2 model.
+
+    Parameters
+    ----------
+    pgm : ConstrainedDiscreteMarkovNetwork
+        The constrained graphical model.
+    model : pytoulbar2.CFN
+        The Toulbar2 constraint satisfaction network model.
+    data : munch.Munch
+        Data dictionary containing variables and evidence.
+
+    Returns
+    -------
+    pytoulbar2.CFN
+        The model with constraints added.
+    """
+    if isinstance(constraints[0], Toulbar2Constraint):
+        for func in constraints:
+            assert isinstance(
+                func, Toulbar2Constraint
+            ), f"Unexpected constraint type ({type(func)}) when performing inference with Toulbar2. If the first constraint is a Toulbar2 constraint, then all subsequent constraints must be the same."
+            model = func(model, data)
+
+    elif isinstance(constraints[0], AlgebraicConstraint):
+        if not smoek_available:
+            raise TypeError(
+                f"The smoek package must be installed to use algebraic constraints."
+            )
+        smoek_model = smoek.model()
+        for func in constraints:
+            func(smoek_model, data)
+        smoek_model._update_smoek_components()
+
+        pyomo_model = pyo.ConcreteModel()
+        N = sum(len(pgm.states_of(k)) for k, _ in model.V.items())
+        pyomo_model.V_conin_temp = pyo.Var(pyo.RangeSet(0, N - 1))
+
+        pyomo_model.V_to_tb2 = ComponentMap()
+        tmp = {}
+        ctr = 0
+        for k, _ in model.V.items():
+            for s in pgm.states_of(k):
+                pyomo_model.V_to_tb2[pyomo_model.V_conin_temp[ctr]] = model.V(k, s)
+                tmp[k, State(s)] = pyomo_model.V_conin_temp[ctr]
+                ctr += 1
+        pyomo_model.V = PyomoVarWrapper(tmp)
+
+        pyomo_model = smoek.pymodel.pyomo.generate(
+            model=smoek_model,
+            pyomo_model=pyomo_model,
+            data=data,
+        )
+        add_toulbar2_constraints(model=model, pyomo_model=pyomo_model)
+
+    else:
+        raise TypeError(
+            f"Unexpected constraint type ({type(constraints[0])}) when performing inference with Toulbar2. Only Toulbar2Constraint is supported."
+        )
+
+    return model
 
 
 def create_toulbar2_map_query_model_MN(
@@ -72,7 +146,7 @@ def create_toulbar2_map_query_model_MN(
             model = pytoulbar2.CFN(verbose=verbose)
             model.Read(filename)
 
-    model.V = VarWrapper(pgm)
+    model.V = Toulbar2VarWrapper(pgm)
     model.states = {i: pgm.states_of(name) for i, name in enumerate(pgm.nodes)}
 
     model.V_evidence = set()
@@ -83,8 +157,7 @@ def create_toulbar2_map_query_model_MN(
 
     if cpgm is not None and cpgm.constraints:
         data = munch.Munch(variables=variables, evidence=evidence)
-        for func in cpgm.constraints:
-            model = func(model, data)
+        add_constraints(pgm=cpgm, constraints=cpgm.constraints, model=model, data=data)
 
     if timing:  # pragma:nocover
         timer.toc("create_toulbar2_map_query_model_MN - STOP")

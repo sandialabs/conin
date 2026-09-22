@@ -1,9 +1,10 @@
 import copy
 import munch
 from ovld import ovld
+from pyomo.common.timing import TicTocTimer
+
 from conin.util import try_import
 from conin.common.unified import save_model
-from pyomo.common.timing import TicTocTimer
 
 from conin.hidden_markov_model import (
     create_dbn_from_hmm,
@@ -11,7 +12,6 @@ from conin.hidden_markov_model import (
     ConstrainedHiddenMarkovModel,
     CHMM,
 )
-
 from conin.markov_network import (
     DiscreteMarkovNetwork,
     ConstrainedDiscreteMarkovNetwork,
@@ -26,6 +26,11 @@ from conin.dynamic_bayesian_network import (
     ConstrainedDynamicDiscreteBayesianNetwork,
 )
 
+from conin.constraints import (
+    create_FactorConstraint,
+    FactorConstraint,
+    AlgebraicConstraint,
+)
 from conin.common.conin import convert_conin_to_pgmpy_mn, convert_conin_to_pgmpy_bn
 
 with try_import() as pgmpy_available:
@@ -74,11 +79,18 @@ def _hmm_states_from_map(map_states, evidence):
 
 def _add_constraints_as_evidence(conin_bn, constraints, data, evidence):
     """Inject generated constraint CPDs into a Bayesian network as evidence."""
+    if isinstance(constraints[0], AlgebraicConstraint):
+        constraints = [create_FactorConstraint(constraints, data)]
     for con in constraints:
-        cpd = con(conin_bn, data)
-        cpd.node = (cpd.node, -1)
-        conin_bn.add_cpd(cpd)
-        evidence[cpd.node] = 1
+        if isinstance(con, FactorConstraint):
+            cpd = con(conin_bn, data)
+            cpd.node = (cpd.node, -1)
+            conin_bn.add_cpd(cpd)
+            evidence[cpd.node] = 1
+        else:
+            raise TypeError(
+                "Unexpected constraint type {type(con)} for VariableElimination"
+            )
 
 
 def _prepare_evidence(evidence):

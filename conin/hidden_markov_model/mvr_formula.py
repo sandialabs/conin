@@ -7,7 +7,7 @@ import re
 
 from typing import Any
 
-from conin.constraint import mvr_constraint_fn
+from conin import mvr_constraint_fn
 from conin.exceptions import InvalidInputError
 from conin.hidden_markov_model.mvr_constraints import (
     mvr_constant,

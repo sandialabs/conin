@@ -1,4 +1,4 @@
-from conin.constraint import OracleConstraint
+from conin.constraints.constraint import OracleConstraint
 
 from . import chmm
 

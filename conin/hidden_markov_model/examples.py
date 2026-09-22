@@ -1,9 +1,10 @@
 import pyomo.environ as pe
-from conin.constraint import OracleConstraint
-from conin.constraint import (
+from conin.constraints import OracleConstraint
+from conin.constraints import (
     pyomo_constraint_fn,
     toulbar2_constraint_fn,
     factor_constraint_fn,
+    algebraic_constraint_fn,
 )
 from conin.hidden_markov_model.constrained_hmm import ConstrainedHiddenMarkovModel
 from conin.hidden_markov_model.hmm import HiddenMarkovModel
@@ -225,6 +226,24 @@ def create_chmm1_pyomo():
     return chmm
 
 
+def create_chmm1_algebraic():
+    hmm = create_hmm1()
+
+    @algebraic_constraint_fn()
+    def num_zeros_greater_than_nine(M, D):
+        return sum(M.V("H", t, "h0") for t in D.hmm.T) >= 10
+
+    @algebraic_constraint_fn()
+    def num_zeros_less_than_thirteen(M, D):
+        return sum(M.V("H", t, "h0") for t in D.hmm.T) <= 12
+
+    constraints = [num_zeros_greater_than_nine, num_zeros_less_than_thirteen]
+
+    chmm = ConstrainedHiddenMarkovModel(hmm=hmm, constraints=constraints)
+    chmm.initialize_chmm()
+    return chmm
+
+
 def create_chmm1_pyomo_aos():
     """
     Constrained HMM example for testing AOS capabilities.
@@ -240,6 +259,29 @@ def create_chmm1_pyomo_aos():
     @pyomo_constraint_fn()
     def num_zeros_less_than_thirteen(M, D):
         M.h0_upper = pe.Constraint(expr=sum(M.V("H", t, "h0") for t in D.hmm.T) <= 12)
+
+    constraints = [num_zeros_less_than_thirteen]
+
+    chmm = ConstrainedHiddenMarkovModel(hmm=hmm, constraints=constraints)
+    chmm.initialize_chmm()
+    return chmm
+
+
+def create_chmm1_algebraic_aos():
+    """
+    Constrained HMM example for testing AOS capabilities.
+    Designed so the known solutions should be well-ordered.
+    Modification of create_hmm1_aos to add constraints
+
+    Based on observed state Lengths > 0, the follow behavior occurs:
+    if length > 12, only sol with prob > 0 is h1*length
+    if length <= 12, best sol h0*length, second best h1*length
+    """
+    hmm = create_hmm1_aos()
+
+    @algebraic_constraint_fn()
+    def num_zeros_less_than_thirteen(M, D):
+        return sum(M.V("H", t, "h0") for t in D.hmm.T) <= 12
 
     constraints = [num_zeros_less_than_thirteen]
 
@@ -266,6 +308,32 @@ def create_chmm2_pyomo_aos():
     @pyomo_constraint_fn()
     def num_ones_less_than_thirteen(M, D):
         M.h0_upper = pe.Constraint(expr=sum(M.V("H", t, "h1") for t in D.hmm.T) <= 12)
+
+    constraints = [num_ones_less_than_thirteen]
+
+    chmm = ConstrainedHiddenMarkovModel(hmm=hmm, constraints=constraints)
+    chmm.initialize_chmm()
+    return chmm
+
+
+def create_chmm2_algebraic_aos():
+    """
+    Constrained HMM example for testing AOS capabilities.
+    Designed so the known solutions should be well-ordered.
+    Modification of create_hmm2_aos to add constraints
+
+    Based on observed state Lengths, the follow behavior occurs:
+    if length > 12, second best can't happen, move sols up one
+    best sol is h0*length
+    second best is h1*length,
+    third best is h2, h0*(length-1)
+    fourth best is h1,h2, h0*(length-2)
+    """
+    hmm = create_hmm2_aos()
+
+    @algebraic_constraint_fn()
+    def num_ones_less_than_thirteen(M, D):
+        return sum(M.V("H", t, "h1") for t in D.hmm.T) <= 12
 
     constraints = [num_ones_less_than_thirteen]
 
@@ -346,6 +414,16 @@ class Num_Zeros(HMMApplication):
             M.h0_upper = pe.Constraint(
                 expr=sum(M.V("H", t, "h0") for t in D.hmm.T) <= self.ub
             )
+
+        return [constraint]
+
+    def get_algebraic_constraints(self):
+        @algebraic_constraint_fn()
+        def constraint(M, D):
+            return [
+                sum(M.V("H", t, "h0") for t in D.hmm.T) >= self.lb,
+                sum(M.V("H", t, "h0") for t in D.hmm.T) <= self.ub,
+            ]
 
         return [constraint]
 
