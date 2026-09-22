@@ -182,3 +182,4 @@ lcov.info
 # LLM stuff
 .claude/
 .codex/
+.opencode-workspace/
