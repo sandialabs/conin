@@ -11,8 +11,10 @@ from conin.util import try_import
 with try_import() as smoek_available:
     from smoek.core.expr.nodes import ExprLeaf
 if not smoek_available:
+
     class ExprLeaf(object):
         pass
+
 
 class ConinVarNode(ExprLeaf):
     """
