@@ -10,7 +10,6 @@ from .constraint import (
     oracle_constraint_fn,
     Toulbar2Constraint,
     toulbar2_constraint_fn,
-    materialise_constraint,
 )
 from .algebraic import algebraic_constraint_fn, AlgebraicConstraint
 from .oracle import *
