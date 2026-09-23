@@ -10,21 +10,42 @@ def constraint_name():
     return inspect.stack()[1].function
 
 
-@oracle_constraint_fn(same_partial_as_func=True)
-def all_diff_constraint(seq):
-    """Require every value in ``seq`` to be unique.
+def _as_seq(states):
+    """Convert a dict with sortable keys into an ordered list of values.
+
+    This is a convenience helper for constraints that are inherently
+    sequential (ordering, time-frame, etc.).  The dict keys are sorted so
+    that ``{0: "rainy", 1: "sunny", 2: "rainy"}`` becomes
+    ``["rainy", "sunny", "rainy"]``.
 
     Parameters
     ----------
-    seq : iterable
-        Sequence to check.
+    states : dict
+        Mapping from sortable keys (e.g. time indices) to state values.
+
+    Returns
+    -------
+    list
+        Values ordered by sorted keys.
+    """
+    return [states[k] for k in sorted(states.keys())]
+
+
+@oracle_constraint_fn(same_partial_as_func=True)
+def all_diff_constraint(states):
+    """Require every value in ``states`` to be unique.
+
+    Parameters
+    ----------
+    states : dict
+        Mapping of keys to state values.
 
     Returns
     -------
     bool
-        ``True`` if all elements are unique.
+        ``True`` if all values are unique.
     """
-    return len(seq) == len(set(seq))
+    return len(states) == len(set(states.values()))
 
 
 def always_appears_before(seq, val1, val2):
@@ -32,8 +53,8 @@ def always_appears_before(seq, val1, val2):
 
     Parameters
     ----------
-    seq : iterable
-        Sequence to check.
+    seq : list
+        Ordered sequence to check.
     val1
         Value that must appear before ``val2``.
     val2
@@ -55,8 +76,8 @@ def always_appears_before(seq, val1, val2):
 
 def always_appears_before_constraint(val1, val2):
     @oracle_constraint_fn(name=constraint_name(), same_partial_as_func=True)
-    def constraint(seq):
-        return always_appears_before(seq, val1, val2)
+    def constraint(states):
+        return always_appears_before(_as_seq(states), val1, val2)
 
     return constraint
 
@@ -78,7 +99,8 @@ def appears_at_least_once_before_constraint(val1, val2):
     """
 
     @oracle_constraint_fn(name=constraint_name(), same_partial_as_func=True)
-    def constraint(seq):
+    def constraint(states):
+        seq = _as_seq(states)
         found_val1 = False
 
         for x in seq:
@@ -109,8 +131,8 @@ def always_appears_after_constraint(val1, val2):
     """
 
     @oracle_constraint_fn(name=constraint_name(), same_partial_as_func=True)
-    def constraint(seq):
-        return always_appears_before(seq, val2, val1)
+    def constraint(states):
+        return always_appears_before(_as_seq(states), val2, val1)
 
     return constraint
 
@@ -133,7 +155,8 @@ def appears_at_least_once_after_constraint(val1, val2):
 
     # No partial here because val2 could appear at the very last time step
     @oracle_constraint_fn(name=constraint_name())
-    def constraint(seq):
+    def constraint(states):
+        seq = _as_seq(states)
         for index1, x1 in enumerate(seq):
             if x1 == val2:
                 for index2 in range(index1 + 1, len(seq)):
@@ -146,22 +169,23 @@ def appears_at_least_once_after_constraint(val1, val2):
 
 
 @oracle_constraint_fn(same_partial_as_func=True)
-def citation_constraint(seq):
+def citation_constraint(states):
     """Require each value to appear in a single contiguous block.
 
-    For example, ``[1, 1, 2, 2, 7, 7]`` is feasible, but
-    ``[1, 1, 2, 2, 7, 7, 2, 2]`` is not.
+    For example, ``{0: 1, 1: 1, 2: 2, 3: 2, 4: 7, 5: 7}`` is feasible, but
+    ``{0: 1, 1: 1, 2: 2, 3: 2, 4: 7, 5: 7, 6: 2, 7: 2}`` is not.
 
     Parameters
     ----------
-    seq : iterable
-        Sequence to check.
+    states : dict
+        Mapping of sortable keys to state values.
 
     Returns
     -------
     bool
         ``True`` if every value appears in one contiguous block.
     """
+    seq = _as_seq(states)
     for t1 in range(2, len(seq)):
         if seq[t1] != seq[t1 - 1]:
             for t2 in range(t1 - 2):
@@ -170,15 +194,15 @@ def citation_constraint(seq):
     return True
 
 
-def has_minimum_number_of_occurences(seq, *, val, count):
+def has_minimum_number_of_occurences(states, *, val, count):
     """Check whether ``val`` appears at least ``count`` times.
 
     The misspelling in this function name is preserved for API compatibility.
 
     Parameters
     ----------
-    seq : iterable
-        Sequence to check.
+    states : dict
+        Mapping of keys to state values.
     val
         Value to count.
     count : int
@@ -189,7 +213,7 @@ def has_minimum_number_of_occurences(seq, *, val, count):
     bool
         ``True`` if ``val`` appears at least ``count`` times.
     """
-    return seq.count(val) >= count
+    return sum(1 for v in states.values() if v == val) >= count
 
 
 def has_minimum_number_of_occurences_constraint(*, val, count):
@@ -198,20 +222,25 @@ def has_minimum_number_of_occurences_constraint(*, val, count):
     The misspelling in this function name is preserved for API compatibility.
     """
     return OracleConstraint(
-        func=lambda seq: has_minimum_number_of_occurences(seq, val=val, count=count),
-        partial_func=lambda T, seq: seq.count(val) + T - len(seq) >= count,
+        func=lambda states: has_minimum_number_of_occurences(
+            states, val=val, count=count
+        ),
+        partial_func=lambda T, states: sum(1 for v in states.values() if v == val)
+        + T
+        - len(states)
+        >= count,
     )
 
 
-def has_maximum_number_of_occurences(seq, *, val, count):
+def has_maximum_number_of_occurences(states, *, val, count):
     """Check whether ``val`` appears at most ``count`` times.
 
     The misspelling in this function name is preserved for API compatibility.
 
     Parameters
     ----------
-    seq : iterable
-        Sequence to check.
+    states : dict
+        Mapping of keys to state values.
     val
         Value to count.
     count : int
@@ -222,7 +251,7 @@ def has_maximum_number_of_occurences(seq, *, val, count):
     bool
         ``True`` if ``val`` appears at most ``count`` times.
     """
-    return seq.count(val) <= count
+    return sum(1 for v in states.values() if v == val) <= count
 
 
 def has_maximum_number_of_occurences_constraint(*, val, count):
@@ -232,8 +261,8 @@ def has_maximum_number_of_occurences_constraint(*, val, count):
     """
 
     @oracle_constraint_fn(name=constraint_name(), same_partial_as_func=True)
-    def constraint(seq):
-        return has_maximum_number_of_occurences(seq, val=val, count=count)
+    def constraint(states):
+        return has_maximum_number_of_occurences(states, val=val, count=count)
 
     return constraint
 
@@ -244,24 +273,27 @@ def has_exact_number_of_occurences_constraint(*, val, count):
     The misspelling in this function name is preserved for API compatibility.
     """
 
-    def has_exact_number_of_occurences(seq, *, val, count):
+    def has_exact_number_of_occurences(states, *, val, count):
         """
-        Check if seq has val appear exactly count times
+        Check if states has val appear exactly count times
 
         Parameters:
-            seq(iterable): The sequence to be checked
+            states(dict): The state dict to be checked
             val : The hidden state to be counted
             count : The exact number
 
         Returns:
             bool: True iff satisfied
         """
-        return seq.count(val) == count
+        return sum(1 for v in states.values() if v == val) == count
 
     return OracleConstraint(
-        func=lambda seq: has_exact_number_of_occurences(seq, val=val, count=count),
-        partial_func=lambda T, seq: seq.count(val) <= count
-        and seq.count(val) + T - len(seq) >= count,
+        func=lambda states: has_exact_number_of_occurences(
+            states, val=val, count=count
+        ),
+        partial_func=lambda T, states: sum(1 for v in states.values() if v == val)
+        <= count
+        and sum(1 for v in states.values() if v == val) + T - len(states) >= count,
     )
 
 
@@ -280,8 +312,8 @@ def appears_at_least_once_constraint(val):
     """
 
     @oracle_constraint_fn(name=constraint_name())
-    def constraint(seq):
-        return has_minimum_number_of_occurences(seq, val=val, count=1)
+    def constraint(states):
+        return has_minimum_number_of_occurences(states, val=val, count=1)
 
     return constraint
 
@@ -301,8 +333,8 @@ def does_not_occur_constraint(val):
     """
 
     @oracle_constraint_fn(name=constraint_name(), same_partial_as_func=True)
-    def constraint(seq):
-        return has_maximum_number_of_occurences(seq, val=val, count=0)
+    def constraint(states):
+        return has_maximum_number_of_occurences(states, val=val, count=0)
 
     return constraint
 
@@ -323,11 +355,11 @@ def fix_final_state_constraint(val):
 
     # No partial because it only involves the final state
     @oracle_constraint_fn(name=constraint_name())
-    def constraint(seq):
-        if not seq:
-            # Return false if seq is empty
+    def constraint(states):
+        if not states:
+            # Return false if states is empty
             return False
-        return seq[-1] == val
+        return states[max(states.keys())] == val
 
     return constraint
 
@@ -352,7 +384,8 @@ def occurs_only_in_time_frame_constraint(val, *, lower_t=None, upper_t=None):
     """
 
     @oracle_constraint_fn(name=constraint_name(), same_partial_as_func=True)
-    def constraint(seq):
+    def constraint(states):
+        seq = _as_seq(states)
         lower = 0 if lower_t is None else lower_t
         upper = len(seq) if upper_t is None else upper_t
 
@@ -381,19 +414,21 @@ def occurs_at_least_once_in_time_frame_constraint(val, *, lower_t=None, upper_t=
         Constraint that evaluates sequences according to this rule.
     """
 
-    def func(seq):
+    def func(states):
+        seq = _as_seq(states)
         lower = 0 if lower_t is None else lower_t
         upper = len(seq) if upper_t is None else upper_t
 
         return seq[lower:upper].count(val) >= 1
 
-    def partial_func(T, seq):
+    def partial_func(T, states):
+        seq = _as_seq(states)
         lower = 0 if lower_t is None else lower_t
         upper = len(seq) if upper_t is None else upper_t
         if len(seq) < upper or lower > len(seq):
             return True
         else:
-            return func(seq)
+            return func(states)
 
     return OracleConstraint(func=func, partial_func=partial_func)
 
@@ -422,15 +457,15 @@ def or_constraints(constraints):
     name = name[:-1]  # Remove trailing underscore
     name += ")"
 
-    def or_func(seq):
+    def or_func(states):
         for constraint in constraints:
-            if constraint(seq):
+            if constraint(states):
                 return True
         return False
 
-    def or_partial_func(T, seq):
+    def or_partial_func(T, states):
         for constraint in constraints:
-            if constraint.partial_func(T, seq):
+            if constraint.partial_func(T, states):
                 return True
         return False
 
@@ -456,10 +491,10 @@ def xor_constraints(constraints):
     name = name[:-1]  # Remove trailing underscore
     name += ")"
 
-    def xor_func(seq):
+    def xor_func(states):
         at_least_one_true = False
         for constraint in constraints:
-            if constraint(seq):
+            if constraint(states):
                 if at_least_one_true:
                     return False
                 at_least_one_true = True
@@ -470,9 +505,9 @@ def xor_constraints(constraints):
 
     # Not a strong partial_func, it's false only if all partial_funcs are false
     # Same as or_partial_func actually
-    def xor_partial_func(T, seq):
+    def xor_partial_func(T, states):
         for constraint in constraints:
-            if constraint.partial_func(T, seq):
+            if constraint.partial_func(T, states):
                 return True
         return False
 
@@ -492,14 +527,14 @@ def not_constraint(constraint):
     Returns
     -------
     OracleConstraint
-        Constraint whose value is ``not constraint(seq)``.
+        Constraint whose value is ``not constraint(states)``.
     """
     name = "not(" + constraint.name + ")"
 
     # No partial func for not_constraint
     @oracle_constraint_fn(name=name)
-    def not_func(seq):
-        return not constraint(seq)
+    def not_func(states):
+        return not constraint(states)
 
     return not_func
 
@@ -527,15 +562,15 @@ def and_constraints(constraints):
     name = name[:-1]  # Remove trailing underscore
     name += ")"
 
-    def and_func(seq):
+    def and_func(states):
         for constraint in constraints:
-            if not constraint(seq):
+            if not constraint(states):
                 return False
         return True
 
-    def and_partial_func(T, seq):
+    def and_partial_func(T, states):
         for constraint in constraints:
-            if not constraint.partial_func(T, seq):
+            if not constraint.partial_func(T, states):
                 return False
         return True
 

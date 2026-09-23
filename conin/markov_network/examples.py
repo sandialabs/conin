@@ -4,7 +4,7 @@ import numpy as np
 from conin.constraints import (
     pyomo_constraint_fn,
     toulbar2_constraint_fn,
-    factor_constraint_fn,
+    oracle_constraint_fn,
     algebraic_constraint_fn,
 )
 from conin.util import try_import, MPESolution
@@ -355,7 +355,7 @@ def ABC_constrained_factor_conin():
     """
     pgm = ABC_conin()
 
-    @factor_constraint_fn(nodes=["A", "B", "C"])
+    @oracle_constraint_fn(nodes=["A", "B", "C"])
     def constraint_fn(states):
         values = set(x for x in states.values())
         return len(values) == 3  # All r.v. values are different
@@ -379,7 +379,7 @@ def ABC2_constrained_factor_conin():
 
     pgm = ABC2_conin()
 
-    @factor_constraint_fn(nodes=["A", "B", "C"])
+    @oracle_constraint_fn(nodes=["A", "B", "C"])
     def constraint_fn(states):
         values = set(x for x in states.values())
         return len(values) == 3  # All r.v. values are different

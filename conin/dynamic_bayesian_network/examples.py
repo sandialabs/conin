@@ -4,7 +4,7 @@ import pyomo.environ as pyo
 from conin.constraints import (
     pyomo_constraint_fn,
     toulbar2_constraint_fn,
-    factor_constraint_fn,
+    oracle_constraint_fn,
     algebraic_constraint_fn,
 )
 from conin.dynamic_bayesian_network import (
@@ -255,7 +255,7 @@ def simple1_DDBN_constrained_factor_conin(debug=False):
             yield ("A", t)
             yield ("B", t)
 
-    @factor_constraint_fn(nodes=nodes)
+    @oracle_constraint_fn(nodes=nodes)
     def constraints(states):
         return states["A", 0] == states["A", 1] and states["B", 0] == states["B", 1]
 
@@ -910,7 +910,7 @@ def weather_constrained_factor_conin(debug=False):
         for t in data.T:
             yield ("W", t)
 
-    @factor_constraint_fn(nodes=nodes)
+    @oracle_constraint_fn(nodes=nodes)
     def constraints(states, data):
         """2 rainy days"""
         num = sum(states["W", t] == "Rainy" for t in data.T)
@@ -931,7 +931,7 @@ def weather_constrained_factor_pgmpy(debug=False):
         for t in data.T:
             yield ("W", t)
 
-    @factor_constraint_fn(nodes=nodes)
+    @oracle_constraint_fn(nodes=nodes)
     def constraints(states, data):
         """2 rainy days"""
         num = sum(states["W", t] == "Rainy" for t in data.T)

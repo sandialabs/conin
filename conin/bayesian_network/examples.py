@@ -6,7 +6,7 @@ import pyomo.environ as pyo
 from conin.constraints import (
     pyomo_constraint_fn,
     toulbar2_constraint_fn,
-    factor_constraint_fn,
+    oracle_constraint_fn,
     algebraic_constraint_fn,
 )
 from conin.util import try_import, MPESolution
@@ -388,7 +388,7 @@ def cancer2_BN_constrained_algebraic_pgmpy(debug=False):
 def cancer1_BN_constrained_factor_conin(debug=False):
     pgm = cancer1_BN_conin(debug=debug).pgm
 
-    @factor_constraint_fn(nodes=["Dyspnoea", "Xray"])
+    @oracle_constraint_fn(nodes=["Dyspnoea", "Xray"])
     def constraints(states):
         return states["Dyspnoea"] != states["Xray"]
 
@@ -412,7 +412,7 @@ def cancer1_BN_constrained_factor_conin(debug=False):
 def cancer1_BN_constrained_factor_pgmpy(debug=False):
     pgm = cancer1_BN_pgmpy(debug=debug).pgm
 
-    @factor_constraint_fn(nodes=["Dyspnoea", "Xray"])
+    @oracle_constraint_fn(nodes=["Dyspnoea", "Xray"])
     def constraints(states):
         return states["Dyspnoea"] != states["Xray"]
 

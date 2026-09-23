@@ -68,9 +68,9 @@ network together with a list of constraints. The examples in
 ``conin.dynamic_bayesian_network.examples`` use the same decorators as the
 other model families.
 
-The Pyomo and Toulbar2 examples require their respective solver backends. Factor
-constraints are converted into auxiliary CPDs during supported inference
-workflows.
+The Pyomo and Toulbar2 examples require their respective solver backends. Oracle
+constraints with ``nodes`` are converted into auxiliary CPDs during supported
+inference workflows.
 
 Pyomo constraints
 ^^^^^^^^^^^^^^^^^
@@ -130,15 +130,15 @@ Toulbar2:
        constraints=[constraints],
    )
 
-Factor constraints
-^^^^^^^^^^^^^^^^^^
+Oracle constraints with node scoping
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ``simple1_DDBN_constrained_factor_conin`` creates a constraint over a generated
 set of nodes:
 
 .. code-block:: python
 
-   from conin import factor_constraint_fn
+   from conin import oracle_constraint_fn
    from conin.dynamic_bayesian_network import ConstrainedDynamicDiscreteBayesianNetwork
    from conin.dynamic_bayesian_network.examples import simple1_DDBN_conin
 
@@ -149,7 +149,7 @@ set of nodes:
            yield ("A", t)
            yield ("B", t)
 
-   @factor_constraint_fn(nodes=nodes)
+   @oracle_constraint_fn(nodes=nodes)
    def constraints(states):
        return states["A", 0] == states["A", 1] and states["B", 0] == states["B", 1]
 

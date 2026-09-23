@@ -47,26 +47,33 @@ class Oracle_CHMM(chmm.CHMM):
     def _make_internal_constraint(self, constraint, hidden_to_external):
         """Convert an external oracle constraint to internal index space.
 
+        The user writes constraints against **dicts** mapping time indices to
+        external labels, e.g. ``{0: "rainy", 1: "sunny"}``.  Internally the
+        HMM works with integer state indices, so this wrapper translates.
+
         Parameters
         ----------
         constraint : OracleConstraint
-            Constraint defined on external hidden-state labels.
+            Constraint defined on external hidden-state labels (dict-based).
         hidden_to_external : dict
             Mapping from internal hidden-state indices to external labels.
 
         Returns
         -------
         OracleConstraint
-            Constraint that accepts internal hidden-state indices.
+            Constraint that accepts a *list* of internal hidden-state indices
+            (as used by the A* search) and converts to the dict the user
+            expects.
         """
 
+        def _to_dict(internal_seq):
+            return {i: hidden_to_external[h] for i, h in enumerate(internal_seq)}
+
         def internal_func(internal_seq):
-            external_seq = [hidden_to_external[h] for h in internal_seq]
-            return constraint(external_seq)
+            return constraint(_to_dict(internal_seq))
 
         def internal_partial_func(T, internal_seq):
-            external_seq = [hidden_to_external[h] for h in internal_seq]
-            return constraint.partial_func(T, external_seq)
+            return constraint.partial_func(T, _to_dict(internal_seq))
 
         internal_constraint = OracleConstraint(
             func=internal_func,

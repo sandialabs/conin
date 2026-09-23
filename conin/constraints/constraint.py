@@ -1,13 +1,10 @@
-# import itertools
+import itertools
 import inspect
 from abc import ABC, abstractmethod
 from ..exceptions import InvalidInputError
 
-# from ..markov_network import DiscreteFactor, DiscreteMarkovNetwork
-# from ..bayesian_network import DiscreteCPD, DiscreteBayesianNetwork
 
 # One could also create an inherited class for additional functionality
-# TODO think about partial_func semantics
 
 
 class ConstraintFunctor(ABC):
@@ -38,27 +35,60 @@ class OracleConstraint(ConstraintFunctor):
         name=None,
         partial_func=None,
         same_partial_as_func=None,
+        nodes=None,
     ):
         """
-        Initialize a OracleConstraint object.
+        Initialize an OracleConstraint object.
 
-        Parameters:
-            func (callable, optional): The constraint function to be applied.
-            name (str, optional): The name of the constraint. If not provided, it will default to the function's name.
-            partial_func (callable, optional): This is a function which returns false on a partial sequence of
-                hidden states only if there is no completion of the sequence which satisfies the constraints. E.g. if
-                you go over budget halfway through, you can never recover from that. This has, as inputs T and seq instead
-                of just seq like for func. This is useful for things like has minimum_number_of_occurences
-            same_partial_as_func (bool, optional): If this is true, partial_func is set to func
+        This is the unified constraint class for all oracle / factor constraints.
+        The user function always receives a **dict** mapping keys to state values.
+
+        * For BN/MN the keys are node names, e.g. ``{"Dyspnoea": 1, "Xray": 0}``.
+        * For DBN the keys are ``(name, t)`` tuples, e.g. ``{("A", 0): 0}``.
+        * For HMM the keys are time indices, e.g. ``{0: "rainy", 1: "sunny"}``.
+
+        Parameters
+        ----------
+        func : callable, optional
+            The constraint predicate.  It receives a dict of assignments and
+            returns ``True`` / ``False``.  If the constraint was created with
+            ``nodes`` **and** the function accepts two positional parameters,
+            the second parameter receives the ``data`` object supplied at
+            inference time.
+        name : str, optional
+            Human-readable name.  Defaults to ``func.__name__`` when *func*
+            is provided.
+        partial_func : callable, optional
+            A function ``(T, states_dict) -> bool`` that may prune partial
+            sequences during A* search.  Only relevant for HMM oracle
+            constraints.
+        same_partial_as_func : bool, optional
+            If ``True``, ``partial_func`` is set to
+            ``lambda T, states: func(states)``.
+        nodes : list or callable, optional
+            Node scope used for factor materialisation (BN / MN / DBN).
+            Can be a list of node names or a callable ``nodes(data)`` that
+            yields node names.  When provided the constraint will be
+            materialised into a ``DiscreteFactor`` or ``DiscreteCPD`` at
+            inference time.  When ``None`` the constraint is used as a
+            black-box predicate during A* search.
         """
         self.func = func
+        self.nodes = nodes
 
         if same_partial_as_func is True:
-            self.partial_func = lambda T, seq: func(seq)
+            self.partial_func = lambda T, states: func(states)
         elif partial_func is not None:
             self.partial_func = partial_func
         else:
-            self.partial_func = lambda T, seq: True
+            self.partial_func = lambda T, states: True
+
+        # Determine how many positional args `func` accepts (1 or 2).
+        # This matters for factor-style constraints that may accept `data`.
+        if func is not None:
+            self.num_args = len(inspect.signature(func).parameters)
+        else:
+            self.num_args = None
 
         # If no name is provided, use the function's name
         if name is not None:
@@ -68,37 +98,113 @@ class OracleConstraint(ConstraintFunctor):
         else:
             self.name = "Unnamed constraint"  # Could also be none
 
-    def __call__(self, seq):
+    def __call__(self, *args, **kwargs):
         """
-        Apply the constraint function to a given sequence.
+        Apply the constraint.
 
-        Parameters:
-            seq (iterable): The sequence to which the constraint function will be applied.
+        When ``nodes`` is ``None`` (HMM / black-box mode):
+            ``constraint(states_dict) -> bool``
 
-        Returns:
-            The result of applying the constraint function to the sequence.
+        When ``nodes`` is set (factor mode):
+            ``constraint(pgm, data=None)`` — materialises the predicate into
+            a ``DiscreteFactor`` (for MN) or ``DiscreteCPD`` (for BN) by
+            enumerating all assignments over the declared ``nodes``.
 
-        Raises:
-            InvalidInputError: If the constraint function is not defined.
+        Raises
+        ------
+        InvalidInputError
+            If the constraint function is not defined.
         """
         if self.func is None:
             raise InvalidInputError(
                 f"In constraint {self.name}, the actual constraint function is not defined."
             )
-        return self.func(seq)
+
+        # --- factor materialisation path (nodes is set) ---
+        if self.nodes is not None and args and not isinstance(args[0], dict):
+            return self._materialise(*args, **kwargs)
+
+        # --- black-box predicate path ---
+        return self.func(*args, **kwargs)
+
+    # -----------------------------------------------------------------
+    # Factor materialisation
+    # -----------------------------------------------------------------
+
+    def _materialise(self, pgm, data=None):
+        """Materialise the predicate into a factor or CPD.
+
+        Parameters
+        ----------
+        pgm : DiscreteMarkovNetwork or DiscreteBayesianNetwork
+            The probabilistic graphical model whose state spaces are used
+            for enumeration.
+        data : optional
+            Application-specific data forwarded to the predicate when it
+            accepts two arguments, and to ``nodes`` when it is callable.
+
+        Returns
+        -------
+        DiscreteFactor or DiscreteCPD
+        """
+        from ..markov_network import DiscreteFactor, DiscreteMarkovNetwork
+        from ..bayesian_network import DiscreteCPD, DiscreteBayesianNetwork
+
+        if type(self.nodes) is list:
+            nodes = self.nodes
+        else:
+            nodes = list(self.nodes(data))
+
+        if type(pgm) == DiscreteMarkovNetwork:
+            M = 10**6
+            values = {}
+            for states in itertools.product(*(pgm.states[name] for name in nodes)):
+                assignment = {name: states[i] for i, name in enumerate(nodes)}
+                if self.num_args == 1:
+                    feasible = self.func(assignment)
+                else:
+                    feasible = self.func(assignment, data)
+                values[states] = M if feasible else 0
+            return DiscreteFactor(nodes=nodes, values=values)
+
+        elif type(pgm) == DiscreteBayesianNetwork:
+            node = self.name
+            values = {}
+            for states in itertools.product(*(pgm.states[name] for name in nodes)):
+                assignment = {name: states[i] for i, name in enumerate(nodes)}
+                if self.num_args == 1:
+                    feasible = self.func(assignment)
+                else:
+                    feasible = self.func(assignment, data)
+                feasible = int(feasible)
+                values[states] = {1: feasible, 0: 1 - feasible}
+            return DiscreteCPD(node=node, parents=nodes, values=values)
+
+        else:
+            raise ValueError(f"Unexpected pgm: {type(pgm)}")
 
 
-def oracle_constraint_fn(*, name=None, same_partial_as_func=None):
+def oracle_constraint_fn(*, nodes=None, name=None, same_partial_as_func=None):
     """
-    Decorator factory that takes the 'name' and returns a decorator function that creates an instance of OracleConstraint.
+    Decorator factory that creates an ``OracleConstraint``.
+
+    Parameters
+    ----------
+    nodes : list or callable, optional
+        Node scope for factor materialisation.  See
+        :class:`OracleConstraint` for details.
+    name : str, optional
+        Human-readable constraint name.
+    same_partial_as_func : bool, optional
+        If ``True``, the partial-feasibility check reuses the main predicate.
     """
 
     def decorator(func):
-        """
-        The actual decorator that wraps the user constraint function in a OracleConstraint class.
-        """
         return OracleConstraint(
-            func=func, name=name, same_partial_as_func=same_partial_as_func
+            func=func,
+            name=name,
+            same_partial_as_func=same_partial_as_func,
+            nodes=nodes,
         )
 
     return decorator

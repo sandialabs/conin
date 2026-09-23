@@ -26,11 +26,7 @@ from conin.dynamic_bayesian_network import (
     ConstrainedDynamicDiscreteBayesianNetwork,
 )
 
-from conin.constraints import (
-    create_FactorConstraint,
-    FactorConstraint,
-    AlgebraicConstraint,
-)
+from conin.constraints import OracleConstraint
 from conin.common.conin import convert_conin_to_pgmpy_mn, convert_conin_to_pgmpy_bn
 
 with try_import() as pgmpy_available:
@@ -79,10 +75,8 @@ def _hmm_states_from_map(map_states, evidence):
 
 def _add_constraints_as_evidence(conin_bn, constraints, data, evidence):
     """Inject generated constraint CPDs into a Bayesian network as evidence."""
-    if isinstance(constraints[0], AlgebraicConstraint):
-        constraints = [create_FactorConstraint(constraints, data)]
     for con in constraints:
-        if isinstance(con, FactorConstraint):
+        if isinstance(con, OracleConstraint) and con.nodes is not None:
             cpd = con(conin_bn, data)
             cpd.node = (cpd.node, -1)
             conin_bn.add_cpd(cpd)

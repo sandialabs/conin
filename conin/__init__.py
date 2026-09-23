@@ -9,7 +9,6 @@ from . import hidden_markov_model
 from .inference import map_query
 from .constraints import (
     ConstraintFunctor,
-    factor_constraint_fn,
     mvr_constraint_fn,
     pyomo_constraint_fn,
     oracle_constraint_fn,

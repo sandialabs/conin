@@ -88,9 +88,9 @@ list of constraint functors. The examples in
 ``conin.markov_network.examples`` use the same three-variable ``ABC`` model and
 add an all-different constraint.
 
-The Pyomo and Toulbar2 examples require their respective solver backends. Factor
-constraints are represented as additional factors and can also be consumed by
-variable-elimination workflows when ``pgmpy`` is installed.
+The Pyomo and Toulbar2 examples require their respective solver backends. Oracle
+constraints with ``nodes`` are represented as additional factors and can also be
+consumed by variable-elimination workflows when ``pgmpy`` is installed.
 
 Pyomo constraints
 ^^^^^^^^^^^^^^^^^
@@ -145,20 +145,20 @@ with the Toulbar2 interface:
        constraints=[constraint_fn],
    )
 
-Factor constraints
-^^^^^^^^^^^^^^^^^^
+Oracle constraints with node scoping
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ``ABC_constrained_factor_conin`` creates the constraint as an auxiliary factor:
 
 .. code-block:: python
 
-   from conin import factor_constraint_fn
+   from conin import oracle_constraint_fn
    from conin.markov_network import ConstrainedDiscreteMarkovNetwork
    from conin.markov_network.examples import ABC_conin
 
    base = ABC_conin().pgm
 
-   @factor_constraint_fn(nodes=["A", "B", "C"])
+   @oracle_constraint_fn(nodes=["A", "B", "C"])
    def constraint_fn(states):
        values = set(states.values())
        return len(values) == 3
