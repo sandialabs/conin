@@ -7,7 +7,7 @@ This shows how the _scale_to_integers function handles various coefficient value
 from fractions import Fraction
 from math import gcd
 from functools import reduce
-from conin.constraints.toulbar2 import _scale_to_integers
+from conin.constraints.algebraic.add_constraints_toulbar2 import _scale_to_integers
 
 
 def test_examples():

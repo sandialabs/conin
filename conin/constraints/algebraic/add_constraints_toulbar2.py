@@ -7,11 +7,12 @@ from pyomo.core.expr import current as EXPR
 from pyomo.repn import generate_standard_repn
 from pyomo.common.collections import ComponentMap
 
-from conin.constraints import Toulbar2Constraint, AlgebraicConstraint
+from conin.constraints import Toulbar2Constraint
 from conin.util import try_import, State
 with try_import() as smoek_available:
     import smoek
 
+from .decorators import AlgebraicConstraint
 
 class PyomoVarWrapper(dict):
     def __init__(self, *arg, **kw):
