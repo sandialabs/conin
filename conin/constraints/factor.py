@@ -6,7 +6,6 @@ from ..markov_network import DiscreteFactor, DiscreteMarkovNetwork
 from ..bayesian_network import DiscreteCPD, DiscreteBayesianNetwork
 
 
-
 class FactorConstraint(ConstraintFunctor):
 
     def __init__(
