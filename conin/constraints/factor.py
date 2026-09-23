@@ -104,7 +104,3 @@ def factor_constraint_fn(*, nodes=None, name=None):
         return FactorConstraint(nodes=nodes, func=func, name=name)
 
     return decorator
-
-
-def create_FactorConstraint():
-    pass

@@ -19,6 +19,7 @@ instead of imperative Pyomo/Toulbar2 code.
 from .decorators import algebraic_constraint_fn, AlgebraicConstraint
 from .add_constraints_pyomo import add_algebraic_constraints_to_pyomo_model
 from .add_constraints_toulbar2 import add_algebraic_constraints_to_toulbar2_model
+from .add_constraints_factor import create_factor_constraints_from_algebraic
 
 __all__ = [
     "algebraic_constraint_fn",
