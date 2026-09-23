@@ -88,7 +88,7 @@ def create_factor_constraints_from_algebraic(*, pgm, constraints, data):
             else:
                 s_str = str(s)
             if type(k) is tuple:
-                k_,t_ = k
+                k_, t_ = k
                 if type(k_) is str:
                     k_str = f'"{k_}"'
                 else:

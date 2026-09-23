@@ -23,6 +23,7 @@ def test_imports():
     from conin import algebraic_constraint_fn
     from conin import algebraic_constraint_fn as smoek_algebraic_constraint_fn
 
+
 def test_coninvarnode():
     """Test ConinVarNode basic functionality."""
     from conin.constraints.algebraic.bridge import ConinVarNode
