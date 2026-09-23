@@ -26,7 +26,7 @@ from conin.dynamic_bayesian_network import (
     ConstrainedDynamicDiscreteBayesianNetwork,
 )
 
-from conin.constraints import OracleConstraint
+from conin.constraints import OracleConstraint, materialise_constraint
 from conin.common.conin import convert_conin_to_pgmpy_mn, convert_conin_to_pgmpy_bn
 
 with try_import() as pgmpy_available:
@@ -77,7 +77,7 @@ def _add_constraints_as_evidence(conin_bn, constraints, data, evidence):
     """Inject generated constraint CPDs into a Bayesian network as evidence."""
     for con in constraints:
         if isinstance(con, OracleConstraint) and con.nodes is not None:
-            cpd = con(conin_bn, data)
+            cpd = materialise_constraint(con, conin_bn, data)
             cpd.node = (cpd.node, -1)
             conin_bn.add_cpd(cpd)
             evidence[cpd.node] = 1
@@ -246,7 +246,7 @@ def _map_query_VariableElimination(
     if pgm.constraints:
         newpgm = copy.deepcopy(pgm.pgm)
         for con in pgm.constraints:
-            factor = con(pgm.pgm)
+            factor = materialise_constraint(con, pgm.pgm)
             newpgm._factors.append(factor)
     else:
         newpgm = pgm.pgm
@@ -303,7 +303,7 @@ def _map_query_VariableElimination(
     if pgm.constraints:
         newpgm = copy.deepcopy(pgm.pgm)
         for con in pgm.constraints:
-            cpd = con(newpgm)
+            cpd = materialise_constraint(con, newpgm)
             newpgm.add_cpd(cpd)
             evidence[cpd.node] = 1
     else:

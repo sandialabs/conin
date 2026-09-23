@@ -39,8 +39,9 @@ class OracleConstraint(ConstraintFunctor):
         """
         Initialize an OracleConstraint object.
 
-        This is the unified constraint class for all oracle / factor constraints.
-        The user function always receives a **dict** mapping keys to state values.
+        This is the unified constraint class for all predicate-style constraints.
+        The user function always receives a **dict** mapping keys to state values
+        and returns ``True`` / ``False``.
 
         * For BN/MN the keys are node names, e.g. ``{"Dyspnoea": 1, "Xray": 0}``.
         * For DBN the keys are ``(name, t)`` tuples, e.g. ``{("A", 0): 0}``.
@@ -49,11 +50,9 @@ class OracleConstraint(ConstraintFunctor):
         Parameters
         ----------
         func : callable, optional
-            The constraint predicate.  It receives a dict of assignments and
-            returns ``True`` / ``False``.  If the constraint was created with
-            ``nodes`` **and** the function accepts two positional parameters,
-            the second parameter receives the ``data`` object supplied at
-            inference time.
+            The constraint predicate ``func(assignment) -> bool``, or
+            ``func(assignment, data) -> bool`` for constraints that need
+            inference-time data (e.g. DBN time indices).
         name : str, optional
             Human-readable name.  Defaults to ``func.__name__`` when *func*
             is provided.
@@ -65,12 +64,11 @@ class OracleConstraint(ConstraintFunctor):
             If ``True``, ``partial_func`` is set to
             ``lambda T, states: func(states)``.
         nodes : list or callable, optional
-            Node scope used for factor materialisation (BN / MN / DBN).
+            Node scope for factor materialisation (BN / MN / DBN).
             Can be a list of node names or a callable ``nodes(data)`` that
-            yields node names.  When provided the constraint will be
-            materialised into a ``DiscreteFactor`` or ``DiscreteCPD`` at
-            inference time.  When ``None`` the constraint is used as a
-            black-box predicate during A* search.
+            yields node names.  When provided, inference backends like
+            variable elimination will materialise this constraint into a
+            ``DiscreteFactor`` or ``DiscreteCPD``.
         """
         self.func = func
         self.nodes = nodes
@@ -82,13 +80,6 @@ class OracleConstraint(ConstraintFunctor):
         else:
             self.partial_func = lambda T, states: True
 
-        # Determine how many positional args `func` accepts (1 or 2).
-        # This matters for factor-style constraints that may accept `data`.
-        if func is not None:
-            self.num_args = len(inspect.signature(func).parameters)
-        else:
-            self.num_args = None
-
         # If no name is provided, use the function's name
         if name is not None:
             self.name = name
@@ -99,15 +90,16 @@ class OracleConstraint(ConstraintFunctor):
 
     def __call__(self, *args, **kwargs):
         """
-        Apply the constraint.
+        Evaluate the constraint predicate.
 
-        When ``nodes`` is ``None`` (HMM / black-box mode):
-            ``constraint(states_dict) -> bool``
+        Parameters
+        ----------
+        *args, **kwargs
+            Forwarded directly to ``func``.
 
-        When ``nodes`` is set (factor mode):
-            ``constraint(pgm, data=None)`` — materialises the predicate into
-            a ``DiscreteFactor`` (for MN) or ``DiscreteCPD`` (for BN) by
-            enumerating all assignments over the declared ``nodes``.
+        Returns
+        -------
+        bool
 
         Raises
         ------
@@ -118,69 +110,7 @@ class OracleConstraint(ConstraintFunctor):
             raise InvalidInputError(
                 f"In constraint {self.name}, the actual constraint function is not defined."
             )
-
-        # --- factor materialisation path (nodes is set) ---
-        if self.nodes is not None and args and not isinstance(args[0], dict):
-            return self._materialise(*args, **kwargs)
-
-        # --- black-box predicate path ---
         return self.func(*args, **kwargs)
-
-    # -----------------------------------------------------------------
-    # Factor materialisation
-    # -----------------------------------------------------------------
-
-    def _materialise(self, pgm, data=None):
-        """Materialise the predicate into a factor or CPD.
-
-        Parameters
-        ----------
-        pgm : DiscreteMarkovNetwork or DiscreteBayesianNetwork
-            The probabilistic graphical model whose state spaces are used
-            for enumeration.
-        data : optional
-            Application-specific data forwarded to the predicate when it
-            accepts two arguments, and to ``nodes`` when it is callable.
-
-        Returns
-        -------
-        DiscreteFactor or DiscreteCPD
-        """
-        from ..markov_network import DiscreteFactor, DiscreteMarkovNetwork
-        from ..bayesian_network import DiscreteCPD, DiscreteBayesianNetwork
-
-        if type(self.nodes) is list:
-            nodes = self.nodes
-        else:
-            nodes = list(self.nodes(data))
-
-        if type(pgm) == DiscreteMarkovNetwork:
-            M = 10**6
-            values = {}
-            for states in itertools.product(*(pgm.states[name] for name in nodes)):
-                assignment = {name: states[i] for i, name in enumerate(nodes)}
-                if self.num_args == 1:
-                    feasible = self.func(assignment)
-                else:
-                    feasible = self.func(assignment, data)
-                values[states] = M if feasible else 0
-            return DiscreteFactor(nodes=nodes, values=values)
-
-        elif type(pgm) == DiscreteBayesianNetwork:
-            node = self.name
-            values = {}
-            for states in itertools.product(*(pgm.states[name] for name in nodes)):
-                assignment = {name: states[i] for i, name in enumerate(nodes)}
-                if self.num_args == 1:
-                    feasible = self.func(assignment)
-                else:
-                    feasible = self.func(assignment, data)
-                feasible = int(feasible)
-                values[states] = {1: feasible, 0: 1 - feasible}
-            return DiscreteCPD(node=node, parents=nodes, values=values)
-
-        else:
-            raise ValueError(f"Unexpected pgm: {type(pgm)}")
 
 
 def oracle_constraint_fn(*, nodes=None, name=None, same_partial_as_func=None):
@@ -207,6 +137,68 @@ def oracle_constraint_fn(*, nodes=None, name=None, same_partial_as_func=None):
         )
 
     return decorator
+
+
+# -----------------------------------------------------------------
+# Factor materialisation utility
+# -----------------------------------------------------------------
+
+
+def materialise_constraint(constraint, pgm, data=None):
+    """Materialise an ``OracleConstraint`` into a factor or CPD.
+
+    This is called by inference backends (e.g. variable elimination) when a
+    constraint has ``nodes`` set.  It enumerates all assignments over the
+    declared nodes and evaluates the predicate to build a deterministic
+    ``DiscreteFactor`` (for Markov networks) or ``DiscreteCPD`` (for Bayesian
+    networks).
+
+    Parameters
+    ----------
+    constraint : OracleConstraint
+        Constraint with ``nodes`` set.
+    pgm : DiscreteMarkovNetwork or DiscreteBayesianNetwork
+        The graphical model whose state spaces are used for enumeration.
+    data : optional
+        Application-specific data forwarded to the predicate when it
+        accepts two arguments, and to ``nodes`` when it is callable.
+
+    Returns
+    -------
+    DiscreteFactor or DiscreteCPD
+    """
+    from ..markov_network import DiscreteFactor, DiscreteMarkovNetwork
+    from ..bayesian_network import DiscreteCPD, DiscreteBayesianNetwork
+
+    func = constraint.func
+    num_args = len(inspect.signature(func).parameters)
+
+    if type(constraint.nodes) is list:
+        nodes = constraint.nodes
+    else:
+        nodes = list(constraint.nodes(data))
+
+    if type(pgm) == DiscreteMarkovNetwork:
+        M = 10**6
+        values = {}
+        for states in itertools.product(*(pgm.states[name] for name in nodes)):
+            assignment = {name: states[i] for i, name in enumerate(nodes)}
+            feasible = func(assignment, data) if num_args >= 2 else func(assignment)
+            values[states] = M if feasible else 0
+        return DiscreteFactor(nodes=nodes, values=values)
+
+    elif type(pgm) == DiscreteBayesianNetwork:
+        node = constraint.name
+        values = {}
+        for states in itertools.product(*(pgm.states[name] for name in nodes)):
+            assignment = {name: states[i] for i, name in enumerate(nodes)}
+            feasible = func(assignment, data) if num_args >= 2 else func(assignment)
+            feasible = int(feasible)
+            values[states] = {1: feasible, 0: 1 - feasible}
+        return DiscreteCPD(node=node, parents=nodes, values=values)
+
+    else:
+        raise ValueError(f"Unexpected pgm: {type(pgm)}")
 
 
 class MVRConstraint(ConstraintFunctor):
