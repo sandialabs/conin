@@ -1,4 +1,5 @@
 from conin.util import try_import
+
 with try_import() as smoek_available:
     import smoek
 
@@ -20,4 +21,3 @@ def add_algebraic_constraints_to_pyomo_model(*, pgm, constraints, model, data):
         component_map=dict(V=model.V),
     )
     return model
-
