@@ -3,7 +3,6 @@ import inspect
 from abc import ABC, abstractmethod
 from ..exceptions import InvalidInputError
 
-
 # One could also create an inherited class for additional functionality
 
 
