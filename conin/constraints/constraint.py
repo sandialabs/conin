@@ -3,7 +3,6 @@ import inspect
 from abc import ABC, abstractmethod
 from ..exceptions import InvalidInputError
 
-
 # One could also create an inherited class for additional functionality
 
 
@@ -201,6 +200,7 @@ def oracle_constraint_fn(*, nodes=None, name=None, same_partial_as_func=None):
         )
 
     return decorator
+
 
 class MVRConstraint(ConstraintFunctor):
 
