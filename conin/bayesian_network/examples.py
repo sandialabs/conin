@@ -1,3 +1,4 @@
+import itertools
 from munch import Munch
 import pandas as pd
 import numpy as np
@@ -1006,3 +1007,49 @@ def tb2_BN_pgmpy_mapcpd(debug=False):
     G.add_cpds(cpd_A, cpd_B, cpd_C)
     G.check_model()
     return Munch(pgm=G, solutions=[MPESolution(states={"A": 0, "B": 3, "C": 4})])
+
+
+#
+# wide
+#
+
+
+def wide_BN_conin(debug=False):
+    N = 10
+
+    G = DiscreteBayesianNetwork()
+    states = {("A", i): [0, 1] for i in range(N)}
+    states["B"] = [0,1]
+    G.states = states
+
+    cpds = []
+    for i in range(N):
+        cpds.append(
+            DiscreteCPD(node=("A", i), values=[1.0 / (i + 1), 1.0 - 1.0 / (i + 1)])
+        )
+
+    B_values = {}
+    tmp = [[0, 1] for i in range(N)]
+    for index in itertools.product(*tmp):
+        count = sum(i for i in index)
+        B_values[index] = [1.0 - 1.0 * count / N, 1.0 * count / N]
+    cpds.append(
+        DiscreteCPD(
+            node="B",
+            parents=[("A", i) for i in range(N)],
+            values=B_values,
+        )
+    )
+
+    if debug:
+        print(G.states)
+        for cpd in cpds:
+            print(cpd)
+
+    G.cpds = cpds
+    G.check_model()
+
+    solution_states = {("A", i): 1 for i in range(N)}
+    solution_states["A",0] = 0
+    solution_states["B"] = 1
+    return Munch(pgm=G, solutions=[MPESolution(states=solution_states)])
