@@ -83,15 +83,23 @@ def create_factor_constraints_from_algebraic(*, pgm, constraints, data):
     tmp = {}
     for k in pgm.nodes:
         for s in pgm.states_of(k):
-            if type(k) is str:
-                k_str = f'"{k}"'
-            else:
-                k_str = str(k)
             if type(s) is str:
                 s_str = f'"{s}"'
             else:
                 s_str = str(s)
-            name = f"m_.V({k_str}, {s_str})"
+            if type(k) is tuple:
+                k_,t_ = k
+                if type(k_) is str:
+                    k_str = f'"{k_}"'
+                else:
+                    k_str = str(k_)
+                name = f"m_.V({k_str}, {t_}, {s_str})"
+            else:
+                if type(k) is str:
+                    k_str = f'"{k}"'
+                else:
+                    k_str = str(k)
+                name = f"m_.V({k_str}, {s_str})"
             setattr(pyomo_model, name, pyo.Var(name=name))
             v = getattr(pyomo_model, name)
             node_map[v] = k
@@ -149,7 +157,7 @@ def create_factor_constraints_from_algebraic(*, pgm, constraints, data):
         composite_constraint_function
     )
 
-    return factor_constraint
+    return [factor_constraint]
 
 
 def _collect_conin_nodes_from_expr(expr, nodes_set):
@@ -207,8 +215,11 @@ def _generate_constraint_function_code(constraint_strings, num_args):
     v_helper = '''
     class m_:
         @staticmethod
-        def V(node, state, time=None):
+        def V(node, state, aux=None):
             """Return 1 if args[node] == state, else 0"""
+            if aux is not None:
+                node = (node,state)
+                state = aux
             if node not in args:
                 raise KeyError(f"Node {node} not found in args")
             return 1 if args.get(node) == state else 0
