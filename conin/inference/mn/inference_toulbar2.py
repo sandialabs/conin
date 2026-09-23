@@ -5,8 +5,8 @@ from pyomo.common.timing import TicTocTimer
 
 import conin.common
 from conin.markov_network import ConstrainedDiscreteMarkovNetwork
-from conin.constraints import Toulbar2Constraint, AlgebraicConstraint
-from conin.constraints.toulbar2 import add_algebraic_constraints_to_toulbar2_model
+from conin.constraints import Toulbar2Constraint
+from conin.constraints.algebraic import add_algebraic_constraints_to_toulbar2_model, AlgebraicConstraint
 from conin.util import try_import
 
 with try_import() as pytoulbar2_available:
