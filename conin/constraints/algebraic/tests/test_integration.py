@@ -464,8 +464,6 @@ class TestToulbar2MultipleConstraints:
 
         assert result_pyomo is not None
         assert result_toulbar2 is not None
-        print(f"HERE {result_pyomo.solution.states=}")
-        print(f"HERE {result_toulbar2.solution.states=}")
         assert result_pyomo.solution.states == result_toulbar2.solution.states
 
     @skipif_toulbar2_not_available
