@@ -4,7 +4,7 @@ from conin import InvalidInputError
 from conin.hidden_markov_model import HiddenMarkovModel
 import conin.hidden_markov_model.hmm_util
 
-import conin.hidden_markov_model.tests.examples as tc
+import conin.hidden_markov_model.examples as tc
 import math
 
 

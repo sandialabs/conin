@@ -251,7 +251,7 @@ def simple1_DDBN_constrained_factor_conin(debug=False):
     pgm = simple1_DDBN_conin(debug=debug).pgm
 
     def nodes(data):
-        for t in range(data.T):
+        for t in data.T:
             yield ("A", t)
             yield ("B", t)
 

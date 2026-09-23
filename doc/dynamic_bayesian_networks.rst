@@ -31,6 +31,10 @@ with an initial distribution and one transition CPD.
    dbn.cpds = [z_start, z_transition]
    dbn.check_model()
 
+``check_model()`` is currently a lightweight consistency hook for dynamic
+Bayesian networks. Static Bayesian networks produced from a dynamic network are
+validated when they are unrolled for inference.
+
 The ``simple1_DDBN_conin`` example introduces two dynamic nodes:
 
 .. code-block:: python
@@ -63,6 +67,10 @@ Constrained dynamic Bayesian networks
 network together with a list of constraints. The examples in
 ``conin.dynamic_bayesian_network.examples`` use the same decorators as the
 other model families.
+
+The Pyomo and Toulbar2 examples require their respective solver backends. Factor
+constraints are converted into auxiliary CPDs during supported inference
+workflows.
 
 Pyomo constraints
 ^^^^^^^^^^^^^^^^^
@@ -137,7 +145,7 @@ set of nodes:
    base = simple1_DDBN_conin().pgm
 
    def nodes(data):
-       for t in range(data.T):
+       for t in data.T:
            yield ("A", t)
            yield ("B", t)
 
@@ -155,5 +163,7 @@ Notes
 
 - ``dynamic_states`` lists the state space for time-indexed variables.
 - ``dbn.t`` is a symbolic time variable used when declaring repeated CPDs.
+- See :doc:`model_conversion_io` for unrolling dynamic Bayesian networks into
+  static Bayesian networks.
 - Simpler models such as ``simple0_DDBN_conin`` and ``simple1_DDBN_conin`` are
   better documentation examples than the larger weather model.

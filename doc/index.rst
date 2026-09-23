@@ -1,7 +1,7 @@
 conin documentation
 ===================
 
-``conin`` provides data structures and inference wrappers for discrete
+``conin`` provides data structures and inference methods for discrete
 probabilistic graphical models, including Markov networks, Bayesian networks,
 dynamic Bayesian networks, and hidden Markov models.
 
@@ -13,6 +13,11 @@ behavior in the codebase.
    :maxdepth: 2
    :caption: Contents:
 
+   quickstart
    probabilistic_graphical_models
    inference
+   examples
+   model_conversion_io
+   hmm_learning
+   backends
    pgm_api

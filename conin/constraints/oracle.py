@@ -3,34 +3,46 @@ from .constraint import OracleConstraint, oracle_constraint_fn
 
 
 def constraint_name():
+    """Return the name of the calling function.
+
+    This helper is used internally when naming generated constraints.
+    """
     return inspect.stack()[1].function
 
 
 @oracle_constraint_fn(same_partial_as_func=True)
 def all_diff_constraint(seq):
-    """
-    Require that all elements in the sequence are different
+    """Require every value in ``seq`` to be unique.
 
-    Parameters:
-        seq (iterable): The sequence to be checked.
+    Parameters
+    ----------
+    seq : iterable
+        Sequence to check.
 
-    Returns:
-        bool: True if all elements are unique, False otherwise.
+    Returns
+    -------
+    bool
+        ``True`` if all elements are unique.
     """
     return len(seq) == len(set(seq))
 
 
 def always_appears_before(seq, val1, val2):
-    """
-    Require that all instances of val1 appear before any instances of val2
+    """Check whether all occurrences of ``val1`` precede ``val2``.
 
-    Parameters:
-        seq (iterable): The sequence to be checked.
-        val1: val1 appears before val2
-        val2: val2 appears after val1
+    Parameters
+    ----------
+    seq : iterable
+        Sequence to check.
+    val1
+        Value that must appear before ``val2``.
+    val2
+        Value that must not appear before a later ``val1``.
 
-    Returns:
-        bool: True iff satisfied
+    Returns
+    -------
+    bool
+        ``True`` if no ``val1`` appears after the first ``val2``.
     """
     for index, x1 in enumerate(seq):
         if x1 == val2:
@@ -50,16 +62,19 @@ def always_appears_before_constraint(val1, val2):
 
 
 def appears_at_least_once_before_constraint(val1, val2):
-    """
-    Require at least one instance of val1 to appear before first val2
+    """Return a constraint requiring ``val1`` before the first ``val2``.
 
-    Parameters:
-        seq (iterable): The sequence to be checked.
-        val1: val1 appears before val2
-        val2: val2 appears after val1
+    Parameters
+    ----------
+    val1
+        Value that must appear before ``val2``.
+    val2
+        Value whose first occurrence is checked.
 
-    Returns:
-        bool: True iff satisfied
+    Returns
+    -------
+    OracleConstraint
+        Constraint that evaluates sequences according to this rule.
     """
 
     @oracle_constraint_fn(name=constraint_name(), same_partial_as_func=True)
@@ -78,16 +93,19 @@ def appears_at_least_once_before_constraint(val1, val2):
 
 
 def always_appears_after_constraint(val1, val2):
-    """
-    Require that any instances of val1 appear after any instances of val2
+    """Return a constraint requiring ``val1`` to appear only after ``val2``.
 
-    Parameters:
-        seq (iterable): The sequence to be checked.
-        val1: val1 appears after val2
-        val2: val2 appears before val1
+    Parameters
+    ----------
+    val1
+        Value that must appear after ``val2``.
+    val2
+        Value that must appear before ``val1``.
 
-    Returns:
-        bool: True iff satisfied
+    Returns
+    -------
+    OracleConstraint
+        Constraint that evaluates sequences according to this rule.
     """
 
     @oracle_constraint_fn(name=constraint_name(), same_partial_as_func=True)
@@ -98,16 +116,19 @@ def always_appears_after_constraint(val1, val2):
 
 
 def appears_at_least_once_after_constraint(val1, val2):
-    """
-    Requires at least one instance of val1 to appear after first val2
+    """Return a constraint requiring ``val1`` after the first ``val2``.
 
-    Parameters:
-        seq (iterable): The sequence to be checked.
-        val1: val1 appears after val2
-        val2: val2 appears before val1
+    Parameters
+    ----------
+    val1
+        Value that must appear after ``val2``.
+    val2
+        Value whose first occurrence is checked.
 
-    Returns:
-        bool: True iff satisfied
+    Returns
+    -------
+    OracleConstraint
+        Constraint that evaluates sequences according to this rule.
     """
 
     # No partial here because val2 could appear at the very last time step
@@ -126,17 +147,20 @@ def appears_at_least_once_after_constraint(val1, val2):
 
 @oracle_constraint_fn(same_partial_as_func=True)
 def citation_constraint(seq):
-    """
-    All elements of seq must appear in non-repeating blocks
-    E.g.
-    True 1112277
-    False 11112227722
+    """Require each value to appear in a single contiguous block.
 
-    Parameters:
-        seq (iterable): The sequence to be checked
+    For example, ``[1, 1, 2, 2, 7, 7]`` is feasible, but
+    ``[1, 1, 2, 2, 7, 7, 2, 2]`` is not.
 
-    Returns:
-        bool: True iff satisfied
+    Parameters
+    ----------
+    seq : iterable
+        Sequence to check.
+
+    Returns
+    -------
+    bool
+        ``True`` if every value appears in one contiguous block.
     """
     for t1 in range(2, len(seq)):
         if seq[t1] != seq[t1 - 1]:
@@ -147,21 +171,32 @@ def citation_constraint(seq):
 
 
 def has_minimum_number_of_occurences(seq, *, val, count):
-    """
-    Require that val appears at least count times (count times returns true)
+    """Check whether ``val`` appears at least ``count`` times.
 
-    Parameters:
-        seq(iterable): The sequence to be checked
-        val : Hidden state to be count
-        count : min number
+    The misspelling in this function name is preserved for API compatibility.
 
-    Returns:
-        bool: True iff satisfied
+    Parameters
+    ----------
+    seq : iterable
+        Sequence to check.
+    val
+        Value to count.
+    count : int
+        Minimum allowed number of occurrences.
+
+    Returns
+    -------
+    bool
+        ``True`` if ``val`` appears at least ``count`` times.
     """
     return seq.count(val) >= count
 
 
 def has_minimum_number_of_occurences_constraint(*, val, count):
+    """Return a constraint requiring at least ``count`` occurrences of ``val``.
+
+    The misspelling in this function name is preserved for API compatibility.
+    """
     return OracleConstraint(
         func=lambda seq: has_minimum_number_of_occurences(seq, val=val, count=count),
         partial_func=lambda T, seq: seq.count(val) + T - len(seq) >= count,
@@ -169,21 +204,33 @@ def has_minimum_number_of_occurences_constraint(*, val, count):
 
 
 def has_maximum_number_of_occurences(seq, *, val, count):
-    """
-    Check if seq has val appear at most count times (count times returns true)
+    """Check whether ``val`` appears at most ``count`` times.
 
-    Parameters:
-        seq(iterable): The sequence to be checked
-        val : The hidden state to be counter
-        count : The max number
+    The misspelling in this function name is preserved for API compatibility.
 
-    Returns:
-        bool: True iff satisfied
+    Parameters
+    ----------
+    seq : iterable
+        Sequence to check.
+    val
+        Value to count.
+    count : int
+        Maximum allowed number of occurrences.
+
+    Returns
+    -------
+    bool
+        ``True`` if ``val`` appears at most ``count`` times.
     """
     return seq.count(val) <= count
 
 
 def has_maximum_number_of_occurences_constraint(*, val, count):
+    """Return a constraint requiring at most ``count`` occurrences of ``val``.
+
+    The misspelling in this function name is preserved for API compatibility.
+    """
+
     @oracle_constraint_fn(name=constraint_name(), same_partial_as_func=True)
     def constraint(seq):
         return has_maximum_number_of_occurences(seq, val=val, count=count)
@@ -192,6 +239,11 @@ def has_maximum_number_of_occurences_constraint(*, val, count):
 
 
 def has_exact_number_of_occurences_constraint(*, val, count):
+    """Return a constraint requiring exactly ``count`` occurrences of ``val``.
+
+    The misspelling in this function name is preserved for API compatibility.
+    """
+
     def has_exact_number_of_occurences(seq, *, val, count):
         """
         Check if seq has val appear exactly count times
@@ -214,15 +266,17 @@ def has_exact_number_of_occurences_constraint(*, val, count):
 
 
 def appears_at_least_once_constraint(val):
-    """
-    Checks if val appears at least once
+    """Return a constraint requiring ``val`` to appear at least once.
 
-    Parameters:
-        seq(iterable): The sequence to be checked
-        val : The hidden state to be counted
+    Parameters
+    ----------
+    val
+        Value that must appear in the sequence.
 
-    Returns:
-        bool: True iff satisfied
+    Returns
+    -------
+    OracleConstraint
+        Constraint that evaluates sequences according to this rule.
     """
 
     @oracle_constraint_fn(name=constraint_name())
@@ -233,15 +287,17 @@ def appears_at_least_once_constraint(val):
 
 
 def does_not_occur_constraint(val):
-    """
-    Checks if val does not occur
+    """Return a constraint requiring ``val`` to be absent.
 
-    Parameters:
-        seq(iterable): The sequence to be checked
-        val : The hidden state to check
+    Parameters
+    ----------
+    val
+        Value that must not appear in the sequence.
 
-    Returns:
-        bool: True iff satisfied
+    Returns
+    -------
+    OracleConstraint
+        Constraint that evaluates sequences according to this rule.
     """
 
     @oracle_constraint_fn(name=constraint_name(), same_partial_as_func=True)
@@ -252,15 +308,17 @@ def does_not_occur_constraint(val):
 
 
 def fix_final_state_constraint(val):
-    """
-    Requires that the final state of sequence is val
+    """Return a constraint requiring the final sequence value to be ``val``.
 
-    Parameters:
-        seq (iterable): The sequence to be checked
-        val : The hidden state which must be the final state
+    Parameters
+    ----------
+    val
+        Required final value.
 
-    Returns:
-        bool: True iff satisfied
+    Returns
+    -------
+    OracleConstraint
+        Constraint that evaluates sequences according to this rule.
     """
 
     # No partial because it only involves the final state
@@ -275,19 +333,22 @@ def fix_final_state_constraint(val):
 
 
 def occurs_only_in_time_frame_constraint(val, *, lower_t=None, upper_t=None):
-    """
-    Requires that val only occurs in seq[lower_t, upper_t]
+    """Return a constraint limiting where ``val`` may occur.
 
-    Parameters:
-        seq (Iterable): The sequence to be checked
-        val : The hidden state
-        lower_t : The lower bound on time frame (inclusive)
-                  If None we set this to 0
-        upper_t : The upper bound on time frame (exclusive)
-                  If None we set this to len(seq)
+    Parameters
+    ----------
+    val
+        Value whose occurrence window is restricted.
+    lower_t : int, optional
+        Lower index before which ``val`` may not appear. Defaults to ``0``.
+    upper_t : int, optional
+        Upper window parameter. In the current implementation, ``val`` may not
+        appear at indices ``upper_t - 1`` or later. Defaults to ``len(seq)``.
 
-    Returns:
-        bool: True iff satisfied
+    Returns
+    -------
+    OracleConstraint
+        Constraint that evaluates sequences according to this rule.
     """
 
     @oracle_constraint_fn(name=constraint_name(), same_partial_as_func=True)
@@ -303,19 +364,21 @@ def occurs_only_in_time_frame_constraint(val, *, lower_t=None, upper_t=None):
 
 
 def occurs_at_least_once_in_time_frame_constraint(val, *, lower_t=None, upper_t=None):
-    """
-    Requires that val only occurs at least once in seq[lower_t, upper_t]
+    """Return a constraint requiring ``val`` inside a time window.
 
-    Parameters:
-        seq (Iterable): The sequence to be checked
-        val : The hidden state
-        lower_t : The lower bound on time frame (inclusive)
-                  If None we set this to 0
-        upper_t : The upper bound on time frame (exclusive)
-                  If None we set this to len(seq)
+    Parameters
+    ----------
+    val
+        Value that must appear in the time window.
+    lower_t : int, optional
+        Inclusive lower index. Defaults to ``0``.
+    upper_t : int, optional
+        Exclusive upper index. Defaults to ``len(seq)``.
 
-    Returns:
-        bool: True iff satisfied
+    Returns
+    -------
+    OracleConstraint
+        Constraint that evaluates sequences according to this rule.
     """
 
     def func(seq):
@@ -341,15 +404,17 @@ def occurs_at_least_once_in_time_frame_constraint(val, *, lower_t=None, upper_t=
 
 
 def or_constraints(constraints):
-    """
-    Takes in a list of constraints and returns a constraints that
-    is true if at least on of the holds
+    """Return a constraint satisfied when any input constraint is satisfied.
 
-    Parameters:
-        constraints (iterable): List of OracleConstraint objects
+    Parameters
+    ----------
+    constraints : iterable of OracleConstraint
+        Constraints to combine.
 
     Returns
-        OracleConstraint: Constraint satisfying desired properties
+    -------
+    OracleConstraint
+        Combined disjunctive constraint.
     """
     name = "or("
     for constraint in constraints:
@@ -373,15 +438,17 @@ def or_constraints(constraints):
 
 
 def xor_constraints(constraints):
-    """
-    Takes in a list of constraints and returns a constraints that
-    is true if exactly one of them holds
+    """Return a constraint satisfied when exactly one input is satisfied.
 
-    Parameters:
-        constraints (iterable): List of OracleConstraint objects
+    Parameters
+    ----------
+    constraints : iterable of OracleConstraint
+        Constraints to combine.
 
     Returns
-        OracleConstraint: Constraint satisfying desired properties
+    -------
+    OracleConstraint
+        Combined exclusive-or constraint.
     """
     name = "xor("
     for constraint in constraints:
@@ -413,19 +480,19 @@ def xor_constraints(constraints):
 
 
 def not_constraint(constraint):
-    """
-    Takes in a constraints and returns a constraints that
-    is true iff the original constraint is false
+    """Return a constraint that negates another constraint.
 
-    Note: If possible use built in functions, this makes it so that
-    we can use the built in partial_func, whereas in the automated
-    process we can't generate partial_func.
+    The negated constraint cannot generally provide a strong ``partial_func``.
 
-    Parameters:
-        constraints (iterable): List of OracleConstraint objects
+    Parameters
+    ----------
+    constraint : OracleConstraint
+        Constraint to negate.
 
     Returns
-        OracleConstraint: Constraint satisfying desired properties
+    -------
+    OracleConstraint
+        Constraint whose value is ``not constraint(seq)``.
     """
     name = "not(" + constraint.name + ")"
 
@@ -438,17 +505,21 @@ def not_constraint(constraint):
 
 
 def and_constraints(constraints):
-    """
-    Takes in a list of constraints and returns a constraints that
-    is true iff all constraints are true.
-    Note: Probably don't use this other than for difficult modelling, you can just
-    add multiple constraints to your statistical model
+    """Return a constraint satisfied when every input constraint is satisfied.
 
-    Parameters:
-        constraints (iterable): List of OracleConstraint objects
+    For most models, adding each constraint separately is preferable. This helper
+    is useful when constraints need to be composed before they are passed to a
+    model.
+
+    Parameters
+    ----------
+    constraints : iterable of OracleConstraint
+        Constraints to combine.
 
     Returns
-        OracleConstraint: Constraint satisfying desired properties
+    -------
+    OracleConstraint
+        Combined conjunctive constraint.
     """
     name = "and("
     for constraint in constraints:

@@ -134,27 +134,24 @@ def algebraic_constraint_fn(*, name=None):
     Returns:
         Decorator function that wraps user function in AlgebraicConstraint
 
-    Example:
-        >>> from conin import algebraic_constraint_fn
-        >>>
-        >>> # Single constraints
-        >>> @algebraic_constraint_fn()
-        >>> def my_constraint(model, data):
-        >>>     # Natural algebraic syntax - works with both Pyomo and Toulbar2
-        >>>     return model.V("A", 0) + model.V("B", 0) <= 1
-        >>>
-        >>> # Multiple constraints in a list
-        >>> @algebraic_constraint_fn()
-        >>> def multi_constraint(model, data):
-        >>>     return [
-        >>>         model.V("A", s) + model.V("B", s) <= 1
-        >>>         for s in [0, 1, 2]
-        >>>     ]
-        >>>
-        >>> # Use with either inference method
-        >>> cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[my_constraint])
-        >>> result = map_query(cpgm, method="integer_program", evidence=...)  # Uses Pyomo
-        >>> result = map_query(cpgm, method="toulbar2", evidence=...)  # Uses Toulbar2
+    Example::
+
+        from conin import algebraic_constraint_fn
+
+        @algebraic_constraint_fn()
+        def my_constraint(model, data):
+            return model.V("A", 0) + model.V("B", 0) <= 1
+
+        @algebraic_constraint_fn()
+        def multi_constraint(model, data):
+            return [
+                model.V("A", s) + model.V("B", s) <= 1
+                for s in [0, 1, 2]
+            ]
+
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[my_constraint])
+        result = map_query(cpgm, method="integer_program", evidence=...)
+        result = map_query(cpgm, method="toulbar2", evidence=...)
     """
 
     def decorator(func):

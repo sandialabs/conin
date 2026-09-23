@@ -56,72 +56,32 @@ class DiscreteCPD:
         ('hard','medium'): dict(A=0.2, B=0.2, C=0.6),
         ('hard','high'): dict(A=0.3, B=0.3, C=0.4)}
 
-    >>> cpd = DiscreteCPD(node='grade',
-    ...              parents=['diff', 'intel'],
-    ...              values={('easy','low'): dict(A=0.2, B=0.2, C=0.6),
-    ...                      ('easy','mid'): dict(A=0.3, B=0.3, C=0.4),
-    ...                      ('easy','high'): dict(A=0.4, B=0.4, C=0.2),
-    ...                      ('hard','low'): dict(A=0.1, B=0.1, C=0.8),
-    ...                      ('hard','mid'): dict(A=0.2, B=0.2, C=0.6),
-    ...                      ('hard','high'): dict(A=0.3, B=0.3, C=0.4)})
-    >>> import os
-    >>> os.environ['COLUMNS'] = "100"   # Make sure we print all columns in the table
-    >>>
-    >>> print(cpd)
-    +----------+------------+------------+-------------+------------+------------+-------------+
-    | diff     | diff(easy) | diff(easy) | diff(easy)  | diff(hard) | diff(hard) | diff(hard)  |
-    +----------+------------+------------+-------------+------------+------------+-------------+
-    | intel    | intel(low) | intel(mid) | intel(high) | intel(low) | intel(mid) | intel(high) |
-    +----------+------------+------------+-------------+------------+------------+-------------+
-    | grade(A) | 0.2        | 0.3        | 0.4         | 0.1        | 0.2        | 0.3         |
-    +----------+------------+------------+-------------+------------+------------+-------------+
-    | grade(B) | 0.2        | 0.3        | 0.4         | 0.1        | 0.2        | 0.3         |
-    +----------+------------+------------+-------------+------------+------------+-------------+
-    | grade(C) | 0.6        | 0.4        | 0.2         | 0.8        | 0.6        | 0.4         |
-    +----------+------------+------------+-------------+------------+------------+-------------+
-    >>> cpd.values
-    array([[[0.2, 0.3, 0.4],
-            [0.1, 0.2, 0.3]],
-    <BLANKLINE>
-           [[0.2, 0.3, 0.4],
-            [0.1, 0.2, 0.3]],
-    <BLANKLINE>
-           [[0.6, 0.4, 0.2],
-            [0.8, 0.6, 0.4]]])
-    >>> cpd.variables
-    ['grade', 'diff', 'intel']
-    >>> cpd.cardinality
-    array([3, 2, 3])
+    >>> from conin.bayesian_network import DiscreteBayesianNetwork, DiscreteCPD
+    >>> cpd = DiscreteCPD(
+    ...     node='grade',
+    ...     parents=['diff', 'intel'],
+    ...     values={
+    ...         ('easy','low'): dict(A=0.2, B=0.2, C=0.6),
+    ...         ('easy','mid'): dict(A=0.3, B=0.3, C=0.4),
+    ...         ('easy','high'): dict(A=0.4, B=0.4, C=0.2),
+    ...         ('hard','low'): dict(A=0.1, B=0.1, C=0.8),
+    ...         ('hard','mid'): dict(A=0.2, B=0.2, C=0.6),
+    ...         ('hard','high'): dict(A=0.3, B=0.3, C=0.4),
+    ...     },
+    ... )
     >>> cpd.node
     'grade'
-    >>> cpd.cardinality
-    array([2])
-    >>> cpd.node
-    'A'
-    >>> cpd.variable_card
-    2
+    >>> cpd.parents
+    ['diff', 'intel']
+    >>> cpd.values[('easy', 'low')]
+    {'A': 0.2, 'B': 0.2, 'C': 0.6}
 
-    >>> cpd = DiscreteCPD(node='B', parents=['A'],
-    ...              values={0:[0.2, 0.8], 1:[0.9, 0.1]})
-    >>> print(cpd)
-    +------+------+------+
-    | A    | A(0) | A(1) |
-    +------+------+------+
-    | B(0) | 0.2  | 0.9  |
-    +------+------+------+
-    | B(1) | 0.8  | 0.1  |
-    +------+------+------+
-    >>> cpd.values
-    array([[0.2, 0.9],
-           [0.8, 0.1]])
-    >>> cpd.variables
-    ['B', 'A']
-    >>> cpd.cardinality
-    array([2, 2])
-    >>> cpd.node
-    'B'
-    >>> cpd.variable_card
-    2
+    List-valued CPDs are normalized against a Bayesian network's state order:
+
+    >>> bn = DiscreteBayesianNetwork(states={'A': [0, 1], 'B': [0, 1]})
+    >>> cpd = DiscreteCPD(node='B', parents=['A'], values={0: [0.2, 0.8], 1: [0.9, 0.1]})
+    >>> cpd.normalize(bn).values
+    {0: {0: 0.2, 1: 0.8}, 1: {0: 0.9, 1: 0.1}}
     """
 
     node: str | int

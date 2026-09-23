@@ -1,44 +1,29 @@
 Inference API
 =============
 
-This page groups the public inference wrapper classes.
+This page documents the public inference entry point. Use
+``conin.inference.map_query`` with a ``method`` argument to select the backend
+algorithm. The implementation dispatches on the model type, so the same call
+shape works across supported Markov networks, Bayesian networks, dynamic
+Bayesian networks, hidden Markov models, and constrained variants when the
+selected backend supports them.
 
-.. autoclass:: conin.inference.AStarInference
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. autofunction:: conin.inference.map_query
 
-.. autoclass:: conin.inference.CFNInference
-   :members:
-   :undoc-members:
-   :show-inheritance:
+Available Methods
+-----------------
 
-.. autoclass:: conin.inference.DPGM_CFNInference
-   :members:
-   :undoc-members:
-   :show-inheritance:
+``integer_program``
+   Uses the Pyomo optimization backend.
 
-.. autoclass:: conin.inference.IntegerProgrammingInference
-   :members:
-   :undoc-members:
-   :show-inheritance:
+``toulbar2``
+   Uses the Toulbar2 cost-function-network backend.
 
-.. autoclass:: conin.inference.DPGM_IntegerProgrammingInference
-   :members:
-   :undoc-members:
-   :show-inheritance:
+``variable_elimination``
+   Uses pgmpy's variable-elimination backend.
 
-.. autoclass:: conin.inference.VariableEliminationInference
-   :members:
-   :undoc-members:
-   :show-inheritance:
+``a_star``
+   Uses A* search for supported hidden Markov model inputs.
 
-.. autoclass:: conin.inference.DPGM_VariableEliminationInference
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. autoclass:: conin.inference.ViterbiInference
-   :members:
-   :undoc-members:
-   :show-inheritance:
+``viterbi``
+   Uses the Viterbi algorithm for supported hidden Markov model inputs.

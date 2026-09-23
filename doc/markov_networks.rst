@@ -10,6 +10,8 @@ Discrete Factors
 A ``DiscreteFactor`` assigns non-negative weights to one or more nodes.
 Factors can be specified either with a dictionary keyed by assignments or with a
 flat list interpreted in the model's state order.
+For multi-node factors, dictionary values are the most explicit representation
+and avoid ambiguity about Cartesian-product ordering.
 
 .. code-block:: python
 
@@ -85,6 +87,10 @@ Constrained Markov networks
 list of constraint functors. The examples in
 ``conin.markov_network.examples`` use the same three-variable ``ABC`` model and
 add an all-different constraint.
+
+The Pyomo and Toulbar2 examples require their respective solver backends. Factor
+constraints are represented as additional factors and can also be consumed by
+variable-elimination workflows when ``pgmpy`` is installed.
 
 Pyomo constraints
 ^^^^^^^^^^^^^^^^^
@@ -168,5 +174,7 @@ Notes
 - ``states`` defines the allowed values for each random variable.
 - ``edges`` can be given explicitly or inferred from the factor scopes.
 - ``check_model()`` is a good final step after assigning states and factors.
+- See :doc:`model_conversion_io` for UAI file I/O and Bayesian-network to
+  Markov-network conversion.
 - Simpler examples such as ``example6_conin`` and ``ABC_conin`` are usually the
   best starting point for custom models.

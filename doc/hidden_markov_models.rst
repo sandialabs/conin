@@ -40,12 +40,60 @@ transition, and emission probabilities and then loads them into a
 After ``load_model()``, the hidden and observed state labels are available from
 ``hmm.hidden_states`` and ``hmm.observed_states``.
 
+Random HMMs
+-----------
+
+Use ``random_hmm`` to create a reproducible HMM with randomly generated start,
+transition, and emission probabilities over a specified state space.
+
+.. code-block:: python
+
+   from conin.hidden_markov_model import random_hmm
+
+   hmm = random_hmm(
+       hidden_states=["h0", "h1"],
+       observed_states=["o0", "o1"],
+       seed=10,
+   )
+
+   assert hmm.hidden_states == ["h0", "h1"]
+   assert hmm.observed_states == ["o0", "o1"]
+   assert abs(sum(hmm.get_start_probs().values()) - 1.0) < 1e-12
+
+JSON I/O
+--------
+
+``HiddenMarkovModel`` can write its start, transition, and emission
+probabilities to a JSON file and load them back later. This HMM-specific JSON
+format is separate from the UAI file support described in
+:doc:`model_conversion_io`.
+
+.. code-block:: python
+
+   from conin.hidden_markov_model import HiddenMarkovModel
+   from conin.hidden_markov_model.examples import create_hmm1
+
+   hmm = create_hmm1()
+   hmm.write_to_file("hmm.json")
+
+   loaded = HiddenMarkovModel()
+   loaded.read_from_file("hmm.json")
+
+   assert loaded.get_start_probs() == hmm.get_start_probs()
+   assert loaded.get_transition_probs() == hmm.get_transition_probs()
+   assert loaded.get_emission_probs() == hmm.get_emission_probs()
+
 Constrained hidden Markov models
 --------------------------------
 
 ``ConstrainedHiddenMarkovModel`` wraps a base HMM and a list of constraint
-functors. The test examples include oracle, factor, Pyomo, and Toulbar2
+functors. The public examples include oracle, factor, Pyomo, and Toulbar2
 constraints.
+
+``initialize_chmm()`` constructs an internal constrained HMM object for oracle,
+Pyomo, and MVR constraints. Factor and Toulbar2 constraints are consumed by the
+corresponding inference methods instead of initializing a standalone CHMM object
+directly.
 
 Oracle constraints
 ^^^^^^^^^^^^^^^^^^
@@ -58,9 +106,9 @@ Oracle constraints
    from conin.hidden_markov_model import (
        HiddenMarkovModel,
        ConstrainedHiddenMarkovModel,
-       OracleConstraint,
    )
-   from conin.hidden_markov_model.tests.examples import create_hmm1
+   from conin.constraints import OracleConstraint
+   from conin.hidden_markov_model.examples import create_hmm1
 
    hmm = create_hmm1()
 
@@ -89,7 +137,7 @@ Pyomo constraints
    import pyomo.environ as pe
    import conin
    from conin.hidden_markov_model import ConstrainedHiddenMarkovModel
-   from conin.hidden_markov_model.tests.examples import create_hmm1
+   from conin.hidden_markov_model.examples import create_hmm1
 
    hmm = create_hmm1()
 
@@ -108,8 +156,8 @@ Pyomo constraints
    chmm = ConstrainedHiddenMarkovModel(
        hmm=hmm,
        constraints=[num_zeros_greater_than_nine, num_zeros_less_than_thirteen],
-   )
-   chmm.initialize_chmm()
+    )
+    chmm.initialize_chmm()
 
 Toulbar2 constraints
 ^^^^^^^^^^^^^^^^^^^^
@@ -120,7 +168,7 @@ Toulbar2 constraints
 
    from conin import toulbar2_constraint_fn
    from conin.hidden_markov_model import ConstrainedHiddenMarkovModel
-   from conin.hidden_markov_model.tests.examples import create_hmm1
+   from conin.hidden_markov_model.examples import create_hmm1
 
    hmm = create_hmm1()
 
@@ -144,7 +192,9 @@ Toulbar2 constraints
        hmm=hmm,
        constraints=[num_zeros_greater_than_nine, num_zeros_less_than_thirteen],
    )
-   chmm.initialize_chmm()
+
+``map_query(..., method="toulbar2")`` applies these constraints when building
+the Toulbar2 model.
 
 Factor constraints
 ^^^^^^^^^^^^^^^^^^
@@ -155,7 +205,7 @@ Factor constraints
 
    from conin import factor_constraint_fn
    from conin.hidden_markov_model import ConstrainedHiddenMarkovModel
-   from conin.hidden_markov_model.tests.examples import create_hmm1
+   from conin.hidden_markov_model.examples import create_hmm1
 
    hmm = create_hmm1()
 
@@ -177,13 +227,23 @@ Factor constraints
        hmm=hmm,
        constraints=[num_zeros_greater_than_nine, num_zeros_less_than_thirteen],
    )
-   chmm.initialize_chmm()
+
+``map_query(..., method="variable_elimination")`` can consume factor
+constraints by expanding them into auxiliary factors.
 
 Notes
 -----
 
 - ``HiddenMarkovModel.load_model()`` accepts dictionaries keyed by hidden and
   observed state labels.
+- ``random_hmm`` is useful for tests, examples, and experiments where exact
+  probabilities are less important than a valid model structure.
+- ``write_to_file`` and ``read_from_file`` provide HMM-specific JSON
+  serialization for model parameters.
+- See :doc:`model_conversion_io` for converting HMMs to dynamic Bayesian
+  networks.
+- See :doc:`hmm_learning` for estimating HMM parameters from labeled
+  simulations.
 - ``ConstrainedHiddenMarkovModel`` requires all constraints in a model to use
   the same constraint family.
 - ``create_hmm1`` and ``create_chmm1_*`` are the simplest tested examples for
