@@ -5,6 +5,69 @@ from functools import reduce
 import pyomo.environ as pyo
 from pyomo.core.expr import current as EXPR
 from pyomo.repn import generate_standard_repn
+from pyomo.common.collections import ComponentMap
+
+from conin.constraints import Toulbar2Constraint, AlgebraicConstraint
+from conin.util import try_import, State
+with try_import() as smoek_available:
+    import smoek
+
+
+class PyomoVarWrapper(dict):
+    def __init__(self, *arg, **kw):
+        super(PyomoVarWrapper, self).__init__(*arg, **kw)
+
+    def pprint(self):  # pragma:nocover
+        pprint.pprint(self)
+
+    def __call__(self, *args):
+        if len(args) == 2:
+            r, s = args
+        elif len(args) == 3:
+            r, i, s = args
+            r = (r, i)
+        else:
+            raise ValueError("There must be either 2 or 3 arguments")
+
+        if type(s) is not State:
+            s = State(s)
+        return dict.__getitem__(self, (r, s))
+
+
+def add_algebraic_constraints_to_toulbar2_model(*, pgm, constraints, model, data):
+    if not smoek_available:
+        raise TypeError(
+            f"The smoek package must be installed to use algebraic constraints."
+        )
+
+    smoek_model = smoek.model()
+    for func in constraints:
+        assert isinstance(
+            func, AlgebraicConstraint
+        ), f"Unexpected constraint type ({type(func)}) when performing inference with Toulbar2. If the first constraint is a  AlgebraicConstraint, then all subsequent constraints must be the same."
+        func(smoek_model, data)
+    smoek_model._update_smoek_components()
+
+    pyomo_model = pyo.ConcreteModel()
+    N = sum(len(pgm.states_of(k)) for k, _ in model.V.items())
+    pyomo_model.V_conin_temp = pyo.Var(pyo.RangeSet(0, N - 1))
+
+    pyomo_model.V_to_tb2 = ComponentMap()
+    tmp = {}
+    ctr = 0
+    for k, _ in model.V.items():
+        for s in pgm.states_of(k):
+            pyomo_model.V_to_tb2[pyomo_model.V_conin_temp[ctr]] = model.V(k, s)
+            tmp[k, State(s)] = pyomo_model.V_conin_temp[ctr]
+            ctr += 1
+    pyomo_model.V = PyomoVarWrapper(tmp)
+
+    pyomo_model = smoek.pymodel.pyomo.generate(
+        model=smoek_model,
+        pyomo_model=pyomo_model,
+        data=data,
+    )
+    add_toulbar2_constraints(model=model, pyomo_model=pyomo_model)
 
 
 def add_toulbar2_constraints(model, pyomo_model):
