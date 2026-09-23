@@ -1,5 +1,5 @@
-from dataclasses import dataclass
 from math import log
+from conin.util import State
 
 
 def get_factor_value(f, values):
@@ -8,11 +8,6 @@ def get_factor_value(f, values):
     the specification of node names that are non-strings.
     """
     return f.values[tuple(f.name_to_no[var][values[var]] for var in f.variables)]
-
-
-@dataclass(order=True, frozen=True)
-class State:
-    value: tuple
 
 
 def extract_factor_representation(pgm):
