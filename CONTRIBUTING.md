@@ -30,6 +30,20 @@ Submitted code that addresses an issue should include a test exercising the
 relevant case. New functionality should include tests to establish validity of
 its results and/or effects.
 
+Notebooks
+---------
+
+Jupyter notebooks in ``notebooks/`` are committed without outputs. A git
+filter handles stripping automatically, but it must be registered once after
+cloning:
+
+```
+nbstripout --install --attributes .gitattributes
+```
+
+``nbstripout`` is included in the dev environment (``dev_environment.yml``).
+If you forget this step, CI will reject the pull request with a clear message.
+
 Legal Disclaimer
 ----------------
 

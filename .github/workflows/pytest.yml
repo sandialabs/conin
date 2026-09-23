@@ -219,3 +219,59 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml
 
+  notebooks:
+    needs: format-check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache conda environment
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/conda_pkgs_dir
+            ~/.conda
+            ~/miniconda3/envs
+          key: conda-ubuntu-latest-3.13-notebooks-${{ hashFiles('dev_environment.yml') }}
+          restore-keys: |
+            conda-ubuntu-latest-3.13-notebooks-
+            conda-ubuntu-latest-3.13-
+
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniconda-version: "latest"
+          auto-update-conda: true
+          python-version: 3.13
+          channels: conda-forge,defaults
+          activate-environment: conin_dev
+          environment-file: dev_environment.yml
+          use-mamba: true
+
+      - name: Install package
+        run: pip install -e .
+
+      - name: Install pgmpy
+        run: |
+            conda install -c pytorch pytorch
+            conda install -c pytorch cpuonly
+            pip install pgmpy
+            python -c "import pgmpy; from pgmpy import config; config.set_backend('numpy'); print('pgmpy initialized')"
+
+      - name: Verify notebooks are stripped
+        run: |
+            pip install nbstripout
+            if ! nbstripout --verify notebooks/*.ipynb; then
+              echo ""
+              echo "ERROR: One or more notebooks contain outputs."
+              echo "Please run 'nbstripout --install --attributes .gitattributes' in your local repo"
+              echo "and then re-add and commit the notebooks. See CONTRIBUTING.md for details."
+              exit 1
+            fi
+
+      - name: Smoke test notebooks
+        run: pytest --nbmake notebooks/*.ipynb -v
+
