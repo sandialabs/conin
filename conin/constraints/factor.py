@@ -1,10 +1,10 @@
 import itertools
 import inspect
+from .constraint import ConstraintFunctor
 from ..exceptions import InvalidInputError
 from ..markov_network import DiscreteFactor, DiscreteMarkovNetwork
 from ..bayesian_network import DiscreteCPD, DiscreteBayesianNetwork
 
-from .constraint import ConstraintFunctor
 
 
 class FactorConstraint(ConstraintFunctor):
