@@ -356,8 +356,8 @@ def _map_query_VariableElimination(
         save_model(newpgm, write_uai_file)
 
     pgmpy_model = convert_conin_to_pgmpy_bn(newpgm)
-    solution_with_evidence = (
-        options.get("solution_with_evidence", False) or (len(pgm.constraints) > 0)
+    solution_with_evidence = options.get("solution_with_evidence", False) or (
+        len(pgm.constraints) > 0
     )
 
     def _execute():

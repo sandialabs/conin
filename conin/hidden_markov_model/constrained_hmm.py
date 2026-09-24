@@ -79,7 +79,10 @@ class ConstrainedHiddenMarkovModel:
         if isinstance(constraint, OracleConstraint):
             if constraint.nodes is not None:
                 # Oracle constraint with nodes for factor materialisation
-                assert self.constraint_type is None or self.constraint_type == "oracle_with_nodes"
+                assert (
+                    self.constraint_type is None
+                    or self.constraint_type == "oracle_with_nodes"
+                )
                 self.constraint_type = "oracle_with_nodes"
             else:
                 # Black-box oracle constraint (HMM A* style)
