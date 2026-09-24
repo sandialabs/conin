@@ -4,20 +4,20 @@ Contributing to Conin
 Online Documentation
 --------------------
 
-The user-facing documentation is built from the files in ``doc/`` and published
+The user-facing documentation is built from the files in ``doc/sphinx/`` and published
 at https://conin.readthedocs.io/en/latest/.
 
 To build it locally from the repository root:
 
 ```
 python -m pip install -e .[docs]
-python -m sphinx -b html doc doc/_build/html
+python -m sphinx -b html doc/sphinx doc/sphinx/_build/html
 ```
 
 When documentation examples change, also run the Sphinx doctest builder:
 
 ```
-python -m sphinx -b doctest doc doc/_build/doctest
+python -m sphinx -b doctest doc/sphinx doc/sphinx/_build/doctest
 ```
 
 Pull Requests
@@ -33,7 +33,7 @@ its results and/or effects.
 Notebooks
 ---------
 
-Jupyter notebooks in ``notebooks/`` are committed without outputs. A git
+Jupyter notebooks in ``doc/notebooks/`` are committed without outputs. A git
 filter handles stripping automatically, but it must be registered once after
 cloning:
 

@@ -264,7 +264,7 @@ jobs:
       - name: Verify notebooks are stripped
         run: |
             pip install nbstripout
-            if ! nbstripout --verify notebooks/*.ipynb; then
+            if ! nbstripout --verify doc/notebooks/*.ipynb; then
               echo ""
               echo "ERROR: One or more notebooks contain outputs."
               echo "Please run 'nbstripout --install --attributes .gitattributes' in your local repo"
@@ -273,5 +273,5 @@ jobs:
             fi
 
       - name: Smoke test notebooks
-        run: pytest --nbmake notebooks/*.ipynb -v
+        run: pytest --nbmake doc/notebooks/*.ipynb -v
 

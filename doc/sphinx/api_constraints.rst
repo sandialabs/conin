@@ -71,8 +71,31 @@ and hidden Markov models:
            num_h0 <= 12,
        ]
 
-The decorated function may return one expression or a list of expressions. The
-inference backend translates those expressions into the backend-specific form at
+The decorated function may return one expression or a list of expressions, or
+it may call ``model.add_components(...)`` to register smoek components
+(sequences, indices, and indexed constraints) directly on the model and return
+``None``. The ``add_components`` approach is useful for indexed constraints over
+a range:
+
+.. code-block:: python
+
+   from conin import algebraic_constraint_fn
+   import smoek as smk
+
+   N = 10
+
+   @algebraic_constraint_fn()
+   def no_adjacent_active(model, data):
+       I = smk.sequence(start=1, stop=N - 1)
+       i = smk.index()
+       c = (
+           smk.constraint()
+           .expr(model.V(("A", i - 1), 1) + model.V(("A", i), 1) <= 1)
+           .forall(i in I)
+       )
+       model.add_components(I=I, i=i, c=c)
+
+The inference backend translates those expressions into the backend-specific form at
 solve time:
 
 - ``map_query(..., method="integer_program")`` translates algebraic constraints

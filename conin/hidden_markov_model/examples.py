@@ -188,30 +188,6 @@ def create_chmm1_oracle():
     return chmm
 
 
-def create_chmm1_oracle():
-    hmm = create_hmm1()
-
-    def nodes(data):
-        for t in data.hmm.T:
-            yield ("H", t)
-
-    @oracle_constraint_fn(nodes=nodes)
-    def num_zeros_greater_than_nine(states, D):
-        num = sum(1 for k, v in states.items() if v == "h0")
-        return num >= 10
-
-    @oracle_constraint_fn(nodes=nodes)
-    def num_zeros_less_than_thirteen(states, D):
-        num = sum(1 for k, v in states.items() if v == "h0")
-        return num <= 12
-
-    constraints = [num_zeros_greater_than_nine, num_zeros_less_than_thirteen]
-
-    chmm = ConstrainedHiddenMarkovModel(hmm=hmm, constraints=constraints)
-    chmm.initialize_chmm()
-    return chmm
-
-
 def create_chmm1_pyomo():
     hmm = create_hmm1()
 
