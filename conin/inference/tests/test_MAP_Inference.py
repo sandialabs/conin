@@ -240,6 +240,41 @@ def test_cancer1_BN_pgmpy(method, solver):
     assert results.solution.states == example.solutions[0].states
 
 
+@pytest.mark.parametrize(
+    "method,solver,write_file",
+    [
+        pytest.param(
+            "toulbar2", None, testfile_uai, marks=skipif_toulbar2_not_available
+        ),
+        pytest.param(
+            "integer_program", mip_solver, testfile_lp, marks=skipif_no_mip_solver
+        ),
+        pytest.param(
+            "variable_elimination", None, testfile_uai, marks=skipif_pgmpy_not_available
+        ),
+    ],
+)
+def test_wide_BN_conin(method, solver, write_file):
+    example = conin.bayesian_network.examples.wide_BN_conin()
+
+    # Test without file writing
+    kwargs = {"method": method}
+    if solver:
+        kwargs["solver"] = solver
+    results = map_query(example.pgm, **kwargs)
+    assert results.solution.states == example.solutions[0].states
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
+
+    # Test with file writing
+    if method == "integer_program":
+        kwargs["write_lp_file"] = write_file
+    else:
+        kwargs["write_uai_file"] = write_file
+    results = map_query(example.pgm, **kwargs)
+    assert os.path.exists(write_file)
+    os.remove(write_file)
+
+
 #
 # ConstrainedBayesianNetwork tests
 #
@@ -320,6 +355,142 @@ def test_cancer1_BN_constrained_factor_pgmpy():
     results = map_query(example.pgm, method="variable_elimination")
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
+
+
+@pytest.mark.parametrize(
+    "method,solver,write_file,example_factory",
+    [
+        pytest.param(
+            "toulbar2",
+            None,
+            testfile_uai,
+            conin.bayesian_network.examples.wide_BN_constrained1_conin_toulbar2,
+            marks=skipif_toulbar2_not_available,
+        ),
+        pytest.param(
+            "toulbar2",
+            None,
+            testfile_uai,
+            conin.bayesian_network.examples.wide_BN_constrained1_conin_algebraic,
+            marks=[skipif_toulbar2_not_available, skipif_smoek_not_available],
+        ),
+        pytest.param(
+            "integer_program",
+            mip_solver,
+            testfile_lp,
+            conin.bayesian_network.examples.wide_BN_constrained1_conin_pyomo,
+            marks=skipif_no_mip_solver,
+        ),
+        pytest.param(
+            "integer_program",
+            mip_solver,
+            testfile_lp,
+            conin.bayesian_network.examples.wide_BN_constrained1_conin_algebraic,
+            marks=[skipif_no_mip_solver, skipif_smoek_not_available],
+        ),
+        pytest.param(
+            "variable_elimination",
+            None,
+            testfile_uai,
+            conin.bayesian_network.examples.wide_BN_constrained1_conin_factor,
+            marks=skipif_pgmpy_not_available,
+        ),
+        pytest.param(
+            "variable_elimination",
+            None,
+            testfile_uai,
+            conin.bayesian_network.examples.wide_BN_constrained1_conin_algebraic,
+            marks=[skipif_pgmpy_not_available, skipif_smoek_not_available],
+        ),
+    ],
+)
+def test_wide_BN_constrained1_conin(method, solver, write_file, example_factory):
+    example = example_factory()
+
+    # Test without file writing
+    kwargs = {"method": method}
+    if solver:
+        kwargs["solver"] = solver
+    results = map_query(example.pgm, **kwargs)
+    assert results.solution.states == example.solutions[0].states
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
+
+    # Test with file writing
+    if method == "integer_program":
+        kwargs["write_lp_file"] = write_file
+    else:
+        kwargs["write_uai_file"] = write_file
+    results = map_query(example.pgm, **kwargs)
+    assert os.path.exists(write_file)
+    os.remove(write_file)
+
+
+@pytest.mark.parametrize(
+    "method,solver,write_file,example_factory",
+    [
+        pytest.param(
+            "toulbar2",
+            None,
+            testfile_uai,
+            conin.bayesian_network.examples.wide_BN_constrained2_conin_toulbar2,
+            marks=skipif_toulbar2_not_available,
+        ),
+        pytest.param(
+            "toulbar2",
+            None,
+            testfile_uai,
+            conin.bayesian_network.examples.wide_BN_constrained2_conin_algebraic,
+            marks=[skipif_toulbar2_not_available, skipif_smoek_not_available],
+        ),
+        pytest.param(
+            "integer_program",
+            mip_solver,
+            testfile_lp,
+            conin.bayesian_network.examples.wide_BN_constrained2_conin_pyomo,
+            marks=skipif_no_mip_solver,
+        ),
+        pytest.param(
+            "integer_program",
+            mip_solver,
+            testfile_lp,
+            conin.bayesian_network.examples.wide_BN_constrained2_conin_algebraic,
+            marks=[skipif_no_mip_solver, skipif_smoek_not_available],
+        ),
+        pytest.param(
+            "variable_elimination",
+            None,
+            testfile_uai,
+            conin.bayesian_network.examples.wide_BN_constrained2_conin_factor,
+            marks=skipif_pgmpy_not_available,
+        ),
+        pytest.param(
+            "variable_elimination",
+            None,
+            testfile_uai,
+            conin.bayesian_network.examples.wide_BN_constrained2_conin_algebraic,
+            marks=[skipif_pgmpy_not_available, skipif_smoek_not_available],
+        ),
+    ],
+)
+def test_wide_BN_constrained2_conin(method, solver, write_file, example_factory):
+    example = example_factory()
+
+    # Test without file writing
+    kwargs = {"method": method}
+    if solver:
+        kwargs["solver"] = solver
+    results = map_query(example.pgm, **kwargs)
+    assert results.solution.states == example.solutions[0].states
+    assert hasattr(results, "solvetime") and type(results.solvetime) is float
+
+    # Test with file writing
+    if method == "integer_program":
+        kwargs["write_lp_file"] = write_file
+    else:
+        kwargs["write_uai_file"] = write_file
+    results = map_query(example.pgm, **kwargs)
+    assert os.path.exists(write_file)
+    os.remove(write_file)
 
 
 #

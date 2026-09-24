@@ -24,6 +24,9 @@ with try_import() as pgmpy_available:
     )
     from pgmpy.factors.discrete import TabularCPD as pgmpy_TabularCPD
 
+with try_import() as smoek_available:
+    import smoek as smk
+
 
 #
 # cancer
@@ -1053,3 +1056,175 @@ def wide_BN_conin(debug=False):
     solution_states["A",0] = 0
     solution_states["B"] = 1
     return Munch(pgm=G, solutions=[MPESolution(states=solution_states)])
+
+
+#
+# wide constrained1
+#
+
+
+def wide_BN_constrained1_conin_pyomo(debug=False):
+    N = 10
+    pgm = wide_BN_conin(debug=debug).pgm
+
+    @pyomo_constraint_fn()
+    def constraints(model):
+        model.c = pyo.ConstraintList()
+        model.c.add(model.V(("A",8), 1) + model.V(("A",9), 1) <= 1)
+
+    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    solution_states = {("A", i): 1 for i in range(N)}
+    solution_states["A",0] = 0
+    solution_states["A",8] = 0
+    solution_states["B"] = 1
+    return Munch(pgm=cpgm, solutions=[MPESolution(states=solution_states)])
+
+
+def wide_BN_constrained1_conin_algebraic(debug=False):
+    N = 10
+    pgm = wide_BN_conin(debug=debug).pgm
+
+    @algebraic_constraint_fn()
+    def constraints(model):
+        return model.V(("A",8), 1) + model.V(("A",9), 1) <= 1
+
+    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    solution_states = {("A", i): 1 for i in range(N)}
+    solution_states["A",0] = 0
+    solution_states["A",8] = 0
+    solution_states["B"] = 1
+    return Munch(pgm=cpgm, solutions=[MPESolution(states=solution_states)])
+
+
+def wide_BN_constrained1_conin_toulbar2(debug=False):
+    N = 10
+    pgm = wide_BN_conin(debug=debug).pgm
+
+    @toulbar2_constraint_fn()
+    def constraints(M):
+        M.AddGeneralizedLinearConstraint([M.V(("A",8), 1), M.V(("A",9), 1)], "<=", 1)
+
+    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    solution_states = {("A", i): 1 for i in range(N)}
+    solution_states["A",0] = 0
+    solution_states["A",8] = 0
+    solution_states["B"] = 1
+    return Munch(pgm=cpgm, solutions=[MPESolution(states=solution_states)])
+
+
+
+def wide_BN_constrained1_conin_factor(debug=False):
+    N = 10
+    pgm = wide_BN_conin(debug=debug).pgm
+
+    @factor_constraint_fn(nodes=[("A",8), ("A",9)])
+    def constraints(states):
+        return states["A",8] + states["A",9] <= 1
+
+    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    solution_states = {("A", i): 1 for i in range(N)}
+    solution_states["A",0] = 0
+    solution_states["A",8] = 0
+    solution_states["B"] = 1
+    return Munch(pgm=cpgm, solutions=[MPESolution(states=solution_states)])
+
+
+#
+# wide constrained2
+#
+
+
+def wide_BN_constrained2_conin_pyomo(debug=False):
+    N = 10
+    pgm = wide_BN_conin(debug=debug).pgm
+
+    @pyomo_constraint_fn()
+    def constraints(model):
+        model.T = pyo.RangeSet(0,N-1)
+
+        def rule(model, t):
+            if t==0:
+                return pyo.Constraint.Skip
+            return model.V(("A",t-1), 1) + model.V(("A",t), 1) <= 1
+        model.c = pyo.Constraint(model.T, rule=rule)
+
+    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    solution_states = {("A", i): 1 for i in range(N)}
+    solution_states["A",0] = 0
+    solution_states["A",1] = 0
+    solution_states["A",2] = 0
+    solution_states["A",4] = 0
+    solution_states["A",6] = 0
+    solution_states["A",8] = 0
+    solution_states["B"] = 0
+    return Munch(pgm=cpgm, solutions=[MPESolution(states=solution_states)])
+
+
+def wide_BN_constrained2_conin_algebraic(debug=False):
+    N = 10
+    pgm = wide_BN_conin(debug=debug).pgm
+
+    @algebraic_constraint_fn()
+    def constraints(M):
+        T = M.T = smk.sequence(start=1, stop=N-1)    # Setting the value of M.T autonames this set
+        t = M.t = smk.index()               # Setting the value of M.t autonames this index
+        M.c = smk.constraint("c").expr(M.V(("A",t-1), 1) + M.V(("A",t), 1) <= 1).forall(t in T)
+
+    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    solution_states = {("A", i): 1 for i in range(N)}
+    solution_states["A",0] = 0
+    solution_states["A",1] = 0
+    solution_states["A",2] = 0
+    solution_states["A",4] = 0
+    solution_states["A",6] = 0
+    solution_states["A",8] = 0
+    solution_states["B"] = 0
+    return Munch(pgm=cpgm, solutions=[MPESolution(states=solution_states)])
+
+
+def wide_BN_constrained2_conin_toulbar2(debug=False):
+    N = 10
+    pgm = wide_BN_conin(debug=debug).pgm
+
+    @toulbar2_constraint_fn()
+    def constraints(M):
+        for t in range(1,N):
+            if t == 0:
+                continue
+            M.AddGeneralizedLinearConstraint([M.V(("A",t-1), 1), M.V(("A",t), 1)], "<=", 1)
+
+    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    solution_states = {("A", i): 1 for i in range(N)}
+    solution_states["A",0] = 0
+    solution_states["A",1] = 0
+    solution_states["A",2] = 0
+    solution_states["A",4] = 0
+    solution_states["A",6] = 0
+    solution_states["A",8] = 0
+    solution_states["B"] = 0
+    return Munch(pgm=cpgm, solutions=[MPESolution(states=solution_states)])
+
+
+
+def wide_BN_constrained2_conin_factor(debug=False):
+    N = 10
+    pgm = wide_BN_conin(debug=debug).pgm
+
+    @factor_constraint_fn(nodes=[("A",t) for t in range(N)])
+    def constraints(states):
+        for t in range(1,N):
+            if states["A",t-1] + states["A",t] > 1:
+                return False
+        return True
+
+    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    solution_states = {("A", i): 1 for i in range(N)}
+    solution_states["A",0] = 0
+    solution_states["A",1] = 0
+    solution_states["A",2] = 0
+    solution_states["A",4] = 0
+    solution_states["A",6] = 0
+    solution_states["A",8] = 0
+    solution_states["B"] = 0
+    return Munch(pgm=cpgm, solutions=[MPESolution(states=solution_states)])
+
