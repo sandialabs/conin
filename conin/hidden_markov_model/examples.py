@@ -203,12 +203,14 @@ def create_chmm1_oracle_ve():
         + sum(1 for v in states.values() if v == "h0")
         >= 10,
         nodes=nodes,
+        name="num_zeros_greater_than_nine",
     )
     num_zeros_less_than_thirteen = OracleConstraint(
         func=lambda states: sum(1 for v in states.values() if v == "h0") < 13,
         partial_func=lambda T, states: sum(1 for v in states.values() if v == "h0")
         < 13,
         nodes=nodes,
+        name="num_zeros_less_than_thirteen",
     )
     constraints = [num_zeros_greater_than_nine, num_zeros_less_than_thirteen]
 
