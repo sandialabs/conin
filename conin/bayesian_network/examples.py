@@ -1166,15 +1166,14 @@ def wide_BN_constrained2_conin_algebraic(debug=False):
 
     @algebraic_constraint_fn()
     def constraints(M):
-        I = M.I = smk.sequence(
-            start=1, stop=N - 1
-        )  # Setting the value of M.I autonames this set
-        i = M.i = smk.index()  # Setting the value of M.i autonames this index
-        M.c = (
-            smk.constraint("c")
+        I = smk.sequence(start=1, stop=N - 1)
+        i = smk.index()
+        c = (
+            smk.constraint()
             .expr(M.V(("A", i - 1), 1) + M.V(("A", i), 1) <= 1)
             .forall(i in I)
         )
+        M.add_components(I=I, i=i, c=c)
 
     cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
     solution_states = {("A", i): 1 for i in range(N)}
