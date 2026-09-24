@@ -12,6 +12,8 @@ dependencies:
   - pip
   - pip:
     - highspy
+    - nbmake
+    - nbstripout
     - pytoulbar2
     - smoek
     - -e git+https://github.com/sandialabs/or_topas.git#egg=or_topas

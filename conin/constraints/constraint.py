@@ -68,8 +68,10 @@ class OracleConstraint(ConstraintFunctor):
             Can be a list of node names or a callable ``nodes(data)`` that
             yields node names.  When ``nodes`` is set, calling the constraint
             with a PGM materialises it into a ``DiscreteFactor`` or
-            ``DiscreteCPD``.  When ``nodes`` is ``None``, calling the
-            constraint evaluates the predicate directly.
+            ``DiscreteCPD``.  When ``nodes`` is ``None`` and the constraint is
+            called with a PGM, every node in the PGM is used as the scope
+            (note: this can be expensive for large models — prefer specifying
+            an explicit ``nodes`` scope when possible).
         """
         self.func = func
         self.nodes = nodes
@@ -100,13 +102,15 @@ class OracleConstraint(ConstraintFunctor):
         """
         Apply the constraint.
 
-        When ``nodes`` is ``None`` (oracle / black-box mode):
+        When called with a states dict (oracle / black-box mode):
             ``constraint(states_dict) -> bool``
 
-        When ``nodes`` is set (factor mode):
+        When called with a PGM as the first argument (factor mode):
             ``constraint(pgm, data=None)`` — materialises the predicate into
             a ``DiscreteFactor`` (for MN) or ``DiscreteCPD`` (for BN) by
-            enumerating all assignments over the declared ``nodes``.
+            enumerating all assignments over the declared ``nodes``.  When
+            ``nodes`` is ``None``, every node in the PGM is used as the scope
+            (note: this can be expensive for large models).
 
         Raises
         ------
@@ -117,6 +121,16 @@ class OracleConstraint(ConstraintFunctor):
             raise InvalidInputError(
                 f"In constraint {self.name}, the actual constraint function is not defined."
             )
+
+        # Route to materialisation when called with a pgm as the first argument.
+        # This covers both nodes-set (factor mode) and nodes=None (all-nodes mode).
+        from ..markov_network import DiscreteMarkovNetwork
+        from ..bayesian_network import DiscreteBayesianNetwork
+
+        if args and isinstance(
+            args[0], (DiscreteMarkovNetwork, DiscreteBayesianNetwork)
+        ):
+            return self._materialise(*args, **kwargs)
 
         if self.nodes is not None:
             return self._materialise(*args, **kwargs)
@@ -142,7 +156,9 @@ class OracleConstraint(ConstraintFunctor):
         from ..markov_network import DiscreteFactor, DiscreteMarkovNetwork
         from ..bayesian_network import DiscreteCPD, DiscreteBayesianNetwork
 
-        if type(self.nodes) is list:
+        if self.nodes is None:
+            nodes = list(pgm.nodes)
+        elif type(self.nodes) is list:
             nodes = self.nodes
         else:
             nodes = list(self.nodes(data))

@@ -188,23 +188,30 @@ def create_chmm1_oracle():
     return chmm
 
 
-def create_chmm1_oracle():
+def create_chmm1_oracle_ve():
+    """Oracle CHMM with node-scoped constraints for variable elimination."""
     hmm = create_hmm1()
 
     def nodes(data):
         for t in data.hmm.T:
             yield ("H", t)
 
-    @oracle_constraint_fn(nodes=nodes)
-    def num_zeros_greater_than_nine(states, D):
-        num = sum(1 for k, v in states.items() if v == "h0")
-        return num >= 10
-
-    @oracle_constraint_fn(nodes=nodes)
-    def num_zeros_less_than_thirteen(states, D):
-        num = sum(1 for k, v in states.items() if v == "h0")
-        return num <= 12
-
+    num_zeros_greater_than_nine = OracleConstraint(
+        func=lambda states: sum(1 for v in states.values() if v == "h0") > 9,
+        partial_func=lambda T, states: T
+        - len(states)
+        + sum(1 for v in states.values() if v == "h0")
+        >= 10,
+        nodes=nodes,
+        name="num_zeros_greater_than_nine",
+    )
+    num_zeros_less_than_thirteen = OracleConstraint(
+        func=lambda states: sum(1 for v in states.values() if v == "h0") < 13,
+        partial_func=lambda T, states: sum(1 for v in states.values() if v == "h0")
+        < 13,
+        nodes=nodes,
+        name="num_zeros_less_than_thirteen",
+    )
     constraints = [num_zeros_greater_than_nine, num_zeros_less_than_thirteen]
 
     chmm = ConstrainedHiddenMarkovModel(hmm=hmm, constraints=constraints)

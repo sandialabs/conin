@@ -694,7 +694,7 @@ def test3_hmm1(method, solver):
             "variable_elimination",
             None,
             testfile_uai,
-            conin.hidden_markov_model.examples.create_chmm1_oracle,
+            conin.hidden_markov_model.examples.create_chmm1_oracle_ve,
             None,
             marks=skipif_pgmpy_not_available,
         ),
@@ -797,7 +797,7 @@ def test0_chmm1(method, solver, write_file, pgm_factory, ip_formulation):
         pytest.param(
             "variable_elimination",
             None,
-            conin.hidden_markov_model.examples.create_chmm1_oracle,
+            conin.hidden_markov_model.examples.create_chmm1_oracle_ve,
             None,
             marks=skipif_pgmpy_not_available,
         ),
@@ -869,7 +869,7 @@ def test1_chmm1(method, solver, pgm_factory, ip_formulation):
         pytest.param(
             "variable_elimination",
             None,
-            conin.hidden_markov_model.examples.create_chmm1_oracle,
+            conin.hidden_markov_model.examples.create_chmm1_oracle_ve,
             marks=skipif_pgmpy_not_available,
         ),
         pytest.param(
@@ -937,7 +937,7 @@ def test2_chmm1(method, solver, pgm_factory):
         pytest.param(
             "variable_elimination",
             None,
-            conin.hidden_markov_model.examples.create_chmm1_oracle,
+            conin.hidden_markov_model.examples.create_chmm1_oracle_ve,
             marks=skipif_pgmpy_not_available,
         ),
         pytest.param(
