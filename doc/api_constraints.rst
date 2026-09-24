@@ -98,6 +98,6 @@ Reusable oracle constraints live in ``conin.constraints.oracle``. The
 Toulbar2 helper module also includes utilities for translating supported linear
 algebraic constraints to Toulbar2 expressions.
 
-.. automodule:: conin.constraints.toulbar2
+.. automodule:: conin.constraints.algebraic.add_constraints_toulbar2
    :members:
    :undoc-members:

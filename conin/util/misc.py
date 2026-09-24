@@ -1,5 +1,11 @@
 import copy
+from dataclasses import dataclass
 import numpy as np
+
+
+@dataclass(order=True, frozen=True)
+class State:
+    value: tuple
 
 
 class Util:

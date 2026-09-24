@@ -188,7 +188,7 @@ def create_chmm1_oracle():
     return chmm
 
 
-def create_chmm1_factor():
+def create_chmm1_oracle():
     hmm = create_hmm1()
 
     def nodes(data):

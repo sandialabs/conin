@@ -148,7 +148,7 @@ with the Toulbar2 interface:
 Oracle constraints with node scoping
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-``ABC_constrained_factor_conin`` creates the constraint as an auxiliary factor:
+``ABC_constrained_oracle_conin`` creates the constraint as an auxiliary factor:
 
 .. code-block:: python
 

@@ -200,7 +200,7 @@ the Toulbar2 model.
 Oracle constraints with node scoping
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-``create_chmm1_factor`` adds the same logic through generated factors:
+``create_chmm1_oracle`` adds the same logic through generated factors:
 
 .. code-block:: python
 

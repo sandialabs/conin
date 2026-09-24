@@ -39,10 +39,10 @@ Selected Markov network examples live in ``conin.markov_network.examples``.
      - Adds the same all-different Pyomo constraint to ``ABC2_conin``.
    * - ``ABC_constrained_toulbar2_conin``
      - Adds an all-different Toulbar2 constraint to ``ABC_conin``.
-   * - ``ABC_constrained_factor_conin``
-     - Adds an all-different factor constraint to ``ABC_conin``.
-   * - ``ABC2_constrained_factor_conin``
-     - Adds an all-different factor constraint to ``ABC2_conin``.
+   * - ``ABC_constrained_oracle_conin``
+     - Adds an all-different oracle constraint to ``ABC_conin``.
+   * - ``ABC2_constrained_oracle_conin``
+     - Adds an all-different oracle constraint to ``ABC2_conin``.
    * - ``example6_pgmpy``
      - ``pgmpy`` implementation of the two-node Markov network.
    * - ``ABC_pgmpy``
@@ -84,8 +84,8 @@ Selected Bayesian network examples live in ``conin.bayesian_network.examples``.
      - Three-node Bayesian network with non-binary state labels.
    * - ``cancer1_BN_constrained_pyomo_conin``
      - Adds Pyomo constraints to the cancer network.
-   * - ``cancer1_BN_constrained_factor_conin``
-     - Adds a factor constraint to the cancer network.
+   * - ``cancer1_BN_constrained_oracle_conin``
+     - Adds an oracle constraint to the cancer network.
    * - ``cancer1_BN_constrained_toulbar2_conin``
      - Adds Toulbar2 constraints to the cancer network.
    * - ``*_pgmpy`` examples
@@ -120,14 +120,14 @@ Selected dynamic Bayesian network examples live in
      - Larger weather, temperature, observation, and humidity model with named states.
    * - ``simple1_DDBN_constrained_pyomo_conin``
      - Adds Pyomo constraints to ``simple1_DDBN_conin``.
-   * - ``simple1_DDBN_constrained_factor_conin``
-     - Adds factor constraints to ``simple1_DDBN_conin``.
+   * - ``simple1_DDBN_constrained_oracle_conin``
+     - Adds oracle constraints to ``simple1_DDBN_conin``.
    * - ``simple1_DDBN_constrained_toulbar2_conin``
      - Adds Toulbar2 constraints to ``simple1_DDBN_conin``.
    * - ``weather_constrained_pyomo_conin``
      - Adds a Pyomo constraint to the weather model.
-   * - ``weather_constrained_factor_conin``
-     - Adds a factor constraint to the weather model.
+   * - ``weather_constrained_oracle_conin``
+     - Adds an oracle constraint to the weather model.
    * - ``weather_constrained_toulbar2_conin``
      - Adds a Toulbar2-style constraint to the weather model.
    * - ``*_pgmpy`` examples
@@ -166,8 +166,8 @@ Selected hidden Markov model examples live in
      - Three-state HMM configured for all-optimal-solution testing.
    * - ``create_chmm1_oracle``
      - Constrained HMM using oracle sequence constraints.
-   * - ``create_chmm1_factor``
-     - Constrained HMM using factor constraints for variable-elimination workflows.
+   * - ``create_chmm1_oracle``
+     - Constrained HMM using oracle constraints for variable-elimination workflows.
    * - ``create_chmm1_pyomo``
      - Constrained HMM using Pyomo constraints.
    * - ``create_chmm1_toulbar2``

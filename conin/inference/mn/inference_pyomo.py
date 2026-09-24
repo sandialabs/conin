@@ -5,16 +5,17 @@ import pyomo.environ as pe
 from pyomo.common.timing import TicTocTimer
 
 from conin.config import default_mip_solver
-from conin.constraints import PyomoConstraint, AlgebraicConstraint
+from conin.constraints import PyomoConstraint
+from conin.constraints.algebraic import (
+    AlgebraicConstraint,
+    add_algebraic_constraints_to_pyomo_model,
+)
 from conin.markov_network import ConstrainedDiscreteMarkovNetwork
-from conin.inference.mn.factor_repn import extract_factor_representation_, State
-
-from conin.util import try_import
+from conin.inference.mn.factor_repn import extract_factor_representation_
+from conin.util import try_import, State
 
 with try_import() as or_topas_available:
     import or_topas.aos as aos
-with try_import() as smoek_available:
-    import smoek
 
 
 """
@@ -68,33 +69,25 @@ class PyomoVarWrapper(dict):
 
 
 def add_constraints(*, pgm, constraints, model, data):
+    if len(constraints) == 0:
+        return model
+
     if isinstance(constraints[0], PyomoConstraint):
         for func in constraints:
             assert isinstance(
                 func, PyomoConstraint
             ), f"Unexpected constraint type ({type(func)}) when performing inference with an integer program. If the first constraint is a pyomo constraint, then all subsequent contraints must be the same."
             model = func(model, data)
+        return model
 
-    elif isinstance(constraints[0], AlgebraicConstraint):
-        if not smoek_available:
-            raise TypeError(
-                f"The smoek package must be installed to use algebraic constraints."
-            )
-        smoek_model = smoek.model()
-        for func in constraints:
-            func(smoek_model, data)
-        smoek_model._update_smoek_components()
-        smoek.pymodel.pyomo.generate(
-            model=smoek_model,
-            pyomo_model=model,
-            data=data,
-            component_map=dict(V=model.V),
+    if isinstance(constraints[0], AlgebraicConstraint):
+        return add_algebraic_constraints_to_pyomo_model(
+            pgm=pgm, constraints=constraints, model=model, data=data
         )
 
-    else:
-        raise TypeError(
-            f"Unexpected constraint type ({type(func)}) when performing inference with an integer program."
-        )
+    raise TypeError(
+        f"Unexpected constraint type ({type(constraints[0])}) when performing inference with an integer program."
+    )
 
 
 def create_pyomo_map_query_model_MN(
