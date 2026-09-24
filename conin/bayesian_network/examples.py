@@ -1139,14 +1139,14 @@ def wide_BN_constrained2_conin_pyomo(debug=False):
 
     @pyomo_constraint_fn()
     def constraints(model):
-        model.T = pyo.RangeSet(0, N - 1)
+        model.I = pyo.RangeSet(0, N - 1)
 
-        def rule(model, t):
-            if t == 0:
+        def rule(model, i):
+            if i == 0:
                 return pyo.Constraint.Skip
-            return model.V(("A", t - 1), 1) + model.V(("A", t), 1) <= 1
+            return model.V(("A", i - 1), 1) + model.V(("A", i), 1) <= 1
 
-        model.c = pyo.Constraint(model.T, rule=rule)
+        model.c = pyo.Constraint(model.I, rule=rule)
 
     cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
     solution_states = {("A", i): 1 for i in range(N)}
@@ -1166,14 +1166,14 @@ def wide_BN_constrained2_conin_algebraic(debug=False):
 
     @algebraic_constraint_fn()
     def constraints(M):
-        T = M.T = smk.sequence(
+        I = M.I = smk.sequence(
             start=1, stop=N - 1
-        )  # Setting the value of M.T autonames this set
-        t = M.t = smk.index()  # Setting the value of M.t autonames this index
+        )  # Setting the value of M.I autonames this set
+        i = M.i = smk.index()  # Setting the value of M.i autonames this index
         M.c = (
             smk.constraint("c")
-            .expr(M.V(("A", t - 1), 1) + M.V(("A", t), 1) <= 1)
-            .forall(t in T)
+            .expr(M.V(("A", i - 1), 1) + M.V(("A", i), 1) <= 1)
+            .forall(i in I)
         )
 
     cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
@@ -1194,11 +1194,11 @@ def wide_BN_constrained2_conin_toulbar2(debug=False):
 
     @toulbar2_constraint_fn()
     def constraints(M):
-        for t in range(1, N):
-            if t == 0:
+        for i in range(1, N):
+            if i == 0:
                 continue
             M.AddGeneralizedLinearConstraint(
-                [M.V(("A", t - 1), 1), M.V(("A", t), 1)], "<=", 1
+                [M.V(("A", i - 1), 1), M.V(("A", i), 1)], "<=", 1
             )
 
     cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
@@ -1219,8 +1219,8 @@ def wide_BN_constrained2_conin_factor(debug=False):
 
     @factor_constraint_fn(nodes=[("A", t) for t in range(N)])
     def constraints(states):
-        for t in range(1, N):
-            if states["A", t - 1] + states["A", t] > 1:
+        for i in range(1, N):
+            if states["A", i - 1] + states["A", i] > 1:
                 return False
         return True
 
