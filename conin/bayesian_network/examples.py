@@ -1169,7 +1169,7 @@ def wide_BN_constrained2_conin_algebraic(debug=False):
         I = smk.sequence(start=1, stop=N - 1)
         i = smk.index()
         c = (
-            smk.constraint("c")
+            smk.constraint()
             .expr(M.V(("A", i - 1), 1) + M.V(("A", i), 1) <= 1)
             .forall(i in I)
         )
