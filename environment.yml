@@ -12,6 +12,6 @@ dependencies:
   - pip:
     - highspy
     - pytoulbar2
+    - smoek
     - -e git+https://github.com/sandialabs/or_topas.git#egg=or_topas
-    - -e git+https://github.com/sandialabs/smoek.git#egg=smoek
   - pyomo

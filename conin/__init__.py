@@ -2,11 +2,6 @@
 
 __version__ = "1.1.1"
 
-from . import markov_network
-from . import bayesian_network
-from . import dynamic_bayesian_network
-from . import hidden_markov_model
-from .inference import map_query
 from .constraints import (
     ConstraintFunctor,
     mvr_constraint_fn,
@@ -17,6 +12,11 @@ from .constraints import (
 )
 from .exceptions import InvalidInputError, InsufficientSolutionsError
 from . import __about__
+from . import markov_network
+from . import bayesian_network
+from . import dynamic_bayesian_network
+from . import hidden_markov_model
+from .inference import map_query
 
 # import os.path
 from . import config
