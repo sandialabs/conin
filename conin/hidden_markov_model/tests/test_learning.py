@@ -227,9 +227,7 @@ def test_supervised_learning_priors():
 
 
 def test_supervised_learning_no_hidden_states():
-    sim = learning.convert_to_simulations(
-        hidden_list=[["h0"]], observed_list=[["o0"]]
-    )
+    sim = learning.convert_to_simulations(hidden_list=[["h0"]], observed_list=[["o0"]])
     with pytest.raises(AssertionError):
         learning.supervised_learning(
             simulations=sim,
@@ -239,9 +237,7 @@ def test_supervised_learning_no_hidden_states():
 
 
 def test_supervised_learning_no_observable_states():
-    sim = learning.convert_to_simulations(
-        hidden_list=[["h0"]], observed_list=[["o0"]]
-    )
+    sim = learning.convert_to_simulations(hidden_list=[["h0"]], observed_list=[["o0"]])
     with pytest.raises(AssertionError):
         learning.supervised_learning(
             simulations=sim,
@@ -304,9 +300,7 @@ def test_supervised_learning_default_tolerances():
     assert math.isclose(sum(start_probs.values()), 1.0)
     # Transition rows from each hidden state must sum to 1.
     for h in ["h0", "h1"]:
-        row_sum = sum(
-            transition_probs[(h, h2)] for h2 in ["h0", "h1"]
-        )
+        row_sum = sum(transition_probs[(h, h2)] for h2 in ["h0", "h1"])
         assert math.isclose(row_sum, 1.0), f"Transition row for {h} does not sum to 1"
     # Emission rows from each hidden state must sum to 1.
     for h in ["h0", "h1"]:
