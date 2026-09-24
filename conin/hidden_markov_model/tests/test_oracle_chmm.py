@@ -54,15 +54,21 @@ class Test_Oracle_CHMM:
         assert cpgm.chmm.is_feasible(pass_seq)
         assert not cpgm.chmm.is_feasible(fail_seq2)
 
-    def Xtest_is_valid_hidden_state(self):
+    def test_is_valid_hidden_state(self):
         cpgm = tc.create_chmm1_oracle()
         assert cpgm.hidden_markov_model.is_valid_hidden_state("h0")
+        assert cpgm.hidden_markov_model.is_valid_hidden_state("h1")
         assert not cpgm.hidden_markov_model.is_valid_hidden_state("invalid")
+        assert not cpgm.hidden_markov_model.is_valid_hidden_state("")
 
-    def Xtest_set_seed(self):
+    def test_set_seed_affects_generation(self):
+        # Calling set_seed with the same value should produce identical sequences.
         chmm = tc.create_chmm1_oracle()
-        chmm.set_seed(1)
-        assert chmm._seed == 1
+        chmm.hidden_markov_model.set_seed(42)
+        seq1 = chmm.hidden_markov_model.generate_hidden(10)
+        chmm.hidden_markov_model.set_seed(42)
+        seq2 = chmm.hidden_markov_model.generate_hidden(10)
+        assert seq1 == seq2
 
     def test_generate(self):
         cpgm = tc.create_chmm1_oracle()

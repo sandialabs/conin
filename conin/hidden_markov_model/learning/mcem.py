@@ -51,19 +51,19 @@ def mcem(
         simulations = []
         log_prob = 0.0
         for _ in range(samples_per_iteration):
-            feasible_hidden = app.generate_hidden(observed)
-            log_prob = log_prob + app.hmm.log_probability(observed, feasible_hidden)
+            feasible_hidden = app.generate_hidden(len(observed))
+            log_prob = log_prob + app.hidden_markov_model.log_probability(observed, feasible_hidden)
             simulations.append(
                 munch.Munch(
                     observed=observed,
-                    hidden=app.generate_hidden(observed),
+                    hidden=app.generate_hidden(len(observed)),
                 )
             )
 
         log_prob /= samples_per_iteration
 
         # Maximization step
-        app.hmm = supervised_learning(
+        app.hidden_markov_model = supervised_learning(
             simulations=simulations,
             hidden_states=hidden_states,
             observable_states=observable_states,
@@ -74,11 +74,11 @@ def mcem(
 
         if iteration >= max_iterations:
             break
-        if prev_log_prob != nan:
+        if not math.isnan(prev_log_prob):
             assert (
                 log_prob < prev_log_prob + convergence_tolerance
             ), f"Expecting decreasing log-probabilities: curr={log_prob} prev={prev_log_prob}"
-            if math.abs(log_prob - prev_log_prob) < convergence_tolerance:
+            if abs(log_prob - prev_log_prob) < convergence_tolerance:
                 break
 
         iteration += 1
