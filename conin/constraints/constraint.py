@@ -127,7 +127,9 @@ class OracleConstraint(ConstraintFunctor):
         from ..markov_network import DiscreteMarkovNetwork
         from ..bayesian_network import DiscreteBayesianNetwork
 
-        if args and isinstance(args[0], (DiscreteMarkovNetwork, DiscreteBayesianNetwork)):
+        if args and isinstance(
+            args[0], (DiscreteMarkovNetwork, DiscreteBayesianNetwork)
+        ):
             return self._materialise(*args, **kwargs)
 
         if self.nodes is not None:
