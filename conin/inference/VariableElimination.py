@@ -26,9 +26,9 @@ from conin.dynamic_bayesian_network import (
     ConstrainedDynamicDiscreteBayesianNetwork,
 )
 
-from conin.constraints import (
-    create_FactorConstraint,
-    FactorConstraint,
+from conin.constraints import FactorConstraint
+from conin.constraints.algebraic import (
+    create_factor_constraints_from_algebraic,
     AlgebraicConstraint,
 )
 from conin.common.conin import convert_conin_to_pgmpy_mn, convert_conin_to_pgmpy_bn
@@ -77,20 +77,51 @@ def _hmm_states_from_map(map_states, evidence):
     return map_states
 
 
-def _add_constraints_as_evidence(conin_bn, constraints, data, evidence):
+def _add_bn_constraints_as_evidence(pgm, constraints, data, evidence, copy_pgm=False):
     """Inject generated constraint CPDs into a Bayesian network as evidence."""
+    if len(constraints) == 0:
+        return
+
+    if copy_pgm:
+        pgm = copy.deepcopy(pgm)
     if isinstance(constraints[0], AlgebraicConstraint):
-        constraints = [create_FactorConstraint(constraints, data)]
+        constraints = create_factor_constraints_from_algebraic(
+            pgm=pgm, constraints=constraints, data=data
+        )
     for con in constraints:
         if isinstance(con, FactorConstraint):
-            cpd = con(conin_bn, data)
+            cpd = con(pgm, data)
             cpd.node = (cpd.node, -1)
-            conin_bn.add_cpd(cpd)
+            pgm.add_cpd(cpd)
             evidence[cpd.node] = 1
         else:
             raise TypeError(
                 "Unexpected constraint type {type(con)} for VariableElimination"
             )
+    return pgm
+
+
+def _add_mn_constraints_as_evidence(pgm, constraints, data, evidence, copy_pgm=False):
+    """Inject generated constraint CPDs into a Bayesian network as evidence."""
+    if len(constraints) == 0:
+        return
+
+    if copy_pgm:
+        pgm = copy.deepcopy(pgm)
+    if isinstance(constraints[0], AlgebraicConstraint):
+        constraints = create_factor_constraints_from_algebraic(
+            pgm=pgm, constraints=constraints, data=data
+        )
+    for con in constraints:
+        if isinstance(con, FactorConstraint):
+            factor = con(pgm, data)
+            pgm._factors.append(factor)
+            evidence[factor.nodes[-1]] = 1
+        else:
+            raise TypeError(
+                "Unexpected constraint type {type(con)} for VariableElimination"
+            )
+    return pgm
 
 
 def _prepare_evidence(evidence):
@@ -135,6 +166,7 @@ def _execute_simple_model_query(
     show_progress,
     timing,
     write_uai_file,
+    solution_with_evidence,
 ):
     """Execute MAP query for unconstrained Markov/Bayesian networks."""
 
@@ -153,6 +185,8 @@ def _execute_simple_model_query(
         map_states, solvetime = _run_map_query_helper(
             pgmpy_model, vars_determined, evidence_prepared, show_progress
         )
+        if solution_with_evidence and evidence:
+            map_states.update(evidence)
 
         return _create_result(map_states, solvetime)
 
@@ -233,6 +267,7 @@ def _map_query_VariableElimination(
         show_progress,
         timing,
         options.get("write_uai_file"),
+        options.get("solution_with_evidence", False),
     )
 
 
@@ -250,10 +285,10 @@ def _map_query_VariableElimination(
 ):
     # Apply constraints as factors
     if pgm.constraints:
-        newpgm = copy.deepcopy(pgm.pgm)
-        for con in pgm.constraints:
-            factor = con(pgm.pgm)
-            newpgm._factors.append(factor)
+        evidence = {}
+        newpgm = _add_mn_constraints_as_evidence(
+            pgm.pgm, pgm.constraints, None, evidence, copy_pgm=True
+        )
     else:
         newpgm = pgm.pgm
 
@@ -265,6 +300,7 @@ def _map_query_VariableElimination(
         show_progress,
         timing,
         options.get("write_uai_file"),
+        options.get("solution_with_evidence", False) or (len(pgm.constraints) > 0),
     )
 
 
@@ -288,6 +324,7 @@ def _map_query_VariableElimination(
         show_progress,
         timing,
         options.get("write_uai_file"),
+        options.get("solution_with_evidence", False),
     )
 
 
@@ -303,15 +340,13 @@ def _map_query_VariableElimination(
     stop=None,
     options={},
 ):
-    evidence = _prepare_evidence(evidence)
+    prepared_evidence = _prepare_evidence(evidence)
 
     # Apply constraints as CPDs with evidence
     if pgm.constraints:
-        newpgm = copy.deepcopy(pgm.pgm)
-        for con in pgm.constraints:
-            cpd = con(newpgm)
-            newpgm.add_cpd(cpd)
-            evidence[cpd.node] = 1
+        newpgm = _add_bn_constraints_as_evidence(
+            pgm.pgm, pgm.constraints, None, prepared_evidence, copy_pgm=True
+        )
     else:
         newpgm = pgm.pgm
 
@@ -321,15 +356,20 @@ def _map_query_VariableElimination(
         save_model(newpgm, write_uai_file)
 
     pgmpy_model = convert_conin_to_pgmpy_bn(newpgm)
+    solution_with_evidence = (
+        options.get("solution_with_evidence", False) or (len(pgm.constraints) > 0),
+    )
 
     def _execute():
         if timing:
             TicTocTimer().tic("Created PGMPY model")
 
-        vars_determined = _determine_variables(newpgm, variables, evidence)
+        vars_determined = _determine_variables(newpgm, variables, prepared_evidence)
         map_states, solvetime = _run_map_query_helper(
-            pgmpy_model, vars_determined, evidence, show_progress
+            pgmpy_model, vars_determined, prepared_evidence, show_progress
         )
+        if (solution_with_evidence or (len(pgm.constraints) > 0)) and evidence:
+            map_states.update(evidence)
 
         return _create_result(map_states, solvetime)
 
@@ -404,8 +444,8 @@ def _map_query_VariableElimination(
 
         conin_bn = create_bn_from_dbn(dbn=pgm.pgm, start=start, stop=stop_val)
         data = munch.Munch(T=list(range(start, stop_val + 1)))
-        _add_constraints_as_evidence(
-            conin_bn=conin_bn,
+        _add_bn_constraints_as_evidence(
+            pgm=conin_bn,
             constraints=pgm.constraints,
             data=data,
             evidence=evidence_,
@@ -423,7 +463,7 @@ def _map_query_VariableElimination(
             evidence=evidence_,
             show_progress=show_progress,
         )
-        if solution_with_evidence and evidence:
+        if (solution_with_evidence or (len(pgm.constraints) > 0)) and evidence:
             states.update(evidence)
 
         return _create_result(states, solvetime)
@@ -491,8 +531,8 @@ def _map_query_VariableElimination(
         conin_dbn = create_dbn_from_hmm(pgm.hidden_markov_model)
         conin_bn = create_bn_from_dbn(dbn=conin_dbn, start=start, stop=stop_val)
         data = munch.Munch(hmm=munch.Munch(T=list(range(len(evidence)))))
-        _add_constraints_as_evidence(
-            conin_bn=conin_bn,
+        _add_bn_constraints_as_evidence(
+            pgm=conin_bn,
             constraints=pgm.constraints,
             data=data,
             evidence=evidence_,
