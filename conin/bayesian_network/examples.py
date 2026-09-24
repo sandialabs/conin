@@ -389,7 +389,7 @@ def cancer2_BN_constrained_algebraic_pgmpy(debug=False):
     )
 
 
-def cancer1_BN_constrained_factor_conin(debug=False):
+def cancer1_BN_constrained_oracle_conin(debug=False):
     pgm = cancer1_BN_conin(debug=debug).pgm
 
     @oracle_constraint_fn(nodes=["Dyspnoea", "Xray"])
@@ -413,7 +413,7 @@ def cancer1_BN_constrained_factor_conin(debug=False):
     )
 
 
-def cancer1_BN_constrained_factor_pgmpy(debug=False):
+def cancer1_BN_constrained_oracle_pgmpy(debug=False):
     pgm = cancer1_BN_pgmpy(debug=debug).pgm
 
     @oracle_constraint_fn(nodes=["Dyspnoea", "Xray"])

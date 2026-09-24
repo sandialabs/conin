@@ -344,7 +344,7 @@ def ABC2_constrained_algebraic_conin():
     )
 
 
-def ABC_constrained_factor_conin():
+def ABC_constrained_oracle_conin():
     """
     Three variables with pair-wise interactions.
 
@@ -364,7 +364,7 @@ def ABC_constrained_factor_conin():
     return Munch(pgm=cpgm, solutions=[MPESolution(states={"A": 0, "B": 2, "C": 1})])
 
 
-def ABC2_constrained_factor_conin():
+def ABC2_constrained_oracle_conin():
     """
     Constrained AOS example for three variables with pair-wise interactions.
     Based off ABC2_conin.

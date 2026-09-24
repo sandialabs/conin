@@ -32,7 +32,7 @@ class PyomoVarWrapper(dict):
         return dict.__getitem__(self, (r, s))
 
 
-def create_oracle_constraints_from_algebraic(*, pgm, constraints, data):
+def create_oracle_constraints_from_algebraic(*, pgm, constraints, data, name=None):
     """
     Convert a list of AlgebraicConstraints into a list with a single OracleConstraint.
 
@@ -43,8 +43,10 @@ def create_oracle_constraints_from_algebraic(*, pgm, constraints, data):
        if all constraints are satisfied
 
     Parameters:
-        algebraic_constraints: A single AlgebraicConstraint or list of AlgebraicConstraints
-        name: Optional name for the resulting OracleConstraint
+        pgm: The PGM model providing node/state information.
+        constraints: A list of AlgebraicConstraints.
+        data: Inference-time data passed to each constraint.
+        name: Optional name for the resulting OracleConstraint.
 
     Returns:
         An OracleConstraint instance that evaluates all the algebraic constraints
@@ -93,15 +95,15 @@ def create_oracle_constraints_from_algebraic(*, pgm, constraints, data):
                     k_str = f'"{k_}"'
                 else:
                     k_str = str(k_)
-                name = f"m_.V({k_str}, {t_}, {s_str})"
+                pyomo_var_name = f"m_.V({k_str}, {t_}, {s_str})"
             else:
                 if type(k) is str:
                     k_str = f'"{k}"'
                 else:
                     k_str = str(k)
-                name = f"m_.V({k_str}, {s_str})"
-            setattr(pyomo_model, name, pyo.Var(name=name))
-            v = getattr(pyomo_model, name)
+                pyomo_var_name = f"m_.V({k_str}, {s_str})"
+            setattr(pyomo_model, pyomo_var_name, pyo.Var(name=pyomo_var_name))
+            v = getattr(pyomo_model, pyomo_var_name)
             node_map[v] = k
             tmp[k, State(s)] = v
     pyomo_model.V = PyomoVarWrapper(tmp)
@@ -112,7 +114,7 @@ def create_oracle_constraints_from_algebraic(*, pgm, constraints, data):
         pyomo_model=pyomo_model,
     )
 
-    # CollectWalk the expression trees to generate string representations
+    # Walk the expression trees to collect constraint strings and node references
     constraint_strings = []
     for constraint_component in pyomo_model.component_objects(
         pyo.Constraint, active=True

@@ -78,9 +78,9 @@ class ConstrainedHiddenMarkovModel:
         """
         if isinstance(constraint, OracleConstraint):
             if constraint.nodes is not None:
-                # Factor-style oracle constraint (has nodes for materialisation)
-                assert self.constraint_type is None or self.constraint_type == "factor"
-                self.constraint_type = "factor"
+                # Oracle constraint with nodes for factor materialisation
+                assert self.constraint_type is None or self.constraint_type == "oracle_with_nodes"
+                self.constraint_type = "oracle_with_nodes"
             else:
                 # Black-box oracle constraint (HMM A* style)
                 assert self.constraint_type is None or self.constraint_type == "oracle"
@@ -111,7 +111,7 @@ class ConstrainedHiddenMarkovModel:
         Parameters
         ----------
         constraint_type : {"oracle", "pyomo", "mvr"}, optional
-            Explicit standalone constrained-HMM backend to initialize. Factor and
+            Explicit standalone constrained-HMM backend to initialize. Oracle-with-nodes and
             Toulbar2 constraints are consumed by the corresponding inference
             wrappers instead of creating an internal ``chmm`` object here.
         data : optional

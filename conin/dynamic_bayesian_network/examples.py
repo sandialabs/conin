@@ -247,7 +247,7 @@ def simple1_DDBN_constrained_algebraic_pgmpy(debug=False):
     )
 
 
-def simple1_DDBN_constrained_factor_conin(debug=False):
+def simple1_DDBN_constrained_oracle_conin(debug=False):
     pgm = simple1_DDBN_conin(debug=debug).pgm
 
     def nodes(data):
@@ -903,7 +903,7 @@ def weather_constrained_algebraic_pgmpy(debug=False):
     )
 
 
-def weather_constrained_factor_conin(debug=False):
+def weather_constrained_oracle_conin(debug=False):
     pgm = weather_conin(debug).pgm
 
     def nodes(data):
@@ -924,7 +924,7 @@ def weather_constrained_factor_conin(debug=False):
     )
 
 
-def weather_constrained_factor_pgmpy(debug=False):
+def weather_constrained_oracle_pgmpy(debug=False):
     pgm = weather2_pgmpy(debug).pgm
 
     def nodes(data):

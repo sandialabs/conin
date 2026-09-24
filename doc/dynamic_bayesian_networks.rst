@@ -133,7 +133,7 @@ Toulbar2:
 Oracle constraints with node scoping
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-``simple1_DDBN_constrained_factor_conin`` creates a constraint over a generated
+``simple1_DDBN_constrained_oracle_conin`` creates a constraint over a generated
 set of nodes:
 
 .. code-block:: python

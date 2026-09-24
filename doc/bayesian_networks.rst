@@ -167,7 +167,7 @@ interface:
 Oracle constraints with node scoping
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-``cancer1_BN_constrained_factor_conin`` creates a binary constraint as an
+``cancer1_BN_constrained_oracle_conin`` creates a binary constraint as an
 auxiliary CPD:
 
 .. code-block:: python
