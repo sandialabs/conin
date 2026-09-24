@@ -85,10 +85,9 @@ def add_constraints(*, pgm, constraints, model, data):
             pgm=pgm, constraints=constraints, model=model, data=data
         )
 
-    else:
-        raise TypeError(
-            f"Unexpected constraint type ({type(func)}) when performing inference with an integer program."
-        )
+    raise TypeError(
+        f"Unexpected constraint type ({type(constraints[0])}) when performing inference with an integer program."
+    )
 
 
 def create_pyomo_map_query_model_MN(

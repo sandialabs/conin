@@ -109,8 +109,8 @@ other model families. The examples in ``conin.bayesian_network.examples`` apply
 constraints to the cancer network.
 
 The Pyomo and Toulbar2 snippets below require their respective solver backends.
-Factor constraints are converted into auxiliary CPDs and can also be used by the
-variable-elimination backend when ``pgmpy`` is installed.
+Oracle constraints with ``nodes`` are converted into auxiliary CPDs and can also
+be used by the variable-elimination backend when ``pgmpy`` is installed.
 
 Pyomo constraints
 ^^^^^^^^^^^^^^^^^
@@ -164,21 +164,21 @@ interface:
 
    constrained = ConstrainedDiscreteBayesianNetwork(base, constraints=[constraints])
 
-Factor constraints
-^^^^^^^^^^^^^^^^^^
+Oracle constraints with node scoping
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-``cancer1_BN_constrained_factor_conin`` creates a binary constraint as an
+``cancer1_BN_constrained_oracle_conin`` creates a binary constraint as an
 auxiliary CPD:
 
 .. code-block:: python
 
-   from conin import factor_constraint_fn
+   from conin import oracle_constraint_fn
    from conin.bayesian_network import ConstrainedDiscreteBayesianNetwork
    from conin.bayesian_network.examples import cancer1_BN_conin
 
    base = cancer1_BN_conin().pgm
 
-   @factor_constraint_fn(nodes=["Dyspnoea", "Xray"])
+   @oracle_constraint_fn(nodes=["Dyspnoea", "Xray"])
    def constraints(states):
        return states["Dyspnoea"] != states["Xray"]
 

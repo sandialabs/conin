@@ -140,7 +140,7 @@ def test_ABC_pgmpy(method, solver):
             "variable_elimination",
             None,
             testfile_uai,
-            conin.markov_network.examples.ABC_constrained_factor_conin,
+            conin.markov_network.examples.ABC_constrained_oracle_conin,
             marks=skipif_pgmpy_not_available,
         ),
         pytest.param(
@@ -174,9 +174,9 @@ def test_ABC_constrained_conin(method, solver, write_file, example_factory):
 
 
 @skipif_pgmpy_not_available
-def test_ABC2_constrained_factor_conin():
+def test_ABC2_constrained_oracle_conin():
     """Additional test case only available for variable elimination."""
-    example = conin.markov_network.examples.ABC2_constrained_factor_conin()
+    example = conin.markov_network.examples.ABC2_constrained_oracle_conin()
     results = map_query(example.pgm, method="variable_elimination")
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
@@ -315,7 +315,7 @@ def test_wide_BN_conin(method, solver, write_file):
             "variable_elimination",
             None,
             testfile_uai,
-            conin.bayesian_network.examples.cancer1_BN_constrained_factor_conin,
+            conin.bayesian_network.examples.cancer1_BN_constrained_oracle_conin,
             marks=skipif_pgmpy_not_available,
         ),
         pytest.param(
@@ -349,9 +349,9 @@ def test_cancer1_BN_constrained_conin(method, solver, write_file, example_factor
 
 
 @skipif_pgmpy_not_available
-def test_cancer1_BN_constrained_factor_pgmpy():
+def test_cancer1_BN_constrained_oracle_pgmpy():
     """Test cancer1 constrained BN with pgmpy - only for variable elimination."""
-    example = conin.bayesian_network.examples.cancer1_BN_constrained_factor_pgmpy()
+    example = conin.bayesian_network.examples.cancer1_BN_constrained_oracle_pgmpy()
     results = map_query(example.pgm, method="variable_elimination")
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
@@ -392,7 +392,7 @@ def test_cancer1_BN_constrained_factor_pgmpy():
             "variable_elimination",
             None,
             testfile_uai,
-            conin.bayesian_network.examples.wide_BN_constrained1_conin_factor,
+            conin.bayesian_network.examples.wide_BN_constrained1_conin_oracle,
             marks=skipif_pgmpy_not_available,
         ),
         pytest.param(
@@ -460,7 +460,7 @@ def test_wide_BN_constrained1_conin(method, solver, write_file, example_factory)
             "variable_elimination",
             None,
             testfile_uai,
-            conin.bayesian_network.examples.wide_BN_constrained2_conin_factor,
+            conin.bayesian_network.examples.wide_BN_constrained2_conin_oracle,
             marks=skipif_pgmpy_not_available,
         ),
         pytest.param(
@@ -694,7 +694,7 @@ def test3_hmm1(method, solver):
             "variable_elimination",
             None,
             testfile_uai,
-            conin.hidden_markov_model.examples.create_chmm1_factor,
+            conin.hidden_markov_model.examples.create_chmm1_oracle,
             None,
             marks=skipif_pgmpy_not_available,
         ),
@@ -797,7 +797,7 @@ def test0_chmm1(method, solver, write_file, pgm_factory, ip_formulation):
         pytest.param(
             "variable_elimination",
             None,
-            conin.hidden_markov_model.examples.create_chmm1_factor,
+            conin.hidden_markov_model.examples.create_chmm1_oracle,
             None,
             marks=skipif_pgmpy_not_available,
         ),
@@ -869,7 +869,7 @@ def test1_chmm1(method, solver, pgm_factory, ip_formulation):
         pytest.param(
             "variable_elimination",
             None,
-            conin.hidden_markov_model.examples.create_chmm1_factor,
+            conin.hidden_markov_model.examples.create_chmm1_oracle,
             marks=skipif_pgmpy_not_available,
         ),
         pytest.param(
@@ -937,7 +937,7 @@ def test2_chmm1(method, solver, pgm_factory):
         pytest.param(
             "variable_elimination",
             None,
-            conin.hidden_markov_model.examples.create_chmm1_factor,
+            conin.hidden_markov_model.examples.create_chmm1_oracle,
             marks=skipif_pgmpy_not_available,
         ),
         pytest.param(
@@ -1151,7 +1151,7 @@ def test_DPGM_weather_pgmpy(method, solver):
         #    "variable_elimination",
         #    None,
         #    testfile_uai,
-        #    conin.dynamic_bayesian_network.examples.weather_constrained_factor_conin,
+        #    conin.dynamic_bayesian_network.examples.weather_constrained_oracle_conin,
         #    marks=skipif_pgmpy_not_available,
         # ),
     ],
@@ -1205,7 +1205,7 @@ def test_DPGM_weather_constrained_conin(method, solver, write_file, example_fact
         # pytest.param(
         #    "variable_elimination",
         #    None,
-        #    conin.dynamic_bayesian_network.examples.weather_constrained_factor_pgmpy,
+        #    conin.dynamic_bayesian_network.examples.weather_constrained_oracle_pgmpy,
         # ),
     ],
 )

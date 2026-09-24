@@ -28,11 +28,6 @@ Constraint classes
    :undoc-members:
    :show-inheritance:
 
-.. autoclass:: conin.constraints.FactorConstraint
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Constraint decorators
 ---------------------
 
@@ -41,8 +36,6 @@ Constraint decorators
 .. autofunction:: conin.constraints.pyomo_constraint_fn
 
 .. autofunction:: conin.constraints.toulbar2_constraint_fn
-
-.. autofunction:: conin.constraints.factor_constraint_fn
 
 Algebraic Constraints With Smoek
 --------------------------------
@@ -105,10 +98,6 @@ Reusable oracle constraints live in ``conin.constraints.oracle``. The
 Toulbar2 helper module also includes utilities for translating supported linear
 algebraic constraints to Toulbar2 expressions.
 
-.. automodule:: conin.constraints.factor
-   :members:
-   :undoc-members:
-
-.. automodule:: conin.constraints.toulbar2
+.. automodule:: conin.constraints.algebraic.add_constraints_toulbar2
    :members:
    :undoc-members:

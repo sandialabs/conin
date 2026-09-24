@@ -87,11 +87,12 @@ Constrained hidden Markov models
 --------------------------------
 
 ``ConstrainedHiddenMarkovModel`` wraps a base HMM and a list of constraint
-functors. The public examples include oracle, factor, Pyomo, and Toulbar2
-constraints.
+functors. The public examples include oracle, Pyomo, and Toulbar2 constraints.
+Oracle constraints with ``nodes`` generate auxiliary factors for
+variable-elimination inference.
 
 ``initialize_chmm()`` constructs an internal constrained HMM object for oracle,
-Pyomo, and MVR constraints. Factor and Toulbar2 constraints are consumed by the
+Pyomo, and MVR constraints. Toulbar2 constraints are consumed by the
 corresponding inference methods instead of initializing a standalone CHMM object
 directly.
 
@@ -113,12 +114,12 @@ Oracle constraints
    hmm = create_hmm1()
 
    num_zeros_greater_than_nine = OracleConstraint(
-       func=lambda seq: seq.count("h0") > 9,
-       partial_func=lambda T, seq: T - len(seq) + seq.count("h0") >= 10,
+       func=lambda states: sum(1 for v in states.values() if v == "h0") > 9,
+       partial_func=lambda T, states: T - len(states) + sum(1 for v in states.values() if v == "h0") >= 10,
    )
    num_zeros_less_than_thirteen = OracleConstraint(
-       func=lambda seq: seq.count("h0") < 13,
-       partial_func=lambda T, seq: seq.count("h0") < 13,
+       func=lambda states: sum(1 for v in states.values() if v == "h0") < 13,
+       partial_func=lambda T, states: sum(1 for v in states.values() if v == "h0") < 13,
    )
 
    chmm = ConstrainedHiddenMarkovModel(
@@ -196,14 +197,14 @@ Toulbar2 constraints
 ``map_query(..., method="toulbar2")`` applies these constraints when building
 the Toulbar2 model.
 
-Factor constraints
-^^^^^^^^^^^^^^^^^^
+Oracle constraints with node scoping
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-``create_chmm1_factor`` adds the same logic through generated factors:
+``create_chmm1_oracle`` adds the same logic through generated factors:
 
 .. code-block:: python
 
-   from conin import factor_constraint_fn
+   from conin import oracle_constraint_fn
    from conin.hidden_markov_model import ConstrainedHiddenMarkovModel
    from conin.hidden_markov_model.examples import create_hmm1
 
@@ -213,12 +214,12 @@ Factor constraints
        for t in data.hmm.T:
            yield ("H", t)
 
-   @factor_constraint_fn(nodes=nodes)
+   @oracle_constraint_fn(nodes=nodes)
    def num_zeros_greater_than_nine(states, data):
        num = sum(1 for _, value in states.items() if value == "h0")
        return num >= 10
 
-   @factor_constraint_fn(nodes=nodes)
+   @oracle_constraint_fn(nodes=nodes)
    def num_zeros_less_than_thirteen(states, data):
        num = sum(1 for _, value in states.items() if value == "h0")
        return num <= 12
@@ -228,8 +229,8 @@ Factor constraints
        constraints=[num_zeros_greater_than_nine, num_zeros_less_than_thirteen],
    )
 
-``map_query(..., method="variable_elimination")`` can consume factor
-constraints by expanding them into auxiliary factors.
+``map_query(..., method="variable_elimination")`` can consume oracle constraints
+with ``nodes`` by expanding them into auxiliary factors.
 
 Notes
 -----

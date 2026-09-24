@@ -4,7 +4,7 @@ import numpy as np
 from conin.constraints import (
     pyomo_constraint_fn,
     toulbar2_constraint_fn,
-    factor_constraint_fn,
+    oracle_constraint_fn,
     algebraic_constraint_fn,
 )
 from conin.util import try_import, MPESolution
@@ -344,7 +344,7 @@ def ABC2_constrained_algebraic_conin():
     )
 
 
-def ABC_constrained_factor_conin():
+def ABC_constrained_oracle_conin():
     """
     Three variables with pair-wise interactions.
 
@@ -355,7 +355,7 @@ def ABC_constrained_factor_conin():
     """
     pgm = ABC_conin()
 
-    @factor_constraint_fn(nodes=["A", "B", "C"])
+    @oracle_constraint_fn(nodes=["A", "B", "C"])
     def constraint_fn(states):
         values = set(x for x in states.values())
         return len(values) == 3  # All r.v. values are different
@@ -364,7 +364,7 @@ def ABC_constrained_factor_conin():
     return Munch(pgm=cpgm, solutions=[MPESolution(states={"A": 0, "B": 2, "C": 1})])
 
 
-def ABC2_constrained_factor_conin():
+def ABC2_constrained_oracle_conin():
     """
     Constrained AOS example for three variables with pair-wise interactions.
     Based off ABC2_conin.
@@ -379,7 +379,7 @@ def ABC2_constrained_factor_conin():
 
     pgm = ABC2_conin()
 
-    @factor_constraint_fn(nodes=["A", "B", "C"])
+    @oracle_constraint_fn(nodes=["A", "B", "C"])
     def constraint_fn(states):
         values = set(x for x in states.values())
         return len(values) == 3  # All r.v. values are different

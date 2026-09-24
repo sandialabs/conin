@@ -26,9 +26,9 @@ from conin.dynamic_bayesian_network import (
     ConstrainedDynamicDiscreteBayesianNetwork,
 )
 
-from conin.constraints import FactorConstraint
+from conin.constraints import OracleConstraint
 from conin.constraints.algebraic import (
-    create_factor_constraints_from_algebraic,
+    create_oracle_constraints_from_algebraic,
     AlgebraicConstraint,
 )
 from conin.common.conin import convert_conin_to_pgmpy_mn, convert_conin_to_pgmpy_bn
@@ -85,11 +85,11 @@ def _add_bn_constraints_as_evidence(pgm, constraints, data, evidence, copy_pgm=F
     if copy_pgm:
         pgm = copy.deepcopy(pgm)
     if isinstance(constraints[0], AlgebraicConstraint):
-        constraints = create_factor_constraints_from_algebraic(
+        constraints = create_oracle_constraints_from_algebraic(
             pgm=pgm, constraints=constraints, data=data
         )
     for con in constraints:
-        if isinstance(con, FactorConstraint):
+        if isinstance(con, OracleConstraint):
             cpd = con(pgm, data)
             cpd.node = (cpd.node, -1)
             pgm.add_cpd(cpd)
@@ -109,11 +109,11 @@ def _add_mn_constraints_as_evidence(pgm, constraints, data, evidence, copy_pgm=F
     if copy_pgm:
         pgm = copy.deepcopy(pgm)
     if isinstance(constraints[0], AlgebraicConstraint):
-        constraints = create_factor_constraints_from_algebraic(
+        constraints = create_oracle_constraints_from_algebraic(
             pgm=pgm, constraints=constraints, data=data
         )
     for con in constraints:
-        if isinstance(con, FactorConstraint):
+        if isinstance(con, OracleConstraint):
             factor = con(pgm, data)
             pgm._factors.append(factor)
             evidence[factor.nodes[-1]] = 1
@@ -356,8 +356,8 @@ def _map_query_VariableElimination(
         save_model(newpgm, write_uai_file)
 
     pgmpy_model = convert_conin_to_pgmpy_bn(newpgm)
-    solution_with_evidence = (
-        options.get("solution_with_evidence", False) or (len(pgm.constraints) > 0),
+    solution_with_evidence = options.get("solution_with_evidence", False) or (
+        len(pgm.constraints) > 0
     )
 
     def _execute():

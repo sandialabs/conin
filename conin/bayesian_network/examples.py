@@ -7,7 +7,7 @@ import pyomo.environ as pyo
 from conin.constraints import (
     pyomo_constraint_fn,
     toulbar2_constraint_fn,
-    factor_constraint_fn,
+    oracle_constraint_fn,
     algebraic_constraint_fn,
 )
 from conin.util import try_import, MPESolution
@@ -389,10 +389,10 @@ def cancer2_BN_constrained_algebraic_pgmpy(debug=False):
     )
 
 
-def cancer1_BN_constrained_factor_conin(debug=False):
+def cancer1_BN_constrained_oracle_conin(debug=False):
     pgm = cancer1_BN_conin(debug=debug).pgm
 
-    @factor_constraint_fn(nodes=["Dyspnoea", "Xray"])
+    @oracle_constraint_fn(nodes=["Dyspnoea", "Xray"])
     def constraints(states):
         return states["Dyspnoea"] != states["Xray"]
 
@@ -413,10 +413,10 @@ def cancer1_BN_constrained_factor_conin(debug=False):
     )
 
 
-def cancer1_BN_constrained_factor_pgmpy(debug=False):
+def cancer1_BN_constrained_oracle_pgmpy(debug=False):
     pgm = cancer1_BN_pgmpy(debug=debug).pgm
 
-    @factor_constraint_fn(nodes=["Dyspnoea", "Xray"])
+    @oracle_constraint_fn(nodes=["Dyspnoea", "Xray"])
     def constraints(states):
         return states["Dyspnoea"] != states["Xray"]
 
@@ -1112,11 +1112,11 @@ def wide_BN_constrained1_conin_toulbar2(debug=False):
     return Munch(pgm=cpgm, solutions=[MPESolution(states=solution_states)])
 
 
-def wide_BN_constrained1_conin_factor(debug=False):
+def wide_BN_constrained1_conin_oracle(debug=False):
     N = 10
     pgm = wide_BN_conin(debug=debug).pgm
 
-    @factor_constraint_fn(nodes=[("A", 8), ("A", 9)])
+    @oracle_constraint_fn(nodes=[("A", 8), ("A", 9)])
     def constraints(states):
         return states["A", 8] + states["A", 9] <= 1
 
@@ -1212,11 +1212,11 @@ def wide_BN_constrained2_conin_toulbar2(debug=False):
     return Munch(pgm=cpgm, solutions=[MPESolution(states=solution_states)])
 
 
-def wide_BN_constrained2_conin_factor(debug=False):
+def wide_BN_constrained2_conin_oracle(debug=False):
     N = 10
     pgm = wide_BN_conin(debug=debug).pgm
 
-    @factor_constraint_fn(nodes=[("A", t) for t in range(N)])
+    @oracle_constraint_fn(nodes=[("A", t) for t in range(N)])
     def constraints(states):
         for i in range(1, N):
             if states["A", i - 1] + states["A", i] > 1:

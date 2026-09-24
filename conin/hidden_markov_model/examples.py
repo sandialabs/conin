@@ -3,7 +3,7 @@ from conin.constraints import OracleConstraint
 from conin.constraints import (
     pyomo_constraint_fn,
     toulbar2_constraint_fn,
-    factor_constraint_fn,
+    oracle_constraint_fn,
     algebraic_constraint_fn,
 )
 from conin.hidden_markov_model.constrained_hmm import ConstrainedHiddenMarkovModel
@@ -170,12 +170,16 @@ def create_chmm1_oracle():
     hmm = create_hmm1()
 
     num_zeros_greater_than_nine = OracleConstraint(
-        func=lambda seq: seq.count("h0") > 9,
-        partial_func=lambda T, seq: T - len(seq) + seq.count("h0") >= 10,
+        func=lambda states: sum(1 for v in states.values() if v == "h0") > 9,
+        partial_func=lambda T, states: T
+        - len(states)
+        + sum(1 for v in states.values() if v == "h0")
+        >= 10,
     )
     num_zeros_less_than_thirteen = OracleConstraint(
-        func=lambda seq: seq.count("h0") < 13,
-        partial_func=lambda T, seq: seq.count("h0") < 13,
+        func=lambda states: sum(1 for v in states.values() if v == "h0") < 13,
+        partial_func=lambda T, states: sum(1 for v in states.values() if v == "h0")
+        < 13,
     )
     constraints = [num_zeros_greater_than_nine, num_zeros_less_than_thirteen]
 
@@ -184,19 +188,19 @@ def create_chmm1_oracle():
     return chmm
 
 
-def create_chmm1_factor():
+def create_chmm1_oracle():
     hmm = create_hmm1()
 
     def nodes(data):
         for t in data.hmm.T:
             yield ("H", t)
 
-    @factor_constraint_fn(nodes=nodes)
+    @oracle_constraint_fn(nodes=nodes)
     def num_zeros_greater_than_nine(states, D):
         num = sum(1 for k, v in states.items() if v == "h0")
         return num >= 10
 
-    @factor_constraint_fn(nodes=nodes)
+    @oracle_constraint_fn(nodes=nodes)
     def num_zeros_less_than_thirteen(states, D):
         num = sum(1 for k, v in states.items() if v == "h0")
         return num <= 12
