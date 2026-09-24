@@ -188,6 +188,35 @@ def create_chmm1_oracle():
     return chmm
 
 
+def create_chmm1_oracle_ve():
+    """Oracle CHMM with node-scoped constraints for variable elimination."""
+    hmm = create_hmm1()
+
+    def nodes(data):
+        for t in data.hmm.T:
+            yield ("H", t)
+
+    num_zeros_greater_than_nine = OracleConstraint(
+        func=lambda states: sum(1 for v in states.values() if v == "h0") > 9,
+        partial_func=lambda T, states: T
+        - len(states)
+        + sum(1 for v in states.values() if v == "h0")
+        >= 10,
+        nodes=nodes,
+    )
+    num_zeros_less_than_thirteen = OracleConstraint(
+        func=lambda states: sum(1 for v in states.values() if v == "h0") < 13,
+        partial_func=lambda T, states: sum(1 for v in states.values() if v == "h0")
+        < 13,
+        nodes=nodes,
+    )
+    constraints = [num_zeros_greater_than_nine, num_zeros_less_than_thirteen]
+
+    chmm = ConstrainedHiddenMarkovModel(hmm=hmm, constraints=constraints)
+    chmm.initialize_chmm()
+    return chmm
+
+
 def create_chmm1_pyomo():
     hmm = create_hmm1()
 
