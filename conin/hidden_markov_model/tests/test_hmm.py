@@ -370,8 +370,13 @@ class Test_HMM1:
     def test_to_dict_keys(self):
         hmm = tc.create_hmm1()
         d = hmm.to_dict()
-        assert set(d.keys()) == {"start_probs", "transition_probs", "emission_probs",
-                                  "num_hidden", "num_observed"}
+        assert set(d.keys()) == {
+            "start_probs",
+            "transition_probs",
+            "emission_probs",
+            "num_hidden",
+            "num_observed",
+        }
 
     def test_to_dict_counts(self):
         hmm = tc.create_hmm1()
@@ -419,7 +424,7 @@ class Test_HMM1:
         d = hmm.to_dict(tolerance=0.4)
         start_labels = [label for label, _ in d["start_probs"]]
         assert "h0" not in start_labels  # 0.4 > 0.4 is False
-        assert "h1" in start_labels     # 0.6 > 0.4 is True
+        assert "h1" in start_labels  # 0.6 > 0.4 is True
 
     def test_to_dict_tolerance_excludes_all(self):
         # With tolerance >= 1.0 no entry survives.

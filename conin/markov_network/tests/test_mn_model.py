@@ -8,7 +8,6 @@ from conin.markov_network import (
     DiscreteMarkovNetwork,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -20,7 +19,9 @@ def _make_simple_mn():
     mn.states = {"A": [0, 1], "B": [0, 1]}
     f_a = DiscreteFactor(nodes=["A"], values={0: 1.0, 1: 2.0})
     f_b = DiscreteFactor(nodes=["B"], values={0: 3.0, 1: 1.0})
-    f_ab = DiscreteFactor(nodes=["A", "B"], values={(0, 0): 1.0, (0, 1): 0.5, (1, 0): 0.5, (1, 1): 2.0})
+    f_ab = DiscreteFactor(
+        nodes=["A", "B"], values={(0, 0): 1.0, (0, 1): 0.5, (1, 0): 0.5, (1, 1): 2.0}
+    )
     mn.factors = [f_a, f_b, f_ab]
     mn.check_model()
     return mn
@@ -61,7 +62,10 @@ class TestDiscreteFactor:
     def test_assignments_binary(self):
         mn = DiscreteMarkovNetwork()
         mn.states = {"A": [0, 1], "B": [0, 1]}
-        f = DiscreteFactor(nodes=["A", "B"], values={(0, 0): 1.0, (0, 1): 2.0, (1, 0): 3.0, (1, 1): 4.0})
+        f = DiscreteFactor(
+            nodes=["A", "B"],
+            values={(0, 0): 1.0, (0, 1): 2.0, (1, 0): 3.0, (1, 1): 4.0},
+        )
         result = list(f.assignments(mn.states))
         assert len(result) == 4  # 2 × 2 assignments
         assert [("A", 0), ("B", 0)] in result
