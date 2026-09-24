@@ -367,6 +367,68 @@ class Test_HMM1:
             math.log(0.6) + math.log(0.4) + math.log(0.2) + math.log(0.7),
         )
 
+    def test_to_dict_keys(self):
+        hmm = tc.create_hmm1()
+        d = hmm.to_dict()
+        assert set(d.keys()) == {"start_probs", "transition_probs", "emission_probs",
+                                  "num_hidden", "num_observed"}
+
+    def test_to_dict_counts(self):
+        hmm = tc.create_hmm1()
+        d = hmm.to_dict()
+        assert d["num_hidden"] == 2
+        assert d["num_observed"] == 2
+
+    def test_to_dict_start_probs_format(self):
+        # start_probs is a list of (label, value) pairs for entries > tolerance
+        hmm = tc.create_hmm1()
+        d = hmm.to_dict()
+        labels = [label for label, _ in d["start_probs"]]
+        assert set(labels) == {"h0", "h1"}
+
+    def test_to_dict_transition_probs_format(self):
+        # transition_probs is a list of ((from, to), value) pairs
+        hmm = tc.create_hmm1()
+        d = hmm.to_dict()
+        pairs = [pair for pair, _ in d["transition_probs"]]
+        assert ("h0", "h0") in pairs
+        assert ("h1", "h0") in pairs
+
+    def test_to_dict_emission_probs_format(self):
+        hmm = tc.create_hmm1()
+        d = hmm.to_dict()
+        pairs = [pair for pair, _ in d["emission_probs"]]
+        assert ("h0", "o0") in pairs
+        assert ("h1", "o1") in pairs
+
+    def test_to_dict_no_tolerance_includes_zeros(self):
+        # create_hmm0 has several zero probabilities; with tolerance=0.0 they
+        # should still be included (the filter is v > tolerance, so 0.0 is excluded
+        # even at tolerance=0.0).
+        hmm = tc.create_hmm0()
+        d = hmm.to_dict(tolerance=0.0)
+        values = [v for _, v in d["start_probs"]]
+        # h1 has start prob 0, so it is filtered out (0 > 0.0 is False)
+        assert 0.0 not in values
+
+    def test_to_dict_tolerance_filters_small_values(self):
+        # With a tolerance equal to the smallest non-zero probability, that entry
+        # should be excluded (strict inequality).
+        hmm = tc.create_hmm1()
+        # The smallest start_prob is h0=0.4; use tolerance=0.4 to exclude it.
+        d = hmm.to_dict(tolerance=0.4)
+        start_labels = [label for label, _ in d["start_probs"]]
+        assert "h0" not in start_labels  # 0.4 > 0.4 is False
+        assert "h1" in start_labels     # 0.6 > 0.4 is True
+
+    def test_to_dict_tolerance_excludes_all(self):
+        # With tolerance >= 1.0 no entry survives.
+        hmm = tc.create_hmm1()
+        d = hmm.to_dict(tolerance=1.0)
+        assert d["start_probs"] == []
+        assert d["transition_probs"] == []
+        assert d["emission_probs"] == []
+
 
 class Test_HMM_Util:
     def test_random_hmm(self):
