@@ -67,15 +67,13 @@ def test_small_cfn():
 
 
 def test_relaxed_syntax():
-    pgm = load_conin_model_from_cfn(
-        string="""
+    pgm = load_conin_model_from_cfn(string="""
 # A comment
 { problem { name t2 mustbe <5 }
   variables { x [a b] y 2 }
   functions { f { scope [x y] costs [0 1 2 5] } }
 }
-"""
-    )
+""")
     assert pgm.states == {"x": ["a", "b"], "y": [0, 1]}
     f = factor_values(pgm)["x", "y"]
     assert f["a", 0] == pytest.approx(1.0)
@@ -85,32 +83,26 @@ def test_relaxed_syntax():
 
 
 def test_quoted_punctuation_in_value_names():
-    pgm = load_conin_model_from_cfn(
-        string="""{"problem":{"name":"p","mustbe":"<10"},
+    pgm = load_conin_model_from_cfn(string="""{"problem":{"name":"p","mustbe":"<10"},
         "variables":{"x":["{","]"]},
-        "functions":{"f":{"scope":["x"],"defaultcost":0,"costs":["]",1]}}}"""
-    )
+        "functions":{"f":{"scope":["x"],"defaultcost":0,"costs":["]",1]}}}""")
     assert pgm.states == {"x": ["{", "]"]}
     assert factor_values(pgm)["x",] == {"{": 1.0, "]": pytest.approx(math.exp(-1))}
 
 
 def test_function_list_and_unused_variable():
-    pgm = load_conin_model_from_cfn(
-        string="""{"problem":{"name":"p","mustbe":"<10"},
+    pgm = load_conin_model_from_cfn(string="""{"problem":{"name":"p","mustbe":"<10"},
         "variables":{"x":2, "u":3},
-        "functions":[{"scope":["x"],"costs":[1,0]}]}"""
-    )
+        "functions":[{"scope":["x"],"costs":[1,0]}]}""")
     values = factor_values(pgm)
     assert values["x",] == {0: pytest.approx(math.exp(-1)), 1: 1.0}
     assert values["u",] == {0: 1.0, 1: 1.0, 2: 1.0}
 
 
 def test_maximization():
-    pgm = load_conin_model_from_cfn(
-        string="""{"problem":{"name":"p","mustbe":">-50"},
+    pgm = load_conin_model_from_cfn(string="""{"problem":{"name":"p","mustbe":">-50"},
         "variables":{"x":3},
-        "functions":{"f":{"scope":["x"],"costs":[1,7,3]}}}"""
-    )
+        "functions":{"f":{"scope":["x"],"costs":[1,7,3]}}}""")
     f = factor_values(pgm)["x",]
     assert f[1] == pytest.approx(1.0)
     assert f[0] == pytest.approx(math.exp(-6))
@@ -120,12 +112,10 @@ def test_maximization():
 def test_negative_costs_and_bound():
     # The bound applies to the total cost: x=0 has cost 60 >= 50 alone, but
     # the minimum total cost is -30 + 1 = -29, so 60 - 1 + (-29) = 30 < 50.
-    pgm = load_conin_model_from_cfn(
-        string="""{"problem":{"name":"p","mustbe":"<50"},
+    pgm = load_conin_model_from_cfn(string="""{"problem":{"name":"p","mustbe":"<50"},
         "variables":{"x":2, "y":2},
         "functions":{"f":{"scope":["x"],"costs":[60,1]},
-                     "g":{"scope":["y"],"costs":[-30,-30]}}}"""
-    )
+                     "g":{"scope":["y"],"costs":[-30,-30]}}}""")
     f = factor_values(pgm)["x",]
     assert f[0] == pytest.approx(math.exp(-59))
     assert f[1] == pytest.approx(1.0)
@@ -221,18 +211,19 @@ def test_knapsackv_variable_names_and_indices():
 
 
 def test_knapsack_boolean():
-    pgm = load_conin_model_from_cfn(
-        string="""{"problem":{"name":"p","mustbe":"<1000"},
+    pgm = load_conin_model_from_cfn(string="""{"problem":{"name":"p","mustbe":"<1000"},
         "variables":{"x":["no","yes"], "y":2},
         "functions":{"k":{"scope":["x","y"],"type":"knapsack",
-                          "params":{"capacity":3,"weights":[1,2]}}}}"""
-    )
+                          "params":{"capacity":3,"weights":[1,2]}}}}""")
     (con,) = pgm.constraints
     assert con.cfn_type == "knapsack"
     assert con.terms == [("x", "yes", 1), ("y", 1, 2)]
     assert con.rhs == 3
     # Variables that only appear in constraints get uniform factors
-    assert factor_values(pgm.pgm) == {("x",): {"no": 1.0, "yes": 1.0}, ("y",): {0: 1.0, 1: 1.0}}
+    assert factor_values(pgm.pgm) == {
+        ("x",): {"no": 1.0, "yes": 1.0},
+        ("y",): {0: 1.0, 1: 1.0},
+    }
 
 
 def test_knapsack_non_boolean_error():
@@ -260,6 +251,7 @@ def test_unsupported_global_cost_function_error(ftype, params):
 #
 # Errors
 #
+
 
 @pytest.mark.parametrize(
     "text",
@@ -344,7 +336,11 @@ def test_abc_constrained_vs_unconstrained():
     "scope,ftype,params",
     [
         # x == c or y == 1
-        ('["x","y"]', "knapsackv", '{"capacity":1,"weightedvalues":[["x",2,1],["y",1,1]]}'),
+        (
+            '["x","y"]',
+            "knapsackv",
+            '{"capacity":1,"weightedvalues":[["x",2,1],["y",1,1]]}',
+        ),
         # 2*(x == b) + 3*(y == 2) + (w == 1) >= 4, using problem variable indices
         (
             '["w","x","y"]',
@@ -352,7 +348,11 @@ def test_abc_constrained_vs_unconstrained():
             '{"capacity":4,"weightedvalues":[[1,1,2],[2,2,3],[0,1,1]]}',
         ),
         # (x == a) + (y == 0) <= 0, i.e. -(x == a) - (y == 0) >= 0
-        ('["x","y"]', "knapsackv", '{"capacity":0,"weightedvalues":[[1,0,-1],[2,0,-1]]}'),
+        (
+            '["x","y"]',
+            "knapsackv",
+            '{"capacity":0,"weightedvalues":[[1,0,-1],[2,0,-1]]}',
+        ),
     ],
 )
 def test_knapsackv_matches_toulbar2(scope, ftype, params):

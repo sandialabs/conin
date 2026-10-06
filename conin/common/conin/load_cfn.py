@@ -69,7 +69,7 @@ def _tokenize(text):
             i = j + 1
         else:
             j = i
-            while j < n and text[j] not in " \t\r\n,:{}[]\"":
+            while j < n and text[j] not in ' \t\r\n,:{}[]"':
                 j += 1
             word = text[i:j]
             if _number_re.match(word):
@@ -278,10 +278,14 @@ def _parse_knapsack(fname, fdef, states, varnames):
     if not _is_object(params):
         raise ValueError(f"CFN function {fname} must define 'params' as an object")
 
-    expected = {"capacity", "weights"} if ftype == "knapsack" else {
-        "capacity",
-        "weightedvalues",
-    }
+    expected = (
+        {"capacity", "weights"}
+        if ftype == "knapsack"
+        else {
+            "capacity",
+            "weightedvalues",
+        }
+    )
     keys = {k for k, _ in params}
     if keys != expected:
         raise NotImplementedError(
@@ -474,9 +478,7 @@ def load_conin_model_from_cfn(filename=None, string=None, cost_scale=1.0):
         elif str(ftype) in _SUPPORTED_GLOBAL_TYPES:
             scope, terms, capacity = _parse_knapsack(fname, fdef, states, varnames)
             constraints.append(
-                _create_knapsack_constraint(
-                    fname, str(ftype), scope, terms, capacity
-                )
+                _create_knapsack_constraint(fname, str(ftype), scope, terms, capacity)
             )
         else:
             raise NotImplementedError(
