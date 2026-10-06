@@ -74,6 +74,12 @@ dependency, but it is not currently exposed as a Python package extra in
 
 Use ``map_query(..., method="toulbar2")`` for Toulbar2-backed inference.
 
+Toulbar2 CFN model files (``.cfn``, ``.cfn.gz``) can be loaded into CONIN
+Markov networks with ``conin.common.load_model``. Linear constraints in these
+files are loaded as Toulbar2 constraints. Loading does not require
+``pytoulbar2``, but inference with the loaded constraints does; see
+:doc:`model_conversion_io`.
+
 When ``pytoulbar2`` is unavailable, some static-model Toulbar2 helpers return
 an empty result object with a termination condition indicating that
 ``pytoulbar2`` is not available. Dynamic Bayesian network and HMM Toulbar2
@@ -193,5 +199,7 @@ Quick Selection Guide
      - Pyomo plus ``gurobi``, ``highs``, or ``glpk``
    * - Run Toulbar2/CFN inference
      - ``pytoulbar2``/Toulbar2
+   * - Load Toulbar2 CFN files
+     - Base package
    * - Use pgmax, pomegranate, or pyagrum integrations
      - Corresponding optional extra, which also installs ``pgmpy``
