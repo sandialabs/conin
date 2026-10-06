@@ -32,7 +32,7 @@ def _get_cpd_tensor(G, cpd):
 def _get_representation(G):
     '''
     Get the dictionary representation of the nodes of G:
-    nodes = {
+    representation = {
         <node>: {
           'states': <states>,
           'parents': <parents>,
@@ -41,11 +41,11 @@ def _get_representation(G):
     }
     Dynamic nodes with initialization, e.g. 'A.0' vs 'A.t', will  have separate entries
     '''
-    nodes = {}
+    representation = {}
     for node in G.states:
         for cpd in G.cpds:
             if cpd.node == node:
-                nodes[node] = {
+                representation[node] = {
                     'states': G.states[node], 
                     'parents': [], 
                     'cpd': _get_cpd_tensor(G, cpd)
@@ -55,7 +55,7 @@ def _get_representation(G):
         for cpd in G.cpds:
             # check to see if we have an initial version
             if isinstance(cpd.node, tuple) and cpd.node[0] == node and isinstance(cpd.node[1], int):
-                nodes[node + '.0'] = {
+                representation[node + '.0'] = {
                     'states': G.dynamic_states[node],
                     'parents': [],
                     'cpd': _get_cpd_tensor(G, cpd)
@@ -71,22 +71,27 @@ def _get_representation(G):
                             parents.append(parent[0] + '.t')
                         else:
                             parents.append(parent)                  
-                nodes[node + '.t'] = {
+                representation[node + '.t'] = {
                     'states': G.dynamic_states[node],
                     'parents': parents,
                     'cpd': _get_cpd_tensor(G, cpd)
                 }
-    if len(nodes) != len(G.cpds):
+    if len(representation) != len(G.cpds):
         raise ValueError(f"We have an CPD count mismatch - are there multiple entries?")
     
-    return nodes
+    return representation
 
 
-def _get_topological_order(G, representation, init=False):
+def _get_topological_order(representation, init=False):
     '''
     Given G and a dictionary representation of G, find the topological sort order
     '''
-    nodes = G.nodes + G.dynamic_nodes
+    nodes = list(dict.fromkeys(  # preserve order
+        [k[:k.rindex('.')] if '.' in k else k for k in representation.keys()]
+    ))
+    static_nodes = [
+        k for k in representation.keys() if not (k.endswith('.0') or k.endswith('.t'))
+    ]
     indeg = {n:0 for n in nodes}
     children = defaultdict(list)
     for node in indeg.keys():
@@ -114,9 +119,37 @@ def _get_topological_order(G, representation, init=False):
                 
     # remove static nodes from order if not initializing
     if not init:
-        order = [n for n in order if not n in G.nodes]
+        order = [n for n in order if not n in static_nodes]
         
     return [nodes.index(n) for n in order]
+
+
+def _get_arrays(representation, init=False):
+    '''
+    Helper function to get cpd and index arrays for fancy indexing
+    '''
+    nodes = list(dict.fromkeys(
+        [k[:k.rindex('.')] if '.' in k else k for k in representation.keys()]
+    ))
+
+    cpd_array = []
+    index_array = []
+    for node in nodes:
+        if init and node + '.0' in representation:
+            rep = representation[node + '.0']
+        elif node + '.t' in representation:
+            rep = representation[node + '.t']
+        else:
+            rep = representation[node]
+
+        cpd = rep['cpd']
+        if len(cpd.shape) == 1:  # nodes with no parents
+            cpd = np.reshape(cpd, (1, len(cpd)))
+        cpd_array.append(cpd)
+        parents = [p[:p.rindex('.')] if (p.endswith('.t') or p.endswith('.t-1')) else p for p in rep['parents']]
+        index_array.append([nodes.index(p) for p in parents])
+        
+    return cpd_array, index_array
 
 
 def _sample_step(order, states, cpd_arrays, index_arrays):
@@ -138,51 +171,25 @@ def _sample_step(order, states, cpd_arrays, index_arrays):
     return states
 
 
-def sample(G, N=10, T=10, return_indices=False):
+def _sample(G, N=10, T=10, return_indices=False):
     '''
     Sample N traces of length T from G
-    '''    
-    nodes = G.nodes + G.dynamic_nodes
-    traces = np.zeros((N,T, len(nodes))).astype(int)
+    '''
     representation = _get_representation(G)
+    nodes = list(dict.fromkeys(
+        [k[:k.rindex('.')] if '.' in k else k for k in representation.keys()]
+    ))
+    traces = np.zeros((N, T, len(nodes))).astype(int)
 
-    # t == 0
-    order_0 = _get_topological_order(G, representation, init=True)
-    cpd_arrays_0 = []
-    index_arrays_0 = []
-    for node in nodes:
-        if node + '.0' in representation:
-            rep = representation[node + '.0']
-        elif node + '.t' in representation:
-            rep = representation[node + '.t']
-        else:
-            rep = representation[node]
-    
-        cpd = rep['cpd']
-        if len(cpd.shape) == 1:  # edge case for nodes with no parents
-            cpd = np.reshape(cpd, (1, len(cpd)))  # to make fancy indexing work in sample_step
-        cpd_arrays_0.append(rep['cpd'])
-        parents = [p[:p.rindex('.')] if (p.endswith('.t') or p.endswith('.t-1')) else p for p in rep['parents']]
-        index_arrays_0.append([nodes.index(p) for p in parents])
+    # t == 0    
+    order_0 = _get_topological_order(representation, init=True)
+    cpd_arrays_0, index_arrays_0 = _get_arrays(representation, init=True)    
     states = np.zeros((N, len(nodes))).astype(int)  # blank slate
     traces[:, 0, :] = _sample_step(order_0, states, cpd_arrays_0, index_arrays_0)
 
     # t > 0
-    order_t = _get_topological_order(G, representation, init=False)
-    cpd_arrays_t = []
-    index_arrays_t = []
-    for node in nodes:
-        if node + '.t' in representation:
-            rep = representation[node + '.t']
-        else:
-            rep = representation[node]
-
-        cpd = rep['cpd']
-        if len(cpd.shape) == 1:  # same as above
-            cpd = np.reshape(cpd, (1, len(cpd)))
-        cpd_arrays_t.append(rep['cpd'])
-        parents = [p[:p.rindex('.')] if (p.endswith('.t') or p.endswith('.t-1')) else p for p in rep['parents']]
-        index_arrays_t.append([nodes.index(p) for p in parents])
+    order_t = _get_topological_order(representation)
+    cpd_arrays_t, index_arrays_t = _get_arrays(representation)    
     for t in range(1, T):
         traces[:, t, :] = _sample_step(order_t, traces[:, t-1, :].copy(), cpd_arrays_t, index_arrays_t)
 
