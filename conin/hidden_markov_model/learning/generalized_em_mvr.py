@@ -103,9 +103,9 @@ def generalized_em_mvr_chmm(
     """Fit ``sum_i log P(y_i | constraints)`` by generalized EM on a copy of ``model``.
 
     Arguments shared with ``baum_welch_mvr_chmm`` mean the same, as does ``history``.
-    Emissions take the closed-form update; initial vector, transition matrix take gradient steps. 
-    Start and transition take up to ``inner_max_iter``; a failed line search warns (``RuntimeWarning``) 
-    and returns the last accepted parameters, which ``history[-1]`` then scores. 
+    Emissions take the closed-form update; initial vector, transition matrix take gradient steps.
+    Start and transition take up to ``inner_max_iter``; a failed line search warns (``RuntimeWarning``)
+    and returns the last accepted parameters, which ``history[-1]`` then scores.
     Invalid budgets or tolerances raise ``InvalidInputError``.
     """
     update = tuple(update)
