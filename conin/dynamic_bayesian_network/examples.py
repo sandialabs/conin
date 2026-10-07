@@ -1,10 +1,11 @@
 from munch import Munch
 import pyomo.environ as pyo
 
-from conin.constraint import (
+from conin.constraints import (
     pyomo_constraint_fn,
     toulbar2_constraint_fn,
-    factor_constraint_fn,
+    oracle_constraint_fn,
+    algebraic_constraint_fn,
 )
 from conin.dynamic_bayesian_network import (
     DynamicDiscreteBayesianNetwork,
@@ -193,15 +194,68 @@ def simple1_DDBN_constrained_pyomo_conin(debug=False):
     )
 
 
-def simple1_DDBN_constrained_factor_conin(debug=False):
+def simple1_DDBN_constrained_algebraic_conin(debug=False):
+    pgm = simple1_DDBN_conin(debug=debug).pgm
+
+    @algebraic_constraint_fn()
+    def constraints(model):
+        return [
+            model.V("A", 0, 0) == model.V("A", 1, 0),
+            model.V("B", 0, 0) == model.V("B", 1, 0),
+        ]
+
+    return Munch(
+        pgm=ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=[constraints]),
+        solutions=[
+            MPESolution(
+                states={
+                    ("A", 0): 0,
+                    ("A", 1): 0,
+                    ("B", 0): 1,
+                    ("B", 1): 1,
+                }
+            )
+        ],
+    )
+
+
+def simple1_DDBN_constrained_algebraic_pgmpy(debug=False):
+    pgm = simple1_DDBN_pgmpy(debug=debug).pgm
+
+    @algebraic_constraint_fn()
+    def constraints(model):
+        return [
+            model.V("A", 0, 0) == model.V("A", 1, 0),
+            model.V("B", 0, 0) == model.V("B", 1, 0),
+        ]
+
+    import conin.common.pgmpy
+
+    pgm = conin.common.pgmpy.convert_pgmpy_to_conin(pgm)
+    return Munch(
+        pgm=ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=[constraints]),
+        solutions=[
+            MPESolution(
+                states={
+                    ("A", 0): 0,
+                    ("A", 1): 0,
+                    ("B", 0): 1,
+                    ("B", 1): 1,
+                }
+            )
+        ],
+    )
+
+
+def simple1_DDBN_constrained_oracle_conin(debug=False):
     pgm = simple1_DDBN_conin(debug=debug).pgm
 
     def nodes(data):
-        for t in range(data.T):
+        for t in data.T:
             yield ("A", t)
             yield ("B", t)
 
-    @factor_constraint_fn(nodes=nodes)
+    @oracle_constraint_fn(nodes=nodes)
     def constraints(states):
         return states["A", 0] == states["A", 1] and states["B", 0] == states["B", 1]
 
@@ -818,14 +872,45 @@ def weather_constrained_pyomo_pgmpy(debug=False):
     )
 
 
-def weather_constrained_factor_conin(debug=False):
+def weather_constrained_algebraic_conin(debug=False):
+    pgm = weather_conin(debug).pgm
+
+    @algebraic_constraint_fn()
+    def constraints(model, data):
+        """2 rainy days"""
+        return sum(model.V("W", t, "Rainy") for t in data.T) == 2
+
+    return Munch(
+        pgm=ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=[constraints]),
+        solutions=[MPESolution(states=q_weather_A_constrained)],
+    )
+
+
+def weather_constrained_algebraic_pgmpy(debug=False):
+    pgm = weather2_pgmpy(debug).pgm
+
+    @algebraic_constraint_fn()
+    def constraints(model, data):
+        """2 rainy days"""
+        return sum(model.V("W", t, "Rainy") for t in data.T) == 2
+
+    import conin.common.pgmpy
+
+    pgm = conin.common.pgmpy.convert_pgmpy_to_conin(pgm)
+    return Munch(
+        pgm=ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=[constraints]),
+        solutions=[MPESolution(states=q_weather_A_constrained)],
+    )
+
+
+def weather_constrained_oracle_conin(debug=False):
     pgm = weather_conin(debug).pgm
 
     def nodes(data):
         for t in data.T:
             yield ("W", t)
 
-    @factor_constraint_fn(nodes=nodes)
+    @oracle_constraint_fn(nodes=nodes)
     def constraints(states, data):
         """2 rainy days"""
         num = sum(states["W", t] == "Rainy" for t in data.T)
@@ -839,14 +924,14 @@ def weather_constrained_factor_conin(debug=False):
     )
 
 
-def weather_constrained_factor_pgmpy(debug=False):
+def weather_constrained_oracle_pgmpy(debug=False):
     pgm = weather2_pgmpy(debug).pgm
 
     def nodes(data):
         for t in data.T:
             yield ("W", t)
 
-    @factor_constraint_fn(nodes=nodes)
+    @oracle_constraint_fn(nodes=nodes)
     def constraints(states, data):
         """2 rainy days"""
         num = sum(states["W", t] == "Rainy" for t in data.T)
@@ -866,7 +951,7 @@ def weather_constrained_factor_pgmpy(debug=False):
 def weather_constrained_toulbar2_conin(debug=False):
     pgm = weather_conin(debug).pgm
 
-    @pyomo_constraint_fn()
+    @toulbar2_constraint_fn()
     def constraints(M, data):
         """2 rainy days"""
         M.AddGeneralizedLinearConstraint(
@@ -882,7 +967,7 @@ def weather_constrained_toulbar2_conin(debug=False):
 def weather_constrained_toulbar2_pgmpy(debug=False):
     pgm = weather1_pgmpy(debug).pgm
 
-    @pyomo_constraint_fn()
+    @toulbar2_constraint_fn()
     def constraints(M, data):
         """2 rainy days"""
         M.AddGeneralizedLinearConstraint(

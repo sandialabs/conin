@@ -104,8 +104,9 @@ def create_pyomo_map_query_model_BN(
 
     if isinstance(pgm, ConstrainedDiscreteBayesianNetwork) and pgm.constraints:
         data = munch.Munch(variables=variables, evidence=evidence)
-        for func in pgm.constraints:
-            model = func(model, data)
+        conin.inference.mn.inference_pyomo.add_constraints(
+            pgm=pgm.pgm, constraints=pgm.constraints, model=model, data=data
+        )
 
     if timing:
         timer.toc("create_pyomo_map_query_model_BN - STOP")

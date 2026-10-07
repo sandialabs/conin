@@ -1,9 +1,9 @@
-from conin.constraint import (
+from conin.constraints import (
     OracleConstraint,
     PyomoConstraint,
     Toulbar2Constraint,
-    FactorConstraint,
     MVRConstraint,
+    AlgebraicConstraint,
 )
 from conin.exceptions import InvalidInputError
 from .chmm import CHMM
@@ -77,8 +77,21 @@ class ConstrainedHiddenMarkovModel:
             If ``constraint`` is not a supported constraint functor type.
         """
         if isinstance(constraint, OracleConstraint):
-            assert self.constraint_type is None or self.constraint_type == "oracle"
-            self.constraint_type = "oracle"
+            if constraint.nodes is not None:
+                # Oracle constraint with nodes for factor materialisation
+                assert (
+                    self.constraint_type is None
+                    or self.constraint_type == "oracle_with_nodes"
+                )
+                self.constraint_type = "oracle_with_nodes"
+            else:
+                # Black-box oracle constraint (HMM A* style)
+                assert self.constraint_type is None or self.constraint_type == "oracle"
+                self.constraint_type = "oracle"
+            self._constraints.append(constraint)
+        elif isinstance(constraint, AlgebraicConstraint):
+            assert self.constraint_type is None or self.constraint_type == "algebraic"
+            self.constraint_type = "algebraic"
             self._constraints.append(constraint)
         elif isinstance(constraint, PyomoConstraint):
             assert self.constraint_type is None or self.constraint_type == "pyomo"
@@ -87,10 +100,6 @@ class ConstrainedHiddenMarkovModel:
         elif isinstance(constraint, Toulbar2Constraint):
             assert self.constraint_type is None or self.constraint_type == "toulbar2"
             self.constraint_type = "toulbar2"
-            self._constraints.append(constraint)
-        elif isinstance(constraint, FactorConstraint):
-            assert self.constraint_type is None or self.constraint_type == "factor"
-            self.constraint_type = "factor"
             self._constraints.append(constraint)
         elif isinstance(constraint, MVRConstraint):
             assert self.constraint_type is None or self.constraint_type == "mvr"
@@ -104,8 +113,10 @@ class ConstrainedHiddenMarkovModel:
 
         Parameters
         ----------
-        constraint_type : {"oracle", "pyomo", "toulbar2", "factor", "mvr"}, optional
-            Explicit constraint backend to use.
+        constraint_type : {"oracle", "pyomo", "mvr"}, optional
+            Explicit standalone constrained-HMM backend to initialize. Oracle-with-nodes and
+            Toulbar2 constraints are consumed by the corresponding inference
+            wrappers instead of creating an internal ``chmm`` object here.
         data : optional
             Application-specific data passed to the solver.
         **kwargs
@@ -237,8 +248,9 @@ class ConstrainedHiddenMarkovModel:
         bool
             ``True`` if every constraint is satisfied and ``False`` otherwise.
         """
+        states = {i: v for i, v in enumerate(seq)}
         for constraint in self.constraints:
-            if not constraint(seq):
+            if not constraint(states):
                 return False
         return True
 

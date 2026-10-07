@@ -6,7 +6,8 @@ from pyomo.common.timing import TicTocTimer
 from conin.util import try_import
 from conin.inference.mn.inference_toulbar2 import (
     solve_toulbar2_map_query_model,
-    VarWrapper,
+    Toulbar2VarWrapper,
+    add_constraints,
 )
 
 with try_import() as pytoulbar2_available:
@@ -71,7 +72,7 @@ def create_toulbar2_map_query_model_BN(
 
     # TODO - do something different here?
     # if var_index_map:
-    model.V = VarWrapper(pgm)
+    model.V = Toulbar2VarWrapper(pgm)
     model.states = {i: pgm.states_of(name) for i, name in enumerate(pgm.nodes)}
 
     model.V_evidence = set()
@@ -82,8 +83,9 @@ def create_toulbar2_map_query_model_BN(
 
     if cpgm is not None and cpgm.constraints:
         data = munch.Munch(variables=variables, evidence=evidence)
-        for func in cpgm.constraints:
-            model = func(model, data)
+        add_constraints(
+            pgm=cpgm.pgm, constraints=cpgm.constraints, model=model, data=data
+        )
 
     if timing:  # pragma:nocover
         timer.toc("create_toulbar2_map_query_model_BN - STOP")

@@ -2,7 +2,7 @@ import pytest
 
 from conin.hidden_markov_model import create_dbn_from_hmm
 from conin.dynamic_bayesian_network import create_bn_from_dbn
-import conin.hidden_markov_model.tests.examples as tc
+import conin.hidden_markov_model.examples as tc
 
 
 def test_hmm0_to_dbn():

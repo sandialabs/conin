@@ -1,19 +1,22 @@
 import os.path
 import tempfile
 import munch
-from conin.common.unified import save_model
 from pyomo.common.timing import TicTocTimer
 
+import conin.common
+from conin.markov_network import ConstrainedDiscreteMarkovNetwork
+from conin.constraints import Toulbar2Constraint
+from conin.constraints.algebraic import (
+    add_algebraic_constraints_to_toulbar2_model,
+    AlgebraicConstraint,
+)
 from conin.util import try_import
 
 with try_import() as pytoulbar2_available:
     import pytoulbar2
 
-import conin.common
-from conin.markov_network import ConstrainedDiscreteMarkovNetwork
 
-
-class VarWrapper(object):
+class Toulbar2VarWrapper(object):
     def __init__(self, pgm):
         self._V = {name: i for i, name in enumerate(pgm.nodes)}
         self._V_state = {
@@ -21,6 +24,9 @@ class VarWrapper(object):
             for name in pgm.nodes
             for i, state in enumerate(pgm.states_of(name))
         }
+
+    def __len__(self):
+        return len(self._V)
 
     def __call__(self, *args, coef=1):
         if len(args) == 2:
@@ -39,6 +45,44 @@ class VarWrapper(object):
     def items(self):
         for k, v in self._V.items():
             yield k, v
+
+
+def add_constraints(*, pgm, constraints, model, data):
+    """Add constraints to a Toulbar2 model.
+
+    Parameters
+    ----------
+    pgm : ConstrainedDiscreteMarkovNetwork
+        The constrained graphical model.
+    model : pytoulbar2.CFN
+        The Toulbar2 constraint satisfaction network model.
+    data : munch.Munch
+        Data dictionary containing variables and evidence.
+
+    Returns
+    -------
+    pytoulbar2.CFN
+        The model with constraints added.
+    """
+    if len(constraints) == 0:
+        return model
+
+    if isinstance(constraints[0], Toulbar2Constraint):
+        for func in constraints:
+            assert isinstance(
+                func, Toulbar2Constraint
+            ), f"Unexpected constraint type ({type(func)}) when performing inference with Toulbar2. If the first constraint is a Toulbar2 constraint, then all subsequent constraints must be the same."
+            model = func(model, data)
+        return model
+
+    if isinstance(constraints[0], AlgebraicConstraint):
+        return add_algebraic_constraints_to_toulbar2_model(
+            pgm=pgm, constraints=constraints, model=model, data=data
+        )
+
+    raise TypeError(
+        f"Unexpected constraint type ({type(constraints[0])}) when performing inference with Toulbar2. Only Toulbar2Constraint is supported."
+    )
 
 
 def create_toulbar2_map_query_model_MN(
@@ -72,7 +116,7 @@ def create_toulbar2_map_query_model_MN(
             model = pytoulbar2.CFN(verbose=verbose)
             model.Read(filename)
 
-    model.V = VarWrapper(pgm)
+    model.V = Toulbar2VarWrapper(pgm)
     model.states = {i: pgm.states_of(name) for i, name in enumerate(pgm.nodes)}
 
     model.V_evidence = set()
@@ -83,8 +127,7 @@ def create_toulbar2_map_query_model_MN(
 
     if cpgm is not None and cpgm.constraints:
         data = munch.Munch(variables=variables, evidence=evidence)
-        for func in cpgm.constraints:
-            model = func(model, data)
+        add_constraints(pgm=cpgm, constraints=cpgm.constraints, model=model, data=data)
 
     if timing:  # pragma:nocover
         timer.toc("create_toulbar2_map_query_model_MN - STOP")

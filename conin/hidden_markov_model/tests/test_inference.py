@@ -10,12 +10,12 @@ with try_import() as or_topas_available:
 from conin.hidden_markov_model.inference.recursive_a_star import *
 from conin.hidden_markov_model import *
 from conin.hidden_markov_model.inference import a_star
-from conin.oracle_constraints import *
+from conin.constraints.oracle import *
 
 # from conin.hidden_markov_model.oracle_chmm import Oracle_CHMM
 from conin.hidden_markov_model.inference import ip_inference
 
-import conin.hidden_markov_model.tests.examples as tc
+import conin.hidden_markov_model.examples as tc
 
 mip_solver = pyomo.opt.check_available_solvers("gurobi", "highs", "glpk")
 mip_solver = mip_solver[0] if mip_solver else None

@@ -1,0 +1,57 @@
+{"problem":{"name":"abc_constrained","mustbe":"<1000"},
+"variables":{
+"A":["s0","s1","s2"],
+"B":["s0","s1","s2"],
+"C":["s0","s1","s2"]
+},
+"functions": {
+"F_0_1":{"scope":["A","B"],"defaultcost":0,
+"costs":[
+0,0,3,
+0,1,4,
+0,2,5,
+1,0,4,
+1,1,2,
+1,2,6,
+2,0,5,
+2,1,6
+]},
+"F_1_2":{"scope":["B","C"],"defaultcost":0,
+"costs":[
+0,0,1,
+0,1,4,
+0,2,5,
+1,0,4,
+1,2,6,
+2,0,5,
+2,1,6,
+2,2,2
+]},
+"F_0_2":{"scope":["A","C"],"defaultcost":0,
+"costs":[
+0,0,1,
+0,1,2,
+0,2,5,
+1,0,2,
+1,2,5,
+2,0,5,
+2,1,5,
+2,2,2
+]},
+"F_0_1_2":{"scope":["A","B","C"],
+"type":"knapsackv",
+"params":{"capacity":-1,
+	"weightedvalues":[[0,0,-1],[1,0,-1],[2,0,-1]]}},
+"F_0_1_2":{"scope":["A","B","C"],
+"type":"knapsackv",
+"params":{"capacity":-1,
+	"weightedvalues":[[0,1,-1],[1,1,-1],[2,1,-1]]}},
+"F_0_1_2":{"scope":["A","B","C"],
+"type":"knapsackv",
+"params":{"capacity":-1,
+	"weightedvalues":[[0,2,-1],[1,2,-1],[2,2,-1]]}},
+"F_0":{"scope":["A"],"defaultcost":1000,
+"costs":[0,0,1,1,2,0]},
+"F":{"scope":[],"costs":[1]}
+}
+}

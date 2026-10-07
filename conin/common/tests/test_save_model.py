@@ -3,6 +3,7 @@ import os.path
 import filecmp
 
 from conin.util import try_import
+import conin.common
 from conin.common.unified import save_model, load_model
 from conin.bayesian_network import DiscreteBayesianNetwork, DiscreteCPD
 
@@ -108,6 +109,17 @@ def test_save_model_error2(asia_uai):
 def test_save_model_error3(asia_uai):
     with pytest.raises(RuntimeError):
         pgm = save_model(asia_uai, os.path.join(cwd, "asia.uai"), model_type="unknown")
+
+
+def test_save_model_documented_common_namespace(asia_uai):
+    fname = os.path.join(cwd, "asia_common_namespace_test.uai")
+    conin.common.save_model(asia_uai, fname, model_type="conin")
+    try:
+        loaded = conin.common.load_model(fname, model_type="conin")
+        assert loaded.nodes
+    finally:
+        if os.path.exists(fname):
+            os.remove(fname)
 
 
 @pytest.mark.skipif(

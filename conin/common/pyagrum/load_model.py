@@ -2,13 +2,24 @@ import gzip
 import tempfile
 from conin.util import try_import
 
-import conin.common.pgmpy
+with try_import() as pgmpy_available:
+    import pgmpy  # noqa: F401
+    import conin.common.pgmpy
 
 with try_import() as pyagrum_available:
     import pyagrum
 
 
 def load_model(name, quiet=True):
+    if not pyagrum_available:
+        raise ImportError(
+            "The pyagrum package must be installed to load a pyagrum model."
+        )
+
+    if not pgmpy_available:
+        raise ImportError(
+            "The pgmpy package must be installed to load a pyagrum model."
+        )
 
     if name.endswith(".gz"):
         suffix = name.split(".")[-2]

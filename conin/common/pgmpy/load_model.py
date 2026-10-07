@@ -13,8 +13,14 @@ with try_import() as pgmpy_readwrite_available:
 
 
 def load_model(name, quiet=True):
+    if not pgmpy_available:
+        raise ImportError("The pgmpy package must be installed to load a pgmpy model.")
 
     if os.path.exists(name):
+        if not pgmpy_readwrite_available:
+            raise ImportError(
+                "The pgmpy.readwrite package must be available to load pgmpy model files."
+            )
 
         if name.endswith(".gz"):
             with gzip.open(name) as INPUT:

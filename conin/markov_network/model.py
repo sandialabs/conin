@@ -255,7 +255,9 @@ class DiscreteMarkovNetwork:
             self._states = {i: list(range(v)) for i, v in enumerate(values)}
 
         elif type(values) is dict:
-            self._nodes = sorted(values.keys())
+            tmp = list(values.keys())
+            tmp.sort(key=lambda x: (x,) if not isinstance(x, tuple) else x)
+            self._nodes = tmp
             self._states = values
 
         else:

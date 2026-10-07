@@ -5,10 +5,14 @@ import pyomo.environ as pe
 from pyomo.common.timing import TicTocTimer
 
 from conin.config import default_mip_solver
+from conin.constraints import PyomoConstraint
+from conin.constraints.algebraic import (
+    AlgebraicConstraint,
+    add_algebraic_constraints_to_pyomo_model,
+)
 from conin.markov_network import ConstrainedDiscreteMarkovNetwork
-from conin.inference.mn.factor_repn import extract_factor_representation_, State
-
-from conin.util import try_import
+from conin.inference.mn.factor_repn import extract_factor_representation_
+from conin.util import try_import, State
 
 with try_import() as or_topas_available:
     import or_topas.aos as aos
@@ -43,9 +47,9 @@ of constraints is O(N + M + Mcl + Mc) = O(N + Mcl).
 """
 
 
-class VarWrapper(dict):
+class PyomoVarWrapper(dict):
     def __init__(self, *arg, **kw):
-        super(VarWrapper, self).__init__(*arg, **kw)
+        super(PyomoVarWrapper, self).__init__(*arg, **kw)
 
     def pprint(self):  # pragma:nocover
         pprint.pprint(self)
@@ -62,6 +66,28 @@ class VarWrapper(dict):
         if type(s) is not State:
             s = State(s)
         return dict.__getitem__(self, (r, s))
+
+
+def add_constraints(*, pgm, constraints, model, data):
+    if len(constraints) == 0:
+        return model
+
+    if isinstance(constraints[0], PyomoConstraint):
+        for func in constraints:
+            assert isinstance(
+                func, PyomoConstraint
+            ), f"Unexpected constraint type ({type(func)}) when performing inference with an integer program. If the first constraint is a pyomo constraint, then all subsequent contraints must be the same."
+            model = func(model, data)
+        return model
+
+    if isinstance(constraints[0], AlgebraicConstraint):
+        return add_algebraic_constraints_to_pyomo_model(
+            pgm=pgm, constraints=constraints, model=model, data=data
+        )
+
+    raise TypeError(
+        f"Unexpected constraint type ({type(constraints[0])}) when performing inference with an integer program."
+    )
 
 
 def create_pyomo_map_query_model_MN(
@@ -138,8 +164,7 @@ def create_pyomo_map_query_model_MN(
 
     if isinstance(pgm, ConstrainedDiscreteMarkovNetwork) and pgm.constraints:
         data = munch.Munch(variables=variables, evidence=evidence)
-        for func in pgm.constraints:
-            model = func(model, data)
+        add_constraints(pgm=pgm, constraints=pgm.constraints, model=model, data=data)
 
     if timing:  # pragma:nocover
         timer.toc("create_pyomo_map_query_model_MN - STOP")
@@ -216,9 +241,9 @@ def create_MN_pyomo_map_query_model_from_factorial_repn(
     model.y = pe.Var(IJ, within=pe.Binary)
 
     if var_index_map is None:
-        model.V = VarWrapper({rs: model.x[rs] for rs in RS})
+        model.V = PyomoVarWrapper({rs: model.x[rs] for rs in RS})
     else:
-        model.V = VarWrapper(
+        model.V = PyomoVarWrapper(
             {
                 (r, s): model.x[index, s]
                 for r, index in var_index_map.items()

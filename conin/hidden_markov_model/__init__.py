@@ -10,3 +10,4 @@ from .hmm_application import HMMApplication
 from .learning import supervised_learning
 from .learning import *
 from .hmm_to_dbn import create_dbn_from_hmm
+from . import examples

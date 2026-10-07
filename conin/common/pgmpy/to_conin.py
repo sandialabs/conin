@@ -134,6 +134,9 @@ def convert_pgmpy_to_DynamicDiscreteBayesianNetwork(pgmpy_pgm):
 
 
 def convert_pgmpy_to_conin(pgmpy_pgm):
+    if not pgmpy_available:
+        raise ImportError("Cannot convert a pgmpy model without importing pgmpy")
+
     if type(pgmpy_pgm) is pgmpy.models.DiscreteMarkovNetwork:
         return convert_pgmpy_to_DiscreteMarkovNetwork(pgmpy_pgm)
 

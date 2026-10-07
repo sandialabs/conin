@@ -1,5 +1,6 @@
 import pytest
 import os.path
+import importlib
 
 from conin.util import try_import
 from conin.common.unified import load_model
@@ -13,6 +14,15 @@ with try_import() as pgmpy_readwrite_available:
 
 
 cwd = os.path.dirname(__file__)
+
+
+def test_convert_pgmpy_to_conin_requires_pgmpy(monkeypatch):
+    module = importlib.import_module("conin.common.pgmpy.to_conin")
+    monkeypatch.setattr(module, "pgmpy_available", False)
+
+    with pytest.raises(ImportError, match="pgmpy"):
+        module.convert_pgmpy_to_conin(object())
+
 
 #
 # cancer

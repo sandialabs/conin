@@ -3,4 +3,3 @@ from .model import (
     ConstrainedDiscreteMarkovNetwork,
     DiscreteFactor,
 )
-from . import examples
