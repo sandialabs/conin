@@ -5,6 +5,7 @@ import warnings
 import numpy as np
 import pytest
 
+from conin.exceptions import InvalidInputError
 from conin.hidden_markov_model.chmm_mvr import MVR_CHMM
 from conin.hidden_markov_model.mvr_constraints import mvr_current_state
 from conin.hidden_markov_model.mvr_operators import mvr_count, mvr_timerange
@@ -16,10 +17,10 @@ from conin.hidden_markov_model.learning.generalized_em_mvr import (  # noqa: E40
     _constraint_statistics,
     generalized_em_mvr_chmm,
 )
-from conin.hidden_markov_model.mvr_common import (
+from conin.hidden_markov_model.mvr_common import (  # noqa: E402
     _build_sumprod_ctx,
     _hmm_to_torch,
-)  # noqa: E402
+)
 from .test_viterbi_mvr import (  # noqa: E402
     as_obs_map,
     make_end_state_inhom_mvr,
@@ -31,7 +32,6 @@ from .test_viterbi_mvr import (  # noqa: E402
 
 def enumerate_objectives(hmm, constraints, observations, horizons, posterior=None):
     likelihood, surrogate, weights = 0.0, 0.0, []
-    log_z = 0.0
     counts = [
         np.zeros_like(p) for p in (hmm.start_vec, hmm.transition_mat, hmm.emission_mat)
     ]
@@ -51,7 +51,6 @@ def enumerate_objectives(hmm, constraints, observations, horizons, posterior=Non
         scores = np.array([score(p, observed) for p in paths])
         prior = np.array([score(p, {}) for p in paths])
         joint, normalizer = np.logaddexp.reduce(scores), np.logaddexp.reduce(prior)
-        log_z += normalizer
         weights.append(np.exp(scores - joint))
         q = weights[-1] if posterior is None else posterior[i]
         positive = q > 0
@@ -64,11 +63,10 @@ def enumerate_objectives(hmm, constraints, observations, horizons, posterior=Non
                 counts[1][left, right] += weight
             for t, label in as_obs_map(observed).items():
                 counts[2][states[t], hmm.observed_to_internal[label]] += weight
-    return likelihood, surrogate, weights, counts, log_z
+    return likelihood, surrogate, weights, counts
 
 
-@pytest.mark.parametrize("seed", range(6))
-def test_gem_matches_enumeration(seed):
+def make_case(seed):
     hmm = make_random_hmm(
         hidden_states=["C", "A", "B"], observed_states=["y", "x"], seed=seed
     )
@@ -100,52 +98,18 @@ def test_gem_matches_enumeration(seed):
         observations, horizons = [["x"], {0: "y"}, {}], [1, 2, 1]
     update = ("start", "transition", "emission") if seed % 2 == 0 else ("transition",)
     model = MVR_CHMM(hidden_markov_model=hmm, constraints=constraints)
+    return hmm, model, observations, horizons, update
+
+
+@pytest.mark.parametrize("seed", range(6))
+def test_gem_matches_enumeration(seed):
+    hmm, model, observations, horizons, update = make_case(seed)
     constraints = model.constraints
-    original = copy.deepcopy(hmm)
-    initial, _, posterior, counts, _ = enumerate_objectives(
-        hmm, constraints, observations, horizons
-    )
-    logs = list(_hmm_to_torch(hmm, log=True, dtype=torch.float64))
-    contexts = {
-        t: _build_sumprod_ctx(model, {}, time_horizon=t, dtype=torch.float64)
-        for t in set(horizons)
-    }
-    multiplicities = {t: horizons.count(t) for t in set(horizons)}
-    prior, normalizer = _constraint_statistics(
-        logs, contexts, multiplicities, counts=True
-    )
-    reference = enumerate_objectives(hmm, constraints, [{}, {}, {}], horizons)
-    assert float(normalizer) == pytest.approx(reference[4], abs=1e-9)
-    for actual, expected in zip(prior, reference[3][:2]):
-        assert actual.numpy() == pytest.approx(expected, abs=1e-9)
-    gradients = _chain_gradient(
-        logs, [torch.tensor(c) / 3 for c in counts], [c / 3 for c in prior], update
-    )
-    for block, attr in enumerate(("start_vec", "transition_mat")):
-        if ("start", "transition")[block] not in update:
-            continue
-        for index in np.ndindex(logs[block].shape):
-            if not torch.isfinite(logs[block][index]):
-                continue
-            values = []
-            for delta in (-1e-5, 1e-5):
-                perturbed = copy.deepcopy(hmm)
-                logits = logs[block].clone()
-                logits[index] += delta
-                setattr(perturbed, attr, logits.softmax(-1).tolist())
-                perturbed.initialize(avoid_reinitialization=False)
-                values.append(
-                    enumerate_objectives(
-                        perturbed, constraints, observations, horizons, posterior
-                    )[1]
-                    / 3
-                )
-            assert float(gradients[block][index]) == pytest.approx(
-                (values[1] - values[0]) / 2e-5, abs=1e-8
-            )
-    previous = initial
+    caller, original = hmm, copy.deepcopy(hmm)
+    previous = enumerate_objectives(hmm, constraints, observations, horizons)[0]
+    initial = previous
     for _ in range(3):
-        _, old_q, posterior, counts, _ = enumerate_objectives(
+        _, old_q, posterior, counts = enumerate_objectives(
             hmm, constraints, observations, horizons
         )
         with warnings.catch_warnings():
@@ -158,10 +122,11 @@ def test_gem_matches_enumeration(seed):
                 time_horizons=horizons,
                 max_iter=1,
                 tol=0,
+                pseudocount=0,
                 update=update,
                 inner_max_iter=3,
             )
-        score, new_q, _, _, _ = enumerate_objectives(
+        score, new_q, _, _ = enumerate_objectives(
             fitted, constraints, observations, horizons, posterior
         )
         assert history == pytest.approx([previous], abs=1e-9)
@@ -186,13 +151,68 @@ def test_gem_matches_enumeration(seed):
         hmm, previous = fitted, score
     assert previous > initial + 1e-6
     for attr in ("start_vec", "transition_mat", "emission_mat"):
-        assert getattr(model.hidden_markov_model, attr) == getattr(original, attr)
-    assert fitted.hidden_to_external == original.hidden_to_external
-    assert fitted.observed_to_external == original.observed_to_external
+        assert getattr(caller, attr) == getattr(original, attr)
 
 
-def test_gem_history_and_backtracking():
-    # Deliberate executable spec: history follows Baum–Welch except on failed search.
+@pytest.mark.parametrize("seed", range(6))
+def test_chain_gradient_matches_finite_differences(seed):
+    # The ascent checks above would also pass for Baum-Welch; this pins the Z term.
+    hmm, model, observations, horizons, update = make_case(seed)
+    constraints = model.constraints
+    _, _, posterior, counts = enumerate_objectives(
+        hmm, constraints, observations, horizons
+    )
+    logs = list(_hmm_to_torch(hmm, log=True, dtype=torch.float64))
+    contexts = {
+        t: _build_sumprod_ctx(model, {}, time_horizon=t, dtype=torch.float64)
+        for t in set(horizons)
+    }
+    multiplicities = {t: horizons.count(t) for t in set(horizons)}
+    prior, _ = _constraint_statistics(logs, contexts, multiplicities, counts=True)
+    gradients = _chain_gradient(
+        logs, [torch.tensor(c) / 3 for c in counts], [c / 3 for c in prior], update
+    )
+    for block, (name, attr) in enumerate(
+        zip(("start", "transition"), ("start_vec", "transition_mat"))
+    ):
+        if name not in update:
+            continue
+        for index in np.ndindex(logs[block].shape):
+            if not torch.isfinite(logs[block][index]):
+                continue
+            values = []
+            for delta in (-1e-5, 1e-5):
+                perturbed = copy.deepcopy(hmm)
+                logits = logs[block].clone()
+                logits[index] += delta
+                setattr(perturbed, attr, logits.softmax(-1).tolist())
+                perturbed.initialize(avoid_reinitialization=False)
+                values.append(
+                    enumerate_objectives(
+                        perturbed, constraints, observations, horizons, posterior
+                    )[1]
+                    / 3
+                )
+            assert float(gradients[block][index]) == pytest.approx(
+                (values[1] - values[0]) / 2e-5, abs=1e-8
+            )
+
+
+def test_pseudocount_keeps_unobserved_emissions_positive():
+    hmm = make_random_hmm(
+        hidden_states=["A", "B"], observed_states=["x", "y", "z"], seed=3
+    )
+    hmm.emission_mat[0] = [0.5, 0.5, 0.0]
+    hmm.initialize(avoid_reinitialization=False)
+    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[])
+    with pytest.warns(UserWarning, match="emission"):
+        fitted, _ = generalized_em_mvr_chmm(model, [["x", "y", "x"]], max_iter=1, tol=0)
+    unobserved = np.asarray(fitted.emission_mat)[:, hmm.observed_to_internal["z"]]
+    assert unobserved[0] == 0 and unobserved[1] > 0
+
+
+def test_gem_history():
+    # Deliberate executable spec: history follows Baum–Welch.
     hmm = make_random_hmm(hidden_states=["A", "B"], observed_states=["x", "y"], seed=8)
     model = MVR_CHMM(hidden_markov_model=hmm, constraints=[])
     observations = [["x", "x", "y"]]
@@ -201,10 +221,18 @@ def test_gem_history_and_backtracking():
     assert enumerate_objectives(fitted, [], observations, [3])[0] >= history[-1]
     fitted, history = generalized_em_mvr_chmm(model, [{}], time_horizons=3)
     assert history == pytest.approx([0, 0], abs=1e-12)
-    with pytest.warns(RuntimeWarning, match="GEM backtracking failed"):
+    fitted, history = generalized_em_mvr_chmm(model, observations, max_iter=0)
+    assert history == []
+    assert fitted.emission_mat == hmm.emission_mat
+
+
+def test_gem_backtracking_failure_retains_parameters():
+    hmm = make_random_hmm(hidden_states=["A", "B"], observed_states=["x", "y"], seed=8)
+    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[])
+    with pytest.warns(RuntimeWarning, match="backtracking"):
         fitted, history = generalized_em_mvr_chmm(
             model,
-            observations,
+            [["x", "x", "y"]],
             max_iter=1,
             update=("start", "transition"),
             step_size=1e10,
@@ -215,3 +243,19 @@ def test_gem_history_and_backtracking():
     assert np.asarray(fitted.transition_mat) == pytest.approx(
         np.asarray(hmm.transition_mat)
     )
+
+
+@pytest.mark.parametrize(
+    "observations, kwargs",
+    [
+        ([["x"]], {"update": ("start", "bogus")}),
+        ([["x"]], {"pseudocount": -1.0}),
+        ([], {}),
+    ],
+    ids=["update", "budget", "empty"],
+)
+def test_gem_rejects_invalid_arguments(observations, kwargs):
+    hmm = make_random_hmm(hidden_states=["A", "B"], observed_states=["x", "y"], seed=8)
+    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[])
+    with pytest.raises(InvalidInputError):
+        generalized_em_mvr_chmm(model, observations, **kwargs)

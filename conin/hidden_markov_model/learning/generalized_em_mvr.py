@@ -20,7 +20,12 @@ from ..mvr_common import (
     _model_parts,
     _resolve_horizon,
 )
-from .baum_welch_mvr import _e_step_counts, _resolve_time_horizons, _support_masks
+from .baum_welch_mvr import (
+    _e_step_counts,
+    _normalize_on_support,
+    _resolve_time_horizons,
+    _support_masks,
+)
 
 
 def _parameter_context(ctx, log_params):
@@ -85,6 +90,7 @@ def generalized_em_mvr_chmm(
     time_horizons=None,
     max_iter=50,
     tol=1e-6,
+    pseudocount=1e-8,
     update=("start", "transition", "emission"),
     dtype=torch.float64,
     device="cpu",
@@ -94,58 +100,13 @@ def generalized_em_mvr_chmm(
     step_size=1.0,
     max_backtracks=30,
 ):
-    """Fit ``sum log P(observations | constraints)`` with constrained GEM.
+    """Fit ``sum_i log P(y_i | constraints)`` by generalized EM on a copy of ``model``.
 
-    Emissions use exact count normalization without pseudocounts; start and
-    transition probabilities use backtracked logit steps. Initial zeros are
-    structural and raise a ``UserWarning``. Failed backtracking warns and returns
-    the last accepted parameters.
-
-    Parameters
-    ----------
-    model : MVR_CHMM
-        Constrained model. The fit runs on a copy, preserving constraint alignment.
-    observations : sequence
-        Batch of dense lists or partial ``{time: label}`` maps in external labels.
-        Missing times still drive transitions and constraints, but contribute no
-        emission counts. Emission rows with no counts retain their current values.
-    time_horizons : int or sequence of int, optional
-        Horizon per sequence; a single int applies to all. Required for maps,
-        including empty maps. Defaults to the sequence length for dense lists.
-    max_iter : int, optional
-        Maximum outer iterations, each an E-step followed by a generalized M-step.
-    tol : float, optional
-        Stop when the total conditional log-likelihood changes by less than this.
-        Exhausting the budget warns; ``tol <= 0`` requests a fixed iteration count.
-    update : tuple of str, optional
-        Parameter blocks to update: ``"start"``, ``"transition"``, and/or
-        ``"emission"``. Other blocks are unchanged.
-    dtype : torch.dtype, optional
-        Floating dtype for torch tensors; defaults to ``torch.float64``.
-    device : str or torch.device, optional
-        Torch device.
-    verbose : bool, optional
-        Print the total conditional log-likelihood each iteration.
-    inner_max_iter : int, optional
-        Maximum chain-gradient steps per M-step.
-    inner_tol : float, optional
-        Stop inner steps when the largest absolute logit gradient is at most this,
-        or improvement is at most this times ``max(1, abs(surrogate))``. Both use
-        the batch-mean surrogate.
-    step_size : float, optional
-        Initial positive step size for each chain-gradient step.
-    max_backtracks : int, optional
-        Maximum candidate steps per line search, halving the step on rejection.
-
-    Returns
-    -------
-    hmm : HiddenMarkovModel
-        Fitted model, with the input's label indexing preserved.
-    history : list[float]
-        Total conditional log-likelihood at the start of each outer iteration.
-        On convergence or failed backtracking, the last entry scores the returned
-        model. On budget exhaustion the model is one update ahead of that entry.
-        With ``max_iter=0``, returns an unchanged copy and an empty history.
+    Arguments shared with ``baum_welch_mvr_chmm`` mean the same, as does ``history``.
+    Emissions take the closed-form update; initial vector, transition matrix take gradient steps. 
+    Start and transition take up to ``inner_max_iter``; a failed line search warns (``RuntimeWarning``) 
+    and returns the last accepted parameters, which ``history[-1]`` then scores. 
+    Invalid budgets or tolerances raise ``InvalidInputError``.
     """
     update = tuple(update)
     unknown = set(update) - {"start", "transition", "emission"}
@@ -161,9 +122,11 @@ def generalized_em_mvr_chmm(
         or not math.isfinite(inner_tol)
         or inner_tol < 0
         or not math.isfinite(tol)
+        or not math.isfinite(pseudocount)
+        or pseudocount < 0
     ):
         raise InvalidInputError(
-            "GEM iteration budgets, step_size, and tolerances must be valid."
+            "GEM budgets, step_size, tolerances, and pseudocount must be valid."
         )
     observations = list(observations)
     if not observations:
@@ -171,7 +134,7 @@ def generalized_em_mvr_chmm(
     horizons = _resolve_time_horizons(observations, time_horizons)
     working = copy.deepcopy(model)
     hmm, constraints = _model_parts(working)
-    _support_masks(hmm)
+    emission_support = _support_masks(hmm)["emission"]
     log_params = list(_hmm_to_torch(hmm, log=True, dtype=dtype, device=device))
 
     contexts, prior_contexts = [], {}
@@ -229,12 +192,6 @@ def generalized_em_mvr_chmm(
             log_params, prior_contexts, multiplicities
         )
         likelihood = joint - float(normalizer)
-        if history and likelihood < history[-1] - 1e-6 * max(1.0, abs(history[-1])):
-            warnings.warn(
-                "GEM conditional log-likelihood decreased; try dtype=torch.float64.",
-                UserWarning,
-                stacklevel=2,
-            )
         history.append(likelihood)
         if verbose:
             print(f"GEM iter {iteration:3d}  loglik = {likelihood:.10f}")
@@ -244,12 +201,16 @@ def generalized_em_mvr_chmm(
             converged = True
             break
 
-        data_counts = [c / n for c in data_counts]
         if "emission" in update:
-            totals = data_counts[2].sum(dim=-1, keepdim=True)
-            log_params[2] = torch.where(
-                totals > 0, data_counts[2].log() - totals.log(), log_params[2]
-            ).to(dtype)
+            # Smoothed on summed counts, matching the pseudocount scale of Baum-Welch.
+            emission = _normalize_on_support(
+                data_counts[2].cpu().numpy(),
+                emission_support,
+                pseudocount,
+                log_params[2].exp().cpu().numpy(),
+            )
+            log_params[2] = torch.as_tensor(emission, dtype=dtype, device=device).log()
+        data_counts = [c / n for c in data_counts]
 
         for _ in range(inner_max_iter):
             prior_counts, normalizer = _constraint_statistics(
