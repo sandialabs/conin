@@ -74,12 +74,6 @@ class PyomoVarWrapper(dict):
         return dict.__getitem__(self, (r, s))
 
 
-# def _c5_expr(M, IRS, i, r, s):
-#    """The c5 constraint expression: factor i selects a configuration with
-#    X_r = s iff variable X_r = s."""
-#    return sum(M.y[i, j] for j in IRS[i, r, s]) == M.x[r, s]
-
-
 def has_omitted_c5(model):
     """Returns ``True`` if the model was created with ``use_cut_generation=True`` and the
     c5 constraints have not been added."""
@@ -123,15 +117,17 @@ class C5LazyCutGenerator:
         self.user_cuts = user_cuts
         self.tol = tol
         self.max_cuts_per_node = max_cuts_per_node
-        self.rows = [
-            (key, [model.y[key[0], j] for j in self.IRS[key]], model.x[key[1], key[2]])
-            for key in sorted(self.IRS.keys())
-        ]
         self.variables = list(model.x.values()) + list(model.y.values())
         # Map from (i,r,s,sense) to the Pyomo constraint created for it
         self.cuts = {}
         self.num_lazy_cuts = 0
         self.num_user_cuts = 0
+
+    def _get_rows(self):
+        # WEH - Should we cache this?  This could be big.
+        model = self.model
+        for key in sorted(self.IRS.keys()):
+                yield (key, [model.y[key[0], j] for j in self.IRS[key]], model.x[key[1], key[2]])
 
     def _violated_rows(self, tol, skip_added=False):
         """
@@ -140,8 +136,7 @@ class C5LazyCutGenerator:
         cut is sum y[i,j] <= x[r,s].  Otherwise, sense is -1 and the cut is
         sum y[i,j] >= x[r,s].
         """
-        violated = []
-        for key, yvars, xvar in self.rows:
+        for key, yvars, xvar in self._get_rows():
             diff = sum(y.value for y in yvars) - xvar.value
             if diff > tol:
                 cut_key = key + (1,)
@@ -151,8 +146,7 @@ class C5LazyCutGenerator:
                 continue
             if skip_added and cut_key in self.cuts:
                 continue
-            violated.append((abs(diff), cut_key))
-        return violated
+            yield (abs(diff), cut_key)
 
     def _get_cut(self, cut_key):
         # N.B. The gurobi_persistent cbLazy() and cbCut() methods do not
@@ -181,7 +175,7 @@ class C5LazyCutGenerator:
             if cb_opt.cbGet(GRB.Callback.MIPNODE_STATUS) != GRB.OPTIMAL:
                 return
             cb_opt.cbGetNodeRel(vars=self.variables)
-            violated = self._violated_rows(self.tol, skip_added=True)
+            violated = list(self._violated_rows(self.tol, skip_added=True))
             violated.sort(key=lambda t: -t[0])
             for _, cut_key in violated[: self.max_cuts_per_node]:
                 cb_opt.cbCut(self._get_cut(cut_key))
