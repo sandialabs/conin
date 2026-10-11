@@ -48,26 +48,40 @@ testfile_lp = os.path.join(cwd, "test.lp")
 
 
 @pytest.mark.parametrize(
-    "method,solver,write_file",
+    "method,write_file,options",
     [
         pytest.param(
-            "toulbar2", None, testfile_uai, marks=skipif_toulbar2_not_available
+            "toulbar2",
+            testfile_uai,
+            {},
+            marks=skipif_toulbar2_not_available,
         ),
         pytest.param(
-            "integer_program", mip_solver, testfile_lp, marks=skipif_no_mip_solver
+            "integer_program",
+            testfile_lp,
+            dict(solver=mip_solver),
+            marks=skipif_no_mip_solver,
         ),
         pytest.param(
-            "variable_elimination", None, testfile_uai, marks=skipif_pgmpy_not_available
+            "integer_program",
+            testfile_lp,
+            dict(solver=mip_solver, use_cut_generation=True),
+            marks=skipif_no_mip_solver,
+        ),
+        pytest.param(
+            "variable_elimination",
+            testfile_uai,
+            {},
+            marks=skipif_pgmpy_not_available,
         ),
     ],
 )
-def test_ABC_conin(method, solver, write_file):
+def test_ABC_conin(method, write_file, options):
     example = conin.markov_network.examples.ABC_conin()
 
     # Test without file writing
     kwargs = {"method": method}
-    if solver:
-        kwargs["solver"] = solver
+    kwargs.update(options)
     results = map_query(example.pgm, **kwargs)
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
@@ -84,18 +98,19 @@ def test_ABC_conin(method, solver, write_file):
 
 @skipif_pgmpy_not_available
 @pytest.mark.parametrize(
-    "method,solver",
+    "method,options",
     [
-        pytest.param("toulbar2", None, marks=skipif_toulbar2_not_available),
-        pytest.param("integer_program", mip_solver, marks=skipif_no_mip_solver),
-        pytest.param("variable_elimination", None),
+        pytest.param("toulbar2", {}, marks=skipif_toulbar2_not_available),
+        pytest.param(
+            "integer_program", dict(solver=mip_solver), marks=skipif_no_mip_solver
+        ),
+        pytest.param("variable_elimination", {}),
     ],
 )
-def test_ABC_pgmpy(method, solver):
+def test_ABC_pgmpy(method, options):
     example = conin.markov_network.examples.ABC_pgmpy()
     kwargs = {"method": method}
-    if solver:
-        kwargs["solver"] = solver
+    kwargs.update(options)
     results = map_query(example.pgm, **kwargs)
     assert results.solution.states == example.solutions[0].states
 
@@ -106,59 +121,65 @@ def test_ABC_pgmpy(method, solver):
 
 
 @pytest.mark.parametrize(
-    "method,solver,write_file,example_factory",
+    "method,write_file,options,example_factory",
     [
         pytest.param(
             "toulbar2",
-            None,
             testfile_uai,
+            {},
             conin.markov_network.examples.ABC_constrained_toulbar2_conin,
             marks=skipif_toulbar2_not_available,
         ),
         pytest.param(
             "toulbar2",
-            None,
             testfile_uai,
+            {},
             conin.markov_network.examples.ABC_constrained_algebraic_conin,
             marks=[skipif_toulbar2_not_available, skipif_smoek_not_available],
         ),
         pytest.param(
             "integer_program",
-            mip_solver,
             testfile_lp,
+            dict(solver=mip_solver),
             conin.markov_network.examples.ABC_constrained_pyomo_conin,
             marks=skipif_no_mip_solver,
         ),
         pytest.param(
             "integer_program",
-            mip_solver,
             testfile_lp,
+            dict(solver=mip_solver, use_cut_generation=True),
+            conin.markov_network.examples.ABC_constrained_pyomo_conin,
+            marks=skipif_no_mip_solver,
+        ),
+        pytest.param(
+            "integer_program",
+            testfile_lp,
+            dict(solver=mip_solver),
             conin.markov_network.examples.ABC_constrained_algebraic_conin,
             marks=[skipif_no_mip_solver, skipif_smoek_not_available],
         ),
         pytest.param(
             "variable_elimination",
-            None,
             testfile_uai,
+            {},
             conin.markov_network.examples.ABC_constrained_oracle_conin,
             marks=skipif_pgmpy_not_available,
         ),
         pytest.param(
             "variable_elimination",
-            None,
             testfile_uai,
+            {},
             conin.markov_network.examples.ABC_constrained_algebraic_conin,
             marks=[skipif_pgmpy_not_available, skipif_smoek_not_available],
         ),
     ],
 )
-def test_ABC_constrained_conin(method, solver, write_file, example_factory):
+def test_ABC_constrained_conin(method, write_file, options, example_factory):
     example = example_factory()
 
     # Test without file writing
     kwargs = {"method": method}
-    if solver:
-        kwargs["solver"] = solver
+    kwargs.update(options)
     results = map_query(example.pgm, **kwargs)
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
@@ -188,26 +209,32 @@ def test_ABC2_constrained_oracle_conin():
 
 
 @pytest.mark.parametrize(
-    "method,solver,write_file",
+    "method,write_file,options",
     [
+        pytest.param("toulbar2", testfile_uai, {}, marks=skipif_toulbar2_not_available),
         pytest.param(
-            "toulbar2", None, testfile_uai, marks=skipif_toulbar2_not_available
+            "integer_program",
+            testfile_lp,
+            dict(solver=mip_solver),
+            marks=skipif_no_mip_solver,
         ),
         pytest.param(
-            "integer_program", mip_solver, testfile_lp, marks=skipif_no_mip_solver
+            "integer_program",
+            testfile_lp,
+            dict(solver=mip_solver, use_cut_generation=True),
+            marks=skipif_no_mip_solver,
         ),
         pytest.param(
-            "variable_elimination", None, testfile_uai, marks=skipif_pgmpy_not_available
+            "variable_elimination", testfile_uai, {}, marks=skipif_pgmpy_not_available
         ),
     ],
 )
-def test_cancer1_BN_conin(method, solver, write_file):
+def test_cancer1_BN_conin(method, write_file, options):
     example = conin.bayesian_network.examples.cancer1_BN_conin()
 
     # Test without file writing
     kwargs = {"method": method}
-    if solver:
-        kwargs["solver"] = solver
+    kwargs.update(options)
     results = map_query(example.pgm, **kwargs)
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
@@ -224,43 +251,50 @@ def test_cancer1_BN_conin(method, solver, write_file):
 
 @skipif_pgmpy_not_available
 @pytest.mark.parametrize(
-    "method,solver",
+    "method,options",
     [
-        pytest.param("toulbar2", None, marks=skipif_toulbar2_not_available),
-        pytest.param("integer_program", mip_solver, marks=skipif_no_mip_solver),
-        pytest.param("variable_elimination", None),
+        pytest.param("toulbar2", {}, marks=skipif_toulbar2_not_available),
+        pytest.param(
+            "integer_program", dict(solver=mip_solver), marks=skipif_no_mip_solver
+        ),
+        pytest.param("variable_elimination", {}),
     ],
 )
-def test_cancer1_BN_pgmpy(method, solver):
+def test_cancer1_BN_pgmpy(method, options):
     example = conin.bayesian_network.examples.cancer1_BN_pgmpy()
     kwargs = {"method": method}
-    if solver:
-        kwargs["solver"] = solver
+    kwargs.update(options)
     results = map_query(example.pgm, **kwargs)
     assert results.solution.states == example.solutions[0].states
 
 
 @pytest.mark.parametrize(
-    "method,solver,write_file",
+    "method,write_file,options",
     [
+        pytest.param("toulbar2", testfile_uai, {}, marks=skipif_toulbar2_not_available),
         pytest.param(
-            "toulbar2", None, testfile_uai, marks=skipif_toulbar2_not_available
+            "integer_program",
+            testfile_lp,
+            dict(solver=mip_solver),
+            marks=skipif_no_mip_solver,
         ),
         pytest.param(
-            "integer_program", mip_solver, testfile_lp, marks=skipif_no_mip_solver
+            "integer_program",
+            testfile_lp,
+            dict(solver=mip_solver, use_cut_generation=True),
+            marks=skipif_no_mip_solver,
         ),
         pytest.param(
-            "variable_elimination", None, testfile_uai, marks=skipif_pgmpy_not_available
+            "variable_elimination", testfile_uai, {}, marks=skipif_pgmpy_not_available
         ),
     ],
 )
-def test_wide_BN_conin(method, solver, write_file):
+def test_wide_BN_conin(method, write_file, options):
     example = conin.bayesian_network.examples.wide_BN_conin()
 
     # Test without file writing
     kwargs = {"method": method}
-    if solver:
-        kwargs["solver"] = solver
+    kwargs.update(options)
     results = map_query(example.pgm, **kwargs)
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
@@ -281,59 +315,65 @@ def test_wide_BN_conin(method, solver, write_file):
 
 
 @pytest.mark.parametrize(
-    "method,solver,write_file,example_factory",
+    "method,write_file,options,example_factory",
     [
         pytest.param(
             "toulbar2",
-            None,
             testfile_uai,
+            {},
             conin.bayesian_network.examples.cancer1_BN_constrained_toulbar2_conin,
             marks=skipif_toulbar2_not_available,
         ),
         pytest.param(
             "toulbar2",
-            None,
             testfile_uai,
+            {},
             conin.bayesian_network.examples.cancer1_BN_constrained_algebraic_conin,
             marks=[skipif_toulbar2_not_available, skipif_smoek_not_available],
         ),
         pytest.param(
             "integer_program",
-            mip_solver,
             testfile_lp,
+            dict(solver=mip_solver),
             conin.bayesian_network.examples.cancer1_BN_constrained_pyomo_conin,
             marks=skipif_no_mip_solver,
         ),
         pytest.param(
             "integer_program",
-            mip_solver,
             testfile_lp,
+            dict(solver=mip_solver, use_cut_generation=True),
+            conin.bayesian_network.examples.cancer1_BN_constrained_pyomo_conin,
+            marks=skipif_no_mip_solver,
+        ),
+        pytest.param(
+            "integer_program",
+            testfile_lp,
+            dict(solver=mip_solver),
             conin.bayesian_network.examples.cancer1_BN_constrained_algebraic_conin,
             marks=[skipif_no_mip_solver, skipif_smoek_not_available],
         ),
         pytest.param(
             "variable_elimination",
-            None,
             testfile_uai,
+            {},
             conin.bayesian_network.examples.cancer1_BN_constrained_oracle_conin,
             marks=skipif_pgmpy_not_available,
         ),
         pytest.param(
             "variable_elimination",
-            None,
             testfile_uai,
+            {},
             conin.bayesian_network.examples.cancer1_BN_constrained_algebraic_conin,
             marks=[skipif_pgmpy_not_available, skipif_smoek_not_available],
         ),
     ],
 )
-def test_cancer1_BN_constrained_conin(method, solver, write_file, example_factory):
+def test_cancer1_BN_constrained_conin(method, write_file, options, example_factory):
     example = example_factory()
 
     # Test without file writing
     kwargs = {"method": method}
-    if solver:
-        kwargs["solver"] = solver
+    kwargs.update(options)
     results = map_query(example.pgm, **kwargs)
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
@@ -358,59 +398,65 @@ def test_cancer1_BN_constrained_oracle_pgmpy():
 
 
 @pytest.mark.parametrize(
-    "method,solver,write_file,example_factory",
+    "method,write_file,options,example_factory",
     [
         pytest.param(
             "toulbar2",
-            None,
             testfile_uai,
+            {},
             conin.bayesian_network.examples.wide_BN_constrained1_conin_toulbar2,
             marks=skipif_toulbar2_not_available,
         ),
         pytest.param(
             "toulbar2",
-            None,
             testfile_uai,
+            {},
             conin.bayesian_network.examples.wide_BN_constrained1_conin_algebraic,
             marks=[skipif_toulbar2_not_available, skipif_smoek_not_available],
         ),
         pytest.param(
             "integer_program",
-            mip_solver,
             testfile_lp,
+            dict(solver=mip_solver),
             conin.bayesian_network.examples.wide_BN_constrained1_conin_pyomo,
             marks=skipif_no_mip_solver,
         ),
         pytest.param(
             "integer_program",
-            mip_solver,
             testfile_lp,
+            dict(solver=mip_solver, use_cut_generation=True),
+            conin.bayesian_network.examples.wide_BN_constrained1_conin_pyomo,
+            marks=skipif_no_mip_solver,
+        ),
+        pytest.param(
+            "integer_program",
+            testfile_lp,
+            dict(solver=mip_solver),
             conin.bayesian_network.examples.wide_BN_constrained1_conin_algebraic,
             marks=[skipif_no_mip_solver, skipif_smoek_not_available],
         ),
         pytest.param(
             "variable_elimination",
-            None,
             testfile_uai,
+            {},
             conin.bayesian_network.examples.wide_BN_constrained1_conin_oracle,
             marks=skipif_pgmpy_not_available,
         ),
         pytest.param(
             "variable_elimination",
-            None,
             testfile_uai,
+            {},
             conin.bayesian_network.examples.wide_BN_constrained1_conin_algebraic,
             marks=[skipif_pgmpy_not_available, skipif_smoek_not_available],
         ),
     ],
 )
-def test_wide_BN_constrained1_conin(method, solver, write_file, example_factory):
+def test_wide_BN_constrained1_conin(method, write_file, options, example_factory):
     example = example_factory()
 
     # Test without file writing
     kwargs = {"method": method}
-    if solver:
-        kwargs["solver"] = solver
+    kwargs.update(options)
     results = map_query(example.pgm, **kwargs)
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
@@ -426,59 +472,65 @@ def test_wide_BN_constrained1_conin(method, solver, write_file, example_factory)
 
 
 @pytest.mark.parametrize(
-    "method,solver,write_file,example_factory",
+    "method,write_file,options,example_factory",
     [
         pytest.param(
             "toulbar2",
-            None,
             testfile_uai,
+            {},
             conin.bayesian_network.examples.wide_BN_constrained2_conin_toulbar2,
             marks=skipif_toulbar2_not_available,
         ),
         pytest.param(
             "toulbar2",
-            None,
             testfile_uai,
+            {},
             conin.bayesian_network.examples.wide_BN_constrained2_conin_algebraic,
             marks=[skipif_toulbar2_not_available, skipif_smoek_not_available],
         ),
         pytest.param(
             "integer_program",
-            mip_solver,
             testfile_lp,
+            dict(solver=mip_solver),
             conin.bayesian_network.examples.wide_BN_constrained2_conin_pyomo,
             marks=skipif_no_mip_solver,
         ),
         pytest.param(
             "integer_program",
-            mip_solver,
             testfile_lp,
+            dict(solver=mip_solver, use_cut_generation=True),
+            conin.bayesian_network.examples.wide_BN_constrained2_conin_pyomo,
+            marks=skipif_no_mip_solver,
+        ),
+        pytest.param(
+            "integer_program",
+            testfile_lp,
+            dict(solver=mip_solver),
             conin.bayesian_network.examples.wide_BN_constrained2_conin_algebraic,
             marks=[skipif_no_mip_solver, skipif_smoek_not_available],
         ),
         pytest.param(
             "variable_elimination",
-            None,
             testfile_uai,
+            {},
             conin.bayesian_network.examples.wide_BN_constrained2_conin_oracle,
             marks=skipif_pgmpy_not_available,
         ),
         pytest.param(
             "variable_elimination",
-            None,
             testfile_uai,
+            {},
             conin.bayesian_network.examples.wide_BN_constrained2_conin_algebraic,
             marks=[skipif_pgmpy_not_available, skipif_smoek_not_available],
         ),
     ],
 )
-def test_wide_BN_constrained2_conin(method, solver, write_file, example_factory):
+def test_wide_BN_constrained2_conin(method, write_file, options, example_factory):
     example = example_factory()
 
     # Test without file writing
     kwargs = {"method": method}
-    if solver:
-        kwargs["solver"] = solver
+    kwargs.update(options)
     results = map_query(example.pgm, **kwargs)
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
@@ -499,53 +551,54 @@ def test_wide_BN_constrained2_conin(method, solver, write_file, example_factory)
 
 
 @pytest.mark.parametrize(
-    "method,solver,write_file,ip_formulation",
+    "method,write_file,options",
     [
-        pytest.param(
-            "toulbar2", None, testfile_uai, None, marks=skipif_toulbar2_not_available
-        ),
-        pytest.param(
-            "integer_program", mip_solver, testfile_lp, None, marks=skipif_no_mip_solver
-        ),
+        pytest.param("toulbar2", testfile_uai, {}, marks=skipif_toulbar2_not_available),
         pytest.param(
             "integer_program",
-            mip_solver,
             testfile_lp,
-            "markov_network",
+            dict(solver=mip_solver),
             marks=skipif_no_mip_solver,
         ),
         pytest.param(
             "integer_program",
-            mip_solver,
             testfile_lp,
-            "network_flow",
+            dict(solver=mip_solver, ip_formulation="markov_network"),
+            marks=skipif_no_mip_solver,
+        ),
+        pytest.param(
+            "integer_program",
+            testfile_lp,
+            dict(solver=mip_solver, ip_formulation="network_flow"),
+            marks=skipif_no_mip_solver,
+        ),
+        pytest.param(
+            "integer_program",
+            testfile_lp,
+            dict(solver=mip_solver, use_cut_generation=True),
             marks=skipif_no_mip_solver,
         ),
         pytest.param(
             "variable_elimination",
-            None,
             testfile_uai,
-            None,
+            {},
             marks=skipif_pgmpy_not_available,
         ),
     ],
 )
-def test0_hmm1(method, solver, write_file, ip_formulation):
+def test0_hmm1(method, write_file, options):
     pgm = conin.hidden_markov_model.examples.create_hmm1()
     observed = ["o0", "o0", "o1", "o0", "o0"]
 
     # Test without file writing
     kwargs = {"method": method, "evidence": observed}
-    if solver:
-        kwargs["solver"] = solver
-    if ip_formulation:
-        kwargs["ip_formulation"] = ip_formulation
+    kwargs.update(options)
     results = map_query(pgm, **kwargs)
     assert results.solution.states == ["h0", "h0", "h0", "h0", "h0"]
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
     # Test with file writing (only for default ip_formulation to avoid redundancy)
-    if ip_formulation is None:
+    if options.get("ip_formulation", None) is None:
         if method == "integer_program":
             kwargs["write_lp_file"] = write_file
         else:
@@ -556,49 +609,56 @@ def test0_hmm1(method, solver, write_file, ip_formulation):
 
 
 @pytest.mark.parametrize(
-    "method,solver,ip_formulation",
+    "method,options",
     [
-        pytest.param("toulbar2", None, None, marks=skipif_toulbar2_not_available),
-        pytest.param("integer_program", mip_solver, None, marks=skipif_no_mip_solver),
+        pytest.param("toulbar2", {}, marks=skipif_toulbar2_not_available),
         pytest.param(
-            "integer_program", mip_solver, "markov_network", marks=skipif_no_mip_solver
+            "integer_program", dict(solver=mip_solver), marks=skipif_no_mip_solver
         ),
         pytest.param(
-            "integer_program", mip_solver, "network_flow", marks=skipif_no_mip_solver
+            "integer_program",
+            dict(solver=mip_solver, ip_formulation="markov_network"),
+            marks=skipif_no_mip_solver,
         ),
         pytest.param(
-            "variable_elimination", None, None, marks=skipif_pgmpy_not_available
+            "integer_program",
+            dict(solver=mip_solver, ip_formulation="network_flow"),
+            marks=skipif_no_mip_solver,
         ),
+        pytest.param(
+            "integer_program",
+            dict(solver=mip_solver, use_cut_generation=True),
+            marks=skipif_no_mip_solver,
+        ),
+        pytest.param("variable_elimination", {}, marks=skipif_pgmpy_not_available),
     ],
 )
-def test1_hmm1(method, solver, ip_formulation):
+def test1_hmm1(method, options):
     pgm = conin.hidden_markov_model.examples.create_hmm1()
     observed = ["o0", "o1", "o1", "o1", "o1"]
 
     kwargs = {"method": method, "evidence": observed}
-    if solver:
-        kwargs["solver"] = solver
-    if ip_formulation:
-        kwargs["ip_formulation"] = ip_formulation
+    kwargs.update(options)
     results = map_query(pgm, **kwargs)
     assert results.solution.states == ["h1", "h1", "h1", "h1", "h1"]
 
 
 @pytest.mark.parametrize(
-    "method,solver",
+    "method,options",
     [
-        pytest.param("toulbar2", None, marks=skipif_toulbar2_not_available),
-        pytest.param("integer_program", mip_solver, marks=skipif_no_mip_solver),
-        pytest.param("variable_elimination", None, marks=skipif_pgmpy_not_available),
+        pytest.param("toulbar2", {}, marks=skipif_toulbar2_not_available),
+        pytest.param(
+            "integer_program", dict(solver=mip_solver), marks=skipif_no_mip_solver
+        ),
+        pytest.param("variable_elimination", {}, marks=skipif_pgmpy_not_available),
     ],
 )
-def test2_hmm1(method, solver):
+def test2_hmm1(method, options):
     pgm = conin.hidden_markov_model.examples.create_hmm1()
     observed = {0: "o0", 1: "o0", 2: "o1", 3: "o0", 4: "o0"}
 
     kwargs = {"method": method, "evidence": observed}
-    if solver:
-        kwargs["solver"] = solver
+    kwargs.update(options)
     results = map_query(pgm, **kwargs)
     assert results.solution.states == {
         0: "h0",
@@ -610,20 +670,21 @@ def test2_hmm1(method, solver):
 
 
 @pytest.mark.parametrize(
-    "method,solver",
+    "method,options",
     [
-        pytest.param("toulbar2", None, marks=skipif_toulbar2_not_available),
-        pytest.param("integer_program", mip_solver, marks=skipif_no_mip_solver),
-        pytest.param("variable_elimination", None, marks=skipif_pgmpy_not_available),
+        pytest.param("toulbar2", {}, marks=skipif_toulbar2_not_available),
+        pytest.param(
+            "integer_program", dict(solver=mip_solver), marks=skipif_no_mip_solver
+        ),
+        pytest.param("variable_elimination", {}, marks=skipif_pgmpy_not_available),
     ],
 )
-def test3_hmm1(method, solver):
+def test3_hmm1(method, options):
     pgm = conin.hidden_markov_model.examples.create_hmm1()
     observed = {0: "o0", 1: "o1", 2: "o1", 3: "o1", 4: "o1"}
 
     kwargs = {"method": method, "evidence": observed}
-    if solver:
-        kwargs["solver"] = solver
+    kwargs.update(options)
     results = map_query(pgm, **kwargs)
     assert results.solution.states == {
         0: "h1",
@@ -640,84 +701,80 @@ def test3_hmm1(method, solver):
 
 
 @pytest.mark.parametrize(
-    "method,solver,write_file,pgm_factory,ip_formulation",
+    "method,write_file,options,pgm_factory",
     [
         pytest.param(
             "toulbar2",
-            None,
             testfile_uai,
+            {},
             conin.hidden_markov_model.examples.create_chmm1_toulbar2,
-            None,
             marks=skipif_toulbar2_not_available,
         ),
         pytest.param(
             "toulbar2",
-            None,
             testfile_uai,
+            {},
             conin.hidden_markov_model.examples.create_chmm1_algebraic,
-            None,
             marks=[skipif_toulbar2_not_available, skipif_smoek_not_available],
         ),
         pytest.param(
             "integer_program",
-            mip_solver,
             testfile_lp,
+            dict(solver=mip_solver),
             conin.hidden_markov_model.examples.create_chmm1_pyomo,
-            None,
             marks=skipif_no_mip_solver,
         ),
         pytest.param(
             "integer_program",
-            mip_solver,
             testfile_lp,
+            dict(solver=mip_solver, ip_formulation="markov_network"),
             conin.hidden_markov_model.examples.create_chmm1_pyomo,
-            "markov_network",
             marks=skipif_no_mip_solver,
         ),
         pytest.param(
             "integer_program",
-            mip_solver,
             testfile_lp,
+            dict(solver=mip_solver, ip_formulation="network_flow"),
             conin.hidden_markov_model.examples.create_chmm1_pyomo,
-            "network_flow",
             marks=skipif_no_mip_solver,
         ),
         pytest.param(
             "integer_program",
-            mip_solver,
             testfile_lp,
+            dict(solver=mip_solver, use_cut_generation=True),
+            conin.hidden_markov_model.examples.create_chmm1_pyomo,
+            marks=skipif_no_mip_solver,
+        ),
+        pytest.param(
+            "integer_program",
+            testfile_lp,
+            dict(solver=mip_solver),
             conin.hidden_markov_model.examples.create_chmm1_algebraic,
-            None,
             marks=[skipif_no_mip_solver, skipif_smoek_not_available],
         ),
         pytest.param(
             "variable_elimination",
-            None,
             testfile_uai,
+            {},
             conin.hidden_markov_model.examples.create_chmm1_oracle_ve,
-            None,
             marks=skipif_pgmpy_not_available,
         ),
         pytest.param(
             "variable_elimination",
-            None,
             testfile_uai,
+            {},
             conin.hidden_markov_model.examples.create_chmm1_algebraic,
-            None,
             marks=[skipif_pgmpy_not_available, skipif_smoek_not_available],
         ),
     ],
 )
-def test0_chmm1(method, solver, write_file, pgm_factory, ip_formulation):
+def test0_chmm1(method, write_file, options, pgm_factory):
     pgm = pgm_factory()
     observed = ["o0"] * 15
 
     # Test without file writing
     kwargs = {"method": method, "evidence": observed}
-    if solver:
-        kwargs["solver"] = solver
-    if ip_formulation:
-        kwargs["ip_formulation"] = ip_formulation
+    kwargs.update(options)
     results = map_query(pgm, **kwargs)
     assert results.solution.states == [
         "h1",
@@ -739,7 +796,7 @@ def test0_chmm1(method, solver, write_file, pgm_factory, ip_formulation):
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
     # Test with file writing (only for default ip_formulation to avoid redundancy)
-    if ip_formulation is None:
+    if options.get("ip_formulation", None) is None:
         if method == "integer_program":
             kwargs["write_lp_file"] = write_file
         else:
@@ -750,75 +807,70 @@ def test0_chmm1(method, solver, write_file, pgm_factory, ip_formulation):
 
 
 @pytest.mark.parametrize(
-    "method,solver,pgm_factory,ip_formulation",
+    "method,options,pgm_factory",
     [
         pytest.param(
             "toulbar2",
-            None,
+            {},
             conin.hidden_markov_model.examples.create_chmm1_toulbar2,
-            None,
             marks=skipif_toulbar2_not_available,
         ),
         pytest.param(
             "toulbar2",
-            None,
+            {},
             conin.hidden_markov_model.examples.create_chmm1_algebraic,
-            None,
             marks=[skipif_toulbar2_not_available, skipif_smoek_not_available],
         ),
         pytest.param(
             "integer_program",
-            mip_solver,
+            dict(solver=mip_solver),
             conin.hidden_markov_model.examples.create_chmm1_pyomo,
-            None,
             marks=skipif_no_mip_solver,
         ),
         pytest.param(
             "integer_program",
-            mip_solver,
+            dict(solver=mip_solver, ip_formulation="markov_network"),
             conin.hidden_markov_model.examples.create_chmm1_pyomo,
-            "markov_network",
             marks=skipif_no_mip_solver,
         ),
         pytest.param(
             "integer_program",
-            mip_solver,
+            dict(solver=mip_solver, ip_formulation="network_flow"),
             conin.hidden_markov_model.examples.create_chmm1_pyomo,
-            "network_flow",
             marks=skipif_no_mip_solver,
         ),
         pytest.param(
             "integer_program",
-            mip_solver,
+            dict(solver=mip_solver, use_cut_generation=True),
+            conin.hidden_markov_model.examples.create_chmm1_pyomo,
+            marks=skipif_no_mip_solver,
+        ),
+        pytest.param(
+            "integer_program",
+            dict(solver=mip_solver),
             conin.hidden_markov_model.examples.create_chmm1_algebraic,
-            None,
             marks=[skipif_no_mip_solver, skipif_smoek_not_available],
         ),
         pytest.param(
             "variable_elimination",
-            None,
+            {},
             conin.hidden_markov_model.examples.create_chmm1_oracle_ve,
-            None,
             marks=skipif_pgmpy_not_available,
         ),
         pytest.param(
             "variable_elimination",
-            None,
+            {},
             conin.hidden_markov_model.examples.create_chmm1_algebraic,
-            None,
             marks=[skipif_pgmpy_not_available, skipif_smoek_not_available],
         ),
     ],
 )
-def test1_chmm1(method, solver, pgm_factory, ip_formulation):
+def test1_chmm1(method, options, pgm_factory):
     pgm = pgm_factory()
     observed = ["o0"] + ["o1"] * 14
 
     kwargs = {"method": method, "evidence": observed}
-    if solver:
-        kwargs["solver"] = solver
-    if ip_formulation:
-        kwargs["ip_formulation"] = ip_formulation
+    kwargs.update(options)
     results = map_query(pgm, **kwargs)
     assert results.solution.states == [
         "h0",
@@ -840,53 +892,58 @@ def test1_chmm1(method, solver, pgm_factory, ip_formulation):
 
 
 @pytest.mark.parametrize(
-    "method,solver,pgm_factory",
+    "method,options,pgm_factory",
     [
         pytest.param(
             "toulbar2",
-            None,
+            {},
             conin.hidden_markov_model.examples.create_chmm1_toulbar2,
             marks=skipif_toulbar2_not_available,
         ),
         pytest.param(
             "toulbar2",
-            None,
+            {},
             conin.hidden_markov_model.examples.create_chmm1_algebraic,
             marks=[skipif_toulbar2_not_available, skipif_smoek_not_available],
         ),
         pytest.param(
             "integer_program",
-            mip_solver,
+            dict(solver=mip_solver),
             conin.hidden_markov_model.examples.create_chmm1_pyomo,
             marks=skipif_no_mip_solver,
         ),
         pytest.param(
             "integer_program",
-            mip_solver,
+            dict(solver=mip_solver, use_cut_generation=True),
+            conin.hidden_markov_model.examples.create_chmm1_pyomo,
+            marks=skipif_no_mip_solver,
+        ),
+        pytest.param(
+            "integer_program",
+            dict(solver=mip_solver),
             conin.hidden_markov_model.examples.create_chmm1_algebraic,
             marks=[skipif_no_mip_solver, skipif_smoek_not_available],
         ),
         pytest.param(
             "variable_elimination",
-            None,
+            {},
             conin.hidden_markov_model.examples.create_chmm1_oracle_ve,
             marks=skipif_pgmpy_not_available,
         ),
         pytest.param(
             "variable_elimination",
-            None,
+            {},
             conin.hidden_markov_model.examples.create_chmm1_algebraic,
             marks=[skipif_pgmpy_not_available, skipif_smoek_not_available],
         ),
     ],
 )
-def test2_chmm1(method, solver, pgm_factory):
+def test2_chmm1(method, options, pgm_factory):
     pgm = pgm_factory()
     observed = {i: "o0" for i in range(15)}
 
     kwargs = {"method": method, "evidence": observed}
-    if solver:
-        kwargs["solver"] = solver
+    kwargs.update(options)
     results = map_query(pgm, **kwargs)
     assert results.solution.states == {
         0: "h1",
@@ -908,55 +965,54 @@ def test2_chmm1(method, solver, pgm_factory):
 
 
 @pytest.mark.parametrize(
-    "method,solver,pgm_factory",
+    "method,options,pgm_factory",
     [
         pytest.param(
             "toulbar2",
-            None,
+            {},
             conin.hidden_markov_model.examples.create_chmm1_toulbar2,
             marks=skipif_toulbar2_not_available,
         ),
         pytest.param(
             "toulbar2",
-            None,
+            {},
             conin.hidden_markov_model.examples.create_chmm1_algebraic,
             marks=[skipif_toulbar2_not_available, skipif_smoek_not_available],
         ),
         pytest.param(
             "integer_program",
-            mip_solver,
+            dict(solver=mip_solver),
             conin.hidden_markov_model.examples.create_chmm1_pyomo,
             marks=skipif_no_mip_solver,
         ),
         pytest.param(
             "integer_program",
-            mip_solver,
+            dict(solver=mip_solver),
             conin.hidden_markov_model.examples.create_chmm1_algebraic,
             marks=[skipif_no_mip_solver, skipif_smoek_not_available],
         ),
         pytest.param(
             "variable_elimination",
-            None,
+            {},
             conin.hidden_markov_model.examples.create_chmm1_oracle_ve,
             marks=skipif_pgmpy_not_available,
         ),
         pytest.param(
             "variable_elimination",
-            None,
+            {},
             conin.hidden_markov_model.examples.create_chmm1_algebraic,
             marks=[skipif_pgmpy_not_available, skipif_smoek_not_available],
         ),
     ],
 )
-def test3_chmm1(method, solver, pgm_factory):
+def test3_chmm1(method, options, pgm_factory):
     pgm = pgm_factory()
     observed = {0: "o0"}
     for i in range(14):
         observed[i + 1] = "o1"
 
     kwargs = {"method": method, "evidence": observed}
-    if solver:
-        kwargs["solver"] = solver
+    kwargs.update(options)
     results = map_query(pgm, **kwargs)
     assert results.solution.states == {
         0: "h0",
@@ -1042,26 +1098,32 @@ q_constrained = {
 
 
 @pytest.mark.parametrize(
-    "method,solver,write_file",
+    "method,options,write_file",
     [
+        pytest.param("toulbar2", {}, testfile_uai, marks=skipif_toulbar2_not_available),
         pytest.param(
-            "toulbar2", None, testfile_uai, marks=skipif_toulbar2_not_available
+            "integer_program",
+            dict(solver=mip_solver),
+            testfile_lp,
+            marks=skipif_no_mip_solver,
         ),
         pytest.param(
-            "integer_program", mip_solver, testfile_lp, marks=skipif_no_mip_solver
+            "integer_program",
+            dict(solver=mip_solver, use_cut_generation=True),
+            testfile_lp,
+            marks=skipif_no_mip_solver,
         ),
         # pytest.param(
         #    "variable_elimination", None, testfile_uai, marks=skipif_pgmpy_not_available
         # ),
     ],
 )
-def test_DPGM_weather_conin(method, solver, write_file):
+def test_DPGM_weather_conin(method, options, write_file):
     example = conin.dynamic_bayesian_network.examples.weather_conin()
 
     # Test without evidence
     kwargs = {"method": method, "stop": 4}
-    if solver:
-        kwargs["solver"] = solver
+    kwargs.update(options)
     results = map_query(example.pgm, **kwargs)
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
@@ -1074,8 +1136,7 @@ def test_DPGM_weather_conin(method, solver, write_file):
 
     # Test with file writing
     kwargs = {"method": method, "stop": 4}
-    if solver:
-        kwargs["solver"] = solver
+    kwargs.update(options)
     if method == "integer_program":
         kwargs["write_lp_file"] = write_file
     else:
@@ -1087,20 +1148,21 @@ def test_DPGM_weather_conin(method, solver, write_file):
 
 @skipif_pgmpy_not_available
 @pytest.mark.parametrize(
-    "method,solver",
+    "method,options",
     [
-        pytest.param("toulbar2", None, marks=skipif_toulbar2_not_available),
-        pytest.param("integer_program", mip_solver, marks=skipif_no_mip_solver),
+        pytest.param("toulbar2", {}, marks=skipif_toulbar2_not_available),
+        pytest.param(
+            "integer_program", dict(solver=mip_solver), marks=skipif_no_mip_solver
+        ),
         # pytest.param("variable_elimination", None),
     ],
 )
-def test_DPGM_weather_pgmpy(method, solver):
+def test_DPGM_weather_pgmpy(method, options):
     example = conin.dynamic_bayesian_network.examples.weather2_pgmpy()
 
     # Test without evidence
     kwargs = {"method": method, "stop": 4}
-    if solver:
-        kwargs["solver"] = solver
+    kwargs.update(options)
     results = map_query(example.pgm, **kwargs)
     assert results.solution.states == example.solutions[0].states
 
@@ -1117,32 +1179,39 @@ def test_DPGM_weather_pgmpy(method, solver):
 
 
 @pytest.mark.parametrize(
-    "method,solver,write_file,example_factory",
+    "method,options,write_file,example_factory",
     [
         pytest.param(
             "toulbar2",
-            None,
+            {},
             testfile_uai,
             conin.dynamic_bayesian_network.examples.weather_constrained_toulbar2_conin,
             marks=skipif_toulbar2_not_available,
         ),
         pytest.param(
             "toulbar2",
-            None,
+            {},
             testfile_uai,
             conin.dynamic_bayesian_network.examples.weather_constrained_algebraic_conin,
             marks=[skipif_toulbar2_not_available, skipif_smoek_not_available],
         ),
         pytest.param(
             "integer_program",
-            mip_solver,
+            dict(solver=mip_solver),
             testfile_lp,
             conin.dynamic_bayesian_network.examples.weather_constrained_pyomo_conin,
             marks=skipif_no_mip_solver,
         ),
         pytest.param(
             "integer_program",
-            mip_solver,
+            dict(solver=mip_solver, use_cut_generation=True),
+            testfile_lp,
+            conin.dynamic_bayesian_network.examples.weather_constrained_pyomo_conin,
+            marks=skipif_no_mip_solver,
+        ),
+        pytest.param(
+            "integer_program",
+            dict(solver=mip_solver),
             testfile_lp,
             conin.dynamic_bayesian_network.examples.weather_constrained_algebraic_conin,
             marks=[skipif_no_mip_solver, skipif_smoek_not_available],
@@ -1156,13 +1225,12 @@ def test_DPGM_weather_pgmpy(method, solver):
         # ),
     ],
 )
-def test_DPGM_weather_constrained_conin(method, solver, write_file, example_factory):
+def test_DPGM_weather_constrained_conin(method, options, write_file, example_factory):
     example = example_factory()
 
     # Test without evidence
     kwargs = {"method": method, "stop": 4}
-    if solver:
-        kwargs["solver"] = solver
+    kwargs.update(options)
     results = map_query(example.pgm, **kwargs)
     assert results.solution.states == example.solutions[0].states
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
@@ -1175,8 +1243,7 @@ def test_DPGM_weather_constrained_conin(method, solver, write_file, example_fact
 
     # Test with file writing
     kwargs = {"method": method, "stop": 4}
-    if solver:
-        kwargs["solver"] = solver
+    kwargs.update(options)
     if method == "integer_program":
         kwargs["write_lp_file"] = write_file
     else:
@@ -1188,17 +1255,17 @@ def test_DPGM_weather_constrained_conin(method, solver, write_file, example_fact
 
 @skipif_pgmpy_not_available
 @pytest.mark.parametrize(
-    "method,solver,example_factory",
+    "method,options,example_factory",
     [
         pytest.param(
             "toulbar2",
-            None,
+            {},
             conin.dynamic_bayesian_network.examples.weather_constrained_toulbar2_pgmpy,
             marks=skipif_toulbar2_not_available,
         ),
         pytest.param(
             "toulbar2",
-            None,
+            {},
             conin.dynamic_bayesian_network.examples.weather_constrained_algebraic_pgmpy,
             marks=[skipif_toulbar2_not_available, skipif_smoek_not_available],
         ),
@@ -1209,13 +1276,12 @@ def test_DPGM_weather_constrained_conin(method, solver, write_file, example_fact
         # ),
     ],
 )
-def test_DPGM_weather_constrained_pgmpy(method, solver, example_factory):
+def test_DPGM_weather_constrained_pgmpy(method, options, example_factory):
     example = example_factory()
 
     # Test without evidence
     kwargs = {"method": method, "stop": 4}
-    if solver:
-        kwargs["solver"] = solver
+    kwargs.update(options)
     results = map_query(example.pgm, **kwargs)
     assert results.solution.states == example.solutions[0].states
 
