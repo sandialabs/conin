@@ -24,9 +24,10 @@ mip_solver = pyomo.opt.check_available_solvers("gurobi", "highs", "glpk")
 mip_solver = mip_solver[0] if mip_solver else None
 other_mip_solver = pyomo.opt.check_available_solvers("highs", "glpk")
 other_mip_solver = other_mip_solver[0] if other_mip_solver else None
-gurobi_available = pyo.SolverFactory("gurobi_persistent").available(
-    exception_flag=False
-)
+try:
+    gurobi_available = pyo.SolverFactory("gurobi_persistent").available(exception_flag=False)
+except:
+    gurobi_available = False
 
 skipif_no_mip_solvers = pytest.mark.skipif(
     not mip_solver, reason="No mip solver installed"
