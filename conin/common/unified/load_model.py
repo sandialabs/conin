@@ -18,7 +18,24 @@ with try_import() as pyagrum_available:
     import conin.common.pyagrum  # noqa: F401
 
 
-def load_model(name, model_type="conin", quiet=True):
+def load_model(name, model_type="conin", quiet=True, **options):
+    """Load a probabilistic graphical model from a file.
+
+    Parameters
+    ----------
+    name : str
+        Model file name.  CONIN models can be loaded from ``.uai``, ``.bif``
+        (requires pgmpy) and Toulbar2 ``.cfn`` files, optionally gzipped.
+    model_type : str, optional
+        The type of model to create: ``"conin"`` (default), ``"pgmpy"``,
+        ``"pomegranate"``, ``"pgmax"`` or ``"pyagrum"``.
+    quiet : bool, optional
+        If False, print diagnostic information.
+    **options
+        Format-specific options for CONIN models.  CFN files accept
+        ``cost_scale``; see
+        :func:`conin.common.conin.load_cfn.load_conin_model_from_cfn`.
+    """
 
     if model_type == "conin":
         #
@@ -28,7 +45,7 @@ def load_model(name, model_type="conin", quiet=True):
             pgm = conin.common.pgmpy.load_model(name, quiet=quiet)
             return conin.common.pgmpy.convert_pgmpy_to_conin(pgm)
 
-        return conin.common.conin.load_model(name, quiet=quiet)
+        return conin.common.conin.load_model(name, quiet=quiet, **options)
 
     elif model_type == "pgmpy":
         if not pgmpy_available:

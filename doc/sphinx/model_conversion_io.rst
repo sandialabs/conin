@@ -45,7 +45,7 @@ UAI Files
 
 The ``conin.common`` namespace exposes a small unified I/O interface. For CONIN
 models, ``save_model`` currently writes UAI files and ``load_model`` reads
-``.uai`` and ``.uai.gz`` files.
+``.uai``, ``.uai.gz``, ``.cfn`` and ``.cfn.gz`` files.
 
 Hidden Markov models use their own JSON methods, ``write_to_file`` and
 ``read_from_file``; see :doc:`hidden_markov_models` for an example.
@@ -63,6 +63,51 @@ Hidden Markov models use their own JSON methods, ``write_to_file`` and
 
 UAI files encode variables by integer position. When a model is loaded back into
 CONIN, nodes are named ``var0``, ``var1``, and so on.
+
+Toulbar2 CFN Files
+------------------
+
+``load_model`` also reads Toulbar2 cost function network files (``.cfn`` and
+``.cfn.gz``) into a CONIN ``DiscreteMarkovNetwork``. This does not require
+``pytoulbar2``. Variable names and value names are taken from the file.
+
+Each cost function becomes a factor with values ``exp(-cost / cost_scale)``,
+so the most probable assignment of the Markov network is an optimal solution
+of the CFN. Entries that violate the CFN upper bound (``"mustbe": "<UB"``)
+get zero factor values. CFN files that Toulbar2 writes from probabilistic
+models store costs as negative log-probabilities multiplied by ``10**7``, so
+load them with ``cost_scale=1e7``:
+
+.. code-block:: python
+
+   from conin.common import load_model
+
+   pgm = load_model("model.cfn", cost_scale=1e7)
+
+Hard linear constraints are also loaded. Toulbar2 stores these as ``knapsack``
+and ``knapsackv`` global cost functions; they are written by pytoulbar2's
+``AddLinearConstraint``, ``AddSumConstraint`` and
+``AddGeneralizedLinearConstraint`` methods. When a file contains such
+constraints, ``load_model`` returns a ``ConstrainedDiscreteMarkovNetwork``
+whose constraints are Toulbar2 constraints, and the unconstrained model is
+available as its ``pgm`` attribute:
+
+.. code-block:: python
+
+   from conin.common import load_model
+   from conin.inference import map_query
+
+   cpgm = load_model("constrained_model.cfn")
+   constrained = map_query(cpgm, method="toulbar2")
+   unconstrained = map_query(cpgm.pgm, method="toulbar2")
+
+Loaded constraints can only be used with ``method="toulbar2"``. Each one also
+stores a description of its linear constraint (``terms``, ``operator`` and
+``rhs``) so that it can be converted to other constraint types later.
+
+Other global cost functions, such as all-different or regular-language
+constraints, raise ``NotImplementedError``. Hard entries in cost tables are
+loaded as zero-valued factor entries, not as CONIN constraints.
 
 Model Utilities
 ---------------
@@ -127,6 +172,8 @@ Reference
 .. autofunction:: conin.common.is_polytree
 
 .. autofunction:: conin.common.conin.load_uai.load_conin_model_from_uai
+
+.. autofunction:: conin.common.conin.load_cfn.load_conin_model_from_cfn
 
 .. autofunction:: conin.common.conin.save_model.save_model_uai
 

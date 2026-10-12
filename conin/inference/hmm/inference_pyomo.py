@@ -1,3 +1,4 @@
+import logging
 import munch
 import conin
 from conin.hidden_markov_model import HiddenMarkovModel
@@ -5,6 +6,8 @@ from conin.hidden_markov_model.inference import lp_inference, ip_inference
 from conin.hidden_markov_model.hmm_to_dbn import create_dbn_from_hmm
 from conin.hidden_markov_model import ConstrainedHiddenMarkovModel
 from conin.inference.dbn.inference_pyomo import create_pyomo_map_query_model_DDBN
+
+logger = logging.getLogger("conin")
 
 
 def create_pyomo_map_query_model_HMM(
@@ -61,8 +64,13 @@ def inference_pyomo_map_query_HMM(
     **options,
 ):
     ip_formulation = options.pop("ip_formulation", None)
+    use_cut_generation = options.pop("use_cut_generation", None)
 
     if ip_formulation == "network_flow":
+        if use_cut_generation:
+            logger.warning(
+                "Cut generation is not supported for the HMM 'network_flow' integer programming formulation"
+            )
         if isinstance(pgm, HiddenMarkovModel):
             if type(evidence) is list:
                 return lp_inference(hmm=pgm, observed=evidence, **options)
@@ -104,6 +112,7 @@ def inference_pyomo_map_query_HMM(
             stop=stop,
             variables=variables,
             evidence=evidence,
+            omit_c5=use_cut_generation,
             **options,
         )
         results = conin.inference.mn.inference_pyomo.solve_pyomo_map_query_model(
