@@ -32,6 +32,9 @@ skipif_smoek_not_available = pytest.mark.skipif(
 skipif_no_mip_solver = pytest.mark.skipif(
     not mip_solver, reason="No mip solver installed"
 )
+skipif_gurobi_not_available = pytest.mark.skipif(
+    not mip_solver or mip_solver != "gurobi", reason="Gurobi not installed"
+)
 skipif_pgmpy_not_available = pytest.mark.skipif(
     not pgmpy_available, reason="pgmpy not installed"
 )
@@ -66,7 +69,7 @@ testfile_lp = os.path.join(cwd, "test.lp")
             "integer_program",
             testfile_lp,
             dict(solver=mip_solver, use_cut_generation=True),
-            marks=skipif_no_mip_solver,
+            marks=skipif_gurobi_not_available,
         ),
         pytest.param(
             "variable_elimination",
@@ -149,7 +152,7 @@ def test_ABC_pgmpy(method, options):
             testfile_lp,
             dict(solver=mip_solver, use_cut_generation=True),
             conin.markov_network.examples.ABC_constrained_pyomo_conin,
-            marks=skipif_no_mip_solver,
+            marks=skipif_gurobi_not_available,
         ),
         pytest.param(
             "integer_program",
@@ -222,7 +225,7 @@ def test_ABC2_constrained_oracle_conin():
             "integer_program",
             testfile_lp,
             dict(solver=mip_solver, use_cut_generation=True),
-            marks=skipif_no_mip_solver,
+            marks=skipif_gurobi_not_available,
         ),
         pytest.param(
             "variable_elimination", testfile_uai, {}, marks=skipif_pgmpy_not_available
@@ -282,7 +285,7 @@ def test_cancer1_BN_pgmpy(method, options):
             "integer_program",
             testfile_lp,
             dict(solver=mip_solver, use_cut_generation=True),
-            marks=skipif_no_mip_solver,
+            marks=skipif_gurobi_not_available,
         ),
         pytest.param(
             "variable_elimination", testfile_uai, {}, marks=skipif_pgmpy_not_available
@@ -343,7 +346,7 @@ def test_wide_BN_conin(method, write_file, options):
             testfile_lp,
             dict(solver=mip_solver, use_cut_generation=True),
             conin.bayesian_network.examples.cancer1_BN_constrained_pyomo_conin,
-            marks=skipif_no_mip_solver,
+            marks=skipif_gurobi_not_available,
         ),
         pytest.param(
             "integer_program",
@@ -426,7 +429,7 @@ def test_cancer1_BN_constrained_oracle_pgmpy():
             testfile_lp,
             dict(solver=mip_solver, use_cut_generation=True),
             conin.bayesian_network.examples.wide_BN_constrained1_conin_pyomo,
-            marks=skipif_no_mip_solver,
+            marks=skipif_gurobi_not_available,
         ),
         pytest.param(
             "integer_program",
@@ -500,7 +503,7 @@ def test_wide_BN_constrained1_conin(method, write_file, options, example_factory
             testfile_lp,
             dict(solver=mip_solver, use_cut_generation=True),
             conin.bayesian_network.examples.wide_BN_constrained2_conin_pyomo,
-            marks=skipif_no_mip_solver,
+            marks=skipif_gurobi_not_available,
         ),
         pytest.param(
             "integer_program",
@@ -576,7 +579,7 @@ def test_wide_BN_constrained2_conin(method, write_file, options, example_factory
             "integer_program",
             testfile_lp,
             dict(solver=mip_solver, use_cut_generation=True),
-            marks=skipif_no_mip_solver,
+            marks=skipif_gurobi_not_available,
         ),
         pytest.param(
             "variable_elimination",
@@ -628,7 +631,7 @@ def test0_hmm1(method, write_file, options):
         pytest.param(
             "integer_program",
             dict(solver=mip_solver, use_cut_generation=True),
-            marks=skipif_no_mip_solver,
+            marks=skipif_gurobi_not_available,
         ),
         pytest.param("variable_elimination", {}, marks=skipif_pgmpy_not_available),
     ],
@@ -743,7 +746,7 @@ def test3_hmm1(method, options):
             testfile_lp,
             dict(solver=mip_solver, use_cut_generation=True),
             conin.hidden_markov_model.examples.create_chmm1_pyomo,
-            marks=skipif_no_mip_solver,
+            marks=skipif_gurobi_not_available,
         ),
         pytest.param(
             "integer_program",
@@ -843,7 +846,7 @@ def test0_chmm1(method, write_file, options, pgm_factory):
             "integer_program",
             dict(solver=mip_solver, use_cut_generation=True),
             conin.hidden_markov_model.examples.create_chmm1_pyomo,
-            marks=skipif_no_mip_solver,
+            marks=skipif_gurobi_not_available,
         ),
         pytest.param(
             "integer_program",
@@ -916,7 +919,7 @@ def test1_chmm1(method, options, pgm_factory):
             "integer_program",
             dict(solver=mip_solver, use_cut_generation=True),
             conin.hidden_markov_model.examples.create_chmm1_pyomo,
-            marks=skipif_no_mip_solver,
+            marks=skipif_gurobi_not_available,
         ),
         pytest.param(
             "integer_program",
@@ -1111,7 +1114,7 @@ q_constrained = {
             "integer_program",
             dict(solver=mip_solver, use_cut_generation=True),
             testfile_lp,
-            marks=skipif_no_mip_solver,
+            marks=skipif_gurobi_not_available,
         ),
         # pytest.param(
         #    "variable_elimination", None, testfile_uai, marks=skipif_pgmpy_not_available
@@ -1207,7 +1210,7 @@ def test_DPGM_weather_pgmpy(method, options):
             dict(solver=mip_solver, use_cut_generation=True),
             testfile_lp,
             conin.dynamic_bayesian_network.examples.weather_constrained_pyomo_conin,
-            marks=skipif_no_mip_solver,
+            marks=skipif_gurobi_not_available,
         ),
         pytest.param(
             "integer_program",
