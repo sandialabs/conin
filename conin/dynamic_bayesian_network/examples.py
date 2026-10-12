@@ -25,8 +25,7 @@ with try_import() as pgmpy_available:
 
 
 def simple0_DDBN_conin(debug=False):
-    G = DynamicDiscreteBayesianNetwork()
-    G.dynamic_states = {"Z": [0, 1]}
+    G = DynamicDiscreteBayesianNetwork(dynamic_states={"Z": [0, 1]})
     z_start_cpd = DiscreteCPD(node=("Z", 0), values=[0.5, 0.5])
     z_trans_cpd = DiscreteCPD(
         node=("Z", G.t),
@@ -34,7 +33,9 @@ def simple0_DDBN_conin(debug=False):
         values={0: [0.7, 0.3], 1: [0.8, 0.2]},
     )
 
-    G.cpds = [z_start_cpd, z_trans_cpd]
+    G = DynamicDiscreteBayesianNetwork(
+        dynamic_states=G.dynamic_states, cpds=[z_start_cpd, z_trans_cpd], t=G.t
+    )
     G.check_model()
 
     if debug:  # pragma:nocover
@@ -93,8 +94,7 @@ def simple0_DDBN2_pgmpy(debug=False):
 
 
 def simple1_DDBN_conin(debug=False):
-    G = DynamicDiscreteBayesianNetwork()
-    G.dynamic_states = {"A": [0, 1], "B": [0, 1]}
+    G = DynamicDiscreteBayesianNetwork(dynamic_states={"A": [0, 1], "B": [0, 1]})
 
     cpd_start_A = DiscreteCPD(node=("A", 0), values=[0.9, 0.1])
     cpd_start_B = DiscreteCPD(
@@ -107,7 +107,11 @@ def simple1_DDBN_conin(debug=False):
         parents=[("A", G.t - 1)],
         values={0: [0.2, 0.8], 1: [0.9, 0.1]},
     )
-    G.cpds = [cpd_start_A, cpd_start_B, cpd_trans_A]
+    G = DynamicDiscreteBayesianNetwork(
+        dynamic_states=G.dynamic_states,
+        cpds=[cpd_start_A, cpd_start_B, cpd_trans_A],
+        t=G.t,
+    )
     G.check_model()
 
     if debug:  # pragma:nocover
@@ -395,8 +399,6 @@ def weather_conin(debug=False):
     # Initialize a simple DDBN model modeling the Weather (W), Rain (O),
     # Temperature (T), and Humidity (H).
 
-    dbn = DynamicDiscreteBayesianNetwork()
-
     # pgmpy requires the user to define the structure of the first time slice and the edges
     # connecting the first time slice to the second time slice.
     # pgmpy assumes that this structure remains constant for further time
@@ -407,7 +409,9 @@ def weather_conin(debug=False):
     O_states = ["Dry", "Wet"]
     H_states = ["Low", "Medium", "High"]
 
-    dbn.dynamic_states = {"W": W_states, "T": T_states, "O": O_states, "H": H_states}
+    dbn = DynamicDiscreteBayesianNetwork(
+        dynamic_states={"W": W_states, "T": T_states, "O": O_states, "H": H_states}
+    )
 
     # Add intra-slice edges for both time slices
     # dbn.add_edges_from(
@@ -498,7 +502,11 @@ def weather_conin(debug=False):
     )
 
     # Add CPDs to the DDBN
-    dbn.cpds = [cpd_w_0, cpd_w_1, cpd_t_0, cpd_t_1, cpd_o, cpd_h]
+    dbn = DynamicDiscreteBayesianNetwork(
+        dynamic_states=dbn.dynamic_states,
+        cpds=[cpd_w_0, cpd_w_1, cpd_t_0, cpd_t_1, cpd_o, cpd_h],
+        t=dbn.t,
+    )
 
     if debug:  # pragma:nocover
         for cpd in dbn.cpds:

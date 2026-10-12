@@ -18,8 +18,6 @@ def create_dbn_from_hmm(hmm, debug=False):
         Dynamic Bayesian network with hidden-state and emission-state CPDs
         equivalent to the input HMM.
     """
-    dbn = DynamicDiscreteBayesianNetwork()
-
     hidden_states = list(sorted(hmm.hidden_states))
     emission_states = list(sorted(hmm.observed_states))
 
@@ -28,10 +26,18 @@ def create_dbn_from_hmm(hmm, debug=False):
     #   H - hidden states
     #   E - emission states
     #
-    dbn.dynamic_states = {
-        "H": hidden_states,
-        "E": emission_states,
-    }
+    # We need `dbn.t` to exist before we can build the CPDs below (they
+    # reference `dbn.t`/`dbn.t - 1`), so construct a throwaway dbn first with
+    # just the dynamic states, grab its `.t`, and reuse that same
+    # ExpressionVariable instance when constructing the final dbn below --
+    # `create_bn_from_dbn` later calls `dbn.t.set_value(t)` and expects that
+    # to be the exact object embedded in the CPDs' `node`/`parents` tuples.
+    dbn = DynamicDiscreteBayesianNetwork(
+        dynamic_states={
+            "H": hidden_states,
+            "E": emission_states,
+        }
+    )
 
     start_probs = hmm.get_start_probs()
     transition_probs = hmm.get_transition_probs()
@@ -62,8 +68,13 @@ def create_dbn_from_hmm(hmm, debug=False):
         },
     )
 
-    # Add CPDs to the DDBN
-    dbn.cpds = [cpd_H_0, cpd_H_t, cpd_E_t]
+    # Build the final dbn, reusing the same dynamic_states and the same `.t`
+    # ExpressionVariable instance embedded in the CPDs above.
+    dbn = DynamicDiscreteBayesianNetwork(
+        dynamic_states=dbn.dynamic_states,
+        cpds=[cpd_H_0, cpd_H_t, cpd_E_t],
+        t=dbn.t,
+    )
     if debug:
         for cpd in dbn.cpds:
             print(cpd)

@@ -18,8 +18,7 @@ with an initial distribution and one transition CPD.
    from conin.dynamic_bayesian_network import DynamicDiscreteBayesianNetwork
    from conin.bayesian_network import DiscreteCPD
 
-   dbn = DynamicDiscreteBayesianNetwork()
-   dbn.dynamic_states = {"Z": [0, 1]}
+   dbn = DynamicDiscreteBayesianNetwork(dynamic_states={"Z": [0, 1]})
 
    z_start = DiscreteCPD(node=("Z", 0), values=[0.5, 0.5])
    z_transition = DiscreteCPD(
@@ -28,7 +27,9 @@ with an initial distribution and one transition CPD.
        values={0: [0.7, 0.3], 1: [0.8, 0.2]},
    )
 
-   dbn.cpds = [z_start, z_transition]
+   dbn = DynamicDiscreteBayesianNetwork(
+       dynamic_states=dbn.dynamic_states, cpds=[z_start, z_transition], t=dbn.t
+   )
    dbn.check_model()
 
 ``check_model()`` is currently a lightweight consistency hook for dynamic
@@ -42,8 +43,7 @@ The ``simple1_DDBN_conin`` example introduces two dynamic nodes:
    from conin.dynamic_bayesian_network import DynamicDiscreteBayesianNetwork
    from conin.bayesian_network import DiscreteCPD
 
-   dbn = DynamicDiscreteBayesianNetwork()
-   dbn.dynamic_states = {"A": [0, 1], "B": [0, 1]}
+   dbn = DynamicDiscreteBayesianNetwork(dynamic_states={"A": [0, 1], "B": [0, 1]})
 
    cpd_start_a = DiscreteCPD(node=("A", 0), values=[0.9, 0.1])
    cpd_start_b = DiscreteCPD(
@@ -57,7 +57,11 @@ The ``simple1_DDBN_conin`` example introduces two dynamic nodes:
        values={0: [0.2, 0.8], 1: [0.9, 0.1]},
    )
 
-   dbn.cpds = [cpd_start_a, cpd_start_b, cpd_trans_a]
+   dbn = DynamicDiscreteBayesianNetwork(
+       dynamic_states=dbn.dynamic_states,
+       cpds=[cpd_start_a, cpd_start_b, cpd_trans_a],
+       t=dbn.t,
+   )
    dbn.check_model()
 
 Constrained dynamic Bayesian networks

@@ -76,10 +76,9 @@ def create_bn_from_dbn(*, dbn, start, stop):
                 continue
             cpds.append(DiscreteCPD(node=node, parents=parents, values=cpd.values))
 
-    pgm = DiscreteBayesianNetwork()
-    pgm.states = states
-    pgm.cpds = cpds
+    pgm = DiscreteBayesianNetwork(
+        states=states, cpds=cpds, pyomo_index_names=_pyomo_index_names
+    )
     pgm.check_model()
-    pgm._pyomo_index_names = _pyomo_index_names
 
     return pgm

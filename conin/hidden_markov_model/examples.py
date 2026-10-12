@@ -33,8 +33,7 @@ def create_hmm0():
         ("h1", "o0"): 0,
         ("h1", "o1"): 1,
     }
-    hmm = HiddenMarkovModel()
-    hmm.load_model(
+    hmm = HiddenMarkovModel.load_model(
         start_probs=start_probs,
         transition_probs=transition_probs,
         emission_probs=emission_probs,
@@ -57,8 +56,7 @@ def create_hmm1():
         ("h1", "o0"): 0.4,
         ("h1", "o1"): 0.6,
     }
-    hmm = HiddenMarkovModel()
-    hmm.load_model(
+    hmm = HiddenMarkovModel.load_model(
         start_probs=start_probs,
         transition_probs=transition_probs,
         emission_probs=emission_probs,
@@ -89,8 +87,7 @@ def create_hmm1_aos():
         ("h1", "o0"): 0.7,
         ("h1", "o1"): 0.3,
     }
-    hmm = HiddenMarkovModel()
-    hmm.load_model(
+    hmm = HiddenMarkovModel.load_model(
         start_probs=start_probs,
         transition_probs=transition_probs,
         emission_probs=emission_probs,
@@ -117,8 +114,7 @@ def create_hmm2():
         ("h1", "o1"): 0.6,
         ("h2", "o2"): 1.0,
     }
-    hmm = HiddenMarkovModel()
-    hmm.load_model(
+    hmm = HiddenMarkovModel.load_model(
         start_probs=start_probs,
         transition_probs=transition_probs,
         emission_probs=emission_probs,
@@ -156,8 +152,7 @@ def create_hmm2_aos():
         ("h2", "o1"): 0.2,
         ("h2", "o2"): 0.1,
     }
-    hmm = HiddenMarkovModel()
-    hmm.load_model(
+    hmm = HiddenMarkovModel.load_model(
         start_probs=start_probs,
         transition_probs=transition_probs,
         emission_probs=emission_probs,

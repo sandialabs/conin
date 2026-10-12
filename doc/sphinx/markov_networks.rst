@@ -39,10 +39,6 @@ for each node and one pairwise factor.
 
    from conin.markov_network import DiscreteMarkovNetwork, DiscreteFactor
 
-   pgm = DiscreteMarkovNetwork()
-   pgm.states = {"A": [0, 1], "B": [0, 1]}
-   pgm.edges = [("A", "B")]
-
    f_a = DiscreteFactor(["A"], {0: 1, 1: 1})
    f_b = DiscreteFactor(["B"], {0: 1, 1: 2})
    f_ab = DiscreteFactor(
@@ -55,7 +51,11 @@ for each node and one pairwise factor.
        },
    )
 
-   pgm.factors = [f_a, f_b, f_ab]
+   pgm = DiscreteMarkovNetwork(
+       states={"A": [0, 1], "B": [0, 1]},
+       edges=[("A", "B")],
+       factors=[f_a, f_b, f_ab],
+   )
    pgm.check_model()
 
 For a slightly larger example, ``ABC_conin`` defines three variables with
@@ -66,10 +66,6 @@ pairwise interactions:
    import numpy as np
    from conin.markov_network import DiscreteMarkovNetwork, DiscreteFactor
 
-   pgm = DiscreteMarkovNetwork()
-   pgm.states = {"A": [0, 1, 2], "B": [0, 1, 2], "C": [0, 1, 2]}
-   pgm.edges = [("A", "B"), ("B", "C"), ("A", "C")]
-
    f_a = DiscreteFactor(nodes=["A"], values=[1, 1, 2])
    f_b = DiscreteFactor(nodes=["B"], values=[1, 1, 3])
    f_c = DiscreteFactor(nodes=["C"], values=[1, 2, 1])
@@ -77,7 +73,11 @@ pairwise interactions:
    f_bc = DiscreteFactor(nodes=["B", "C"], values=np.ones(9))
    f_ac = DiscreteFactor(nodes=["A", "C"], values=np.ones(9))
 
-   pgm.factors = [f_a, f_b, f_c, f_ab, f_bc, f_ac]
+   pgm = DiscreteMarkovNetwork(
+       states={"A": [0, 1, 2], "B": [0, 1, 2], "C": [0, 1, 2]},
+       edges=[("A", "B"), ("B", "C"), ("A", "C")],
+       factors=[f_a, f_b, f_c, f_ab, f_bc, f_ac],
+   )
    pgm.check_model()
 
 Constrained Markov networks

@@ -50,8 +50,7 @@ class Num_Zeros(HMMApplication):
                 (1, 0): prob_error,
                 (1, 1): 1 - prob_error,
             }
-            hmm = HiddenMarkovModel()
-            hmm.load_model(
+            hmm = HiddenMarkovModel.load_model(
                 start_probs=start_probs,
                 transition_probs=transition_probs,
                 emission_probs=emission_probs,
@@ -145,8 +144,7 @@ class Test_Application_CHMM:
         assert app.hidden_markov_model == chmm.hidden_markov_model
 
     def test_hmm_equality_setter(self, app):
-        hmm = HiddenMarkovModel()
-        hmm.load_model(
+        hmm = HiddenMarkovModel.load_model(
             emission_probs={
                 (0, 0): 0.6,
                 (0, 1): 0.4,

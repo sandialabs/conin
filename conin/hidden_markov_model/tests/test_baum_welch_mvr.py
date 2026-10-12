@@ -419,8 +419,6 @@ def test_em_updates_only_the_requested_blocks(hmm, observed, block, attribute):
 
 def make_sparse_hmm(hidden_states, observed_states):
     """A model with a forbidden transition and a state that emits one symbol."""
-    hmm = HiddenMarkovModel()
-
     transition = {
         (h1, h2): (0.0 if (h1, h2) == ("A", "C") else 0.5)
         for h1 in hidden_states
@@ -437,7 +435,7 @@ def make_sparse_hmm(hidden_states, observed_states):
         for o in observed_states
     }
 
-    hmm.load_model(
+    hmm = HiddenMarkovModel.load_model(
         start_probs={h: 1.0 / len(hidden_states) for h in hidden_states},
         transition_probs=transition,
         emission_probs=emission,

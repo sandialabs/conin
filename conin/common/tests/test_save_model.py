@@ -48,34 +48,30 @@ def toulbar2_bn_uai():
 
 @pytest.fixture
 def tiny_bn_orig():
-    pgm = DiscreteBayesianNetwork()
-    pgm.states = {"node_%i" % i: [0, 1] for i in range(3)}
     values = {
         (0, 0): {0: 0.31, 1: 0.69},
         (0, 1): {0: 0.23, 1: 0.77},
         (1, 0): {0: 0.27, 1: 0.73},
         (1, 1): {0: 0.56, 1: 0.44},
     }
-    pgm.cpds = []
-    pgm.cpds.append(
-        DiscreteCPD(node="node_2", parents=["node_0", "node_1"], values=values)
+    pgm = DiscreteBayesianNetwork(
+        states={"node_%i" % i: [0, 1] for i in range(3)},
+        cpds=[DiscreteCPD(node="node_2", parents=["node_0", "node_1"], values=values)],
     )
     return pgm
 
 
 @pytest.fixture
 def tiny_bn_permuted():
-    pgm = DiscreteBayesianNetwork()
-    pgm.states = {"node_%i" % i: [0, 1] for i in range(3)}
     values = {
         (0, 0): {0: 0.31, 1: 0.69},
         (1, 0): {0: 0.27, 1: 0.73},
         (1, 1): {0: 0.56, 1: 0.44},
         (0, 1): {0: 0.23, 1: 0.77},
     }
-    pgm.cpds = []
-    pgm.cpds.append(
-        DiscreteCPD(node="node_2", parents=["node_0", "node_1"], values=values)
+    pgm = DiscreteBayesianNetwork(
+        states={"node_%i" % i: [0, 1] for i in range(3)},
+        cpds=[DiscreteCPD(node="node_2", parents=["node_0", "node_1"], values=values)],
     )
     return pgm
 

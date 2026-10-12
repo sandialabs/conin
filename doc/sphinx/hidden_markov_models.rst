@@ -29,8 +29,7 @@ transition, and emission probabilities and then loads them into a
        ("h1", "o1"): 0.6,
    }
 
-   hmm = HiddenMarkovModel()
-   hmm.load_model(
+   hmm = HiddenMarkovModel.load_model(
        start_probs=start_probs,
        transition_probs=transition_probs,
        emission_probs=emission_probs,
@@ -76,8 +75,7 @@ format is separate from the UAI file support described in
    hmm = create_hmm1()
    hmm.write_to_file("hmm.json")
 
-   loaded = HiddenMarkovModel()
-   loaded.read_from_file("hmm.json")
+   loaded = HiddenMarkovModel.read_from_file("hmm.json")
 
    assert loaded.get_start_probs() == hmm.get_start_probs()
    assert loaded.get_transition_probs() == hmm.get_transition_probs()

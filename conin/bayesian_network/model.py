@@ -10,7 +10,7 @@ from conin.markov_network import DiscreteFactor
 # NOTE: We leave the states dictionary off of the CPD object for now.  This is not
 # currently used for CPD operations.
 #
-@dataclass(slots=True)
+@dataclass(frozen=True, slots=True)
 class DiscreteCPD:
     """Define a discrete conditional probability distribution (CPD).
 
@@ -88,6 +88,15 @@ class DiscreteCPD:
     values: list | dict
     parents: list = None
     default_value: float = 0  # NOTE: Note used yet
+
+    def __post_init__(self):
+        object.__setattr__(
+            self,
+            "values",
+            dict(self.values) if isinstance(self.values, dict) else list(self.values),
+        )
+        if self.parents is not None:
+            object.__setattr__(self, "parents", list(self.parents))
 
     def __str__(self):
         return "\n".join(
@@ -198,22 +207,47 @@ class DiscreteCPD:
 class DiscreteBayesianNetwork:
     """Discrete Bayesian network composed of nodes, edges, and CPDs."""
 
-    def __init__(self, *, states={}, cpds=[]):
+    def __init__(self, *, states={}, cpds=[], pyomo_index_names=None):
         """Create a new Bayesian network.
 
         Parameters
         ----------
-        states : dict, optional
-            Mapping from each node to its possible states. If omitted, the
-            mapping can be populated later.
+        states : list or dict, optional
+            Mapping from each node to its possible states, or a list of
+            cardinalities for anonymous nodes. If omitted, the mapping can be
+            populated later.
         cpds : list of DiscreteCPD, optional
             Collection of conditional probability distributions for the
             network.
+        pyomo_index_names : dict, optional
+            Private bolt-on data used by the pyomo/toulbar2 DBN inference
+            backends.
         """
-        self._nodes = []
+        if isinstance(states, list):
+            self._nodes = list(range(len(states)))
+            self._states = {i: list(range(v)) for i, v in enumerate(states)}
+        elif isinstance(states, dict):
+            tmp = list(states.keys())
+            tmp.sort(key=lambda x: (x,) if not isinstance(x, tuple) else x)
+            self._nodes = tmp
+            self._states = dict(states)
+        else:
+            raise TypeError(f"Unexpected type for states: {type(states)}")
         self._edges = None
-        self._states = states
-        self._cpds = cpds
+
+        normalized_cpds = []
+        for cpd in cpds:
+            if cpd.node not in self._states:
+                tmp = next(iter(cpd.values.values()))
+                self._states[cpd.node] = list(sorted(tmp.keys()))
+                if cpd.node not in self._nodes:
+                    self._nodes.append(cpd.node)
+            normalized_cpds.append(cpd.normalize(self))
+        self._cpds = normalized_cpds
+
+        self._pyomo_index_names = (
+            dict(pyomo_index_names) if pyomo_index_names else None
+        )
 
     def check_model(self):
         """Validate that the network structure and CPDs are well formed.
@@ -341,38 +375,7 @@ class DiscreteBayesianNetwork:
         dict
             Dictionary mapping each node to an ordered list of states.
         """
-        return self._states
-
-    @states.setter
-    def states(self, values):
-        """Define the state space for each node in the network.
-
-        The setter accepts either a list describing the cardinality for
-        anonymous nodes or a dictionary mapping node identifiers to their
-        explicit state lists.
-
-        Parameters
-        ----------
-        values : list or dict
-            Cardinalities or explicit state definitions for nodes.
-
-        Raises
-        ------
-        TypeError
-            If ``values`` is neither a list nor a dictionary.
-        """
-        if type(values) is list:
-            self._nodes = list(range(len(values)))
-            self._states = {i: list(range(v)) for i, v in enumerate(values)}
-
-        elif type(values) is dict:
-            tmp = list(values.keys())
-            tmp.sort(key=lambda x: (x,) if not isinstance(x, tuple) else x)
-            self._nodes = tmp
-            self._states = values
-
-        else:
-            raise TypeError(f"Unexpected type for states: {type(values)}")
+        return dict(self._states)
 
     def states_of(self, node):
         """Return the states associated with a node.
@@ -417,25 +420,26 @@ class DiscreteBayesianNetwork:
         list of DiscreteCPD
             List of CPDs defining the network.
         """
-        return self._cpds
+        return list(self._cpds)
 
-    @cpds.setter
-    def cpds(self, cpd_list):
-        """Store CPDs after normalizing their internal representation.
+    def with_cpd(self, cpd):
+        """Return a new network with ``cpd`` added to its collection of CPDs.
 
         Parameters
         ----------
-        cpd_list : list of DiscreteCPD
-            Iterable of CPDs to attach to the network.
-        """
-        self._cpds = [cpd.normalize(self) for cpd in cpd_list]
+        cpd : DiscreteCPD
+            CPD to add to the network.
 
-    def add_cpd(self, cpd):
-        cpd = cpd.normalize(self)
-        self._nodes.append(cpd.node)
-        self._cpds.append(cpd)
-        tmp = next(iter(cpd.values.values()))
-        self._states[cpd.node] = list(sorted(tmp.keys()))
+        Returns
+        -------
+        DiscreteBayesianNetwork
+            A new network containing the existing CPDs plus ``cpd``.
+        """
+        return DiscreteBayesianNetwork(
+            states=self.states,
+            cpds=self.cpds + [cpd],
+            pyomo_index_names=self._pyomo_index_names,
+        )
 
     def num_cpd_parameters(self):
         return sum(len(cpd.values) for cpd in self.cpds)

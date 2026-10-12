@@ -61,8 +61,7 @@ def make_hmm(hidden_states=ALPHABET, observed_states=("o1", "o2")):
     num_hidden = len(hidden_states)
     num_observed = len(observed_states)
 
-    hmm = HiddenMarkovModel()
-    hmm.load_model(
+    hmm = HiddenMarkovModel.load_model(
         start_probs={h: 1.0 / num_hidden for h in hidden_states},
         transition_probs={
             (h1, h2): 1.0 / num_hidden for h1 in hidden_states for h2 in hidden_states

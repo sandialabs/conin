@@ -3,13 +3,9 @@ from conin.bayesian_network.model import DiscreteCPD
 
 
 def create_ddbn0():
-    G = DynamicDiscreteBayesianNetwork()
-
     states = {"X": ["T", "F"]}
-    G.states = states
-
     dynamic_states = {"A": ["a", "b", "c"], "B": [0, 1, 2, 3], "C": ["t", "f"]}
-    G.dynamic_states = dynamic_states
+    G = DynamicDiscreteBayesianNetwork(states=states, dynamic_states=dynamic_states)
 
     cpd_start_A = DiscreteCPD(node=("A", 0), values=[0.7, 0.1, 0.2])
     cpd_trans_A = DiscreteCPD(
@@ -56,7 +52,12 @@ def create_ddbn0():
     )
     cpd_C = DiscreteCPD(node=("C", G.t), values=[0.5, 0.5])
     cpd_X = DiscreteCPD(node="X", values=[0.9, 0.1])
-    G.cpds = [cpd_start_A, cpd_trans_A, cpd_B, cpd_C, cpd_X]
+    G = DynamicDiscreteBayesianNetwork(
+        states=G.states,
+        dynamic_states=G.dynamic_states,
+        cpds=[cpd_start_A, cpd_trans_A, cpd_B, cpd_C, cpd_X],
+        t=G.t,
+    )
 
     # print(G.check_model())
     return G

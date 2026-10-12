@@ -22,8 +22,7 @@ class Test_Oracle_CHMM:
     def test_load_model2(self):
         cpgm = tc.create_chmm1_oracle()
 
-        _hmm = HiddenMarkovModel()
-        _hmm.load_model(
+        _hmm = HiddenMarkovModel.load_model(
             start_probs=cpgm.hidden_markov_model.get_start_probs(),
             emission_probs=cpgm.hidden_markov_model.get_emission_probs(),
             transition_probs=cpgm.hidden_markov_model.get_transition_probs(),

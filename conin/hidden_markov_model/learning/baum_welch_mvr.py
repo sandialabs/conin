@@ -18,6 +18,7 @@ import torch
 
 from conin.exceptions import InvalidInputError
 
+from ..hmm import HiddenMarkovModel
 from ..mvr_common import (
     ACCUM_DTYPE,
     _build_static_context,
@@ -196,7 +197,7 @@ def _normalize_on_support(counts, support, eps, fallback):
 
 
 def _m_step(hmm, counts, masks, pseudocount, update):
-    """Normalize the expected counts on support and install them in ``hmm``."""
+    """Normalize the expected counts on support and return a new ``hmm``."""
     init_counts, trans_counts, emit_counts = (c.cpu().numpy() for c in counts)
 
     start = _as_array(hmm.start_vec)
@@ -222,12 +223,20 @@ def _m_step(hmm, counts, masks, pseudocount, update):
         )
 
     # Deliberately not load_model: it re-derives the index order from sorted keys,
-    # which would break the constraint alignment MVR_CHMM established.
-    hmm.start_vec = [float(x) for x in start]
-    hmm.transition_mat = [[float(x) for x in row] for row in transition]
-    hmm.emission_mat = [[float(x) for x in row] for row in emission]
+    # which would break the constraint alignment MVR_CHMM established. Reuse
+    # hmm's existing label maps unchanged instead.
+    new_hmm = HiddenMarkovModel(
+        start_vec=[float(x) for x in start],
+        transition_mat=[[float(x) for x in row] for row in transition],
+        emission_mat=[[float(x) for x in row] for row in emission],
+        hidden_to_internal=hmm.hidden_to_internal,
+        observed_to_internal=hmm.observed_to_internal,
+        hidden_to_external=hmm.hidden_to_external,
+        observed_to_external=hmm.observed_to_external,
+    )
+    new_hmm.initialize(avoid_reinitialization=False)
 
-    hmm.initialize(avoid_reinitialization=False)
+    return new_hmm
 
 
 # ======================================================================
@@ -444,13 +453,14 @@ def baum_welch_mvr_chmm(
             converged = True
             break
 
-        _m_step(
+        hmm = _m_step(
             hmm,
             (init_counts, trans_counts, emit_counts),
             masks,
             pseudocount,
             update,
         )
+        working.hidden_markov_model = hmm
 
     # tol <= 0 asks for exactly max_iter iterations, so exhausting them is intended.
     if tol > 0 and not converged and len(history) > 1:
