@@ -245,9 +245,7 @@ class DiscreteBayesianNetwork:
             normalized_cpds.append(cpd.normalize(self))
         self._cpds = normalized_cpds
 
-        self._pyomo_index_names = (
-            dict(pyomo_index_names) if pyomo_index_names else None
-        )
+        self._pyomo_index_names = dict(pyomo_index_names) if pyomo_index_names else None
 
     def check_model(self):
         """Validate that the network structure and CPDs are well formed.

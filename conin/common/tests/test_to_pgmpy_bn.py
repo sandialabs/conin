@@ -83,9 +83,7 @@ def test_simple_parent_child_conversion():
         states={"A": [0, 1], "B": [0, 1]},
         cpds=[
             DiscreteCPD(node="A", values=[0.3, 0.7]),
-            DiscreteCPD(
-                node="B", parents=["A"], values={0: [0.2, 0.8], 1: [0.9, 0.1]}
-            ),
+            DiscreteCPD(node="B", parents=["A"], values={0: [0.2, 0.8], 1: [0.9, 0.1]}),
         ],
     )
 
@@ -194,9 +192,7 @@ def test_model_equivalence():
         states={"A": [0, 1], "B": [0, 1]},
         cpds=[
             DiscreteCPD(node="A", values=[0.3, 0.7]),
-            DiscreteCPD(
-                node="B", parents=["A"], values={0: [0.2, 0.8], 1: [0.9, 0.1]}
-            ),
+            DiscreteCPD(node="B", parents=["A"], values={0: [0.2, 0.8], 1: [0.9, 0.1]}),
         ],
     )
 

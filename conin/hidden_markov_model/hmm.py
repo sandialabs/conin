@@ -389,9 +389,7 @@ class HiddenMarkovModel:
         self._repn = None
         self._start_vec = list(start_vec) if start_vec is not None else []
         self._transition_mat = (
-            [list(row) for row in transition_mat]
-            if transition_mat is not None
-            else []
+            [list(row) for row in transition_mat] if transition_mat is not None else []
         )
         self._emission_mat = (
             [list(row) for row in emission_mat] if emission_mat is not None else []
@@ -867,9 +865,7 @@ class HiddenMarkovModel:
         h = [self._hidden_to_internal[hval] for hval in hidden]
         o = [self._observed_to_internal[oval] for oval in observed]
 
-        ans = math.log(self._start_vec[h[0]]) + math.log(
-            self._emission_mat[h[0]][o[0]]
-        )
+        ans = math.log(self._start_vec[h[0]]) + math.log(self._emission_mat[h[0]][o[0]])
         for t in range(1, len(observed)):
             ans += math.log(self._transition_mat[h[t - 1]][h[t]]) + math.log(
                 self._emission_mat[h[t]][o[t]]
