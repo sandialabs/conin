@@ -1,4 +1,4 @@
-import logger
+import logging
 import munch
 import conin
 from conin.hidden_markov_model import HiddenMarkovModel
@@ -6,6 +6,8 @@ from conin.hidden_markov_model.inference import lp_inference, ip_inference
 from conin.hidden_markov_model.hmm_to_dbn import create_dbn_from_hmm
 from conin.hidden_markov_model import ConstrainedHiddenMarkovModel
 from conin.inference.dbn.inference_pyomo import create_pyomo_map_query_model_DDBN
+
+logger = logging.getLogger("conin")
 
 
 def create_pyomo_map_query_model_HMM(
