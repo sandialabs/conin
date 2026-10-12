@@ -115,9 +115,7 @@ def convert_pgmpy_to_DynamicDiscreteBayesianNetwork(pgmpy_pgm):
             cpds.append(
                 DiscreteCPD(
                     node=_as_tuple(cpd.variable, t, offset),
-                    parents=[
-                        _as_tuple(var, t, offset) for var in cpd.variables[1:]
-                    ],
+                    parents=[_as_tuple(var, t, offset) for var in cpd.variables[1:]],
                     values=values,
                 )
             )

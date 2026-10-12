@@ -241,10 +241,7 @@ def _m_step(hmm, counts, masks, pseudocount, update):
         },
         initialize=True,
     )
-    if (
-        new_hmm.hidden_to_external != hidden
-        or new_hmm.observed_to_external != observed
-    ):
+    if new_hmm.hidden_to_external != hidden or new_hmm.observed_to_external != observed:
         raise InvalidInputError(  # pragma: no cover
             "Rebuilding the HMM changed its internal state order"
         )
