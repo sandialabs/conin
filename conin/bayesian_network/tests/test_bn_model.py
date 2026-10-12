@@ -19,9 +19,7 @@ def _make_simple_bn():
         parents=["A"],
         values={0: [0.2, 0.8], 1: [0.9, 0.1]},
     )
-    bn = DiscreteBayesianNetwork(
-        states={"A": [0, 1], "B": [0, 1]}, cpds=[cpd_A, cpd_B]
-    )
+    bn = DiscreteBayesianNetwork(states={"A": [0, 1], "B": [0, 1]}, cpds=[cpd_A, cpd_B])
     bn.check_model()
     return bn
 
