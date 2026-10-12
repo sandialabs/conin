@@ -1,3 +1,4 @@
+import logger
 import munch
 import conin
 from conin.hidden_markov_model import HiddenMarkovModel
