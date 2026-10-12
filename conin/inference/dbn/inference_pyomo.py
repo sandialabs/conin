@@ -47,12 +47,14 @@ def inference_pyomo_map_query_DDBN(
     evidence=None,
     **options,
 ):
+    use_cut_generation = options.pop("use_cut_generation", False)
     model = create_pyomo_map_query_model_DDBN(
         pgm=pgm,
         start=start,
         stop=stop,
         variables=variables,
         evidence=evidence,
+        omit_c5=use_cut_generation,
         **options,
     )
     return conin.inference.mn.inference_pyomo.solve_pyomo_map_query_model(

@@ -1,4 +1,5 @@
 from collections import defaultdict
+import logging
 import pprint
 import munch
 import pyomo.environ as pe
@@ -16,6 +17,11 @@ from conin.util import try_import, State
 
 with try_import() as or_topas_available:
     import or_topas.aos as aos
+
+with try_import() as gurobipy_available:
+    import gurobipy
+
+logger = logging.getLogger(__name__)
 
 
 """
@@ -68,6 +74,118 @@ class PyomoVarWrapper(dict):
         return dict.__getitem__(self, (r, s))
 
 
+def has_omitted_c5(model):
+    """Returns ``True`` if the model was created with ``use_cut_generation=True`` and the
+    c5 constraints have not been added."""
+    return getattr(model, "_c5_data", None) is not None
+
+
+def add_c5_constraints(model, IRS):
+    """Add the full set of c5 constraints to a model that was created with
+    ``use_cut_generation=True``.  This is a no-op for models that already include c5.
+    """
+
+    def c5_(M, i, r, s):
+        return sum(M.y[i, j] for j in IRS[i, r, s]) == M.x[r, s]
+
+    model.c5 = pe.Constraint(sorted(IRS.keys()), rule=c5_)
+    return model
+
+
+class C5LazyCutGenerator:
+    """
+    Gurobi callback that generates the c5 constraints on demand for models
+    created with ``use_cut_generation=True``.
+
+    Without c5, the factor configuration variables (y) are decoupled from
+    the variable-value indicators (x).  This callback separates violated c5
+    rows:
+
+    * MIPSOL: every violated c5 row for the candidate integer solution is
+      added as a lazy constraint.  This is required for correctness.  Only
+      the violated side of each c5 equality is added.
+    * MIPNODE (optional, ``user_cuts=True``): the most violated c5 rows for
+      the node LP relaxation are added as user cuts to tighten the bound.
+
+    Each cut is an exact c5 row, so the optimal solution is identical to the
+    solution of the full model.
+    """
+
+    def __init__(self, model, *, user_cuts=False, tol=1e-6, max_cuts_per_node=100):
+        self.model = model
+        self.IRS = model._c5_data.IRS
+        self.user_cuts = user_cuts
+        self.tol = tol
+        self.max_cuts_per_node = max_cuts_per_node
+        self.variables = list(model.x.values()) + list(model.y.values())
+        # Map from (i,r,s,sense) to the Pyomo constraint created for it
+        self.cuts = {}
+        self.num_lazy_cuts = 0
+        self.num_user_cuts = 0
+
+    def _get_rows(self):
+        # WEH - Should we cache this?  This could be big.
+        model = self.model
+        for key in sorted(self.IRS.keys()):
+            yield (
+                key,
+                [model.y[key[0], j] for j in self.IRS[key]],
+                model.x[key[1], key[2]],
+            )
+
+    def _violated_rows(self, tol, skip_added=False):
+        """
+        Returns a list of tuples (violation, cut_key), where cut_key is
+        (i, r, s, sense).  If sense is 1, then sum y[i,j] > x[r,s] and the
+        cut is sum y[i,j] <= x[r,s].  Otherwise, sense is -1 and the cut is
+        sum y[i,j] >= x[r,s].
+        """
+        for key, yvars, xvar in self._get_rows():
+            diff = sum(y.value for y in yvars) - xvar.value
+            if diff > tol:
+                cut_key = key + (1,)
+            elif diff < -tol:
+                cut_key = key + (-1,)
+            else:
+                continue
+            if skip_added and cut_key in self.cuts:
+                continue
+            yield (abs(diff), cut_key)
+
+    def _get_cut(self, cut_key):
+        # N.B. The gurobi_persistent cbLazy() and cbCut() methods do not
+        # support equality constraints, so each side of c5 is added separately.
+        con = self.cuts.get(cut_key, None)
+        if con is None:
+            i, r, s, sense = cut_key
+            lhs = sum(self.model.y[i, j] for j in self.IRS[i, r, s])
+            rhs = self.model.x[r, s]
+            if sense > 0:
+                con = self.model.c5_cuts.add(lhs <= rhs)
+            else:
+                con = self.model.c5_cuts.add(lhs >= rhs)
+            self.cuts[cut_key] = con
+        return con
+
+    def __call__(self, cb_m, cb_opt, cb_where):
+        GRB = gurobipy.GRB
+        if cb_where == GRB.Callback.MIPSOL:
+            cb_opt.cbGetSolution(vars=self.variables)
+            for _, cut_key in self._violated_rows(0.5):
+                cb_opt.cbLazy(self._get_cut(cut_key))
+                self.num_lazy_cuts += 1
+
+        elif self.user_cuts and cb_where == GRB.Callback.MIPNODE:
+            if cb_opt.cbGet(GRB.Callback.MIPNODE_STATUS) != GRB.OPTIMAL:
+                return
+            cb_opt.cbGetNodeRel(vars=self.variables)
+            violated = list(self._violated_rows(self.tol, skip_added=True))
+            violated.sort(key=lambda t: -t[0])
+            for _, cut_key in violated[: self.max_cuts_per_node]:
+                cb_opt.cbCut(self._get_cut(cut_key))
+                self.num_user_cuts += 1
+
+
 def add_constraints(*, pgm, constraints, model, data):
     if len(constraints) == 0:
         return model
@@ -97,6 +215,7 @@ def create_pyomo_map_query_model_MN(
     evidence=None,
     var_index_map=None,
     timing=False,
+    omit_c5=False,
     **options,
 ):
     """Build a inference model for MAP queries.
@@ -113,6 +232,11 @@ def create_pyomo_map_query_model_MN(
         If ``True``, return inference statistics along with the MAP result.
     var_index_map : dict, optional
         A dictionary of that is used construct mapped varibles
+    omit_c5 : bool, optional
+        If ``True``, omit the c5 constraints that couple factor configurations
+        and variable values.  These constraints are generated as lazy cuts when
+        the model is solved with ``solver="gurobi"``, and they are added to the
+        model before solving with other solvers.
     **options
         Additional keyword arguments forwarded to the inference backend.
 
@@ -156,6 +280,7 @@ def create_pyomo_map_query_model_MN(
         var_index_map=var_index_map,
         variables=variables,
         timing=timing,
+        omit_c5=omit_c5,
     )
 
     if evidence:
@@ -181,6 +306,7 @@ def create_MN_pyomo_map_query_model_from_factorial_repn(
     variables=None,
     timing=False,
     tuple_repn=True,
+    omit_c5=False,
 ):
     #
     # S[r]: the (finite) set of possible values of variable X_r
@@ -197,6 +323,10 @@ def create_MN_pyomo_map_query_model_from_factorial_repn(
     #           Note that j \in J[i]
     #
     # var_index_map[hr]: a dictionary that maps hashable value hr to variable name X_r
+    #
+    # omit_c5: If True, the c5 constraints are not created.  Instead, the data
+    #           needed to generate them is stored in model._c5_data, and the
+    #           model.c5_cuts constraint list is used to store generated cuts.
     #
     if timing:  # pragma:nocover
         timer = TicTocTimer()
@@ -273,11 +403,12 @@ def create_MN_pyomo_map_query_model_from_factorial_repn(
         timer.toc("c2")
 
     if tuple_repn:
-
-        def c5_(M, i, r, s):
-            return sum(M.y[i, j] for j in IRS[i, r, s]) == M.x[r, s]
-
-        model.c5 = pe.Constraint(sorted(IRS.keys()), rule=c5_)
+        if omit_c5:
+            # The c5 constraints are generated with cut generation when solving
+            model._c5_data = munch.Munch(IRS=IRS)
+            model.c5_cuts = pe.ConstraintList()
+        else:
+            add_c5_constraints(model, IRS)
 
         if timing:  # pragma:nocover
             timer.toc("c5")
@@ -327,18 +458,38 @@ def solve_pyomo_map_query_model(
     solver_options=None,
     evidence=None,
     write_lp_file=None,
+    c5_user_cuts=False,
+    c5_cut_tol=1e-6,
+    c5_max_cuts_per_node=100,
 ):
+    """Solve a MAP query model.
+
+    If the model was created with ``use_cut_generation=True`` and ``solver="gurobi"``,
+    then the c5 constraints are generated as lazy constraints in a Gurobi
+    callback (and optionally as user cuts if ``c5_user_cuts=True``).  For
+    other solvers, the c5 constraints are added to the model before solving.
+    """
     if timing:  # pragma:nocover
         timer = TicTocTimer()
         timer.tic("optimize_map_query_model - START")
 
+    cut_stats = None
+    if has_omitted_c5(model) and solver != "gurobi":
+        raise RuntimeError(
+            f"The c5 constraints were omitted, but cut generation is not supported for solver={solver}."
+        )
+
     if solver == "or_topas":
+        #
+        # AOS solver in or_topas
+        #
         if not or_topas_available:  # pragma:nocover
             raise RuntimeError("or_topas not installed")
 
         if solver_options is None:
             solver_options = dict()
         topas_method = solver_options.pop("topas_method", "balas")
+
         if timing:  # pragma:nocover
             timer.toc("Initialize solver")
 
@@ -351,6 +502,7 @@ def solve_pyomo_map_query_model(
         else:  # pragma:nocover
             raise RuntimeError(f"Asked for {topas_method=}, which is not supported")
         solvetime = solver_timer.toc(None)
+
         if timing:  # pragma:nocover
             timer.toc("Completed optimization")
 
@@ -361,13 +513,67 @@ def solve_pyomo_map_query_model(
         ]
         soln = solutions[0]
         termination_condition = "ok"
+
+    elif solver == "gurobi":
+        #
+        # Gurobi ILP solver
+        #
+        if write_lp_file:
+            model.write(write_lp_file)
+
+        opt = pe.SolverFactory("gurobi_persistent")
+        opt.set_instance(model)
+        if solver_options:
+            for key, val in solver_options.items():
+                opt.set_gurobi_param(key, val)
+
+        cut_generator = None
+        if has_omitted_c5(model):
+            cut_generator = C5LazyCutGenerator(
+                model,
+                user_cuts=c5_user_cuts,
+                tol=c5_cut_tol,
+                max_cuts_per_node=c5_max_cuts_per_node,
+            )
+            opt.set_gurobi_param("LazyConstraints", 1)
+            if c5_user_cuts:
+                # Allow cuts on the original model to be translated into the
+                # presolved model
+                opt.set_gurobi_param("PreCrush", 1)
+            opt.set_callback(cut_generator)
+
+        if timing:  # pragma:nocover
+            timer.toc("Initialize solver")
+
+        solver_timer = TicTocTimer()
+        solver_timer.tic(None)
+        res = opt.solve(tee=tee, save_results=False)
+        solvetime = solver_timer.toc(None)
+
+        if timing:  # pragma:nocover
+            timer.toc("Completed optimization")
+
+        pe.assert_optimal_termination(res)
+        soln = parse_model_solution_pyomo_map_query(model, solution_with_fixed)
+        solutions = [soln]
+        termination_condition = "ok"
+        if cut_generator is not None:
+            cut_stats = munch.Munch(
+                num_lazy_cuts=cut_generator.num_lazy_cuts,
+                num_user_cuts=cut_generator.num_user_cuts,
+            )
+
     else:
+        #
+        # Other ILP solver
+        #
         if write_lp_file:
             model.write(write_lp_file)
 
         opt = pe.SolverFactory(solver)
         if solver_options:
             opt.options = solver_options
+
         if timing:  # pragma:nocover
             timer.toc("Initialize solver")
 
@@ -375,6 +581,7 @@ def solve_pyomo_map_query_model(
         solver_timer.tic(None)
         res = opt.solve(model, tee=tee)
         solvetime = solver_timer.toc(None)
+
         if timing:  # pragma:nocover
             timer.toc("Completed optimization")
 
@@ -383,6 +590,9 @@ def solve_pyomo_map_query_model(
         solutions = [soln]
         termination_condition = "ok"
 
+    #
+    # Post-optimization processing
+    #
     if evidence and solution_with_evidence and not solution_with_fixed:
         for soln in solutions:
             for k, v in evidence.items():
@@ -390,12 +600,19 @@ def solve_pyomo_map_query_model(
 
     if timing:  # pragma:nocover
         timer.toc("optimize_map_query_model - STOP")
-    return munch.Munch(
+
+    results = munch.Munch(
         solution=soln,
         solutions=solutions,
         termination_condition=termination_condition,
         solvetime=solvetime,
     )
+    if cut_stats is not None:
+        results.cut_stats = cut_stats
+        if timing:  # pragma:nocover
+            timer.toc(f"cut statistics: {cut_stats}")
+
+    return results
 
 
 def parse_model_solution_pyomo_map_query(model, solution_with_fixed):
@@ -453,8 +670,15 @@ def inference_pyomo_map_query_MN(
     timing=False,
     **options,
 ):
+    use_cut_generation = options.pop("use_cut_generation", False)
+
     model = create_pyomo_map_query_model_MN(
-        pgm=pgm, variables=variables, evidence=evidence, timing=timing, **options
+        pgm=pgm,
+        variables=variables,
+        evidence=evidence,
+        timing=timing,
+        omit_c5=use_cut_generation,
+        **options,
     )
     return solve_pyomo_map_query_model(
         model, timing=timing, evidence=evidence, **options
