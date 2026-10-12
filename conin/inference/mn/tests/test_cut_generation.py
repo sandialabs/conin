@@ -143,7 +143,10 @@ def test_omit_c5_fallback():
     support cut generation.
     """
     example = examples.ABC_conin()
-    with pytest.raises(RuntimeError, match=r"The c5 constraints were omitted, but cut generation is not supported for solver="):
+    with pytest.raises(
+        RuntimeError,
+        match=r"The c5 constraints were omitted, but cut generation is not supported for solver=",
+    ):
         results = inference_pyomo_map_query_MN(
             pgm=example.pgm, solver=other_mip_solver, use_cut_generation=True
         )

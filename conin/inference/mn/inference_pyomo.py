@@ -127,7 +127,11 @@ class C5LazyCutGenerator:
         # WEH - Should we cache this?  This could be big.
         model = self.model
         for key in sorted(self.IRS.keys()):
-                yield (key, [model.y[key[0], j] for j in self.IRS[key]], model.x[key[1], key[2]])
+            yield (
+                key,
+                [model.y[key[0], j] for j in self.IRS[key]],
+                model.x[key[1], key[2]],
+            )
 
     def _violated_rows(self, tol, skip_added=False):
         """
