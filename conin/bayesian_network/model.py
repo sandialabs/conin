@@ -2,6 +2,7 @@ import itertools
 from math import prod
 from dataclasses import dataclass
 
+from conin.exceptions import InvalidInputError
 from conin.util import batched
 from conin.markov_network import DiscreteFactor
 
@@ -78,7 +79,10 @@ class DiscreteCPD:
 
     List-valued CPDs are normalized against a Bayesian network's state order:
 
-    >>> bn = DiscreteBayesianNetwork(states={'A': [0, 1], 'B': [0, 1]})
+    >>> bn = DiscreteBayesianNetwork(
+    ...     states={'A': [0, 1], 'B': [0, 1]},
+    ...     cpds=[DiscreteCPD(node='A', values=[0.5, 0.5])],
+    ... )
     >>> cpd = DiscreteCPD(node='B', parents=['A'], values={0: [0.2, 0.8], 1: [0.9, 0.1]})
     >>> cpd.normalize(bn).values
     {0: {0: 0.2, 1: 0.8}, 1: {0: 0.9, 1: 0.1}}
@@ -207,22 +211,32 @@ class DiscreteCPD:
 class DiscreteBayesianNetwork:
     """Discrete Bayesian network composed of nodes, edges, and CPDs."""
 
-    def __init__(self, *, states={}, cpds=[], pyomo_index_names=None):
+    def __init__(self, *, cpds, states=None, pyomo_index_names=None):
         """Create a new Bayesian network.
 
         Parameters
         ----------
+        cpds : list of DiscreteCPD
+            Non-empty collection of conditional probability distributions for
+            the network.
         states : list or dict, optional
             Mapping from each node to its possible states, or a list of
-            cardinalities for anonymous nodes. If omitted, the mapping can be
-            populated later.
-        cpds : list of DiscreteCPD, optional
-            Collection of conditional probability distributions for the
-            network.
+            cardinalities for anonymous nodes. States of nodes that are not
+            listed are inferred from their CPDs.
         pyomo_index_names : dict, optional
             Private bolt-on data used by the pyomo/toulbar2 DBN inference
             backends.
+
+        Raises
+        ------
+        InvalidInputError
+            If ``cpds`` is empty.
         """
+        cpds = list(cpds)
+        if not cpds:
+            raise InvalidInputError("cpds must be a non-empty list")
+        if states is None:
+            states = {}
         if isinstance(states, list):
             self._nodes = list(range(len(states)))
             self._states = {i: list(range(v)) for i, v in enumerate(states)}

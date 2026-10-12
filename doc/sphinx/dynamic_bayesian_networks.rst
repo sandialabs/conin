@@ -5,7 +5,10 @@ This page describes how to create a ``DynamicDiscreteBayesianNetwork`` instance 
 ``DiscreteCPD`` objects.
 ``DynamicDiscreteBayesianNetwork`` represents a two-slice dynamic Bayesian
 network whose conditional probability distributions can reference the symbolic
-time variable ``t``.
+time variable ``t``. Create an ``ExpressionVariable`` for ``t``, use it to
+define the CPDs, and pass the same object to the constructor, which also
+requires a non-empty list of CPDs and at least one of ``states`` or
+``dynamic_states``.
 
 Dynamic Bayesian networks
 -------------------------
@@ -15,20 +18,23 @@ with an initial distribution and one transition CPD.
 
 .. code-block:: python
 
-   from conin.dynamic_bayesian_network import DynamicDiscreteBayesianNetwork
+   from conin.dynamic_bayesian_network import (
+       DynamicDiscreteBayesianNetwork,
+       ExpressionVariable,
+   )
    from conin.bayesian_network import DiscreteCPD
 
-   dbn = DynamicDiscreteBayesianNetwork(dynamic_states={"Z": [0, 1]})
+   t = ExpressionVariable()
 
    z_start = DiscreteCPD(node=("Z", 0), values=[0.5, 0.5])
    z_transition = DiscreteCPD(
-       node=("Z", dbn.t),
-       parents=[("Z", dbn.t - 1)],
+       node=("Z", t),
+       parents=[("Z", t - 1)],
        values={0: [0.7, 0.3], 1: [0.8, 0.2]},
    )
 
    dbn = DynamicDiscreteBayesianNetwork(
-       dynamic_states=dbn.dynamic_states, cpds=[z_start, z_transition], t=dbn.t
+       dynamic_states={"Z": [0, 1]}, cpds=[z_start, z_transition], t=t
    )
    dbn.check_model()
 
@@ -40,27 +46,30 @@ The ``simple1_DDBN_conin`` example introduces two dynamic nodes:
 
 .. code-block:: python
 
-   from conin.dynamic_bayesian_network import DynamicDiscreteBayesianNetwork
+   from conin.dynamic_bayesian_network import (
+       DynamicDiscreteBayesianNetwork,
+       ExpressionVariable,
+   )
    from conin.bayesian_network import DiscreteCPD
 
-   dbn = DynamicDiscreteBayesianNetwork(dynamic_states={"A": [0, 1], "B": [0, 1]})
+   t = ExpressionVariable()
 
    cpd_start_a = DiscreteCPD(node=("A", 0), values=[0.9, 0.1])
    cpd_start_b = DiscreteCPD(
-       node=("B", dbn.t),
-       parents=[("A", dbn.t)],
+       node=("B", t),
+       parents=[("A", t)],
        values={0: [0.2, 0.8], 1: [0.9, 0.1]},
    )
    cpd_trans_a = DiscreteCPD(
-       node=("A", dbn.t),
-       parents=[("A", dbn.t - 1)],
+       node=("A", t),
+       parents=[("A", t - 1)],
        values={0: [0.2, 0.8], 1: [0.9, 0.1]},
    )
 
    dbn = DynamicDiscreteBayesianNetwork(
-       dynamic_states=dbn.dynamic_states,
+       dynamic_states={"A": [0, 1], "B": [0, 1]},
        cpds=[cpd_start_a, cpd_start_b, cpd_trans_a],
-       t=dbn.t,
+       t=t,
    )
    dbn.check_model()
 
@@ -165,8 +174,12 @@ set of nodes:
 Notes
 -----
 
+- ``cpds`` is required and must be non-empty, and at least one of ``states``
+  and ``dynamic_states`` must be non-empty.
 - ``dynamic_states`` lists the state space for time-indexed variables.
-- ``dbn.t`` is a symbolic time variable used when declaring repeated CPDs.
+- ``t`` is a symbolic ``ExpressionVariable`` used when declaring repeated CPDs.
+  Pass the same object that the CPDs use to the constructor; it is available
+  afterwards as ``dbn.t``.
 - See :doc:`model_conversion_io` for unrolling dynamic Bayesian networks into
   static Bayesian networks.
 - Simpler models such as ``simple0_DDBN_conin`` and ``simple1_DDBN_conin`` are

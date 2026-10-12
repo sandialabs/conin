@@ -1,3 +1,4 @@
+from conin.exceptions import InvalidInputError
 from conin.dynamic_bayesian_network.expr import ExpressionVariable
 
 
@@ -9,27 +10,47 @@ class DynamicDiscreteBayesianNetwork:
     variables.
     """
 
-    def __init__(self, *, states={}, dynamic_states={}, cpds=[], t=None):
+    def __init__(self, *, cpds, states=None, dynamic_states=None, t=None):
         """Initialize a dynamic discrete Bayesian network.
 
         Parameters
         ----------
+        cpds : list
+            Non-empty list of conditional probability distributions associated
+            with the model.
         states : list or dict, optional
             Mapping from static node identifiers to their allowed states, or
             a list of cardinalities for anonymous static nodes.
         dynamic_states : dict, optional
             Mapping from dynamic node identifiers to their allowed states across
-            time steps.
-        cpds : list, optional
-            Conditional probability distributions associated with the model.
+            time steps. At least one of ``states`` and ``dynamic_states`` must
+            be non-empty.
         t : ExpressionVariable, optional
-            Symbolic time-index placeholder used to express time-shifted CPD
-            templates (``dbn.t``, ``dbn.t - 1``). Defaults to a fresh
-            ``ExpressionVariable()``. Callers that need the CPDs they build
-            to reference the SAME placeholder embedded in the returned
-            network (e.g. ``create_dbn_from_hmm``) can pass an existing
-            instance here.
+            Symbolic time-index placeholder used in time-shifted CPD templates
+            (``t``, ``t - 1``). CPDs that refer to the time index must be built
+            with the same ``ExpressionVariable`` instance that is passed here;
+            it is exposed afterwards as ``dbn.t``. Defaults to a fresh
+            ``ExpressionVariable()``, which is only appropriate when no CPD
+            refers to the time index.
+
+        Raises
+        ------
+        InvalidInputError
+            If ``cpds`` is empty, or if both ``states`` and ``dynamic_states``
+            are empty.
         """
+        cpds = list(cpds)
+        if not cpds:
+            raise InvalidInputError("cpds must be a non-empty list")
+        if states is None:
+            states = {}
+        if dynamic_states is None:
+            dynamic_states = {}
+        if not states and not dynamic_states:
+            raise InvalidInputError(
+                "At least one of states and dynamic_states must be non-empty"
+            )
+
         self._edges = []
         self._dynamic_edges = []
 
@@ -136,13 +157,19 @@ class DynamicDiscreteBayesianNetwork:
         Examples
         --------
         >>> from conin.dynamic_bayesian_network import DynamicDiscreteBayesianNetwork
-        >>> ddbn = DynamicDiscreteBayesianNetwork(states=[4, 3])
+        >>> from conin.bayesian_network import DiscreteCPD
+        >>> ddbn = DynamicDiscreteBayesianNetwork(
+        ...     states=[4, 3], cpds=[DiscreteCPD(node=0, values=[0.25] * 4)]
+        ... )
         >>> ddbn.nodes
         [0, 1]
         >>> ddbn.states
         {0: [0, 1, 2, 3], 1: [0, 1, 2]}
 
-        >>> ddbn = DynamicDiscreteBayesianNetwork(states={"A": ["T", "F"], "B": [-1, 1]})
+        >>> ddbn = DynamicDiscreteBayesianNetwork(
+        ...     states={"A": ["T", "F"], "B": [-1, 1]},
+        ...     cpds=[DiscreteCPD(node="A", values=[0.5, 0.5])],
+        ... )
         >>> ddbn.nodes
         ['A', 'B']
         >>> ddbn.states
@@ -162,7 +189,11 @@ class DynamicDiscreteBayesianNetwork:
         Examples
         --------
         >>> from conin.dynamic_bayesian_network import DynamicDiscreteBayesianNetwork
-        >>> ddbn = DynamicDiscreteBayesianNetwork(dynamic_states={"A": ["T", "F"], "B": [-1, 1]})
+        >>> from conin.bayesian_network import DiscreteCPD
+        >>> ddbn = DynamicDiscreteBayesianNetwork(
+        ...     dynamic_states={"A": ["T", "F"], "B": [-1, 1]},
+        ...     cpds=[DiscreteCPD(node=("A", 0), values=[0.5, 0.5])],
+        ... )
         >>> ddbn.dynamic_nodes
         ['A', 'B']
         >>> ddbn.dynamic_states

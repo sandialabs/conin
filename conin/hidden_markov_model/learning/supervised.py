@@ -108,7 +108,7 @@ def supervised_learning(
             for o in observable_states:
                 emission_probs[i, o] /= rowsum[i]
 
-    hmm = HiddenMarkovModel.load_model(
+    hmm = HiddenMarkovModel(
         start_probs=start_probs,
         transition_probs=transition_probs,
         emission_probs=emission_probs,

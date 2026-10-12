@@ -40,11 +40,6 @@ class MVR_CHMM(chmm.CHMM):
     def __init__(self, *, hidden_markov_model=None, constraints=None, data=None):
         if hidden_markov_model is None:
             raise InvalidInputError("hidden_markov_model is a required argument")
-        if hidden_markov_model.repn is None:
-            raise InvalidInputError(
-                "hidden_markov_model.repn is missing "
-                "Please run Load_model() with the correct start/trans/emit probs"
-            )
         # Align constraints once so algorithms can index their arrays directly.
         if constraints:
             hidden_to_external = list(hidden_markov_model.hidden_to_external)

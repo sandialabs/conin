@@ -35,7 +35,7 @@ def make_random_hmm(*, hidden_states, observed_states, seed=0):
     emission_mat = rng.random((num_hidden, num_observed))
     emission_mat = emission_mat / emission_mat.sum(axis=1, keepdims=True)
 
-    hmm = HiddenMarkovModel.load_model(
+    hmm = HiddenMarkovModel(
         start_probs={h: start_vec[i] for i, h in enumerate(hidden_states)},
         transition_probs={
             (h1, h2): transition_mat[i, j]

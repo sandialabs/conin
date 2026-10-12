@@ -222,19 +222,32 @@ def _m_step(hmm, counts, masks, pseudocount, update):
             emit_counts, masks["emission"], pseudocount, emission
         )
 
-    # Deliberately not load_model: it re-derives the index order from sorted keys,
-    # which would break the constraint alignment MVR_CHMM established. Reuse
-    # hmm's existing label maps unchanged instead.
+    # The constructor orders states by sorted label, and the dense dictionaries
+    # below mention every label, so the rebuilt model keeps hmm's internal index
+    # order (and with it the constraint alignment MVR_CHMM established).
+    hidden = hmm.hidden_to_external
+    observed = hmm.observed_to_external
     new_hmm = HiddenMarkovModel(
-        start_vec=[float(x) for x in start],
-        transition_mat=[[float(x) for x in row] for row in transition],
-        emission_mat=[[float(x) for x in row] for row in emission],
-        hidden_to_internal=hmm.hidden_to_internal,
-        observed_to_internal=hmm.observed_to_internal,
-        hidden_to_external=hmm.hidden_to_external,
-        observed_to_external=hmm.observed_to_external,
+        start_probs={h: float(start[i]) for i, h in enumerate(hidden)},
+        transition_probs={
+            (h1, h2): float(transition[i][j])
+            for i, h1 in enumerate(hidden)
+            for j, h2 in enumerate(hidden)
+        },
+        emission_probs={
+            (h, o): float(emission[i][j])
+            for i, h in enumerate(hidden)
+            for j, o in enumerate(observed)
+        },
+        initialize=True,
     )
-    new_hmm.initialize(avoid_reinitialization=False)
+    if (
+        new_hmm.hidden_to_external != hidden
+        or new_hmm.observed_to_external != observed
+    ):
+        raise InvalidInputError(  # pragma: no cover
+            "Rebuilding the HMM changed its internal state order"
+        )
 
     return new_hmm
 

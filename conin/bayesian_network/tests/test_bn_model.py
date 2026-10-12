@@ -2,6 +2,7 @@
 
 import pytest
 
+from conin.exceptions import InvalidInputError
 from conin.bayesian_network import DiscreteBayesianNetwork, DiscreteCPD
 from conin.bayesian_network.bn_to_mn import create_mn_from_bn
 from conin.markov_network import DiscreteMarkovNetwork
@@ -22,6 +23,16 @@ def _make_simple_bn():
     bn = DiscreteBayesianNetwork(states={"A": [0, 1], "B": [0, 1]}, cpds=[cpd_A, cpd_B])
     bn.check_model()
     return bn
+
+
+def _uniform_cpds(states):
+    """Return one parentless, uniform CPD per node of ``states``."""
+    if isinstance(states, list):
+        states = {i: list(range(card)) for i, card in enumerate(states)}
+    return [
+        DiscreteCPD(node=node, values=[1 / len(values)] * len(values))
+        for node, values in states.items()
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -49,7 +60,8 @@ class TestDiscreteCPD:
         assert "0.5" in s
 
     def test_normalize_list_values_no_parents(self):
-        bn = DiscreteBayesianNetwork(states={"A": ["a0", "a1"]})
+        states = {"A": ["a0", "a1"]}
+        bn = DiscreteBayesianNetwork(states=states, cpds=_uniform_cpds(states))
         cpd = DiscreteCPD(node="A", values=[0.3, 0.7])
         normalized = cpd.normalize(bn)
         # A list CPD without parents normalizes to a dict keyed by state values.
@@ -63,7 +75,7 @@ class TestDiscreteCPD:
         assert isinstance(next(iter(cpd_B.values.values())), dict)
 
     def test_normalize_already_dict_of_dicts_is_identity(self):
-        bn = DiscreteBayesianNetwork(states={"A": [0, 1], "B": [0, 1]})
+        bn = _make_simple_bn()
         cpd_B = DiscreteCPD(
             node="B",
             parents=["A"],
@@ -101,11 +113,12 @@ class TestDiscreteCPD:
 
 class TestDiscreteBayesianNetwork:
     def test_states_dict(self):
-        bn = DiscreteBayesianNetwork(states={"A": [0, 1], "B": [0, 1]})
+        states = {"A": [0, 1], "B": [0, 1]}
+        bn = DiscreteBayesianNetwork(states=states, cpds=_uniform_cpds(states))
         assert set(bn.nodes) == {"A", "B"}
 
     def test_states_list(self):
-        bn = DiscreteBayesianNetwork(states=[2, 3])
+        bn = DiscreteBayesianNetwork(states=[2, 3], cpds=_uniform_cpds([2, 3]))
         # Nodes are integer indices when states is a list.
         assert bn.nodes == [0, 1]
         assert bn.states_of(0) == [0, 1]
@@ -113,7 +126,43 @@ class TestDiscreteBayesianNetwork:
 
     def test_states_invalid_type(self):
         with pytest.raises(TypeError):
-            DiscreteBayesianNetwork(states="bad")
+            DiscreteBayesianNetwork(states="bad", cpds=_uniform_cpds({"A": [0, 1]}))
+
+    def test_cpds_required(self):
+        with pytest.raises(TypeError):
+            DiscreteBayesianNetwork()
+        with pytest.raises(TypeError):
+            DiscreteBayesianNetwork(states={"A": [0, 1]})
+
+    def test_cpds_must_be_non_empty(self):
+        with pytest.raises(InvalidInputError, match="cpds"):
+            DiscreteBayesianNetwork(states={"A": [0, 1]}, cpds=[])
+
+    def test_states_inferred_from_cpds(self):
+        # B is not listed in states, so its states come from its CPD.
+        bn = DiscreteBayesianNetwork(
+            states={"A": [0, 1]},
+            cpds=[
+                DiscreteCPD(node="A", values=[0.5, 0.5]),
+                DiscreteCPD(
+                    node="B",
+                    parents=["A"],
+                    values={0: {"x": 0.2, "y": 0.8}, 1: {"x": 0.9, "y": 0.1}},
+                ),
+            ],
+        )
+        assert bn.nodes == ["A", "B"]
+        assert bn.states_of("B") == ["x", "y"]
+
+    def test_with_cpd_does_not_mutate(self):
+        bn = DiscreteBayesianNetwork(
+            states={"A": [0, 1], "B": [0, 1]},
+            cpds=[DiscreteCPD(node="A", values=[0.5, 0.5])],
+        )
+        bn2 = bn.with_cpd(DiscreteCPD(node="B", values=[0.5, 0.5]))
+        assert len(bn.cpds) == 1
+        assert len(bn2.cpds) == 2
+        bn2.check_model()
 
     def test_states_of(self):
         bn = _make_simple_bn()
@@ -145,16 +194,20 @@ class TestDiscreteBayesianNetwork:
         _make_simple_bn()
 
     def test_check_model_unknown_node_in_cpd(self):
-        bn = DiscreteBayesianNetwork(states={"A": [0, 1]})
+        bn = DiscreteBayesianNetwork(
+            states={"A": [0, 1]}, cpds=_uniform_cpds({"A": [0, 1]})
+        )
         cpd_B = DiscreteCPD(node="B", values=[0.5, 0.5])
         bn._cpds = [cpd_B]
         with pytest.raises(AssertionError):
             bn.check_model()
 
     def test_check_model_missing_node(self):
-        bn = DiscreteBayesianNetwork(states={"A": [0, 1], "B": [0, 1]})
         # Only provide CPD for A, leaving B without one.
-        bn._cpds = [DiscreteCPD(node="A", values=[0.5, 0.5])]
+        bn = DiscreteBayesianNetwork(
+            states={"A": [0, 1], "B": [0, 1]},
+            cpds=[DiscreteCPD(node="A", values=[0.5, 0.5])],
+        )
         with pytest.raises(AssertionError):
             bn.check_model()
 

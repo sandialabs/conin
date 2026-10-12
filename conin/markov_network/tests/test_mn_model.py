@@ -2,6 +2,7 @@
 
 import pytest
 
+from conin.exceptions import InvalidInputError
 from conin.markov_network import (
     ConstrainedDiscreteMarkovNetwork,
     DiscreteFactor,
@@ -25,6 +26,21 @@ def _make_simple_mn():
     )
     mn.check_model()
     return mn
+
+
+def _unit_factors(states):
+    """Return one unary factor with unit weights per node of ``states``."""
+    if isinstance(states, list):
+        states = {i: list(range(card)) for i, card in enumerate(states)}
+    return [
+        DiscreteFactor(nodes=[node], values={v: 1.0 for v in values})
+        for node, values in states.items()
+    ]
+
+
+def _mn(states):
+    """Return a Markov network over ``states`` with unit unary factors."""
+    return DiscreteMarkovNetwork(states=states, factors=_unit_factors(states))
 
 
 # ---------------------------------------------------------------------------
@@ -52,14 +68,14 @@ class TestDiscreteFactor:
     # --- assignments ---
 
     def test_assignments_unary(self):
-        mn = DiscreteMarkovNetwork(states={"A": [0, 1, 2]})
+        mn = _mn({"A": [0, 1, 2]})
         f = DiscreteFactor(nodes=["A"], values={0: 1.0, 1: 2.0, 2: 3.0})
         result = list(f.assignments(mn.states))
         # One entry per state, each is a list of one (node, value) pair
         assert result == [[("A", 0)], [("A", 1)], [("A", 2)]]
 
     def test_assignments_binary(self):
-        mn = DiscreteMarkovNetwork(states={"A": [0, 1], "B": [0, 1]})
+        mn = _mn({"A": [0, 1], "B": [0, 1]})
         f = DiscreteFactor(
             nodes=["A", "B"],
             values={(0, 0): 1.0, (0, 1): 2.0, (1, 0): 3.0, (1, 1): 4.0},
@@ -73,17 +89,17 @@ class TestDiscreteFactor:
 
     def test_normalize_already_dict_returns_self(self):
         f = DiscreteFactor(nodes=["A"], values={0: 1.0, 1: 2.0})
-        mn = DiscreteMarkovNetwork(states={"A": [0, 1]})
+        mn = _mn({"A": [0, 1]})
         assert f.normalize(mn) is f
 
     def test_normalize_list_unary(self):
-        mn = DiscreteMarkovNetwork(states={"A": ["x", "y"]})
+        mn = _mn({"A": ["x", "y"]})
         f = DiscreteFactor(nodes=["A"], values=[3.0, 7.0])
         normalized = f.normalize(mn)
         assert normalized.values == {"x": 3.0, "y": 7.0}
 
     def test_normalize_list_binary(self):
-        mn = DiscreteMarkovNetwork(states={"A": [0, 1], "B": [0, 1]})
+        mn = _mn({"A": [0, 1], "B": [0, 1]})
         # List order follows the Cartesian product in the order nodes are listed
         f = DiscreteFactor(nodes=["A", "B"], values=[1.0, 2.0, 3.0, 4.0])
         normalized = f.normalize(mn)
@@ -101,19 +117,35 @@ class TestDiscreteMarkovNetwork:
     # --- states constructor argument ---
 
     def test_states_dict(self):
-        mn = DiscreteMarkovNetwork(states={"A": [0, 1], "B": [0, 1]})
+        mn = _mn({"A": [0, 1], "B": [0, 1]})
         assert set(mn.nodes) == {"A", "B"}
         assert mn.states_of("A") == [0, 1]
 
     def test_states_list(self):
-        mn = DiscreteMarkovNetwork(states=[3, 2])
+        mn = _mn([3, 2])
         assert mn.nodes == [0, 1]
         assert mn.states_of(0) == [0, 1, 2]
         assert mn.states_of(1) == [0, 1]
 
     def test_states_invalid_type(self):
         with pytest.raises(TypeError):
-            DiscreteMarkovNetwork(states="bad")
+            DiscreteMarkovNetwork(states="bad", factors=_unit_factors({"A": [0, 1]}))
+
+    def test_factors_required(self):
+        with pytest.raises(TypeError):
+            DiscreteMarkovNetwork()
+        with pytest.raises(TypeError):
+            DiscreteMarkovNetwork(states={"A": [0, 1]})
+
+    def test_factors_must_be_non_empty(self):
+        with pytest.raises(InvalidInputError, match="factors"):
+            DiscreteMarkovNetwork(states={"A": [0, 1]}, factors=[])
+
+    def test_nodes_inferred_from_factors(self):
+        mn = DiscreteMarkovNetwork(
+            factors=[DiscreteFactor(nodes=["A"], values={0: 1.0, 1: 2.0})]
+        )
+        assert mn.nodes == ["A"]
 
     # --- states_of / card ---
 
@@ -135,8 +167,9 @@ class TestDiscreteMarkovNetwork:
         assert ("A", "B") in mn.edges
 
     def test_edges_explicit_constructor_arg(self):
+        states = {"A": [0, 1], "B": [0, 1]}
         mn = DiscreteMarkovNetwork(
-            states={"A": [0, 1], "B": [0, 1]}, edges=[("A", "B")]
+            states=states, edges=[("A", "B")], factors=_unit_factors(states)
         )
         assert mn.edges == [("A", "B")]
 
@@ -165,16 +198,19 @@ class TestDiscreteMarkovNetwork:
     # --- with_factor ---
 
     def test_with_factor_appends(self):
-        mn = DiscreteMarkovNetwork(states={"A": [0, 1]})
-        f = DiscreteFactor(nodes=["A"], values={0: 1.0, 1: 2.0})
+        mn = _make_simple_mn()
+        f = DiscreteFactor(nodes=["A"], values={0: 5.0, 1: 7.0})
         mn2 = mn.with_factor(f)
         assert f in mn2.factors
         # with_factor does not mutate the original model
         assert f not in mn.factors
 
     def test_with_factor_registers_new_node(self):
-        mn = DiscreteMarkovNetwork(states={"A": [0, 1], "B": [0, 1]})
-        # Start with only A in the factors; with_factor with B should register it
+        mn = DiscreteMarkovNetwork(
+            states={"A": [0, 1]},
+            factors=[DiscreteFactor(nodes=["A"], values={0: 1.0, 1: 2.0})],
+        )
+        # B is in neither the states nor the factors; with_factor should register it
         f = DiscreteFactor(nodes=["B"], values={0: 1.0, 1: 2.0})
         mn2 = mn.with_factor(f)
         assert "B" in mn2.nodes
@@ -210,7 +246,7 @@ class TestDiscreteMarkovNetwork:
 
     def test_check_model_factor_node_not_in_model(self):
         # Factor references node B which is not in states
-        mn = DiscreteMarkovNetwork(states={"A": [0, 1]})
+        mn = _mn({"A": [0, 1]})
         mn._factors = [DiscreteFactor(nodes=["B"], values={0: 1.0, 1: 2.0})]
         with pytest.raises((AssertionError, KeyError)):
             mn.check_model()
@@ -226,7 +262,7 @@ class TestDiscreteMarkovNetwork:
 
     def test_check_model_list_factor_wrong_length(self):
         # Should have 2 values for a binary node, not 3
-        mn = DiscreteMarkovNetwork(states={"A": [0, 1]})
+        mn = _mn({"A": [0, 1]})
         mn._factors = [DiscreteFactor(nodes=["A"], values=[1.0, 2.0, 3.0])]
         with pytest.raises(AssertionError):
             mn.check_model()

@@ -61,7 +61,7 @@ def make_hmm(hidden_states=ALPHABET, observed_states=("o1", "o2")):
     num_hidden = len(hidden_states)
     num_observed = len(observed_states)
 
-    hmm = HiddenMarkovModel.load_model(
+    hmm = HiddenMarkovModel(
         start_probs={h: 1.0 / num_hidden for h in hidden_states},
         transition_probs={
             (h1, h2): 1.0 / num_hidden for h1 in hidden_states for h2 in hidden_states
@@ -275,8 +275,9 @@ def test_jump_matches_reference():
     ],
 )
 def test_primitives_reject_an_unusable_model(builder):
+    # HiddenMarkovModel always has hidden states, so use a stand-in without any.
     with pytest.raises(InvalidInputError, match="no hidden states"):
-        builder(HiddenMarkovModel())
+        builder(SimpleNamespace(hidden_states=[]))
 
     with pytest.raises(InvalidInputError, match="required argument"):
         builder(None)

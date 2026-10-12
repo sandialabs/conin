@@ -52,7 +52,7 @@ def make_random_hmm(
         for j, o in enumerate(observed_states)
     }
 
-    hmm = HiddenMarkovModel.load_model(
+    hmm = HiddenMarkovModel(
         start_probs=start_probs,
         transition_probs=transition_probs,
         emission_probs=emission_probs,

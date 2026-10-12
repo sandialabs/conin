@@ -333,87 +333,97 @@ class HiddenMarkovModel:
 
     Parameters
     ----------
-    start_vec : list, optional
-        Starting probabilities for hidden states in internal index order.
-    transition_mat : list, optional
-        Transition probabilities between internal hidden states.
-    emission_mat : list, optional
-        Emission probabilities from internal hidden states to observed states.
-    hidden_to_internal : dict, optional
-        Mapping from external hidden-state labels to internal indices.
-    observed_to_internal : dict, optional
-        Mapping from external observed-state labels to internal indices.
-    hidden_to_external : list, optional
-        Mapping from internal hidden-state indices to external labels.
-    observed_to_external : list, optional
-        Mapping from internal observed-state indices to external labels.
+    start_probs : dict
+        Mapping from hidden-state labels to starting probabilities.
+    transition_probs : dict
+        Mapping from ``(from_state, to_state)`` pairs to transition probabilities.
+    emission_probs : dict
+        Mapping from ``(hidden_state, observed_state)`` pairs to emission
+        probabilities.
+    initialize : bool, optional
+        If ``True``, immediately construct (and validate) the numeric
+        representation.
+
+    Raises
+    ------
+    InvalidInputError
+        If any of the probability dictionaries is empty, or if they are
+        inconsistent with each other.
 
     Notes
     -----
-    This is a low-level constructor that takes fully-resolved arrays and label
-    maps. All arguments are optional, but either none or all of them must be
-    given (an "empty" model with no args behaves identically to one built with
-    all of its collections empty). Prefer :meth:`load_model` or
-    :meth:`read_from_file` to build a model from dictionary-based or
-    file-based inputs.
+    The hidden states are the labels appearing in ``transition_probs``, and the
+    observed states are the observed labels appearing in ``emission_probs``.
+    The internal index order is the sorted order of these labels, independent
+    of dictionary insertion order and of which entries are present. Missing
+    entries are treated as zero probabilities.
     """
 
     def __init__(
         self,
         *,
-        start_vec=None,
-        transition_mat=None,
-        emission_mat=None,
-        hidden_to_internal=None,
-        observed_to_internal=None,
-        hidden_to_external=None,
-        observed_to_external=None,
+        start_probs,
+        transition_probs,
+        emission_probs,
+        initialize=False,
     ):
-        args = (
-            start_vec,
-            transition_mat,
-            emission_mat,
-            hidden_to_internal,
-            observed_to_internal,
-            hidden_to_external,
-            observed_to_external,
-        )
-        given = [arg is not None for arg in args]
-        if any(given) and not all(given):
-            raise InvalidInputError(
-                "If any of start_vec/transition_mat/emission_mat/"
-                "hidden_to_internal/observed_to_internal/hidden_to_external/"
-                "observed_to_external is given, all must be given."
-            )
+        start_probs = dict(start_probs)
+        transition_probs = dict(transition_probs)
+        emission_probs = dict(emission_probs)
+        for name, probs in (
+            ("start_probs", start_probs),
+            ("transition_probs", transition_probs),
+            ("emission_probs", emission_probs),
+        ):
+            if not probs:
+                raise InvalidInputError(f"{name} must be a non-empty dictionary")
+
+        # Internal indices follow the sorted order of the state labels
+        hidden_to_external = sorted({h for key in transition_probs for h in key})
+        hidden_to_internal = {h: i for i, h in enumerate(hidden_to_external)}
+        observed_to_external = sorted({o for _, o in emission_probs})
+        observed_to_internal = {o: i for i, o in enumerate(observed_to_external)}
+        num_hidden_states = len(hidden_to_external)
+        num_observed_states = len(observed_to_external)
+
+        # Setup start_vec
+        start_vec = [0] * num_hidden_states
+        for h, prob in start_probs.items():
+            if h not in hidden_to_internal:
+                raise InvalidInputError(
+                    f"start_probs contains hidden state {h!r} that does not "
+                    "appear in transition_probs"
+                )
+            start_vec[hidden_to_internal[h]] = prob
+
+        # Setup transition_mat
+        transition_mat = [[0] * num_hidden_states for _ in range(num_hidden_states)]
+        for (h1, h2), prob in transition_probs.items():
+            transition_mat[hidden_to_internal[h1]][hidden_to_internal[h2]] = prob
+
+        # Setup emission_mat
+        emission_mat = [[0] * num_observed_states for _ in range(num_hidden_states)]
+        for (h, o), prob in emission_probs.items():
+            if h not in hidden_to_internal:
+                raise InvalidInputError(
+                    f"emission_probs contains hidden state {h!r} that does not "
+                    f"appear in transition_probs: ({h!r}, {o!r}): {prob}"
+                )
+            emission_mat[hidden_to_internal[h]][observed_to_internal[o]] = prob
 
         self._repn = None
-        self._start_vec = list(start_vec) if start_vec is not None else []
-        self._transition_mat = (
-            [list(row) for row in transition_mat] if transition_mat is not None else []
-        )
-        self._emission_mat = (
-            [list(row) for row in emission_mat] if emission_mat is not None else []
-        )
-        self._hidden_to_internal = (
-            dict(hidden_to_internal) if hidden_to_internal is not None else {}
-        )
-        self._observed_to_internal = (
-            dict(observed_to_internal) if observed_to_internal is not None else {}
-        )
-        self._hidden_to_external = (
-            list(hidden_to_external) if hidden_to_external is not None else []
-        )
-        self._observed_to_external = (
-            list(observed_to_external) if observed_to_external is not None else []
-        )
-        self._num_hidden_states = (
-            len(self._hidden_to_internal) if hidden_to_internal is not None else None
-        )
-        self._num_observed_states = (
-            len(self._observed_to_internal)
-            if observed_to_internal is not None
-            else None
-        )
+        self._start_vec = start_vec
+        self._transition_mat = transition_mat
+        self._emission_mat = emission_mat
+        self._hidden_to_internal = hidden_to_internal
+        self._observed_to_internal = observed_to_internal
+        self._hidden_to_external = hidden_to_external
+        self._observed_to_external = observed_to_external
+        self._num_hidden_states = num_hidden_states
+        self._num_observed_states = num_observed_states
+
+        if initialize:
+            self.initialize(avoid_reinitialization=True)
 
     def __str__(self):
         """Return a readable dictionary-style representation of the model."""
@@ -425,9 +435,8 @@ class HiddenMarkovModel:
 
         Returns
         -------
-        HMM_MatVecRepn or None
-            Numeric representation of the model, or ``None`` if the model has
-            not yet been populated.
+        HMM_MatVecRepn
+            Numeric representation of the model.
         """
         return self.initialize()
 
@@ -468,12 +477,12 @@ class HiddenMarkovModel:
 
     @property
     def num_hidden_states(self):
-        """Return the number of hidden states, or ``None`` if unset."""
+        """Return the number of hidden states."""
         return self._num_hidden_states
 
     @property
     def num_observed_states(self):
-        """Return the number of observed states, or ``None`` if unset."""
+        """Return the number of observed states."""
         return self._num_observed_states
 
     @property
@@ -498,107 +507,6 @@ class HiddenMarkovModel:
         """
         return self.observed_to_external
 
-    @classmethod
-    def load_model(
-        cls, *, start_probs, transition_probs, emission_probs, initialize=False
-    ):
-        """Build a new model from dictionary-based inputs.
-
-        Parameters
-        ----------
-        start_probs : dict
-            Mapping from hidden-state labels to starting probabilities.
-        transition_probs : dict
-            Mapping from ``(from_state, to_state)`` pairs to transition probabilities.
-        emission_probs : dict
-            Mapping from ``(hidden_state, observed_state)`` pairs to emission
-            probabilities.
-        initialize : bool, optional
-            If ``True``, immediately construct the numeric representation.
-
-        Returns
-        -------
-        HiddenMarkovModel
-            A new model built from the supplied probabilities.
-
-        Raises
-        ------
-        InvalidInputError
-            If the supplied probability dictionaries are inconsistent with each other.
-        """
-        hidden_to_internal = {}  # Maps from labels to indices
-        hidden_to_external = []  # Maps from indices to labels
-        observed_to_internal = {}
-        observed_to_external = []
-
-        # Setup hidden_to_internal, hidden_to_external, and num_hidden_states
-        for h1, h2 in sorted(transition_probs.keys()):
-            if h1 not in hidden_to_internal.keys():
-                hidden_to_external.append(h1)
-                hidden_to_internal[h1] = len(hidden_to_external) - 1
-            if h2 not in hidden_to_internal.keys():
-                hidden_to_external.append(h2)
-                hidden_to_internal[h2] = len(hidden_to_external) - 1
-        num_hidden_states = len(hidden_to_internal)
-
-        if not set(start_probs.keys()).issubset(set(hidden_to_external)):
-            raise InvalidInputError("start_prob keys match with transition keys")
-
-        # Setup observed_to_internal, observed_to_external, and
-        # num_observed_states
-        for h, o in sorted(emission_probs.keys()):
-            if o not in observed_to_internal:
-                observed_to_external.append(o)
-                observed_to_internal[o] = len(observed_to_external) - 1
-        num_observed_states = len(observed_to_internal)
-
-        # Setup start_vec
-        start_vec = [0] * num_hidden_states
-        for h, prob in start_probs.items():
-            start_vec[hidden_to_internal[h]] = prob
-
-        # Setup transition_mat
-        transition_mat = [
-            [0 for _ in range(num_hidden_states)] for _ in range(num_hidden_states)
-        ]
-        for (h1, h2), prob in transition_probs.items():
-            # No new hidden states
-            if (h1 not in hidden_to_internal) or (h2 not in hidden_to_internal):
-                raise InvalidInputError("You shouldn't see this")  # pragma: no cover
-            transition_mat[hidden_to_internal[h1]][hidden_to_internal[h2]] = prob
-
-        # Setup emission_mat
-        emission_mat = [
-            [0 for _ in range(num_observed_states)] for _ in range(num_hidden_states)
-        ]
-        for (h, o), prob in emission_probs.items():
-            # No new hidden states
-            if h not in hidden_to_internal:
-                raise InvalidInputError(
-                    "start_probs does not contain all hidden states appearing in emission_probs, (",
-                    h,
-                    ", ",
-                    o,
-                    "): ",
-                    prob,
-                )
-            emission_mat[hidden_to_internal[h]][observed_to_internal[o]] = prob
-
-        hmm = cls(
-            start_vec=start_vec,
-            transition_mat=transition_mat,
-            emission_mat=emission_mat,
-            hidden_to_internal=hidden_to_internal,
-            observed_to_internal=observed_to_internal,
-            hidden_to_external=hidden_to_external,
-            observed_to_external=observed_to_external,
-        )
-
-        if initialize:
-            hmm.initialize(True)
-
-        return hmm
-
     def initialize(self, avoid_reinitialization=True):
         """Construct the numeric matrix/vector representation of the model.
 
@@ -610,13 +518,10 @@ class HiddenMarkovModel:
 
         Returns
         -------
-        HMM_MatVecRepn or None
-            Numeric representation of the model, or ``None`` if the model has not yet
-            been populated.
+        HMM_MatVecRepn
+            Numeric representation of the model.
         """
         if avoid_reinitialization and self._repn is not None:
-            return self._repn
-        if not self._start_vec:
             return self._repn
 
         self._repn = HMM_MatVecRepn(
@@ -694,14 +599,14 @@ class HiddenMarkovModel:
         dict
             Mapping from hidden-state labels to starting probabilities.
         """
-        # Same format as in load_model
+        # Same format as the constructor arguments
         return {
             self._hidden_to_external[h]: self._start_vec[h]
             for h in range(self._num_hidden_states)
         }
 
     def get_transition_probs(self):
-        # Same format as in load_model
+        # Same format as the constructor arguments
         """Return the transition probabilities keyed by hidden-state pairs.
 
         Returns
@@ -728,7 +633,7 @@ class HiddenMarkovModel:
             Mapping from ``(hidden_state, observed_state)`` pairs to emission
             probabilities.
         """
-        # Same format as in load_model
+        # Same format as the constructor arguments
         return {
             (
                 self._hidden_to_external[h],
@@ -905,7 +810,7 @@ class HiddenMarkovModel:
         transition_probs = Util.normalize_2d_dictionary(transition_probs)
         emission_probs = Util.normalize_2d_dictionary(emission_probs)
 
-        return HiddenMarkovModel.load_model(
+        return HiddenMarkovModel(
             start_probs=start_probs,
             transition_probs=transition_probs,
             emission_probs=emission_probs,
@@ -967,7 +872,7 @@ class HiddenMarkovModel:
         # Extract start probabilities
         start_probs = data["start_probs"]
 
-        return cls.load_model(
+        return cls(
             start_probs=start_probs,
             transition_probs=transition_probs,
             emission_probs=emission_probs,

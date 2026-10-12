@@ -4,6 +4,7 @@ from conin.util import try_import
 from conin.markov_network import DiscreteMarkovNetwork, DiscreteFactor
 from conin.bayesian_network import DiscreteBayesianNetwork, DiscreteCPD
 from conin.dynamic_bayesian_network.model import DynamicDiscreteBayesianNetwork
+from conin.dynamic_bayesian_network.expr import ExpressionVariable
 
 with try_import() as pgmpy_available:
     import pgmpy.models
@@ -85,7 +86,7 @@ def convert_pgmpy_to_DynamicDiscreteBayesianNetwork(pgmpy_pgm):
         else:
             tmp[k] = v
 
-    dbn = DynamicDiscreteBayesianNetwork(dynamic_states=tmp)
+    t = ExpressionVariable()
 
     cpds = []
     for cpd in pgmpy_pgm.get_cpds():
@@ -113,17 +114,15 @@ def convert_pgmpy_to_DynamicDiscreteBayesianNetwork(pgmpy_pgm):
 
             cpds.append(
                 DiscreteCPD(
-                    node=_as_tuple(cpd.variable, dbn.t, offset),
+                    node=_as_tuple(cpd.variable, t, offset),
                     parents=[
-                        _as_tuple(var, dbn.t, offset) for var in cpd.variables[1:]
+                        _as_tuple(var, t, offset) for var in cpd.variables[1:]
                     ],
                     values=values,
                 )
             )
 
-    pgm = DynamicDiscreteBayesianNetwork(
-        dynamic_states=dbn.dynamic_states, cpds=cpds, t=dbn.t
-    )
+    pgm = DynamicDiscreteBayesianNetwork(dynamic_states=tmp, cpds=cpds, t=t)
 
     return pgm
 

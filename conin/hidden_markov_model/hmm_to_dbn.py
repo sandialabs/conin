@@ -1,4 +1,7 @@
-from conin.dynamic_bayesian_network import DynamicDiscreteBayesianNetwork
+from conin.dynamic_bayesian_network import (
+    DynamicDiscreteBayesianNetwork,
+    ExpressionVariable,
+)
 from conin.bayesian_network import DiscreteCPD
 
 
@@ -26,18 +29,11 @@ def create_dbn_from_hmm(hmm, debug=False):
     #   H - hidden states
     #   E - emission states
     #
-    # We need `dbn.t` to exist before we can build the CPDs below (they
-    # reference `dbn.t`/`dbn.t - 1`), so construct a throwaway dbn first with
-    # just the dynamic states, grab its `.t`, and reuse that same
-    # ExpressionVariable instance when constructing the final dbn below --
-    # `create_bn_from_dbn` later calls `dbn.t.set_value(t)` and expects that
-    # to be the exact object embedded in the CPDs' `node`/`parents` tuples.
-    dbn = DynamicDiscreteBayesianNetwork(
-        dynamic_states={
-            "H": hidden_states,
-            "E": emission_states,
-        }
-    )
+    # The CPDs below refer to the time index `t`. The same ExpressionVariable
+    # instance is passed to the DBN constructor: `create_bn_from_dbn` later
+    # calls `dbn.t.set_value(...)` and expects it to be the exact object
+    # embedded in the CPDs' `node`/`parents` tuples.
+    t = ExpressionVariable()
 
     start_probs = hmm.get_start_probs()
     transition_probs = hmm.get_transition_probs()
@@ -51,8 +47,8 @@ def create_dbn_from_hmm(hmm, debug=False):
 
     # Specify the CPD for the hidden states at time t
     cpd_H_t = DiscreteCPD(
-        node=("H", dbn.t),
-        parents=[("H", dbn.t - 1)],
+        node=("H", t),
+        parents=[("H", t - 1)],
         values={
             h0: {h1: transition_probs[h0, h1] for h1 in hidden_states}
             for h0 in hidden_states
@@ -61,19 +57,20 @@ def create_dbn_from_hmm(hmm, debug=False):
 
     # Specify the CPD for the emission states at time t
     cpd_E_t = DiscreteCPD(
-        node=("E", dbn.t),
-        parents=[("H", dbn.t)],
+        node=("E", t),
+        parents=[("H", t)],
         values={
             h: {e: emission_probs[h, e] for e in emission_states} for h in hidden_states
         },
     )
 
-    # Build the final dbn, reusing the same dynamic_states and the same `.t`
-    # ExpressionVariable instance embedded in the CPDs above.
     dbn = DynamicDiscreteBayesianNetwork(
-        dynamic_states=dbn.dynamic_states,
+        dynamic_states={
+            "H": hidden_states,
+            "E": emission_states,
+        },
         cpds=[cpd_H_0, cpd_H_t, cpd_E_t],
-        t=dbn.t,
+        t=t,
     )
     if debug:
         for cpd in dbn.cpds:

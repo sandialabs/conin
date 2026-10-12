@@ -187,7 +187,10 @@ auxiliary CPD:
 Notes
 -----
 
-- ``states`` defines the state names used by every CPD.
+- ``cpds`` is required and must be non-empty. Models are immutable after
+  construction; use ``with_cpd`` to get a new model with an extra CPD.
+- ``states`` defines the state names used by every CPD. It is optional: the
+  states of nodes that are not listed are inferred from their CPDs.
 - ``DiscreteCPD`` supports both dictionary-based and list-based probability
   declarations.
 - ``check_model()`` verifies that the CPDs are consistent with the network

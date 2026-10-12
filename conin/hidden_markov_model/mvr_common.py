@@ -18,9 +18,6 @@ def _hmm_to_torch(hmm, *, log=False, dtype=torch.float32, device="cpu"):
     """Convert a hidden Markov model into torch tensors, optionally in log space."""
     repn = hmm.repn
 
-    if repn is None:
-        raise InvalidInputError("hidden_markov_model.repn is missing.")
-
     def convert(array):
         # Log in the source precision: casting first would flush subnormals to -inf.
         array = np.asarray(array, dtype=np.float64)

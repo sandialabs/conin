@@ -33,7 +33,7 @@ def random_hmm(*, hidden_states, observed_states, seed=None):
         {(s, o): np.random.uniform() for s in hidden_states for o in observed_states}
     )
 
-    hmm = HiddenMarkovModel.load_model(
+    hmm = HiddenMarkovModel(
         start_probs=S, transition_probs=T, emission_probs=E
     )
     return hmm

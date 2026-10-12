@@ -171,9 +171,11 @@ Oracle constraints with node scoping
 Notes
 -----
 
+- ``factors`` is required and must be non-empty. Models are immutable after
+  construction; use ``with_factor`` to get a new model with an extra factor.
 - ``states`` defines the allowed values for each random variable.
 - ``edges`` can be given explicitly or inferred from the factor scopes.
-- ``check_model()`` is a good final step after assigning states and factors.
+- ``check_model()`` is a good final step after constructing the model.
 - See :doc:`model_conversion_io` for UAI file I/O and Bayesian-network to
   Markov-network conversion.
 - Simpler examples such as ``example6_conin`` and ``ABC_conin`` are usually the

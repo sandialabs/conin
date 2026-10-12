@@ -340,8 +340,8 @@ def test_em_leaves_the_caller_model_untouched(hmm, observed):
 
 
 def test_em_write_back_preserves_indexing_and_rebuilds_repn(hmm, observed):
-    # load_model re-derives the internal order from sorted keys, so a write-back
-    # through it could permute indices out from under the aligned constraints.
+    # A write-back that permuted the internal order would misalign the
+    # constraints, which were built against the original indices.
     mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="A")
     model = MVR_CHMM(hidden_markov_model=hmm, constraints=[mvr])
 
@@ -435,7 +435,7 @@ def make_sparse_hmm(hidden_states, observed_states):
         for o in observed_states
     }
 
-    hmm = HiddenMarkovModel.load_model(
+    hmm = HiddenMarkovModel(
         start_probs={h: 1.0 / len(hidden_states) for h in hidden_states},
         transition_probs=transition,
         emission_probs=emission,

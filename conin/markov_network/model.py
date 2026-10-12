@@ -2,6 +2,8 @@ import itertools
 from math import prod
 from dataclasses import dataclass
 
+from conin.exceptions import InvalidInputError
+
 
 @dataclass(frozen=True, slots=True)
 class DiscreteFactor:
@@ -110,19 +112,30 @@ class DiscreteMarkovNetwork:
     dictionary keyed by assignments using the model's states.
     """
 
-    def __init__(self, *, states={}, edges=None, factors=[]):
+    def __init__(self, *, factors, states=None, edges=None):
         """Initialize a discrete Markov network.
 
         Parameters
         ----------
+        factors : Iterable[DiscreteFactor]
+            Non-empty collection of factors that encode the potential of each
+            clique in the network.
         states : dict or list, optional
             Mapping from node identifiers to ordered states or a list of node
             cardinalities. Defaults to an empty dictionary.
         edges : Iterable[tuple], optional
             Pairwise edges that connect nodes in the network.
-        factors : Iterable[DiscreteFactor], optional
-            Factors that encode the potential of each clique in the network.
+
+        Raises
+        ------
+        InvalidInputError
+            If ``factors`` is empty.
         """
+        factors = list(factors)
+        if not factors:
+            raise InvalidInputError("factors must be a non-empty list")
+        if states is None:
+            states = {}
         if isinstance(states, list):
             self._nodes = list(range(len(states)))
             self._states = {i: list(range(v)) for i, v in enumerate(states)}
@@ -324,10 +337,12 @@ class DiscreteMarkovNetwork:
         Examples
         --------
         >>> from conin.markov_network import DiscreteMarkovNetwork, DiscreteFactor
-        >>> dmn = DiscreteMarkovNetwork(states=[4, 3])
         >>> f1 = DiscreteFactor(nodes=[0, 1], values={(0, 0): 1, (0, 1): 2, (0, 2): 3})
         >>> f2 = DiscreteFactor(nodes=[0], values={0: 0, 1: 1, 2: 2, 3: 3})
-        >>> dmn = dmn.with_factor(f1).with_factor(f2)
+        >>> dmn = DiscreteMarkovNetwork(states=[4, 3], factors=[f1])
+        >>> dmn = dmn.with_factor(f2)
+        >>> len(dmn.factors)
+        2
         """
         return DiscreteMarkovNetwork(
             states=self.states, edges=self._edges, factors=self.factors + [factor]
