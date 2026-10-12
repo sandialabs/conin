@@ -25,7 +25,9 @@ mip_solver = mip_solver[0] if mip_solver else None
 other_mip_solver = pyomo.opt.check_available_solvers("highs", "glpk")
 other_mip_solver = other_mip_solver[0] if other_mip_solver else None
 try:
-    gurobi_available = pyo.SolverFactory("gurobi_persistent").available(exception_flag=False)
+    gurobi_available = pyo.SolverFactory("gurobi_persistent").available(
+        exception_flag=False
+    )
 except:
     gurobi_available = False
 
