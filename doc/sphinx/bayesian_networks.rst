@@ -15,9 +15,6 @@ parents can be supplied as a dictionary keyed by parent assignments.
 
    from conin.bayesian_network import DiscreteBayesianNetwork, DiscreteCPD
 
-   pgm = DiscreteBayesianNetwork()
-   pgm.states = {"A": [0, 1], "B": [0, 1]}
-
    cpd_a = DiscreteCPD(node="A", values=[0.9, 0.1])
    cpd_b = DiscreteCPD(
        node="B",
@@ -25,7 +22,10 @@ parents can be supplied as a dictionary keyed by parent assignments.
        values={0: [0.2, 0.8], 1: [0.9, 0.1]},
    )
 
-   pgm.cpds = [cpd_a, cpd_b]
+   pgm = DiscreteBayesianNetwork(
+       states={"A": [0, 1], "B": [0, 1]},
+       cpds=[cpd_a, cpd_b],
+   )
 
 When CPDs are attached to a ``DiscreteBayesianNetwork``, list-valued entries are
 normalized into dictionaries keyed by the model's states.
@@ -40,9 +40,6 @@ two nodes and one conditional dependency.
 
    from conin.bayesian_network import DiscreteBayesianNetwork, DiscreteCPD
 
-   pgm = DiscreteBayesianNetwork()
-   pgm.states = {"A": [0, 1], "B": [0, 1]}
-
    cpd_a = DiscreteCPD(node="A", values=[0.9, 0.1])
    cpd_b = DiscreteCPD(
        node="B",
@@ -50,7 +47,10 @@ two nodes and one conditional dependency.
        values={0: [0.2, 0.8], 1: [0.9, 0.1]},
    )
 
-   pgm.cpds = [cpd_a, cpd_b]
+   pgm = DiscreteBayesianNetwork(
+       states={"A": [0, 1], "B": [0, 1]},
+       cpds=[cpd_a, cpd_b],
+   )
    pgm.check_model()
 
 A larger example is ``cancer1_BN_conin``, which uses explicit state names and a
@@ -59,15 +59,6 @@ node with two parents:
 .. code-block:: python
 
    from conin.bayesian_network import DiscreteBayesianNetwork, DiscreteCPD
-
-   cancer = DiscreteBayesianNetwork()
-   cancer.states = {
-       "Cancer": [0, 1],
-       "Dyspnoea": [0, 1],
-       "Pollution": [0, 1],
-       "Smoker": [0, 1],
-       "Xray": [0, 1],
-   }
 
    cpd_pollution = DiscreteCPD(node="Pollution", values=[0.9, 0.1])
    cpd_smoker = DiscreteCPD(node="Smoker", values=[0.3, 0.7])
@@ -92,13 +83,22 @@ node with two parents:
        values={0: [0.65, 0.35], 1: [0.3, 0.7]},
    )
 
-   cancer.cpds = [
-       cpd_pollution,
-       cpd_smoker,
-       cpd_cancer,
-       cpd_xray,
-       cpd_dyspnoea,
-   ]
+   cancer = DiscreteBayesianNetwork(
+       states={
+           "Cancer": [0, 1],
+           "Dyspnoea": [0, 1],
+           "Pollution": [0, 1],
+           "Smoker": [0, 1],
+           "Xray": [0, 1],
+       },
+       cpds=[
+           cpd_pollution,
+           cpd_smoker,
+           cpd_cancer,
+           cpd_xray,
+           cpd_dyspnoea,
+       ],
+   )
    cancer.check_model()
 
 Constrained Bayesian networks
@@ -187,7 +187,10 @@ auxiliary CPD:
 Notes
 -----
 
-- ``states`` defines the state names used by every CPD.
+- ``cpds`` is required and must be non-empty. Models are immutable after
+  construction; use ``with_cpd`` to get a new model with an extra CPD.
+- ``states`` defines the state names used by every CPD. It is optional: the
+  states of nodes that are not listed are inferred from their CPDs.
 - ``DiscreteCPD`` supports both dictionary-based and list-based probability
   declarations.
 - ``check_model()`` verifies that the CPDs are consistent with the network

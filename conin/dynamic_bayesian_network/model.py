@@ -1,3 +1,4 @@
+from conin.exceptions import InvalidInputError
 from conin.dynamic_bayesian_network.expr import ExpressionVariable
 
 
@@ -9,27 +10,70 @@ class DynamicDiscreteBayesianNetwork:
     variables.
     """
 
-    def __init__(self, *, states={}, dynamic_states={}, cpds=[]):
+    def __init__(self, *, cpds, states=None, dynamic_states=None, t=None):
         """Initialize a dynamic discrete Bayesian network.
 
         Parameters
         ----------
-        states : dict, optional
-            Mapping from static node identifiers to their allowed states.
+        cpds : list
+            Non-empty list of conditional probability distributions associated
+            with the model.
+        states : list or dict, optional
+            Mapping from static node identifiers to their allowed states, or
+            a list of cardinalities for anonymous static nodes.
         dynamic_states : dict, optional
             Mapping from dynamic node identifiers to their allowed states across
-            time steps.
-        cpds : list, optional
-            Conditional probability distributions associated with the model.
+            time steps. At least one of ``states`` and ``dynamic_states`` must
+            be non-empty.
+        t : ExpressionVariable, optional
+            Symbolic time-index placeholder used in time-shifted CPD templates
+            (``t``, ``t - 1``). CPDs that refer to the time index must be built
+            with the same ``ExpressionVariable`` instance that is passed here;
+            it is exposed afterwards as ``dbn.t``. Defaults to a fresh
+            ``ExpressionVariable()``, which is only appropriate when no CPD
+            refers to the time index.
+
+        Raises
+        ------
+        InvalidInputError
+            If ``cpds`` is empty, or if both ``states`` and ``dynamic_states``
+            are empty.
         """
-        self._nodes = []
-        self._dynamic_nodes = []
+        cpds = list(cpds)
+        if not cpds:
+            raise InvalidInputError("cpds must be a non-empty list")
+        if states is None:
+            states = {}
+        if dynamic_states is None:
+            dynamic_states = {}
+        if not states and not dynamic_states:
+            raise InvalidInputError(
+                "At least one of states and dynamic_states must be non-empty"
+            )
+
         self._edges = []
         self._dynamic_edges = []
-        self._states = states
-        self._dynamic_states = dynamic_states
-        self._cpds = cpds
-        self.t = ExpressionVariable()
+
+        if type(states) is list:
+            self._nodes = list(range(len(states)))
+            self._states = {i: list(range(v)) for i, v in enumerate(states)}
+        elif type(states) is dict:
+            self._nodes = sorted(states.keys())
+            self._states = dict(states)
+        else:
+            raise TypeError(f"Unexpected type for states: {type(states)}")
+
+        if type(dynamic_states) is dict:
+            self._dynamic_nodes = sorted(dynamic_states.keys())
+            self._dynamic_states = dict(dynamic_states)
+        else:
+            raise TypeError(
+                f"Unexpected type for dynamic states: {type(dynamic_states)}"
+            )
+
+        self._cpds = [cpd.normalize(self) for cpd in cpds]
+
+        self.t = t if t is not None else ExpressionVariable()
 
     def check_model(self):
         """Return ``True`` for the current dynamic model placeholder check.
@@ -109,54 +153,29 @@ class DynamicDiscreteBayesianNetwork:
         -------
         dict
             Mapping from static node identifiers to ordered state lists.
-        """
-        return self._states
-
-    @states.setter
-    def states(self, values):
-        """Set the state space for static nodes.
-
-        If a list is provided, nodes are created as integers ``0..n-1`` and
-        each entry gives that node's cardinality with state values
-        ``0..card-1``. If a dictionary is provided, keys are node identifiers
-        and values are explicit state lists.
-
-        Parameters
-        ----------
-        values : list or dict
-            Cardinalities or explicit state definitions for static nodes.
-
-        Raises
-        ------
-        TypeError
-            If ``values`` is neither a list nor a dictionary.
 
         Examples
         --------
-        >>> ddbn = DynamicDiscreteBayesianNetwork()
-        >>> ddbn.states = [4, 3]
+        >>> from conin.dynamic_bayesian_network import DynamicDiscreteBayesianNetwork
+        >>> from conin.bayesian_network import DiscreteCPD
+        >>> ddbn = DynamicDiscreteBayesianNetwork(
+        ...     states=[4, 3], cpds=[DiscreteCPD(node=0, values=[0.25] * 4)]
+        ... )
         >>> ddbn.nodes
         [0, 1]
         >>> ddbn.states
         {0: [0, 1, 2, 3], 1: [0, 1, 2]}
 
-        >>> ddbn = DynamicDiscreteBayesianNetwork()
-        >>> ddbn.states = {"A": ["T", "F"], "B": [-1, 1]}
+        >>> ddbn = DynamicDiscreteBayesianNetwork(
+        ...     states={"A": ["T", "F"], "B": [-1, 1]},
+        ...     cpds=[DiscreteCPD(node="A", values=[0.5, 0.5])],
+        ... )
         >>> ddbn.nodes
         ['A', 'B']
         >>> ddbn.states
         {'A': ['T', 'F'], 'B': [-1, 1]}
         """
-        if type(values) is list:
-            self._nodes = list(range(len(values)))
-            self._states = {i: list(range(v)) for i, v in enumerate(values)}
-
-        elif type(values) is dict:
-            self._nodes = sorted(values.keys())
-            self._states = values
-
-        else:
-            raise TypeError(f"Unexpected type for states: {type(values)}")
+        return dict(self._states)
 
     @property
     def dynamic_states(self):
@@ -166,38 +185,21 @@ class DynamicDiscreteBayesianNetwork:
         -------
         dict
             Mapping from dynamic node identifiers to ordered state lists.
-        """
-        return self._dynamic_states
-
-    @dynamic_states.setter
-    def dynamic_states(self, values):
-        """Set the state space for dynamic nodes.
-
-        Parameters
-        ----------
-        values : dict
-            Mapping from dynamic node identifiers to explicit state lists.
-
-        Raises
-        ------
-        TypeError
-            If ``values`` is not a dictionary.
 
         Examples
         --------
-        >>> ddbn = DynamicDiscreteBayesianNetwork()
-        >>> ddbn.dynamic_states = {"A": ["T", "F"], "B": [-1, 1]}
+        >>> from conin.dynamic_bayesian_network import DynamicDiscreteBayesianNetwork
+        >>> from conin.bayesian_network import DiscreteCPD
+        >>> ddbn = DynamicDiscreteBayesianNetwork(
+        ...     dynamic_states={"A": ["T", "F"], "B": [-1, 1]},
+        ...     cpds=[DiscreteCPD(node=("A", 0), values=[0.5, 0.5])],
+        ... )
         >>> ddbn.dynamic_nodes
         ['A', 'B']
         >>> ddbn.dynamic_states
         {'A': ['T', 'F'], 'B': [-1, 1]}
         """
-        if type(values) is dict:
-            self._dynamic_nodes = sorted(values.keys())
-            self._dynamic_states = values
-
-        else:
-            raise TypeError(f"Unexpected type for dynamic states: {type(values)}")
+        return dict(self._dynamic_states)
 
     def states_of(self, node):
         """Return the states associated with a node.
@@ -266,36 +268,49 @@ class DynamicDiscreteBayesianNetwork:
         -------
         list
             Conditional probability distributions stored on the model.
-        """
-        return self._cpds
-
-    @cpds.setter
-    def cpds(self, cpd_list):
-        """Store CPDs after normalizing their internal representation.
-
-        Parameters
-        ----------
-        cpd_list : list
-            Iterable of CPDs to attach to the dynamic network.
 
         Examples
         --------
-        >>> ddbn = DynamicDiscreteBayesianNetwork()
-        >>> ddbn.states = {"X": ["T", "F"], "Y": [-1, 1]}
-        >>> ddbn.dynamic_states = {"A": ["t", "f"], "B": [2, 3]}
-        >>> c1 = DiscreteCPD(
-        ...     node=("A", None),
-        ...     parents=["X"],
-        ...     values={"T": {"t": 0.3, "f": 0.7}, "F": {"t": 0.4, "f": 0.6}},
+        >>> from conin.dynamic_bayesian_network import DynamicDiscreteBayesianNetwork
+        >>> from conin.bayesian_network import DiscreteCPD
+        >>> ddbn = DynamicDiscreteBayesianNetwork(
+        ...     states={"X": ["T", "F"], "Y": [-1, 1]},
+        ...     dynamic_states={"A": ["t", "f"], "B": [2, 3]},
+        ...     cpds=[
+        ...         DiscreteCPD(
+        ...             node=("A", None),
+        ...             parents=["X"],
+        ...             values={"T": {"t": 0.3, "f": 0.7}, "F": {"t": 0.4, "f": 0.6}},
+        ...         ),
+        ...         DiscreteCPD(
+        ...             node=("B", 0),
+        ...             parents=["Y"],
+        ...             values={-1: {2: 0.3, 3: 0.7}, 1: {2: 0.4, 3: 0.6}},
+        ...         ),
+        ...     ],
         ... )
-        >>> c2 = DiscreteCPD(
-        ...     node=("B", 0),
-        ...     parents=["Y"],
-        ...     values={-1: {2: 0.3, 3: 0.7}, 1: {2: 0.4, 3: 0.6}},
-        ... )
-        >>> ddbn.cpds = [c1, c2]
         """
-        self._cpds = [cpd.normalize(self) for cpd in cpd_list]
+        return list(self._cpds)
+
+    def with_cpd(self, cpd):
+        """Return a new network with ``cpd`` added to its collection of CPDs.
+
+        Parameters
+        ----------
+        cpd : DiscreteCPD
+            CPD to add to the network.
+
+        Returns
+        -------
+        DynamicDiscreteBayesianNetwork
+            A new network containing the existing CPDs plus ``cpd``.
+        """
+        return DynamicDiscreteBayesianNetwork(
+            states=self.states,
+            dynamic_states=self.dynamic_states,
+            cpds=self.cpds + [cpd],
+            t=self.t,
+        )
 
 
 class ConstrainedDynamicDiscreteBayesianNetwork:

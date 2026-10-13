@@ -530,9 +530,7 @@ def load_conin_model_from_cfn(filename=None, string=None, cost_scale=1.0):
                 DiscreteFactor(nodes=[v], values={s: 1.0 for s in states[v]})
             )
 
-    pgm = DiscreteMarkovNetwork()
-    pgm.states = states
-    pgm.factors = factors
+    pgm = DiscreteMarkovNetwork(states=states, factors=factors)
     pgm.check_model()
     if constraints:
         return ConstrainedDiscreteMarkovNetwork(pgm, constraints=constraints)

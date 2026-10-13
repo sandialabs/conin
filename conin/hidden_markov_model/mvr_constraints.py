@@ -30,7 +30,7 @@ def _model_hidden_states(hidden_markov_model) -> list[Any]:
     if not hidden_states:
         raise InvalidInputError(
             "hidden_markov_model has no hidden states. "
-            "Please run load_model() with the correct start/trans/emit probs"
+            "Construct it with the correct start/transition/emission probs"
         )
 
     return list(hidden_states)

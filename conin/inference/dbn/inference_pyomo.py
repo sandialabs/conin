@@ -19,7 +19,6 @@ def create_pyomo_map_query_model_DDBN(
         pgm=bn,
         variables=variables,
         evidence=evidence,
-        var_index_map=bn._pyomo_index_names,
         **options,
     )
 

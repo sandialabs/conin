@@ -45,11 +45,6 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
         print(f"TYPE {pgmtype}")
     is_bayes = pgmtype == "BAYES"
 
-    if is_bayes:
-        pgm = DiscreteBayesianNetwork()
-    else:
-        pgm = DiscreteMarkovNetwork()
-
     # Parse vars
     nvars = int(next(tokens))
     if verbose:  # pragma:nocover
@@ -58,7 +53,7 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
     vname = [f"var{i}" for i in range(nvars)]
 
     # Add states
-    pgm.states = {vname[i]: list(range(vcard[i])) for i in range(nvars)}
+    states = {vname[i]: list(range(vcard[i])) for i in range(nvars)}
 
     # Add nodes to PGM
     # if pgmtype == "BAYES":
@@ -75,7 +70,7 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
         n = int(next(tokens))
         fun.append([int(next(tokens)) for i in range(n)])
 
-    # Add edges to MNs
+    # Compute edges for MNs
     if not is_bayes:
         edges = set()
         for f in fun:
@@ -84,7 +79,6 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
             child_name = vname[f[-1]]
             for parent in f[:-1]:
                 edges.add((vname[parent], child_name))
-        pgm.edges = edges
 
     # Parse factor/cpd values
     factors = []
@@ -152,9 +146,9 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
 
     # Add factors/cpds
     if is_bayes:
-        pgm.cpds = factors
+        pgm = DiscreteBayesianNetwork(states=states, cpds=factors)
     else:
-        pgm.factors = factors
+        pgm = DiscreteMarkovNetwork(states=states, edges=edges, factors=factors)
 
     pgm.check_model()
 

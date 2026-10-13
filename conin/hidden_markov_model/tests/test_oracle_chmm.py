@@ -11,7 +11,7 @@ import conin.constraints.oracle as oc
 class Test_Oracle_CHMM:
     T = 25
 
-    def test_load_model(self):
+    def test_construct_model(self):
         cpgm = tc.create_chmm1_oracle()
 
         assert cpgm.chmm.hmm.start_vec == [
@@ -19,11 +19,10 @@ class Test_Oracle_CHMM:
             for h in cpgm.hidden_markov_model.hidden_states
         ]
 
-    def test_load_model2(self):
+    def test_construct_model2(self):
         cpgm = tc.create_chmm1_oracle()
 
-        _hmm = HiddenMarkovModel()
-        _hmm.load_model(
+        _hmm = HiddenMarkovModel(
             start_probs=cpgm.hidden_markov_model.get_start_probs(),
             emission_probs=cpgm.hidden_markov_model.get_emission_probs(),
             transition_probs=cpgm.hidden_markov_model.get_transition_probs(),
@@ -35,7 +34,7 @@ class Test_Oracle_CHMM:
             for h in cpgm.hidden_markov_model.hidden_states
         ]
 
-    def test_load_model3(self):
+    def test_construct_model3(self):
         pgm = tc.create_hmm0()
         constraints = [oc.all_diff_constraint]
         chmm = Oracle_CHMM(hmm=pgm.repn, constraints=constraints)

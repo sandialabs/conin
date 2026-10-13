@@ -23,6 +23,7 @@ from ..mvr_common import (
 from .baum_welch_mvr import (
     _e_step_counts,
     _normalize_on_support,
+    _rebuild_hmm,
     _resolve_time_horizons,
     _support_masks,
 )
@@ -266,12 +267,14 @@ def generalized_em_mvr_chmm(
             stacklevel=2,
         )
     if max_iter:
-        for name, attr, p in zip(
-            ("start", "transition", "emission"),
-            ("start_vec", "transition_mat", "emission_mat"),
-            log_params,
-        ):
-            if name in update:
-                setattr(hmm, attr, p.exp().cpu().tolist())
-        hmm.initialize(avoid_reinitialization=False)
+        current = (hmm.start_vec, hmm.transition_mat, hmm.emission_mat)
+        hmm = _rebuild_hmm(
+            hmm,
+            *(
+                p.exp().cpu().tolist() if name in update else old
+                for name, p, old in zip(
+                    ("start", "transition", "emission"), log_params, current
+                )
+            ),
+        )
     return hmm, history

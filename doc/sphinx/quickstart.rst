@@ -38,15 +38,13 @@ The following example creates a two-node Bayesian network with one root node
 .. doctest:: quickstart
 
    >>> from conin.bayesian_network import DiscreteBayesianNetwork, DiscreteCPD
-   >>> pgm = DiscreteBayesianNetwork()
-   >>> pgm.states = {"A": [0, 1], "B": [0, 1]}
    >>> cpd_a = DiscreteCPD(node="A", values=[0.9, 0.1])
    >>> cpd_b = DiscreteCPD(
    ...     node="B",
    ...     parents=["A"],
    ...     values={0: [0.2, 0.8], 1: [0.9, 0.1]},
    ... )
-   >>> pgm.cpds = [cpd_a, cpd_b]
+   >>> pgm = DiscreteBayesianNetwork(states={"A": [0, 1], "B": [0, 1]}, cpds=[cpd_a, cpd_b])
    >>> pgm.check_model()
    >>> pgm.nodes
    ['A', 'B']

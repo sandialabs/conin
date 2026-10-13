@@ -261,12 +261,17 @@ def create_pyomo_map_query_model_MN(
         timer.toc("Setup states and factors")
 
     #
-    # Create a var_index_map if we have tuple states
+    # Create a var_index_map if any node is a tuple.  Tuple nodes (e.g. the
+    # time-indexed nodes of an unrolled dynamic Bayesian network) are mapped to
+    # flat names like "A_0"; other nodes are used as-is.
     #
     if not var_index_map:
         nodes_ = list(states.keys())
-        if type(nodes_[0]) is tuple:
-            var_index_map = {v: "_".join(str(i) for i in v) for v in nodes_}
+        if any(type(v) is tuple for v in nodes_):
+            var_index_map = {
+                v: "_".join(str(i) for i in v) if type(v) is tuple else v
+                for v in nodes_
+            }
 
     S, J, v, w = extract_factor_representation_(states, factors, var_index_map)
     if timing:  # pragma:nocover

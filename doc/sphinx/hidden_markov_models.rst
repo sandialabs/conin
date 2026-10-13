@@ -8,8 +8,8 @@ Hidden Markov models
 --------------------
 
 The ``create_hmm1`` example is a compact starting point. It defines start,
-transition, and emission probabilities and then loads them into a
-``HiddenMarkovModel``.
+transition, and emission probabilities and then passes them to the
+``HiddenMarkovModel`` constructor.
 
 .. code-block:: python
 
@@ -29,16 +29,16 @@ transition, and emission probabilities and then loads them into a
        ("h1", "o1"): 0.6,
    }
 
-   hmm = HiddenMarkovModel()
-   hmm.load_model(
+   hmm = HiddenMarkovModel(
        start_probs=start_probs,
        transition_probs=transition_probs,
        emission_probs=emission_probs,
    )
    hmm.set_seed(0)
 
-After ``load_model()``, the hidden and observed state labels are available from
-``hmm.hidden_states`` and ``hmm.observed_states``.
+The hidden and observed state labels are available from ``hmm.hidden_states``
+and ``hmm.observed_states``. Internally, states are indexed in sorted label
+order.
 
 Random HMMs
 -----------
@@ -76,8 +76,7 @@ format is separate from the UAI file support described in
    hmm = create_hmm1()
    hmm.write_to_file("hmm.json")
 
-   loaded = HiddenMarkovModel()
-   loaded.read_from_file("hmm.json")
+   loaded = HiddenMarkovModel.read_from_file("hmm.json")
 
    assert loaded.get_start_probs() == hmm.get_start_probs()
    assert loaded.get_transition_probs() == hmm.get_transition_probs()
@@ -157,8 +156,8 @@ Pyomo constraints
    chmm = ConstrainedHiddenMarkovModel(
        hmm=hmm,
        constraints=[num_zeros_greater_than_nine, num_zeros_less_than_thirteen],
-    )
-    chmm.initialize_chmm()
+   )
+   chmm.initialize_chmm()
 
 Toulbar2 constraints
 ^^^^^^^^^^^^^^^^^^^^
@@ -235,8 +234,9 @@ with ``nodes`` by expanding them into auxiliary factors.
 Notes
 -----
 
-- ``HiddenMarkovModel.load_model()`` accepts dictionaries keyed by hidden and
-  observed state labels.
+- The ``HiddenMarkovModel`` constructor requires non-empty ``start_probs``,
+  ``transition_probs``, and ``emission_probs`` dictionaries keyed by hidden and
+  observed state labels. Models are immutable after construction.
 - ``random_hmm`` is useful for tests, examples, and experiments where exact
   probabilities are less important than a valid model structure.
 - ``write_to_file`` and ``read_from_file`` provide HMM-specific JSON

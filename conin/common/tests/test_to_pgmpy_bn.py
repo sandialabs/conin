@@ -39,12 +39,13 @@ def test_convert_invalid_input():
 def test_simple_root_node_conversion():
     """Test conversion of a simple model with only root nodes."""
     # Create conin model
-    conin_pgm = DiscreteBayesianNetwork()
-    conin_pgm.states = {"A": [0, 1], "B": [0, 1]}
-    conin_pgm.cpds = [
-        DiscreteCPD(node="A", values=[0.3, 0.7]),
-        DiscreteCPD(node="B", values=[0.2, 0.8]),
-    ]
+    conin_pgm = DiscreteBayesianNetwork(
+        states={"A": [0, 1], "B": [0, 1]},
+        cpds=[
+            DiscreteCPD(node="A", values=[0.3, 0.7]),
+            DiscreteCPD(node="B", values=[0.2, 0.8]),
+        ],
+    )
 
     # Convert to pgmpy
     pgmpy_pgm = convert_conin_to_pgmpy_bn(conin_pgm)
@@ -78,12 +79,13 @@ def test_simple_root_node_conversion():
 def test_simple_parent_child_conversion():
     """Test conversion of a model with parent-child relationships."""
     # Create conin model
-    conin_pgm = DiscreteBayesianNetwork()
-    conin_pgm.states = {"A": [0, 1], "B": [0, 1]}
-    conin_pgm.cpds = [
-        DiscreteCPD(node="A", values=[0.3, 0.7]),
-        DiscreteCPD(node="B", parents=["A"], values={0: [0.2, 0.8], 1: [0.9, 0.1]}),
-    ]
+    conin_pgm = DiscreteBayesianNetwork(
+        states={"A": [0, 1], "B": [0, 1]},
+        cpds=[
+            DiscreteCPD(node="A", values=[0.3, 0.7]),
+            DiscreteCPD(node="B", parents=["A"], values={0: [0.2, 0.8], 1: [0.9, 0.1]}),
+        ],
+    )
 
     # Convert to pgmpy
     pgmpy_pgm = convert_conin_to_pgmpy_bn(conin_pgm)
@@ -186,12 +188,13 @@ def test_model_equivalence():
     from conin.common.conin import log_potential as conin_log_potential
 
     # Create test model
-    conin_pgm = DiscreteBayesianNetwork()
-    conin_pgm.states = {"A": [0, 1], "B": [0, 1]}
-    conin_pgm.cpds = [
-        DiscreteCPD(node="A", values=[0.3, 0.7]),
-        DiscreteCPD(node="B", parents=["A"], values={0: [0.2, 0.8], 1: [0.9, 0.1]}),
-    ]
+    conin_pgm = DiscreteBayesianNetwork(
+        states={"A": [0, 1], "B": [0, 1]},
+        cpds=[
+            DiscreteCPD(node="A", values=[0.3, 0.7]),
+            DiscreteCPD(node="B", parents=["A"], values={0: [0.2, 0.8], 1: [0.9, 0.1]}),
+        ],
+    )
 
     # Convert to pgmpy
     pgmpy_pgm = convert_conin_to_pgmpy_bn(conin_pgm)
@@ -221,9 +224,10 @@ def test_model_equivalence():
 @require_pgmpy
 def test_single_node_model():
     """Test conversion of a model with a single node."""
-    conin_pgm = DiscreteBayesianNetwork()
-    conin_pgm.states = {"A": [0, 1, 2]}
-    conin_pgm.cpds = [DiscreteCPD(node="A", values=[0.1, 0.2, 0.7])]
+    conin_pgm = DiscreteBayesianNetwork(
+        states={"A": [0, 1, 2]},
+        cpds=[DiscreteCPD(node="A", values=[0.1, 0.2, 0.7])],
+    )
 
     pgmpy_pgm = convert_conin_to_pgmpy_bn(conin_pgm)
 
@@ -235,27 +239,28 @@ def test_single_node_model():
 @require_pgmpy
 def test_model_with_multiple_parents():
     """Test conversion of a model with nodes having multiple parents."""
-    conin_pgm = DiscreteBayesianNetwork()
-    conin_pgm.states = {"A": [0, 1], "B": [0, 1], "C": [0, 1], "D": [0, 1]}
-    conin_pgm.cpds = [
-        DiscreteCPD(node="A", values=[0.5, 0.5]),
-        DiscreteCPD(node="B", values=[0.5, 0.5]),
-        DiscreteCPD(node="C", values=[0.5, 0.5]),
-        DiscreteCPD(
-            node="D",
-            parents=["A", "B", "C"],
-            values={
-                (0, 0, 0): [0.1, 0.9],
-                (0, 0, 1): [0.2, 0.8],
-                (0, 1, 0): [0.3, 0.7],
-                (0, 1, 1): [0.4, 0.6],
-                (1, 0, 0): [0.5, 0.5],
-                (1, 0, 1): [0.6, 0.4],
-                (1, 1, 0): [0.7, 0.3],
-                (1, 1, 1): [0.8, 0.2],
-            },
-        ),
-    ]
+    conin_pgm = DiscreteBayesianNetwork(
+        states={"A": [0, 1], "B": [0, 1], "C": [0, 1], "D": [0, 1]},
+        cpds=[
+            DiscreteCPD(node="A", values=[0.5, 0.5]),
+            DiscreteCPD(node="B", values=[0.5, 0.5]),
+            DiscreteCPD(node="C", values=[0.5, 0.5]),
+            DiscreteCPD(
+                node="D",
+                parents=["A", "B", "C"],
+                values={
+                    (0, 0, 0): [0.1, 0.9],
+                    (0, 0, 1): [0.2, 0.8],
+                    (0, 1, 0): [0.3, 0.7],
+                    (0, 1, 1): [0.4, 0.6],
+                    (1, 0, 0): [0.5, 0.5],
+                    (1, 0, 1): [0.6, 0.4],
+                    (1, 1, 0): [0.7, 0.3],
+                    (1, 1, 1): [0.8, 0.2],
+                },
+            ),
+        ],
+    )
 
     pgmpy_pgm = convert_conin_to_pgmpy_bn(conin_pgm)
 

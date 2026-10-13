@@ -88,9 +88,9 @@ def create_pyomo_map_query_model_BN(
         # By default, we avoid creating a complete Markov model.  Rather, we
         # create the skeleton of a model that is used to setup the integer program.
         #
-        MN = conin.markov_network.DiscreteMarkovNetwork()
-        MN.states = pgm_.states
-        MN.factors = [cpd.to_factor() for cpd in pgm_.cpds]
+        MN = conin.markov_network.DiscreteMarkovNetwork(
+            states=pgm_.states, factors=[cpd.to_factor() for cpd in pgm_.cpds]
+        )
         if timing:
             timer.toc("Created skeleton Markov network")
 

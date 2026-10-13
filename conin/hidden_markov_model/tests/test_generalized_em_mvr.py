@@ -12,6 +12,9 @@ from conin.hidden_markov_model.mvr_operators import mvr_count, mvr_timerange
 
 torch = pytest.importorskip("torch")
 
+from conin.hidden_markov_model.learning.baum_welch_mvr import (  # noqa: E402
+    _rebuild_hmm,
+)
 from conin.hidden_markov_model.learning.generalized_em_mvr import (  # noqa: E402
     _chain_gradient,
     _constraint_statistics,
@@ -71,13 +74,16 @@ def make_case(seed):
         hidden_states=["C", "A", "B"], observed_states=["y", "x"], seed=seed
     )
     if seed == 4:
-        hmm.start_vec[1] = 0.0
         start = np.asarray(hmm.start_vec)
-        hmm.start_vec = (start / start.sum()).tolist()
-        hmm.transition_mat[0][1] = 0.0
-        row = np.asarray(hmm.transition_mat[0])
-        hmm.transition_mat[0] = (row / row.sum()).tolist()
-        hmm.initialize(avoid_reinitialization=False)
+        start[1] = 0.0
+        transition = np.asarray(hmm.transition_mat)
+        transition[0, 1] = 0.0
+        hmm = _rebuild_hmm(
+            hmm,
+            start / start.sum(),
+            transition / transition.sum(axis=1, keepdims=True),
+            hmm.emission_mat,
+        )
     constraints = []
     if seed % 3:
         constraints.append(
@@ -172,9 +178,7 @@ def test_chain_gradient_matches_finite_differences(seed):
     gradients = _chain_gradient(
         logs, [torch.tensor(c) / 3 for c in counts], [c / 3 for c in prior], update
     )
-    for block, (name, attr) in enumerate(
-        zip(("start", "transition"), ("start_vec", "transition_mat"))
-    ):
+    for block, name in enumerate(("start", "transition")):
         if name not in update:
             continue
         for index in np.ndindex(logs[block].shape):
@@ -182,11 +186,11 @@ def test_chain_gradient_matches_finite_differences(seed):
                 continue
             values = []
             for delta in (-1e-5, 1e-5):
-                perturbed = copy.deepcopy(hmm)
                 logits = logs[block].clone()
                 logits[index] += delta
-                setattr(perturbed, attr, logits.softmax(-1).tolist())
-                perturbed.initialize(avoid_reinitialization=False)
+                params = [hmm.start_vec, hmm.transition_mat, hmm.emission_mat]
+                params[block] = logits.softmax(-1).tolist()
+                perturbed = _rebuild_hmm(hmm, *params)
                 values.append(
                     enumerate_objectives(
                         perturbed, constraints, observations, horizons, posterior
@@ -202,8 +206,9 @@ def test_pseudocount_keeps_unobserved_emissions_positive():
     hmm = make_random_hmm(
         hidden_states=["A", "B"], observed_states=["x", "y", "z"], seed=3
     )
-    hmm.emission_mat[0] = [0.5, 0.5, 0.0]
-    hmm.initialize(avoid_reinitialization=False)
+    emission = hmm.emission_mat
+    emission[0] = [0.5, 0.5, 0.0]
+    hmm = _rebuild_hmm(hmm, hmm.start_vec, hmm.transition_mat, emission)
     model = MVR_CHMM(hidden_markov_model=hmm, constraints=[])
     with pytest.warns(UserWarning, match="emission"):
         fitted, _ = generalized_em_mvr_chmm(model, [["x", "y", "x"]], max_iter=1, tol=0)

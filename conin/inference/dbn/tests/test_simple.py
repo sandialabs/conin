@@ -248,3 +248,55 @@ def test_simple1_DDBN_constrained_toulbar2_pgmpy():
     example = examples.simple1_DDBN_constrained_toulbar2_pgmpy()
     results = inference_toulbar2_map_query_DDBN(pgm=example.pgm)
     assert results.solution.states == example.solutions[0].states
+
+
+#
+# Mixed static and dynamic nodes
+#
+
+
+def _static_and_dynamic_DDBN():
+    """A DBN with a static node ``S`` that is a parent of the dynamic node ``Z``.
+
+    Unrolling it gives a Bayesian network whose nodes mix plain names
+    (``"S"``) and tuples (``("Z", t)``).
+    """
+    from conin.bayesian_network import DiscreteCPD
+    from conin.dynamic_bayesian_network import (
+        DynamicDiscreteBayesianNetwork,
+        ExpressionVariable,
+    )
+
+    t = ExpressionVariable()
+    s_cpd = DiscreteCPD(node="S", values=[0.4, 0.6])
+    z_start_cpd = DiscreteCPD(
+        node=("Z", 0), parents=["S"], values={0: [0.9, 0.1], 1: [0.2, 0.8]}
+    )
+    z_trans_cpd = DiscreteCPD(
+        node=("Z", t),
+        parents=[("Z", t - 1)],
+        values={0: [0.7, 0.3], 1: [0.1, 0.9]},
+    )
+    pgm = DynamicDiscreteBayesianNetwork(
+        states={"S": [0, 1]},
+        dynamic_states={"Z": [0, 1]},
+        cpds=[s_cpd, z_start_cpd, z_trans_cpd],
+        t=t,
+    )
+    pgm.check_model()
+    # MAP by enumeration: S=1, Z0=1, Z1=1 has probability 0.6*0.8*0.9 = 0.432
+    return pgm, {"S": 1, ("Z", 0): 1, ("Z", 1): 1}
+
+
+@skipif_no_mip_solver
+def test_static_and_dynamic_DDBN_conin_mip():
+    pgm, expected = _static_and_dynamic_DDBN()
+    results = inference_pyomo_map_query_DDBN(pgm=pgm, solver=mip_solver)
+    assert results.solution.states == expected
+
+
+@skipif_toulbar2_not_available
+def test_static_and_dynamic_DDBN_conin_toulbar2():
+    pgm, expected = _static_and_dynamic_DDBN()
+    results = inference_toulbar2_map_query_DDBN(pgm=pgm)
+    assert results.solution.states == expected
