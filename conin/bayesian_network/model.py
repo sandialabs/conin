@@ -211,7 +211,7 @@ class DiscreteCPD:
 class DiscreteBayesianNetwork:
     """Discrete Bayesian network composed of nodes, edges, and CPDs."""
 
-    def __init__(self, *, cpds, states=None, pyomo_index_names=None):
+    def __init__(self, *, cpds, states=None):
         """Create a new Bayesian network.
 
         Parameters
@@ -223,9 +223,6 @@ class DiscreteBayesianNetwork:
             Mapping from each node to its possible states, or a list of
             cardinalities for anonymous nodes. States of nodes that are not
             listed are inferred from their CPDs.
-        pyomo_index_names : dict, optional
-            Private bolt-on data used by the pyomo/toulbar2 DBN inference
-            backends.
 
         Raises
         ------
@@ -258,8 +255,6 @@ class DiscreteBayesianNetwork:
                     self._nodes.append(cpd.node)
             normalized_cpds.append(cpd.normalize(self))
         self._cpds = normalized_cpds
-
-        self._pyomo_index_names = dict(pyomo_index_names) if pyomo_index_names else None
 
     def check_model(self):
         """Validate that the network structure and CPDs are well formed.
@@ -450,7 +445,6 @@ class DiscreteBayesianNetwork:
         return DiscreteBayesianNetwork(
             states=self.states,
             cpds=self.cpds + [cpd],
-            pyomo_index_names=self._pyomo_index_names,
         )
 
     def num_cpd_parameters(self):

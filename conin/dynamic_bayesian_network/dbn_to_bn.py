@@ -16,7 +16,6 @@ def create_bn_from_dbn(*, dbn, start, stop):
     # Copy non-dynamic states
     #
     states = copy.copy(dbn.states)
-    _pyomo_index_names = {key: key for key in states}
 
     #
     # Copy dynamic states to all time steps
@@ -24,7 +23,6 @@ def create_bn_from_dbn(*, dbn, start, stop):
     for t in range(start, stop + 1):
         for v, s in dbn.dynamic_states.items():
             states[(v, t)] = s
-            _pyomo_index_names[(v, t)] = f"{v}_{t}"
 
     #
     # Copy cpds
@@ -76,9 +74,7 @@ def create_bn_from_dbn(*, dbn, start, stop):
                 continue
             cpds.append(DiscreteCPD(node=node, parents=parents, values=cpd.values))
 
-    pgm = DiscreteBayesianNetwork(
-        states=states, cpds=cpds, pyomo_index_names=_pyomo_index_names
-    )
+    pgm = DiscreteBayesianNetwork(states=states, cpds=cpds)
     pgm.check_model()
 
     return pgm
