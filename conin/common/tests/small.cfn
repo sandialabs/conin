@@ -1,0 +1,9 @@
+{"problem":{"name":"small","mustbe":"<10.0"},
+ "variables":{"a":2, "b":["lo","mid","hi"]},
+ "functions":{
+   "f1":{"scope":["a","b"],"costs":[0.5,1.25,0, 2,3.5,10]},
+   "f2":{"scope":["b"],"defaultcost":0.75,"costs":["hi",0.1]},
+   "f3":{"scope":[0],"costs":[0.3,0]},
+   "c":{"scope":[],"costs":[1.5]}
+ }
+}

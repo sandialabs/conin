@@ -18,6 +18,7 @@ import torch
 
 from conin.exceptions import InvalidInputError
 
+from ..hmm import HiddenMarkovModel
 from ..mvr_common import (
     ACCUM_DTYPE,
     _build_static_context,
@@ -196,7 +197,7 @@ def _normalize_on_support(counts, support, eps, fallback):
 
 
 def _m_step(hmm, counts, masks, pseudocount, update):
-    """Normalize the expected counts on support and install them in ``hmm``."""
+    """Normalize the expected counts on support and return a new ``hmm``."""
     init_counts, trans_counts, emit_counts = (c.cpu().numpy() for c in counts)
 
     start = _as_array(hmm.start_vec)
@@ -221,13 +222,40 @@ def _m_step(hmm, counts, masks, pseudocount, update):
             emit_counts, masks["emission"], pseudocount, emission
         )
 
-    # Deliberately not load_model: it re-derives the index order from sorted keys,
-    # which would break the constraint alignment MVR_CHMM established.
-    hmm.start_vec = [float(x) for x in start]
-    hmm.transition_mat = [[float(x) for x in row] for row in transition]
-    hmm.emission_mat = [[float(x) for x in row] for row in emission]
+    return _rebuild_hmm(hmm, start, transition, emission)
 
-    hmm.initialize(avoid_reinitialization=False)
+
+def _rebuild_hmm(hmm, start, transition, emission):
+    """Return a new ``HiddenMarkovModel`` with ``hmm``'s labels and new parameters.
+
+    ``HiddenMarkovModel`` is immutable, so updated parameters require a new
+    instance. Arrays are indexed in ``hmm``'s internal state order.
+    """
+    # The constructor orders states by sorted label, and the dense dictionaries
+    # below mention every label, so the rebuilt model keeps hmm's internal index
+    # order (and with it the constraint alignment MVR_CHMM established).
+    hidden = hmm.hidden_to_external
+    observed = hmm.observed_to_external
+    new_hmm = HiddenMarkovModel(
+        start_probs={h: float(start[i]) for i, h in enumerate(hidden)},
+        transition_probs={
+            (h1, h2): float(transition[i][j])
+            for i, h1 in enumerate(hidden)
+            for j, h2 in enumerate(hidden)
+        },
+        emission_probs={
+            (h, o): float(emission[i][j])
+            for i, h in enumerate(hidden)
+            for j, o in enumerate(observed)
+        },
+        initialize=True,
+    )
+    if new_hmm.hidden_to_external != hidden or new_hmm.observed_to_external != observed:
+        raise InvalidInputError(  # pragma: no cover
+            "Rebuilding the HMM changed its internal state order"
+        )
+
+    return new_hmm
 
 
 # ======================================================================
@@ -444,13 +472,14 @@ def baum_welch_mvr_chmm(
             converged = True
             break
 
-        _m_step(
+        hmm = _m_step(
             hmm,
             (init_counts, trans_counts, emit_counts),
             masks,
             pseudocount,
             update,
         )
+        working.hidden_markov_model = hmm
 
     # tol <= 0 asks for exactly max_iter iterations, so exhausting them is intended.
     if tol > 0 and not converged and len(history) > 1:

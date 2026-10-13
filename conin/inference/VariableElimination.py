@@ -1,4 +1,5 @@
 import copy
+import dataclasses
 import munch
 from ovld import ovld
 from pyomo.common.timing import TicTocTimer
@@ -77,13 +78,11 @@ def _hmm_states_from_map(map_states, evidence):
     return map_states
 
 
-def _add_bn_constraints_as_evidence(pgm, constraints, data, evidence, copy_pgm=False):
+def _add_bn_constraints_as_evidence(pgm, constraints, data, evidence):
     """Inject generated constraint CPDs into a Bayesian network as evidence."""
     if len(constraints) == 0:
         return
 
-    if copy_pgm:
-        pgm = copy.deepcopy(pgm)
     if isinstance(constraints[0], AlgebraicConstraint):
         constraints = create_oracle_constraints_from_algebraic(
             pgm=pgm, constraints=constraints, data=data
@@ -91,8 +90,8 @@ def _add_bn_constraints_as_evidence(pgm, constraints, data, evidence, copy_pgm=F
     for con in constraints:
         if isinstance(con, OracleConstraint):
             cpd = con(pgm, data)
-            cpd.node = (cpd.node, -1)
-            pgm.add_cpd(cpd)
+            cpd = dataclasses.replace(cpd, node=(cpd.node, -1))
+            pgm = pgm.with_cpd(cpd)
             evidence[cpd.node] = 1
         else:
             raise TypeError(
@@ -101,13 +100,11 @@ def _add_bn_constraints_as_evidence(pgm, constraints, data, evidence, copy_pgm=F
     return pgm
 
 
-def _add_mn_constraints_as_evidence(pgm, constraints, data, evidence, copy_pgm=False):
+def _add_mn_constraints_as_evidence(pgm, constraints, data, evidence):
     """Inject generated constraint CPDs into a Bayesian network as evidence."""
     if len(constraints) == 0:
         return
 
-    if copy_pgm:
-        pgm = copy.deepcopy(pgm)
     if isinstance(constraints[0], AlgebraicConstraint):
         constraints = create_oracle_constraints_from_algebraic(
             pgm=pgm, constraints=constraints, data=data
@@ -115,7 +112,7 @@ def _add_mn_constraints_as_evidence(pgm, constraints, data, evidence, copy_pgm=F
     for con in constraints:
         if isinstance(con, OracleConstraint):
             factor = con(pgm, data)
-            pgm._factors.append(factor)
+            pgm = pgm.with_factor(factor)
             evidence[factor.nodes[-1]] = 1
         else:
             raise TypeError(
@@ -287,7 +284,7 @@ def _map_query_VariableElimination(
     if pgm.constraints:
         evidence = {}
         newpgm = _add_mn_constraints_as_evidence(
-            pgm.pgm, pgm.constraints, None, evidence, copy_pgm=True
+            pgm.pgm, pgm.constraints, None, evidence
         )
     else:
         newpgm = pgm.pgm
@@ -345,7 +342,7 @@ def _map_query_VariableElimination(
     # Apply constraints as CPDs with evidence
     if pgm.constraints:
         newpgm = _add_bn_constraints_as_evidence(
-            pgm.pgm, pgm.constraints, None, prepared_evidence, copy_pgm=True
+            pgm.pgm, pgm.constraints, None, prepared_evidence
         )
     else:
         newpgm = pgm.pgm
@@ -444,11 +441,14 @@ def _map_query_VariableElimination(
 
         conin_bn = create_bn_from_dbn(dbn=pgm.pgm, start=start, stop=stop_val)
         data = munch.Munch(T=list(range(start, stop_val + 1)))
-        _add_bn_constraints_as_evidence(
-            pgm=conin_bn,
-            constraints=pgm.constraints,
-            data=data,
-            evidence=evidence_,
+        conin_bn = (
+            _add_bn_constraints_as_evidence(
+                pgm=conin_bn,
+                constraints=pgm.constraints,
+                data=data,
+                evidence=evidence_,
+            )
+            or conin_bn
         )
         if write_uai_file:
             save_model(conin_bn, write_uai_file)
@@ -531,11 +531,14 @@ def _map_query_VariableElimination(
         conin_dbn = create_dbn_from_hmm(pgm.hidden_markov_model)
         conin_bn = create_bn_from_dbn(dbn=conin_dbn, start=start, stop=stop_val)
         data = munch.Munch(hmm=munch.Munch(T=list(range(len(evidence)))))
-        _add_bn_constraints_as_evidence(
-            pgm=conin_bn,
-            constraints=pgm.constraints,
-            data=data,
-            evidence=evidence_,
+        conin_bn = (
+            _add_bn_constraints_as_evidence(
+                pgm=conin_bn,
+                constraints=pgm.constraints,
+                data=data,
+                evidence=evidence_,
+            )
+            or conin_bn
         )
         if write_uai_file:
             save_model(conin_bn, write_uai_file)

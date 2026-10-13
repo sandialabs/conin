@@ -22,7 +22,6 @@ def create_toulbar2_map_query_model_BN(
     pgm,
     variables=None,
     evidence=None,
-    var_index_map=None,
     timing=False,
     write_uai_file=None,
     **options,
@@ -40,8 +39,6 @@ def create_toulbar2_map_query_model_BN(
         Observed node assignments.
     timing : bool, optional
         Whether to collect timing information.
-    var_index_map : dict, optional
-        Dictionary mapping variable indices to Pyomo variable data objects
     **options : dict, optional
         Additional keyword arguments forwarded to
         :func:`create_BN_map_query_model`.
@@ -70,8 +67,6 @@ def create_toulbar2_map_query_model_BN(
             model = pytoulbar2.CFN(verbose=verbose)
             model.Read(filename)
 
-    # TODO - do something different here?
-    # if var_index_map:
     model.V = Toulbar2VarWrapper(pgm)
     model.states = {i: pgm.states_of(name) for i, name in enumerate(pgm.nodes)}
 

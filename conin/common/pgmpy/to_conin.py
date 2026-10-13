@@ -4,6 +4,7 @@ from conin.util import try_import
 from conin.markov_network import DiscreteMarkovNetwork, DiscreteFactor
 from conin.bayesian_network import DiscreteBayesianNetwork, DiscreteCPD
 from conin.dynamic_bayesian_network.model import DynamicDiscreteBayesianNetwork
+from conin.dynamic_bayesian_network.expr import ExpressionVariable
 
 with try_import() as pgmpy_available:
     import pgmpy.models
@@ -19,10 +20,6 @@ def _get_factor_value(f, values):
 
 
 def convert_pgmpy_to_DiscreteMarkovNetwork(pgmpy_pgm):
-    pgm = DiscreteMarkovNetwork()
-    pgm._pgmpy_pgm = pgmpy_pgm
-    pgm.states = pgmpy_pgm.states
-
     factors = []
     for factor in pgmpy_pgm.get_factors():
         vars = factor.scope()
@@ -40,16 +37,13 @@ def convert_pgmpy_to_DiscreteMarkovNetwork(pgmpy_pgm):
             }
 
         factors.append(DiscreteFactor(nodes=factor.variables, values=values))
-    pgm.factors = factors
+
+    pgm = DiscreteMarkovNetwork(states=pgmpy_pgm.states, factors=factors)
 
     return pgm
 
 
 def convert_pgmpy_to_DiscreteBayesianNetwork(pgmpy_pgm):
-    pgm = DiscreteBayesianNetwork()
-    pgm._pgmpy_pgm = pgmpy_pgm
-    pgm.states = pgmpy_pgm.states
-
     cpds = []
     for cpd in pgmpy_pgm.get_cpds():
 
@@ -69,7 +63,8 @@ def convert_pgmpy_to_DiscreteBayesianNetwork(pgmpy_pgm):
                 values=values,
             )
         )
-    pgm.cpds = cpds
+
+    pgm = DiscreteBayesianNetwork(states=pgmpy_pgm.states, cpds=cpds)
 
     return pgm
 
@@ -82,9 +77,6 @@ def _as_tuple(var, t, offset):
 
 def convert_pgmpy_to_DynamicDiscreteBayesianNetwork(pgmpy_pgm):
 
-    pgm = DynamicDiscreteBayesianNetwork()
-    pgm._pgmpy_pgm = pgmpy_pgm
-
     tmp = {}
     for k, v in pgmpy_pgm.states.items():
         if type(k) is tuple:
@@ -93,7 +85,8 @@ def convert_pgmpy_to_DynamicDiscreteBayesianNetwork(pgmpy_pgm):
             tmp[k.node] = v
         else:
             tmp[k] = v
-    pgm.dynamic_states = tmp
+
+    t = ExpressionVariable()
 
     cpds = []
     for cpd in pgmpy_pgm.get_cpds():
@@ -121,14 +114,13 @@ def convert_pgmpy_to_DynamicDiscreteBayesianNetwork(pgmpy_pgm):
 
             cpds.append(
                 DiscreteCPD(
-                    node=_as_tuple(cpd.variable, pgm.t, offset),
-                    parents=[
-                        _as_tuple(var, pgm.t, offset) for var in cpd.variables[1:]
-                    ],
+                    node=_as_tuple(cpd.variable, t, offset),
+                    parents=[_as_tuple(var, t, offset) for var in cpd.variables[1:]],
                     values=values,
                 )
             )
-    pgm.cpds = cpds
+
+    pgm = DynamicDiscreteBayesianNetwork(dynamic_states=tmp, cpds=cpds, t=t)
 
     return pgm
 

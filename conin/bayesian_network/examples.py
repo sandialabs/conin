@@ -38,9 +38,7 @@ def cancer1_BN_conin(debug=False):
     Cancer example using conin
     """
     # Step 1: Define the network structure.
-    cancer_model = DiscreteBayesianNetwork()
-
-    cancer_model.states = {
+    states = {
         "Cancer": [0, 1],
         "Dyspnoea": [0, 1],
         "Pollution": [0, 1],
@@ -82,7 +80,9 @@ def cancer1_BN_conin(debug=False):
         print(cpd_cancer)
         print(cpd_xray)
         print(cpd_dysp)
-    cancer_model.cpds = [cpd_poll, cpd_smoke, cpd_cancer, cpd_xray, cpd_dysp]
+    cancer_model = DiscreteBayesianNetwork(
+        states=states, cpds=[cpd_poll, cpd_smoke, cpd_cancer, cpd_xray, cpd_dysp]
+    )
 
     # Step 4: Check if the model is correctly defined.
     cancer_model.check_model()
@@ -500,8 +500,6 @@ def cancer1_BN_constrained_toulbar2_conin(debug=False):
 
 
 def simple1_BN_conin(debug=False):
-    G = DiscreteBayesianNetwork()
-    G.states = {"A": [0, 1], "B": [0, 1]}
     cpd_A = DiscreteCPD(node="A", values=[0.9, 0.1])
     cpd_B = DiscreteCPD(
         node="B",
@@ -511,7 +509,7 @@ def simple1_BN_conin(debug=False):
     if debug:  # pragma:nocover
         print(cpd_A)
         print(cpd_B)
-    G.cpds = [cpd_A, cpd_B]
+    G = DiscreteBayesianNetwork(states={"A": [0, 1], "B": [0, 1]}, cpds=[cpd_A, cpd_B])
     G.check_model()
     return Munch(pgm=G, solutions=[MPESolution(states={"A": 0, "B": 1})])
 
@@ -570,9 +568,7 @@ def DBDA_5_1_conin(debug=False):
     p_test_positive_given_disease_present = 0.99
     p_test_positive_given_disease_absent = 0.05
 
-    model = DiscreteBayesianNetwork()
-
-    model.states = {
+    model_states = {
         "disease-state": [0, 1],
         "test-result1": [0, 1],
         "test-result2": [0, 1],
@@ -613,7 +609,10 @@ def DBDA_5_1_conin(debug=False):
         },
     )
 
-    model.cpds = [disease_state_CPD, test_result_CPD_1, test_result_CPD_2]
+    model = DiscreteBayesianNetwork(
+        states=model_states,
+        cpds=[disease_state_CPD, test_result_CPD_1, test_result_CPD_2],
+    )
     model.check_model()
 
     if debug:  # pragma:nocover
@@ -722,8 +721,7 @@ def holmes_conin(debug=False):
     A. Gao. "Lecture 13: Variable Elimination Algorithm", 2021.
     https://cs.uwaterloo.ca/~a23gao/cs486686_f18/schedule.shtml
     """
-    G = DiscreteBayesianNetwork()
-    G.states = {
+    g_states = {
         "W": ["w", "-w"],
         "G": ["g", "-g"],
         "A": ["a", "-a"],
@@ -767,7 +765,9 @@ def holmes_conin(debug=False):
         print(cpd_A)
         print(cpd_W)
         print(cpd_G)
-    G.cpds = [cpd_E, cpd_B, cpd_R, cpd_A, cpd_W, cpd_G]
+    G = DiscreteBayesianNetwork(
+        states=g_states, cpds=[cpd_E, cpd_B, cpd_R, cpd_A, cpd_W, cpd_G]
+    )
     G.check_model()
     return Munch(
         pgm=G,
@@ -910,8 +910,6 @@ def pgmpy_issue_1177_pgmpy(debug=False):
 
 
 def tb2_BN_conin(debug=False):
-    G = DiscreteBayesianNetwork()
-    G.states = {"A": [0, 1], "B": [2, 3], "C": [4, 5, 6]}
     cpd_A = DiscreteCPD(node="A", values=[0.436, 0.564])
     cpd_B = DiscreteCPD(
         node="B",
@@ -932,7 +930,10 @@ def tb2_BN_conin(debug=False):
         print(cpd_A)
         print(cpd_B)
         print(cpd_C)
-    G.cpds = [cpd_A, cpd_B, cpd_C]
+    G = DiscreteBayesianNetwork(
+        states={"A": [0, 1], "B": [2, 3], "C": [4, 5, 6]},
+        cpds=[cpd_A, cpd_B, cpd_C],
+    )
     G.check_model()
     return Munch(pgm=G, solutions=[MPESolution(states={"A": 0, "B": 3, "C": 4})])
 
@@ -1020,10 +1021,8 @@ def tb2_BN_pgmpy_mapcpd(debug=False):
 def wide_BN_conin(debug=False):
     N = 10
 
-    G = DiscreteBayesianNetwork()
     states = {("A", i): [0, 1] for i in range(N)}
     states["B"] = [0, 1]
-    G.states = states
 
     cpds = []
     for i in range(N):
@@ -1045,11 +1044,11 @@ def wide_BN_conin(debug=False):
     )
 
     if debug:
-        print(G.states)
+        print(states)
         for cpd in cpds:
             print(cpd)
 
-    G.cpds = cpds
+    G = DiscreteBayesianNetwork(states=states, cpds=cpds)
     G.check_model()
 
     solution_states = {("A", i): 1 for i in range(N)}

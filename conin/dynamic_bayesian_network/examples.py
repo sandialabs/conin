@@ -10,6 +10,7 @@ from conin.constraints import (
 from conin.dynamic_bayesian_network import (
     DynamicDiscreteBayesianNetwork,
     ConstrainedDynamicDiscreteBayesianNetwork,
+    ExpressionVariable,
 )
 from conin.bayesian_network import DiscreteCPD
 from conin.util import try_import, MPESolution
@@ -25,16 +26,17 @@ with try_import() as pgmpy_available:
 
 
 def simple0_DDBN_conin(debug=False):
-    G = DynamicDiscreteBayesianNetwork()
-    G.dynamic_states = {"Z": [0, 1]}
+    t = ExpressionVariable()
     z_start_cpd = DiscreteCPD(node=("Z", 0), values=[0.5, 0.5])
     z_trans_cpd = DiscreteCPD(
-        node=("Z", G.t),
-        parents=[("Z", G.t - 1)],
+        node=("Z", t),
+        parents=[("Z", t - 1)],
         values={0: [0.7, 0.3], 1: [0.8, 0.2]},
     )
 
-    G.cpds = [z_start_cpd, z_trans_cpd]
+    G = DynamicDiscreteBayesianNetwork(
+        dynamic_states={"Z": [0, 1]}, cpds=[z_start_cpd, z_trans_cpd], t=t
+    )
     G.check_model()
 
     if debug:  # pragma:nocover
@@ -93,21 +95,24 @@ def simple0_DDBN2_pgmpy(debug=False):
 
 
 def simple1_DDBN_conin(debug=False):
-    G = DynamicDiscreteBayesianNetwork()
-    G.dynamic_states = {"A": [0, 1], "B": [0, 1]}
+    t = ExpressionVariable()
 
     cpd_start_A = DiscreteCPD(node=("A", 0), values=[0.9, 0.1])
     cpd_start_B = DiscreteCPD(
-        node=("B", G.t),
-        parents=[("A", G.t)],
+        node=("B", t),
+        parents=[("A", t)],
         values={0: [0.2, 0.8], 1: [0.9, 0.1]},
     )
     cpd_trans_A = DiscreteCPD(
-        node=("A", G.t),
-        parents=[("A", G.t - 1)],
+        node=("A", t),
+        parents=[("A", t - 1)],
         values={0: [0.2, 0.8], 1: [0.9, 0.1]},
     )
-    G.cpds = [cpd_start_A, cpd_start_B, cpd_trans_A]
+    G = DynamicDiscreteBayesianNetwork(
+        dynamic_states={"A": [0, 1], "B": [0, 1]},
+        cpds=[cpd_start_A, cpd_start_B, cpd_trans_A],
+        t=t,
+    )
     G.check_model()
 
     if debug:  # pragma:nocover
@@ -395,8 +400,6 @@ def weather_conin(debug=False):
     # Initialize a simple DDBN model modeling the Weather (W), Rain (O),
     # Temperature (T), and Humidity (H).
 
-    dbn = DynamicDiscreteBayesianNetwork()
-
     # pgmpy requires the user to define the structure of the first time slice and the edges
     # connecting the first time slice to the second time slice.
     # pgmpy assumes that this structure remains constant for further time
@@ -407,7 +410,7 @@ def weather_conin(debug=False):
     O_states = ["Dry", "Wet"]
     H_states = ["Low", "Medium", "High"]
 
-    dbn.dynamic_states = {"W": W_states, "T": T_states, "O": O_states, "H": H_states}
+    t = ExpressionVariable()
 
     # Add intra-slice edges for both time slices
     # dbn.add_edges_from(
@@ -438,8 +441,8 @@ def weather_conin(debug=False):
     )
 
     cpd_w_1 = DiscreteCPD(
-        node=("W", dbn.t),
-        parents=[("W", dbn.t - 1)],
+        node=("W", t),
+        parents=[("W", t - 1)],
         values={
             "Sunny": {"Sunny": 0.7, "Cloudy": 0.2, "Rainy": 0.1},
             "Cloudy": {"Sunny": 0.3, "Cloudy": 0.4, "Rainy": 0.3},
@@ -454,8 +457,8 @@ def weather_conin(debug=False):
     )
 
     cpd_t_1 = DiscreteCPD(
-        node=("T", dbn.t),
-        parents=[("T", dbn.t - 1), ("W", dbn.t - 1)],
+        node=("T", t),
+        parents=[("T", t - 1), ("W", t - 1)],
         values={
             ("Hot", "Sunny"): {"Hot": 0.8, "Mild": 0.2, "Cold": 0.0},
             ("Hot", "Cloudy"): {"Hot": 0.6, "Mild": 0.3, "Cold": 0.1},
@@ -471,8 +474,8 @@ def weather_conin(debug=False):
 
     # CPD for O (Ground observation)
     cpd_o = DiscreteCPD(
-        node=("O", dbn.t),
-        parents=[("W", dbn.t)],
+        node=("O", t),
+        parents=[("W", t)],
         values={
             "Sunny": {"Dry": 0.9, "Wet": 0.1},
             "Cloudy": {"Dry": 0.6, "Wet": 0.4},
@@ -482,8 +485,8 @@ def weather_conin(debug=False):
 
     # CPD for H (Humidity observation)
     cpd_h = DiscreteCPD(
-        node=("H", dbn.t),
-        parents=[("T", dbn.t), ("W", dbn.t)],
+        node=("H", t),
+        parents=[("T", t), ("W", t)],
         values={
             ("Hot", "Sunny"): {"Low": 0.7, "Medium": 0.2, "High": 0.1},
             ("Hot", "Cloudy"): {"Low": 0.4, "Medium": 0.5, "High": 0.1},
@@ -498,7 +501,11 @@ def weather_conin(debug=False):
     )
 
     # Add CPDs to the DDBN
-    dbn.cpds = [cpd_w_0, cpd_w_1, cpd_t_0, cpd_t_1, cpd_o, cpd_h]
+    dbn = DynamicDiscreteBayesianNetwork(
+        dynamic_states={"W": W_states, "T": T_states, "O": O_states, "H": H_states},
+        cpds=[cpd_w_0, cpd_w_1, cpd_t_0, cpd_t_1, cpd_o, cpd_h],
+        t=t,
+    )
 
     if debug:  # pragma:nocover
         for cpd in dbn.cpds:

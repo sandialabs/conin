@@ -2,8 +2,10 @@ import itertools
 from math import prod
 from dataclasses import dataclass
 
+from conin.exceptions import InvalidInputError
 
-@dataclass(slots=True)
+
+@dataclass(frozen=True, slots=True)
 class DiscreteFactor:
     """A factor over one or more discrete variables.
 
@@ -33,6 +35,14 @@ class DiscreteFactor:
     nodes: list
     values: list | dict
     default_value: str | int = 0
+
+    def __post_init__(self):
+        object.__setattr__(
+            self,
+            "values",
+            dict(self.values) if isinstance(self.values, dict) else list(self.values),
+        )
+        object.__setattr__(self, "nodes", list(self.nodes))
 
     def assignments(self, states):
         """Iterate over assignments for this factor's scope.
@@ -102,23 +112,50 @@ class DiscreteMarkovNetwork:
     dictionary keyed by assignments using the model's states.
     """
 
-    def __init__(self, *, states={}, edges=None, factors=[]):
+    def __init__(self, *, factors, states=None, edges=None):
         """Initialize a discrete Markov network.
 
         Parameters
         ----------
+        factors : Iterable[DiscreteFactor]
+            Non-empty collection of factors that encode the potential of each
+            clique in the network.
         states : dict or list, optional
             Mapping from node identifiers to ordered states or a list of node
             cardinalities. Defaults to an empty dictionary.
         edges : Iterable[tuple], optional
             Pairwise edges that connect nodes in the network.
-        factors : Iterable[DiscreteFactor], optional
-            Factors that encode the potential of each clique in the network.
+
+        Raises
+        ------
+        InvalidInputError
+            If ``factors`` is empty.
         """
-        self._nodes = []
-        self._edges = edges
-        self._factors = factors
-        self.states = states
+        factors = list(factors)
+        if not factors:
+            raise InvalidInputError("factors must be a non-empty list")
+        if states is None:
+            states = {}
+        if isinstance(states, list):
+            self._nodes = list(range(len(states)))
+            self._states = {i: list(range(v)) for i, v in enumerate(states)}
+        elif isinstance(states, dict):
+            tmp = list(states.keys())
+            tmp.sort(key=lambda x: (x,) if not isinstance(x, tuple) else x)
+            self._nodes = tmp
+            self._states = dict(states)
+        else:
+            raise TypeError(f"Unexpected type for states: {type(states)}")
+
+        self._edges = list(edges) if edges is not None else None
+
+        tmp = set(self._nodes)
+        for factor in factors:
+            for node in factor.nodes:
+                if node not in tmp:
+                    tmp.add(node)
+                    self._nodes.append(node)
+        self._factors = [factor.normalize(self) for factor in factors]
 
     def check_model(self):
         """Validate structural consistency of nodes, edges, and factors.
@@ -212,56 +249,7 @@ class DiscreteMarkovNetwork:
         dict
             Dictionary mapping each node to the ordered list of valid states.
         """
-        return self._states
-
-    @states.setter
-    def states(self, values):
-        """Set node states from cardinalities or explicit values.
-
-        If a list is provided, nodes are created as integers ``0..n-1`` and
-        each entry indicates a node's cardinality with state values
-        ``0..card-1``. If a dictionary is provided, keys are node identifiers
-        and values are the explicit lists of allowed states.
-
-        Parameters
-        ----------
-        values : list of int or dict
-            Either a list containing the cardinality for each anonymous node or
-            a dictionary that directly maps node identifiers to ordered states.
-
-        Raises
-        ------
-        TypeError
-            If ``values`` is neither a list nor a dictionary.
-
-        Examples
-        --------
-        >>> dmn = DiscreteMarkovNetwork()
-        >>> dmn.states = [4, 3]
-        >>> dmn.nodes
-        [0, 1]
-        >>> dmn.states
-        {0: [0, 1, 2, 3], 1: [0, 1, 2]}
-
-        >>> dmn = DiscreteMarkovNetwork()
-        >>> dmn.states = {"A": ["T", "F"], "B": [-1, 1]}
-        >>> dmn.nodes
-        ['A', 'B']
-        >>> dmn.states
-        {'A': ['T', 'F'], 'B': [-1, 1]}
-        """
-        if type(values) is list:
-            self._nodes = list(range(len(values)))
-            self._states = {i: list(range(v)) for i, v in enumerate(values)}
-
-        elif type(values) is dict:
-            tmp = list(values.keys())
-            tmp.sort(key=lambda x: (x,) if not isinstance(x, tuple) else x)
-            self._nodes = tmp
-            self._states = values
-
-        else:
-            raise TypeError(f"Unexpected type for states: {type(values)}")
+        return dict(self._states)
 
     def states_of(self, node):
         """Return the allowed states for a node.
@@ -315,24 +303,7 @@ class DiscreteMarkovNetwork:
                 for edge in itertools.combinations(sorted(factor.nodes), 2):
                     edges.add(edge)
             self._edges = list(edges)
-        return self._edges
-
-    @edges.setter
-    def edges(self, edges):
-        """Set the list of undirected edges.
-
-        Parameters
-        ----------
-        edges : Iterable[tuple]
-            Collection of pairwise node connections.
-
-        Examples
-        --------
-        >>> dmn = DiscreteMarkovNetwork()
-        >>> dmn.states = [4, 3]
-        >>> dmn.edges = [(0, 1), (1, 2)]
-        """
-        self._edges = list(edges)
+        return list(self._edges)
 
     #
     # Factors
@@ -347,38 +318,35 @@ class DiscreteMarkovNetwork:
         list of DiscreteFactor
             Factor objects representing clique potentials.
         """
-        return self._factors
+        return list(self._factors)
 
-    @factors.setter
-    def factors(self, factor_list):
-        """Attach a list of factors to the model.
-
-        Each factor is converted to dictionary form via
-        ``DiscreteFactor.normalize`` using the current model states.
+    def with_factor(self, factor):
+        """Return a new model with ``factor`` appended to its factor list.
 
         Parameters
         ----------
-        factor_list : Iterable[DiscreteFactor]
-            Factors that define the potential of each clique. Factors with
-            list-valued potentials are normalized against the current state
-            definitions.
+        factor : DiscreteFactor
+            Factor to add to the model.
+
+        Returns
+        -------
+        DiscreteMarkovNetwork
+            A new model with the same states and edges as ``self`` plus the
+            additional factor.
 
         Examples
         --------
-        >>> dmn = DiscreteMarkovNetwork()
-        >>> dmn.states = [4, 3]
+        >>> from conin.markov_network import DiscreteMarkovNetwork, DiscreteFactor
         >>> f1 = DiscreteFactor(nodes=[0, 1], values={(0, 0): 1, (0, 1): 2, (0, 2): 3})
         >>> f2 = DiscreteFactor(nodes=[0], values={0: 0, 1: 1, 2: 2, 3: 3})
-        >>> dmn.factors = [f1, f2]
+        >>> dmn = DiscreteMarkovNetwork(states=[4, 3], factors=[f1])
+        >>> dmn = dmn.with_factor(f2)
+        >>> len(dmn.factors)
+        2
         """
-        self._factors = [factor.normalize(self) for factor in factor_list]
-
-    def add_factor(self, factor):
-        self._factors.append(factor)
-        tmp = set(self._nodes)
-        for node in factor.nodes:
-            if not node in tmp:
-                self._nodes.append(node)
+        return DiscreteMarkovNetwork(
+            states=self.states, edges=self._edges, factors=self.factors + [factor]
+        )
 
     def num_factor_parameters(self):
         return sum(len(f.values) for f in self.factors)

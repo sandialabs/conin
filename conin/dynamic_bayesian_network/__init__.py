@@ -3,3 +3,4 @@ from .model import (
     ConstrainedDynamicDiscreteBayesianNetwork,
 )
 from .dbn_to_bn import create_bn_from_dbn
+from .expr import ExpressionVariable

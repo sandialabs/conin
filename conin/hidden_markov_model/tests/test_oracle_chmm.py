@@ -11,7 +11,7 @@ import conin.constraints.oracle as oc
 class Test_Oracle_CHMM:
     T = 25
 
-    def test_load_model(self):
+    def test_construct_model(self):
         cpgm = tc.create_chmm1_oracle()
 
         assert cpgm.chmm.hmm.start_vec == [
@@ -19,11 +19,10 @@ class Test_Oracle_CHMM:
             for h in cpgm.hidden_markov_model.hidden_states
         ]
 
-    def test_load_model2(self):
+    def test_construct_model2(self):
         cpgm = tc.create_chmm1_oracle()
 
-        _hmm = HiddenMarkovModel()
-        _hmm.load_model(
+        _hmm = HiddenMarkovModel(
             start_probs=cpgm.hidden_markov_model.get_start_probs(),
             emission_probs=cpgm.hidden_markov_model.get_emission_probs(),
             transition_probs=cpgm.hidden_markov_model.get_transition_probs(),
@@ -35,7 +34,7 @@ class Test_Oracle_CHMM:
             for h in cpgm.hidden_markov_model.hidden_states
         ]
 
-    def test_load_model3(self):
+    def test_construct_model3(self):
         pgm = tc.create_hmm0()
         constraints = [oc.all_diff_constraint]
         chmm = Oracle_CHMM(hmm=pgm.repn, constraints=constraints)
@@ -54,15 +53,21 @@ class Test_Oracle_CHMM:
         assert cpgm.chmm.is_feasible(pass_seq)
         assert not cpgm.chmm.is_feasible(fail_seq2)
 
-    def Xtest_is_valid_hidden_state(self):
+    def test_is_valid_hidden_state(self):
         cpgm = tc.create_chmm1_oracle()
         assert cpgm.hidden_markov_model.is_valid_hidden_state("h0")
+        assert cpgm.hidden_markov_model.is_valid_hidden_state("h1")
         assert not cpgm.hidden_markov_model.is_valid_hidden_state("invalid")
+        assert not cpgm.hidden_markov_model.is_valid_hidden_state("")
 
-    def Xtest_set_seed(self):
+    def test_set_seed_affects_generation(self):
+        # Calling set_seed with the same value should produce identical sequences.
         chmm = tc.create_chmm1_oracle()
-        chmm.set_seed(1)
-        assert chmm._seed == 1
+        chmm.hidden_markov_model.set_seed(42)
+        seq1 = chmm.hidden_markov_model.generate_hidden(10)
+        chmm.hidden_markov_model.set_seed(42)
+        seq2 = chmm.hidden_markov_model.generate_hidden(10)
+        assert seq1 == seq2
 
     def test_generate(self):
         cpgm = tc.create_chmm1_oracle()

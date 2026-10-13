@@ -1,4 +1,4 @@
-<img src="doc/logos/conin_logo_large.png" align="center" alt="CONIN Logo" width="450"/>
+<img src="doc/sphinx/logos/conin_logo_large.png" align="center" alt="CONIN Logo" width="450"/>
 A Python library that supports constrained analysis and learning for probabilistic graphical models.
 
 --------------------------------------------------------------------------------
@@ -51,10 +51,10 @@ To build the documentation locally:
 
 ```
 python -m pip install -e .[docs]
-python -m sphinx -b html doc doc/_build/html
+python -m sphinx -b html doc/sphinx doc/sphinx/_build/html
 ```
 
-The generated HTML is written to `doc/_build/html`.
+The generated HTML is written to `doc/sphinx/_build/html`.
 
 ## Testing
 
