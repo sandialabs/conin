@@ -222,6 +222,15 @@ def _m_step(hmm, counts, masks, pseudocount, update):
             emit_counts, masks["emission"], pseudocount, emission
         )
 
+    return _rebuild_hmm(hmm, start, transition, emission)
+
+
+def _rebuild_hmm(hmm, start, transition, emission):
+    """Return a new ``HiddenMarkovModel`` with ``hmm``'s labels and new parameters.
+
+    ``HiddenMarkovModel`` is immutable, so updated parameters require a new
+    instance. Arrays are indexed in ``hmm``'s internal state order.
+    """
     # The constructor orders states by sorted label, and the dense dictionaries
     # below mention every label, so the rebuilt model keeps hmm's internal index
     # order (and with it the constraint alignment MVR_CHMM established).
