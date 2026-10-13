@@ -403,3 +403,48 @@ def test_ABC_constrained():
         assert J == J_
         assert v == v_
         assert w == w_
+
+
+#
+# Internal name clashes are rejected
+#
+
+
+def _two_node_MN(a, b):
+    from conin.markov_network import DiscreteFactor, DiscreteMarkovNetwork
+
+    return DiscreteMarkovNetwork(
+        states={a: [0, 1], b: [0, 1]},
+        factors=[DiscreteFactor(nodes=[a, b], values=[1, 2, 3, 4])],
+    )
+
+
+@pytest.mark.parametrize(
+    "a, b",
+    [
+        ("Z_0", ("Z", 0)),
+        (("A_B", 1), ("A", "B_1")),
+        ("X", ("X",)),
+    ],
+)
+def test_variable_name_clash_raises(a, b):
+    from conin.exceptions import InvalidInputError
+
+    with pytest.raises(InvalidInputError, match="internal variable name"):
+        create_pyomo_map_query_model_MN(pgm=_two_node_MN(a, b))
+
+
+def test_factor_name_clash_raises():
+    from conin.exceptions import InvalidInputError
+    from conin.markov_network import DiscreteFactor, DiscreteMarkovNetwork
+
+    # Factors over {A_B, C} and {A, B_C} both get the internal name "A_B_C"
+    pgm = DiscreteMarkovNetwork(
+        states={n: [0, 1] for n in ["A", "A_B", "B_C", "C"]},
+        factors=[
+            DiscreteFactor(nodes=["A_B", "C"], values=[1, 2, 3, 4]),
+            DiscreteFactor(nodes=["A", "B_C"], values=[1, 2, 3, 4]),
+        ],
+    )
+    with pytest.raises(InvalidInputError, match="internal name 'A_B_C'"):
+        extract_factor_representation(pgm)

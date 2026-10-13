@@ -1,5 +1,21 @@
 from math import log
+from conin.exceptions import InvalidInputError
 from conin.util import State
+
+
+def _check_unique_variable_names(pgm_states, var_index_map):
+    """Raise if two nodes are mapped to the same pyomo variable name."""
+    # TODO: Use clash-free (e.g. integer) variable ids instead of raising.
+    seen = {}
+    for r in pgm_states:
+        name = var_index_map[r]
+        if name in seen:
+            raise InvalidInputError(
+                f"Nodes {seen[name]!r} and {r!r} both have the internal "
+                f"variable name {name!r}; rename one of them to use the "
+                "pyomo backend"
+            )
+        seen[name] = r
 
 
 def get_factor_value(f, values):
@@ -33,6 +49,7 @@ def extract_factor_representation_(pgm_states, pgm_factors, var_index_map=None):
         var_index_map = {}
 
     if var_index_map:
+        _check_unique_variable_names(pgm_states, var_index_map)
         S = {
             var_index_map[r]: [State(value=s) for s in values]
             for r, values in pgm_states.items()
@@ -42,6 +59,7 @@ def extract_factor_representation_(pgm_states, pgm_factors, var_index_map=None):
     J = {}
     v = {}
     w = {}
+    factor_nodes = {}
     for factor in pgm_factors:
         # Create a string name for this factor
         vars = factor.nodes
@@ -49,6 +67,16 @@ def extract_factor_representation_(pgm_states, pgm_factors, var_index_map=None):
             i = "_".join(var_index_map[v] for v in vars)
         else:
             i = "_".join(vars)
+        # Factors over different nodes must not share a name.  (Factors over
+        # the same nodes still overwrite each other, as before.)
+        if i in factor_nodes and factor_nodes[i] != list(vars):
+            # TODO: Use clash-free (e.g. integer) factor ids instead of raising.
+            raise InvalidInputError(
+                f"Factors over {factor_nodes[i]} and {list(vars)} both have "
+                f"the internal name {i!r}; the pyomo backend does not support "
+                "factors with the same name"
+            )
+        factor_nodes[i] = list(vars)
 
         # J
         size = len(factor.values)
