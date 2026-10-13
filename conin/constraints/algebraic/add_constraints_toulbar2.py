@@ -4,7 +4,6 @@ from math import gcd
 from functools import reduce
 
 import pyomo.environ as pyo
-from pyomo.core.expr import current as EXPR
 from pyomo.repn import generate_standard_repn
 from pyomo.common.collections import ComponentMap
 
