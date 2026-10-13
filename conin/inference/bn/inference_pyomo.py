@@ -12,6 +12,7 @@ def create_pyomo_map_query_model_BN(
     evidence=None,
     var_index_map=None,
     timing=False,
+    omit_c5=False,
     **options,
 ):
     """Create a MAP query model.
@@ -100,6 +101,7 @@ def create_pyomo_map_query_model_BN(
         evidence=evidence,
         var_index_map=var_index_map,
         timing=timing,
+        omit_c5=omit_c5,
     )
 
     if isinstance(pgm, ConstrainedDiscreteBayesianNetwork) and pgm.constraints:
@@ -122,6 +124,7 @@ def inference_pyomo_map_query_BN(
     **options,
 ):
     use_cut_generation = options.pop("use_cut_generation", False)
+
     model = create_pyomo_map_query_model_BN(
         pgm=pgm,
         variables=variables,
