@@ -148,6 +148,9 @@ conin/
     wrapped classes, data isolation, get_copy);
   - +12 `test_public_api.py` rows (`conin.constrained_models.*`, `conin.representations.*`): 219 passed, 9 skipped.
   The MVR spec tests are still 281 passed in `/projects/.conin-scratch/venv`.
+- **After the PR 3 follow-ups** (single constraint accepted, brackets dropped): **1075 passed, 195 skipped,
+  0 errors** in `.venv-opencode` (+1, `test_single_constraint_accepted`). The same suite in the
+  `conin_scaling_experiments` venv (pgmpy + torch) gives 1434 passed, 119 skipped.
 - pgmpy, or_topas, gurobi and glpk are not installed in `.venv-opencode`; torch is broken
   there; greenery is missing.
 - PR 0 adds `doc/notebooks/MVR/*.ipynb` to the CI notebook job and fixes the
@@ -581,7 +584,7 @@ dependencies, and no new top-level imports of optional backends.
 ---
 
 ## 8. Testing strategy
-- PR 0 adds a public-API smoke test and records the baseline counts (959 passed / 195 skipped / 0 errors; see §2.3). After PR 1: 962 passed / 195 skipped. After PR 2: 1009 passed / 195 skipped (+47 new tests). After PR 3: 1074 passed / 195 skipped (+65).
+- PR 0 adds a public-API smoke test and records the baseline counts (959 passed / 195 skipped / 0 errors; see §2.3). After PR 1: 962 passed / 195 skipped. After PR 2: 1009 passed / 195 skipped (+47 new tests). After PR 3: 1074 passed / 195 skipped (+65). After the PR 3 follow-ups: 1075 passed / 195 skipped.
 - Every PR must keep the pass count ≥ baseline, after adjusting for deliberately deleted tests.
 - PR 3 adds tests for:
   - immutability (setattr raises; `with_*` returns a new object);
