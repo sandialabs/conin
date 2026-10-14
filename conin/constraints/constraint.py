@@ -251,7 +251,7 @@ class MVRConstraint(ConstraintFunctor):
         else:
             mvr = self.func(hidden_markov_model, data)
 
-        from ..hidden_markov_model.mvr import BaseMVR
+        from .mvr.mvr import BaseMVR
 
         if not isinstance(mvr, BaseMVR):
             raise InvalidInputError(

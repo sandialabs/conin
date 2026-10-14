@@ -6,7 +6,7 @@ from itertools import combinations, product
 from typing import Any, Literal
 
 from conin.exceptions import InvalidInputError
-from conin.hidden_markov_model.mvr import HomMVR, InhomMVR, _normalize_time_range
+from conin.constraints.mvr.mvr import HomMVR, InhomMVR, _normalize_time_range
 from conin.operators import mvr_operator_fn
 
 MVR = HomMVR | InhomMVR

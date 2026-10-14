@@ -6,7 +6,7 @@ import numpy as np
 import torch
 
 from conin.exceptions import InvalidInputError
-from conin.hidden_markov_model.mvr import InhomMVR
+from conin.constraints.mvr.mvr import InhomMVR
 
 NEG_INF = float("-inf")
 

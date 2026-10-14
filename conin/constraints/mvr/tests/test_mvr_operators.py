@@ -3,9 +3,9 @@ import pytest
 from itertools import product
 
 from conin.exceptions import InvalidInputError
-from conin.hidden_markov_model.mvr import HomMVR, InhomMVR
+from conin.constraints.mvr.mvr import HomMVR, InhomMVR
 
-from conin.hidden_markov_model.mvr_operators import (
+from conin.constraints.mvr.operators import (
     mvr_timerange,
     mvr_and,
     mvr_or,

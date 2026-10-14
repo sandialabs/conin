@@ -12,4 +12,4 @@ from .constraint import (
     toulbar2_constraint_fn,
 )
 from .algebraic import algebraic_constraint_fn, AlgebraicConstraint
-from .oracle import *
+from .oracle_library import *

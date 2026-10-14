@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 from conin.exceptions import InvalidInputError
-from conin.hidden_markov_model.mvr import BaseMVR
+from conin.constraints.mvr.mvr import BaseMVR
 
 
 class OperatorFunctor(ABC):

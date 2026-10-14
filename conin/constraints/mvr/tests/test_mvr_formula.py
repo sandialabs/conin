@@ -4,9 +4,9 @@ import pytest
 
 from conin.exceptions import InvalidInputError
 from conin.hidden_markov_model.constrained_hmm import ConstrainedHiddenMarkovModel
-from conin.hidden_markov_model.mvr_formula import build_mvr, build_mvr_functor
+from conin.constraints.mvr.formula import build_mvr, build_mvr_functor
 
-from conin.hidden_markov_model.mvr_constraints import (
+from conin.constraints.mvr.primitives import (
     mvr_constant,
     mvr_current_sequencelist,
     mvr_current_state,
@@ -20,7 +20,7 @@ from conin.hidden_markov_model.mvr_constraints import (
     mvr_withinbounds,
 )
 
-from conin.hidden_markov_model.mvr_operators import (
+from conin.constraints.mvr.operators import (
     mvr_and,
     mvr_concatenate,
     mvr_count,
@@ -35,7 +35,7 @@ from conin.hidden_markov_model.mvr_operators import (
     mvr_setdiff,
 )
 
-from conin.hidden_markov_model.tests.test_mvr_constraints import (
+from conin.constraints.mvr.tests.test_mvr_constraints import (
     ALPHABET,
     skipif_no_greenery,
     MAX_LENGTH,
@@ -234,8 +234,9 @@ def test_within_bounds_matches_hand_composed_calls(bounds):
 
 def test_grammar_covers_the_algebra():
     """Deliberately redundant: require formula coverage for every algebra entry."""
-    from conin.hidden_markov_model import mvr_constraints, mvr_operators
-    from conin.hidden_markov_model import mvr_formula as formula_module
+    from conin.constraints.mvr import primitives as mvr_constraints
+    from conin.constraints.mvr import operators as mvr_operators
+    from conin.constraints.mvr import formula as formula_module
 
     with open(formula_module.__file__) as source_file:
         source = source_file.read()
