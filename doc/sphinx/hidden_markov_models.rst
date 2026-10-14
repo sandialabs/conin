@@ -85,8 +85,8 @@ format is separate from the UAI file support described in
 Constrained hidden Markov models
 --------------------------------
 
-``ConstrainedHiddenMarkovModel`` wraps a base HMM and a list of constraint
-functors. The public examples include oracle, Pyomo, and Toulbar2 constraints.
+``ConstrainedHiddenMarkovModel`` wraps a base HMM and a list of
+constraints. The public examples include oracle, Pyomo, and Toulbar2 constraints.
 Oracle constraints with ``nodes`` (``FactorOracleConstraint``) generate
 auxiliary factors for variable-elimination inference.
 

@@ -1,5 +1,5 @@
 class ConstrainedDiscreteBayesianNetwork:
-    """Wrap a Bayesian network with optional constraint functors."""
+    """Wrap a Bayesian network with optional constraints."""
 
     def __init__(self, pgm, constraints=None):
         """Initialize the constrained Bayesian network.
@@ -9,7 +9,7 @@ class ConstrainedDiscreteBayesianNetwork:
         pgm : DiscreteBayesianNetwork
             Underlying Bayesian network to be constrained.
         constraints : list[Constraint], optional
-            Constraint functors that apply additional constraints during
+            Constraint objects that add constraints during
             inference.
         """
         self.pgm = pgm
@@ -35,7 +35,7 @@ class ConstrainedDiscreteBayesianNetwork:
 
     @property
     def constraints(self):
-        """Return the configured constraint functors.
+        """Return the configured constraints.
 
         Returns
         -------

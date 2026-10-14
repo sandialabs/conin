@@ -51,7 +51,7 @@ class ConinV:
 
 class AlgebraicConstraint(Constraint):
     """
-    Unified constraint functor for algebraic constraints.
+    Constraint class for algebraic constraints.
 
     Wraps a user function that adds constraints to a Smoek model.
     """

@@ -74,7 +74,7 @@ def _hmm_states_from_map(map_states, evidence):
 def _add_bn_constraints_as_evidence(pgm, constraints, data, evidence):
     """Inject generated constraint CPDs into a Bayesian network as evidence."""
     if len(constraints) == 0:
-        return
+        return pgm
 
     if isinstance(constraints[0], AlgebraicConstraint):
         constraints = create_oracle_constraints_from_algebraic(
@@ -88,15 +88,15 @@ def _add_bn_constraints_as_evidence(pgm, constraints, data, evidence):
             evidence[cpd.node] = 1
         else:
             raise TypeError(
-                "Unexpected constraint type {type(con)} for VariableElimination"
+                f"Unexpected constraint type {type(con)} for VariableElimination"
             )
     return pgm
 
 
 def _add_mn_constraints_as_evidence(pgm, constraints, data, evidence):
-    """Inject generated constraint CPDs into a Bayesian network as evidence."""
+    """Inject generated constraint factors into a Markov network as evidence."""
     if len(constraints) == 0:
-        return
+        return pgm
 
     if isinstance(constraints[0], AlgebraicConstraint):
         constraints = create_oracle_constraints_from_algebraic(
@@ -109,7 +109,7 @@ def _add_mn_constraints_as_evidence(pgm, constraints, data, evidence):
             evidence[factor.nodes[-1]] = 1
         else:
             raise TypeError(
-                "Unexpected constraint type {type(con)} for VariableElimination"
+                f"Unexpected constraint type {type(con)} for VariableElimination"
             )
     return pgm
 

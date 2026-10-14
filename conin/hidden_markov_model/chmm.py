@@ -13,7 +13,7 @@ class CHMM:
         High-level hidden Markov model object associated with the constrained
         model.
     constraints : list, optional
-        Constraint objects or functors used by derived constrained HMM
+        Constraint objects used by derived constrained HMM
         implementations.
     data : munch.Munch or mapping, optional
         Application-specific data made available to constrained HMM

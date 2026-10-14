@@ -1,5 +1,5 @@
 class ConstrainedDynamicDiscreteBayesianNetwork:
-    """Wrap a dynamic Bayesian network with optional constraint functors."""
+    """Wrap a dynamic Bayesian network with optional constraints."""
 
     def __init__(self, pgm, constraints=None):
         """Initialize the constrained dynamic Bayesian network.
@@ -9,7 +9,7 @@ class ConstrainedDynamicDiscreteBayesianNetwork:
         pgm : DynamicDiscreteBayesianNetwork
             Underlying dynamic Bayesian network to be constrained.
         constraints : list[Constraint], optional
-            Constraint functors that apply additional constraints during
+            Constraint objects that add constraints during
             inference.
         """
         self.pgm = pgm
@@ -34,7 +34,7 @@ class ConstrainedDynamicDiscreteBayesianNetwork:
 
     @property
     def constraints(self):
-        """Return the configured constraint functors.
+        """Return the configured constraints.
 
         Returns
         -------

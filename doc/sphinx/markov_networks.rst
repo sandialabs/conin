@@ -84,7 +84,7 @@ Constrained Markov networks
 ---------------------------
 
 ``ConstrainedDiscreteMarkovNetwork`` wraps a base Markov network together with a
-list of constraint functors. The examples in
+list of constraints. The examples in
 ``conin.examples.markov_network`` use the same three-variable ``ABC`` model and
 add an all-different constraint.
 

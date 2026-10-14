@@ -13,7 +13,7 @@ class ConstrainedDiscreteMarkovNetwork:
         pgm : DiscreteMarkovNetwork
             Underlying probabilistic graphical model to constrain.
         constraints : list[Constraint] or None, optional
-            Constraint functors that apply additional restrictions during
+            Constraint objects that add restrictions during
             inference.
         """
         self.pgm = pgm
@@ -54,7 +54,7 @@ class ConstrainedDiscreteMarkovNetwork:
 
     @property
     def constraints(self):
-        """Return the configured constraint functors.
+        """Return the configured constraints.
 
         Returns
         -------

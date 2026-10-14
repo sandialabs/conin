@@ -11,14 +11,14 @@ from .chmm import CHMM
 
 
 class ConstrainedHiddenMarkovModel:
-    """Hidden Markov model wrapper with attached constraint functors.
+    """Hidden Markov model wrapper with attached constraints.
 
     Parameters
     ----------
     hmm : HiddenMarkovModel or HMM_MatVecRepn, optional
         Hidden Markov model to wrap.
     constraints : list[Constraint], optional
-        Constraint functors used to build a constrained HMM solver.
+        Constraints used to build a constrained HMM solver.
     """
 
     def __init__(self, *, hmm=None, constraints=None):
@@ -29,7 +29,7 @@ class ConstrainedHiddenMarkovModel:
         hmm : HiddenMarkovModel or HMM_MatVecRepn, optional
             Hidden Markov model to wrap.
         constraints : list[Constraint], optional
-            Constraint functors used to configure the constrained model.
+            Constraints used to configure the constrained model.
         """
         self.hidden_markov_model = hmm
         self.constraint_type = None
@@ -40,7 +40,7 @@ class ConstrainedHiddenMarkovModel:
 
     @property
     def constraints(self):
-        """Get the configured constraint functors.
+        """Get the configured constraints.
 
         Returns
         -------
@@ -51,7 +51,7 @@ class ConstrainedHiddenMarkovModel:
 
     @constraints.setter
     def constraints(self, constraint_list):
-        """Set the list of constraint functors used to define model constraints.
+        """Set the list of constraints on the model.
 
         Parameters
         ----------
@@ -65,17 +65,17 @@ class ConstrainedHiddenMarkovModel:
             self.add_constraint(con)
 
     def add_constraint(self, constraint):
-        """Add a single constraint functor to the model.
+        """Add a single constraint to the model.
 
         Parameters
         ----------
         constraint : Constraint
-            Constraint functor to register.
+            Constraint to register.
 
         Raises
         ------
         ValueError
-            If ``constraint`` is not a supported constraint functor type.
+            If ``constraint`` is not a supported constraint type.
         """
         if isinstance(constraint, OracleConstraint):
             # Black-box oracle constraint (HMM A* style)

@@ -113,7 +113,8 @@ conin/
   regression tests (2 in `graphical_models/tests/test_conversions.py`, 1 in
   `sampling/dbn/tests/test_sampling.py`). `test_public_api.py` is still 194 passed, 9 skipped
   (rows moved to the new paths, duplicates merged, a `GraphicalModel` row added).
-- **After PR 2:** **1004 passed, 195 skipped, 0 errors**. The +42 are new tests:
+- **After PR 2:** **1009 passed, 195 skipped, 0 errors**. The +47 are new tests:
+  - 5 VE regression tests for the two §9 bugs fixed in PR 2 (`inference/tests/test_variable_elimination_helpers.py`);
   - 29 unit tests: `constraints/tests/test_families.py` (16), `representations/factor/tests/test_materialise.py` (6),
     `constraints/mvr/tests/test_mvr_constraint_family.py` (7);
   - a net +13 `test_public_api.py` rows: `Constraint` and `FactorOracleConstraint` (api_constraints.rst) replace the
@@ -506,7 +507,7 @@ dependencies, and no new top-level imports of optional backends.
 ---
 
 ## 8. Testing strategy
-- PR 0 adds a public-API smoke test and records the baseline counts (959 passed / 195 skipped / 0 errors; see §2.3). After PR 1: 962 passed / 195 skipped. After PR 2: 1004 passed / 195 skipped (+42 new tests).
+- PR 0 adds a public-API smoke test and records the baseline counts (959 passed / 195 skipped / 0 errors; see §2.3). After PR 1: 962 passed / 195 skipped. After PR 2: 1009 passed / 195 skipped (+47 new tests).
 - Every PR must keep the pass count ≥ baseline, after adjusting for deliberately deleted tests.
 - PR 3 adds tests for:
   - immutability (setattr raises; `with_*` returns a new object);
@@ -527,7 +528,8 @@ dependencies, and no new top-level imports of optional backends.
 | `recursive_a_star`: partial feasibility uses the old `constraint_data`; `n_infeasible` is in the wrong branch | 4c |
 | `mcem` replaces the HMM but the oracle keeps sampling from the old one; it also scores one sample and stores another | 4c |
 | The `CHMM` overloads in the AStar/Optimization/CFN dispatchers are broken | 3/5 (removed) |
-| VE: the ConstrainedMN overload replaces user evidence with `{}`; the MN factor oracle forces an existing scope node to 1; two error strings are missing the `f` prefix | 4e |
+| VE: the ConstrainedMN overload replaces user evidence with `{}`; the MN factor oracle forces an existing scope node to 1 | 4e |
+| VE: `_add_{bn,mn}_constraints_as_evidence` return `None` for an empty constraint list, and their `TypeError` strings were missing the `f` prefix | 2 (fixed, regression tests in `inference/tests/test_variable_elimination_helpers.py`) |
 | `solve_toulbar2_map_query_model` rejects extra `**options` (e.g. `verbose`) | 4b |
 | The DBN/HMM toulbar2 paths don't check that pytoulbar2 is available | 4b |
 | The HMM `network_flow` branch can return `None` | 4a |
