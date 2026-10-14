@@ -4,7 +4,8 @@ from dataclasses import dataclass
 
 from conin.exceptions import InvalidInputError
 from conin.util import batched
-from conin.markov_network import DiscreteFactor
+from conin.graphical_models.base import GraphicalModel
+from conin.graphical_models.markov_network import DiscreteFactor
 
 
 #
@@ -57,7 +58,7 @@ class DiscreteCPD:
         ('hard','medium'): dict(A=0.2, B=0.2, C=0.6),
         ('hard','high'): dict(A=0.3, B=0.3, C=0.4)}
 
-    >>> from conin.bayesian_network import DiscreteBayesianNetwork, DiscreteCPD
+    >>> from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
     >>> cpd = DiscreteCPD(
     ...     node='grade',
     ...     parents=['diff', 'intel'],
@@ -208,7 +209,7 @@ class DiscreteCPD:
         )
 
 
-class DiscreteBayesianNetwork:
+class DiscreteBayesianNetwork(GraphicalModel):
     """Discrete Bayesian network composed of nodes, edges, and CPDs."""
 
     def __init__(self, *, cpds, states=None):
@@ -449,64 +450,3 @@ class DiscreteBayesianNetwork:
 
     def num_cpd_parameters(self):
         return sum(len(cpd.values) for cpd in self.cpds)
-
-
-class ConstrainedDiscreteBayesianNetwork:
-    """Wrap a Bayesian network with optional constraint functors."""
-
-    def __init__(self, pgm, constraints=None):
-        """Initialize the constrained Bayesian network.
-
-        Parameters
-        ----------
-        pgm : DiscreteBayesianNetwork
-            Underlying Bayesian network to be constrained.
-        constraints : list[ConstraintFunctor], optional
-            Constraint functors that apply additional constraints during
-            inference.
-        """
-        self.pgm = pgm
-        if constraints:
-            self._constraints = constraints
-        else:
-            self._constraints = []
-
-    def check_model(self):
-        """Validate the underlying Bayesian network."""
-        self.pgm.check_model()
-
-    @property
-    def nodes(self):
-        """Return the nodes of the wrapped Bayesian network.
-
-        Returns
-        -------
-        list
-            Nodes maintained by the underlying Bayesian network.
-        """
-        return self.pgm.nodes
-
-    @property
-    def constraints(self):
-        """Return the configured constraint functors.
-
-        Returns
-        -------
-        list
-            List of ``ConstraintFunctor`` instances that add constraints to a
-            query model.
-        """
-        return self._constraints
-
-    @constraints.setter
-    def constraints(self, constraint_list):
-        """Set the functions that define model constraints.
-
-        Parameters
-        ----------
-        constraint_list : list of ConstraintFunctor
-            List of ``ConstraintFunctor`` instances that generate model
-            constraints.
-        """
-        assert type(constraint_list) is list
-        self._constraints = constraint_list

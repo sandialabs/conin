@@ -7,25 +7,17 @@ from pyomo.common.timing import TicTocTimer
 from conin.util import try_import
 from conin.common.unified import save_model
 
+from conin.graphical_models import create_dbn_from_hmm, HiddenMarkovModel
 from conin.hidden_markov_model import (
-    create_dbn_from_hmm,
-    HiddenMarkovModel,
     ConstrainedHiddenMarkovModel,
     CHMM,
 )
-from conin.markov_network import (
-    DiscreteMarkovNetwork,
-    ConstrainedDiscreteMarkovNetwork,
-)
-from conin.bayesian_network import (
-    DiscreteBayesianNetwork,
-    ConstrainedDiscreteBayesianNetwork,
-)
-from conin.dynamic_bayesian_network import (
-    create_bn_from_dbn,
-    DynamicDiscreteBayesianNetwork,
-    ConstrainedDynamicDiscreteBayesianNetwork,
-)
+from conin.graphical_models import DiscreteMarkovNetwork
+from conin.markov_network import ConstrainedDiscreteMarkovNetwork
+from conin.graphical_models import DiscreteBayesianNetwork
+from conin.bayesian_network import ConstrainedDiscreteBayesianNetwork
+from conin.graphical_models import create_bn_from_dbn, DynamicDiscreteBayesianNetwork
+from conin.dynamic_bayesian_network import ConstrainedDynamicDiscreteBayesianNetwork
 
 from conin.constraints import OracleConstraint
 from conin.constraints.algebraic import (

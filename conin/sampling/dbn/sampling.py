@@ -1,14 +1,22 @@
+import copy
+
 from conin.util import Util
-from conin.dynamic_bayesian_network.expr import ExpressionNode
+from conin.graphical_models.expr import ExpressionNode
 
 
 class DBNSampler:
     """
     Class to handle sampling functions for the DBN G
+
+    The sampler works on a private deep copy of ``G``, so changing the time
+    index (``set_time``, ``sample``) does not modify the shared ``t`` variable
+    of the DBN passed in.
     """
 
     def __init__(self, G):
-        self.G = G
+        # Deep-copy G so that the CPD time expressions refer to a private copy
+        # of the time variable G.t, which this class mutates while sampling.
+        self.G = copy.deepcopy(G)
         self.G.t.set_value(0)
         self.cpd_map = self.get_cpd_map()
         self.representation = self.build_representation()

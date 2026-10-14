@@ -8,11 +8,8 @@ from conin.constraints import (
     algebraic_constraint_fn,
 )
 from conin.util import try_import, MPESolution
-from conin.markov_network import (
-    DiscreteFactor,
-    DiscreteMarkovNetwork,
-    ConstrainedDiscreteMarkovNetwork,
-)
+from conin.graphical_models import DiscreteFactor, DiscreteMarkovNetwork
+from conin.markov_network import ConstrainedDiscreteMarkovNetwork
 
 with try_import() as pgmpy_available:
     from pgmpy.models import DiscreteMarkovNetwork as pgmpy_MarkovNetwork

@@ -5,9 +5,9 @@ import numpy as np
 
 from conin.util import try_import
 from conin.common.conin import convert_conin_to_pgmpy_mn
-from conin.bayesian_network import create_mn_from_bn
-import conin.markov_network.examples
-import conin.bayesian_network.examples
+from conin.graphical_models import create_mn_from_bn
+import conin.examples.mn
+import conin.examples.bn
 
 with try_import() as pgmpy_available:
     import pgmpy
@@ -45,7 +45,7 @@ def check_values(factor, values):
 
 @require_pgmpy
 def test_ABC():
-    conin_pgm = conin.markov_network.examples.ABC_conin().pgm
+    conin_pgm = conin.examples.mn.ABC_conin().pgm
 
     # Convert to pgmpy
     pgmpy_pgm = convert_conin_to_pgmpy_mn(conin_pgm)
@@ -83,7 +83,7 @@ def test_ABC():
 
 @require_pgmpy
 def test_ABC2():
-    conin_pgm = conin.markov_network.examples.ABC2_conin().pgm
+    conin_pgm = conin.examples.mn.ABC2_conin().pgm
 
     # Convert to pgmpy
     pgmpy_pgm = convert_conin_to_pgmpy_mn(conin_pgm)
@@ -122,7 +122,7 @@ def test_ABC2():
 @require_pgmpy
 def test_integration_with_bayesian_examples():
     """Test conversion works with various examples from the bayesian_network module."""
-    from conin.bayesian_network.examples import (
+    from conin.examples.bn import (
         simple1_BN_conin,
         DBDA_5_1_conin,
         holmes_conin,

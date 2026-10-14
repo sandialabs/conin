@@ -1,6 +1,1 @@
-from .model import (
-    DynamicDiscreteBayesianNetwork,
-    ConstrainedDynamicDiscreteBayesianNetwork,
-)
-from .dbn_to_bn import create_bn_from_dbn
-from .expr import ExpressionVariable
+from .constrained_model import ConstrainedDynamicDiscreteBayesianNetwork

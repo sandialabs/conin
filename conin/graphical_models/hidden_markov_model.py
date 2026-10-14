@@ -6,6 +6,7 @@ import ast
 
 from conin.exceptions import InvalidInputError
 from conin.util import Util
+from conin.graphical_models.base import GraphicalModel
 
 
 def _validate_start_vec(start_vec, check_errors=True):
@@ -328,7 +329,7 @@ class HMM_MatVecRepn:
         return self.generate_observed_from_hidden(hidden)
 
 
-class HiddenMarkovModel:
+class HiddenMarkovModel(GraphicalModel):
     """Hidden Markov model with external-label and numeric representations.
 
     Parameters
@@ -877,3 +878,37 @@ class HiddenMarkovModel:
             transition_probs=transition_probs,
             emission_probs=emission_probs,
         )
+
+
+def random_hmm(*, hidden_states, observed_states, seed=None):
+    """Generate a random hidden Markov model.
+
+    Parameters
+    ----------
+    hidden_states : iterable
+        Hidden state labels for the generated model.
+    observed_states : iterable
+        Observable state labels for the generated model.
+    seed : int, optional
+        Random seed used for reproducible sampling.
+
+    Returns
+    -------
+    HiddenMarkovModel
+        Hidden Markov model with randomly generated start, transition, and
+        emission probabilities.
+    """
+    if seed is not None:
+        np.random.seed(seed)
+
+    S = Util.normalize_dictionary({s: np.random.uniform() for s in hidden_states})
+
+    T = Util.normalize_2d_dictionary(
+        {(a, b): np.random.uniform() for a in hidden_states for b in hidden_states}
+    )
+    E = Util.normalize_2d_dictionary(
+        {(s, o): np.random.uniform() for s in hidden_states for o in observed_states}
+    )
+
+    hmm = HiddenMarkovModel(start_probs=S, transition_probs=T, emission_probs=E)
+    return hmm

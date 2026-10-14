@@ -1,10 +1,10 @@
 from math import prod
 
 from conin.util import try_import
-from conin.markov_network import DiscreteMarkovNetwork, DiscreteFactor
-from conin.bayesian_network import DiscreteBayesianNetwork, DiscreteCPD
-from conin.dynamic_bayesian_network.model import DynamicDiscreteBayesianNetwork
-from conin.dynamic_bayesian_network.expr import ExpressionVariable
+from conin.graphical_models import DiscreteMarkovNetwork, DiscreteFactor
+from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
+from conin.graphical_models import DynamicDiscreteBayesianNetwork
+from conin.graphical_models import ExpressionVariable
 
 with try_import() as pgmpy_available:
     import pgmpy.models

@@ -1,13 +1,9 @@
-"""Tests for DiscreteFactor, DiscreteMarkovNetwork, and ConstrainedDiscreteMarkovNetwork."""
+"""Tests for DiscreteFactor and DiscreteMarkovNetwork."""
 
 import pytest
 
 from conin.exceptions import InvalidInputError
-from conin.markov_network import (
-    ConstrainedDiscreteMarkovNetwork,
-    DiscreteFactor,
-    DiscreteMarkovNetwork,
-)
+from conin.graphical_models import DiscreteFactor, DiscreteMarkovNetwork
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -275,54 +271,3 @@ class TestDiscreteMarkovNetwork:
         )
         with pytest.raises(AssertionError):
             mn.check_model()
-
-
-# ---------------------------------------------------------------------------
-# ConstrainedDiscreteMarkovNetwork tests
-# ---------------------------------------------------------------------------
-
-
-class TestConstrainedDiscreteMarkovNetwork:
-    def test_wraps_pgm(self):
-        mn = _make_simple_mn()
-        cmn = ConstrainedDiscreteMarkovNetwork(mn)
-        assert cmn.pgm is mn
-
-    def test_nodes_delegates_to_pgm(self):
-        mn = _make_simple_mn()
-        cmn = ConstrainedDiscreteMarkovNetwork(mn)
-        assert cmn.nodes == mn.nodes
-
-    def test_states_of_delegates(self):
-        mn = _make_simple_mn()
-        cmn = ConstrainedDiscreteMarkovNetwork(mn)
-        assert cmn.states_of("A") == [0, 1]
-
-    def test_default_constraints_empty(self):
-        mn = _make_simple_mn()
-        cmn = ConstrainedDiscreteMarkovNetwork(mn)
-        assert cmn.constraints == []
-
-    def test_constraints_kwarg(self):
-        mn = _make_simple_mn()
-        sentinel = object()
-        cmn = ConstrainedDiscreteMarkovNetwork(mn, constraints=[sentinel])
-        assert cmn.constraints == [sentinel]
-
-    def test_constraints_setter(self):
-        mn = _make_simple_mn()
-        cmn = ConstrainedDiscreteMarkovNetwork(mn)
-        sentinel = object()
-        cmn.constraints = [sentinel]
-        assert cmn.constraints == [sentinel]
-
-    def test_constraints_setter_requires_list(self):
-        mn = _make_simple_mn()
-        cmn = ConstrainedDiscreteMarkovNetwork(mn)
-        with pytest.raises(AssertionError):
-            cmn.constraints = "not-a-list"
-
-    def test_check_model_delegates(self):
-        mn = _make_simple_mn()
-        cmn = ConstrainedDiscreteMarkovNetwork(mn)
-        cmn.check_model()  # should not raise

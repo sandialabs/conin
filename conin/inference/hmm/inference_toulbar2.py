@@ -1,7 +1,7 @@
 import munch
 import conin.markov_network
 from conin.hidden_markov_model import ConstrainedHiddenMarkovModel
-from conin.hidden_markov_model.hmm_to_dbn import create_dbn_from_hmm
+from conin.graphical_models import create_dbn_from_hmm
 from conin.inference.dbn.inference_toulbar2 import (
     create_toulbar2_map_query_model_DDBN,
 )

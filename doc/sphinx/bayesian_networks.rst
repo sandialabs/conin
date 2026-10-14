@@ -13,7 +13,7 @@ parents can be supplied as a dictionary keyed by parent assignments.
 
 .. code-block:: python
 
-   from conin.bayesian_network import DiscreteBayesianNetwork, DiscreteCPD
+   from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
 
    cpd_a = DiscreteCPD(node="A", values=[0.9, 0.1])
    cpd_b = DiscreteCPD(
@@ -38,7 +38,7 @@ two nodes and one conditional dependency.
 
 .. code-block:: python
 
-   from conin.bayesian_network import DiscreteBayesianNetwork, DiscreteCPD
+   from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
 
    cpd_a = DiscreteCPD(node="A", values=[0.9, 0.1])
    cpd_b = DiscreteCPD(
@@ -58,7 +58,7 @@ node with two parents:
 
 .. code-block:: python
 
-   from conin.bayesian_network import DiscreteBayesianNetwork, DiscreteCPD
+   from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
 
    cpd_pollution = DiscreteCPD(node="Pollution", values=[0.9, 0.1])
    cpd_smoker = DiscreteCPD(node="Smoker", values=[0.3, 0.7])
@@ -105,7 +105,7 @@ Constrained Bayesian networks
 -----------------------------
 
 ``ConstrainedDiscreteBayesianNetwork`` uses the same constraint decorators as
-other model families. The examples in ``conin.bayesian_network.examples`` apply
+other model families. The examples in ``conin.examples.bn`` apply
 constraints to the cancer network.
 
 The Pyomo and Toulbar2 snippets below require their respective solver backends.
@@ -123,7 +123,7 @@ choosing the same state:
    import pyomo.environ as pyo
    from conin import pyomo_constraint_fn
    from conin.bayesian_network import ConstrainedDiscreteBayesianNetwork
-   from conin.bayesian_network.examples import cancer1_BN_conin
+   from conin.examples.bn import cancer1_BN_conin
 
    base = cancer1_BN_conin().pgm
 
@@ -145,7 +145,7 @@ interface:
 
    from conin import toulbar2_constraint_fn
    from conin.bayesian_network import ConstrainedDiscreteBayesianNetwork
-   from conin.bayesian_network.examples import cancer1_BN_conin
+   from conin.examples.bn import cancer1_BN_conin
 
    base = cancer1_BN_conin().pgm
 
@@ -174,7 +174,7 @@ auxiliary CPD:
 
    from conin import oracle_constraint_fn
    from conin.bayesian_network import ConstrainedDiscreteBayesianNetwork
-   from conin.bayesian_network.examples import cancer1_BN_conin
+   from conin.examples.bn import cancer1_BN_conin
 
    base = cancer1_BN_conin().pgm
 

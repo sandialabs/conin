@@ -1,8 +1,7 @@
 from conin.util import try_import
 import conin.common.conin
 
-import conin.bayesian_network
-import conin.markov_network
+import conin.graphical_models
 
 with try_import() as pgmpy_available:
     import pgmpy  # noqa: F401
@@ -23,8 +22,8 @@ def log_potential(pgm, query_variables, evidence=None, **options):
     A wrapper function that calls log_potential functions for specific libraries that
     conin interfaces with.
     """
-    if isinstance(pgm, conin.bayesian_network.DiscreteBayesianNetwork) or isinstance(
-        pgm, conin.markov_network.DiscreteMarkovNetwork
+    if isinstance(pgm, conin.graphical_models.DiscreteBayesianNetwork) or isinstance(
+        pgm, conin.graphical_models.DiscreteMarkovNetwork
     ):
         return conin.common.conin.log_potential(
             pgm, query_variables, evidence=evidence, **options

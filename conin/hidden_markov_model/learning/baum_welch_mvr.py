@@ -18,7 +18,7 @@ import torch
 
 from conin.exceptions import InvalidInputError
 
-from ..hmm import HiddenMarkovModel
+from conin.graphical_models import HiddenMarkovModel
 from ..mvr_common import (
     ACCUM_DTYPE,
     _build_static_context,

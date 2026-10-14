@@ -4,7 +4,7 @@ import sys
 import numpy as np
 
 from conin.util import try_import
-from conin.bayesian_network import DiscreteBayesianNetwork, DiscreteCPD
+from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
 from conin.common.conin import convert_conin_to_pgmpy_bn
 
 with try_import() as pgmpy_available:
@@ -121,7 +121,7 @@ def test_simple_parent_child_conversion():
 @require_pgmpy
 def test_cancer_model_conversion():
     """Test conversion using the complex cancer example."""
-    from conin.bayesian_network.examples import cancer1_BN_conin
+    from conin.examples.bn import cancer1_BN_conin
 
     # Get conin cancer model
     cancer_data = cancer1_BN_conin()
@@ -278,7 +278,7 @@ def test_model_with_multiple_parents():
 @require_pgmpy
 def test_integration_with_bayesian_examples():
     """Test conversion works with various examples from the bayesian_network module."""
-    from conin.bayesian_network.examples import (
+    from conin.examples.bn import (
         simple1_BN_conin,
         DBDA_5_1_conin,
         holmes_conin,

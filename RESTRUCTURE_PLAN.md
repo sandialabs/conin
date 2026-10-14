@@ -1,6 +1,6 @@
 # Conin Restructure Plan
 
-Status: **In progress.** PR 0 is merged into `main` (#241). The later PRs target the `restructure` branch.
+Status: **In progress.** PR 0 is merged into `main` (#241). PR 1 is done (branch `restructure-pr1-graphical-models`, targets `restructure`). The later PRs target the `restructure` branch.
 This file lives at the repo root while the work is in progress. Delete it in the final PR.
 
 All decisions are recorded in §11; §12 lists what is still open. Critiques of the
@@ -32,13 +32,21 @@ constraint functions see.
 ## 2. Current state (summary of findings)
 
 ### 2.1 Layout today
+Before PR 1, each model package held both its unconstrained and constrained classes
+(`markov_network/model.py`, `bayesian_network/model.py` + `bn_to_mn.py`,
+`dynamic_bayesian_network/model.py` + `dbn_to_bn.py` + `expr.py`,
+`hidden_markov_model/hmm.py` + `hmm_util.py` + `hmm_to_dbn.py`) plus an `examples.py`.
+After PR 1:
 ```
 conin/
-  markov_network/        model.py (DiscreteFactor, DiscreteMarkovNetwork, ConstrainedDiscreteMarkovNetwork), examples.py
-  bayesian_network/      model.py (DiscreteCPD, DiscreteBayesianNetwork, ConstrainedDiscreteBayesianNetwork), bn_to_mn.py, examples.py
-  dynamic_bayesian_network/ model.py, dbn_to_bn.py, expr.py, examples.py
-  hidden_markov_model/   hmm.py, constrained_hmm.py, chmm*.py, mvr*.py, hmm_application.py, hmm_to_dbn.py,
-                         inference/ learning/ sampling/ other_queries/, examples.py
+  graphical_models/      base.py (GraphicalModel), markov_network.py, bayesian_network.py,
+                         dynamic_bayesian_network.py, expr.py, hidden_markov_model.py, conversions.py
+  examples/              mn.py, bn.py, dbn.py, hmm.py
+  markov_network/        constrained_model.py (ConstrainedDiscreteMarkovNetwork)
+  bayesian_network/      constrained_model.py (ConstrainedDiscreteBayesianNetwork)
+  dynamic_bayesian_network/ constrained_model.py (ConstrainedDynamicDiscreteBayesianNetwork)
+  hidden_markov_model/   constrained_hmm.py, chmm*.py, mvr*.py, hmm_application.py,
+                         inference/ learning/ sampling/ other_queries/
   constraints/           constraint.py (all functor classes), oracle.py (oracle library), algebraic/ (smoek)
   inference/             map_query.py, {Optimization,CFN,AStar,Viterbi}Inference.py, VariableElimination.py,
                          mn/ bn/ dbn/ hmm/  (pyomo + toulbar2 per model)
@@ -88,6 +96,10 @@ conin/
   gives **959 passed, 195 skipped, 0 errors**. This breaks down as:
   - the old suite: 765 passed, 186 skipped (178 + the 8 torch MVR modules, which now skip);
   - the new `conin/tests/test_public_api.py`: 194 passed, 9 skipped (the torch rows).
+- **After PR 1:** **962 passed, 195 skipped, 0 errors**. The +3 are the new DBN `.t`
+  regression tests (2 in `graphical_models/tests/test_conversions.py`, 1 in
+  `sampling/dbn/tests/test_sampling.py`). `test_public_api.py` is still 194 passed, 9 skipped
+  (rows moved to the new paths, duplicates merged, a `GraphicalModel` row added).
 - pgmpy, or_topas, gurobi and glpk are not installed in `.venv-opencode`; torch is broken
   there; greenery is missing.
 - PR 0 adds `doc/notebooks/MVR/*.ipynb` to the CI notebook job and fixes the
@@ -399,7 +411,7 @@ detection keeps the diffs reviewable.
 | PR | Title | Kind | Contents |
 |----|-------|------|----------|
 | 0 | Guardrails | infra | **DONE (#241, merged to `main`).** **Target `main`.** Make torch tests skip robustly (`try_import` instead of `importorskip`). Add `doc/notebooks/MVR/*.ipynb` to CI and fix the `regex_tutorial` import. Add `tests/test_public_api.py`, which imports every public symbol used by the docs and notebooks; later PRs update it instead of breaking it silently. Record the baseline test counts. |
-| 1 | Unconstrained models → `graphical_models/`; examples → `examples/` | move | Pure moves plus import updates. Conversions move too. One behaviour fix: stop `create_bn_from_dbn` and `DBNSampler` from mutating `dbn.t` (the immutability leak). |
+| 1 | Unconstrained models → `graphical_models/`; examples → `examples/` | move | **DONE (branch `restructure-pr1-graphical-models`).** Pure moves plus import updates. Conversions move too. One behaviour fix: stop `create_bn_from_dbn` and `DBNSampler` from mutating `dbn.t` (the immutability leak). |
 | 2 | Constraints → containers | move + small refactor | Split `constraint.py`. Move the oracle library and the MVR spec code (mvr, primitives, operators, formula) into `constraints/`. Merge `operators.py` (removes the cycle). Add `family`. Split `FactorOracleConstraint`. Move `_materialise` into a temporary home in `representations/factor/`. |
 | 3 | `ConstrainedGraphicalModel` + representation framework | **design** | Base class, registry, cache, `get_copy`, immutability. Port the four constrained classes. Builders initially wrap the *existing* create functions, so behaviour stays identical. Update every `initialize_chmm` and `.chmm` call site (examples, tests, docs). |
 | 4a | Pyomo repns + `inference/pyomo` | refactor | One `PyomoVarWrapper` and one constraint applier. Split create from solve. Network-flow repn. Fix Pyomo-path bugs from §9. |
@@ -461,7 +473,7 @@ dependencies, and no new top-level imports of optional backends.
 ---
 
 ## 8. Testing strategy
-- PR 0 adds a public-API smoke test and records the baseline counts (959 passed / 195 skipped / 0 errors; see §2.3).
+- PR 0 adds a public-API smoke test and records the baseline counts (959 passed / 195 skipped / 0 errors; see §2.3). After PR 1: 962 passed / 195 skipped.
 - Every PR must keep the pass count ≥ baseline, after adjusting for deliberately deleted tests.
 - PR 3 adds tests for:
   - immutability (setattr raises; `with_*` returns a new object);
@@ -488,7 +500,7 @@ dependencies, and no new top-level imports of optional backends.
 | The HMM `network_flow` branch can return `None` | 4a |
 | `CallableDict.__getitem__` returns `KeyError` instead of raising it | 4a |
 | `ConstrainedDynamicDiscreteBayesianNetwork.nodes` is not a property | 3 |
-| `DynamicDiscreteBayesianNetwork.t` is public and gets mutated by `create_bn_from_dbn` and `DBNSampler` (an immutability leak) | 1 |
+| `DynamicDiscreteBayesianNetwork.t` is public and gets mutated by `create_bn_from_dbn` and `DBNSampler` (an immutability leak) | 1 (fixed: `create_bn_from_dbn` restores `t`; `DBNSampler` works on a deep copy) |
 | `backends.rst` calls smoek optional although pyproject requires it; torch and pytoulbar2 aren't declared as extras | 6 |
 
 ---

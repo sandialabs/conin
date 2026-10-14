@@ -6,7 +6,7 @@ from conin.inference.bn import (
     inference_pyomo_map_query_BN,
     inference_toulbar2_map_query_BN,
 )
-from conin.bayesian_network import examples
+from conin.examples import bn as examples
 
 with try_import() as pgmpy_available:
     from pgmpy.inference import VariableElimination

@@ -2,8 +2,7 @@ import numpy as np
 
 # import pandas as pd
 
-import conin.markov_network
-import conin.bayesian_network
+import conin.graphical_models
 
 
 def log_potential(pgm, variables, evidence=None):
@@ -25,7 +24,7 @@ def log_potential(pgm, variables, evidence=None):
     ), "ERROR: cannot yet compute log_probability value with latent variables, which need to be marginalized."
 
     log_potential = 0.0
-    if type(pgm) is conin.bayesian_network.DiscreteBayesianNetwork:
+    if type(pgm) is conin.graphical_models.DiscreteBayesianNetwork:
         for cpd in pgm.cpds:
             if cpd.parents:
                 if len(cpd.parents) == 1:
@@ -42,7 +41,7 @@ def log_potential(pgm, variables, evidence=None):
 
         return log_potential
 
-    elif type(pgm) is conin.markov_network.DiscreteMarkovNetwork:
+    elif type(pgm) is conin.graphical_models.DiscreteMarkovNetwork:
         for factor in pgm.factors:
             if len(factor.nodes) == 1:
                 x = factor.values[data[factor.nodes[0]]]

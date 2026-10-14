@@ -7,6 +7,7 @@ import copy
 import pyomo.environ as pyo
 
 from conin.hidden_markov_model import *
+from conin.graphical_models import HiddenMarkovModel
 from conin.constraints.oracle import *
 from conin import pyomo_constraint_fn
 from conin.hidden_markov_model.inference import (

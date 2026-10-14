@@ -7,7 +7,7 @@ from conin.inference.dbn import (
     inference_toulbar2_map_query_DDBN,
 )
 
-from conin.dynamic_bayesian_network import examples
+from conin.examples import dbn as examples
 
 with try_import() as pgmpy_available:
     import pgmpy

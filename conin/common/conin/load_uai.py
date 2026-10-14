@@ -4,8 +4,8 @@ import itertools
 import pprint
 from collections import defaultdict
 
-from conin.markov_network import DiscreteFactor, DiscreteMarkovNetwork
-from conin.bayesian_network import DiscreteCPD, DiscreteBayesianNetwork
+from conin.graphical_models import DiscreteFactor, DiscreteMarkovNetwork
+from conin.graphical_models import DiscreteCPD, DiscreteBayesianNetwork
 
 lineno = 0
 

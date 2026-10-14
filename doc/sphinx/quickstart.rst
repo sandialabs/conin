@@ -37,7 +37,7 @@ The following example creates a two-node Bayesian network with one root node
 
 .. doctest:: quickstart
 
-   >>> from conin.bayesian_network import DiscreteBayesianNetwork, DiscreteCPD
+   >>> from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
    >>> cpd_a = DiscreteCPD(node="A", values=[0.9, 0.1])
    >>> cpd_b = DiscreteCPD(
    ...     node="B",

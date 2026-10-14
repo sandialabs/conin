@@ -1,5 +1,1 @@
-from .model import (
-    DiscreteMarkovNetwork,
-    ConstrainedDiscreteMarkovNetwork,
-    DiscreteFactor,
-)
+from .constrained_model import ConstrainedDiscreteMarkovNetwork

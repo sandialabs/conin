@@ -14,7 +14,7 @@ from conin.inference.mn.factor_repn import (
     State,
 )
 
-from conin.markov_network import examples
+from conin.examples import mn as examples
 
 with try_import() as pgmpy_available:
     import pgmpy
@@ -411,7 +411,7 @@ def test_ABC_constrained():
 
 
 def _two_node_MN(a, b):
-    from conin.markov_network import DiscreteFactor, DiscreteMarkovNetwork
+    from conin.graphical_models import DiscreteFactor, DiscreteMarkovNetwork
 
     return DiscreteMarkovNetwork(
         states={a: [0, 1], b: [0, 1]},
@@ -436,7 +436,7 @@ def test_variable_name_clash_raises(a, b):
 
 def test_factor_name_clash_raises():
     from conin.exceptions import InvalidInputError
-    from conin.markov_network import DiscreteFactor, DiscreteMarkovNetwork
+    from conin.graphical_models import DiscreteFactor, DiscreteMarkovNetwork
 
     # Factors over {A_B, C} and {A, B_C} both get the internal name "A_B_C"
     pgm = DiscreteMarkovNetwork(

@@ -12,6 +12,7 @@ from .constraints import (
 )
 from .exceptions import InvalidInputError, InsufficientSolutionsError
 from . import __about__
+from . import graphical_models
 from . import markov_network
 from . import bayesian_network
 from . import dynamic_bayesian_network

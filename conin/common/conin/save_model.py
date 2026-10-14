@@ -1,7 +1,7 @@
 from conin.util import try_import
-from conin.bayesian_network.model import DiscreteBayesianNetwork
-from conin.dynamic_bayesian_network.model import DynamicDiscreteBayesianNetwork
-from conin.markov_network.model import DiscreteMarkovNetwork
+from conin.graphical_models import DiscreteBayesianNetwork
+from conin.graphical_models import DynamicDiscreteBayesianNetwork
+from conin.graphical_models import DiscreteMarkovNetwork
 
 with try_import() as pgmpy_available:
     from pgmpy.models import DiscreteBayesianNetwork as pgmpy_DiscreteBayesianNetwork

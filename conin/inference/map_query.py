@@ -73,16 +73,16 @@ def map_query(
     --------
     Static model (Markov network):
 
-    >>> import conin.markov_network.examples
+    >>> import conin.examples.mn
     >>> from conin.inference import map_query
-    >>> example = conin.markov_network.examples.ABC_conin()
+    >>> example = conin.examples.mn.ABC_conin()
     >>> results = map_query(example.pgm, method="integer_program", solver="glpk")  # doctest: +SKIP
 
     Dynamic model (Hidden Markov model):
 
-    >>> import conin.hidden_markov_model.examples
+    >>> import conin.examples.hmm
     >>> from conin.inference import map_query
-    >>> pgm = conin.hidden_markov_model.examples.create_hmm1()
+    >>> pgm = conin.examples.hmm.create_hmm1()
     >>> results = map_query(pgm, method="integer_program", evidence=["o0", "o1"], solver="glpk")  # doctest: +SKIP
     """
     if method not in _query_functions:

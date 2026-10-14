@@ -7,8 +7,9 @@ model and, when available, a ``solutions`` field with expected MAP/MPE results
 used by the test suite.
 
 This page highlights representative examples that are useful starting points for
-new models. It is not an exhaustive API listing; inspect each model package's
-``examples.py`` module for every available factory.
+new models. It is not an exhaustive API listing; inspect the ``conin.examples``
+modules (``conin/examples/mn.py``, ``bn.py``, ``dbn.py`` and ``hmm.py``) for
+every available factory.
 
 Backend Requirements
 --------------------
@@ -20,7 +21,7 @@ package and solver requirements.
 Markov Network Examples
 -----------------------
 
-Selected Markov network examples live in ``conin.markov_network.examples``.
+Selected Markov network examples live in ``conin.examples.mn``.
 
 .. list-table::
    :header-rows: 1
@@ -56,7 +57,7 @@ Example usage:
 
 .. code-block:: python
 
-   from conin.markov_network.examples import ABC_conin
+   from conin.examples.mn import ABC_conin
 
    example = ABC_conin()
    pgm = example.pgm
@@ -65,7 +66,7 @@ Example usage:
 Bayesian Network Examples
 -------------------------
 
-Selected Bayesian network examples live in ``conin.bayesian_network.examples``.
+Selected Bayesian network examples live in ``conin.examples.bn``.
 
 .. list-table::
    :header-rows: 1
@@ -95,7 +96,7 @@ Example usage:
 
 .. code-block:: python
 
-   from conin.bayesian_network.examples import simple1_BN_conin
+   from conin.examples.bn import simple1_BN_conin
 
    example = simple1_BN_conin()
    pgm = example.pgm
@@ -105,7 +106,7 @@ Dynamic Bayesian Network Examples
 ---------------------------------
 
 Selected dynamic Bayesian network examples live in
-``conin.dynamic_bayesian_network.examples``.
+``conin.examples.dbn``.
 
 .. list-table::
    :header-rows: 1
@@ -137,7 +138,7 @@ Example usage:
 
 .. code-block:: python
 
-   from conin.dynamic_bayesian_network.examples import simple0_DDBN_conin
+   from conin.examples.dbn import simple0_DDBN_conin
 
    example = simple0_DDBN_conin()
    dbn = example.pgm
@@ -147,7 +148,7 @@ Hidden Markov Model Examples
 ----------------------------
 
 Selected hidden Markov model examples live in
-``conin.hidden_markov_model.examples``.
+``conin.examples.hmm``.
 
 .. list-table::
    :header-rows: 1
@@ -181,7 +182,7 @@ Example usage:
 
 .. code-block:: python
 
-   from conin.hidden_markov_model.examples import create_hmm1
+   from conin.examples.hmm import create_hmm1
 
    hmm = create_hmm1()
    observed = ["o0", "o0", "o1"]
