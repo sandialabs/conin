@@ -261,10 +261,19 @@ jobs:
             pip install pgmpy
             python -c "import pgmpy; from pgmpy import config; config.set_backend('numpy'); print('pgmpy initialized')"
 
+      - name: Install MVR notebook dependencies
+        run: |
+            # torch normally comes from the conda step above; fall back to the
+            # CPU wheel only if it is not importable. greenery is needed by
+            # mvr_regex, and matplotlib by the plotting cells.
+            python -c "import torch" || pip install torch --index-url https://download.pytorch.org/whl/cpu
+            pip install greenery matplotlib
+            python -c "import torch, greenery, matplotlib; print('torch', torch.__version__)"
+
       - name: Verify notebooks are stripped
         run: |
             pip install nbstripout
-            if ! nbstripout --verify doc/notebooks/*.ipynb; then
+            if ! nbstripout --verify doc/notebooks/*.ipynb doc/notebooks/MVR/*.ipynb; then
               echo ""
               echo "ERROR: One or more notebooks contain outputs."
               echo "Please run 'nbstripout --install --attributes .gitattributes' in your local repo"
@@ -273,5 +282,6 @@ jobs:
             fi
 
       - name: Smoke test notebooks
-        run: pytest --nbmake doc/notebooks/*.ipynb -v
+        # The MVR notebooks declare a local "conin" kernel; force the default one.
+        run: pytest --nbmake --nbmake-kernel=python3 doc/notebooks/*.ipynb doc/notebooks/MVR/*.ipynb -v
 
