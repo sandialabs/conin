@@ -8,7 +8,7 @@ class ConstrainedDynamicDiscreteBayesianNetwork:
         ----------
         pgm : DynamicDiscreteBayesianNetwork
             Underlying dynamic Bayesian network to be constrained.
-        constraints : list[ConstraintFunctor], optional
+        constraints : list[Constraint], optional
             Constraint functors that apply additional constraints during
             inference.
         """
@@ -39,7 +39,7 @@ class ConstrainedDynamicDiscreteBayesianNetwork:
         Returns
         -------
         list
-            List of ``ConstraintFunctor`` instances that add constraints to a
+            List of ``Constraint`` instances that add constraints to a
             query model.
         """
         return self._constraints
@@ -50,8 +50,8 @@ class ConstrainedDynamicDiscreteBayesianNetwork:
 
         Parameters
         ----------
-        constraint_list : list of ConstraintFunctor
-            List of ``ConstraintFunctor`` instances that generate model
+        constraint_list : list of Constraint
+            List of ``Constraint`` instances that generate model
             constraints.
         """
         assert type(constraint_list) is list

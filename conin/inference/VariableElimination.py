@@ -19,7 +19,8 @@ from conin.bayesian_network import ConstrainedDiscreteBayesianNetwork
 from conin.graphical_models import create_bn_from_dbn, DynamicDiscreteBayesianNetwork
 from conin.dynamic_bayesian_network import ConstrainedDynamicDiscreteBayesianNetwork
 
-from conin.constraints import OracleConstraint
+from conin.constraints import FactorOracleConstraint
+from conin.representations.factor import materialise_factor_oracle
 from conin.constraints.algebraic import (
     create_oracle_constraints_from_algebraic,
     AlgebraicConstraint,
@@ -80,8 +81,8 @@ def _add_bn_constraints_as_evidence(pgm, constraints, data, evidence):
             pgm=pgm, constraints=constraints, data=data
         )
     for con in constraints:
-        if isinstance(con, OracleConstraint):
-            cpd = con(pgm, data)
+        if isinstance(con, FactorOracleConstraint):
+            cpd = materialise_factor_oracle(con, pgm, data)
             cpd = dataclasses.replace(cpd, node=(cpd.node, -1))
             pgm = pgm.with_cpd(cpd)
             evidence[cpd.node] = 1
@@ -102,8 +103,8 @@ def _add_mn_constraints_as_evidence(pgm, constraints, data, evidence):
             pgm=pgm, constraints=constraints, data=data
         )
     for con in constraints:
-        if isinstance(con, OracleConstraint):
-            factor = con(pgm, data)
+        if isinstance(con, FactorOracleConstraint):
+            factor = materialise_factor_oracle(con, pgm, data)
             pgm = pgm.with_factor(factor)
             evidence[factor.nodes[-1]] = 1
         else:

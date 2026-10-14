@@ -1,5 +1,6 @@
 from conin.constraints import (
     OracleConstraint,
+    FactorOracleConstraint,
     PyomoConstraint,
     Toulbar2Constraint,
     MVRConstraint,
@@ -16,7 +17,7 @@ class ConstrainedHiddenMarkovModel:
     ----------
     hmm : HiddenMarkovModel or HMM_MatVecRepn, optional
         Hidden Markov model to wrap.
-    constraints : list[ConstraintFunctor], optional
+    constraints : list[Constraint], optional
         Constraint functors used to build a constrained HMM solver.
     """
 
@@ -27,7 +28,7 @@ class ConstrainedHiddenMarkovModel:
         ----------
         hmm : HiddenMarkovModel or HMM_MatVecRepn, optional
             Hidden Markov model to wrap.
-        constraints : list[ConstraintFunctor], optional
+        constraints : list[Constraint], optional
             Constraint functors used to configure the constrained model.
         """
         self.hidden_markov_model = hmm
@@ -44,7 +45,7 @@ class ConstrainedHiddenMarkovModel:
         Returns
         -------
         list
-            List of ``ConstraintFunctor`` instances.
+            List of ``Constraint`` instances.
         """
         return self._constraints
 
@@ -54,8 +55,8 @@ class ConstrainedHiddenMarkovModel:
 
         Parameters
         ----------
-        constraint_list : list[ConstraintFunctor]
-            List of ``ConstraintFunctor`` instances that generate model
+        constraint_list : list[Constraint]
+            List of ``Constraint`` instances that generate model
             constraints.
         """
         assert type(constraint_list) is list
@@ -68,7 +69,7 @@ class ConstrainedHiddenMarkovModel:
 
         Parameters
         ----------
-        constraint : ConstraintFunctor
+        constraint : Constraint
             Constraint functor to register.
 
         Raises
@@ -77,17 +78,17 @@ class ConstrainedHiddenMarkovModel:
             If ``constraint`` is not a supported constraint functor type.
         """
         if isinstance(constraint, OracleConstraint):
-            if constraint.nodes is not None:
-                # Oracle constraint with nodes for factor materialisation
-                assert (
-                    self.constraint_type is None
-                    or self.constraint_type == "oracle_with_nodes"
-                )
-                self.constraint_type = "oracle_with_nodes"
-            else:
-                # Black-box oracle constraint (HMM A* style)
-                assert self.constraint_type is None or self.constraint_type == "oracle"
-                self.constraint_type = "oracle"
+            # Black-box oracle constraint (HMM A* style)
+            assert self.constraint_type is None or self.constraint_type == "oracle"
+            self.constraint_type = "oracle"
+            self._constraints.append(constraint)
+        elif isinstance(constraint, FactorOracleConstraint):
+            # Oracle constraint with nodes for factor materialisation
+            assert (
+                self.constraint_type is None
+                or self.constraint_type == "oracle_with_nodes"
+            )
+            self.constraint_type = "oracle_with_nodes"
             self._constraints.append(constraint)
         elif isinstance(constraint, AlgebraicConstraint):
             assert self.constraint_type is None or self.constraint_type == "algebraic"

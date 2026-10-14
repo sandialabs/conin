@@ -1,5 +1,13 @@
+"""Reusable oracle constraints.
+
+Each ``*_constraint`` function returns an
+:class:`~conin.constraints.OracleConstraint` that checks a candidate
+assignment of states (a dict, e.g. mapping time indices to state values).  The ``and``/``or``/``xor``/``not`` combinators
+build new oracle constraints from existing ones.
+"""
+
 import inspect
-from .constraint import OracleConstraint, oracle_constraint_fn
+from .oracle import OracleConstraint, oracle_constraint_fn
 
 
 def constraint_name():

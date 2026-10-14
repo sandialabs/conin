@@ -87,8 +87,8 @@ Constrained hidden Markov models
 
 ``ConstrainedHiddenMarkovModel`` wraps a base HMM and a list of constraint
 functors. The public examples include oracle, Pyomo, and Toulbar2 constraints.
-Oracle constraints with ``nodes`` generate auxiliary factors for
-variable-elimination inference.
+Oracle constraints with ``nodes`` (``FactorOracleConstraint``) generate
+auxiliary factors for variable-elimination inference.
 
 ``initialize_chmm()`` constructs an internal constrained HMM object for oracle,
 Pyomo, and MVR constraints. Toulbar2 constraints are consumed by the
@@ -226,8 +226,8 @@ Oracle constraints with node scoping
        constraints=[num_zeros_greater_than_nine, num_zeros_less_than_thirteen],
    )
 
-``map_query(..., method="variable_elimination")`` can consume oracle constraints
-with ``nodes`` by expanding them into auxiliary factors.
+``oracle_constraint_fn(nodes=...)`` creates a ``FactorOracleConstraint``, which
+``map_query(..., method="variable_elimination")`` expands into auxiliary factors.
 
 Notes
 -----

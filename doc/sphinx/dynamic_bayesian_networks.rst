@@ -82,7 +82,7 @@ network together with a list of constraints. The examples in
 other model families.
 
 The Pyomo and Toulbar2 examples require their respective solver backends. Oracle
-constraints with ``nodes`` are converted into auxiliary CPDs during supported
+constraints with ``nodes`` (``FactorOracleConstraint``) are converted into auxiliary CPDs during supported
 inference workflows.
 
 Pyomo constraints

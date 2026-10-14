@@ -1,19 +1,25 @@
 Constraint Declarations
 =======================
 
-The ``conin.constraints`` package contains the constraint functors used to
-create constrained graphical models. Most user code should create these objects
-through the decorators below instead of instantiating the classes directly.
+The ``conin.constraints`` package contains the constraint classes (subclasses
+of ``Constraint``) used to create constrained graphical models. Most user code
+should create these objects through the decorators below instead of
+instantiating the classes directly.
 
 Constraint classes
 ------------------
 
-.. autoclass:: conin.constraints.ConstraintFunctor
+.. autoclass:: conin.constraints.Constraint
    :members:
    :undoc-members:
    :show-inheritance:
 
 .. autoclass:: conin.constraints.OracleConstraint
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autoclass:: conin.constraints.FactorOracleConstraint
    :members:
    :undoc-members:
    :show-inheritance:
@@ -117,7 +123,7 @@ expressions may fail during backend translation.
 Specialized Modules
 -------------------
 
-Reusable oracle constraints live in ``conin.constraints.oracle``. The
+Reusable oracle constraints live in ``conin.constraints.oracle_library``. The
 Toulbar2 helper module also includes utilities for translating supported linear
 algebraic constraints to Toulbar2 expressions.
 

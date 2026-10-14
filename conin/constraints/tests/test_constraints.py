@@ -1,6 +1,7 @@
 import pytest
 
 from conin.exceptions import InvalidInputError
+from conin.constraints import OracleConstraint, oracle_constraint_fn
 from conin.constraints.oracle_library import *
 from conin.hidden_markov_model import *
 

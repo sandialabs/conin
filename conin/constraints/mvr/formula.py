@@ -7,7 +7,7 @@ import re
 
 from typing import Any
 
-from conin import mvr_constraint_fn
+from conin.constraints.mvr.constraint import mvr_constraint_fn
 from conin.exceptions import InvalidInputError
 from conin.constraints.mvr.primitives import (
     mvr_constant,

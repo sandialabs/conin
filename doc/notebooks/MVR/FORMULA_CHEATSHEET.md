@@ -1,11 +1,11 @@
 # MVR formula syntax — cheatsheet
 
-A formula string is parsed into calls to `mvr_constraints.py` and
-`mvr_operators.py`. Nothing new is constructed, so every formula below is
+A formula string is parsed into calls to `conin.constraints.mvr.primitives` and
+`conin.constraints.mvr.operators`. Nothing new is constructed, so every formula below is
 shorthand for calls you could write by hand. Worked demo: [`formula.ipynb`](formula.ipynb).
 
 ```python
-from conin.hidden_markov_model.mvr_formula import build_mvr, build_mvr_functor
+from conin.constraints.mvr import build_mvr, build_mvr_functor
 
 build_mvr(hmm, "reach B before A[2]")     # -> list[BaseMVR],       for MVR_CHMM(constraints=...)
 build_mvr_functor("reach B before A[2]")  # -> list[MVRConstraint], for ConstrainedHiddenMarkovModel(constraints=...)
@@ -182,6 +182,6 @@ High priority listed first. Parentheses to override.
 | `match "<A><B>*"` | one `A` followed by any number of `B`s |
 | `reverse (A cat B)` | a `B` before an `A`, read backwards |
 
-Anything the grammar cannot say is still reachable by calling `mvr_constraints`
-and `mvr_operators` directly. The formula layer is a convenience over that
+Anything the grammar cannot say is still reachable by calling the primitives
+and operators in `conin.constraints.mvr` directly. The formula layer is a convenience over that
 algebra, not a replacement for it.

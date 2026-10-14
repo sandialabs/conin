@@ -1,5 +1,5 @@
 import pyomo.environ as pe
-from conin.constraints import OracleConstraint
+from conin.constraints import OracleConstraint, FactorOracleConstraint
 from conin.constraints import (
     pyomo_constraint_fn,
     toulbar2_constraint_fn,
@@ -191,19 +191,13 @@ def create_chmm1_oracle_ve():
         for t in data.hmm.T:
             yield ("H", t)
 
-    num_zeros_greater_than_nine = OracleConstraint(
+    num_zeros_greater_than_nine = FactorOracleConstraint(
         func=lambda states: sum(1 for v in states.values() if v == "h0") > 9,
-        partial_func=lambda T, states: T
-        - len(states)
-        + sum(1 for v in states.values() if v == "h0")
-        >= 10,
         nodes=nodes,
         name="num_zeros_greater_than_nine",
     )
-    num_zeros_less_than_thirteen = OracleConstraint(
+    num_zeros_less_than_thirteen = FactorOracleConstraint(
         func=lambda states: sum(1 for v in states.values() if v == "h0") < 13,
-        partial_func=lambda T, states: sum(1 for v in states.values() if v == "h0")
-        < 13,
         nodes=nodes,
         name="num_zeros_less_than_thirteen",
     )

@@ -5,6 +5,7 @@ from typing import Any
 import numpy as np
 
 from conin.exceptions import InvalidInputError
+from conin.constraints.base import Constraint
 
 
 def _has_product_domain(mapping, first, second):
@@ -40,8 +41,10 @@ def _normalize_time_range(
     return list(time_range)
 
 
-class BaseMVR:
+class BaseMVR(Constraint):
     """Auxiliary state process tracking a constraint on hidden-state sequences."""
+
+    family = "mvr"
 
     hidden_states: Any
     mediation_states: Any

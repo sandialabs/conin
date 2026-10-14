@@ -1,7 +1,7 @@
 class ConstrainedDiscreteMarkovNetwork:
     """Markov network that supports custom constraints.
 
-    Wraps a ``DiscreteMarkovNetwork`` and optional ``ConstraintFunctor``
+    Wraps a ``DiscreteMarkovNetwork`` and optional ``Constraint``
     instances that apply additional feasibility constraints.
     """
 
@@ -12,7 +12,7 @@ class ConstrainedDiscreteMarkovNetwork:
         ----------
         pgm : DiscreteMarkovNetwork
             Underlying probabilistic graphical model to constrain.
-        constraints : list[ConstraintFunctor] or None, optional
+        constraints : list[Constraint] or None, optional
             Constraint functors that apply additional restrictions during
             inference.
         """
@@ -59,7 +59,7 @@ class ConstrainedDiscreteMarkovNetwork:
         Returns
         -------
         list
-            List of ``ConstraintFunctor`` instances that add constraints to an
+            List of ``Constraint`` instances that add constraints to an
             inference model.
         """
         return self._constraints
@@ -70,8 +70,8 @@ class ConstrainedDiscreteMarkovNetwork:
 
         Parameters
         ----------
-        constraint_list : list of ConstraintFunctor
-            List of ``ConstraintFunctor`` instances that generate model
+        constraint_list : list of Constraint
+            List of ``Constraint`` instances that generate model
             constraints.
         """
         assert type(constraint_list) is list
