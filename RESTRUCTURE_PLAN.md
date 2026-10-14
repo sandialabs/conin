@@ -602,6 +602,11 @@ dependencies, and no new top-level imports of optional backends.
 | DBN `.t` leak | Fixed in PR 1 |
 | pgmpy conversion | Stays in `common/pgmpy/` |
 | Version | 2.0.0 |
+| Application `data` (PR 3) | Constructor kwarg: `Constrained*(model, constraints=(), data=None)`, read-only `.data`, passed to builders; not part of the cache key |
+| PR 3 representation scope | Framework + the HMM kinds that replace `initialize_chmm`: `"oracle"` (Oracle_CHMM), `"pyomo_network_flow"` (PyomoAlgebraic_CHMM), `"mvr"` (MVR_CHMM). pyomo/toulbar2/factor builders come in 4a/4b/4e; `map_query` dispatch is unchanged until PR 5 |
+| MVR in PR 3 | `MVR_CHMM` and the torch algorithms are untouched until 4d; the `"mvr"` repn wraps `MVR_CHMM` and already exposes `.mvrs` |
+| Constrained-class location | PR 3 `git mv`s them to `constrained_models/` (rename-only first commit) and deletes the empty `markov_network/`, `bayesian_network/`, `dynamic_bayesian_network/` packages |
+| Constructor names / CHMM overloads | First parameter is `model` (no `hmm=`/`pgm=` alias); the broken `CHMM` overloads in the AStar/Optimization/CFN dispatchers are removed in PR 3 |
 
 ---
 
