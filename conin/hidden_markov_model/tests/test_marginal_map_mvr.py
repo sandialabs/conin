@@ -9,7 +9,11 @@ from conin.exceptions import InvalidInputError
 from conin.hidden_markov_model.chmm_mvr import MVR_CHMM
 from conin.hidden_markov_model.mvr import InhomMVR
 
-torch = pytest.importorskip("torch")
+# importorskip only catches ImportError; a broken torch install raises OSError.
+try:
+    import torch
+except (ImportError, OSError) as exc:
+    pytest.skip(f"torch not available: {exc}", allow_module_level=True)
 
 from conin.hidden_markov_model.inference.marginal_map_mvr import (  # noqa: E402
     marginal_map_torch_mvr_chmm,

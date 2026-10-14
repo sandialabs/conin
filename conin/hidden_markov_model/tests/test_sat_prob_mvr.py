@@ -7,7 +7,11 @@ import pytest
 from conin.exceptions import InvalidInputError
 from conin.hidden_markov_model.chmm_mvr import MVR_CHMM
 
-torch = pytest.importorskip("torch")
+# importorskip only catches ImportError; a broken torch install raises OSError.
+try:
+    import torch
+except (ImportError, OSError) as exc:
+    pytest.skip(f"torch not available: {exc}", allow_module_level=True)
 
 from conin.hidden_markov_model.other_queries.sat_prob_mvr import (  # noqa: E402
     sat_prob_torch_mvr_chmm,
