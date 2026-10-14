@@ -4,7 +4,7 @@ import munch
 from pyomo.common.timing import TicTocTimer
 
 import conin.common
-from conin.markov_network import ConstrainedDiscreteMarkovNetwork
+from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
 from conin.constraints import Toulbar2Constraint
 from conin.constraints.algebraic import (
     add_algebraic_constraints_to_toulbar2_model,

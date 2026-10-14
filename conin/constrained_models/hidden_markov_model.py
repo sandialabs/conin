@@ -7,7 +7,6 @@ from conin.constraints import (
     AlgebraicConstraint,
 )
 from conin.exceptions import InvalidInputError
-from .chmm import CHMM
 
 
 class ConstrainedHiddenMarkovModel:
@@ -127,11 +126,13 @@ class ConstrainedHiddenMarkovModel:
         if constraint_type:
             self.constraint_type = constraint_type
         if self.constraint_type is None:
+            from conin.hidden_markov_model.chmm import CHMM
+
             self.chmm = CHMM(
                 hmm=self.hidden_markov_model.repn, constraints=self.constraints
             )
         elif self.constraint_type == "oracle":
-            from .chmm_oracle import Oracle_CHMM
+            from conin.hidden_markov_model.chmm_oracle import Oracle_CHMM
 
             self.chmm = Oracle_CHMM(
                 hmm=self.hidden_markov_model.repn,  # HMM object
@@ -141,7 +142,7 @@ class ConstrainedHiddenMarkovModel:
                 **kwargs,
             )
         elif self.constraint_type == "pyomo":
-            from .chmm_algebraic import PyomoAlgebraic_CHMM
+            from conin.hidden_markov_model.chmm_algebraic import PyomoAlgebraic_CHMM
 
             self.chmm = PyomoAlgebraic_CHMM(
                 hidden_markov_model=self.hidden_markov_model,  # HiddenMarkovModel object
@@ -150,7 +151,7 @@ class ConstrainedHiddenMarkovModel:
                 **kwargs,
             )
         elif self.constraint_type == "mvr":
-            from .chmm_mvr import MVR_CHMM
+            from conin.hidden_markov_model.chmm_mvr import MVR_CHMM
 
             self.chmm = MVR_CHMM(
                 hidden_markov_model=self.hidden_markov_model,

@@ -3,7 +3,7 @@ import warnings
 import pytest
 
 from conin.exceptions import InvalidInputError
-from conin.hidden_markov_model.constrained_hmm import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.constraints.mvr.formula import build_mvr, build_mvr_functor
 
 from conin.constraints.mvr.primitives import (

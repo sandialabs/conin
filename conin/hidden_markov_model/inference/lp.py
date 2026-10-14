@@ -2,7 +2,7 @@ import math
 import munch
 
 from conin.config import default_mip_solver
-from conin.hidden_markov_model import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.util import try_import
 
 import pyomo.environ as pyo

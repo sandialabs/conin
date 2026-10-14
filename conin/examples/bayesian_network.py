@@ -12,7 +12,7 @@ from conin.constraints import (
 )
 from conin.util import try_import, MPESolution
 from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
-from conin.bayesian_network import ConstrainedDiscreteBayesianNetwork
+from conin.constrained_models import ConstrainedDiscreteBayesianNetwork
 
 with try_import() as pgmpy_available:
     from pgmpy.models import DiscreteBayesianNetwork as pgmpy_DiscreteBayesianNetwork

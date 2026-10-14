@@ -1,7 +1,7 @@
 import munch
 
 from . import learning
-from .constrained_hmm import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedHiddenMarkovModel
 
 
 class HMMApplication:

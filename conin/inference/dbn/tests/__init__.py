@@ -1,1 +1,1 @@
-# conin.dynamic_bayesian_network.tests
+# conin.inference.dbn.tests

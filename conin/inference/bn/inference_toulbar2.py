@@ -14,7 +14,7 @@ with try_import() as pytoulbar2_available:
     import pytoulbar2
 
 import conin.common
-from conin.bayesian_network import ConstrainedDiscreteBayesianNetwork
+from conin.constrained_models import ConstrainedDiscreteBayesianNetwork
 
 
 def create_toulbar2_map_query_model_BN(
@@ -45,7 +45,7 @@ def create_toulbar2_map_query_model_BN(
 
     Returns
     -------
-    conin.bayesian_network.inference.BNMapQueryModel
+    pytoulbar2.CFN
         Constrained MAP query model.
     """
     if timing:  # pragma:nocover

@@ -11,7 +11,7 @@ from conin.constraints.algebraic import (
     AlgebraicConstraint,
     add_algebraic_constraints_to_pyomo_model,
 )
-from conin.markov_network import ConstrainedDiscreteMarkovNetwork
+from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
 from conin.inference.mn.factor_repn import extract_factor_representation_
 from conin.util import try_import, State
 

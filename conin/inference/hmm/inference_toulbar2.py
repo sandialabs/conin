@@ -1,6 +1,6 @@
 import munch
-import conin.markov_network
-from conin.hidden_markov_model import ConstrainedHiddenMarkovModel
+import conin.constrained_models
+from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.graphical_models import create_dbn_from_hmm
 from conin.inference.dbn.inference_toulbar2 import (
     create_toulbar2_map_query_model_DDBN,

@@ -3,7 +3,7 @@
 import pytest
 
 from conin.graphical_models import DiscreteFactor, DiscreteMarkovNetwork
-from conin.markov_network import ConstrainedDiscreteMarkovNetwork
+from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
 
 # ---------------------------------------------------------------------------
 # Helpers

@@ -7,7 +7,7 @@ from conin.constraints import (
     oracle_constraint_fn,
     algebraic_constraint_fn,
 )
-from conin.dynamic_bayesian_network import ConstrainedDynamicDiscreteBayesianNetwork
+from conin.constrained_models import ConstrainedDynamicDiscreteBayesianNetwork
 from conin.graphical_models import (
     DiscreteCPD,
     DynamicDiscreteBayesianNetwork,

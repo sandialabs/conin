@@ -1,7 +1,7 @@
 import munch
-import conin.markov_network
+import conin.constrained_models
 from conin.graphical_models import create_bn_from_dbn
-from conin.dynamic_bayesian_network import ConstrainedDynamicDiscreteBayesianNetwork
+from conin.constrained_models import ConstrainedDynamicDiscreteBayesianNetwork
 
 from conin.inference.bn.inference_pyomo import create_pyomo_map_query_model_BN
 

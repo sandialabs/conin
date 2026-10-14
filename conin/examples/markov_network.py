@@ -9,7 +9,7 @@ from conin.constraints import (
 )
 from conin.util import try_import, MPESolution
 from conin.graphical_models import DiscreteFactor, DiscreteMarkovNetwork
-from conin.markov_network import ConstrainedDiscreteMarkovNetwork
+from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
 
 with try_import() as pgmpy_available:
     from pgmpy.models import DiscreteMarkovNetwork as pgmpy_MarkovNetwork

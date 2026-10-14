@@ -6,7 +6,7 @@ The following constrained probabilistic graphical models are defined in conin.
 Markov networks
 ---------------
 
-.. autoclass:: conin.markov_network.ConstrainedDiscreteMarkovNetwork
+.. autoclass:: conin.constrained_models.ConstrainedDiscreteMarkovNetwork
    :members:
    :undoc-members:
    :show-inheritance:
@@ -14,7 +14,7 @@ Markov networks
 Discrete Bayesian networks
 --------------------------
 
-.. autoclass:: conin.bayesian_network.ConstrainedDiscreteBayesianNetwork
+.. autoclass:: conin.constrained_models.ConstrainedDiscreteBayesianNetwork
    :members:
    :undoc-members:
    :show-inheritance:
@@ -22,7 +22,7 @@ Discrete Bayesian networks
 Hidden Markov models
 --------------------
 
-.. autoclass:: conin.hidden_markov_model.ConstrainedHiddenMarkovModel
+.. autoclass:: conin.constrained_models.ConstrainedHiddenMarkovModel
    :members:
    :undoc-members:
    :show-inheritance:
@@ -30,7 +30,7 @@ Hidden Markov models
 Dynamic Discrete Bayesian networks
 ----------------------------------
 
-.. autoclass:: conin.dynamic_bayesian_network.ConstrainedDynamicDiscreteBayesianNetwork
+.. autoclass:: conin.constrained_models.ConstrainedDynamicDiscreteBayesianNetwork
    :members:
    :undoc-members:
    :show-inheritance:

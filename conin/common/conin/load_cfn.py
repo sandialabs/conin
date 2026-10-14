@@ -21,7 +21,7 @@ import warnings
 
 from conin.constraints import Toulbar2Constraint
 from conin.graphical_models import DiscreteFactor, DiscreteMarkovNetwork
-from conin.markov_network import ConstrainedDiscreteMarkovNetwork
+from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
 
 _number_re = re.compile(r"^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$")
 

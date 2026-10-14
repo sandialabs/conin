@@ -122,7 +122,7 @@ choosing the same state:
 
    import pyomo.environ as pyo
    from conin import pyomo_constraint_fn
-   from conin.bayesian_network import ConstrainedDiscreteBayesianNetwork
+   from conin.constrained_models import ConstrainedDiscreteBayesianNetwork
    from conin.examples.bayesian_network import cancer1_BN_conin
 
    base = cancer1_BN_conin().pgm
@@ -144,7 +144,7 @@ interface:
 .. code-block:: python
 
    from conin import toulbar2_constraint_fn
-   from conin.bayesian_network import ConstrainedDiscreteBayesianNetwork
+   from conin.constrained_models import ConstrainedDiscreteBayesianNetwork
    from conin.examples.bayesian_network import cancer1_BN_conin
 
    base = cancer1_BN_conin().pgm
@@ -173,7 +173,7 @@ auxiliary CPD:
 .. code-block:: python
 
    from conin import oracle_constraint_fn
-   from conin.bayesian_network import ConstrainedDiscreteBayesianNetwork
+   from conin.constrained_models import ConstrainedDiscreteBayesianNetwork
    from conin.examples.bayesian_network import cancer1_BN_conin
 
    base = cancer1_BN_conin().pgm

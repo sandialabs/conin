@@ -2,7 +2,7 @@ import munch
 from pyomo.common.timing import TicTocTimer
 
 import conin.graphical_models
-from conin.bayesian_network import ConstrainedDiscreteBayesianNetwork
+from conin.constrained_models import ConstrainedDiscreteBayesianNetwork
 
 
 def create_pyomo_map_query_model_BN(
@@ -33,7 +33,7 @@ def create_pyomo_map_query_model_BN(
 
     Returns
     -------
-    conin.bayesian_network.inference.BNMapQueryModel
+    pyomo.environ.ConcreteModel
         Constrained MAP query model.
     """
     if timing:

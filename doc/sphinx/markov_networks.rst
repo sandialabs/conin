@@ -101,7 +101,7 @@ constraints to the optimization model:
 .. code-block:: python
 
    from conin import pyomo_constraint_fn
-   from conin.markov_network import ConstrainedDiscreteMarkovNetwork
+   from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
    from conin.examples.markov_network import ABC_conin
 
    base = ABC_conin().pgm
@@ -126,7 +126,7 @@ with the Toulbar2 interface:
 .. code-block:: python
 
    from conin import toulbar2_constraint_fn
-   from conin.markov_network import ConstrainedDiscreteMarkovNetwork
+   from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
    from conin.examples.markov_network import ABC_conin
 
    base = ABC_conin().pgm
@@ -153,7 +153,7 @@ Oracle constraints with node scoping
 .. code-block:: python
 
    from conin import oracle_constraint_fn
-   from conin.markov_network import ConstrainedDiscreteMarkovNetwork
+   from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
    from conin.examples.markov_network import ABC_conin
 
    base = ABC_conin().pgm

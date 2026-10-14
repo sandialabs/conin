@@ -1,23 +1,21 @@
 from ovld import ovld
 from conin.util import try_import
 from conin.graphical_models import HiddenMarkovModel
-from conin.hidden_markov_model import (
-    ConstrainedHiddenMarkovModel,
-    CHMM,
-)
+from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.hidden_markov_model import CHMM
 
 from conin.graphical_models import DiscreteMarkovNetwork
-from conin.markov_network import ConstrainedDiscreteMarkovNetwork
+from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
 from .mn import (
     inference_pyomo_map_query_MN,
 )
 from conin.graphical_models import DiscreteBayesianNetwork
-from conin.bayesian_network import ConstrainedDiscreteBayesianNetwork
+from conin.constrained_models import ConstrainedDiscreteBayesianNetwork
 from .bn import (
     inference_pyomo_map_query_BN,
 )
 from conin.graphical_models import DynamicDiscreteBayesianNetwork
-from conin.dynamic_bayesian_network import ConstrainedDynamicDiscreteBayesianNetwork
+from conin.constrained_models import ConstrainedDynamicDiscreteBayesianNetwork
 from .dbn import (
     inference_pyomo_map_query_DDBN,
 )

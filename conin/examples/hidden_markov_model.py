@@ -6,7 +6,7 @@ from conin.constraints import (
     oracle_constraint_fn,
     algebraic_constraint_fn,
 )
-from conin.hidden_markov_model.constrained_hmm import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.graphical_models import HiddenMarkovModel
 from conin.hidden_markov_model.hmm_application import HMMApplication
 
