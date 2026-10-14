@@ -329,6 +329,13 @@ class ConstrainedGraphicalModel:
   a wrong model type.
   Subclasses may set `supported_families`; `ConstrainedHiddenMarkovModel` accepts None, "oracle",
   "factor_oracle", "pyomo", "algebraic", "toulbar2" and "mvr".
+  **(Decided after PR 3, done at the end of PR 4.)** `supported_families` is removed. The constructor derives
+  the accepted families from the registry: a family is accepted for a model type iff
+  `supported_representations(model_type)` has at least one `(kind, family)` pair for it. Then adding a constraint
+  family or a model type means only registering builders. Families must not list model types, because
+  support is a property of the (model type, family) pair, which the registry already records. This waits until
+  4a/4b/4e have registered the HMM "pyomo", "algebraic", "toulbar2" and "factor_oracle" builders. Before that, the
+  registry would reject HMMs that work today through the legacy `map_query` path.
 - (PR 3) `representation()` raises `InvalidInputError` naming the supported `(kind, family)` pairs when no
   builder is registered.
 - Every class has the same constructor shape:
@@ -478,7 +485,8 @@ Breaking changes (these go in the CHANGELOG for 2.0):
 - The constrained classes move to `conin.constrained_models`. `conin.markov_network`, `conin.bayesian_network`
   and `conin.dynamic_bayesian_network` are removed, and `conin.hidden_markov_model` no longer exports
   `ConstrainedHiddenMarkovModel`.
-- Invalid constraints (mixed families, non-`Constraint` objects, a bare constraint instead of a list) and a wrong
+- A single `Constraint` is accepted and wrapped into a 1-tuple. Invalid constraints (mixed families,
+  non-`Constraint` objects, a string) and a wrong
   model type raise `InvalidInputError` at construction (some mixes used to fail later with `AssertionError`).
 - `ConstrainedDynamicDiscreteBayesianNetwork.nodes` is a property (it was a method).
 - `map_query` no longer accepts `CHMM` objects (those overloads were broken).
@@ -679,6 +687,8 @@ dependencies, and no new top-level imports of optional backends.
 | Constrained-class location | PR 3 `git mv`s them to `constrained_models/` (rename-only first commit) and deletes the empty `markov_network/`, `bayesian_network/`, `dynamic_bayesian_network/` packages |
 | Representation API (PR 3) | `Representation` ABC with `kind` and `get_copy()`; `@register_representation(kind, model_type, families=(None,))`; `build_representation(cmodel, kind, **params)`; `supported_representations(model_type)` (§4.3) |
 | `with_model` / `with_constraints` cache (PR 3) | Always start with an empty cache |
+| Single constraint (after PR 3) | `Constrained*(model, c)` is accepted (wrapped as `(c,)`); single-element lists dropped in examples/docs/tests |
+| Accepted constraint families (after PR 3) | Derived from the representation registry at the end of PR 4; `supported_families` is removed then. Not stored on constraint classes (§4.2) |
 | `ConstrainedHiddenMarkovModel` model type (PR 3) | Requires `HiddenMarkovModel`; `HMM_MatVecRepn` is rejected (no caller passed one) |
 | HMM repn modules (PR 3) | `representations/oracle/hmm.py`, `representations/pyomo/hmm_network_flow.py`, `representations/mvr/hmm.py` |
 | mcem (PR 3) | Keeps the model in a local variable and does not write it back to `app`; same results |
