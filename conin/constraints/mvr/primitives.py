@@ -7,8 +7,8 @@ import warnings
 from typing import Any
 
 from conin.exceptions import InvalidInputError
-from conin.hidden_markov_model.mvr import HomMVR, InhomMVR
-from conin.hidden_markov_model.mvr_operators import mvr_already_satisfied, mvr_not_yet
+from .base import HomMVR, InhomMVR
+from .operators import mvr_already_satisfied, mvr_not_yet
 from conin.util import try_import
 
 with try_import() as greenery_available:

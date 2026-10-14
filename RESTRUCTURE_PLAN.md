@@ -1,6 +1,6 @@
 # Conin Restructure Plan
 
-Status: **In progress.** PR 0 is merged into `main` (#241). PR 1 is done (branch `restructure-pr1-graphical-models`, targets `restructure`). The later PRs target the `restructure` branch.
+Status: **In progress.** PR 0 is merged into `main` (#241). PR 1 is merged into `restructure` (#242). PR 2 is done (branch `restructure-pr2-constraints`, targets `restructure`). The later PRs target the `restructure` branch.
 This file lives at the repo root while the work is in progress. Delete it in the final PR.
 
 All decisions are recorded in §11; §12 lists what is still open. Critiques of the
@@ -57,6 +57,18 @@ conin/
   mediation_variables/   research prototype (KEEP, untouched)
   util/                  State, try_import, MPESolution, ...
 ```
+After PR 2:
+```
+conin/
+  constraints/           base.py (Constraint ABC, `family`), pyomo.py, toulbar2.py, oracle.py (OracleConstraint),
+                         factor_oracle.py (FactorOracleConstraint), oracle_library.py (the oracle library),
+                         algebraic/ (AlgebraicConstraint + the add_constraints_* backend modules, which move in PR 4a/4b),
+                         mvr/ (constraint.py, base.py, primitives.py, operators.py, formula.py; __init__ exports the public MVR names)
+  representations/factor/ materialise.py (materialise_factor_oracle; temporary home, used by inference/VariableElimination.py)
+  hidden_markov_model/   constrained_hmm.py, chmm*.py, mvr_common.py, hmm_application.py,
+                         inference/ learning/ sampling/ other_queries/  (torch MVR code moves in PR 4d)
+  operators.py           removed (merged into constraints/mvr/operators.py)
+```
 
 ### 2.2 Problems the restructure should fix
 - **The constrained wrappers are inconsistent.**
@@ -101,6 +113,15 @@ conin/
   regression tests (2 in `graphical_models/tests/test_conversions.py`, 1 in
   `sampling/dbn/tests/test_sampling.py`). `test_public_api.py` is still 194 passed, 9 skipped
   (rows moved to the new paths, duplicates merged, a `GraphicalModel` row added).
+- **After PR 2:** **1009 passed, 195 skipped, 0 errors**. The +47 are new tests:
+  - 5 VE regression tests for the two §9 bugs fixed in PR 2 (`inference/tests/test_variable_elimination_helpers.py`);
+  - 29 unit tests: `constraints/tests/test_families.py` (16), `representations/factor/tests/test_materialise.py` (6),
+    `constraints/mvr/tests/test_mvr_constraint_family.py` (7);
+  - a net +13 `test_public_api.py` rows: `Constraint` and `FactorOracleConstraint` (api_constraints.rst) replace the
+    deleted `ConstraintFunctor` row, and a new `RESTRUCTURE_PLAN_API` group holds 12 rows for the §5 names. The MVR
+    notebook rows now point at `conin.constraints.mvr`. `test_public_api.py` is 207 passed, 9 skipped.
+  The moved MVR spec tests (`constraints/mvr/tests/`) give 281 passed, 0 skipped in `/projects/.conin-scratch/venv`
+  (it has greenery).
 - pgmpy, or_topas, gurobi and glpk are not installed in `.venv-opencode`; torch is broken
   there; greenery is missing.
 - PR 0 adds `doc/notebooks/MVR/*.ipynb` to the CI notebook job and fixes the
@@ -137,7 +158,7 @@ conin/
 │   ├── oracle_library.py       # current constraints/oracle.py (all_diff, citation, and/or/not, ...)
 │   └── mvr/
 │       ├── constraint.py       # MVRConstraint, mvr_constraint_fn (factories: hmm -> MVR)
-│       ├── mvr.py              # BaseMVR(Constraint), HomMVR, InhomMVR, MVR_MatVecRepn
+│       ├── base.py             # BaseMVR(Constraint), HomMVR, InhomMVR, MVR_MatVecRepn
 │       ├── primitives.py       # current mvr_constraints.py (mvr_forbid_state, mvr_regex, ...)
 │       ├── operators.py        # current mvr_operators.py + conin/operators.py (cycle removed)
 │       └── formula.py          # current mvr_formula.py (build_mvr, build_mvr_functor)
@@ -151,7 +172,7 @@ conin/
 ├── representations/
 │   ├── __init__.py
 │   ├── base.py                 # Representation ABC (get_copy), registry, build_representation()
-│   ├── factor/                 # factor repn (S,J,v,w), BN->MN skeleton, FactorOracle -> factor/CPD
+│   ├── factor/                 # factor repn (S,J,v,w), BN->MN skeleton, FactorOracle -> factor/CPD (materialise.py: materialise_factor_oracle, since PR 2)
 │   ├── pyomo/
 │   │   ├── common.py           # ONE PyomoVarWrapper, IP-from-factor-repn, c5 constraints, smoek->pyomo
 │   │   ├── mn.py  bn.py  dbn.py  hmm.py
@@ -205,6 +226,10 @@ restructure. When in doubt, keep it and flag it in the PR description.**
 
 Tests stay next to the code they test, as today (e.g. `representations/pyomo/tests/`).
 
+MVR imports: code outside `conin/constraints/mvr/` imports public names from the package
+(`from conin.constraints.mvr import HomMVR`), not from its modules. Modules inside the package use relative
+imports (`from .base import HomMVR`). The package's own tests may import from submodules.
+
 ---
 
 ## 4. Core design
@@ -213,7 +238,8 @@ Tests stay next to the code they test, as today (e.g. `representations/pyomo/tes
 - `Constraint` is an ABC. Each subclass is a plain container holding `func`, `name`,
   `num_args` and any class-specific metadata.
 - `constraints/` must **not** import graphical models.
-  `OracleConstraint._materialise` moves to `representations/factor/`. The lazy
+  `OracleConstraint._materialise` moves to `representations/factor/` (PR 2: `materialise_factor_oracle(constraint, pgm, data=None)`
+  in `representations/factor/materialise.py`). The lazy
   `BaseMVR` import goes away because MVRs now live under `constraints/mvr/`.
 - **Constraint family.** Each class declares `family` (a class attribute). A
   constrained model needs all of its constraints to be in one family. Most classes are
@@ -228,6 +254,11 @@ Tests stay next to the code they test, as today (e.g. `representations/pyomo/tes
     callable). It gets materialised into a factor/CPD for VE.
   - `oracle_constraint_fn(nodes=...)` returns whichever class matches the arguments, so
     decorator users see no change.
+  - (PR 2) `FactorOracleConstraint` has no `partial_func`; `oracle_constraint_fn(nodes=..., same_partial_as_func=True)`
+    raises `InvalidInputError`. Calling a `FactorOracleConstraint` evaluates the predicate; it no longer materialises
+    when called with a pgm. The "all-nodes mode" (an oracle called with a pgm and `nodes=None`) is removed.
+  - (PR 2) `Constraint` declares no abstract `__call__` (`BaseMVR` has none).
+  - `family` values: `"pyomo"`, `"toulbar2"`, `"algebraic"`, `"oracle"`, `"factor_oracle"`, `"mvr"`.
 
 Compatibility matrix (representation kind × constraint family):
 
@@ -391,7 +422,13 @@ Breaking changes (these go in the CHANGELOG for 2.0):
   `representation(kind)` and `constraint_family` instead.
 - Constrained models are immutable, and their constructors are unified as `(model, constraints=)`.
 - `MVR_CHMM` is removed; use `ConstrainedHiddenMarkovModel`.
-- `ConstraintFunctor` is renamed `Constraint`.
+- `ConstraintFunctor` is renamed `Constraint` (no alias). `Constraint` no longer requires `__call__`.
+- The oracle library moves from `conin.constraints.oracle` to `conin.constraints.oracle_library` and is no longer
+  star-exported from `conin.constraints`. `conin.constraints.oracle` is now the `OracleConstraint` module.
+- The MVR spec modules move to `conin.constraints.mvr` (`hidden_markov_model.mvr` → `constraints.mvr.base`,
+  `mvr_constraints` → `primitives`, `mvr_operators` + `conin.operators` → `operators`, `mvr_formula` → `formula`).
+- Calling a `FactorOracleConstraint` evaluates the predicate; it no longer materialises when called with a pgm.
+  `OracleConstraint` has no `nodes`, and the "all-nodes" materialisation mode is removed.
 - `mvr_timerange` no longer mutates its input by default.
 - `OracleConstraint(nodes=...)` becomes `FactorOracleConstraint`. The decorator still works as before.
 - pgmax and pomegranate support is removed.
@@ -412,8 +449,8 @@ detection keeps the diffs reviewable.
 | PR | Title | Kind | Contents |
 |----|-------|------|----------|
 | 0 | Guardrails | infra | **DONE (#241, merged to `main`).** **Target `main`.** Make torch tests skip robustly (`try_import` instead of `importorskip`). Add `doc/notebooks/MVR/*.ipynb` to CI and fix the `regex_tutorial` import. Add `tests/test_public_api.py`, which imports every public symbol used by the docs and notebooks; later PRs update it instead of breaking it silently. Record the baseline test counts. |
-| 1 | Unconstrained models → `graphical_models/`; examples → `examples/` | move | **DONE (branch `restructure-pr1-graphical-models`).** Pure moves plus import updates. Conversions move too. One behaviour fix: stop `create_bn_from_dbn` and `DBNSampler` from mutating `dbn.t` (the immutability leak). |
-| 2 | Constraints → containers | move + small refactor | Split `constraint.py`. Move the oracle library and the MVR spec code (mvr, primitives, operators, formula) into `constraints/`. Merge `operators.py` (removes the cycle). Add `family`. Split `FactorOracleConstraint`. Move `_materialise` into a temporary home in `representations/factor/`. |
+| 1 | Unconstrained models → `graphical_models/`; examples → `examples/` | move | **DONE (#242, merged to `restructure`).** Pure moves plus import updates. Conversions move too. One behaviour fix: stop `create_bn_from_dbn` and `DBNSampler` from mutating `dbn.t` (the immutability leak). |
+| 2 | Constraints → containers | move + small refactor | **DONE (branch `restructure-pr2-constraints`).** Split `constraint.py`. Move the oracle library and the MVR spec code (mvr, primitives, operators, formula) into `constraints/`. Merge `operators.py` (removes the cycle). Add `family`. Split `FactorOracleConstraint`. Move `_materialise` into a temporary home in `representations/factor/`. |
 | 3 | `ConstrainedGraphicalModel` + representation framework | **design** | Base class, registry, cache, `get_copy`, immutability. Port the four constrained classes. Builders initially wrap the *existing* create functions, so behaviour stays identical. Update every `initialize_chmm` and `.chmm` call site (examples, tests, docs). |
 | 4a | Pyomo repns + `inference/pyomo` | refactor | One `PyomoVarWrapper` and one constraint applier. Split create from solve. Network-flow repn. Fix Pyomo-path bugs from §9. |
 | 4b | toulbar2 repns + `inference/toulbar2` | refactor | Dedupe the MN/BN builders. Implement the rebuild-on-get strategy. Fix toulbar2 bugs. |
@@ -474,7 +511,7 @@ dependencies, and no new top-level imports of optional backends.
 ---
 
 ## 8. Testing strategy
-- PR 0 adds a public-API smoke test and records the baseline counts (959 passed / 195 skipped / 0 errors; see §2.3). After PR 1: 962 passed / 195 skipped.
+- PR 0 adds a public-API smoke test and records the baseline counts (959 passed / 195 skipped / 0 errors; see §2.3). After PR 1: 962 passed / 195 skipped. After PR 2: 1009 passed / 195 skipped (+47 new tests).
 - Every PR must keep the pass count ≥ baseline, after adjusting for deliberately deleted tests.
 - PR 3 adds tests for:
   - immutability (setattr raises; `with_*` returns a new object);
@@ -495,7 +532,8 @@ dependencies, and no new top-level imports of optional backends.
 | `recursive_a_star`: partial feasibility uses the old `constraint_data`; `n_infeasible` is in the wrong branch | 4c |
 | `mcem` replaces the HMM but the oracle keeps sampling from the old one; it also scores one sample and stores another | 4c |
 | The `CHMM` overloads in the AStar/Optimization/CFN dispatchers are broken | 3/5 (removed) |
-| VE: the ConstrainedMN overload replaces user evidence with `{}`; the MN factor oracle forces an existing scope node to 1; two error strings are missing the `f` prefix | 4e |
+| VE: the ConstrainedMN overload replaces user evidence with `{}`; the MN factor oracle forces an existing scope node to 1 | 4e |
+| VE: `_add_{bn,mn}_constraints_as_evidence` return `None` for an empty constraint list, and their `TypeError` strings were missing the `f` prefix | 2 (fixed, regression tests in `inference/tests/test_variable_elimination_helpers.py`) |
 | `solve_toulbar2_map_query_model` rejects extra `**options` (e.g. `verbose`) | 4b |
 | The DBN/HMM toulbar2 paths don't check that pytoulbar2 is available | 4b |
 | The HMM `network_flow` branch can return `None` | 4a |
@@ -568,6 +606,11 @@ dependencies, and no new top-level imports of optional backends.
 | DBN `.t` leak | Fixed in PR 1 |
 | pgmpy conversion | Stays in `common/pgmpy/` |
 | Version | 2.0.0 |
+| Application `data` (PR 3) | Constructor kwarg: `Constrained*(model, constraints=(), data=None)`, read-only `.data`, passed to builders; not part of the cache key |
+| PR 3 representation scope | Framework + the HMM kinds that replace `initialize_chmm`: `"oracle"` (Oracle_CHMM), `"pyomo_network_flow"` (PyomoAlgebraic_CHMM), `"mvr"` (MVR_CHMM). pyomo/toulbar2/factor builders come in 4a/4b/4e; `map_query` dispatch is unchanged until PR 5 |
+| MVR in PR 3 | `MVR_CHMM` and the torch algorithms are untouched until 4d; the `"mvr"` repn wraps `MVR_CHMM` and already exposes `.mvrs` |
+| Constrained-class location | PR 3 `git mv`s them to `constrained_models/` (rename-only first commit) and deletes the empty `markov_network/`, `bayesian_network/`, `dynamic_bayesian_network/` packages |
+| Constructor names / CHMM overloads | First parameter is `model` (no `hmm=`/`pgm=` alias); the broken `CHMM` overloads in the AStar/Optimization/CFN dispatchers are removed in PR 3 |
 
 ---
 

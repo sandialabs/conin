@@ -84,12 +84,12 @@ Constrained Markov networks
 ---------------------------
 
 ``ConstrainedDiscreteMarkovNetwork`` wraps a base Markov network together with a
-list of constraint functors. The examples in
+list of constraints. The examples in
 ``conin.examples.markov_network`` use the same three-variable ``ABC`` model and
 add an all-different constraint.
 
 The Pyomo and Toulbar2 examples require their respective solver backends. Oracle
-constraints with ``nodes`` are represented as additional factors and can also be
+constraints with ``nodes`` (``FactorOracleConstraint``) are represented as additional factors and can also be
 consumed by variable-elimination workflows when ``pgmpy`` is installed.
 
 Pyomo constraints

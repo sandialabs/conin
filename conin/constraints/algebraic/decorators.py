@@ -7,7 +7,7 @@ which are then translated to Pyomo or Toulbar2 constraint declarations.
 """
 
 import inspect
-from conin.constraints import ConstraintFunctor
+from conin.constraints.base import Constraint
 from conin.constraints.algebraic.bridge import ConinVarNode
 from conin.util import try_import
 
@@ -49,12 +49,14 @@ class ConinV:
             raise ValueError(f"V() requires 2 or 3 arguments, got {len(args)}")
 
 
-class AlgebraicConstraint(ConstraintFunctor):
+class AlgebraicConstraint(Constraint):
     """
-    Unified constraint functor for algebraic constraints.
+    Constraint class for algebraic constraints.
 
     Wraps a user function that adds constraints to a Smoek model.
     """
+
+    family = "algebraic"
 
     def __init__(self, func, name=None):
         """

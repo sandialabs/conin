@@ -147,9 +147,9 @@ class Algebraic_CHMM(chmm.CHMM):
     cache_indices : bool, optional
         Whether to cache generated index sets on ``self.data``.
     constraints : list, optional
-        Constraint functors applied to the optimization model.
+        Constraints applied to the optimization model.
     data : optional
-        Application-specific data passed to constraint functors.
+        Application-specific data passed to constraints.
     """
 
     def __init__(
@@ -169,9 +169,9 @@ class Algebraic_CHMM(chmm.CHMM):
         cache_indices : bool, optional
             Whether to cache generated index sets on ``self.data``.
         constraints : list, optional
-            Constraint functors applied to the optimization model.
+            Constraints applied to the optimization model.
         data : optional
-            Application-specific data passed to constraint functors.
+            Application-specific data passed to constraints.
         """
         super().__init__(
             hidden_markov_model=hidden_markov_model,
@@ -229,9 +229,9 @@ class PyomoAlgebraic_CHMM(Algebraic_CHMM):
         x_binary : bool, optional
             If ``True``, create binary hidden-state selection variables.
         constraints : list, optional
-            Constraint functors applied to the Pyomo model.
+            Constraints applied to the Pyomo model.
         data : optional
-            Application-specific data passed to constraint functors.
+            Application-specific data passed to constraints.
         """
         super().__init__(
             hidden_markov_model=hidden_markov_model,

@@ -3,7 +3,7 @@
 __version__ = "1.1.1"
 
 from .constraints import (
-    ConstraintFunctor,
+    Constraint,
     mvr_constraint_fn,
     pyomo_constraint_fn,
     oracle_constraint_fn,

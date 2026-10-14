@@ -178,7 +178,7 @@ class HMMApplication:
         Returns
         -------
         list
-            Oracle constraint functors used by oracle-constrained HMM solvers.
+            Oracle constraints used by oracle-constrained HMM solvers.
         """
         return []
 
@@ -189,6 +189,6 @@ class HMMApplication:
         Returns
         -------
         list
-            Constraint functors used by algebraic constrained HMM solvers.
+            Constraints used by algebraic constrained HMM solvers.
         """
         return []

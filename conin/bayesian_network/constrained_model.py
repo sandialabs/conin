@@ -1,5 +1,5 @@
 class ConstrainedDiscreteBayesianNetwork:
-    """Wrap a Bayesian network with optional constraint functors."""
+    """Wrap a Bayesian network with optional constraints."""
 
     def __init__(self, pgm, constraints=None):
         """Initialize the constrained Bayesian network.
@@ -8,8 +8,8 @@ class ConstrainedDiscreteBayesianNetwork:
         ----------
         pgm : DiscreteBayesianNetwork
             Underlying Bayesian network to be constrained.
-        constraints : list[ConstraintFunctor], optional
-            Constraint functors that apply additional constraints during
+        constraints : list[Constraint], optional
+            Constraint objects that add constraints during
             inference.
         """
         self.pgm = pgm
@@ -35,12 +35,12 @@ class ConstrainedDiscreteBayesianNetwork:
 
     @property
     def constraints(self):
-        """Return the configured constraint functors.
+        """Return the configured constraints.
 
         Returns
         -------
         list
-            List of ``ConstraintFunctor`` instances that add constraints to a
+            List of ``Constraint`` instances that add constraints to a
             query model.
         """
         return self._constraints
@@ -51,8 +51,8 @@ class ConstrainedDiscreteBayesianNetwork:
 
         Parameters
         ----------
-        constraint_list : list of ConstraintFunctor
-            List of ``ConstraintFunctor`` instances that generate model
+        constraint_list : list of Constraint
+            List of ``Constraint`` instances that generate model
             constraints.
         """
         assert type(constraint_list) is list

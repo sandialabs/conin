@@ -7,9 +7,9 @@ import re
 
 from typing import Any
 
-from conin import mvr_constraint_fn
+from .constraint import mvr_constraint_fn
 from conin.exceptions import InvalidInputError
-from conin.hidden_markov_model.mvr_constraints import (
+from .primitives import (
     mvr_constant,
     mvr_current_sequencelist,
     mvr_current_state,
@@ -20,7 +20,7 @@ from conin.hidden_markov_model.mvr_constraints import (
     mvr_regex,
     mvr_withinbounds,
 )
-from conin.hidden_markov_model.mvr_operators import (
+from .operators import (
     mvr_already_satisfied,
     mvr_and,
     mvr_concatenate,

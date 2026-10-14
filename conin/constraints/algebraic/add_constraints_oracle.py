@@ -2,7 +2,7 @@ import pprint
 import pyomo.environ as pyo
 from pyomo.core.expr.visitor import identify_variables
 
-from conin.constraints.constraint import oracle_constraint_fn
+from conin.constraints.oracle import oracle_constraint_fn
 from .bridge import ConinVarNode
 from .decorators import AlgebraicConstraint
 from conin.util import try_import, State
@@ -34,7 +34,7 @@ class PyomoVarWrapper(dict):
 
 def create_oracle_constraints_from_algebraic(*, pgm, constraints, data, name=None):
     """
-    Convert a list of AlgebraicConstraints into a list with a single OracleConstraint.
+    Convert a list of AlgebraicConstraints into a list with a single FactorOracleConstraint.
 
     This function:
     1. Takes a list of AlgebraicConstraints
@@ -46,10 +46,10 @@ def create_oracle_constraints_from_algebraic(*, pgm, constraints, data, name=Non
         pgm: The PGM model providing node/state information.
         constraints: A list of AlgebraicConstraints.
         data: Inference-time data passed to each constraint.
-        name: Optional name for the resulting OracleConstraint.
+        name: Optional name for the resulting FactorOracleConstraint.
 
     Returns:
-        An OracleConstraint instance that evaluates all the algebraic constraints
+        A list with a single FactorOracleConstraint that evaluates all the algebraic constraints
     """
     if not smoek_available:
         raise ImportError(
@@ -154,7 +154,7 @@ def create_oracle_constraints_from_algebraic(*, pgm, constraints, data, name=Non
         constraint_names = [c.name for c in constraints]
         name = f"composite_{'_'.join(constraint_names)}"
 
-    # Use the oracle_constraint_fn decorator to create the OracleConstraint
+    # Use the oracle_constraint_fn decorator to create the FactorOracleConstraint
     oracle_constraint = oracle_constraint_fn(nodes=nodes, name=name)(
         composite_constraint_function
     )

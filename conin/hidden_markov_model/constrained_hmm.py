@@ -1,5 +1,6 @@
 from conin.constraints import (
     OracleConstraint,
+    FactorOracleConstraint,
     PyomoConstraint,
     Toulbar2Constraint,
     MVRConstraint,
@@ -10,14 +11,14 @@ from .chmm import CHMM
 
 
 class ConstrainedHiddenMarkovModel:
-    """Hidden Markov model wrapper with attached constraint functors.
+    """Hidden Markov model wrapper with attached constraints.
 
     Parameters
     ----------
     hmm : HiddenMarkovModel or HMM_MatVecRepn, optional
         Hidden Markov model to wrap.
-    constraints : list[ConstraintFunctor], optional
-        Constraint functors used to build a constrained HMM solver.
+    constraints : list[Constraint], optional
+        Constraints used to build a constrained HMM solver.
     """
 
     def __init__(self, *, hmm=None, constraints=None):
@@ -27,8 +28,8 @@ class ConstrainedHiddenMarkovModel:
         ----------
         hmm : HiddenMarkovModel or HMM_MatVecRepn, optional
             Hidden Markov model to wrap.
-        constraints : list[ConstraintFunctor], optional
-            Constraint functors used to configure the constrained model.
+        constraints : list[Constraint], optional
+            Constraints used to configure the constrained model.
         """
         self.hidden_markov_model = hmm
         self.constraint_type = None
@@ -39,23 +40,23 @@ class ConstrainedHiddenMarkovModel:
 
     @property
     def constraints(self):
-        """Get the configured constraint functors.
+        """Get the configured constraints.
 
         Returns
         -------
         list
-            List of ``ConstraintFunctor`` instances.
+            List of ``Constraint`` instances.
         """
         return self._constraints
 
     @constraints.setter
     def constraints(self, constraint_list):
-        """Set the list of constraint functors used to define model constraints.
+        """Set the list of constraints on the model.
 
         Parameters
         ----------
-        constraint_list : list[ConstraintFunctor]
-            List of ``ConstraintFunctor`` instances that generate model
+        constraint_list : list[Constraint]
+            List of ``Constraint`` instances that generate model
             constraints.
         """
         assert type(constraint_list) is list
@@ -64,30 +65,30 @@ class ConstrainedHiddenMarkovModel:
             self.add_constraint(con)
 
     def add_constraint(self, constraint):
-        """Add a single constraint functor to the model.
+        """Add a single constraint to the model.
 
         Parameters
         ----------
-        constraint : ConstraintFunctor
-            Constraint functor to register.
+        constraint : Constraint
+            Constraint to register.
 
         Raises
         ------
         ValueError
-            If ``constraint`` is not a supported constraint functor type.
+            If ``constraint`` is not a supported constraint type.
         """
         if isinstance(constraint, OracleConstraint):
-            if constraint.nodes is not None:
-                # Oracle constraint with nodes for factor materialisation
-                assert (
-                    self.constraint_type is None
-                    or self.constraint_type == "oracle_with_nodes"
-                )
-                self.constraint_type = "oracle_with_nodes"
-            else:
-                # Black-box oracle constraint (HMM A* style)
-                assert self.constraint_type is None or self.constraint_type == "oracle"
-                self.constraint_type = "oracle"
+            # Black-box oracle constraint (HMM A* style)
+            assert self.constraint_type is None or self.constraint_type == "oracle"
+            self.constraint_type = "oracle"
+            self._constraints.append(constraint)
+        elif isinstance(constraint, FactorOracleConstraint):
+            # Oracle constraint with nodes for factor materialisation
+            assert (
+                self.constraint_type is None
+                or self.constraint_type == "oracle_with_nodes"
+            )
+            self.constraint_type = "oracle_with_nodes"
             self._constraints.append(constraint)
         elif isinstance(constraint, AlgebraicConstraint):
             assert self.constraint_type is None or self.constraint_type == "algebraic"

@@ -13,7 +13,7 @@ import torch
 from conin.exceptions import InvalidInputError
 
 from ..mvr_common import NEG_INF, _model_parts
-from ..mvr_operators import mvr_sattime
+from conin.constraints.mvr import mvr_sattime
 from ..other_queries.sat_time_mvr import _resolve_target, sat_time_torch_mvr_chmm
 from .ffbs_mvr import _draw, _positive_int, ffbs_torch_mvr_chmm
 
