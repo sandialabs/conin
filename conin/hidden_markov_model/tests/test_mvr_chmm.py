@@ -6,7 +6,7 @@ import pytest
 from conin import mvr_constraint_fn
 from conin.exceptions import InvalidInputError
 from conin.hidden_markov_model import ConstrainedHiddenMarkovModel
-from conin.hidden_markov_model.hmm import HiddenMarkovModel
+from conin.graphical_models import HiddenMarkovModel
 from conin.hidden_markov_model.mvr import HomMVR, InhomMVR, MVR_MatVecRepn
 from conin.hidden_markov_model.chmm_mvr import MVR_CHMM
 

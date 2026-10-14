@@ -1,7 +1,7 @@
 import numpy as np
 import munch
 
-from conin.hidden_markov_model.hmm import HMM_MatVecRepn
+from conin.graphical_models import HMM_MatVecRepn
 
 
 def viterbi_(*, observed, hmm):

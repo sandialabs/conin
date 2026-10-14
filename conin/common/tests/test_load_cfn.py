@@ -11,10 +11,8 @@ from conin.common.conin import load_conin_model_from_cfn
 from conin.common.conin.log_potential import log_potential
 from conin.constraints import Toulbar2Constraint
 from conin.inference import map_query
-from conin.markov_network import (
-    ConstrainedDiscreteMarkovNetwork,
-    DiscreteMarkovNetwork,
-)
+from conin.graphical_models import DiscreteMarkovNetwork
+from conin.markov_network import ConstrainedDiscreteMarkovNetwork
 
 with try_import() as pytoulbar2_available:
     import pytoulbar2

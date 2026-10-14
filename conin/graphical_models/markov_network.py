@@ -3,6 +3,7 @@ from math import prod
 from dataclasses import dataclass
 
 from conin.exceptions import InvalidInputError
+from conin.graphical_models.base import GraphicalModel
 
 
 @dataclass(frozen=True, slots=True)
@@ -103,7 +104,7 @@ class DiscreteFactor:
             )
 
 
-class DiscreteMarkovNetwork:
+class DiscreteMarkovNetwork(GraphicalModel):
     """A discrete Markov network over finite-valued nodes.
 
     Stores node state spaces, optional undirected edges, and factor potentials.
@@ -336,7 +337,7 @@ class DiscreteMarkovNetwork:
 
         Examples
         --------
-        >>> from conin.markov_network import DiscreteMarkovNetwork, DiscreteFactor
+        >>> from conin.graphical_models import DiscreteMarkovNetwork, DiscreteFactor
         >>> f1 = DiscreteFactor(nodes=[0, 1], values={(0, 0): 1, (0, 1): 2, (0, 2): 3})
         >>> f2 = DiscreteFactor(nodes=[0], values={0: 0, 1: 1, 2: 2, 3: 3})
         >>> dmn = DiscreteMarkovNetwork(states=[4, 3], factors=[f1])
@@ -350,83 +351,3 @@ class DiscreteMarkovNetwork:
 
     def num_factor_parameters(self):
         return sum(len(f.values) for f in self.factors)
-
-
-class ConstrainedDiscreteMarkovNetwork:
-    """Markov network that supports custom constraints.
-
-    Wraps a ``DiscreteMarkovNetwork`` and optional ``ConstraintFunctor``
-    instances that apply additional feasibility constraints.
-    """
-
-    def __init__(self, pgm, constraints=None):
-        """Initialize the constrained wrapper.
-
-        Parameters
-        ----------
-        pgm : DiscreteMarkovNetwork
-            Underlying probabilistic graphical model to constrain.
-        constraints : list[ConstraintFunctor] or None, optional
-            Constraint functors that apply additional restrictions during
-            inference.
-        """
-        self.pgm = pgm
-        if constraints:
-            self._constraints = constraints
-        else:
-            self._constraints = []
-
-    def check_model(self):
-        """Validate the underlying model."""
-        self.pgm.check_model()
-
-    @property
-    def nodes(self):
-        """Return the underlying model's nodes.
-
-        Returns
-        -------
-        list
-            Node identifiers maintained by the underlying model.
-        """
-        return self.pgm.nodes
-
-    def states_of(self, node):
-        """Return the allowed states for a node.
-
-        Parameters
-        ----------
-        node : Hashable
-            Identifier of the node of interest.
-
-        Returns
-        -------
-        list
-            Ordered list of valid states for ``node``.
-        """
-        return self.pgm.states_of(node)
-
-    @property
-    def constraints(self):
-        """Return the configured constraint functors.
-
-        Returns
-        -------
-        list
-            List of ``ConstraintFunctor`` instances that add constraints to an
-            inference model.
-        """
-        return self._constraints
-
-    @constraints.setter
-    def constraints(self, constraint_list):
-        """Set the functions used to define model constraints.
-
-        Parameters
-        ----------
-        constraint_list : list of ConstraintFunctor
-            List of ``ConstraintFunctor`` instances that generate model
-            constraints.
-        """
-        assert type(constraint_list) is list
-        self._constraints = constraint_list

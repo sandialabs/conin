@@ -1,8 +1,8 @@
-from conin.dynamic_bayesian_network import (
+from conin.graphical_models import (
+    DiscreteCPD,
     DynamicDiscreteBayesianNetwork,
     ExpressionVariable,
 )
-from conin.bayesian_network.model import DiscreteCPD
 
 
 def create_ddbn0():

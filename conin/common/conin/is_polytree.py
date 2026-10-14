@@ -1,5 +1,5 @@
 from collections import deque
-from conin.bayesian_network import DiscreteBayesianNetwork
+from conin.graphical_models import DiscreteBayesianNetwork
 
 
 def is_polytree(pgm):

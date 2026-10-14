@@ -2,9 +2,10 @@ import pytest
 
 from conin import *
 from conin.hidden_markov_model import *
+from conin.graphical_models import HiddenMarkovModel
 from conin.hidden_markov_model.chmm_oracle import Oracle_CHMM
 
-import conin.hidden_markov_model.examples as tc
+import conin.examples.hidden_markov_model as tc
 import conin.constraints.oracle as oc
 
 

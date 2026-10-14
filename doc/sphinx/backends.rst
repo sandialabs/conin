@@ -56,7 +56,7 @@ You can also pass a solver explicitly to ``map_query``:
 .. code-block:: python
 
    from conin.inference import map_query
-   from conin.markov_network.examples import ABC_conin
+   from conin.examples.markov_network import ABC_conin
 
    pgm = ABC_conin().pgm
    results = map_query(pgm, method="integer_program", solver="highs")

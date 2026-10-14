@@ -3,7 +3,7 @@ import numpy as np
 import munch
 import time
 
-from conin.hidden_markov_model.hmm import HiddenMarkovModel, HMM_MatVecRepn
+from conin.graphical_models import HiddenMarkovModel, HMM_MatVecRepn
 
 from dataclasses import dataclass, field
 from typing import Any

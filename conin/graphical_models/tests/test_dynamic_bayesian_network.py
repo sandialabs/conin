@@ -3,8 +3,8 @@
 import pytest
 
 from conin.exceptions import InvalidInputError
-from conin.bayesian_network import DiscreteCPD
-from conin.dynamic_bayesian_network import (
+from conin.graphical_models import (
+    DiscreteCPD,
     DynamicDiscreteBayesianNetwork,
     ExpressionVariable,
 )

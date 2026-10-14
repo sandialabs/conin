@@ -1,10 +1,10 @@
 import pytest
 
 from conin import InvalidInputError
-from conin.hidden_markov_model import HiddenMarkovModel
-import conin.hidden_markov_model.hmm_util
+from conin.graphical_models import HiddenMarkovModel
+import conin.graphical_models
 
-import conin.hidden_markov_model.examples as tc
+import conin.examples.hidden_markov_model as tc
 import math
 
 
@@ -404,7 +404,7 @@ class Test_HMM_Util:
         hidden_states = {1, 2, 3, 4}
         observed_states = ["a", "b", "c"]
         seed = 1
-        hmm = conin.hidden_markov_model.hmm_util.random_hmm(
+        hmm = conin.graphical_models.random_hmm(
             hidden_states=hidden_states,
             observed_states=observed_states,
             seed=1,

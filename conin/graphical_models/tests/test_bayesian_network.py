@@ -3,9 +3,12 @@
 import pytest
 
 from conin.exceptions import InvalidInputError
-from conin.bayesian_network import DiscreteBayesianNetwork, DiscreteCPD
-from conin.bayesian_network.bn_to_mn import create_mn_from_bn
-from conin.markov_network import DiscreteMarkovNetwork
+from conin.graphical_models import (
+    DiscreteBayesianNetwork,
+    DiscreteCPD,
+    create_mn_from_bn,
+)
+from conin.graphical_models import DiscreteMarkovNetwork
 
 # ---------------------------------------------------------------------------
 # Helpers

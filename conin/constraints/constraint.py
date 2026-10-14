@@ -124,8 +124,7 @@ class OracleConstraint(ConstraintFunctor):
 
         # Route to materialisation when called with a pgm as the first argument.
         # This covers both nodes-set (factor mode) and nodes=None (all-nodes mode).
-        from ..markov_network import DiscreteMarkovNetwork
-        from ..bayesian_network import DiscreteBayesianNetwork
+        from ..graphical_models import DiscreteMarkovNetwork, DiscreteBayesianNetwork
 
         if args and isinstance(
             args[0], (DiscreteMarkovNetwork, DiscreteBayesianNetwork)
@@ -153,8 +152,12 @@ class OracleConstraint(ConstraintFunctor):
         -------
         DiscreteFactor or DiscreteCPD
         """
-        from ..markov_network import DiscreteFactor, DiscreteMarkovNetwork
-        from ..bayesian_network import DiscreteCPD, DiscreteBayesianNetwork
+        from ..graphical_models import (
+            DiscreteFactor,
+            DiscreteMarkovNetwork,
+            DiscreteCPD,
+            DiscreteBayesianNetwork,
+        )
 
         if self.nodes is None:
             nodes = list(pgm.nodes)

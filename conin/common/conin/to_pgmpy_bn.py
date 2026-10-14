@@ -1,6 +1,6 @@
 import itertools
 from conin.util import try_import
-from conin.bayesian_network import DiscreteBayesianNetwork, DiscreteCPD
+from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
 
 with try_import() as pgmpy_available:
     from pgmpy.models import DiscreteBayesianNetwork as pgmpy_DiscreteBayesianNetwork

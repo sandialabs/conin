@@ -7,7 +7,7 @@ from conin.constraints import (
     algebraic_constraint_fn,
 )
 from conin.hidden_markov_model.constrained_hmm import ConstrainedHiddenMarkovModel
-from conin.hidden_markov_model.hmm import HiddenMarkovModel
+from conin.graphical_models import HiddenMarkovModel
 from conin.hidden_markov_model.hmm_application import HMMApplication
 
 import munch

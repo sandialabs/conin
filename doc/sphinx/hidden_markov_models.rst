@@ -13,7 +13,7 @@ transition, and emission probabilities and then passes them to the
 
 .. code-block:: python
 
-   from conin.hidden_markov_model import HiddenMarkovModel
+   from conin.graphical_models import HiddenMarkovModel
 
    start_probs = {"h0": 0.4, "h1": 0.6}
    transition_probs = {
@@ -48,7 +48,7 @@ transition, and emission probabilities over a specified state space.
 
 .. code-block:: python
 
-   from conin.hidden_markov_model import random_hmm
+   from conin.graphical_models import random_hmm
 
    hmm = random_hmm(
        hidden_states=["h0", "h1"],
@@ -70,8 +70,8 @@ format is separate from the UAI file support described in
 
 .. code-block:: python
 
-   from conin.hidden_markov_model import HiddenMarkovModel
-   from conin.hidden_markov_model.examples import create_hmm1
+   from conin.graphical_models import HiddenMarkovModel
+   from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
    hmm.write_to_file("hmm.json")
@@ -103,12 +103,10 @@ Oracle constraints
 
 .. code-block:: python
 
-   from conin.hidden_markov_model import (
-       HiddenMarkovModel,
-       ConstrainedHiddenMarkovModel,
-   )
+   from conin.graphical_models import HiddenMarkovModel
+   from conin.hidden_markov_model import ConstrainedHiddenMarkovModel
    from conin.constraints import OracleConstraint
-   from conin.hidden_markov_model.examples import create_hmm1
+   from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
 
@@ -137,7 +135,7 @@ Pyomo constraints
    import pyomo.environ as pe
    import conin
    from conin.hidden_markov_model import ConstrainedHiddenMarkovModel
-   from conin.hidden_markov_model.examples import create_hmm1
+   from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
 
@@ -168,7 +166,7 @@ Toulbar2 constraints
 
    from conin import toulbar2_constraint_fn
    from conin.hidden_markov_model import ConstrainedHiddenMarkovModel
-   from conin.hidden_markov_model.examples import create_hmm1
+   from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
 
@@ -205,7 +203,7 @@ Oracle constraints with node scoping
 
    from conin import oracle_constraint_fn
    from conin.hidden_markov_model import ConstrainedHiddenMarkovModel
-   from conin.hidden_markov_model.examples import create_hmm1
+   from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
 

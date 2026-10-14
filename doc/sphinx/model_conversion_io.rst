@@ -13,8 +13,8 @@ into a factor.
 
 .. code-block:: python
 
-   from conin.bayesian_network import create_mn_from_bn
-   from conin.bayesian_network.examples import simple1_BN_conin
+   from conin.graphical_models import create_mn_from_bn
+   from conin.examples.bayesian_network import simple1_BN_conin
 
    bn = simple1_BN_conin().pgm
    mn = create_mn_from_bn(bn)
@@ -29,9 +29,9 @@ specified inclusive time horizon. The HMM conversion creates dynamic variables
 
 .. code-block:: python
 
-   from conin.dynamic_bayesian_network import create_bn_from_dbn
-   from conin.hidden_markov_model import create_dbn_from_hmm
-   from conin.hidden_markov_model.examples import create_hmm1
+   from conin.graphical_models import create_bn_from_dbn
+   from conin.graphical_models import create_dbn_from_hmm
+   from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
    dbn = create_dbn_from_hmm(hmm)
@@ -52,7 +52,7 @@ Hidden Markov models use their own JSON methods, ``write_to_file`` and
 
 .. code-block:: python
 
-   from conin.bayesian_network.examples import simple1_BN_conin
+   from conin.examples.bayesian_network import simple1_BN_conin
    from conin.common import load_model, save_model
 
    pgm = simple1_BN_conin().pgm
@@ -118,7 +118,7 @@ node; it does not marginalize over latent variables.
 
 .. code-block:: python
 
-   from conin.bayesian_network.examples import simple1_BN_conin
+   from conin.examples.bayesian_network import simple1_BN_conin
    from conin.common import is_polytree, log_potential
 
    pgm = simple1_BN_conin().pgm
@@ -157,11 +157,11 @@ not installed.
 Reference
 ---------
 
-.. autofunction:: conin.bayesian_network.create_mn_from_bn
+.. autofunction:: conin.graphical_models.create_mn_from_bn
 
-.. autofunction:: conin.dynamic_bayesian_network.create_bn_from_dbn
+.. autofunction:: conin.graphical_models.create_bn_from_dbn
 
-.. autofunction:: conin.hidden_markov_model.create_dbn_from_hmm
+.. autofunction:: conin.graphical_models.create_dbn_from_hmm
 
 .. autofunction:: conin.common.load_model
 

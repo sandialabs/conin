@@ -11,7 +11,7 @@ with try_import() as greenery_available:
 import pytest
 
 from conin.exceptions import InvalidInputError
-from conin.hidden_markov_model.hmm import HiddenMarkovModel
+from conin.graphical_models import HiddenMarkovModel
 from conin.hidden_markov_model.mvr import HomMVR
 
 from conin.hidden_markov_model.mvr_constraints import (

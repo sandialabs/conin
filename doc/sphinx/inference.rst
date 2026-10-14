@@ -11,13 +11,13 @@ See :doc:`backends` for backend-specific installation and solver requirements.
 Markov network inference
 ------------------------
 
-The ``ABC_conin`` example from ``conin.markov_network.examples`` is a compact
+The ``ABC_conin`` example from ``conin.examples.markov_network`` is a compact
 Markov network with three variables and pairwise interactions.
 
 .. code-block:: python
 
    from conin.inference import map_query
-   from conin.markov_network.examples import ABC_conin
+   from conin.examples.markov_network import ABC_conin
 
    example = ABC_conin()
    pgm = example.pgm
@@ -37,7 +37,7 @@ Toulbar2 backend, ``integer_program`` creates a Pyomo optimization model, and
 Hidden Markov model inference
 -----------------------------
 
-The ``create_hmm1`` example from ``conin.hidden_markov_model.examples`` is
+The ``create_hmm1`` example from ``conin.examples.hidden_markov_model`` is
 small enough to use throughout the documentation.
 
 Viterbi and A* inference
@@ -46,7 +46,7 @@ Viterbi and A* inference
 .. code-block:: python
 
    from conin.inference import map_query
-   from conin.hidden_markov_model.examples import create_hmm1
+   from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
    observed = ["o0", "o0", "o1", "o0", "o0"]
@@ -70,7 +70,7 @@ input model type and selected ``method`` determine the backend dispatch.
 .. code-block:: python
 
    from conin.inference import map_query
-   from conin.hidden_markov_model.examples import create_hmm1
+   from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
    observed = ["o0", "o0", "o1", "o0", "o0"]
@@ -95,7 +95,7 @@ Bayesian network and then unrolls it into a static Bayesian network for pgmpy.
 .. code-block:: python
 
    from conin.inference import map_query
-   from conin.hidden_markov_model.examples import create_hmm1
+   from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
    observed = ["o0", "o0", "o1", "o0", "o0"]
@@ -107,7 +107,7 @@ Constrained HMM inference
 -------------------------
 
 The constrained examples from
-``conin.hidden_markov_model.examples`` can be used with the same ``map_query``
+``conin.examples.hidden_markov_model`` can be used with the same ``map_query``
 entry point.
 For example, the Pyomo-constrained model ``create_chmm1_pyomo()`` works with
 ``method="integer_program"``, and the Toulbar2-constrained model
@@ -116,7 +116,7 @@ For example, the Pyomo-constrained model ``create_chmm1_pyomo()`` works with
 .. code-block:: python
 
    from conin.inference import map_query
-   from conin.hidden_markov_model.examples import (
+   from conin.examples.hidden_markov_model import (
        create_chmm1_pyomo,
        create_chmm1_toulbar2,
    )

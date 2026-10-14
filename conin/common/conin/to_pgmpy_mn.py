@@ -1,6 +1,6 @@
 import itertools
 from conin.util import try_import
-from conin.markov_network import DiscreteMarkovNetwork, DiscreteFactor
+from conin.graphical_models import DiscreteMarkovNetwork, DiscreteFactor
 
 with try_import() as pgmpy_available:
     from pgmpy.models import DiscreteMarkovNetwork as pgmpy_DiscreteMarkovNetwork

@@ -122,5 +122,14 @@ class TestSampler(unittest.TestCase):
         for k, trace in runs.items():
             assert len(trace) == 6
 
+    def test_does_not_mutate_input_dbn_t(self):
+        t_before = self.G.t.value()
+        assert t_before is None
+        sampler = DBNSampler(self.G)
+        assert sampler.G is not self.G
+        sampler.set_time(3)
+        sampler.sample(T=4, N=2)
+        assert self.G.t.value() is t_before
+
     def tearDown(self):
         self.G = None

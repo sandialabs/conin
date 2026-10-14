@@ -13,8 +13,8 @@ import sys
 import os
 
 from conin.common.unified import load_model, save_model
-from conin.bayesian_network.model import DiscreteBayesianNetwork
-from conin.markov_network.model import DiscreteMarkovNetwork
+from conin.graphical_models import DiscreteBayesianNetwork
+from conin.graphical_models import DiscreteMarkovNetwork
 import conin.common.conin
 
 

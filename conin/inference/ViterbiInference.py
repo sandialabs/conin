@@ -1,5 +1,5 @@
 from ovld import ovld
-from conin.hidden_markov_model.hmm import HiddenMarkovModel, HMM_MatVecRepn
+from conin.graphical_models import HiddenMarkovModel, HMM_MatVecRepn
 from conin.hidden_markov_model.inference import viterbi
 
 

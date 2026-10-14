@@ -1,6 +1,6 @@
-"""Tests for conin.dynamic_bayesian_network.expr."""
+"""Tests for conin.graphical_models.expr."""
 
-from conin.dynamic_bayesian_network.expr import (
+from conin.graphical_models.expr import (
     AddNode,
     ExpressionConstant,
     ExpressionVariable,

@@ -6,7 +6,7 @@
 - Prefer stable public APIs when practical. If APIs change, update all affected
   code, tests, examples, and documentation together.
 - Do not revert unrelated user or collaborator changes.
-- Public examples should live in each model package's `examples.py` module, not under test modules.
+- Public examples should live in `conin/examples/` (`markov_network.py`, `bayesian_network.py`, `dynamic_bayesian_network.py`, `hidden_markov_model.py`), not under test modules.
 
 ## Documentation
 

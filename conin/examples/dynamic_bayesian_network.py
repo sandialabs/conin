@@ -7,12 +7,12 @@ from conin.constraints import (
     oracle_constraint_fn,
     algebraic_constraint_fn,
 )
-from conin.dynamic_bayesian_network import (
+from conin.dynamic_bayesian_network import ConstrainedDynamicDiscreteBayesianNetwork
+from conin.graphical_models import (
+    DiscreteCPD,
     DynamicDiscreteBayesianNetwork,
-    ConstrainedDynamicDiscreteBayesianNetwork,
     ExpressionVariable,
 )
-from conin.bayesian_network import DiscreteCPD
 from conin.util import try_import, MPESolution
 
 with try_import() as pgmpy_available:

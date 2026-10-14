@@ -6,7 +6,7 @@ from conin.inference.dbn import (
     inference_toulbar2_map_query_DDBN,
 )
 
-from conin.dynamic_bayesian_network import examples
+from conin.examples import dynamic_bayesian_network as examples
 
 with try_import() as pgmpy_available:
     import pgmpy
@@ -261,8 +261,8 @@ def _static_and_dynamic_DDBN():
     Unrolling it gives a Bayesian network whose nodes mix plain names
     (``"S"``) and tuples (``("Z", t)``).
     """
-    from conin.bayesian_network import DiscreteCPD
-    from conin.dynamic_bayesian_network import (
+    from conin.graphical_models import (
+        DiscreteCPD,
         DynamicDiscreteBayesianNetwork,
         ExpressionVariable,
     )

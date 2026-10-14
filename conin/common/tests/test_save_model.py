@@ -5,7 +5,7 @@ import filecmp
 from conin.util import try_import
 import conin.common
 from conin.common.unified import save_model, load_model
-from conin.bayesian_network import DiscreteBayesianNetwork, DiscreteCPD
+from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
 
 with try_import() as pgmpy_available:
     import pgmpy
