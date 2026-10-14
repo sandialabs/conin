@@ -249,7 +249,7 @@ def create_pyomo_map_query_model_MN(
     if timing:  # pragma:nocover
         timer = TicTocTimer()
         timer.tic("create_map_query_pyomo_model_MN - START")
-    pgm_ = pgm.pgm if isinstance(pgm, ConstrainedDiscreteMarkovNetwork) else pgm
+    pgm_ = pgm.model if isinstance(pgm, ConstrainedDiscreteMarkovNetwork) else pgm
 
     if variables:  # pragma:nocover
         raise RuntimeError("VariableElimination is not supported for CONIN models")

@@ -21,6 +21,7 @@ from munch import Munch
 from conin.examples.bayesian_network import cancer1_BN_conin
 from conin.constrained_models import ConstrainedDiscreteBayesianNetwork
 from conin.inference import map_query
+from conin.exceptions import InvalidInputError
 from conin import pyomo_constraint_fn, algebraic_constraint_fn
 from conin.util import try_import
 
@@ -118,7 +119,11 @@ class TestBasicAlgebraicConstraints:
         assert result_traditional.solution.states == result_algebraic.solution.states
 
     def test_mixing_constraint_styles(self):
-        """Test that algebraic and traditional constraints can be mixed."""
+        """Test that algebraic and traditional constraints cannot be mixed.
+
+        A constrained model accepts constraints from one family only, so the
+        constructor rejects the mix with an InvalidInputError.
+        """
         pgm = cancer1_BN_conin().pgm
 
         @pyomo_constraint_fn()
@@ -131,13 +136,10 @@ class TestBasicAlgebraicConstraints:
             return model.V("Dyspnoea", 0) + model.V("Xray", 0) <= 1
 
         # Mix both styles
-        cpgm = ConstrainedDiscreteBayesianNetwork(
-            pgm, constraints=[traditional_constraint, algebraic_constraint]
-        )
-
-        with pytest.raises(AssertionError):
-            evidence = {"Pollution": 0, "Smoker": 1}
-            result = map_query(cpgm, method="integer_program", evidence=evidence)
+        with pytest.raises(InvalidInputError, match="one constraint family"):
+            ConstrainedDiscreteBayesianNetwork(
+                pgm, constraints=[traditional_constraint, algebraic_constraint]
+            )
 
 
 class TestArithmeticOperations:

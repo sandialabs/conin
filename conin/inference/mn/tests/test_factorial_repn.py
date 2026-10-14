@@ -389,7 +389,7 @@ def test_ABC_constrained():
     if True:
         # Double-check that we can extract the right factor representation
         cpgm = examples.ABC_constrained_pyomo_conin().pgm
-        S_, J_, v_, w_ = extract_factor_representation(cpgm.pgm)
+        S_, J_, v_, w_ = extract_factor_representation(cpgm.model)
         assert S == S_
         assert J == J_
         assert v == v_
@@ -398,7 +398,7 @@ def test_ABC_constrained():
     if pgmpy_available:
         # Double-check that we can extract the right factor representation
         cpgm = examples.ABC_constrained_pyomo_pgmpy().pgm
-        S_, J_, v_, w_ = extract_factor_representation(cpgm.pgm)
+        S_, J_, v_, w_ = extract_factor_representation(cpgm.model)
         assert S == S_
         assert J == J_
         assert v == v_

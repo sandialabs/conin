@@ -1,58 +1,34 @@
-class ConstrainedDynamicDiscreteBayesianNetwork:
-    """Wrap a dynamic Bayesian network with optional constraints."""
+from conin.graphical_models import DynamicDiscreteBayesianNetwork
 
-    def __init__(self, pgm, constraints=None):
-        """Initialize the constrained dynamic Bayesian network.
+from .base import ConstrainedGraphicalModel
 
-        Parameters
-        ----------
-        pgm : DynamicDiscreteBayesianNetwork
-            Underlying dynamic Bayesian network to be constrained.
-        constraints : list[Constraint], optional
-            Constraint objects that add constraints during
-            inference.
-        """
-        self.pgm = pgm
-        if constraints:
-            self._constraints = constraints
-        else:
-            self._constraints = []
+
+class ConstrainedDynamicDiscreteBayesianNetwork(ConstrainedGraphicalModel):
+    """Dynamic Bayesian network paired with constraints.
+
+    Parameters
+    ----------
+    model : DynamicDiscreteBayesianNetwork
+        The model to constrain.
+    constraints : iterable of Constraint, optional
+        Constraints of one family, applied during inference.
+    data : object, optional
+        Application data passed to the representation builders.
+    """
+
+    __slots__ = ()
+
+    model_type = DynamicDiscreteBayesianNetwork
 
     def check_model(self):
-        """Validate the underlying dynamic Bayesian network."""
-        self.pgm.check_model()
-
-    def nodes(self):
-        """Return the nodes of the wrapped dynamic Bayesian network.
-
-        Returns
-        -------
-        list
-            Nodes maintained by the underlying dynamic Bayesian network.
-        """
-        return self.pgm.nodes
+        """Validate the underlying model."""
+        self.model.check_model()
 
     @property
-    def constraints(self):
-        """Return the configured constraints.
+    def nodes(self):
+        """Return the underlying model's nodes."""
+        return self.model.nodes
 
-        Returns
-        -------
-        list
-            List of ``Constraint`` instances that add constraints to a
-            query model.
-        """
-        return self._constraints
-
-    @constraints.setter
-    def constraints(self, constraint_list):
-        """Set the functions that define model constraints.
-
-        Parameters
-        ----------
-        constraint_list : list of Constraint
-            List of ``Constraint`` instances that generate model
-            constraints.
-        """
-        assert type(constraint_list) is list
-        self._constraints = constraint_list
+    def states_of(self, node):
+        """Return the allowed states for ``node`` in the underlying model."""
+        return self.model.states_of(node)

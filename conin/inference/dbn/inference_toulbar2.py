@@ -11,7 +11,7 @@ def create_toulbar2_map_query_model_DDBN(
     *, pgm, start=0, stop=1, variables=None, evidence=None, **options
 ):
     pgm_ = (
-        pgm.pgm if isinstance(pgm, ConstrainedDynamicDiscreteBayesianNetwork) else pgm
+        pgm.model if isinstance(pgm, ConstrainedDynamicDiscreteBayesianNetwork) else pgm
     )
 
     bn = create_bn_from_dbn(dbn=pgm_, start=start, stop=stop)

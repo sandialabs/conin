@@ -9,7 +9,6 @@ from conin.common.unified import save_model
 
 from conin.graphical_models import create_dbn_from_hmm, HiddenMarkovModel
 from conin.constrained_models import ConstrainedHiddenMarkovModel
-from conin.hidden_markov_model import CHMM
 from conin.graphical_models import DiscreteMarkovNetwork
 from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
 from conin.graphical_models import DiscreteBayesianNetwork
@@ -275,10 +274,10 @@ def _map_query_VariableElimination(
     if pgm.constraints:
         evidence = {}
         newpgm = _add_mn_constraints_as_evidence(
-            pgm.pgm, pgm.constraints, None, evidence
+            pgm.model, pgm.constraints, None, evidence
         )
     else:
-        newpgm = pgm.pgm
+        newpgm = pgm.model
 
     return _execute_simple_model_query(
         newpgm,
@@ -333,10 +332,10 @@ def _map_query_VariableElimination(
     # Apply constraints as CPDs with evidence
     if pgm.constraints:
         newpgm = _add_bn_constraints_as_evidence(
-            pgm.pgm, pgm.constraints, None, prepared_evidence
+            pgm.model, pgm.constraints, None, prepared_evidence
         )
     else:
-        newpgm = pgm.pgm
+        newpgm = pgm.model
 
     # Execute with prepared evidence - pass None for variables to re-determine after constraint
     write_uai_file = options.get("write_uai_file")
@@ -430,7 +429,7 @@ def _map_query_VariableElimination(
         else:
             stop_val = stop
 
-        conin_bn = create_bn_from_dbn(dbn=pgm.pgm, start=start, stop=stop_val)
+        conin_bn = create_bn_from_dbn(dbn=pgm.model, start=start, stop=stop_val)
         data = munch.Munch(T=list(range(start, stop_val + 1)))
         conin_bn = (
             _add_bn_constraints_as_evidence(
@@ -519,7 +518,7 @@ def _map_query_VariableElimination(
         evidence_ = _hmm_evidence_to_pgmpy(evidence)
 
         stop_val = len(evidence) - 1
-        conin_dbn = create_dbn_from_hmm(pgm.hidden_markov_model)
+        conin_dbn = create_dbn_from_hmm(pgm.model)
         conin_bn = create_bn_from_dbn(dbn=conin_dbn, start=start, stop=stop_val)
         data = munch.Munch(hmm=munch.Munch(T=list(range(len(evidence)))))
         conin_bn = (

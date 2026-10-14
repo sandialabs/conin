@@ -54,7 +54,7 @@ def create_toulbar2_map_query_model_BN(
     verbose = options.pop("verbose", -1)
 
     cpgm = pgm if isinstance(pgm, ConstrainedDiscreteBayesianNetwork) else None
-    pgm = cpgm.pgm if cpgm is not None else pgm
+    pgm = cpgm.model if cpgm is not None else pgm
 
     if write_uai_file:
         conin.common.save_model(pgm, write_uai_file)
@@ -79,7 +79,7 @@ def create_toulbar2_map_query_model_BN(
     if cpgm is not None and cpgm.constraints:
         data = munch.Munch(variables=variables, evidence=evidence)
         add_constraints(
-            pgm=cpgm.pgm, constraints=cpgm.constraints, model=model, data=data
+            pgm=cpgm.model, constraints=cpgm.constraints, model=model, data=data
         )
 
     if timing:  # pragma:nocover

@@ -386,7 +386,7 @@ def load_conin_model_from_cfn(filename=None, string=None, cost_scale=1.0):
     written by pytoulbar2's ``AddLinearConstraint``, ``AddSumConstraint`` and
     ``AddGeneralizedLinearConstraint`` methods.  If the file contains such
     constraints, a :class:`ConstrainedDiscreteMarkovNetwork` is returned and
-    the unconstrained model is available as its ``pgm`` attribute.  Each
+    the unconstrained model is available as its ``model`` attribute.  Each
     constraint also records a solver-independent description of the linear
     constraint
     ``sum(weight * [node == state] for node, state, weight in terms) >= rhs``

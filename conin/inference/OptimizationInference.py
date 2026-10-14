@@ -2,7 +2,6 @@ from ovld import ovld
 from conin.util import try_import
 from conin.graphical_models import HiddenMarkovModel
 from conin.constrained_models import ConstrainedHiddenMarkovModel
-from conin.hidden_markov_model import CHMM
 
 from conin.graphical_models import DiscreteMarkovNetwork
 from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
@@ -47,7 +46,7 @@ def _map_query_IntegerProgram(
         f"Expected one of: DiscreteMarkovNetwork, ConstrainedDiscreteMarkovNetwork, "
         f"DiscreteBayesianNetwork, ConstrainedDiscreteBayesianNetwork, "
         f"DynamicDiscreteBayesianNetwork, ConstrainedDynamicDiscreteBayesianNetwork, "
-        f"HiddenMarkovModel, ConstrainedHiddenMarkovModel, CHMM."
+        f"HiddenMarkovModel, ConstrainedHiddenMarkovModel."
     )
 
 
@@ -188,7 +187,7 @@ def _map_query_IntegerProgram(
     )
 
 
-# Dynamic models: HiddenMarkovModel, ConstrainedHiddenMarkovModel, and CHMM
+# Dynamic models: HiddenMarkovModel and ConstrainedHiddenMarkovModel
 
 
 @ovld
@@ -216,28 +215,6 @@ def _map_query_IntegerProgram(
 @ovld
 def _map_query_IntegerProgram(
     pgm: ConstrainedHiddenMarkovModel,
-    *,
-    variables=None,
-    evidence=None,
-    show_progress=False,
-    timing=False,
-    start=0,
-    stop=None,
-    options={},
-):
-    return inference_pyomo_map_query_HMM(
-        pgm=pgm,
-        start=start,
-        stop=stop,
-        variables=variables,
-        evidence=evidence,
-        **options,
-    )
-
-
-@ovld
-def _map_query_IntegerProgram(
-    pgm: CHMM,
     *,
     variables=None,
     evidence=None,

@@ -1,78 +1,34 @@
-class ConstrainedDiscreteMarkovNetwork:
-    """Markov network that supports custom constraints.
+from conin.graphical_models import DiscreteMarkovNetwork
 
-    Wraps a ``DiscreteMarkovNetwork`` and optional ``Constraint``
-    instances that apply additional feasibility constraints.
+from .base import ConstrainedGraphicalModel
+
+
+class ConstrainedDiscreteMarkovNetwork(ConstrainedGraphicalModel):
+    """Markov network paired with constraints.
+
+    Parameters
+    ----------
+    model : DiscreteMarkovNetwork
+        The model to constrain.
+    constraints : iterable of Constraint, optional
+        Constraints of one family, applied during inference.
+    data : object, optional
+        Application data passed to the representation builders.
     """
 
-    def __init__(self, pgm, constraints=None):
-        """Initialize the constrained wrapper.
+    __slots__ = ()
 
-        Parameters
-        ----------
-        pgm : DiscreteMarkovNetwork
-            Underlying probabilistic graphical model to constrain.
-        constraints : list[Constraint] or None, optional
-            Constraint objects that add restrictions during
-            inference.
-        """
-        self.pgm = pgm
-        if constraints:
-            self._constraints = constraints
-        else:
-            self._constraints = []
+    model_type = DiscreteMarkovNetwork
 
     def check_model(self):
         """Validate the underlying model."""
-        self.pgm.check_model()
+        self.model.check_model()
 
     @property
     def nodes(self):
-        """Return the underlying model's nodes.
-
-        Returns
-        -------
-        list
-            Node identifiers maintained by the underlying model.
-        """
-        return self.pgm.nodes
+        """Return the underlying model's nodes."""
+        return self.model.nodes
 
     def states_of(self, node):
-        """Return the allowed states for a node.
-
-        Parameters
-        ----------
-        node : Hashable
-            Identifier of the node of interest.
-
-        Returns
-        -------
-        list
-            Ordered list of valid states for ``node``.
-        """
-        return self.pgm.states_of(node)
-
-    @property
-    def constraints(self):
-        """Return the configured constraints.
-
-        Returns
-        -------
-        list
-            List of ``Constraint`` instances that add constraints to an
-            inference model.
-        """
-        return self._constraints
-
-    @constraints.setter
-    def constraints(self, constraint_list):
-        """Set the functions used to define model constraints.
-
-        Parameters
-        ----------
-        constraint_list : list of Constraint
-            List of ``Constraint`` instances that generate model
-            constraints.
-        """
-        assert type(constraint_list) is list
-        self._constraints = constraint_list
+        """Return the allowed states for ``node`` in the underlying model."""
+        return self.model.states_of(node)
