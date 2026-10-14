@@ -3,7 +3,7 @@ import importlib
 import pytest
 
 from conin.constraints import Constraint, MVRConstraint
-from conin.constraints.mvr.mvr import BaseMVR, HomMVR, InhomMVR
+from conin.constraints.mvr.base import BaseMVR, HomMVR, InhomMVR
 from conin.constraints.mvr.primitives import mvr_forbid_state
 from conin.constraints.mvr.tests.test_mvr_constraints import make_hmm
 

@@ -7,7 +7,7 @@ import pytest
 from conin.exceptions import InvalidInputError
 from conin.hidden_markov_model.chmm_mvr import MVR_CHMM
 from conin.graphical_models import HiddenMarkovModel
-from conin.constraints.mvr.mvr import HomMVR, InhomMVR
+from conin.constraints.mvr import HomMVR, InhomMVR
 
 # importorskip only catches ImportError; a broken torch install raises OSError.
 try:

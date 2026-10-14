@@ -7,7 +7,7 @@ from itertools import combinations, product
 from typing import Any, Literal
 
 from conin.exceptions import InvalidInputError
-from conin.constraints.mvr.mvr import (
+from .base import (
     BaseMVR,
     HomMVR,
     InhomMVR,

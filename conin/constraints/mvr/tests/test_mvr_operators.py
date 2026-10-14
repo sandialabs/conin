@@ -3,7 +3,7 @@ import pytest
 from itertools import product
 
 from conin.exceptions import InvalidInputError
-from conin.constraints.mvr.mvr import HomMVR, InhomMVR
+from conin.constraints.mvr.base import HomMVR, InhomMVR
 
 from conin.constraints.mvr.operators import (
     mvr_timerange,

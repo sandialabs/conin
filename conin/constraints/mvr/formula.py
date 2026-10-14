@@ -7,9 +7,9 @@ import re
 
 from typing import Any
 
-from conin.constraints.mvr.constraint import mvr_constraint_fn
+from .constraint import mvr_constraint_fn
 from conin.exceptions import InvalidInputError
-from conin.constraints.mvr.primitives import (
+from .primitives import (
     mvr_constant,
     mvr_current_sequencelist,
     mvr_current_state,
@@ -20,7 +20,7 @@ from conin.constraints.mvr.primitives import (
     mvr_regex,
     mvr_withinbounds,
 )
-from conin.constraints.mvr.operators import (
+from .operators import (
     mvr_already_satisfied,
     mvr_and,
     mvr_concatenate,

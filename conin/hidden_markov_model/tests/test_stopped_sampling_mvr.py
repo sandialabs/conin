@@ -14,7 +14,7 @@ try:
 except (ImportError, OSError) as exc:
     pytest.skip(f"torch not available: {exc}", allow_module_level=True)
 
-from conin.constraints.mvr.operators import mvr_sattime  # noqa: E402
+from conin.constraints.mvr import mvr_sattime  # noqa: E402
 from conin.hidden_markov_model.sampling.stopped_sampling_mvr import (  # noqa: E402
     stopped_sampling_torch_mvr_chmm,
 )

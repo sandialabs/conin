@@ -12,7 +12,7 @@ import pytest
 
 from conin.exceptions import InvalidInputError
 from conin.graphical_models import HiddenMarkovModel
-from conin.constraints.mvr.mvr import HomMVR
+from conin.constraints.mvr.base import HomMVR
 
 from conin.constraints.mvr.primitives import (
     mvr_constant,

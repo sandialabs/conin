@@ -2,7 +2,7 @@ import copy
 
 from conin.exceptions import InvalidInputError
 from . import chmm
-from conin.constraints.mvr.mvr import BaseMVR, MVR_MatVecRepn
+from conin.constraints.mvr import BaseMVR, MVR_MatVecRepn
 
 
 def _align_hidden_states(mvr, hidden_to_external):

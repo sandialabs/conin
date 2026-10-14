@@ -63,7 +63,7 @@ conin/
   constraints/           base.py (Constraint ABC, `family`), pyomo.py, toulbar2.py, oracle.py (OracleConstraint),
                          factor_oracle.py (FactorOracleConstraint), oracle_library.py (the oracle library),
                          algebraic/ (AlgebraicConstraint + the add_constraints_* backend modules, which move in PR 4a/4b),
-                         mvr/ (constraint.py, mvr.py, primitives.py, operators.py, formula.py; __init__ exports the public MVR names)
+                         mvr/ (constraint.py, base.py, primitives.py, operators.py, formula.py; __init__ exports the public MVR names)
   representations/factor/ materialise.py (materialise_factor_oracle; temporary home, used by inference/VariableElimination.py)
   hidden_markov_model/   constrained_hmm.py, chmm*.py, mvr_common.py, hmm_application.py,
                          inference/ learning/ sampling/ other_queries/  (torch MVR code moves in PR 4d)
@@ -158,7 +158,7 @@ conin/
 │   ├── oracle_library.py       # current constraints/oracle.py (all_diff, citation, and/or/not, ...)
 │   └── mvr/
 │       ├── constraint.py       # MVRConstraint, mvr_constraint_fn (factories: hmm -> MVR)
-│       ├── mvr.py              # BaseMVR(Constraint), HomMVR, InhomMVR, MVR_MatVecRepn
+│       ├── base.py             # BaseMVR(Constraint), HomMVR, InhomMVR, MVR_MatVecRepn
 │       ├── primitives.py       # current mvr_constraints.py (mvr_forbid_state, mvr_regex, ...)
 │       ├── operators.py        # current mvr_operators.py + conin/operators.py (cycle removed)
 │       └── formula.py          # current mvr_formula.py (build_mvr, build_mvr_functor)
@@ -225,6 +225,10 @@ similar code. Rule for subagents: **delete only code that becomes redundant beca
 restructure. When in doubt, keep it and flag it in the PR description.**
 
 Tests stay next to the code they test, as today (e.g. `representations/pyomo/tests/`).
+
+MVR imports: code outside `conin/constraints/mvr/` imports public names from the package
+(`from conin.constraints.mvr import HomMVR`), not from its modules. Modules inside the package use relative
+imports (`from .base import HomMVR`). The package's own tests may import from submodules.
 
 ---
 
@@ -421,7 +425,7 @@ Breaking changes (these go in the CHANGELOG for 2.0):
 - `ConstraintFunctor` is renamed `Constraint` (no alias). `Constraint` no longer requires `__call__`.
 - The oracle library moves from `conin.constraints.oracle` to `conin.constraints.oracle_library` and is no longer
   star-exported from `conin.constraints`. `conin.constraints.oracle` is now the `OracleConstraint` module.
-- The MVR spec modules move to `conin.constraints.mvr` (`hidden_markov_model.mvr` → `constraints.mvr.mvr`,
+- The MVR spec modules move to `conin.constraints.mvr` (`hidden_markov_model.mvr` → `constraints.mvr.base`,
   `mvr_constraints` → `primitives`, `mvr_operators` + `conin.operators` → `operators`, `mvr_formula` → `formula`).
 - Calling a `FactorOracleConstraint` evaluates the predicate; it no longer materialises when called with a pgm.
   `OracleConstraint` has no `nodes`, and the "all-nodes" materialisation mode is removed.

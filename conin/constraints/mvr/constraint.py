@@ -2,7 +2,7 @@ import inspect
 
 from conin.exceptions import InvalidInputError
 from conin.constraints.base import Constraint
-from .mvr import BaseMVR
+from .base import BaseMVR
 
 
 class MVRConstraint(Constraint):

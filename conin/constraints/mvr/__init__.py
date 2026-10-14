@@ -9,7 +9,7 @@ operators, and the MVR formula language (``build_mvr``,
 ``greenery`` dependency is needed only by ``mvr_regex``.
 """
 
-from .mvr import BaseMVR, HomMVR, InhomMVR, MVR_MatVecRepn
+from .base import BaseMVR, HomMVR, InhomMVR, MVR_MatVecRepn
 from .constraint import MVRConstraint, mvr_constraint_fn
 from .operators import (
     MVROperator,
