@@ -324,8 +324,9 @@ class ConstrainedGraphicalModel:
 - The object is fully immutable: no `add_constraint`, no setters, no `initialize_chmm`.
   (PR 3) It uses `__slots__`, and `__setattr__`/`__delattr__` raise `AttributeError`. `copy`, `deepcopy` and
   pickle work (`__getstate__`/`__setstate__`); copies start with an empty cache.
-- (PR 3) `constraints` must be an iterable (list, tuple, generator) of `Constraint`; a single constraint, a string
-  or a non-`Constraint` element raises `InvalidInputError`, as do mixed families and a wrong model type.
+- (PR 3) `constraints` is a single `Constraint` (wrapped into a 1-tuple) or an iterable (list, tuple, generator)
+  of `Constraint`; a string or a non-`Constraint` element raises `InvalidInputError`, as do mixed families and
+  a wrong model type.
   Subclasses may set `supported_families`; `ConstrainedHiddenMarkovModel` accepts None, "oracle",
   "factor_oracle", "pyomo", "algebraic", "toulbar2" and "mvr".
 - (PR 3) `representation()` raises `InvalidInputError` naming the supported `(kind, family)` pairs when no

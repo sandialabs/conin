@@ -81,10 +81,11 @@ class TestConstrainedDiscreteMarkovNetwork:
             cmn.constraints = [_make_constraint()]
         assert cmn.constraints == ()
 
-    def test_single_constraint_is_rejected(self):
+    def test_single_constraint_is_wrapped(self):
         mn = _make_simple_mn()
-        with pytest.raises(InvalidInputError):
-            ConstrainedDiscreteMarkovNetwork(mn, constraints=_make_constraint())
+        c = _make_constraint()
+        cmn = ConstrainedDiscreteMarkovNetwork(mn, constraints=c)
+        assert cmn.constraints == (c,)
 
     def test_string_constraints_rejected(self):
         mn = _make_simple_mn()

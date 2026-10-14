@@ -88,6 +88,13 @@ def test_generator_constraints_accepted():
     assert c.constraints == (pyomo_c,)
 
 
+def test_single_constraint_accepted():
+    c = ConstrainedDiscreteMarkovNetwork(_mn(), pyomo_c)
+    assert c.constraints == (pyomo_c,)
+    assert c.constraint_family == "pyomo"
+    assert c.with_constraints(pyomo_c).constraints == (pyomo_c,)
+
+
 def test_model_keyword():
     mn = _mn()
     assert ConstrainedDiscreteMarkovNetwork(model=mn).model is mn

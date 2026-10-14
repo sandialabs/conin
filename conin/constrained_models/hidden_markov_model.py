@@ -11,7 +11,7 @@ class ConstrainedHiddenMarkovModel(ConstrainedGraphicalModel):
     ----------
     model : HiddenMarkovModel
         Hidden Markov model to wrap.
-    constraints : iterable of Constraint, optional
+    constraints : Constraint or iterable of Constraint, optional
         Constraints of one family: ``"oracle"``, ``"factor_oracle"``,
         ``"pyomo"``, ``"algebraic"``, ``"toulbar2"`` or ``"mvr"``.
     data : object, optional

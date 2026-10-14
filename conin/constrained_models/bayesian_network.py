@@ -10,7 +10,7 @@ class ConstrainedDiscreteBayesianNetwork(ConstrainedGraphicalModel):
     ----------
     model : DiscreteBayesianNetwork
         The model to constrain.
-    constraints : iterable of Constraint, optional
+    constraints : Constraint or iterable of Constraint, optional
         Constraints of one family, applied during inference.
     data : object, optional
         Application data passed to the representation builders.

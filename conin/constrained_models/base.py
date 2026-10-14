@@ -23,9 +23,9 @@ class ConstrainedGraphicalModel:
     ----------
     model : GraphicalModel
         The unconstrained model. It must be an instance of ``model_type``.
-    constraints : iterable of Constraint, optional
-        The constraints (a list, tuple or other iterable, not a single
-        constraint). They must all belong to one constraint family
+    constraints : Constraint or iterable of Constraint, optional
+        The constraints: a single constraint, or a list, tuple or other
+        iterable of constraints. They must all belong to one constraint family
         (``type(c).family``). ``None`` is treated as no constraints.
     data : object, optional
         Application data passed to the representation builders (e.g. to MVR
@@ -78,11 +78,7 @@ class ConstrainedGraphicalModel:
         if constraints is None:
             return ()
         if isinstance(constraints, Constraint):
-            raise InvalidInputError(
-                f"{type(self).__name__}: constraints must be an iterable of "
-                f"Constraint objects, not a single {type(constraints).__name__}; "
-                "wrap it in a list"
-            )
+            return (constraints,)
         if isinstance(constraints, (str, bytes)):
             raise InvalidInputError(
                 f"{type(self).__name__}: constraints must be an iterable of "
@@ -180,7 +176,8 @@ class ConstrainedGraphicalModel:
     def with_constraints(self, constraints):
         """Return a new object with the same model and data and new constraints.
 
-        The new object starts with an empty representation cache.
+        ``constraints`` is a single constraint or an iterable of constraints,
+        as in the constructor. The new object starts with an empty representation cache.
         """
         return type(self)(self._model, constraints, data=self._data)
 
