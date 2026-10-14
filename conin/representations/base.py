@@ -62,6 +62,9 @@ def _load_builtins():
 def register_representation(kind, model_type, families=(None,)):
     """Decorator that registers a representation builder.
 
+    The decorated builder is called as ``builder(cmodel, **structure_params)``
+    and must return a :class:`Representation`.
+
     Parameters
     ----------
     kind : str
@@ -71,9 +74,6 @@ def register_representation(kind, model_type, families=(None,)):
     families : iterable of (str or None), optional
         Constraint families the builder accepts.  ``None`` stands for a model
         without constraints.
-
-    The decorated builder is called as ``builder(cmodel, **structure_params)``
-    and must return a :class:`Representation`.
 
     Raises
     ------

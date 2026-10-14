@@ -162,6 +162,7 @@ SPHINX_AUTODOC = [
     ("conin.constrained_models", "ConstrainedDiscreteBayesianNetwork", "api_constrained_graphical_models.rst"),
     ("conin.constrained_models", "ConstrainedDiscreteMarkovNetwork", "api_constrained_graphical_models.rst"),
     ("conin.constrained_models", "ConstrainedDynamicDiscreteBayesianNetwork", "api_constrained_graphical_models.rst"),
+    ("conin.constrained_models", "ConstrainedGraphicalModel", "api_constrained_graphical_models.rst"),
     ("conin.constrained_models", "ConstrainedHiddenMarkovModel", "api_constrained_graphical_models.rst"),
     ("conin.constraints", "AlgebraicConstraint", "api_constraints.rst"),
     ("conin.constraints", "Constraint", "api_constraints.rst"),
@@ -190,6 +191,10 @@ SPHINX_AUTODOC = [
     ("conin.hidden_markov_model.learning", "mcem", "hmm_learning.rst"),
     ("conin.hidden_markov_model.learning", "supervised_learning", "hmm_learning.rst"),
     ("conin.inference", "map_query", "api_inference.rst"),
+    ("conin.representations", "Representation", "api_constrained_graphical_models.rst"),
+    ("conin.representations", "build_representation", "api_constrained_graphical_models.rst"),
+    ("conin.representations", "register_representation", "api_constrained_graphical_models.rst"),
+    ("conin.representations", "supported_representations", "api_constrained_graphical_models.rst"),
 ]
 
 SPHINX_EXAMPLE_TABLES = [
@@ -260,6 +265,11 @@ EXAMPLES_MODULES = [
 
 RESTRUCTURE_PLAN_API = [
     ("conin", "Constraint", "RESTRUCTURE_PLAN.md §5"),
+    ("conin.constrained_models", "ConstrainedDiscreteBayesianNetwork", "RESTRUCTURE_PLAN.md §5"),
+    ("conin.constrained_models", "ConstrainedDiscreteMarkovNetwork", "RESTRUCTURE_PLAN.md §5"),
+    ("conin.constrained_models", "ConstrainedDynamicDiscreteBayesianNetwork", "RESTRUCTURE_PLAN.md §5"),
+    ("conin.constrained_models", "ConstrainedGraphicalModel", "RESTRUCTURE_PLAN.md §5"),
+    ("conin.constrained_models", "ConstrainedHiddenMarkovModel", "RESTRUCTURE_PLAN.md §5"),
     ("conin.constraints", "FactorOracleConstraint", "RESTRUCTURE_PLAN.md §5"),
     ("conin.constraints.mvr", "BaseMVR", "RESTRUCTURE_PLAN.md §5"),
     ("conin.constraints.mvr", "HomMVR", "RESTRUCTURE_PLAN.md §5"),
@@ -271,6 +281,9 @@ RESTRUCTURE_PLAN_API = [
     ("conin.constraints.mvr", "mvr_forbid_state", "RESTRUCTURE_PLAN.md §5"),
     ("conin.constraints.mvr", "mvr_not_yet", "RESTRUCTURE_PLAN.md §5"),
     ("conin.constraints.oracle_library", None, "RESTRUCTURE_PLAN.md §5"),
+    ("conin.representations", "Representation", "RESTRUCTURE_PLAN.md §5"),
+    ("conin.representations", "build_representation", "RESTRUCTURE_PLAN.md §5"),
+    ("conin.representations", "register_representation", "RESTRUCTURE_PLAN.md §5"),
 ]
 # fmt: on
 

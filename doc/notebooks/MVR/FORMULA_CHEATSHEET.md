@@ -17,7 +17,8 @@ constraint. The two differ only in when the MVR is built:
 
  - `build_mvr` takes an `hmm` and builds the MVRs for that HMM right away.
  - `build_mvr_functor` takes no `hmm`. It builds `MVRConstraint` factories, each of
-   which constructs its MVR later, when `initialize_chmm` supplies an HMM.
+   which constructs its MVR later, when a `ConstrainedHiddenMarkovModel` builds its
+   `"mvr"` representation (`chmm.representation("mvr")`).
 
 Each result is named after its own formula — `"never A and reach B[0]"` — unless
 you pass `name=`. That name is what `sat_time_mvr` and `sat_prob_mvr` accept as

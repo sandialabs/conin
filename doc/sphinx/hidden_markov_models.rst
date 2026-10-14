@@ -90,10 +90,21 @@ constraints. The public examples include oracle, Pyomo, and Toulbar2 constraints
 Oracle constraints with ``nodes`` (``FactorOracleConstraint``) generate
 auxiliary factors for variable-elimination inference.
 
-``initialize_chmm()`` constructs an internal constrained HMM object for oracle,
-Pyomo, and MVR constraints. Toulbar2 constraints are consumed by the
-corresponding inference methods instead of initializing a standalone CHMM object
-directly.
+Constrained models are immutable: ``ConstrainedHiddenMarkovModel(hmm,
+constraints, data=None)`` stores the HMM as ``.model`` and the constraints as a
+tuple in ``.constraints``. All constraints must belong to one constraint family,
+which is available as ``.constraint_family`` (``None`` when there are no
+constraints); mixing families raises ``InvalidInputError``. Application data
+used by constraint functions and MVR factories is passed to the constructor
+with ``data=``.
+
+Backend representations are built lazily and cached by
+``representation(kind)``. HMMs register three kinds: ``"oracle"`` (for no
+constraints or oracle constraints), ``"pyomo_network_flow"`` (no constraints or
+Pyomo constraints) and ``"mvr"`` (no constraints or MVR constraints; the built
+MVRs are ``chmm.representation("mvr").mvrs``). Toulbar2, algebraic and
+factor-oracle constraints have no HMM representation; ``map_query`` consumes
+them directly.
 
 Oracle constraints
 ^^^^^^^^^^^^^^^^^^
@@ -120,10 +131,9 @@ Oracle constraints
    )
 
    chmm = ConstrainedHiddenMarkovModel(
-       hmm=hmm,
+       hmm,
        constraints=[num_zeros_greater_than_nine, num_zeros_less_than_thirteen],
    )
-   chmm.initialize_chmm()
 
 Pyomo constraints
 ^^^^^^^^^^^^^^^^^
@@ -152,10 +162,9 @@ Pyomo constraints
        )
 
    chmm = ConstrainedHiddenMarkovModel(
-       hmm=hmm,
+       hmm,
        constraints=[num_zeros_greater_than_nine, num_zeros_less_than_thirteen],
    )
-   chmm.initialize_chmm()
 
 Toulbar2 constraints
 ^^^^^^^^^^^^^^^^^^^^
@@ -187,7 +196,7 @@ Toulbar2 constraints
        )
 
    chmm = ConstrainedHiddenMarkovModel(
-       hmm=hmm,
+       hmm,
        constraints=[num_zeros_greater_than_nine, num_zeros_less_than_thirteen],
    )
 
@@ -197,7 +206,7 @@ the Toulbar2 model.
 Oracle constraints with node scoping
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-``create_chmm1_oracle`` adds the same logic through generated factors:
+``create_chmm1_oracle_ve`` adds the same logic through generated factors:
 
 .. code-block:: python
 
@@ -222,7 +231,7 @@ Oracle constraints with node scoping
        return num <= 12
 
    chmm = ConstrainedHiddenMarkovModel(
-       hmm=hmm,
+       hmm,
        constraints=[num_zeros_greater_than_nine, num_zeros_less_than_thirteen],
    )
 

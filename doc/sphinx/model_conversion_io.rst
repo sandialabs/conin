@@ -90,7 +90,7 @@ and ``knapsackv`` global cost functions; they are written by pytoulbar2's
 ``AddGeneralizedLinearConstraint`` methods. When a file contains such
 constraints, ``load_model`` returns a ``ConstrainedDiscreteMarkovNetwork``
 whose constraints are Toulbar2 constraints, and the unconstrained model is
-available as its ``pgm`` attribute:
+available as its ``model`` attribute:
 
 .. code-block:: python
 
@@ -99,7 +99,7 @@ available as its ``pgm`` attribute:
 
    cpgm = load_model("constrained_model.cfn")
    constrained = map_query(cpgm, method="toulbar2")
-   unconstrained = map_query(cpgm.pgm, method="toulbar2")
+   unconstrained = map_query(cpgm.model, method="toulbar2")
 
 Loaded constraints can only be used with ``method="toulbar2"``. Each one also
 stores a description of its linear constraint (``terms``, ``operator`` and

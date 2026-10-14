@@ -1,6 +1,6 @@
 # Conin Restructure Plan
 
-Status: **In progress.** PR 0 is merged into `main` (#241). PR 1 is merged into `restructure` (#242). PR 2 is done (branch `restructure-pr2-constraints`, targets `restructure`). The later PRs target the `restructure` branch.
+Status: **In progress.** PR 0 is merged into `main` (#241). PR 1 is merged into `restructure` (#242). PR 2 is merged into `restructure` (#243). PR 3 is done (branch `restructure-pr3-constrained-models`, targets `restructure`). The later PRs target the `restructure` branch.
 This file lives at the repo root while the work is in progress. Delete it in the final PR.
 
 All decisions are recorded in §11; §12 lists what is still open. Critiques of the
@@ -69,6 +69,18 @@ conin/
                          inference/ learning/ sampling/ other_queries/  (torch MVR code moves in PR 4d)
   operators.py           removed (merged into constraints/mvr/operators.py)
 ```
+After PR 3:
+```
+conin/
+  constrained_models/    base.py (ConstrainedGraphicalModel), markov_network.py, bayesian_network.py,
+                         dynamic_bayesian_network.py, hidden_markov_model.py, tests/
+  representations/       base.py (Representation, registry, register_representation, build_representation),
+                         oracle/hmm.py (OracleHMMRepresentation, wraps Oracle_CHMM),
+                         pyomo/hmm_network_flow.py (PyomoNetworkFlowHMMRepresentation, wraps PyomoAlgebraic_CHMM),
+                         mvr/hmm.py (MVRHMMRepresentation, wraps MVR_CHMM, exposes .mvrs), factor/ (unchanged)
+  hidden_markov_model/   chmm*.py, mvr_common.py, hmm_application.py, inference/ learning/ sampling/ other_queries/
+  markov_network/, bayesian_network/, dynamic_bayesian_network/   removed (emptied)
+```
 
 ### 2.2 Problems the restructure should fix
 - **The constrained wrappers are inconsistent.**
@@ -79,12 +91,16 @@ conin/
     *after* construction. That object goes stale if the HMM or constraints change, and the
     call is a silent no-op for algebraic, toulbar2 and oracle-with-nodes constraints.
 - **Representation building is scattered across the code:**
-  - inside constraint classes: `OracleConstraint._materialise` builds factors and CPDs;
-  - inside containers: `initialize_chmm`;
-  - inside "model" classes: `PyomoAlgebraic_CHMM.generate_model`;
-  - inside inference functions: `create_*_map_query_model_*`, and `lp_inference` builds
-    a CHMM;
-  - inside the dispatch layer: `VariableElimination._add_*_constraints_as_evidence`.
+  - inside constraint classes: `OracleConstraint._materialise` builds factors and CPDs
+    (PR 2: moved to `representations/factor/materialise.py`; becomes the factor repn in 4e);
+  - inside containers: `initialize_chmm` (PR 3: removed; replaced by the registered "oracle",
+    "pyomo_network_flow" and "mvr" HMM representations, which still wrap `Oracle_CHMM`,
+    `PyomoAlgebraic_CHMM` and `MVR_CHMM` until 4a/4c/4d);
+  - inside "model" classes: `PyomoAlgebraic_CHMM.generate_model` (PR 3: reached only through the
+    "pyomo_network_flow" repn; the class itself is replaced in 4a);
+  - inside inference functions: `create_*_map_query_model_*` (remain; 4a/4b), and `lp_inference`
+    builds a CHMM (PR 3: uses `representation("pyomo_network_flow")`);
+  - inside the dispatch layer: `VariableElimination._add_*_constraints_as_evidence` (remains; 4e).
 - **Almost nothing is cached.** Only `HiddenMarkovModel.repn` is. The
   HMM→DBN→BN→MN→factor-repn→Pyomo chain is rebuilt on every query.
 - **There is a lot of duplication:**
@@ -122,6 +138,16 @@ conin/
     notebook rows now point at `conin.constraints.mvr`. `test_public_api.py` is 207 passed, 9 skipped.
   The moved MVR spec tests (`constraints/mvr/tests/`) give 281 passed, 0 skipped in `/projects/.conin-scratch/venv`
   (it has greenery).
+- **After PR 3:** **1074 passed, 195 skipped, 0 errors** (+65). The new and rewritten tests:
+  - `constrained_models/tests/test_base.py` (33: immutability, validation, lazy build, cache, get_copy isolation,
+    the unsupported-kind error, copy/deepcopy/pickle, with_*);
+  - `constrained_models/tests/test_{markov_network,bayesian_network,dynamic_bayesian_network}.py` (the MN file is the
+    moved `markov_network/tests/test_constrained_model.py`, rewritten for read-only constraints; BN/DBN are new,
+    including the §9 `nodes`-is-a-property regression test);
+  - `representations/tests/test_hmm_representations.py` (11: oracle, pyomo_network_flow and mvr parity with the
+    wrapped classes, data isolation, get_copy);
+  - +12 `test_public_api.py` rows (`conin.constrained_models.*`, `conin.representations.*`): 219 passed, 9 skipped.
+  The MVR spec tests are still 281 passed in `/projects/.conin-scratch/venv`.
 - pgmpy, or_topas, gurobi and glpk are not installed in `.venv-opencode`; torch is broken
   there; greenery is missing.
 - PR 0 adds `doc/notebooks/MVR/*.ipynb` to the CI notebook job and fixes the
@@ -281,21 +307,29 @@ Unsupported combinations raise a clear `InvalidInputError` that lists the suppor
 class ConstrainedGraphicalModel:
     model_type: type[GraphicalModel]          # set by subclass
 
-    def __init__(self, model, constraints=()):
+    def __init__(self, model, constraints=(), *, data=None):
         # type-check model against model_type
         # check every constraint is a Constraint and they share one family -> InvalidInputError
         self._model = model                   # already immutable
         self._constraints = tuple(constraints)
         self._family = ...                    # derived
+        self._data = data                     # passed to builders, not part of the cache key
         self._cache = {}                      # key -> Representation
 
-    @property model / constraints / constraint_family      # read-only
+    @property model / constraints / constraint_family / data   # read-only
     def representation(self, kind, **structure_params):    # build lazily, cache, return repn.get_copy()
     def with_constraints(self, constraints):               # new object, empty cache
     def with_model(self, model):                           # new object, empty cache (used by learning)
 ```
 - The object is fully immutable: no `add_constraint`, no setters, no `initialize_chmm`.
-  Use `__slots__` and/or block `__setattr__` after init.
+  (PR 3) It uses `__slots__`, and `__setattr__`/`__delattr__` raise `AttributeError`. `copy`, `deepcopy` and
+  pickle work (`__getstate__`/`__setstate__`); copies start with an empty cache.
+- (PR 3) `constraints` must be an iterable (list, tuple, generator) of `Constraint`; a single constraint, a string
+  or a non-`Constraint` element raises `InvalidInputError`, as do mixed families and a wrong model type.
+  Subclasses may set `supported_families`; `ConstrainedHiddenMarkovModel` accepts None, "oracle",
+  "factor_oracle", "pyomo", "algebraic", "toulbar2" and "mvr".
+- (PR 3) `representation()` raises `InvalidInputError` naming the supported `(kind, family)` pairs when no
+  builder is registered.
 - Every class has the same constructor shape:
   `ConstrainedHiddenMarkovModel(hmm, constraints=[...])`,
   `ConstrainedDiscreteBayesianNetwork(bn, constraints=[...])`, and so on.
@@ -317,6 +351,18 @@ class ConstrainedGraphicalModel:
   functions see the same `model.V(...)` and `data` as today.
 - Each backend has exactly one function that applies constraints of a given family.
   This replaces the 3 duplicated `add_constraints` dispatchers.
+- (PR 3) API, in `conin/representations/base.py`:
+  - `Representation` (ABC): class attribute `kind`, and `get_copy()` (default `copy.deepcopy(self)`);
+  - `@register_representation(kind, model_type, families=(None,))` registers `builder(cmodel, **structure_params)`
+    under each `(kind, model_type, family)`; `None` means "no constraints"; re-registering a key with another
+    builder raises `ValueError`; `unregister_representation(...)` is for tests;
+  - `build_representation(cmodel, kind, **structure_params)` (uncached; `cmodel.representation()` caches it),
+    `supported_representations(model_type)` (sorted `(kind, family)` pairs) and `get_representation_builder(...)`;
+  - the built-in builder modules are imported lazily on first registry use, because they import
+    `conin.hidden_markov_model`, which imports the constrained models.
+- (PR 3) Registered HMM kinds: `"oracle"` (None, "oracle"), `"pyomo_network_flow"` (None, "pyomo") and
+  `"mvr"` (None, "mvr"). `"algebraic"` is not registered for `"pyomo_network_flow"`: it never worked before
+  PR 3 (initialize_chmm built no `.chmm` for it).
 
 ### 4.4 Caching and copy-on-get
 - Representations are cached on the constrained model.
@@ -327,6 +373,9 @@ class ConstrainedGraphicalModel:
   | Representation             | `get_copy()` strategy |
   |----------------------------|------------------------|
   | Factor (S,J,v,w), oracle, recursive, MVR | immutable (frozen data, read-only arrays) → return `self` |
+  | (PR 3) oracle HMM (wraps `Oracle_CHMM`) | `self` (no per-query state; sampling uses the global NumPy RNG) |
+  | (PR 3) MVR HMM (wraps `MVR_CHMM`) | shallow copy with deep-copied MVRs (MVRs are mutable until 4d); the HMM is shared |
+  | (PR 3) pyomo_network_flow HMM | a fresh wrapper with a shallow copy of `data` (the CHMM writes `data.hmm` per query) |
   | Pyomo                      | `pyomo_model.clone()` |
   | toulbar2                   | cache the intermediate (UAI text + constraint/evidence spec); rebuild a fresh `pytoulbar2.CFN` on each get |
 
@@ -419,8 +468,20 @@ from conin.common import log_potential, is_polytree, convert_pgmpy_to_conin
 Breaking changes (these go in the CHANGELOG for 2.0):
 - All model, constraint and example import paths change (see above).
 - `initialize_chmm()`, `chmm.chmm` and `constraint_type` are removed. Use
-  `representation(kind)` and `constraint_family` instead.
-- Constrained models are immutable, and their constructors are unified as `(model, constraints=)`.
+  `representation(kind)` and `constraint_family` instead (`chmm.chmm.constraints` for MVRs →
+  `chmm.representation("mvr").mvrs`; `initialize_chmm(data=d)` → `Constrained*(model, constraints, data=d)`).
+  `constraint_family` values are the constraint classes' `family`; `"oracle_with_nodes"` becomes `"factor_oracle"`.
+- Constrained models are immutable, and their constructors are unified as `(model, constraints=(), *, data=None)`:
+  there are no `hmm=`/`pgm=` keywords, no `constraints` setters and no `add_constraint`, and `.constraints` is a tuple.
+- `.model` replaces `.pgm` (BN/MN/DBN) and `.hidden_markov_model` (HMM).
+- The constrained classes move to `conin.constrained_models`. `conin.markov_network`, `conin.bayesian_network`
+  and `conin.dynamic_bayesian_network` are removed, and `conin.hidden_markov_model` no longer exports
+  `ConstrainedHiddenMarkovModel`.
+- Invalid constraints (mixed families, non-`Constraint` objects, a bare constraint instead of a list) and a wrong
+  model type raise `InvalidInputError` at construction (some mixes used to fail later with `AssertionError`).
+- `ConstrainedDynamicDiscreteBayesianNetwork.nodes` is a property (it was a method).
+- `map_query` no longer accepts `CHMM` objects (those overloads were broken).
+- `mcem` no longer writes the re-estimated HMM back to `app`.
 - `MVR_CHMM` is removed; use `ConstrainedHiddenMarkovModel`.
 - `ConstraintFunctor` is renamed `Constraint` (no alias). `Constraint` no longer requires `__call__`.
 - The oracle library moves from `conin.constraints.oracle` to `conin.constraints.oracle_library` and is no longer
@@ -451,7 +512,7 @@ detection keeps the diffs reviewable.
 | 0 | Guardrails | infra | **DONE (#241, merged to `main`).** **Target `main`.** Make torch tests skip robustly (`try_import` instead of `importorskip`). Add `doc/notebooks/MVR/*.ipynb` to CI and fix the `regex_tutorial` import. Add `tests/test_public_api.py`, which imports every public symbol used by the docs and notebooks; later PRs update it instead of breaking it silently. Record the baseline test counts. |
 | 1 | Unconstrained models → `graphical_models/`; examples → `examples/` | move | **DONE (#242, merged to `restructure`).** Pure moves plus import updates. Conversions move too. One behaviour fix: stop `create_bn_from_dbn` and `DBNSampler` from mutating `dbn.t` (the immutability leak). |
 | 2 | Constraints → containers | move + small refactor | **DONE (branch `restructure-pr2-constraints`).** Split `constraint.py`. Move the oracle library and the MVR spec code (mvr, primitives, operators, formula) into `constraints/`. Merge `operators.py` (removes the cycle). Add `family`. Split `FactorOracleConstraint`. Move `_materialise` into a temporary home in `representations/factor/`. |
-| 3 | `ConstrainedGraphicalModel` + representation framework | **design** | Base class, registry, cache, `get_copy`, immutability. Port the four constrained classes. Builders initially wrap the *existing* create functions, so behaviour stays identical. Update every `initialize_chmm` and `.chmm` call site (examples, tests, docs). |
+| 3 | `ConstrainedGraphicalModel` + representation framework | **design** | **DONE (branch `restructure-pr3-constrained-models`).** Base class, registry, cache, `get_copy`, immutability. Port the four constrained classes. Builders initially wrap the *existing* create functions, so behaviour stays identical. Update every `initialize_chmm` and `.chmm` call site (examples, tests, docs). |
 | 4a | Pyomo repns + `inference/pyomo` | refactor | One `PyomoVarWrapper` and one constraint applier. Split create from solve. Network-flow repn. Fix Pyomo-path bugs from §9. |
 | 4b | toulbar2 repns + `inference/toulbar2` | refactor | Dedupe the MN/BN builders. Implement the rebuild-on-get strategy. Fix toulbar2 bugs. |
 | 4c | Oracle + Recursive (A*), oracle sampling, mcem | refactor | `Oracle_CHMM` becomes `OracleRepresentation`. Add `RecursiveConstraint`, decouple `HMMApplication` and move it to `applications/`. Fix the A* pruning bugs. |
@@ -511,7 +572,7 @@ dependencies, and no new top-level imports of optional backends.
 ---
 
 ## 8. Testing strategy
-- PR 0 adds a public-API smoke test and records the baseline counts (959 passed / 195 skipped / 0 errors; see §2.3). After PR 1: 962 passed / 195 skipped. After PR 2: 1009 passed / 195 skipped (+47 new tests).
+- PR 0 adds a public-API smoke test and records the baseline counts (959 passed / 195 skipped / 0 errors; see §2.3). After PR 1: 962 passed / 195 skipped. After PR 2: 1009 passed / 195 skipped (+47 new tests). After PR 3: 1074 passed / 195 skipped (+65).
 - Every PR must keep the pass count ≥ baseline, after adjusting for deliberately deleted tests.
 - PR 3 adds tests for:
   - immutability (setattr raises; `with_*` returns a new object);
@@ -519,6 +580,7 @@ dependencies, and no new top-level imports of optional backends.
   - lazy building (nothing built at `__init__`);
   - cache hits;
   - `get_copy` isolation (mutating a returned Pyomo model doesn't affect the next get).
+  (PR 3: all done, using a test representation registered in the test; the Pyomo `get_copy` test moves to 4a.)
 - Each bug fix gets a regression test.
 - Notebooks run in CI, including `MVR/`.
 
@@ -531,14 +593,18 @@ dependencies, and no new top-level imports of optional backends.
 | `a_star_`: the partial-feasibility pruning condition is always true, and it checks `seq` instead of `newSeq` | 4c |
 | `recursive_a_star`: partial feasibility uses the old `constraint_data`; `n_infeasible` is in the wrong branch | 4c |
 | `mcem` replaces the HMM but the oracle keeps sampling from the old one; it also scores one sample and stores another | 4c |
-| The `CHMM` overloads in the AStar/Optimization/CFN dispatchers are broken | 3/5 (removed) |
+| The `CHMM` overloads in the AStar/Optimization/CFN dispatchers are broken | 3 (removed) |
 | VE: the ConstrainedMN overload replaces user evidence with `{}`; the MN factor oracle forces an existing scope node to 1 | 4e |
 | VE: `_add_{bn,mn}_constraints_as_evidence` return `None` for an empty constraint list, and their `TypeError` strings were missing the `f` prefix | 2 (fixed, regression tests in `inference/tests/test_variable_elimination_helpers.py`) |
 | `solve_toulbar2_map_query_model` rejects extra `**options` (e.g. `verbose`) | 4b |
 | The DBN/HMM toulbar2 paths don't check that pytoulbar2 is available | 4b |
 | The HMM `network_flow` branch can return `None` | 4a |
 | `CallableDict.__getitem__` returns `KeyError` instead of raising it | 4a |
-| `ConstrainedDynamicDiscreteBayesianNetwork.nodes` is not a property | 3 |
+| `ConstrainedDynamicDiscreteBayesianNetwork.nodes` is not a property | 3 (fixed, regression test in `constrained_models/tests/test_dynamic_bayesian_network.py`) |
+| `a_star` on an unconstrained `ConstrainedHiddenMarkovModel` raised `AttributeError` (a bare `CHMM` has no `is_feasible`) | 3 (fixed as a side effect of the "oracle" repn) |
+| `mcem` calls `app.generate_hidden` twice per sample (it scores one sequence and trains on another) | 4c |
+| `HMMApplication.create_chmm("pyomo")` attaches no `data`, so constraints that read application data (e.g. `data.num_zeros` in test_application_chmm) would fail if solved | 4c |
+| `MVR/formula.ipynb` prose says `MVR_HMM`/`MVRFunctor` (typos for `MVR_CHMM`/`MVRConstraint`) | 4d |
 | `DynamicDiscreteBayesianNetwork.t` is public and gets mutated by `create_bn_from_dbn` and `DBNSampler` (an immutability leak) | 1 (fixed: `create_bn_from_dbn` restores `t`; `DBNSampler` works on a deep copy) |
 | `backends.rst` calls smoek optional although pyproject requires it; torch and pytoulbar2 aren't declared as extras | 6 |
 
@@ -610,6 +676,11 @@ dependencies, and no new top-level imports of optional backends.
 | PR 3 representation scope | Framework + the HMM kinds that replace `initialize_chmm`: `"oracle"` (Oracle_CHMM), `"pyomo_network_flow"` (PyomoAlgebraic_CHMM), `"mvr"` (MVR_CHMM). pyomo/toulbar2/factor builders come in 4a/4b/4e; `map_query` dispatch is unchanged until PR 5 |
 | MVR in PR 3 | `MVR_CHMM` and the torch algorithms are untouched until 4d; the `"mvr"` repn wraps `MVR_CHMM` and already exposes `.mvrs` |
 | Constrained-class location | PR 3 `git mv`s them to `constrained_models/` (rename-only first commit) and deletes the empty `markov_network/`, `bayesian_network/`, `dynamic_bayesian_network/` packages |
+| Representation API (PR 3) | `Representation` ABC with `kind` and `get_copy()`; `@register_representation(kind, model_type, families=(None,))`; `build_representation(cmodel, kind, **params)`; `supported_representations(model_type)` (§4.3) |
+| `with_model` / `with_constraints` cache (PR 3) | Always start with an empty cache |
+| `ConstrainedHiddenMarkovModel` model type (PR 3) | Requires `HiddenMarkovModel`; `HMM_MatVecRepn` is rejected (no caller passed one) |
+| HMM repn modules (PR 3) | `representations/oracle/hmm.py`, `representations/pyomo/hmm_network_flow.py`, `representations/mvr/hmm.py` |
+| mcem (PR 3) | Keeps the model in a local variable and does not write it back to `app`; same results |
 | Constructor names / CHMM overloads | First parameter is `model` (no `hmm=`/`pgm=` alias); the broken `CHMM` overloads in the AStar/Optimization/CFN dispatchers are removed in PR 3 |
 
 ---
@@ -618,5 +689,4 @@ dependencies, and no new top-level imports of optional backends.
 
 None blocking. These can be settled during PR 3 (the design PR):
 - Whether Pyomo `get_copy()` should use `clone()` or rebuild, depending on what benchmarks show (§4.4).
-- How `with_model` interacts with cached representations that depend only on constraints. For example, MVR alignment depends only on hidden-state labels, so its cache entry could be reused. Default: start with an empty cache.
-- The exact signatures in the `Representation` ABC (beyond `get_copy`), and the builder-registration decorator.
+- (`with_model` cache behaviour, the `Representation` signatures and the registration decorator were settled in PR 3; see §11.)

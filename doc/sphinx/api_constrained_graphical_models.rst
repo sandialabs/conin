@@ -3,6 +3,14 @@ Constrained Graphical Models
 
 The following constrained probabilistic graphical models are defined in conin.
 
+Base class
+----------
+
+.. autoclass:: conin.constrained_models.ConstrainedGraphicalModel
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Markov networks
 ---------------
 
@@ -34,3 +42,21 @@ Dynamic Discrete Bayesian networks
    :members:
    :undoc-members:
    :show-inheritance:
+
+Representations
+---------------
+
+Constrained models build backend representations lazily with
+``representation(kind)``. Builders are registered per
+``(kind, model_type, constraint_family)``.
+
+.. autoclass:: conin.representations.Representation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autofunction:: conin.representations.register_representation
+
+.. autofunction:: conin.representations.build_representation
+
+.. autofunction:: conin.representations.supported_representations
