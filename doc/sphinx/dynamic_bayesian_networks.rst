@@ -78,7 +78,7 @@ Constrained dynamic Bayesian networks
 
 ``ConstrainedDynamicDiscreteBayesianNetwork`` wraps a base dynamic Bayesian
 network together with a list of constraints. The examples in
-``conin.examples.dbn`` use the same decorators as the
+``conin.examples.dynamic_bayesian_network`` use the same decorators as the
 other model families.
 
 The Pyomo and Toulbar2 examples require their respective solver backends. Oracle
@@ -96,7 +96,7 @@ to stay fixed across the first two time steps:
    import pyomo.environ as pyo
    from conin import pyomo_constraint_fn
    from conin.dynamic_bayesian_network import ConstrainedDynamicDiscreteBayesianNetwork
-   from conin.examples.dbn import simple1_DDBN_conin
+   from conin.examples.dynamic_bayesian_network import simple1_DDBN_conin
 
    base = simple1_DDBN_conin().pgm
 
@@ -121,7 +121,7 @@ Toulbar2:
 
    from conin import toulbar2_constraint_fn
    from conin.dynamic_bayesian_network import ConstrainedDynamicDiscreteBayesianNetwork
-   from conin.examples.dbn import simple1_DDBN_conin
+   from conin.examples.dynamic_bayesian_network import simple1_DDBN_conin
 
    base = simple1_DDBN_conin().pgm
 
@@ -153,7 +153,7 @@ set of nodes:
 
    from conin import oracle_constraint_fn
    from conin.dynamic_bayesian_network import ConstrainedDynamicDiscreteBayesianNetwork
-   from conin.examples.dbn import simple1_DDBN_conin
+   from conin.examples.dynamic_bayesian_network import simple1_DDBN_conin
 
    base = simple1_DDBN_conin().pgm
 

@@ -31,7 +31,7 @@ and avoid ambiguity about Cartesian-product ordering.
 Markov networks
 ---------------
 
-The smallest complete example in ``conin.examples.mn`` is
+The smallest complete example in ``conin.examples.markov_network`` is
 ``example6_conin``. It builds a two-node Markov network with one unary factor
 for each node and one pairwise factor.
 
@@ -85,7 +85,7 @@ Constrained Markov networks
 
 ``ConstrainedDiscreteMarkovNetwork`` wraps a base Markov network together with a
 list of constraint functors. The examples in
-``conin.examples.mn`` use the same three-variable ``ABC`` model and
+``conin.examples.markov_network`` use the same three-variable ``ABC`` model and
 add an all-different constraint.
 
 The Pyomo and Toulbar2 examples require their respective solver backends. Oracle
@@ -102,7 +102,7 @@ constraints to the optimization model:
 
    from conin import pyomo_constraint_fn
    from conin.markov_network import ConstrainedDiscreteMarkovNetwork
-   from conin.examples.mn import ABC_conin
+   from conin.examples.markov_network import ABC_conin
 
    base = ABC_conin().pgm
 
@@ -127,7 +127,7 @@ with the Toulbar2 interface:
 
    from conin import toulbar2_constraint_fn
    from conin.markov_network import ConstrainedDiscreteMarkovNetwork
-   from conin.examples.mn import ABC_conin
+   from conin.examples.markov_network import ABC_conin
 
    base = ABC_conin().pgm
 
@@ -154,7 +154,7 @@ Oracle constraints with node scoping
 
    from conin import oracle_constraint_fn
    from conin.markov_network import ConstrainedDiscreteMarkovNetwork
-   from conin.examples.mn import ABC_conin
+   from conin.examples.markov_network import ABC_conin
 
    base = ABC_conin().pgm
 

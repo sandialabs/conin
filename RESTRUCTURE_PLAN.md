@@ -41,7 +41,8 @@ After PR 1:
 conin/
   graphical_models/      base.py (GraphicalModel), markov_network.py, bayesian_network.py,
                          dynamic_bayesian_network.py, expr.py, hidden_markov_model.py, conversions.py
-  examples/              mn.py, bn.py, dbn.py, hmm.py
+  examples/              markov_network.py, bayesian_network.py, dynamic_bayesian_network.py,
+                         hidden_markov_model.py (same names as graphical_models/)
   markov_network/        constrained_model.py (ConstrainedDiscreteMarkovNetwork)
   bayesian_network/      constrained_model.py (ConstrainedDiscreteBayesianNetwork)
   dynamic_bayesian_network/ constrained_model.py (ConstrainedDynamicDiscreteBayesianNetwork)
@@ -183,7 +184,7 @@ conin/
 │   └── mvr/                    # ffbs.py, stopped_sampling.py
 ├── queries/mvr/                # sat_prob.py, sat_time.py (from other_queries/)
 ├── applications/               # hmm_application.py (HMMApplication)
-├── examples/                   # hmm.py, bn.py, mn.py, dbn.py (from */examples.py)
+├── examples/                   # markov_network.py, bayesian_network.py, dynamic_bayesian_network.py, hidden_markov_model.py (from */examples.py)
 ├── io/                         # file IO: UAI/CFN load+save, unified load_model/save_model, convert_pgm CLI, pyagrum loader
 ├── common/                     # non-IO helpers: pgmpy/ (pgmpy<->conin conversion, MapCPD), is_polytree, log_potential
 ├── mediation_variables/        # UNTOUCHED (research prototype)
@@ -379,7 +380,7 @@ from conin.learning.mvr import baum_welch_mvr_chmm, generalized_em_mvr_chmm, for
 from conin.learning import supervised_learning, mcem, convert_to_simulations, add_unknowns
 from conin.sampling.mvr import ffbs_torch_mvr_chmm, stopped_sampling_torch_mvr_chmm
 from conin.queries.mvr import sat_prob_torch_mvr_chmm, sat_time_torch_mvr_chmm
-from conin.examples.hmm import create_hmm1, create_chmm1_pyomo
+from conin.examples.hidden_markov_model import create_hmm1, create_chmm1_pyomo
 from conin.io import load_model, save_model
 from conin.common import log_potential, is_polytree, convert_pgmpy_to_conin
 ```
@@ -550,7 +551,7 @@ dependencies, and no new top-level imports of optional backends.
 | Naming | `graphical_models`, `constraints`, `constrained_models`, `representations`, `inference`, `learning`, `sampling`, `queries`; lowercase backend subdirs |
 | No-constraint algorithms | `unconstrained/` |
 | Constructors | `Constrained*(model, constraints=...)` |
-| Examples | `conin/examples/{hmm,bn,mn,dbn}.py`; update AGENTS.md |
+| Examples | `conin/examples/{markov_network,bayesian_network,dynamic_bayesian_network,hidden_markov_model}.py` (same module names as `graphical_models/`); update AGENTS.md |
 | HMMApplication | Keep it, move it to `applications/`, decouple it via `RecursiveConstraint` |
 | `common/` | Split into `io/` (file IO) and `common/` (non-IO helpers) |
 | pgmax/pomegranate | Remove the converters and the loaders (the loaders just load with pgmpy and convert); keep pyagrum (it reads files natively) |

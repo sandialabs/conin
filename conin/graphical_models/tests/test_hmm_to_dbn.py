@@ -2,7 +2,7 @@ import pytest
 
 from conin.graphical_models import create_dbn_from_hmm
 from conin.graphical_models import create_bn_from_dbn
-import conin.examples.hmm as tc
+import conin.examples.hidden_markov_model as tc
 
 
 def test_hmm0_to_dbn():

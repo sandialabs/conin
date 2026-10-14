@@ -105,7 +105,7 @@ Constrained Bayesian networks
 -----------------------------
 
 ``ConstrainedDiscreteBayesianNetwork`` uses the same constraint decorators as
-other model families. The examples in ``conin.examples.bn`` apply
+other model families. The examples in ``conin.examples.bayesian_network`` apply
 constraints to the cancer network.
 
 The Pyomo and Toulbar2 snippets below require their respective solver backends.
@@ -123,7 +123,7 @@ choosing the same state:
    import pyomo.environ as pyo
    from conin import pyomo_constraint_fn
    from conin.bayesian_network import ConstrainedDiscreteBayesianNetwork
-   from conin.examples.bn import cancer1_BN_conin
+   from conin.examples.bayesian_network import cancer1_BN_conin
 
    base = cancer1_BN_conin().pgm
 
@@ -145,7 +145,7 @@ interface:
 
    from conin import toulbar2_constraint_fn
    from conin.bayesian_network import ConstrainedDiscreteBayesianNetwork
-   from conin.examples.bn import cancer1_BN_conin
+   from conin.examples.bayesian_network import cancer1_BN_conin
 
    base = cancer1_BN_conin().pgm
 
@@ -174,7 +174,7 @@ auxiliary CPD:
 
    from conin import oracle_constraint_fn
    from conin.bayesian_network import ConstrainedDiscreteBayesianNetwork
-   from conin.examples.bn import cancer1_BN_conin
+   from conin.examples.bayesian_network import cancer1_BN_conin
 
    base = cancer1_BN_conin().pgm
 

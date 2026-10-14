@@ -14,7 +14,7 @@ into a factor.
 .. code-block:: python
 
    from conin.graphical_models import create_mn_from_bn
-   from conin.examples.bn import simple1_BN_conin
+   from conin.examples.bayesian_network import simple1_BN_conin
 
    bn = simple1_BN_conin().pgm
    mn = create_mn_from_bn(bn)
@@ -31,7 +31,7 @@ specified inclusive time horizon. The HMM conversion creates dynamic variables
 
    from conin.graphical_models import create_bn_from_dbn
    from conin.graphical_models import create_dbn_from_hmm
-   from conin.examples.hmm import create_hmm1
+   from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
    dbn = create_dbn_from_hmm(hmm)
@@ -52,7 +52,7 @@ Hidden Markov models use their own JSON methods, ``write_to_file`` and
 
 .. code-block:: python
 
-   from conin.examples.bn import simple1_BN_conin
+   from conin.examples.bayesian_network import simple1_BN_conin
    from conin.common import load_model, save_model
 
    pgm = simple1_BN_conin().pgm
@@ -118,7 +118,7 @@ node; it does not marginalize over latent variables.
 
 .. code-block:: python
 
-   from conin.examples.bn import simple1_BN_conin
+   from conin.examples.bayesian_network import simple1_BN_conin
    from conin.common import is_polytree, log_potential
 
    pgm = simple1_BN_conin().pgm

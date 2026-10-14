@@ -315,7 +315,7 @@ def test_mcem_runs_and_returns_log_prob():
     #   3. math.abs(...)         -> abs(...)  (math.abs does not exist)
     #   4. app.hmm               -> app.hidden_markov_model  (HMM_MatVecRepn lacks log_probability)
     from conin.hidden_markov_model import learning
-    import conin.examples.hmm as tc
+    import conin.examples.hidden_markov_model as tc
 
     chmm = tc.create_chmm1_oracle()
     chmm.hidden_markov_model.set_seed(0)

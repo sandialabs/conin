@@ -71,7 +71,7 @@ format is separate from the UAI file support described in
 .. code-block:: python
 
    from conin.graphical_models import HiddenMarkovModel
-   from conin.examples.hmm import create_hmm1
+   from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
    hmm.write_to_file("hmm.json")
@@ -106,7 +106,7 @@ Oracle constraints
    from conin.graphical_models import HiddenMarkovModel
    from conin.hidden_markov_model import ConstrainedHiddenMarkovModel
    from conin.constraints import OracleConstraint
-   from conin.examples.hmm import create_hmm1
+   from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
 
@@ -135,7 +135,7 @@ Pyomo constraints
    import pyomo.environ as pe
    import conin
    from conin.hidden_markov_model import ConstrainedHiddenMarkovModel
-   from conin.examples.hmm import create_hmm1
+   from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
 
@@ -166,7 +166,7 @@ Toulbar2 constraints
 
    from conin import toulbar2_constraint_fn
    from conin.hidden_markov_model import ConstrainedHiddenMarkovModel
-   from conin.examples.hmm import create_hmm1
+   from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
 
@@ -203,7 +203,7 @@ Oracle constraints with node scoping
 
    from conin import oracle_constraint_fn
    from conin.hidden_markov_model import ConstrainedHiddenMarkovModel
-   from conin.examples.hmm import create_hmm1
+   from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
 

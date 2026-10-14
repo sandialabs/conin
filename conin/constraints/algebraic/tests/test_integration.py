@@ -18,7 +18,7 @@ if not smoek_available:
 import pyomo.environ as pyo
 from munch import Munch
 
-from conin.examples.bn import cancer1_BN_conin
+from conin.examples.bayesian_network import cancer1_BN_conin
 from conin.bayesian_network import ConstrainedDiscreteBayesianNetwork
 from conin.inference import map_query
 from conin import pyomo_constraint_fn, algebraic_constraint_fn

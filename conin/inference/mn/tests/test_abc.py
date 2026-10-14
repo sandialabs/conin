@@ -6,7 +6,7 @@ from conin.inference.mn import (
     inference_pyomo_map_query_MN,
     inference_toulbar2_map_query_MN,
 )
-from conin.examples import mn as examples
+from conin.examples import markov_network as examples
 
 with try_import() as pgmpy_available:
     import pgmpy

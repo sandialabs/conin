@@ -14,7 +14,7 @@ from conin.inference.mn.factor_repn import (
     State,
 )
 
-from conin.examples import mn as examples
+from conin.examples import markov_network as examples
 
 with try_import() as pgmpy_available:
     import pgmpy

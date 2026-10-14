@@ -3,7 +3,7 @@ import pytest
 import conin.hidden_markov_model
 import conin.hidden_markov_model.chmm_algebraic
 
-import conin.examples.hmm as tc
+import conin.examples.hidden_markov_model as tc
 
 
 class Test_IndexSets1:
