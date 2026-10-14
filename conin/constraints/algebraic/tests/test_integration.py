@@ -45,9 +45,7 @@ class TestBasicAlgebraicConstraints:
             # Simple constraint: V("Dyspnoea", 1) + V("Xray", 1) <= 1
             return model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1
 
-        cpgm = ConstrainedDiscreteBayesianNetwork(
-            pgm, constraints=[algebraic_constraint]
-        )
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=algebraic_constraint)
 
         # Should be able to create inference model
         evidence = {"Pollution": 0, "Smoker": 1}
@@ -70,7 +68,7 @@ class TestBasicAlgebraicConstraints:
             ]
 
         cpgm = ConstrainedDiscreteBayesianNetwork(
-            pgm, constraints=[algebraic_constraints]
+            pgm, constraints=algebraic_constraints
         )
 
         evidence = {"Pollution": 0, "Smoker": 1}
@@ -102,14 +100,14 @@ class TestBasicAlgebraicConstraints:
         evidence = {"Pollution": 0, "Smoker": 1}
 
         cpgm_traditional = ConstrainedDiscreteBayesianNetwork(
-            pgm, constraints=[traditional_constraint]
+            pgm, constraints=traditional_constraint
         )
         result_traditional = map_query(
             cpgm_traditional, method="integer_program", evidence=evidence
         )
 
         cpgm_algebraic = ConstrainedDiscreteBayesianNetwork(
-            pgm, constraints=[algebraic_constraint]
+            pgm, constraints=algebraic_constraint
         )
         result_algebraic = map_query(
             cpgm_algebraic, method="integer_program", evidence=evidence
@@ -153,7 +151,7 @@ class TestArithmeticOperations:
         def constraint(model, data):
             return model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1
 
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraint])
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint)
         evidence = {"Pollution": 0, "Smoker": 1}
         result = map_query(cpgm, method="integer_program", evidence=evidence)
         assert result is not None
@@ -166,7 +164,7 @@ class TestArithmeticOperations:
         def constraint(model, data):
             return model.V("Dyspnoea", 1) - model.V("Xray", 1) >= -1
 
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraint])
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint)
         evidence = {"Pollution": 0, "Smoker": 1}
         result = map_query(cpgm, method="integer_program", evidence=evidence)
         assert result is not None
@@ -179,7 +177,7 @@ class TestArithmeticOperations:
         def constraint(model, data):
             return 2 * model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 2
 
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraint])
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint)
         evidence = {"Pollution": 0, "Smoker": 1}
         result = map_query(cpgm, method="integer_program", evidence=evidence)
         assert result is not None
@@ -197,7 +195,7 @@ class TestArithmeticOperations:
                 <= 3
             )
 
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraint])
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint)
         evidence = {"Pollution": 0, "Smoker": 1}
         result = map_query(cpgm, method="integer_program", evidence=evidence)
         assert result is not None
@@ -214,7 +212,7 @@ class TestComparisonOperators:
         def constraint(model, data):
             return model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1
 
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraint])
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint)
         evidence = {"Pollution": 0, "Smoker": 1}
         result = map_query(cpgm, method="integer_program", evidence=evidence)
         assert result is not None
@@ -227,7 +225,7 @@ class TestComparisonOperators:
         def constraint(model, data):
             return model.V("Dyspnoea", 1) + model.V("Xray", 1) >= 0
 
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraint])
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint)
         evidence = {"Pollution": 0, "Smoker": 1}
         result = map_query(cpgm, method="integer_program", evidence=evidence)
         assert result is not None
@@ -240,7 +238,7 @@ class TestComparisonOperators:
         def constraint(model, data):
             return model.V("Dyspnoea", 1) == 0
 
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraint])
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint)
         evidence = {"Pollution": 0, "Smoker": 1}
         result = map_query(cpgm, method="integer_program", evidence=evidence)
         assert result is not None
@@ -261,7 +259,7 @@ class TestDataUsage:
                 limit = data.limit
             return model.V("Dyspnoea", 1) + model.V("Xray", 1) <= limit
 
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraint])
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint)
         evidence = {"Pollution": 0, "Smoker": 1}
         result = map_query(cpgm, method="integer_program", evidence=evidence)
         assert result is not None
@@ -280,9 +278,7 @@ class TestToulbar2BasicAlgebraicConstraints:
             # Simple constraint: V("Dyspnoea", 1) + V("Xray", 1) <= 1
             return model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1
 
-        cpgm = ConstrainedDiscreteBayesianNetwork(
-            pgm, constraints=[algebraic_constraint]
-        )
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=algebraic_constraint)
 
         # Should be able to create inference model
         evidence = {"Pollution": 0, "Smoker": 1}
@@ -301,9 +297,7 @@ class TestToulbar2BasicAlgebraicConstraints:
         def algebraic_constraint(model, data):
             return model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1
 
-        cpgm = ConstrainedDiscreteBayesianNetwork(
-            pgm, constraints=[algebraic_constraint]
-        )
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=algebraic_constraint)
         evidence = {"Pollution": 0, "Smoker": 1}
 
         # Solve with both methods
@@ -326,7 +320,7 @@ class TestToulbar2ArithmeticOperations:
         def constraint(model, data):
             return model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1
 
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraint])
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint)
         evidence = {"Pollution": 0, "Smoker": 1}
 
         result_pyomo = map_query(cpgm, method="integer_program", evidence=evidence)
@@ -345,7 +339,7 @@ class TestToulbar2ArithmeticOperations:
         def constraint(model, data):
             return 2 * model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 2
 
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraint])
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint)
         evidence = {"Pollution": 0, "Smoker": 1}
 
         result_pyomo = map_query(cpgm, method="integer_program", evidence=evidence)
@@ -369,7 +363,7 @@ class TestToulbar2ArithmeticOperations:
                 <= 3
             )
 
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraint])
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint)
         evidence = {"Pollution": 0, "Smoker": 1}
 
         result_pyomo = map_query(cpgm, method="integer_program", evidence=evidence)
@@ -392,7 +386,7 @@ class TestToulbar2ComparisonOperators:
         def constraint(model, data):
             return model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1
 
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraint])
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint)
         evidence = {"Pollution": 0, "Smoker": 1}
 
         result_pyomo = map_query(cpgm, method="integer_program", evidence=evidence)
@@ -411,7 +405,7 @@ class TestToulbar2ComparisonOperators:
         def constraint(model, data):
             return model.V("Dyspnoea", 1) + model.V("Xray", 1) >= 0
 
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraint])
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint)
         evidence = {"Pollution": 0, "Smoker": 1}
 
         result_pyomo = map_query(cpgm, method="integer_program", evidence=evidence)
@@ -430,7 +424,7 @@ class TestToulbar2ComparisonOperators:
         def constraint(model, data):
             return model.V("Dyspnoea", 1) == 0
 
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraint])
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint)
         evidence = {"Pollution": 0, "Smoker": 1}
 
         result_pyomo = map_query(cpgm, method="integer_program", evidence=evidence)
@@ -456,9 +450,7 @@ class TestToulbar2MultipleConstraints:
                 model.V("Dyspnoea", 0) + model.V("Xray", 0) <= 1,
             ]
 
-        cpgm = ConstrainedDiscreteBayesianNetwork(
-            pgm, constraints=[algebraic_constraint]
-        )
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=algebraic_constraint)
         evidence = {"Pollution": 0, "Smoker": 1}
 
         result_pyomo = map_query(cpgm, method="integer_program", evidence=evidence)
@@ -480,9 +472,7 @@ class TestToulbar2MultipleConstraints:
                 model.V("Dyspnoea", 0) + model.V("Xray", 0) >= 0,
             ]
 
-        cpgm = ConstrainedDiscreteBayesianNetwork(
-            pgm, constraints=[algebraic_constraint]
-        )
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=algebraic_constraint)
         evidence = {"Pollution": 0, "Smoker": 1}
 
         result_pyomo = map_query(cpgm, method="integer_program", evidence=evidence)

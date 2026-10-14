@@ -108,7 +108,7 @@ to stay fixed across the first two time steps:
 
    constrained = ConstrainedDynamicDiscreteBayesianNetwork(
        base,
-       constraints=[constraints],
+       constraints=constraints,
    )
 
 Toulbar2 constraints
@@ -140,7 +140,7 @@ Toulbar2:
 
    constrained = ConstrainedDynamicDiscreteBayesianNetwork(
        base,
-       constraints=[constraints],
+       constraints=constraints,
    )
 
 Oracle constraints with node scoping
@@ -168,7 +168,7 @@ set of nodes:
 
    constrained = ConstrainedDynamicDiscreteBayesianNetwork(
        base,
-       constraints=[constraints],
+       constraints=constraints,
    )
 
 Notes

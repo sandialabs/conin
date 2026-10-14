@@ -253,7 +253,7 @@ def cancer1_BN_constrained_pyomo_conin(debug=False):
         model.c.add(model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1)
         model.c.add(model.V("Dyspnoea", 0) + model.V("Xray", 0) <= 1)
 
-    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraints)
     return Munch(
         pgm=cpgm,
         solutions=[
@@ -282,7 +282,7 @@ def cancer1_BN_constrained_pyomo_pgmpy(debug=False):
     import conin.common.pgmpy
 
     pgm = conin.common.pgmpy.convert_pgmpy_to_conin(pgm)
-    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraints)
     return Munch(
         pgm=cpgm,
         solutions=[
@@ -309,7 +309,7 @@ def cancer1_BN_constrained_algebraic_conin(debug=False):
             model.V("Dyspnoea", 0) + model.V("Xray", 0) <= 1,
         ]
 
-    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraints)
     return Munch(
         pgm=cpgm,
         solutions=[
@@ -339,7 +339,7 @@ def cancer1_BN_constrained_algebraic_pgmpy(debug=False):
     import conin.common.pgmpy
 
     pgm = conin.common.pgmpy.convert_pgmpy_to_conin(pgm)
-    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraints)
     return Munch(
         pgm=cpgm,
         solutions=[
@@ -369,7 +369,7 @@ def cancer2_BN_constrained_algebraic_pgmpy(debug=False):
     import conin.common.pgmpy
 
     pgm = conin.common.pgmpy.convert_pgmpy_to_conin(pgm)
-    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraints)
     return Munch(
         pgm=cpgm,
         solutions=[
@@ -393,7 +393,7 @@ def cancer1_BN_constrained_oracle_conin(debug=False):
     def constraints(states):
         return states["Dyspnoea"] != states["Xray"]
 
-    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraints)
     return Munch(
         pgm=cpgm,
         solutions=[
@@ -420,7 +420,7 @@ def cancer1_BN_constrained_oracle_pgmpy(debug=False):
     import conin.common.pgmpy
 
     pgm = conin.common.pgmpy.convert_pgmpy_to_conin(pgm)
-    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraints)
     return Munch(
         pgm=cpgm,
         solutions=[
@@ -449,7 +449,7 @@ def cancer2_BN_constrained_pyomo_pgmpy(debug=False):
     import conin.common.pgmpy
 
     pgm = conin.common.pgmpy.convert_pgmpy_to_conin(pgm)
-    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraints)
     return Munch(
         pgm=cpgm,
         solutions=[
@@ -474,7 +474,7 @@ def cancer1_BN_constrained_toulbar2_conin(debug=False):
         M.AddGeneralizedLinearConstraint([M.V("Dyspnoea", 1), M.V("Xray", 1)], "<=", 1)
         M.AddGeneralizedLinearConstraint([M.V("Dyspnoea", 0), M.V("Xray", 0)], "<=", 1)
 
-    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraints)
     return Munch(
         pgm=cpgm,
         solutions=[
@@ -1068,7 +1068,7 @@ def wide_BN_constrained1_conin_pyomo(debug=False):
         model.c = pyo.ConstraintList()
         model.c.add(model.V(("A", 8), 1) + model.V(("A", 9), 1) <= 1)
 
-    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraints)
     solution_states = {("A", i): 1 for i in range(N)}
     solution_states["A", 0] = 0
     solution_states["A", 8] = 0
@@ -1084,7 +1084,7 @@ def wide_BN_constrained1_conin_algebraic(debug=False):
     def constraints(model):
         return model.V(("A", 8), 1) + model.V(("A", 9), 1) <= 1
 
-    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraints)
     solution_states = {("A", i): 1 for i in range(N)}
     solution_states["A", 0] = 0
     solution_states["A", 8] = 0
@@ -1100,7 +1100,7 @@ def wide_BN_constrained1_conin_toulbar2(debug=False):
     def constraints(M):
         M.AddGeneralizedLinearConstraint([M.V(("A", 8), 1), M.V(("A", 9), 1)], "<=", 1)
 
-    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraints)
     solution_states = {("A", i): 1 for i in range(N)}
     solution_states["A", 0] = 0
     solution_states["A", 8] = 0
@@ -1116,7 +1116,7 @@ def wide_BN_constrained1_conin_oracle(debug=False):
     def constraints(states):
         return states["A", 8] + states["A", 9] <= 1
 
-    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraints)
     solution_states = {("A", i): 1 for i in range(N)}
     solution_states["A", 0] = 0
     solution_states["A", 8] = 0
@@ -1144,7 +1144,7 @@ def wide_BN_constrained2_conin_pyomo(debug=False):
 
         model.c = pyo.Constraint(model.I, rule=rule)
 
-    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraints)
     solution_states = {("A", i): 1 for i in range(N)}
     solution_states["A", 0] = 0
     solution_states["A", 1] = 0
@@ -1171,7 +1171,7 @@ def wide_BN_constrained2_conin_algebraic(debug=False):
         )
         M.add_components(I=I, i=i, c=c)
 
-    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraints)
     solution_states = {("A", i): 1 for i in range(N)}
     solution_states["A", 0] = 0
     solution_states["A", 1] = 0
@@ -1196,7 +1196,7 @@ def wide_BN_constrained2_conin_toulbar2(debug=False):
                 [M.V(("A", i - 1), 1), M.V(("A", i), 1)], "<=", 1
             )
 
-    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraints)
     solution_states = {("A", i): 1 for i in range(N)}
     solution_states["A", 0] = 0
     solution_states["A", 1] = 0
@@ -1219,7 +1219,7 @@ def wide_BN_constrained2_conin_oracle(debug=False):
                 return False
         return True
 
-    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[constraints])
+    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraints)
     solution_states = {("A", i): 1 for i in range(N)}
     solution_states["A", 0] = 0
     solution_states["A", 1] = 0

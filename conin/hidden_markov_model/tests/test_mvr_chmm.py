@@ -434,7 +434,7 @@ def test_constrained_hmm_initializes_mvr_backend_from_functor():
 
     chmm = ConstrainedHiddenMarkovModel(
         hmm,
-        constraints=[forbid_state_constraint],
+        constraints=forbid_state_constraint,
         data={"forbidden_state": forbidden_state},
     )
 

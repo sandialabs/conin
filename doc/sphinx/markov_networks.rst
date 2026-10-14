@@ -114,7 +114,7 @@ constraints to the optimization model:
 
    constrained = ConstrainedDiscreteMarkovNetwork(
        base,
-       constraints=[constraint_fn],
+       constraints=constraint_fn,
    )
 
 Toulbar2 constraints
@@ -142,7 +142,7 @@ with the Toulbar2 interface:
 
    constrained = ConstrainedDiscreteMarkovNetwork(
        base,
-       constraints=[constraint_fn],
+       constraints=constraint_fn,
    )
 
 Oracle constraints with node scoping
@@ -165,7 +165,7 @@ Oracle constraints with node scoping
 
    constrained = ConstrainedDiscreteMarkovNetwork(
        base,
-       constraints=[constraint_fn],
+       constraints=constraint_fn,
    )
 
 Notes

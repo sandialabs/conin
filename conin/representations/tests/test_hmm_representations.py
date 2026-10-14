@@ -79,7 +79,7 @@ def test_pyomo_network_flow_does_not_write_into_user_data():
 
     user_data = munch.Munch(k=1)
     cmodel = ConstrainedHiddenMarkovModel(
-        tc.create_hmm1(), [at_most_k_zeros], data=user_data
+        tc.create_hmm1(), at_most_k_zeros, data=user_data
     )
     repn = cmodel.representation("pyomo_network_flow")
     M = repn.generate_model(observed=["o0"] * 5)
@@ -153,7 +153,7 @@ def test_mvr_factories_and_prebuilt_mvrs():
 def test_mvr_mismatched_hidden_states_raise():
     hmm = _hmm()
     mvr = mvr_forbid_state(_hmm(("a", "b", "x")), ["a"])
-    cmodel = ConstrainedHiddenMarkovModel(hmm, [mvr])
+    cmodel = ConstrainedHiddenMarkovModel(hmm, mvr)
     with pytest.raises(
         InvalidInputError, match="Hidden states of constraint 0 do not match"
     ):
@@ -162,7 +162,7 @@ def test_mvr_mismatched_hidden_states_raise():
 
 def test_mvr_get_copy_is_a_deep_copy():
     hmm = _hmm()
-    cmodel = ConstrainedHiddenMarkovModel(hmm, [mvr_forbid_state(hmm, ["a"])])
+    cmodel = ConstrainedHiddenMarkovModel(hmm, mvr_forbid_state(hmm, ["a"]))
     first = cmodel.representation("mvr")
     assert first.mvrs[0].time_range is None
     first.mvrs[0]._time_range = [0, 3]
@@ -183,7 +183,7 @@ def test_unsupported_family_raises():
     def noop(M, D):
         pass
 
-    cmodel = ConstrainedHiddenMarkovModel(tc.create_hmm1(), [noop])
+    cmodel = ConstrainedHiddenMarkovModel(tc.create_hmm1(), noop)
     with pytest.raises(InvalidInputError) as excinfo:
         cmodel.representation("oracle")
     assert "('oracle', 'oracle')" in str(excinfo.value)

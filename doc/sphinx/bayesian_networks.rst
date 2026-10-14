@@ -133,7 +133,7 @@ choosing the same state:
        model.c.add(model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1)
        model.c.add(model.V("Dyspnoea", 0) + model.V("Xray", 0) <= 1)
 
-   constrained = ConstrainedDiscreteBayesianNetwork(base, constraints=[constraints])
+   constrained = ConstrainedDiscreteBayesianNetwork(base, constraints=constraints)
 
 Toulbar2 constraints
 ^^^^^^^^^^^^^^^^^^^^
@@ -162,7 +162,7 @@ interface:
            1,
        )
 
-   constrained = ConstrainedDiscreteBayesianNetwork(base, constraints=[constraints])
+   constrained = ConstrainedDiscreteBayesianNetwork(base, constraints=constraints)
 
 Oracle constraints with node scoping
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -182,7 +182,7 @@ auxiliary CPD:
    def constraints(states):
        return states["Dyspnoea"] != states["Xray"]
 
-   constrained = ConstrainedDiscreteBayesianNetwork(base, constraints=[constraints])
+   constrained = ConstrainedDiscreteBayesianNetwork(base, constraints=constraints)
 
 Notes
 -----
