@@ -1,167 +1,47 @@
-from conin.constraints import (
-    OracleConstraint,
-    FactorOracleConstraint,
-    PyomoConstraint,
-    Toulbar2Constraint,
-    MVRConstraint,
-    AlgebraicConstraint,
-)
 from conin.exceptions import InvalidInputError
+from conin.graphical_models import HiddenMarkovModel
+
+from .base import ConstrainedGraphicalModel
 
 
-class ConstrainedHiddenMarkovModel:
-    """Hidden Markov model wrapper with attached constraints.
+class ConstrainedHiddenMarkovModel(ConstrainedGraphicalModel):
+    """Hidden Markov model paired with constraints.
 
     Parameters
     ----------
-    hmm : HiddenMarkovModel or HMM_MatVecRepn, optional
+    model : HiddenMarkovModel
         Hidden Markov model to wrap.
-    constraints : list[Constraint], optional
-        Constraints used to build a constrained HMM solver.
+    constraints : iterable of Constraint, optional
+        Constraints of one family: ``"oracle"``, ``"factor_oracle"``,
+        ``"pyomo"``, ``"algebraic"``, ``"toulbar2"`` or ``"mvr"``.
+    data : object, optional
+        Application data passed to the representation builders (MVR
+        factories, Pyomo constraint functions, oracle wrappers).
+
+    Notes
+    -----
+    Registered representations (see :meth:`representation`):
+
+    * ``"oracle"`` (no constraints or ``"oracle"``): sampling and feasibility
+      checks on internal hidden-state indices, used by A*;
+    * ``"pyomo_network_flow"`` (no constraints or ``"pyomo"``): the
+      network-flow integer program;
+    * ``"mvr"`` (``"mvr"``): the built MVRs, aligned to the HMM
+      (``representation("mvr").mvrs``).
     """
 
-    def __init__(self, *, hmm=None, constraints=None):
-        """Initialize a constrained hidden Markov model wrapper.
+    __slots__ = ()
 
-        Parameters
-        ----------
-        hmm : HiddenMarkovModel or HMM_MatVecRepn, optional
-            Hidden Markov model to wrap.
-        constraints : list[Constraint], optional
-            Constraints used to configure the constrained model.
-        """
-        self.hidden_markov_model = hmm
-        self.constraint_type = None
-        if constraints:
-            self.constraints = constraints
-        else:
-            self._constraints = []
-
-    @property
-    def constraints(self):
-        """Get the configured constraints.
-
-        Returns
-        -------
-        list
-            List of ``Constraint`` instances.
-        """
-        return self._constraints
-
-    @constraints.setter
-    def constraints(self, constraint_list):
-        """Set the list of constraints on the model.
-
-        Parameters
-        ----------
-        constraint_list : list[Constraint]
-            List of ``Constraint`` instances that generate model
-            constraints.
-        """
-        assert type(constraint_list) is list
-        self._constraints = []
-        for con in constraint_list:
-            self.add_constraint(con)
-
-    def add_constraint(self, constraint):
-        """Add a single constraint to the model.
-
-        Parameters
-        ----------
-        constraint : Constraint
-            Constraint to register.
-
-        Raises
-        ------
-        ValueError
-            If ``constraint`` is not a supported constraint type.
-        """
-        if isinstance(constraint, OracleConstraint):
-            # Black-box oracle constraint (HMM A* style)
-            assert self.constraint_type is None or self.constraint_type == "oracle"
-            self.constraint_type = "oracle"
-            self._constraints.append(constraint)
-        elif isinstance(constraint, FactorOracleConstraint):
-            # Oracle constraint with nodes for factor materialisation
-            assert (
-                self.constraint_type is None
-                or self.constraint_type == "oracle_with_nodes"
-            )
-            self.constraint_type = "oracle_with_nodes"
-            self._constraints.append(constraint)
-        elif isinstance(constraint, AlgebraicConstraint):
-            assert self.constraint_type is None or self.constraint_type == "algebraic"
-            self.constraint_type = "algebraic"
-            self._constraints.append(constraint)
-        elif isinstance(constraint, PyomoConstraint):
-            assert self.constraint_type is None or self.constraint_type == "pyomo"
-            self.constraint_type = "pyomo"
-            self._constraints.append(constraint)
-        elif isinstance(constraint, Toulbar2Constraint):
-            assert self.constraint_type is None or self.constraint_type == "toulbar2"
-            self.constraint_type = "toulbar2"
-            self._constraints.append(constraint)
-        elif isinstance(constraint, MVRConstraint):
-            assert self.constraint_type is None or self.constraint_type == "mvr"
-            self.constraint_type = "mvr"
-            self._constraints.append(constraint)
-        else:
-            raise ValueError(f"Unexpected constraint type: {type(constraint)=}")
-
-    def initialize_chmm(self, constraint_type=None, *, data=None, **kwargs):
-        """Initialize the internal constrained HMM solver.
-
-        Parameters
-        ----------
-        constraint_type : {"oracle", "pyomo", "mvr"}, optional
-            Explicit standalone constrained-HMM backend to initialize. Oracle-with-nodes and
-            Toulbar2 constraints are consumed by the corresponding inference
-            wrappers instead of creating an internal ``chmm`` object here.
-        data : optional
-            Application-specific data passed to the solver.
-        **kwargs
-            Additional keyword arguments forwarded to the selected solver
-            implementation.
-        """
-        if constraint_type:
-            self.constraint_type = constraint_type
-        if self.constraint_type is None:
-            from conin.hidden_markov_model.chmm import CHMM
-
-            self.chmm = CHMM(
-                hmm=self.hidden_markov_model.repn, constraints=self.constraints
-            )
-        elif self.constraint_type == "oracle":
-            from conin.hidden_markov_model.chmm_oracle import Oracle_CHMM
-
-            self.chmm = Oracle_CHMM(
-                hmm=self.hidden_markov_model.repn,  # HMM object
-                constraints=self.constraints,  # list of OracleConstraint objects
-                hidden_to_external=self.hidden_markov_model.hidden_to_external,
-                data=data,  # Application-specific data
-                **kwargs,
-            )
-        elif self.constraint_type == "pyomo":
-            from conin.hidden_markov_model.chmm_algebraic import PyomoAlgebraic_CHMM
-
-            self.chmm = PyomoAlgebraic_CHMM(
-                hidden_markov_model=self.hidden_markov_model,  # HiddenMarkovModel object
-                constraints=self.constraints,  # list of PyomoConstraint objects
-                data=data,  # Application-specific data
-                **kwargs,
-            )
-        elif self.constraint_type == "mvr":
-            from conin.hidden_markov_model.chmm_mvr import MVR_CHMM
-
-            self.chmm = MVR_CHMM(
-                hidden_markov_model=self.hidden_markov_model,
-                constraints=[
-                    constraint(self.hidden_markov_model, data)
-                    for constraint in self.constraints
-                ],
-                data=data,
-                **kwargs,
-            )
+    model_type = HiddenMarkovModel
+    supported_families = (
+        None,
+        "oracle",
+        "factor_oracle",
+        "pyomo",
+        "algebraic",
+        "toulbar2",
+        "mvr",
+    )
 
     def generate_hidden(self, time_steps):
         """Generate a feasible sequence of hidden states.
@@ -177,8 +57,8 @@ class ConstrainedHiddenMarkovModel:
             Feasible sequence of external hidden-state labels.
         """
         return [
-            self.hidden_markov_model.hidden_to_external[h]
-            for h in self.chmm.generate_hidden(time_steps)
+            self.model.hidden_to_external[h]
+            for h in self.representation("oracle").generate_hidden(time_steps)
         ]
 
     def generate_observed_from_hidden(self, hidden):
@@ -199,19 +79,15 @@ class ConstrainedHiddenMarkovModel:
         InvalidInputError
             If ``hidden`` does not satisfy the configured constraints.
         """
-        internal_hidden = [
-            self.hidden_markov_model.hidden_to_internal[h] for h in hidden
-        ]
-        if not self.chmm.is_feasible(internal_hidden):
+        internal_hidden = [self.model.hidden_to_internal[h] for h in hidden]
+        if not self.representation("oracle").is_feasible(internal_hidden):
             raise InvalidInputError(
                 "ConstrainedHiddenMarkovModel.generate_observed_from_hidden() - The sequence of hidden states is not feasible."
             )
-        internal_observed = self.hidden_markov_model.repn.generate_observed_from_hidden(
+        internal_observed = self.model.repn.generate_observed_from_hidden(
             internal_hidden
         )
-        return [
-            self.hidden_markov_model.observed_to_external[o] for o in internal_observed
-        ]
+        return [self.model.observed_to_external[o] for o in internal_observed]
 
     def generate_observed(self, time_steps):
         """Generate a feasible hidden-state sequence and sample observations.
@@ -272,6 +148,6 @@ class ConstrainedHiddenMarkovModel:
             ``True`` if the partial sequence admits a feasible completion and
             ``False`` otherwise.
         """
-        return self.chmm.partial_is_feasible(
-            T=T, seq=[self.hidden_markov_model.hidden_to_internal[h] for h in seq]
+        return self.representation("oracle").partial_is_feasible(
+            T=T, seq=[self.model.hidden_to_internal[h] for h in seq]
         )

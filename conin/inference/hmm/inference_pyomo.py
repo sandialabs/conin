@@ -13,11 +13,7 @@ logger = logging.getLogger("conin")
 def create_pyomo_map_query_model_HMM(
     *, pgm, start=0, stop=None, variables=None, evidence=None, **options
 ):
-    pgm_ = (
-        pgm.hidden_markov_model
-        if isinstance(pgm, ConstrainedHiddenMarkovModel)
-        else pgm
-    )
+    pgm_ = pgm.model if isinstance(pgm, ConstrainedHiddenMarkovModel) else pgm
 
     assert stop is not None, "Expecting evidence (observations) for an HMM"
 

@@ -31,10 +31,9 @@ def lp_inference(
 
     if debug:
         tic("Generating Model - START")
-    chmm = ConstrainedHiddenMarkovModel(hmm=hmm)
-    chmm.initialize_chmm("pyomo")
-    M = chmm.chmm.generate_unconstrained_model(observed=observed)
-    data = chmm.chmm.data
+    repn = ConstrainedHiddenMarkovModel(hmm).representation("pyomo_network_flow")
+    M = repn.generate_unconstrained_model(observed=observed)
+    data = repn.data
     if debug:
         toc("Generating Model - STOP")
     if debug:
@@ -94,8 +93,9 @@ def ip_inference(
 ):
     if debug:
         tic("Generating Model - START")
-    M = hmm.chmm.generate_model(observed=observed)
-    data = hmm.chmm.data
+    repn = hmm.representation("pyomo_network_flow")
+    M = repn.generate_model(observed=observed)
+    data = repn.data
     T = len(observed)
     if debug:
         toc("Generating Model - STOP")
@@ -126,7 +126,7 @@ def ip_inference(
         solutions = []
         for index, aos_solution in enumerate(aos_pm.solutions):
             aos_sol_munch = parse_aos_solution_pyomo_ip_inference(
-                aos_solution=aos_solution, M=M, hmm=hmm, T=T
+                aos_solution=aos_solution, M=M, hmm=hmm, T=T, data=data
             )
             if index == 0:
                 first_sol = aos_sol_munch
@@ -153,7 +153,7 @@ def ip_inference(
         log_likelihood = res["Problem"][0]["Lower bound"]
 
         soln = parse_model_solution_pyomo_ip_inference(
-            M=M, hmm=hmm, T=T, log_likelihood=log_likelihood
+            M=M, hmm=hmm, T=T, log_likelihood=log_likelihood, data=data
         )
         solutions = [soln]
 
@@ -176,13 +176,12 @@ def ip_inference(
     )
 
 
-def parse_model_solution_pyomo_ip_inference(M, hmm, T, log_likelihood):
-    data = hmm.chmm.data
+def parse_model_solution_pyomo_ip_inference(M, hmm, T, log_likelihood, *, data):
     hidden = ["__UNKNOWN__"] * T
     for t in range(T):
         for a in data.hmm.A:
             if pyo.value(M.hmm.x[t, a]) > 0.5:
-                hidden[t] = hmm.hidden_markov_model.hidden_to_external[a]
+                hidden[t] = hmm.model.hidden_to_external[a]
         assert (
             hidden[t] != "__UNKNOWN__"
         ), f"ERROR: Unexpected missing hidden state at time step {t}"
@@ -200,18 +199,17 @@ def parse_model_solution_pyomo_ip_inference(M, hmm, T, log_likelihood):
     )
 
 
-def parse_aos_solution_pyomo_ip_inference(aos_solution, M, hmm, T):
+def parse_aos_solution_pyomo_ip_inference(aos_solution, M, hmm, T, *, data):
     obj_list = aos_solution._objectives
     assert len(obj_list) > 0, "Solution in parse_aos_solution has empty objective list"
     # this implicitly forces an assumption that there is only 1 objective
     log_likelihood = obj_list[0].value
-    data = hmm.chmm.data
     hidden = ["__UNKNOWN__"] * T
     for t in range(T):
         for a in data.hmm.A:
             aos_var_hmm_x_t_a = aos_solution.variable(M.hmm.x[t, a].name)
             if aos_var_hmm_x_t_a.value > 0.5:
-                hidden[t] = hmm.hidden_markov_model.hidden_to_external[a]
+                hidden[t] = hmm.model.hidden_to_external[a]
         assert (
             hidden[t] != "__UNKNOWN__"
         ), f"ERROR: Unexpected missing hidden state at time step {t}"

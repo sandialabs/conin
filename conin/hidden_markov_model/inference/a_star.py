@@ -189,9 +189,11 @@ def a_star(
 
     if isinstance(hmm, HiddenMarkovModel):
         chmm = None
-    else:  # CHMM
-        chmm = hmm.chmm
-        hmm = hmm.hidden_markov_model
+    else:  # ConstrainedHiddenMarkovModel
+        # Raises InvalidInputError for constraint families without an
+        # "oracle" representation (anything other than no constraints/"oracle").
+        chmm = hmm.representation("oracle")
+        hmm = hmm.model
 
     observed_ = [hmm.observed_to_internal[o] for o in observed]
     hmm_ = hmm.repn  # HMM_MatVecRepn instance associated with the HiddenMarkovModel

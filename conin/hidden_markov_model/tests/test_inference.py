@@ -65,11 +65,7 @@ def constraints(lb, ub):
 @pytest.fixture
 def chmm(hmm, constraints):
 
-    # chmm = Oracle_CHMM()
-    chmm = ConstrainedHiddenMarkovModel(hmm=hmm)
-    for constraint in constraints:
-        chmm.add_constraint(constraint)
-    return chmm
+    return ConstrainedHiddenMarkovModel(hmm, constraints)
 
 
 @pytest.fixture

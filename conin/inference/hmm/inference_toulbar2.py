@@ -10,11 +10,7 @@ from conin.inference.dbn.inference_toulbar2 import (
 def create_toulbar2_map_query_model_HMM(
     *, pgm, start=0, stop=None, variables=None, evidence=None, **options
 ):
-    pgm_ = (
-        pgm.hidden_markov_model
-        if isinstance(pgm, ConstrainedHiddenMarkovModel)
-        else pgm
-    )
+    pgm_ = pgm.model if isinstance(pgm, ConstrainedHiddenMarkovModel) else pgm
 
     dbn = create_dbn_from_hmm(hmm=pgm_)
     if type(evidence) is list:

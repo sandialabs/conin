@@ -318,7 +318,7 @@ def test_mcem_runs_and_returns_log_prob():
     import conin.examples.hidden_markov_model as tc
 
     chmm = tc.create_chmm1_oracle()
-    chmm.hidden_markov_model.set_seed(0)
+    chmm.model.set_seed(0)
     observed = chmm.generate_observed(11)
 
     # mcem expects a ConstrainedHiddenMarkovModel as app, not the internal Oracle_CHMM.
