@@ -3,7 +3,7 @@ import conin.constrained_models
 from conin.graphical_models import create_bn_from_dbn
 from conin.constrained_models import ConstrainedDynamicDiscreteBayesianNetwork
 
-from conin.inference.bn.inference_pyomo import create_pyomo_map_query_model_BN
+from conin.inference.pyomo.bn import create_pyomo_map_query_model_BN
 
 
 def create_pyomo_map_query_model_DDBN(
@@ -30,7 +30,7 @@ def create_pyomo_map_query_model_DDBN(
             evidence=evidence,
             T=list(range(start, stop + 1)),
         )
-        conin.inference.mn.inference_pyomo.add_constraints(
+        conin.inference.pyomo.solve.add_constraints(
             pgm=bn, constraints=pgm.constraints, model=model, data=data
         )
 
@@ -56,6 +56,6 @@ def inference_pyomo_map_query_DDBN(
         omit_c5=use_cut_generation,
         **options,
     )
-    return conin.inference.mn.inference_pyomo.solve_pyomo_map_query_model(
+    return conin.inference.pyomo.solve.solve_pyomo_map_query_model(
         model, evidence=evidence, **options
     )

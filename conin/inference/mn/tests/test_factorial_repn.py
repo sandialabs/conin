@@ -4,7 +4,7 @@ import pyomo.environ as pyo
 import pyomo.opt
 
 from conin.util import try_import
-from conin.inference.mn.inference_pyomo import (
+from conin.inference.pyomo.solve import (
     create_pyomo_map_query_model_MN,
     solve_pyomo_map_query_model,
     create_MN_pyomo_map_query_model_from_factorial_repn,

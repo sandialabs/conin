@@ -2,10 +2,10 @@ import logging
 import munch
 import conin
 from conin.graphical_models import HiddenMarkovModel
-from conin.hidden_markov_model.inference import lp_inference, ip_inference
+from conin.inference.pyomo.hmm_network_flow import lp_inference, ip_inference
 from conin.graphical_models import create_dbn_from_hmm
 from conin.constrained_models import ConstrainedHiddenMarkovModel
-from conin.inference.dbn.inference_pyomo import create_pyomo_map_query_model_DDBN
+from conin.inference.pyomo.dbn import create_pyomo_map_query_model_DDBN
 
 logger = logging.getLogger("conin")
 
@@ -43,7 +43,7 @@ def create_pyomo_map_query_model_HMM(
                 hidden_to_internal=pgm_.hidden_to_internal,
             ),
         )
-        conin.inference.mn.inference_pyomo.add_constraints(
+        conin.inference.pyomo.solve.add_constraints(
             pgm=dbn, constraints=pgm.constraints, model=model, data=data
         )
 
@@ -111,7 +111,7 @@ def inference_pyomo_map_query_HMM(
             omit_c5=use_cut_generation,
             **options,
         )
-        results = conin.inference.mn.inference_pyomo.solve_pyomo_map_query_model(
+        results = conin.inference.pyomo.solve.solve_pyomo_map_query_model(
             model, evidence=evidence, **options
         )
         if type(evidence) is list:

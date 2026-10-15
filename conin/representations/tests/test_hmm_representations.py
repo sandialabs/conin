@@ -17,7 +17,7 @@ from conin.constraints.mvr.primitives import mvr_forbid_state, mvr_visit_state
 from conin.exceptions import InvalidInputError
 from conin.graphical_models import HiddenMarkovModel
 from conin.hidden_markov_model.chmm_oracle import Oracle_CHMM
-from conin.hidden_markov_model.inference import ip_inference
+from conin.inference.pyomo import ip_inference
 
 # ---------------------------------------------------------------------
 # "oracle"

@@ -95,7 +95,7 @@ def create_pyomo_map_query_model_BN(
         if timing:
             timer.toc("Created skeleton Markov network")
 
-    model = conin.inference.mn.inference_pyomo.create_pyomo_map_query_model_MN(
+    model = conin.inference.pyomo.solve.create_pyomo_map_query_model_MN(
         pgm=MN,
         variables=variables,
         evidence=evidence,
@@ -106,7 +106,7 @@ def create_pyomo_map_query_model_BN(
 
     if isinstance(pgm, ConstrainedDiscreteBayesianNetwork) and pgm.constraints:
         data = munch.Munch(variables=variables, evidence=evidence)
-        conin.inference.mn.inference_pyomo.add_constraints(
+        conin.inference.pyomo.solve.add_constraints(
             pgm=pgm.model, constraints=pgm.constraints, model=model, data=data
         )
 
@@ -133,6 +133,6 @@ def inference_pyomo_map_query_BN(
         omit_c5=use_cut_generation,
         **options,
     )
-    return conin.inference.mn.inference_pyomo.solve_pyomo_map_query_model(
+    return conin.inference.pyomo.solve.solve_pyomo_map_query_model(
         model, timing=timing, evidence=evidence, **options
     )

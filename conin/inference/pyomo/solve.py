@@ -7,8 +7,8 @@ from pyomo.common.timing import TicTocTimer
 
 from conin.config import default_mip_solver
 from conin.constraints import PyomoConstraint
-from conin.constraints.algebraic import (
-    AlgebraicConstraint,
+from conin.constraints.algebraic import AlgebraicConstraint
+from conin.representations.pyomo.common import (
     add_algebraic_constraints_to_pyomo_model,
 )
 from conin.constrained_models import ConstrainedDiscreteMarkovNetwork

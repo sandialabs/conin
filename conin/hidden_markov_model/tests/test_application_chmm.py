@@ -13,9 +13,8 @@ from conin import pyomo_constraint_fn
 from conin.hidden_markov_model.inference import (
     viterbi,
     a_star,
-    lp_inference,
-    ip_inference,
 )
+from conin.inference.pyomo import lp_inference, ip_inference
 
 
 #

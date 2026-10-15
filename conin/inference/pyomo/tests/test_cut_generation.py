@@ -12,8 +12,8 @@ import pyomo.opt
 
 from conin.util import State
 from conin.examples import markov_network as examples
-from conin.inference.mn import inference_pyomo_map_query_MN
-from conin.inference.mn.inference_pyomo import (
+from conin.inference.pyomo import inference_pyomo_map_query_MN
+from conin.inference.pyomo.solve import (
     create_pyomo_map_query_model_MN,
     create_MN_pyomo_map_query_model_from_factorial_repn,
     solve_pyomo_map_query_model,
