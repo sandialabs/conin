@@ -34,11 +34,7 @@ def inference_pyomo_map_query_MN(
     if variables:  # pragma:nocover
         raise RuntimeError("VariableElimination is not supported for CONIN models")
 
-    cmodel = (
-        pgm
-        if isinstance(pgm, ConstrainedDiscreteMarkovNetwork)
-        else ConstrainedDiscreteMarkovNetwork(pgm)
-    )
+    cmodel = ConstrainedDiscreteMarkovNetwork.ensure(pgm)
     model = cmodel.representation("pyomo").create_model(
         evidence=evidence,
         variables=variables,

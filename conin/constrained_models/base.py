@@ -173,6 +173,18 @@ class ConstrainedGraphicalModel:
             self._cache[key] = repn
         return repn.get_copy()
 
+    @classmethod
+    def ensure(cls, model):
+        """Return ``model`` if it is already a ``cls``, else ``cls(model)``.
+
+        Lets functions that accept either a bare or a constrained model work
+        on the constrained one. A bare model is wrapped with no constraints.
+        Anything else raises ``InvalidInputError``, as the constructor does.
+        """
+        if isinstance(model, cls):
+            return model
+        return cls(model)
+
     def with_constraints(self, constraints):
         """Return a new object with the same model and data and new constraints.
 

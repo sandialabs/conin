@@ -31,11 +31,7 @@ def inference_pyomo_map_query_DDBN(
     """
     use_cut_generation = options.pop("use_cut_generation", False)
 
-    cmodel = (
-        pgm
-        if isinstance(pgm, ConstrainedDynamicDiscreteBayesianNetwork)
-        else ConstrainedDynamicDiscreteBayesianNetwork(pgm)
-    )
+    cmodel = ConstrainedDynamicDiscreteBayesianNetwork.ensure(pgm)
     repn = cmodel.representation("pyomo", start=start, stop=stop)
     _validate_bn_query(options, variables, repn.nodes, evidence=evidence)
     model = repn.create_model(

@@ -100,11 +100,7 @@ def inference_pyomo_map_query_HMM(
         if stop is None and evidence is not None:
             stop = len(evidence) - 1
 
-        cmodel = (
-            pgm
-            if isinstance(pgm, ConstrainedHiddenMarkovModel)
-            else ConstrainedHiddenMarkovModel(pgm)
-        )
+        cmodel = ConstrainedHiddenMarkovModel.ensure(pgm)
         repn = cmodel.representation("pyomo", start=start, stop=stop)
         if type(evidence) is list:
             dbn_evidence = {("E", i): evidence[i] for i in range(start, stop + 1)}

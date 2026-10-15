@@ -202,6 +202,8 @@ conin/
   pairs). No test removed. In the `conin_scaling_experiments` venv (pgmpy): `test_MAP_Inference.py` 69 passed,
   41 skipped (unchanged). LP files written for 15 MN/BN/DBN/HMM/network-flow cases (constrained, algebraic,
   evidence, omit_c5) are byte-identical to the old path.
+- **After the PR 4a follow-ups** (`_validate_bn_query` merges the two BN query helpers; `ConstrainedGraphicalModel.ensure`):
+  **1116 passed, 193 skipped, 0 errors** in `.venv-opencode` (+1, `test_base.test_ensure`).
 - pgmpy, or_topas, gurobi and glpk are not installed in `.venv-opencode`; torch is broken
   there; greenery is missing.
 - PR 0 adds `doc/notebooks/MVR/*.ipynb` to the CI notebook job and fixes the
@@ -378,7 +380,13 @@ class ConstrainedGraphicalModel:
     def representation(self, kind, **structure_params):    # build lazily, cache, return repn.get_copy()
     def with_constraints(self, constraints):               # new object, empty cache
     def with_model(self, model):                           # new object, empty cache (used by learning)
+    @classmethod
+    def ensure(cls, model):                                # (PR 4a) model if isinstance(model, cls) else cls(model)
 ```
+- (PR 4a) `ensure(pgm)` replaces the repeated
+  `pgm if isinstance(pgm, ConstrainedX) else ConstrainedX(pgm)` in the backend inference functions; use it in new
+  code (4b onwards). Composition (not inheritance from the unconstrained class) is kept on purpose: a constrained
+  model must not be silently accepted, with its constraints dropped, by code written for bare models (§11).
 - The object is fully immutable: no `add_constraint`, no setters, no `initialize_chmm`.
   (PR 3) It uses `__slots__`, and `__setattr__`/`__delattr__` raise `AttributeError`. `copy`, `deepcopy` and
   pickle work (`__getstate__`/`__setstate__`); copies start with an empty cache.
@@ -602,6 +610,8 @@ Breaking changes (these go in the CHANGELOG for 2.0):
   `create_MN_pyomo_map_query_model_from_factorial_repn`, `PyomoVarWrapper`, `add_c5_constraints`, `has_omitted_c5`,
   `C5LazyCutGenerator` and `add_algebraic_constraints_to_pyomo_model` move to `conin.representations.pyomo.common`
   (the last one was `conin.constraints.algebraic[.add_constraints_pyomo]`).
+- (PR 4a, additive) `ConstrainedGraphicalModel.ensure(model)` (classmethod): returns `model` if it is already an
+  instance of the class, else wraps it with no constraints.
 - (PR 4a) `PyomoAlgebraic_CHMM`, `Algebraic_CHMM`, `CallableDict` and `create_algebraic_chmm` are removed (no longer
   exported by `conin.hidden_markov_model`); `representation("pyomo_network_flow")` is a
   `PyomoNetworkFlowHMMRepresentation`: `generate_model`/`generate_unconstrained_model` → `create_model(observed=)`,
@@ -691,7 +701,7 @@ dependencies, and no new top-level imports of optional backends.
 ---
 
 ## 8. Testing strategy
-- PR 0 adds a public-API smoke test and records the baseline counts (959 passed / 195 skipped / 0 errors; see §2.3). After PR 1: 962 passed / 195 skipped. After PR 2: 1009 passed / 195 skipped (+47 new tests). After PR 3: 1074 passed / 195 skipped (+65). After the PR 3 follow-ups: 1075 passed / 195 skipped. After PR 4f: 1076 passed / 193 skipped (−4 passed and −2 skipped deleted loader tests, +5 `test_public_api.py` rows). After PR 4a: 1115 passed / 193 skipped (+30 Pyomo representation tests, +9 `test_public_api.py` rows).
+- PR 0 adds a public-API smoke test and records the baseline counts (959 passed / 195 skipped / 0 errors; see §2.3). After PR 1: 962 passed / 195 skipped. After PR 2: 1009 passed / 195 skipped (+47 new tests). After PR 3: 1074 passed / 195 skipped (+65). After the PR 3 follow-ups: 1075 passed / 195 skipped. After PR 4f: 1076 passed / 193 skipped (−4 passed and −2 skipped deleted loader tests, +5 `test_public_api.py` rows). After PR 4a: 1115 passed / 193 skipped (+30 Pyomo representation tests, +9 `test_public_api.py` rows); 1116 / 193 after the 4a follow-ups (+1, `test_ensure`).
 - Every PR must keep the pass count ≥ baseline, after adjusting for deliberately deleted tests.
 - PR 3 adds tests for:
   - immutability (setattr raises; `with_*` returns a new object);
@@ -817,6 +827,7 @@ dependencies, and no new top-level imports of optional backends.
 | Network-flow `M.V` (PR 4a) | The shared `PyomoVarWrapper` (`CallableDict` deleted) |
 | Network-flow `x_binary`/`y_binary` (PR 4a) | Kept as structure params (defaults `True`/`False`); `cache_indices` dropped (index sets are per query) |
 | Network flow + "algebraic" (PR 4a) | Registered and tested |
+| Constrained model: composition vs inheritance (PR 4a) | Keep composition (`cmodel.model`). Inheritance from the unconstrained class would let bare-model code (Viterbi, `save_model`, converters, samplers, learning) silently drop the constraints, make inherited builders like `with_factor` return the base type, and turn `with_model` into copy-and-rebuild. The wrap-if-bare boilerplate is handled by the `ensure(pgm)` classmethod instead (and by PR 5's `map_query` normalisation) |
 | Constructor names / CHMM overloads | First parameter is `model` (no `hmm=`/`pgm=` alias); the broken `CHMM` overloads in the AStar/Optimization/CFN dispatchers are removed in PR 3 |
 
 ---
