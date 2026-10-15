@@ -5,11 +5,14 @@ from conin.constrained_models import ConstrainedDiscreteBayesianNetwork
 from .solve import solve_pyomo_map_query_model
 
 
-def pop_bn_build_options(options):
-    """Pop and check the BN build options (``prune_network``, ``create_MN``).
+def _validate_bn_query(options, variables, nodes, *, evidence=None):
+    """Pop ``prune_network``/``create_MN`` from ``options`` and reject unsupported queries.
 
-    Neither is supported for CONIN models; ``True`` raises ``RuntimeError``.
-    Returns ``create_MN``.
+    Neither option is supported for CONIN models, and neither is any
+    non-empty ``variables`` other than all of ``nodes`` (that would need
+    variable elimination).  These raise ``RuntimeError``.
+
+    Returns ``variables`` (``None`` if it named every node).
     """
     prune_network = options.pop("prune_network", False)
     create_MN = options.pop("create_MN", False)
@@ -26,18 +29,7 @@ def pop_bn_build_options(options):
         slow for large models.
         """
         raise RuntimeError("Pruning is not currently supported with CONIN models.")
-    return create_MN
 
-
-def check_bn_variables(variables, nodes, *, evidence=None, create_MN=False):
-    """Check a BN MAP query's ``variables``.
-
-    ``variables`` naming every node is the same as ``None``.  Any other
-    non-empty ``variables`` (or ``create_MN=True``) would need variable
-    elimination, which is not supported for CONIN models.
-
-    Returns ``variables`` (``None`` if it named every node).
-    """
     if variables and len(variables) == len(nodes):
         assert set(variables) == set(
             nodes
@@ -79,7 +71,6 @@ def inference_pyomo_map_query_BN(
         :func:`~conin.inference.pyomo.solve_pyomo_map_query_model`.
     """
     use_cut_generation = options.pop("use_cut_generation", False)
-    create_MN = pop_bn_build_options(options)
 
     cmodel = (
         pgm
@@ -87,9 +78,7 @@ def inference_pyomo_map_query_BN(
         else ConstrainedDiscreteBayesianNetwork(pgm)
     )
     repn = cmodel.representation("pyomo")
-    variables = check_bn_variables(
-        variables, repn.nodes, evidence=evidence, create_MN=create_MN
-    )
+    variables = _validate_bn_query(options, variables, repn.nodes, evidence=evidence)
     model = repn.create_model(
         evidence=evidence,
         variables=variables,

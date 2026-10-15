@@ -2,7 +2,7 @@
 
 from conin.constrained_models import ConstrainedDynamicDiscreteBayesianNetwork
 
-from .bn import check_bn_variables, pop_bn_build_options
+from .bn import _validate_bn_query
 from .solve import solve_pyomo_map_query_model
 
 
@@ -30,7 +30,6 @@ def inference_pyomo_map_query_DDBN(
         As for :func:`~conin.inference.pyomo.inference_pyomo_map_query_BN`.
     """
     use_cut_generation = options.pop("use_cut_generation", False)
-    create_MN = pop_bn_build_options(options)
 
     cmodel = (
         pgm
@@ -38,7 +37,7 @@ def inference_pyomo_map_query_DDBN(
         else ConstrainedDynamicDiscreteBayesianNetwork(pgm)
     )
     repn = cmodel.representation("pyomo", start=start, stop=stop)
-    check_bn_variables(variables, repn.nodes, evidence=evidence, create_MN=create_MN)
+    _validate_bn_query(options, variables, repn.nodes, evidence=evidence)
     model = repn.create_model(
         evidence=evidence, variables=variables, omit_c5=use_cut_generation
     )
