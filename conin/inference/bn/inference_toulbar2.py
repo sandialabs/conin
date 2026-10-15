@@ -13,7 +13,7 @@ from conin.inference.mn.inference_toulbar2 import (
 with try_import() as pytoulbar2_available:
     import pytoulbar2
 
-import conin.common
+from conin.io import save_model
 from conin.constrained_models import ConstrainedDiscreteBayesianNetwork
 
 
@@ -57,13 +57,13 @@ def create_toulbar2_map_query_model_BN(
     pgm = cpgm.model if cpgm is not None else pgm
 
     if write_uai_file:
-        conin.common.save_model(pgm, write_uai_file)
+        save_model(pgm, write_uai_file)
         model = pytoulbar2.CFN(verbose=verbose)
         model.Read(write_uai_file)
     else:
         with tempfile.TemporaryDirectory() as tempdir:
             filename = os.path.join(tempdir, "model.uai")
-            conin.common.save_model(pgm, filename)
+            save_model(pgm, filename)
             model = pytoulbar2.CFN(verbose=verbose)
             model.Read(filename)
 

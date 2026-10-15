@@ -1,5 +1,6 @@
 from conin.util import try_import
 import conin.common.conin
+import conin.io.pgmpy_files
 
 with try_import() as pgmpy_available:
     import pgmpy  # noqa: F401
@@ -34,7 +35,7 @@ def load_model(name, model_type="conin", quiet=True, **options):
     **options
         Format-specific options for CONIN models.  CFN files accept
         ``cost_scale``; see
-        :func:`conin.common.conin.load_cfn.load_conin_model_from_cfn`.
+        :func:`conin.io.cfn.load_conin_model_from_cfn`.
     """
 
     if model_type == "conin":
@@ -42,7 +43,7 @@ def load_model(name, model_type="conin", quiet=True, **options):
         # For now, we load BIF files using pgmpy and convert the model to conin
         #
         if (name.endswith(".bif") or name.endswith("bif.gz")) and pgmpy_available:
-            pgm = conin.common.pgmpy.load_model(name, quiet=quiet)
+            pgm = conin.io.pgmpy_files.load_model(name, quiet=quiet)
             return conin.common.pgmpy.convert_pgmpy_to_conin(pgm)
 
         return conin.common.conin.load_model(name, quiet=quiet, **options)
@@ -52,7 +53,7 @@ def load_model(name, model_type="conin", quiet=True, **options):
             raise ImportError(
                 "Missing import pgmpy, which is required to load a pgmpy model."
             )
-        return conin.common.pgmpy.load_model(name, quiet=quiet)
+        return conin.io.pgmpy_files.load_model(name, quiet=quiet)
 
     elif model_type == "pomegranate":
         if not pomegranate_available:

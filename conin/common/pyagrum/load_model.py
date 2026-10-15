@@ -4,7 +4,7 @@ from conin.util import try_import
 
 with try_import() as pgmpy_available:
     import pgmpy  # noqa: F401
-    import conin.common.pgmpy
+    import conin.io.pgmpy_files
 
 with try_import() as pyagrum_available:
     import pyagrum
@@ -33,9 +33,9 @@ def load_model(name, quiet=True):
 
                 # Load the BayesNet from the temporary file
                 pgm = pyagrum.loadBN(tmp_filename)
-                pgm._pgmpy = conin.common.pgmpy.load_model(name)
+                pgm._pgmpy = conin.io.pgmpy_files.load_model(name)
     else:
         pgm = pyagrum.loadBN(name)
-        pgm._pgmpy = conin.common.pgmpy.load_model(name)
+        pgm._pgmpy = conin.io.pgmpy_files.load_model(name)
 
     return pgm

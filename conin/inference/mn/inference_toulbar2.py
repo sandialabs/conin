@@ -3,7 +3,7 @@ import tempfile
 import munch
 from pyomo.common.timing import TicTocTimer
 
-import conin.common
+from conin.io import save_model
 from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
 from conin.constraints import Toulbar2Constraint
 from conin.constraints.algebraic import (
@@ -106,13 +106,13 @@ def create_toulbar2_map_query_model_MN(
     pgm = cpgm.model if cpgm is not None else pgm
 
     if write_uai_file:
-        conin.common.save_model(pgm, write_uai_file)
+        save_model(pgm, write_uai_file)
         model = pytoulbar2.CFN(verbose=verbose)
         model.Read(write_uai_file)
     else:
         with tempfile.TemporaryDirectory() as tempdir:
             filename = os.path.join(tempdir, "model.uai")
-            conin.common.save_model(pgm, filename)
+            save_model(pgm, filename)
             model = pytoulbar2.CFN(verbose=verbose)
             model.Read(filename)
 

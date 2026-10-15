@@ -3,8 +3,8 @@ import os.path
 import importlib
 
 from conin.util import try_import
-import conin.common
-from conin.common.unified import load_model
+import conin.io
+from conin.io import load_model
 
 with try_import() as pgmpy_available:
     import pgmpy
@@ -43,8 +43,8 @@ def test_load_model_error3():
         pgm = load_model(os.path.join(cwd, "asia.uai"), model_type="unknown")
 
 
-def test_load_model_documented_common_namespace():
-    pgm = conin.common.load_model(os.path.join(cwd, "asia.uai"), model_type="conin")
+def test_load_model_documented_io_namespace():
+    pgm = conin.io.load_model(os.path.join(cwd, "asia.uai"), model_type="conin")
     assert pgm.nodes
 
 
@@ -57,7 +57,7 @@ def test_load_model_error4():
 
 
 def test_pgmpy_load_model_requires_pgmpy(monkeypatch):
-    module = importlib.import_module("conin.common.pgmpy.load_model")
+    module = importlib.import_module("conin.io.pgmpy_files")
     monkeypatch.setattr(module, "pgmpy_available", False)
 
     with pytest.raises(ImportError, match="pgmpy"):
@@ -65,7 +65,7 @@ def test_pgmpy_load_model_requires_pgmpy(monkeypatch):
 
 
 def test_pgmpy_load_model_file_requires_readwrite(monkeypatch):
-    module = importlib.import_module("conin.common.pgmpy.load_model")
+    module = importlib.import_module("conin.io.pgmpy_files")
     monkeypatch.setattr(module, "pgmpy_available", True)
     monkeypatch.setattr(module, "pgmpy_readwrite_available", False)
 

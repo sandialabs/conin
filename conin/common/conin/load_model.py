@@ -1,7 +1,7 @@
 import os
 import gzip
-from .load_uai import load_conin_model_from_uai
-from .load_cfn import load_conin_model_from_cfn
+from conin.io.uai import load_conin_model_from_uai
+from conin.io.cfn import load_conin_model_from_cfn
 
 
 def load_model(name, quiet=True, **options):
@@ -16,7 +16,7 @@ def load_model(name, quiet=True, **options):
     **options
         Additional options passed to the format-specific loader.  CFN files
         accept ``cost_scale``; see
-        :func:`conin.common.conin.load_cfn.load_conin_model_from_cfn`.
+        :func:`conin.io.cfn.load_conin_model_from_cfn`.
     """
 
     if not os.path.exists(name):

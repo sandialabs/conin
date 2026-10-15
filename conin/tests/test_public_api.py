@@ -99,9 +99,7 @@ SPHINX_CODE = [
     ("conin", "pyomo_constraint_fn", "bayesian_networks.rst, dynamic_bayesian_networks.rst, hidden_markov_models.rst, markov_networks.rst"),
     ("conin", "toulbar2_constraint_fn", "bayesian_networks.rst, dynamic_bayesian_networks.rst, hidden_markov_models.rst, markov_networks.rst"),
     ("conin.common", "is_polytree", "model_conversion_io.rst"),
-    ("conin.common", "load_model", "model_conversion_io.rst"),
     ("conin.common", "log_potential", "model_conversion_io.rst, quickstart.rst"),
-    ("conin.common", "save_model", "model_conversion_io.rst"),
     ("conin.constrained_models", "ConstrainedDiscreteBayesianNetwork", "bayesian_networks.rst"),
     ("conin.constrained_models", "ConstrainedDiscreteMarkovNetwork", "markov_networks.rst"),
     ("conin.constrained_models", "ConstrainedDynamicDiscreteBayesianNetwork", "dynamic_bayesian_networks.rst"),
@@ -146,18 +144,16 @@ SPHINX_CODE = [
     ("conin.graphical_models", "random_hmm", "hidden_markov_models.rst"),
     ("conin.hidden_markov_model", "learning", "hmm_learning.rst"),
     ("conin.inference", "map_query", "backends.rst, inference.rst, model_conversion_io.rst, quickstart.rst"),
+    ("conin.io", "load_model", "model_conversion_io.rst"),
+    ("conin.io", "save_model", "model_conversion_io.rst"),
 ]
 
 SPHINX_AUTODOC = [
     ("conin.common", "is_polytree", "model_conversion_io.rst"),
-    ("conin.common", "load_model", "model_conversion_io.rst"),
     ("conin.common", "log_potential", "model_conversion_io.rst"),
-    ("conin.common", "save_model", "model_conversion_io.rst"),
-    ("conin.common.conin", "convert_conin_to_pgmpy_bn", "model_conversion_io.rst", "pgmpy"),
-    ("conin.common.conin", "convert_conin_to_pgmpy_mn", "model_conversion_io.rst", "pgmpy"),
-    ("conin.common.conin.load_cfn", "load_conin_model_from_cfn", "model_conversion_io.rst"),
-    ("conin.common.conin.load_uai", "load_conin_model_from_uai", "model_conversion_io.rst"),
     ("conin.common.conin.save_model", "save_model_uai", "model_conversion_io.rst"),
+    ("conin.common.pgmpy", "convert_conin_to_pgmpy_bn", "model_conversion_io.rst", "pgmpy"),
+    ("conin.common.pgmpy", "convert_conin_to_pgmpy_mn", "model_conversion_io.rst", "pgmpy"),
     ("conin.common.pgmpy", "convert_pgmpy_to_conin", "model_conversion_io.rst", "pgmpy"),
     ("conin.constrained_models", "ConstrainedDiscreteBayesianNetwork", "api_constrained_graphical_models.rst"),
     ("conin.constrained_models", "ConstrainedDiscreteMarkovNetwork", "api_constrained_graphical_models.rst"),
@@ -237,6 +233,10 @@ SPHINX_EXAMPLE_TABLES = [
     ("conin.examples.markov_network", "ABC_pgmpy", "examples.rst", "pgmpy"),
     ("conin.examples.markov_network", "example6_conin", "examples.rst"),
     ("conin.examples.markov_network", "example6_pgmpy", "examples.rst", "pgmpy"),
+    ("conin.io", "load_model", "model_conversion_io.rst"),
+    ("conin.io", "save_model", "model_conversion_io.rst"),
+    ("conin.io.cfn", "load_conin_model_from_cfn", "model_conversion_io.rst"),
+    ("conin.io.uai", "load_conin_model_from_uai", "model_conversion_io.rst"),
 ]
 
 EXAMPLES_MODULES = [

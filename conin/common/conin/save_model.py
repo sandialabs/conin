@@ -8,8 +8,8 @@ with try_import() as pgmpy_available:
     from pgmpy.models import DiscreteMarkovNetwork as pgmpy_DiscreteMarkovNetwork
 
 if pgmpy_available:
-    from .to_pgmpy_bn import convert_conin_to_pgmpy_bn
-    from .to_pgmpy_mn import convert_conin_to_pgmpy_mn
+    from conin.common.pgmpy.to_pgmpy_bn import convert_conin_to_pgmpy_bn
+    from conin.common.pgmpy.to_pgmpy_mn import convert_conin_to_pgmpy_mn
     from conin.common.pgmpy.save_model import save_model as pgmpy_save_model
 
 

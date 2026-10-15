@@ -3,7 +3,7 @@ import pytest
 from conin.util import try_import
 import conin.common.pgmpy
 import conin.common.conin
-from conin.common.unified import log_potential
+from conin.common import log_potential
 
 import conin.examples.markov_network
 

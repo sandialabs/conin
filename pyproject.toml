@@ -34,7 +34,7 @@ classifiers=[
     ]
 
 [project.scripts]
-convert_pgm = "conin.common.bin.convert_pgm:main"
+convert_pgm = "conin.io.convert_pgm:main"
 
 [project.optional-dependencies]
 docs = [

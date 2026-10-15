@@ -5,7 +5,7 @@ from ovld import ovld
 from pyomo.common.timing import TicTocTimer
 
 from conin.util import try_import
-from conin.common.unified import save_model
+from conin.io import save_model
 
 from conin.graphical_models import create_dbn_from_hmm, HiddenMarkovModel
 from conin.constrained_models import ConstrainedHiddenMarkovModel
@@ -22,7 +22,7 @@ from conin.constraints.algebraic import (
     create_oracle_constraints_from_algebraic,
     AlgebraicConstraint,
 )
-from conin.common.conin import convert_conin_to_pgmpy_mn, convert_conin_to_pgmpy_bn
+from conin.common.pgmpy import convert_conin_to_pgmpy_mn, convert_conin_to_pgmpy_bn
 
 with try_import() as pgmpy_available:
     import pgmpy.models

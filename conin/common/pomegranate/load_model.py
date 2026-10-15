@@ -3,6 +3,7 @@ from conin.util import try_import
 with try_import() as pgmpy_available:
     import pgmpy  # noqa: F401
     import conin.common.pgmpy  # noqa: F401
+    import conin.io.pgmpy_files  # noqa: F401
 
 
 def load_model(name, quiet=True):
@@ -12,7 +13,7 @@ def load_model(name, quiet=True):
             "The pgmpy package must be installed to load a pomegranate model."
         )
 
-    pgmpy_pgm = conin.common.pgmpy.load_model(name, quiet=quiet)
+    pgmpy_pgm = conin.io.pgmpy_files.load_model(name, quiet=quiet)
     pgm = conin.common.pgmpy.convert_pgmpy_to_pomegranate(pgmpy_pgm)
     pgm._pgmpy = pgmpy_pgm
     return pgm

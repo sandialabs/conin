@@ -43,7 +43,7 @@ specified inclusive time horizon. The HMM conversion creates dynamic variables
 UAI Files
 ---------
 
-The ``conin.common`` namespace exposes a small unified I/O interface. For CONIN
+The ``conin.io`` namespace exposes a small unified I/O interface. For CONIN
 models, ``save_model`` currently writes UAI files and ``load_model`` reads
 ``.uai``, ``.uai.gz``, ``.cfn`` and ``.cfn.gz`` files.
 
@@ -53,7 +53,7 @@ Hidden Markov models use their own JSON methods, ``write_to_file`` and
 .. code-block:: python
 
    from conin.examples.bayesian_network import simple1_BN_conin
-   from conin.common import load_model, save_model
+   from conin.io import load_model, save_model
 
    pgm = simple1_BN_conin().pgm
    save_model(pgm, "simple.uai")
@@ -80,7 +80,7 @@ load them with ``cost_scale=1e7``:
 
 .. code-block:: python
 
-   from conin.common import load_model
+   from conin.io import load_model
 
    pgm = load_model("model.cfn", cost_scale=1e7)
 
@@ -94,7 +94,7 @@ available as its ``model`` attribute:
 
 .. code-block:: python
 
-   from conin.common import load_model
+   from conin.io import load_model
    from conin.inference import map_query
 
    cpgm = load_model("constrained_model.cfn")
@@ -139,17 +139,17 @@ requirements.
 ``pgmpy`` support includes:
 
 - ``conin.common.pgmpy.convert_pgmpy_to_conin``
-- ``conin.common.conin.convert_conin_to_pgmpy_bn``
-- ``conin.common.conin.convert_conin_to_pgmpy_mn``
+- ``conin.common.pgmpy.convert_conin_to_pgmpy_bn``
+- ``conin.common.pgmpy.convert_conin_to_pgmpy_mn``
 
 Additional optional integrations include:
 
 - ``conin.common.pgmpy.convert_pgmpy_to_pgmax``
 - ``conin.common.pgmpy.convert_pgmpy_to_pomegranate``
-- ``conin.common.load_model(..., model_type="pgmpy")``
-- ``conin.common.load_model(..., model_type="pgmax")``
-- ``conin.common.load_model(..., model_type="pomegranate")``
-- ``conin.common.load_model(..., model_type="pyagrum")``
+- ``conin.io.load_model(..., model_type="pgmpy")``
+- ``conin.io.load_model(..., model_type="pgmax")``
+- ``conin.io.load_model(..., model_type="pomegranate")``
+- ``conin.io.load_model(..., model_type="pyagrum")``
 
 These conversions raise ``ImportError`` if the corresponding optional package is
 not installed.
@@ -163,22 +163,22 @@ Reference
 
 .. autofunction:: conin.graphical_models.create_dbn_from_hmm
 
-.. autofunction:: conin.common.load_model
+.. autofunction:: conin.io.load_model
 
-.. autofunction:: conin.common.save_model
+.. autofunction:: conin.io.save_model
 
 .. autofunction:: conin.common.log_potential
 
 .. autofunction:: conin.common.is_polytree
 
-.. autofunction:: conin.common.conin.load_uai.load_conin_model_from_uai
+.. autofunction:: conin.io.uai.load_conin_model_from_uai
 
-.. autofunction:: conin.common.conin.load_cfn.load_conin_model_from_cfn
+.. autofunction:: conin.io.cfn.load_conin_model_from_cfn
 
 .. autofunction:: conin.common.conin.save_model.save_model_uai
 
-.. autofunction:: conin.common.conin.convert_conin_to_pgmpy_bn
+.. autofunction:: conin.common.pgmpy.convert_conin_to_pgmpy_bn
 
-.. autofunction:: conin.common.conin.convert_conin_to_pgmpy_mn
+.. autofunction:: conin.common.pgmpy.convert_conin_to_pgmpy_mn
 
 .. autofunction:: conin.common.pgmpy.convert_pgmpy_to_conin

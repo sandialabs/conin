@@ -3,7 +3,7 @@ import os.path
 import importlib
 
 from conin.util import try_import
-from conin.common.unified import load_model
+from conin.io import load_model
 
 with try_import() as pgmpy_available:
     import pgmpy
@@ -13,7 +13,7 @@ with try_import() as pgmpy_readwrite_available:
     from conin.common.pgmpy import convert_pgmpy_to_conin
 
 
-cwd = os.path.dirname(__file__)
+cwd = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "io", "tests")
 
 
 def test_convert_pgmpy_to_conin_requires_pgmpy(monkeypatch):
