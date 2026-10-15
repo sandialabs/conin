@@ -1,6 +1,6 @@
 # Conin Restructure Plan
 
-Status: **In progress.** PR 0 is merged into `main` (#241). PR 1 is merged into `restructure` (#242). PR 2 is merged into `restructure` (#243). PR 3 is done (branch `restructure-pr3-constrained-models`, targets `restructure`). The later PRs target the `restructure` branch.
+Status: **In progress.** PR 0 is merged into `main` (#241). PR 1 is merged into `restructure` (#242). PR 2 is merged into `restructure` (#243). PR 3 is merged into `restructure` (#244). PR 4 is split into sub-PRs 4f, 4a, 4b, 4e, 4c, 4d (in that order, stacked branches); 4f is done (branch `restructure-pr4f-io`, off `restructure`). The later PRs target the `restructure` branch.
 This file lives at the repo root while the work is in progress. Delete it in the final PR.
 
 All decisions are recorded in §11; §12 lists what is still open. Critiques of the
@@ -81,6 +81,18 @@ conin/
   hidden_markov_model/   chmm*.py, mvr_common.py, hmm_application.py, inference/ learning/ sampling/ other_queries/
   markov_network/, bayesian_network/, dynamic_bayesian_network/   removed (emptied)
 ```
+After PR 4f:
+```
+conin/
+  io/                    __init__ (load_model, save_model, load_conin_model_from_uai, save_model_uai, load_conin_model_from_cfn),
+                         load_model.py (unified load_model + load_conin_model), save_model.py (unified save_model + save_conin_model),
+                         uai.py (UAI load + save_model_uai), cfn.py (CFN load), pgmpy_files.py (pgmpy BIF/UAI load + save),
+                         convert_pgm.py (the `convert_pgm` console script), tests/ (IO tests + all model data files)
+  common/                __init__ (log_potential, is_polytree, convert_pgmpy_to_conin, convert_conin_to_pgmpy_bn/mn),
+                         log_potential.py (unified dispatcher + log_potential_conin), is_polytree.py,
+                         pgmpy/ (to_conin, to_pgmpy_bn, to_pgmpy_mn, mapcpd, log_potential, polytree, custom_VE), tests/
+  common/{conin,unified,bin,pgmax,pomegranate,pyagrum}/   removed
+```
 
 ### 2.2 Problems the restructure should fix
 - **The constrained wrappers are inconsistent.**
@@ -151,6 +163,14 @@ conin/
 - **After the PR 3 follow-ups** (single constraint accepted, brackets dropped): **1075 passed, 195 skipped,
   0 errors** in `.venv-opencode` (+1, `test_single_constraint_accepted`). The same suite in the
   `conin_scaling_experiments` venv (pgmpy + torch) gives 1434 passed, 119 skipped.
+- **PR 4 branch point** (`restructure` = last-fetched `origin/restructure`, ea7a5b0, the PR 3 merge): 1075 passed,
+  195 skipped, 0 errors in `.venv-opencode` (re-run; matches the PR 3 follow-ups).
+- **After PR 4f:** **1076 passed, 193 skipped, 0 errors** in `.venv-opencode`. Removed: the 4 pgmax/pomegranate/pyagrum
+  loader tests in `io/tests/test_load_model.py` (passed) and the 2 pomegranate load tests (skipped). `test_public_api.py`:
+  224 passed, 9 skipped (+5 `RESTRUCTURE_PLAN_API` rows for the §5 `conin.io` / `conin.common` names; the other
+  `conin.common*` rows moved to `conin.io*` / `conin.common.pgmpy`). In the `conin_scaling_experiments` venv (pgmpy):
+  `test_MAP_Inference.py` 69 passed, 41 skipped (unchanged); `conin/io conin/common conin/inference/{bn,dbn,mn}` +
+  `test_MAP_Inference.py` + `test_public_api.py`: 496 passed, 65 skipped, 0 failed.
 - pgmpy, or_topas, gurobi and glpk are not installed in `.venv-opencode`; torch is broken
   there; greenery is missing.
 - PR 0 adds `doc/notebooks/MVR/*.ipynb` to the CI notebook job and fixes the
@@ -235,8 +255,8 @@ conin/
 ├── queries/mvr/                # sat_prob.py, sat_time.py (from other_queries/)
 ├── applications/               # hmm_application.py (HMMApplication)
 ├── examples/                   # markov_network.py, bayesian_network.py, dynamic_bayesian_network.py, hidden_markov_model.py (from */examples.py)
-├── io/                         # file IO: UAI/CFN load+save, unified load_model/save_model, convert_pgm CLI, pyagrum loader
-├── common/                     # non-IO helpers: pgmpy/ (pgmpy<->conin conversion, MapCPD), is_polytree, log_potential
+├── io/                         # (PR 4f) file IO: uai.py, cfn.py, pgmpy_files.py, unified load_model.py/save_model.py, convert_pgm.py CLI
+├── common/                     # (PR 4f) non-IO helpers: log_potential.py, is_polytree.py, pgmpy/ (pgmpy<->conin conversion, MapCPD, custom_VE until 4e)
 ├── mediation_variables/        # UNTOUCHED (research prototype)
 └── util/
 ```
@@ -245,6 +265,7 @@ Removed outright:
 - the pgmax and pomegranate support: `to_pgmax`, `to_pomegranate`, the
   `pgmax/` and `pomegranate/` loaders (these just load with pgmpy and convert),
   the `model_type` branches in unified `load_model`, and the pyproject extras;
+  (PR 4f) also the pyagrum loader, its `model_type="pyagrum"` branch and the `pyagrum`/`pgm-all` extras;
 - `initialize_chmm`, `CHMM`, `Oracle_CHMM`, `Algebraic_CHMM`,
   `PyomoAlgebraic_CHMM` and `MVR_CHMM` (they become representations);
 - `create_algebraic_chmm`, `Xgenerate_hidden`, and the duplicated `PyomoVarWrapper`s.
@@ -504,7 +525,22 @@ Breaking changes (these go in the CHANGELOG for 2.0):
   `OracleConstraint` has no `nodes`, and the "all-nodes" materialisation mode is removed.
 - `mvr_timerange` no longer mutates its input by default.
 - `OracleConstraint(nodes=...)` becomes `FactorOracleConstraint`. The decorator still works as before.
-- pgmax and pomegranate support is removed.
+- (PR 4f) pgmax, pomegranate and pyagrum support is removed: `convert_pgmpy_to_pgmax`, `convert_pgmpy_to_pomegranate`,
+  `load_model(..., model_type="pgmax" | "pomegranate" | "pyagrum")` (now `RuntimeError: Unexpected model type`), and the
+  `pgmax`, `pomegranate`, `pyagrum` and `pgm-all` extras.
+- (PR 4f) File IO moves from `conin.common` to `conin.io`: `conin.common.load_model`/`save_model` →
+  `conin.io.load_model`/`save_model` (`model_type` is `"conin"` or `"pgmpy"`); `conin.common.unified` is removed;
+  `conin.common.conin.load_uai.load_conin_model_from_uai` → `conin.io.uai` (also `conin.io`);
+  `conin.common.conin.load_cfn.load_conin_model_from_cfn` → `conin.io.cfn` (also `conin.io`);
+  `conin.common.conin.save_model.save_model_uai` → `conin.io.uai` (also `conin.io`);
+  `conin.common.conin.load_model`/`save_model` → `conin.io.load_model.load_conin_model` / `conin.io.save_model.save_conin_model`;
+  `conin.common.pgmpy.load_model`/`save_model` → `conin.io.pgmpy_files.load_model`/`save_model`.
+  The `convert_pgm` console script now points at `conin.io.convert_pgm:main` (same name and options).
+- (PR 4f) `conin.common.conin` is removed: `convert_conin_to_pgmpy_bn`/`_mn` → `conin.common.pgmpy` (also `conin.common`);
+  `is_polytree` → `conin.common.is_polytree` (also `conin.common`); the CONIN-native `log_potential` →
+  `conin.common.log_potential.log_potential_conin`. `conin.common.log_potential` is now the unified dispatcher (it also
+  accepts pgmpy models); for an unsupported model type it raises `TypeError` (the native function raised `RuntimeError`).
+  `conin.common` also exports `convert_pgmpy_to_conin`, `convert_conin_to_pgmpy_bn` and `convert_conin_to_pgmpy_mn`.
 - New: `map_query(..., method="mvr_viterbi")`.
 
 ---
@@ -530,7 +566,7 @@ detection keeps the diffs reviewable.
 | 4c | Oracle + Recursive (A*), oracle sampling, mcem | refactor | `Oracle_CHMM` becomes `OracleRepresentation`. Add `RecursiveConstraint`, decouple `HMMApplication` and move it to `applications/`. Fix the A* pruning bugs. |
 | 4d | MVR | refactor | `chmm_mvr` and `mvr_common` become repn plus kernels. Move inference, learning, sampling and queries. Update all MVR notebooks. |
 | 4e | Factor / VE | refactor | VE constraint handling moves into the factor repn. Move `custom_VE`. Fix the VE evidence bugs. |
-| 4f | `common/` → `io/` + `common/`; remove pgmax/pomegranate | move + delete | Independent of 3 and 4a–e. It can happen right after PR 1. |
+| 4f | `common/` → `io/` + `common/`; remove pgmax/pomegranate | move + delete | **DONE (branch `restructure-pr4f-io`).** Rename-only first commit, then the folds and deletions; pyagrum removed too (§11). Independent of 3 and 4a–e. It can happen right after PR 1. |
 | 5 | Dispatch rewrite | **design** | `map_query` → repn → ovld on the repn type. Remove the duplicated overloads. Add `method="mvr_viterbi"`. |
 | 6 | Docs + cleanup | docs | Sphinx API pages, prose docs, AGENTS.md (examples location), CHANGELOG, version 2.0. Delete this plan file. |
 
@@ -584,7 +620,7 @@ dependencies, and no new top-level imports of optional backends.
 ---
 
 ## 8. Testing strategy
-- PR 0 adds a public-API smoke test and records the baseline counts (959 passed / 195 skipped / 0 errors; see §2.3). After PR 1: 962 passed / 195 skipped. After PR 2: 1009 passed / 195 skipped (+47 new tests). After PR 3: 1074 passed / 195 skipped (+65). After the PR 3 follow-ups: 1075 passed / 195 skipped.
+- PR 0 adds a public-API smoke test and records the baseline counts (959 passed / 195 skipped / 0 errors; see §2.3). After PR 1: 962 passed / 195 skipped. After PR 2: 1009 passed / 195 skipped (+47 new tests). After PR 3: 1074 passed / 195 skipped (+65). After the PR 3 follow-ups: 1075 passed / 195 skipped. After PR 4f: 1076 passed / 193 skipped (−4 passed and −2 skipped deleted loader tests, +5 `test_public_api.py` rows).
 - Every PR must keep the pass count ≥ baseline, after adjusting for deliberately deleted tests.
 - PR 3 adds tests for:
   - immutability (setattr raises; `with_*` returns a new object);
@@ -618,6 +654,7 @@ dependencies, and no new top-level imports of optional backends.
 | `HMMApplication.create_chmm("pyomo")` attaches no `data`, so constraints that read application data (e.g. `data.num_zeros` in test_application_chmm) would fail if solved | 4c |
 | `MVR/formula.ipynb` prose says `MVR_HMM`/`MVRFunctor` (typos for `MVR_CHMM`/`MVRConstraint`) | 4d |
 | `DynamicDiscreteBayesianNetwork.t` is public and gets mutated by `create_bn_from_dbn` and `DBNSampler` (an immutability leak) | 1 (fixed: `create_bn_from_dbn` restores `t`; `DBNSampler` works on a deep copy) |
+| `conin.io.save_model.save_conin_model` (was `common.conin.save_model`): the `.bif` branch writes the file but doesn't return, so it then raises "Unknown format" (`convert_pgm --bif` avoids it by saving with `model_type="pgmpy"`) | 6 (found in 4f) |
 | `backends.rst` calls smoek optional although pyproject requires it; torch and pytoulbar2 aren't declared as extras | 6 |
 
 ---
@@ -670,7 +707,7 @@ dependencies, and no new top-level imports of optional backends.
 | Examples | `conin/examples/{markov_network,bayesian_network,dynamic_bayesian_network,hidden_markov_model}.py` (same module names as `graphical_models/`); update AGENTS.md |
 | HMMApplication | Keep it, move it to `applications/`, decouple it via `RecursiveConstraint` |
 | `common/` | Split into `io/` (file IO) and `common/` (non-IO helpers) |
-| pgmax/pomegranate | Remove the converters and the loaders (the loaders just load with pgmpy and convert); keep pyagrum (it reads files natively) |
+| pgmax/pomegranate | Remove the converters and the loaders (the loaders just load with pgmpy and convert); keep pyagrum (it reads files natively). **Superseded in PR 4f: pyagrum is removed too (unused)** |
 | network_flow IP | Keep it as the `pyomo_network_flow` repn |
 | Plan location | Root `RESTRUCTURE_PLAN.md`, deleted at the end |
 | Constraint base class | Renamed `ConstraintFunctor` → `Constraint` |
@@ -695,6 +732,9 @@ dependencies, and no new top-level imports of optional backends.
 | `ConstrainedHiddenMarkovModel` model type (PR 3) | Requires `HiddenMarkovModel`; `HMM_MatVecRepn` is rejected (no caller passed one) |
 | HMM repn modules (PR 3) | `representations/oracle/hmm.py`, `representations/pyomo/hmm_network_flow.py`, `representations/mvr/hmm.py` |
 | mcem (PR 3) | Keeps the model in a local variable and does not write it back to `app`; same results |
+| `io/` and `common/` layout (PR 4f) | `conin.common.conin` is dissolved. `io/`: `uai.py`, `cfn.py`, `pgmpy_files.py`, `load_model.py`, `save_model.py`, `convert_pgm.py`. `common/`: `log_potential.py` (unified dispatcher), `is_polytree.py`, `pgmpy/` (now also `to_pgmpy_bn`/`to_pgmpy_mn`). Model data files live in `io/tests/`; the `common/tests` that need them point there |
+| `convert_pgm` CLI (PR 4f) | Keeps its name; module `conin/io/convert_pgm.py` (the one-file `bin/` package is dropped) |
+| `load_model`/`save_model` `model_type` (PR 4f) | Kept, with fewer values: `"conin"` (default) and `"pgmpy"` |
 | Constructor names / CHMM overloads | First parameter is `model` (no `hmm=`/`pgm=` alias); the broken `CHMM` overloads in the AStar/Optimization/CFN dispatchers are removed in PR 3 |
 
 ---
