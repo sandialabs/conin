@@ -1,4 +1,3 @@
-import pprint
 from fractions import Fraction
 from math import gcd
 from functools import reduce
@@ -14,27 +13,6 @@ with try_import() as smoek_available:
     import smoek
 
 from .decorators import AlgebraicConstraint
-
-
-class PyomoVarWrapper(dict):
-    def __init__(self, *arg, **kw):
-        super(PyomoVarWrapper, self).__init__(*arg, **kw)
-
-    def pprint(self):  # pragma:nocover
-        pprint.pprint(self)
-
-    def __call__(self, *args):
-        if len(args) == 2:
-            r, s = args
-        elif len(args) == 3:
-            r, i, s = args
-            r = (r, i)
-        else:
-            raise ValueError("There must be either 2 or 3 arguments")
-
-        if type(s) is not State:
-            s = State(s)
-        return dict.__getitem__(self, (r, s))
 
 
 def add_algebraic_constraints_to_toulbar2_model(*, pgm, constraints, model, data):
@@ -63,6 +41,8 @@ def add_algebraic_constraints_to_toulbar2_model(*, pgm, constraints, model, data
             pyomo_model.V_to_tb2[pyomo_model.V_conin_temp[ctr]] = model.V(k, s)
             tmp[k, State(s)] = pyomo_model.V_conin_temp[ctr]
             ctr += 1
+    from conin.representations.pyomo.common import PyomoVarWrapper
+
     pyomo_model.V = PyomoVarWrapper(tmp)
 
     pyomo_model = smoek.pymodel.pyomo.generate(

@@ -215,7 +215,11 @@ def test_supported_representations_hmm():
     for pair in [
         ("oracle", None),
         ("oracle", "oracle"),
+        ("pyomo", None),
+        ("pyomo", "algebraic"),
+        ("pyomo", "pyomo"),
         ("pyomo_network_flow", None),
+        ("pyomo_network_flow", "algebraic"),
         ("pyomo_network_flow", "pyomo"),
         ("mvr", "mvr"),
     ]:

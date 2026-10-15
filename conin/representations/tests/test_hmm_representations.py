@@ -66,10 +66,10 @@ def test_oracle_get_copy_returns_the_cached_object():
 
 def test_pyomo_network_flow_generates_the_constrained_model():
     repn = tc.create_chmm1_pyomo().representation("pyomo_network_flow")
-    M = repn.generate_model(observed=["o0"] * 15)
+    M, data = repn.create_model(observed=["o0"] * 15)
     assert isinstance(M.h0_lower, pyo.Constraint)
     assert isinstance(M.h0_upper, pyo.Constraint)
-    assert repn.data.hmm.Tmax == 15
+    assert data.hmm.Tmax == 15
 
 
 def test_pyomo_network_flow_does_not_write_into_user_data():
@@ -82,20 +82,23 @@ def test_pyomo_network_flow_does_not_write_into_user_data():
         tc.create_hmm1(), at_most_k_zeros, data=user_data
     )
     repn = cmodel.representation("pyomo_network_flow")
-    M = repn.generate_model(observed=["o0"] * 5)
+    M, data = repn.create_model(observed=["o0"] * 5)
 
     assert pyo.value(M.k_zeros.upper) == 1
-    assert "hmm" in repn.data
+    assert "hmm" in data
     assert "hmm" not in user_data
     assert user_data == munch.Munch(k=1)
 
 
-def test_pyomo_network_flow_get_copy_returns_fresh_wrappers():
+def test_pyomo_network_flow_get_copy_returns_the_cached_object():
     cmodel = tc.create_chmm1_pyomo()
     first = cmodel.representation("pyomo_network_flow")
-    second = cmodel.representation("pyomo_network_flow")
-    assert first is not second
-    assert first.chmm is not second.chmm
+    assert cmodel.representation("pyomo_network_flow") is first
+    # Each query builds a fresh model and fresh per-query data.
+    M1, d1 = first.create_model(observed=["o0"] * 5)
+    M2, d2 = first.create_model(observed=["o0"] * 7)
+    assert M1 is not M2 and d1 is not d2
+    assert d1.hmm.Tmax == 5 and d2.hmm.Tmax == 7
 
 
 @pytest.mark.skipif(not default_mip_solver, reason="No mip solver installed")

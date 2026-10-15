@@ -1,49 +1,18 @@
-import munch
-from pyomo.common.timing import TicTocTimer
+"""Pyomo MAP inference for (constrained) Bayesian networks."""
 
-import conin.graphical_models
 from conin.constrained_models import ConstrainedDiscreteBayesianNetwork
 
+from .solve import solve_pyomo_map_query_model
 
-def create_pyomo_map_query_model_BN(
-    *,
-    pgm,
-    variables=None,
-    evidence=None,
-    var_index_map=None,
-    timing=False,
-    omit_c5=False,
-    **options,
-):
-    """Create a MAP query model.
 
-    Parameters
-    ----------
-    variables : list, optional
-        Nodes for which to compute the MAP estimate.
-    evidence : dict, optional
-        Observed node assignments.
-    timing : bool, optional
-        Whether to collect timing information.
-    var_index_map : dict, optional
-        Dictionary mapping variable indices to Pyomo variable data objects
-    **options : dict, optional
-        Additional keyword arguments forwarded to
-        :func:`create_BN_map_query_model`.
+def pop_bn_build_options(options):
+    """Pop and check the BN build options (``prune_network``, ``create_MN``).
 
-    Returns
-    -------
-    pyomo.environ.ConcreteModel
-        Constrained MAP query model.
+    Neither is supported for CONIN models; ``True`` raises ``RuntimeError``.
+    Returns ``create_MN``.
     """
-    if timing:
-        timer = TicTocTimer()
-        timer.tic("create_pyomo_map_query_model_BN - START")
     prune_network = options.pop("prune_network", False)
     create_MN = options.pop("create_MN", False)
-
-    pgm_ = pgm.model if isinstance(pgm, ConstrainedDiscreteBayesianNetwork) else pgm
-
     if prune_network:
         """
         Apply the pruning methods described here:
@@ -57,62 +26,30 @@ def create_pyomo_map_query_model_BN(
         slow for large models.
         """
         raise RuntimeError("Pruning is not currently supported with CONIN models.")
+    return create_MN
 
-        # inf = pgmpy.inference.Inference(pgm)
-        # pgm, evidence = inf._prune_bayesian_model(
-        #    [] if variables is None else variables, evidence
-        # )
-        # if timing:
-        #    timer.toc("Created pruned model")
 
-    if variables and len(variables) == len(pgm_.nodes):
+def check_bn_variables(variables, nodes, *, evidence=None, create_MN=False):
+    """Check a BN MAP query's ``variables``.
+
+    ``variables`` naming every node is the same as ``None``.  Any other
+    non-empty ``variables`` (or ``create_MN=True``) would need variable
+    elimination, which is not supported for CONIN models.
+
+    Returns ``variables`` (``None`` if it named every node).
+    """
+    if variables and len(variables) == len(nodes):
         assert set(variables) == set(
-            pgm_.nodes
+            nodes
         ), "Mismatch in the specified variables and the nodes in the model"
-        # We continue with 'variables' set to None, which is a special case recognized below
+        # We continue with 'variables' set to None
         variables = None
 
     if variables or create_MN:
-        #
-        # We need to create a Markov network if (1) the user asks us to, or (2) we have 'variables'
-        # specified.  In (2), we need to reduce the factors and apply variable elimination to
-        # eliminate unspecified variables.
-        #
         raise RuntimeError(
             f"CONIN does not currently support the generation of discrete Markov networks using variable elimination to prune unspecified variables. {variables=} {evidence=} {create_MN=}"
         )
-        MN = pgm_.to_markov_model()
-        if timing:
-            timer.toc("Created Markov network from Bayesian network")
-    else:
-        #
-        # By default, we avoid creating a complete Markov model.  Rather, we
-        # create the skeleton of a model that is used to setup the integer program.
-        #
-        MN = conin.graphical_models.DiscreteMarkovNetwork(
-            states=pgm_.states, factors=[cpd.to_factor() for cpd in pgm_.cpds]
-        )
-        if timing:
-            timer.toc("Created skeleton Markov network")
-
-    model = conin.inference.pyomo.solve.create_pyomo_map_query_model_MN(
-        pgm=MN,
-        variables=variables,
-        evidence=evidence,
-        var_index_map=var_index_map,
-        timing=timing,
-        omit_c5=omit_c5,
-    )
-
-    if isinstance(pgm, ConstrainedDiscreteBayesianNetwork) and pgm.constraints:
-        data = munch.Munch(variables=variables, evidence=evidence)
-        conin.inference.pyomo.solve.add_constraints(
-            pgm=pgm.model, constraints=pgm.constraints, model=model, data=data
-        )
-
-    if timing:
-        timer.toc("create_pyomo_map_query_model_BN - STOP")
-    return model
+    return variables
 
 
 def inference_pyomo_map_query_BN(
@@ -123,16 +60,42 @@ def inference_pyomo_map_query_BN(
     timing=False,
     **options,
 ):
-    use_cut_generation = options.pop("use_cut_generation", False)
+    """MAP query on a Bayesian network with the factor-repn integer program.
 
-    model = create_pyomo_map_query_model_BN(
-        pgm=pgm,
-        variables=variables,
-        evidence=evidence,
-        timing=timing,
-        omit_c5=use_cut_generation,
-        **options,
+    The IP is built on the BN's Markov-network skeleton (one factor per CPD).
+
+    Parameters
+    ----------
+    pgm : DiscreteBayesianNetwork or ConstrainedDiscreteBayesianNetwork
+    variables : list, optional
+        Only ``None`` or all nodes are supported.
+    evidence : dict, optional
+        ``{node: state}``.
+    timing : bool, optional
+        Print timing information.
+    **options
+        ``use_cut_generation``, ``prune_network`` and ``create_MN`` (both
+        unsupported: ``True`` raises ``RuntimeError``), and the options of
+        :func:`~conin.inference.pyomo.solve_pyomo_map_query_model`.
+    """
+    use_cut_generation = options.pop("use_cut_generation", False)
+    create_MN = pop_bn_build_options(options)
+
+    cmodel = (
+        pgm
+        if isinstance(pgm, ConstrainedDiscreteBayesianNetwork)
+        else ConstrainedDiscreteBayesianNetwork(pgm)
     )
-    return conin.inference.pyomo.solve.solve_pyomo_map_query_model(
+    repn = cmodel.representation("pyomo")
+    variables = check_bn_variables(
+        variables, repn.nodes, evidence=evidence, create_MN=create_MN
+    )
+    model = repn.create_model(
+        evidence=evidence,
+        variables=variables,
+        omit_c5=use_cut_generation,
+        timing=timing,
+    )
+    return solve_pyomo_map_query_model(
         model, timing=timing, evidence=evidence, **options
     )
