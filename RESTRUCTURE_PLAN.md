@@ -1,6 +1,6 @@
 # Conin Restructure Plan
 
-Status: **In progress.** PR 0 is merged into `main` (#241). PR 1 is merged into `restructure` (#242). PR 2 is merged into `restructure` (#243). PR 3 is merged into `restructure` (#244). PR 4 is split into sub-PRs 4f, 4a, 4b, 4e, 4c, 4d (in that order, stacked branches); 4f is done (branch `restructure-pr4f-io`, off `restructure`). The later PRs target the `restructure` branch.
+Status: **In progress.** PR 0 is merged into `main` (#241). PR 1 is merged into `restructure` (#242). PR 2 is merged into `restructure` (#243). PR 3 is merged into `restructure` (#244). PR 4 is split into sub-PRs 4f, 4a, 4b, 4e, 4c, 4d (in that order, stacked branches); 4f is done (branch `restructure-pr4f-io`, off `restructure`, merged as #245); 4a is done (branch `restructure-pr4a-pyomo`, off 4f). The later PRs target the `restructure` branch.
 This file lives at the repo root while the work is in progress. Delete it in the final PR.
 
 All decisions are recorded in §11; §12 lists what is still open. Critiques of the
@@ -93,6 +93,20 @@ conin/
                          pgmpy/ (to_conin, to_pgmpy_bn, to_pgmpy_mn, mapcpd, log_potential, polytree, custom_VE), tests/
   common/{conin,unified,bin,pgmax,pomegranate,pyagrum}/   removed
 ```
+After PR 4a:
+```
+conin/
+  representations/pyomo/ common.py (PyomoVarWrapper, apply_pyomo_constraints + add_algebraic_constraints_to_pyomo_model
+                         (smoek->pyomo), create_MN_pyomo_map_query_model_from_factorial_repn, c5 helpers + C5LazyCutGenerator,
+                         factor_representation_of_mn, skeleton_mn_of_bn, PyomoFactorRepresentation),
+                         mn.py bn.py dbn.py hmm.py (Pyomo{MN,BN,DBN,HMM}Representation, kind "pyomo"),
+                         hmm_network_flow.py (PyomoNetworkFlowHMMRepresentation + _create_index_sets), tests/
+  inference/pyomo/       solve.py (solve_pyomo_map_query_model + parsers), mn.py bn.py dbn.py hmm.py
+                         (inference_pyomo_map_query_{MN,BN,DDBN,HMM}), hmm_network_flow.py (lp_inference, ip_inference), tests/
+  inference/{mn,bn,dbn,hmm}/   only toulbar2 left (+ mn/factor_repn.py, until 4e)
+  hidden_markov_model/   chmm_algebraic.py and inference/lp.py removed
+  constraints/algebraic/ add_constraints_pyomo.py removed (now representations/pyomo/common.py)
+```
 
 ### 2.2 Problems the restructure should fix
 - **The constrained wrappers are inconsistent.**
@@ -109,22 +123,25 @@ conin/
     "pyomo_network_flow" and "mvr" HMM representations, which still wrap `Oracle_CHMM`,
     `PyomoAlgebraic_CHMM` and `MVR_CHMM` until 4a/4c/4d);
   - inside "model" classes: `PyomoAlgebraic_CHMM.generate_model` (PR 3: reached only through the
-    "pyomo_network_flow" repn; the class itself is replaced in 4a);
-  - inside inference functions: `create_*_map_query_model_*` (remain; 4a/4b), and `lp_inference`
-    builds a CHMM (PR 3: uses `representation("pyomo_network_flow")`);
+    "pyomo_network_flow" repn; **4a: replaced by `PyomoNetworkFlowHMMRepresentation.create_model`**);
+  - inside inference functions: `create_*_map_query_model_*` (**4a: the Pyomo ones are removed; the
+    "pyomo" representations build the models**; toulbar2 remains for 4b), and `lp_inference`
+    builds a CHMM (PR 3: uses `representation("pyomo_network_flow")`; 4a: `create_model(observed=)`);
   - inside the dispatch layer: `VariableElimination._add_*_constraints_as_evidence` (remains; 4e).
 - **Almost nothing is cached.** Only `HiddenMarkovModel.repn` is. The
-  HMM→DBN→BN→MN→factor-repn→Pyomo chain is rebuilt on every query.
+  HMM→DBN→BN→MN→factor-repn→Pyomo chain is rebuilt on every query (4a: cached up to the factor repn,
+  per `(start, stop)`, when the same constrained model is reused; `map_query` on a bare model still wraps it anew each call).
 - **There is a lot of duplication:**
-  - 3 copies of `PyomoVarWrapper`;
+  - 3 copies of `PyomoVarWrapper` (**4a: one, in `representations/pyomo/common.py`**);
   - the MN and BN toulbar2 builders are near-identical;
   - every ovld dispatcher has identical Constrained/unconstrained overload pairs;
-  - there are 3 separate `add_constraints` dispatchers.
+  - there are 3 separate `add_constraints` dispatchers (**4a: the Pyomo one is
+    `representations/pyomo/common.apply_pyomo_constraints`**; toulbar2 in 4b).
 - **The imports are tangled.**
   - `constraints` lazily imports MN, BN and HMM.
   - `operators.py` and `mvr_operators` import each other (a cycle).
   - Some code uses implicit attribute-path imports (`conin.inference.mn.inference_pyomo.solve_…`)
-    that only work because of import order.
+    that only work because of import order (**4a: gone from the Pyomo code**; the toulbar2 modules still have them).
 - `mvr_common.py` mixes representation building with torch kernels.
 - `recursive_a_star` relies on an undeclared duck-typed protocol on an
   `HMMApplication` subclass instead of a constraint object.
@@ -171,6 +188,20 @@ conin/
   `conin.common*` rows moved to `conin.io*` / `conin.common.pgmpy`). In the `conin_scaling_experiments` venv (pgmpy):
   `test_MAP_Inference.py` 69 passed, 41 skipped (unchanged); `conin/io conin/common conin/inference/{bn,dbn,mn}` +
   `test_MAP_Inference.py` + `test_public_api.py`: 496 passed, 65 skipped, 0 failed.
+- **PR 4a branch point** (`restructure-pr4a-pyomo` = `restructure-pr4f-io` = b59605a, the 4f head; `restructure` =
+  last-fetched `origin/restructure` 1eb3fc0 is its merge, same tree): 1076 passed, 193 skipped, 0 errors (re-run).
+- **After PR 4a:** **1115 passed, 193 skipped, 0 errors** in `.venv-opencode` (+39). New:
+  `representations/pyomo/tests/test_pyomo_representations.py` (30: registry pairs, repn classes, get_copy isolation,
+  evidence isolation, cache keys, the constraint `data` each model passes, the two §9 regression groups, network flow
+  with algebraic constraints, BN build options) and +9 `test_public_api.py` rows (`conin.inference.pyomo.*`,
+  `conin.representations.pyomo.{PyomoNetworkFlowHMMRepresentation,PyomoVarWrapper}`): 233 passed, 9 skipped.
+  Moved: `test_cut_generation.py` (→ `inference/pyomo/tests/`), `test_pyomo_chmm.py` (→
+  `representations/pyomo/tests/test_hmm_network_flow.py`). Rewritten: the PR 3 `pyomo_network_flow` tests in
+  `representations/tests/test_hmm_representations.py` (`create_model` returns `(model, data)`; get_copy returns the
+  cached object), `test_application_chmm.test_algebraic_type`, `test_base.test_supported_representations_hmm` (more
+  pairs). No test removed. In the `conin_scaling_experiments` venv (pgmpy): `test_MAP_Inference.py` 69 passed,
+  41 skipped (unchanged). LP files written for 15 MN/BN/DBN/HMM/network-flow cases (constrained, algebraic,
+  evidence, omit_c5) are byte-identical to the old path.
 - pgmpy, or_topas, gurobi and glpk are not installed in `.venv-opencode`; torch is broken
   there; greenery is missing.
 - PR 0 adds `doc/notebooks/MVR/*.ipynb` to the CI notebook job and fixes the
@@ -222,10 +253,10 @@ conin/
 │   ├── __init__.py
 │   ├── base.py                 # Representation ABC (get_copy), registry, build_representation()
 │   ├── factor/                 # factor repn (S,J,v,w), BN->MN skeleton, FactorOracle -> factor/CPD (materialise.py: materialise_factor_oracle, since PR 2)
-│   ├── pyomo/
-│   │   ├── common.py           # ONE PyomoVarWrapper, IP-from-factor-repn, c5 constraints, smoek->pyomo
-│   │   ├── mn.py  bn.py  dbn.py  hmm.py
-│   │   └── hmm_network_flow.py # from PyomoAlgebraic_CHMM / lp.py (ip_formulation="network_flow")
+│   ├── pyomo/                  # (PR 4a: done)
+│   │   ├── common.py           # ONE PyomoVarWrapper, apply_pyomo_constraints, IP-from-factor-repn, c5 constraints, smoek->pyomo, PyomoFactorRepresentation
+│   │   ├── mn.py  bn.py  dbn.py  hmm.py   # Pyomo{MN,BN,DBN,HMM}Representation ("pyomo")
+│   │   └── hmm_network_flow.py # PyomoNetworkFlowHMMRepresentation, from PyomoAlgebraic_CHMM (ip_formulation="network_flow")
 │   ├── toulbar2/
 │   │   ├── common.py           # UAI->CFN, Toulbar2VarWrapper, smoek->toulbar2 linear translator
 │   │   └── mn.py  bn.py  dbn.py  hmm.py
@@ -238,7 +269,7 @@ conin/
 │   ├── __init__.py             # exports map_query
 │   ├── map_query.py            # public entry point (method -> repn kind -> ovld on repn type)
 │   ├── unconstrained/          # viterbi.py, a_star core search (a_star_)
-│   ├── pyomo/                  # solve.py (generic solve/parse), per-model result post-processing
+│   ├── pyomo/                  # (PR 4a) solve.py (generic solve/parse); mn/bn/dbn/hmm.py (per-model post-processing); hmm_network_flow.py (lp_inference, ip_inference, from lp.py)
 │   ├── toulbar2/               # solve.py, per-model post-processing
 │   ├── variable_elimination/   # VE on factor repn; custom_VE.py moves here
 │   ├── mvr/                    # viterbi.py, marginal_map.py
@@ -268,7 +299,10 @@ Removed outright:
   (PR 4f) also the pyagrum loader, its `model_type="pyagrum"` branch and the `pyagrum`/`pgm-all` extras;
 - `initialize_chmm`, `CHMM`, `Oracle_CHMM`, `Algebraic_CHMM`,
   `PyomoAlgebraic_CHMM` and `MVR_CHMM` (they become representations);
-- `create_algebraic_chmm`, `Xgenerate_hidden`, and the duplicated `PyomoVarWrapper`s.
+- `create_algebraic_chmm`, `Xgenerate_hidden`, and the duplicated `PyomoVarWrapper`s;
+- (PR 4a, done) `Algebraic_CHMM`, `PyomoAlgebraic_CHMM`, `CallableDict`, `create_algebraic_chmm`, `Xgenerate_hidden`,
+  `create_pyomo_map_query_model_{MN,BN,DDBN,HMM}` and the `add_constraints` dispatcher in `inference/mn/inference_pyomo.py`
+  (replaced by `apply_pyomo_constraints`).
 
 Kept even though untested (they have plausible uses): `factor_repn.get_factor_value`, and
 similar code. Rule for subagents: **delete only code that becomes redundant because of the
@@ -395,6 +429,23 @@ class ConstrainedGraphicalModel:
 - (PR 3) Registered HMM kinds: `"oracle"` (None, "oracle"), `"pyomo_network_flow"` (None, "pyomo") and
   `"mvr"` (None, "mvr"). `"algebraic"` is not registered for `"pyomo_network_flow"`: it never worked before
   PR 3 (initialize_chmm built no `.chmm` for it).
+- (PR 4a) Registered: `"pyomo"` for MN, BN, DBN and HMM (None, "pyomo", "algebraic"); `"pyomo_network_flow"` for HMM
+  now also accepts "algebraic" (smoek->pyomo on the network-flow `M.V`; tested). The Pyomo representations:
+  - `PyomoFactorRepresentation` (base; `representations/pyomo/common.py`) holds `S, J, v, w`, `var_index_map`, `pgm`
+    (the model the constraint applier sees: MN, BN, the unrolled BN for DBNs, the DBN for HMMs), `constraints`, `nodes`.
+    `create_model(*, evidence=None, variables=None, omit_c5=False, timing=False)` builds a fresh `ConcreteModel`,
+    fixes `model.V(k, State(v))` for the evidence, then applies the constraints with `constraint_data(evidence=,
+    variables=)`, which is today's layout: MN/BN `Munch(variables, evidence)`; DBN `+start, stop, T`; HMM
+    `Munch(start, stop, variables, evidence, hmm=Munch(T, hidden_to_internal))`. HMM evidence is keyed `("E", t)`.
+    The constrained model's own `data` is **not** passed on these paths (unchanged from before 4a).
+  - Structure params / cache key: MN, BN `()`; DBN `start=0, stop=1`; HMM `start=0, stop` (required).
+    `omit_c5` (`use_cut_generation`), `variables`, `prune_network` and `create_MN` are **not** structure params.
+  - The builders build on each other: HMM → `create_dbn_from_hmm` → DBN builder (`create_bn_from_dbn`) → BN builder
+    (`skeleton_mn_of_bn`: one factor per CPD) → MN builder (`factor_representation_of_mn`).
+  - `PyomoNetworkFlowHMMRepresentation` holds the HMM, constraints, application `data`, and the structure params
+    `x_binary=True`, `y_binary=False`. `create_model(*, observed, Tmax=None)` returns `(model, data)`, where `data` is a
+    shallow copy of the application data with `.hmm` = the index sets. `M.V` is the shared `PyomoVarWrapper`
+    (keys `(("H", t), State(h))`).
 
 ### 4.4 Caching and copy-on-get
 - Representations are cached on the constrained model.
@@ -408,7 +459,8 @@ class ConstrainedGraphicalModel:
   | (PR 3) oracle HMM (wraps `Oracle_CHMM`) | `self` (no per-query state; sampling uses the global NumPy RNG) |
   | (PR 3) MVR HMM (wraps `MVR_CHMM`) | shallow copy with deep-copied MVRs (MVRs are mutable until 4d); the HMM is shared |
   | (PR 3) pyomo_network_flow HMM | a fresh wrapper with a shallow copy of `data` (the CHMM writes `data.hmm` per query) |
-  | Pyomo                      | `pyomo_model.clone()` |
+  | (PR 4a) Pyomo (`"pyomo"`, MN/BN/DBN/HMM) | `self`: the repn caches the evidence-independent factor repn; `create_model()` rebuilds a fresh Pyomo model per query (`clone()` was 1.6–2.4× slower than a rebuild, §11) |
+  | (PR 4a) pyomo_network_flow HMM | `self`: `create_model(observed=)` builds the model and a per-query shallow copy of `data` (the model depends on the observations) |
   | toulbar2                   | cache the intermediate (UAI text + constraint/evidence spec); rebuild a fresh `pytoulbar2.CFN` on each get |
 
 - Evidence and per-query options are applied to the *copy* by the inference
@@ -419,9 +471,7 @@ class ConstrainedGraphicalModel:
   `get_copy()`. For VE, evidence changes the factors, so VE caches only the
   evidence-independent factor representation.
 - The cache has no size limit (one entry per distinct structure). This can be revisited if memory becomes a problem.
-- Open point, to be checked in PR 3: `clone()` may not be cheaper than a rebuild for
-  big Pyomo models. If it isn't, the Pyomo repn can also use a rebuild strategy.
-  `get_copy()` keeps this an internal decision.
+- (Settled in PR 4a, §11) `clone()` is slower than a rebuild, so the Pyomo repns rebuild per query.
 
 ### 4.5 Inference dispatch (keeps ovld + `map_query`)
 ```
@@ -494,6 +544,8 @@ from conin.sampling.mvr import ffbs_torch_mvr_chmm, stopped_sampling_torch_mvr_c
 from conin.queries.mvr import sat_prob_torch_mvr_chmm, sat_time_torch_mvr_chmm
 from conin.examples.hidden_markov_model import create_hmm1, create_chmm1_pyomo
 from conin.io import load_model, save_model
+from conin.inference.pyomo import inference_pyomo_map_query_MN, ..., lp_inference, ip_inference, solve_pyomo_map_query_model
+from conin.representations.pyomo import PyomoVarWrapper, PyomoNetworkFlowHMMRepresentation, ...
 from conin.common import log_potential, is_polytree, convert_pgmpy_to_conin
 ```
 
@@ -541,6 +593,25 @@ Breaking changes (these go in the CHANGELOG for 2.0):
   `conin.common.log_potential.log_potential_conin`. `conin.common.log_potential` is now the unified dispatcher (it also
   accepts pgmpy models); for an unsupported model type it raises `TypeError` (the native function raised `RuntimeError`).
   `conin.common` also exports `convert_pgmpy_to_conin`, `convert_conin_to_pgmpy_bn` and `convert_conin_to_pgmpy_mn`.
+- (PR 4a) The Pyomo inference code moves to `conin.inference.pyomo`: `inference_pyomo_map_query_{MN,BN,DDBN,HMM}`
+  (were `conin.inference.{mn,bn,dbn,hmm}[.inference_pyomo]`), `solve_pyomo_map_query_model` (was
+  `conin.inference.mn.inference_pyomo`), `lp_inference`/`ip_inference` (were `conin.hidden_markov_model[.inference]`
+  and `conin.hidden_markov_model.inference.lp`). Names and signatures are unchanged.
+- (PR 4a) `create_pyomo_map_query_model_{MN,BN,DDBN,HMM}` are removed. Use
+  `Constrained*(model, constraints).representation("pyomo", [start=, stop=]).create_model(evidence=..., omit_c5=...)`.
+  `create_MN_pyomo_map_query_model_from_factorial_repn`, `PyomoVarWrapper`, `add_c5_constraints`, `has_omitted_c5`,
+  `C5LazyCutGenerator` and `add_algebraic_constraints_to_pyomo_model` move to `conin.representations.pyomo.common`
+  (the last one was `conin.constraints.algebraic[.add_constraints_pyomo]`).
+- (PR 4a) `PyomoAlgebraic_CHMM`, `Algebraic_CHMM`, `CallableDict` and `create_algebraic_chmm` are removed (no longer
+  exported by `conin.hidden_markov_model`); `representation("pyomo_network_flow")` is a
+  `PyomoNetworkFlowHMMRepresentation`: `generate_model`/`generate_unconstrained_model` → `create_model(observed=)`,
+  which returns `(model, data)`; `.chmm` and `.data` are gone; `get_copy()` returns the cached object.
+- (PR 4a) On network-flow models, `M.V` is a `PyomoVarWrapper`: a missing variable raises `KeyError` (it returned
+  `None`), a wrong number of arguments raises `ValueError` (it returned a `KeyError`), and direct indexing uses
+  `M.V[("H", t), State(h)]`.
+- (PR 4a) `map_query(hmm, method="integer_program", ip_formulation="network_flow")` raises `InvalidInputError` for
+  evidence that is not a list or dict (it returned `None`). `prune_network=False`/`create_MN=False` are accepted
+  (they raised `TypeError` from the solver).
 - New: `map_query(..., method="mvr_viterbi")`.
 
 ---
@@ -561,7 +632,7 @@ detection keeps the diffs reviewable.
 | 1 | Unconstrained models → `graphical_models/`; examples → `examples/` | move | **DONE (#242, merged to `restructure`).** Pure moves plus import updates. Conversions move too. One behaviour fix: stop `create_bn_from_dbn` and `DBNSampler` from mutating `dbn.t` (the immutability leak). |
 | 2 | Constraints → containers | move + small refactor | **DONE (branch `restructure-pr2-constraints`).** Split `constraint.py`. Move the oracle library and the MVR spec code (mvr, primitives, operators, formula) into `constraints/`. Merge `operators.py` (removes the cycle). Add `family`. Split `FactorOracleConstraint`. Move `_materialise` into a temporary home in `representations/factor/`. |
 | 3 | `ConstrainedGraphicalModel` + representation framework | **design** | **DONE (branch `restructure-pr3-constrained-models`).** Base class, registry, cache, `get_copy`, immutability. Port the four constrained classes. Builders initially wrap the *existing* create functions, so behaviour stays identical. Update every `initialize_chmm` and `.chmm` call site (examples, tests, docs). |
-| 4a | Pyomo repns + `inference/pyomo` | refactor | One `PyomoVarWrapper` and one constraint applier. Split create from solve. Network-flow repn. Fix Pyomo-path bugs from §9. |
+| 4a | Pyomo repns + `inference/pyomo` | refactor | **DONE (branch `restructure-pr4a-pyomo`, off 4f).** One `PyomoVarWrapper` and one constraint applier. Split create from solve. Network-flow repn. Fix Pyomo-path bugs from §9. |
 | 4b | toulbar2 repns + `inference/toulbar2` | refactor | Dedupe the MN/BN builders. Implement the rebuild-on-get strategy. Fix toulbar2 bugs. |
 | 4c | Oracle + Recursive (A*), oracle sampling, mcem | refactor | `Oracle_CHMM` becomes `OracleRepresentation`. Add `RecursiveConstraint`, decouple `HMMApplication` and move it to `applications/`. Fix the A* pruning bugs. |
 | 4d | MVR | refactor | `chmm_mvr` and `mvr_common` become repn plus kernels. Move inference, learning, sampling and queries. Update all MVR notebooks. |
@@ -620,7 +691,7 @@ dependencies, and no new top-level imports of optional backends.
 ---
 
 ## 8. Testing strategy
-- PR 0 adds a public-API smoke test and records the baseline counts (959 passed / 195 skipped / 0 errors; see §2.3). After PR 1: 962 passed / 195 skipped. After PR 2: 1009 passed / 195 skipped (+47 new tests). After PR 3: 1074 passed / 195 skipped (+65). After the PR 3 follow-ups: 1075 passed / 195 skipped. After PR 4f: 1076 passed / 193 skipped (−4 passed and −2 skipped deleted loader tests, +5 `test_public_api.py` rows).
+- PR 0 adds a public-API smoke test and records the baseline counts (959 passed / 195 skipped / 0 errors; see §2.3). After PR 1: 962 passed / 195 skipped. After PR 2: 1009 passed / 195 skipped (+47 new tests). After PR 3: 1074 passed / 195 skipped (+65). After the PR 3 follow-ups: 1075 passed / 195 skipped. After PR 4f: 1076 passed / 193 skipped (−4 passed and −2 skipped deleted loader tests, +5 `test_public_api.py` rows). After PR 4a: 1115 passed / 193 skipped (+30 Pyomo representation tests, +9 `test_public_api.py` rows).
 - Every PR must keep the pass count ≥ baseline, after adjusting for deliberately deleted tests.
 - PR 3 adds tests for:
   - immutability (setattr raises; `with_*` returns a new object);
@@ -628,7 +699,8 @@ dependencies, and no new top-level imports of optional backends.
   - lazy building (nothing built at `__init__`);
   - cache hits;
   - `get_copy` isolation (mutating a returned Pyomo model doesn't affect the next get).
-  (PR 3: all done, using a test representation registered in the test; the Pyomo `get_copy` test moves to 4a.)
+  (PR 3: all done, using a test representation registered in the test; the Pyomo `get_copy` test moves to 4a.
+  PR 4a: done, `test_mutating_a_returned_model_does_not_affect_the_next_one`.)
 - Each bug fix gets a regression test.
 - Notebooks run in CI, including `MVR/`.
 
@@ -646,8 +718,11 @@ dependencies, and no new top-level imports of optional backends.
 | VE: `_add_{bn,mn}_constraints_as_evidence` return `None` for an empty constraint list, and their `TypeError` strings were missing the `f` prefix | 2 (fixed, regression tests in `inference/tests/test_variable_elimination_helpers.py`) |
 | `solve_toulbar2_map_query_model` rejects extra `**options` (e.g. `verbose`) | 4b |
 | The DBN/HMM toulbar2 paths don't check that pytoulbar2 is available | 4b |
-| The HMM `network_flow` branch can return `None` | 4a |
-| `CallableDict.__getitem__` returns `KeyError` instead of raising it | 4a |
+| The HMM `network_flow` branch can return `None` | 4a (fixed: `InvalidInputError`; `test_network_flow_rejects_unsupported_{evidence,model}` in `representations/pyomo/tests/test_pyomo_representations.py`) |
+| `CallableDict.__getitem__` returns `KeyError` instead of raising it (it was `__call__`, for a bad arity; a missing key also returned `None`) | 4a (fixed: `CallableDict` replaced by `PyomoVarWrapper`; `test_network_flow_V_{lookups,bad_arity_raises,missing_key_raises}`) |
+| BN/DBN/HMM Pyomo paths forwarded `prune_network=False`/`create_MN=False` to `solve_pyomo_map_query_model`, which raised `TypeError` | 4a (fixed; `test_bn_prune_network_false_is_accepted`) |
+| `solve_pyomo_map_query_model` and `ip_inference` (or_topas) `pop("topas_method")` from the caller's `solver_options`, mutating it (a second call with the same dict uses `"balas"`) | 6 (found in 4a) |
+| The MN/BN/DBN/HMM `"pyomo"` paths never pass the constrained model's `data` to constraint functions (only network flow does), so `Constrained*(..., data=d)` is ignored there | 5 (found in 4a; decide whether to merge `cmodel.data` into the per-query data) |
 | `ConstrainedDynamicDiscreteBayesianNetwork.nodes` is not a property | 3 (fixed, regression test in `constrained_models/tests/test_dynamic_bayesian_network.py`) |
 | `a_star` on an unconstrained `ConstrainedHiddenMarkovModel` raised `AttributeError` (a bare `CHMM` has no `is_feasible`) | 3 (fixed as a side effect of the "oracle" repn) |
 | `mcem` calls `app.generate_hidden` twice per sample (it scores one sequence and trains on another) | 4c |
@@ -735,6 +810,13 @@ dependencies, and no new top-level imports of optional backends.
 | `io/` and `common/` layout (PR 4f) | `conin.common.conin` is dissolved. `io/`: `uai.py`, `cfn.py`, `pgmpy_files.py`, `load_model.py`, `save_model.py`, `convert_pgm.py`. `common/`: `log_potential.py` (unified dispatcher), `is_polytree.py`, `pgmpy/` (now also `to_pgmpy_bn`/`to_pgmpy_mn`). Model data files live in `io/tests/`; the `common/tests` that need them point there |
 | `convert_pgm` CLI (PR 4f) | Keeps its name; module `conin/io/convert_pgm.py` (the one-file `bin/` package is dropped) |
 | `load_model`/`save_model` `model_type` (PR 4f) | Kept, with fewer values: `"conin"` (default) and `"pgmpy"` |
+| Pyomo get_copy (PR 4a) | Rebuild per query, not `clone()`. Measured on this emulated CPU (best of 3): weather DBN stop=4 build 0.030 s / clone 0.049 s; stop=20 0.121 / 0.207 s; 5×4 HMM T=50 markov_network 0.172 / 0.329 s; network_flow 0.145 / 0.305 s. The repn caches the evidence-independent factor repn and `get_copy()` returns `self` |
+| Pyomo cache key (PR 4a) | `()` for MN/BN, `(start, stop)` for DBN/HMM, `(x_binary, y_binary)` for network flow. `omit_c5`/`use_cut_generation` is a `create_model()` option; `variables`, `prune_network` and `create_MN` are validated in `inference/pyomo` (same errors as before) and are not structure params |
+| `create_*_map_query_model_*` (PR 4a) | Removed (the "pyomo" repns' `create_model` replaces them); the primitives stay public in `conin.representations.pyomo.common` |
+| `inference/pyomo/` layout (PR 4a) | `solve.py`, `mn.py`, `bn.py`, `dbn.py`, `hmm.py`, `hmm_network_flow.py`; the four `inference/*/inference_pyomo.py` and `hidden_markov_model/inference/lp.py` are gone; `conin.inference.{mn,bn,dbn,hmm}` keep only toulbar2 |
+| Network-flow `M.V` (PR 4a) | The shared `PyomoVarWrapper` (`CallableDict` deleted) |
+| Network-flow `x_binary`/`y_binary` (PR 4a) | Kept as structure params (defaults `True`/`False`); `cache_indices` dropped (index sets are per query) |
+| Network flow + "algebraic" (PR 4a) | Registered and tested |
 | Constructor names / CHMM overloads | First parameter is `model` (no `hmm=`/`pgm=` alias); the broken `CHMM` overloads in the AStar/Optimization/CFN dispatchers are removed in PR 3 |
 
 ---
@@ -742,5 +824,5 @@ dependencies, and no new top-level imports of optional backends.
 ## 12. Open questions
 
 None blocking. These can be settled during PR 3 (the design PR):
-- Whether Pyomo `get_copy()` should use `clone()` or rebuild, depending on what benchmarks show (§4.4).
+- (Pyomo `get_copy()`: settled in PR 4a, rebuild; see §11.)
 - (`with_model` cache behaviour, the `Representation` signatures and the registration decorator were settled in PR 3; see §11.)
