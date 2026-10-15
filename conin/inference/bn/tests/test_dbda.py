@@ -2,10 +2,8 @@ import pytest
 import pyomo.opt
 
 from conin.util import try_import
-from conin.inference.bn import (
-    inference_pyomo_map_query_BN,
-    inference_toulbar2_map_query_BN,
-)
+from conin.inference.pyomo import inference_pyomo_map_query_BN
+from conin.inference.bn import inference_toulbar2_map_query_BN
 
 from conin.examples import bayesian_network as examples
 

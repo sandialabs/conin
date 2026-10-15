@@ -5,21 +5,21 @@ from conin.constrained_models import ConstrainedHiddenMarkovModel
 
 from conin.graphical_models import DiscreteMarkovNetwork
 from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
-from .mn import (
+from .pyomo import (
     inference_pyomo_map_query_MN,
 )
 from conin.graphical_models import DiscreteBayesianNetwork
 from conin.constrained_models import ConstrainedDiscreteBayesianNetwork
-from .bn import (
+from .pyomo import (
     inference_pyomo_map_query_BN,
 )
 from conin.graphical_models import DynamicDiscreteBayesianNetwork
 from conin.constrained_models import ConstrainedDynamicDiscreteBayesianNetwork
-from .dbn import (
+from .pyomo import (
     inference_pyomo_map_query_DDBN,
 )
 
-from .hmm import (
+from .pyomo import (
     inference_pyomo_map_query_HMM,
 )
 

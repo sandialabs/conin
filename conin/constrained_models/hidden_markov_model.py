@@ -24,8 +24,11 @@ class ConstrainedHiddenMarkovModel(ConstrainedGraphicalModel):
 
     * ``"oracle"`` (no constraints or ``"oracle"``): sampling and feasibility
       checks on internal hidden-state indices, used by A*;
-    * ``"pyomo_network_flow"`` (no constraints or ``"pyomo"``): the
-      network-flow integer program;
+    * ``"pyomo"`` (no constraints, ``"pyomo"`` or ``"algebraic"``;
+      structure params ``start``, ``stop``): the integer program of the
+      unrolled model (``ip_formulation="markov_network"``);
+    * ``"pyomo_network_flow"`` (no constraints, ``"pyomo"`` or
+      ``"algebraic"``): the network-flow integer program;
     * ``"mvr"`` (``"mvr"``): the built MVRs, aligned to the HMM
       (``representation("mvr").mvrs``).
     """

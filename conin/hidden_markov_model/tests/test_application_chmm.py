@@ -13,9 +13,9 @@ from conin import pyomo_constraint_fn
 from conin.hidden_markov_model.inference import (
     viterbi,
     a_star,
-    lp_inference,
-    ip_inference,
 )
+from conin.inference.pyomo import lp_inference, ip_inference
+from conin.representations.pyomo import PyomoNetworkFlowHMMRepresentation
 
 
 #
@@ -142,7 +142,8 @@ class Test_Application_CHMM:
     def test_algebraic_type(self, app):
         chmm = app.create_chmm("pyomo")
         assert isinstance(
-            chmm.representation("pyomo_network_flow").chmm, PyomoAlgebraic_CHMM
+            chmm.representation("pyomo_network_flow"),
+            PyomoNetworkFlowHMMRepresentation,
         )
         assert app.hidden_markov_model == chmm.model
 

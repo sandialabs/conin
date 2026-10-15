@@ -1,7 +1,7 @@
 import pytest
 
 import conin.hidden_markov_model
-import conin.hidden_markov_model.chmm_algebraic
+from conin.representations.pyomo.hmm_network_flow import _create_index_sets
 
 import conin.examples.hidden_markov_model as tc
 
@@ -21,9 +21,7 @@ class Test_IndexSets1:
 
     def test_index_sets(self):
         hmm = tc.create_hmm1()
-        data = conin.hidden_markov_model.chmm_algebraic._create_index_sets(
-            hmm=hmm, observed=["o0", "o1", "o0", "o1", "o0"]
-        )
+        data = _create_index_sets(hmm=hmm, observed=["o0", "o1", "o0", "o1", "o0"])
         assert data.E == [
             (0, -1, 0),
             (0, -1, 1),
@@ -105,7 +103,7 @@ class Test_IndexSets2:
 
     def test_index_sets(self):
         hmm = tc.create_hmm2()
-        data = conin.hidden_markov_model.chmm_algebraic._create_index_sets(
+        data = _create_index_sets(
             hmm=hmm, observed=["o0", "o1", "o0", "o1", "o0", "o2"]
         )
         assert data.E == [
