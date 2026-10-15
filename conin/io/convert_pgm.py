@@ -12,10 +12,10 @@ import argparse
 import sys
 import os
 
-from conin.common.unified import load_model, save_model
+from conin.io import load_model, save_model
 from conin.graphical_models import DiscreteBayesianNetwork
 from conin.graphical_models import DiscreteMarkovNetwork
-import conin.common.conin
+from conin.common.pgmpy import convert_conin_to_pgmpy_bn
 
 
 def main():
@@ -138,7 +138,7 @@ Examples:
 
             # Convert conin model to pgmpy before saving
             if isinstance(pgm, DiscreteBayesianNetwork):
-                pgm_pgmpy = conin.common.conin.convert_conin_to_pgmpy_bn(pgm)
+                pgm_pgmpy = convert_conin_to_pgmpy_bn(pgm)
             else:
                 raise ValueError(
                     f"Cannot save model of type {type(pgm).__name__} to BIF format. "

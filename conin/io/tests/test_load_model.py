@@ -3,8 +3,8 @@ import os.path
 import importlib
 
 from conin.util import try_import
-import conin.common
-from conin.common.unified import load_model
+import conin.io
+from conin.io import load_model
 
 with try_import() as pgmpy_available:
     import pgmpy
@@ -17,9 +17,6 @@ with try_import() as pgmpy_available:
 #
 with try_import() as pgmpy_readwrite_available:
     import pgmpy.readwrite
-
-with try_import() as pomegranate_available:
-    import pomegranate
 
 cwd = os.path.dirname(__file__)
 
@@ -43,8 +40,8 @@ def test_load_model_error3():
         pgm = load_model(os.path.join(cwd, "asia.uai"), model_type="unknown")
 
 
-def test_load_model_documented_common_namespace():
-    pgm = conin.common.load_model(os.path.join(cwd, "asia.uai"), model_type="conin")
+def test_load_model_documented_io_namespace():
+    pgm = conin.io.load_model(os.path.join(cwd, "asia.uai"), model_type="conin")
     assert pgm.nodes
 
 
@@ -57,7 +54,7 @@ def test_load_model_error4():
 
 
 def test_pgmpy_load_model_requires_pgmpy(monkeypatch):
-    module = importlib.import_module("conin.common.pgmpy.load_model")
+    module = importlib.import_module("conin.io.pgmpy_files")
     monkeypatch.setattr(module, "pgmpy_available", False)
 
     with pytest.raises(ImportError, match="pgmpy"):
@@ -65,44 +62,11 @@ def test_pgmpy_load_model_requires_pgmpy(monkeypatch):
 
 
 def test_pgmpy_load_model_file_requires_readwrite(monkeypatch):
-    module = importlib.import_module("conin.common.pgmpy.load_model")
+    module = importlib.import_module("conin.io.pgmpy_files")
     monkeypatch.setattr(module, "pgmpy_available", True)
     monkeypatch.setattr(module, "pgmpy_readwrite_available", False)
 
     with pytest.raises(ImportError, match="pgmpy.readwrite"):
-        module.load_model(os.path.join(cwd, "asia.uai"))
-
-
-def test_pgmax_load_model_requires_pgmpy(monkeypatch):
-    module = importlib.import_module("conin.common.pgmax.load_model")
-    monkeypatch.setattr(module, "pgmpy_available", False)
-
-    with pytest.raises(ImportError, match="pgmpy"):
-        module.load_model(os.path.join(cwd, "asia.uai"))
-
-
-def test_pomegranate_load_model_requires_pgmpy(monkeypatch):
-    module = importlib.import_module("conin.common.pomegranate.load_model")
-    monkeypatch.setattr(module, "pgmpy_available", False)
-
-    with pytest.raises(ImportError, match="pgmpy"):
-        module.load_model(os.path.join(cwd, "asia.uai"))
-
-
-def test_pyagrum_load_model_requires_pyagrum(monkeypatch):
-    module = importlib.import_module("conin.common.pyagrum.load_model")
-    monkeypatch.setattr(module, "pyagrum_available", False)
-
-    with pytest.raises(ImportError, match="pyagrum"):
-        module.load_model(os.path.join(cwd, "asia.uai"))
-
-
-def test_pyagrum_load_model_requires_pgmpy(monkeypatch):
-    module = importlib.import_module("conin.common.pyagrum.load_model")
-    monkeypatch.setattr(module, "pyagrum_available", True)
-    monkeypatch.setattr(module, "pgmpy_available", False)
-
-    with pytest.raises(ImportError, match="pgmpy"):
         module.load_model(os.path.join(cwd, "asia.uai"))
 
 
@@ -120,11 +84,6 @@ def test_load_model_asia_uai1_pgmpy():
     pgm = load_model(os.path.join(cwd, "asia.uai"), model_type="pgmpy")
 
 
-@pytest.mark.skipif(not pomegranate_available, reason="pomegranate not installed")
-def test_load_model_asia_uai1_pomegranate():
-    pgm = load_model(os.path.join(cwd, "asia.uai"), model_type="pomegranate")
-
-
 def test_load_model_asia_uai2_conin():
     pgm = load_model(os.path.join(cwd, "asia_compressed.uai.gz"))
 
@@ -132,13 +91,6 @@ def test_load_model_asia_uai2_conin():
 @pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
 def test_load_model_asia_uai2_pgmpy():
     pgm = load_model(os.path.join(cwd, "asia_compressed.uai.gz"), model_type="pgmpy")
-
-
-@pytest.mark.skipif(not pomegranate_available, reason="pomegranate not installed")
-def test_load_model_asia_uai2_pomegranate():
-    pgm = load_model(
-        os.path.join(cwd, "asia_compressed.uai.gz"), model_type="pomegranate"
-    )
 
 
 #

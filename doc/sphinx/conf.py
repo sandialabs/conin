@@ -32,10 +32,7 @@ extensions = [
 ]
 
 autodoc_mock_imports = [
-    "pgmax",
     "pgmpy",
-    "pyagrum",
-    "pomegranate",
     "pytoulbar2",
 ]
 

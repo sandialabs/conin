@@ -1,11 +1,36 @@
 import numpy as np
 
-# import pandas as pd
-
+from conin.util import try_import
 import conin.graphical_models
 
+with try_import() as pgmpy_available:
+    import pgmpy.models
+    from conin.common.pgmpy import log_potential as log_potential_pgmpy
 
-def log_potential(pgm, variables, evidence=None):
+
+def log_potential(pgm, query_variables, evidence=None, **options):
+    """
+    A wrapper function that calls log_potential functions for specific libraries that
+    conin interfaces with.
+    """
+    if isinstance(pgm, conin.graphical_models.DiscreteBayesianNetwork) or isinstance(
+        pgm, conin.graphical_models.DiscreteMarkovNetwork
+    ):
+        return log_potential_conin(pgm, query_variables, evidence=evidence, **options)
+
+    if pgmpy_available:
+        if isinstance(pgm, pgmpy.models.DiscreteBayesianNetwork) or isinstance(
+            pgm, pgmpy.models.DiscreteMarkovNetwork
+        ):
+            return log_potential_pgmpy(
+                pgm, query_variables, evidence=evidence, **options
+            )
+
+    raise TypeError(f"Unexpected model type: {type(pgm)}")
+
+
+def log_potential_conin(pgm, variables, evidence=None):
+    """Log potential of a full assignment of a CONIN BN or MN."""
 
     data = {k: v for k, v in variables.items()}
     if evidence:

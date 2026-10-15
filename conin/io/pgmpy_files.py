@@ -1,3 +1,5 @@
+"""Load and save pgmpy models from BIF and UAI files (requires pgmpy)."""
+
 import os
 import gzip
 
@@ -8,8 +10,8 @@ with try_import() as pgmpy_available:
     import pgmpy.models
 
 with try_import() as pgmpy_readwrite_available:
-    from pgmpy.readwrite.BIF import BIFReader
-    from pgmpy.readwrite.UAI import UAIReader
+    from pgmpy.readwrite.BIF import BIFReader, BIFWriter
+    from pgmpy.readwrite.UAI import UAIReader, UAIWriter
 
 
 def load_model(name, quiet=True):
@@ -54,3 +56,22 @@ def load_model(name, quiet=True):
     if not quiet:  # pragma:nocover
         print(f"  Loading model pgmpy examples: {name}")
     return pgmpy.utils.get_example_model(name)
+
+
+def save_model(pgm, name, quiet=True):
+
+    if name.endswith(".bif"):
+        if not pgmpy_readwrite_available:
+            raise RuntimeError(
+                "Cannot save a pgmpy model to BIF format without importing pgmpy"
+            )
+        writer = BIFWriter(pgm)
+        writer.write(name)
+
+    elif name.endswith(".uai"):
+        if not pgmpy_readwrite_available:
+            raise RuntimeError(
+                "Cannot save a pgmpy model to UAI format without importing pgmpy"
+            )
+        writer = UAIWriter(pgm)
+        writer.write(name)

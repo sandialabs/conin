@@ -75,7 +75,7 @@ dependency, but it is not currently exposed as a Python package extra in
 Use ``map_query(..., method="toulbar2")`` for Toulbar2-backed inference.
 
 Toulbar2 CFN model files (``.cfn``, ``.cfn.gz``) can be loaded into CONIN
-Markov networks with ``conin.common.load_model``. Linear constraints in these
+Markov networks with ``conin.io.load_model``. Linear constraints in these
 files are loaded as Toulbar2 constraints. Loading does not require
 ``pytoulbar2``, but inference with the loaded constraints does; see
 :doc:`model_conversion_io`.
@@ -123,46 +123,12 @@ pgmpy
 Features requiring ``pgmpy`` include:
 
 - ``map_query(..., method="variable_elimination")``
-- Loading BIF files through ``conin.common.load_model(..., model_type="conin")``
-- ``conin.common.load_model(..., model_type="pgmpy")``
-- ``conin.common.save_model(..., model_type="pgmpy")``
+- Loading BIF files through ``conin.io.load_model(..., model_type="conin")``
+- ``conin.io.load_model(..., model_type="pgmpy")``
+- ``conin.io.save_model(..., model_type="pgmpy")``
 - ``conin.common.pgmpy.convert_pgmpy_to_conin``
-- ``conin.common.conin.convert_conin_to_pgmpy_bn``
-- ``conin.common.conin.convert_conin_to_pgmpy_mn``
-
-Other Optional Integrations
----------------------------
-
-Additional extras are declared for model-loading and conversion integrations:
-
-The ``pyagrum``, ``pgmax``, and ``pomegranate`` loaders use ``pgmpy`` as an
-intermediate representation, so those extras include ``pgmpy`` in addition to
-the target package.
-
-.. list-table:: Optional integration extras
-   :header-rows: 1
-
-   * - Extra
-     - Package
-     - Related functionality
-   * - ``pyagrum``
-     - ``pgmpy``, ``pyagrum``
-     - ``conin.common.load_model(..., model_type="pyagrum")``
-   * - ``pgmax``
-     - ``pgmpy``, ``pgmax``
-     - ``conin.common.load_model(..., model_type="pgmax")`` and ``convert_pgmpy_to_pgmax``
-   * - ``pomegranate``
-     - ``pgmpy``, ``pomegranate``
-     - ``conin.common.load_model(..., model_type="pomegranate")`` and ``convert_pgmpy_to_pomegranate``
-   * - ``pgm-all``
-     - ``pgmpy``, ``pyagrum``, ``pgmax``, ``pomegranate``
-     - Installs the declared optional PGM integration packages
-
-For example:
-
-.. code-block:: shell
-
-   python -m pip install -e .[pgm-all]
+- ``conin.common.pgmpy.convert_conin_to_pgmpy_bn``
+- ``conin.common.pgmpy.convert_conin_to_pgmpy_mn``
 
 Development Environments
 ------------------------
@@ -201,5 +167,3 @@ Quick Selection Guide
      - ``pytoulbar2``/Toulbar2
    * - Load Toulbar2 CFN files
      - Base package
-   * - Use pgmax, pomegranate, or pyagrum integrations
-     - Corresponding optional extra, which also installs ``pgmpy``

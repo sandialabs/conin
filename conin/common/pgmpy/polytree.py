@@ -1,4 +1,4 @@
-from conin.common.conin.is_polytree import _is_polytree
+from conin.common.is_polytree import _is_polytree
 
 
 def is_polytree(pgm):

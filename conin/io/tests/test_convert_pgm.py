@@ -8,8 +8,8 @@ from unittest.mock import patch
 from io import StringIO
 
 from conin.util import try_import
-from conin.common.unified import load_model
-from conin.common.bin.convert_pgm import main
+from conin.io import load_model
+from conin.io.convert_pgm import main
 
 with try_import() as pgmpy_available:
     import pgmpy

@@ -22,15 +22,15 @@ Install Conin from a local checkout with:
 python -m pip install -e .
 ```
 
-Optional extras are available for documentation, tests, and PGM integrations:
+Optional extras are available for documentation, tests, and pgmpy integration:
 
 ```
 python -m pip install -e .[docs]
 python -m pip install -e .[test]
-python -m pip install -e .[pgm-all]
+python -m pip install -e .[pgmpy]
 ```
 
-Individual PGM extras and solver requirements are described in the backend
+Optional backends and solver requirements are described in the backend
 requirements page in the documentation.
 
 ## Documentation

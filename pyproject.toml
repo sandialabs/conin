@@ -34,7 +34,7 @@ classifiers=[
     ]
 
 [project.scripts]
-convert_pgm = "conin.common.bin.convert_pgm:main"
+convert_pgm = "conin.io.convert_pgm:main"
 
 [project.optional-dependencies]
 docs = [
@@ -47,10 +47,6 @@ test = [
     ]
 regex = ["greenery"]
 pgmpy = ["pgmpy"]
-pyagrum = ["pgmpy", "pyagrum"]
-pgmax = ["pgmpy", "pgmax"]
-pomegranate = ["pgmpy", "pomegranate"]
-pgm-all = ["pgmpy", "pyagrum", "pgmax", "pomegranate"]
 
 [tool.setuptools.packages.find]
 where = ["."]
