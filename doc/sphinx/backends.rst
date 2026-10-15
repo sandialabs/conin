@@ -130,40 +130,6 @@ Features requiring ``pgmpy`` include:
 - ``conin.common.pgmpy.convert_conin_to_pgmpy_bn``
 - ``conin.common.pgmpy.convert_conin_to_pgmpy_mn``
 
-Other Optional Integrations
----------------------------
-
-Additional extras are declared for model-loading and conversion integrations:
-
-The ``pyagrum``, ``pgmax``, and ``pomegranate`` loaders use ``pgmpy`` as an
-intermediate representation, so those extras include ``pgmpy`` in addition to
-the target package.
-
-.. list-table:: Optional integration extras
-   :header-rows: 1
-
-   * - Extra
-     - Package
-     - Related functionality
-   * - ``pyagrum``
-     - ``pgmpy``, ``pyagrum``
-     - ``conin.io.load_model(..., model_type="pyagrum")``
-   * - ``pgmax``
-     - ``pgmpy``, ``pgmax``
-     - ``conin.io.load_model(..., model_type="pgmax")`` and ``convert_pgmpy_to_pgmax``
-   * - ``pomegranate``
-     - ``pgmpy``, ``pomegranate``
-     - ``conin.io.load_model(..., model_type="pomegranate")`` and ``convert_pgmpy_to_pomegranate``
-   * - ``pgm-all``
-     - ``pgmpy``, ``pyagrum``, ``pgmax``, ``pomegranate``
-     - Installs the declared optional PGM integration packages
-
-For example:
-
-.. code-block:: shell
-
-   python -m pip install -e .[pgm-all]
-
 Development Environments
 ------------------------
 
@@ -201,5 +167,3 @@ Quick Selection Guide
      - ``pytoulbar2``/Toulbar2
    * - Load Toulbar2 CFN files
      - Base package
-   * - Use pgmax, pomegranate, or pyagrum integrations
-     - Corresponding optional extra, which also installs ``pgmpy``

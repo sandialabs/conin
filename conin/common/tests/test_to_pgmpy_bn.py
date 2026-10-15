@@ -185,7 +185,7 @@ def test_cancer_model_conversion():
 def test_model_equivalence():
     """Test that converted models produce equivalent results to original conin models."""
     from conin.common.pgmpy import log_potential as pgmpy_log_potential
-    from conin.common.conin import log_potential as conin_log_potential
+    from conin.common.log_potential import log_potential_conin as conin_log_potential
 
     # Create test model
     conin_pgm = DiscreteBayesianNetwork(

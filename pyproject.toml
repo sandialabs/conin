@@ -47,10 +47,6 @@ test = [
     ]
 regex = ["greenery"]
 pgmpy = ["pgmpy"]
-pyagrum = ["pgmpy", "pyagrum"]
-pgmax = ["pgmpy", "pgmax"]
-pomegranate = ["pgmpy", "pomegranate"]
-pgm-all = ["pgmpy", "pyagrum", "pgmax", "pomegranate"]
 
 [tool.setuptools.packages.find]
 where = ["."]

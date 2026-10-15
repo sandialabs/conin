@@ -32,10 +32,6 @@ def log_potential(pgm, variables, evidence=None):
     if evidence:
         data.update({k: [v] for k, v in evidence.items()})
 
-    if hasattr(pgm, "pgmpy"):
-        # This is a hack.  If we load a model with pyagrum, then we re-load it with pgmpy.
-        pgm = pgm.pgmpy
-
     assert len(pgm.nodes()) <= len(
         data
     ), f"Cannot specify more node values than are in the pgmpy model: num_nodes={len(pgm.nodes())} num_values={len(data)}"

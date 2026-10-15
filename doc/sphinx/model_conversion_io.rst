@@ -141,15 +141,8 @@ requirements.
 - ``conin.common.pgmpy.convert_pgmpy_to_conin``
 - ``conin.common.pgmpy.convert_conin_to_pgmpy_bn``
 - ``conin.common.pgmpy.convert_conin_to_pgmpy_mn``
-
-Additional optional integrations include:
-
-- ``conin.common.pgmpy.convert_pgmpy_to_pgmax``
-- ``conin.common.pgmpy.convert_pgmpy_to_pomegranate``
 - ``conin.io.load_model(..., model_type="pgmpy")``
-- ``conin.io.load_model(..., model_type="pgmax")``
-- ``conin.io.load_model(..., model_type="pomegranate")``
-- ``conin.io.load_model(..., model_type="pyagrum")``
+- ``conin.io.save_model(..., model_type="pgmpy")``
 
 These conversions raise ``ImportError`` if the corresponding optional package is
 not installed.
@@ -175,7 +168,7 @@ Reference
 
 .. autofunction:: conin.io.cfn.load_conin_model_from_cfn
 
-.. autofunction:: conin.common.conin.save_model.save_model_uai
+.. autofunction:: conin.io.uai.save_model_uai
 
 .. autofunction:: conin.common.pgmpy.convert_conin_to_pgmpy_bn
 

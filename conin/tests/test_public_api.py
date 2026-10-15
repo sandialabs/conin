@@ -151,7 +151,6 @@ SPHINX_CODE = [
 SPHINX_AUTODOC = [
     ("conin.common", "is_polytree", "model_conversion_io.rst"),
     ("conin.common", "log_potential", "model_conversion_io.rst"),
-    ("conin.common.conin.save_model", "save_model_uai", "model_conversion_io.rst"),
     ("conin.common.pgmpy", "convert_conin_to_pgmpy_bn", "model_conversion_io.rst", "pgmpy"),
     ("conin.common.pgmpy", "convert_conin_to_pgmpy_mn", "model_conversion_io.rst", "pgmpy"),
     ("conin.common.pgmpy", "convert_pgmpy_to_conin", "model_conversion_io.rst", "pgmpy"),
@@ -187,6 +186,11 @@ SPHINX_AUTODOC = [
     ("conin.hidden_markov_model.learning", "mcem", "hmm_learning.rst"),
     ("conin.hidden_markov_model.learning", "supervised_learning", "hmm_learning.rst"),
     ("conin.inference", "map_query", "api_inference.rst"),
+    ("conin.io", "load_model", "model_conversion_io.rst"),
+    ("conin.io", "save_model", "model_conversion_io.rst"),
+    ("conin.io.cfn", "load_conin_model_from_cfn", "model_conversion_io.rst"),
+    ("conin.io.uai", "load_conin_model_from_uai", "model_conversion_io.rst"),
+    ("conin.io.uai", "save_model_uai", "model_conversion_io.rst"),
     ("conin.representations", "Representation", "api_constrained_graphical_models.rst"),
     ("conin.representations", "build_representation", "api_constrained_graphical_models.rst"),
     ("conin.representations", "register_representation", "api_constrained_graphical_models.rst"),
@@ -233,10 +237,6 @@ SPHINX_EXAMPLE_TABLES = [
     ("conin.examples.markov_network", "ABC_pgmpy", "examples.rst", "pgmpy"),
     ("conin.examples.markov_network", "example6_conin", "examples.rst"),
     ("conin.examples.markov_network", "example6_pgmpy", "examples.rst", "pgmpy"),
-    ("conin.io", "load_model", "model_conversion_io.rst"),
-    ("conin.io", "save_model", "model_conversion_io.rst"),
-    ("conin.io.cfn", "load_conin_model_from_cfn", "model_conversion_io.rst"),
-    ("conin.io.uai", "load_conin_model_from_uai", "model_conversion_io.rst"),
 ]
 
 EXAMPLES_MODULES = [
@@ -265,6 +265,9 @@ EXAMPLES_MODULES = [
 
 RESTRUCTURE_PLAN_API = [
     ("conin", "Constraint", "RESTRUCTURE_PLAN.md §5"),
+    ("conin.common", "convert_pgmpy_to_conin", "RESTRUCTURE_PLAN.md §5", "pgmpy"),
+    ("conin.common", "is_polytree", "RESTRUCTURE_PLAN.md §5"),
+    ("conin.common", "log_potential", "RESTRUCTURE_PLAN.md §5"),
     ("conin.constrained_models", "ConstrainedDiscreteBayesianNetwork", "RESTRUCTURE_PLAN.md §5"),
     ("conin.constrained_models", "ConstrainedDiscreteMarkovNetwork", "RESTRUCTURE_PLAN.md §5"),
     ("conin.constrained_models", "ConstrainedDynamicDiscreteBayesianNetwork", "RESTRUCTURE_PLAN.md §5"),
@@ -281,6 +284,8 @@ RESTRUCTURE_PLAN_API = [
     ("conin.constraints.mvr", "mvr_forbid_state", "RESTRUCTURE_PLAN.md §5"),
     ("conin.constraints.mvr", "mvr_not_yet", "RESTRUCTURE_PLAN.md §5"),
     ("conin.constraints.oracle_library", None, "RESTRUCTURE_PLAN.md §5"),
+    ("conin.io", "load_model", "RESTRUCTURE_PLAN.md §5"),
+    ("conin.io", "save_model", "RESTRUCTURE_PLAN.md §5"),
     ("conin.representations", "Representation", "RESTRUCTURE_PLAN.md §5"),
     ("conin.representations", "build_representation", "RESTRUCTURE_PLAN.md §5"),
     ("conin.representations", "register_representation", "RESTRUCTURE_PLAN.md §5"),

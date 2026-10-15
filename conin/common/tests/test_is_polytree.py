@@ -14,7 +14,9 @@ with try_import() as pgmpy_readwrite_available:
     from conin.common.pgmpy import convert_pgmpy_to_conin
 
 
-cwd = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "io", "tests")
+cwd = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "io", "tests"
+)
 
 #
 # asia.uai
