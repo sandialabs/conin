@@ -151,7 +151,7 @@ def algebraic_constraint_fn(*, name=None):
                 for s in [0, 1, 2]
             ]
 
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=[my_constraint])
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=my_constraint)
         result = map_query(cpgm, method="integer_program", evidence=...)
         result = map_query(cpgm, method="toulbar2", evidence=...)
     """

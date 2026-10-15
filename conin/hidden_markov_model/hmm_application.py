@@ -1,7 +1,7 @@
 import munch
 
 from . import learning
-from .constrained_hmm import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedHiddenMarkovModel
 
 
 class HMMApplication:
@@ -66,25 +66,29 @@ class HMMApplication:
         self._simulations = simulations
 
     def create_chmm(self, constraint_type=None):
-        """Create and initialize a constrained HMM for this application.
+        """Create a constrained HMM for this application.
 
         Parameters
         ----------
         constraint_type : {"oracle", "pyomo"}, optional
-            Constraint backend to use when configuring the constrained HMM.
+            Which of the application's constraints to attach:
+            :meth:`get_oracle_constraints` for ``"oracle"``,
+            :meth:`get_pyomo_constraints` for ``"pyomo"``, and none otherwise.
 
         Returns
         -------
         ConstrainedHiddenMarkovModel
-            Initialized constrained HMM wrapper.
+            The application's hidden Markov model paired with those
+            constraints. The application's ``data`` is not attached, so the
+            representations get a fresh ``Munch`` as their data.
         """
-        chmm = ConstrainedHiddenMarkovModel(hmm=self.hidden_markov_model)
         if constraint_type == "oracle":
-            chmm.constraints = self.get_oracle_constraints()
+            constraints = self.get_oracle_constraints()
         elif constraint_type == "pyomo":
-            chmm.constraints = self.get_pyomo_constraints()
-        chmm.initialize_chmm(constraint_type)
-        return chmm
+            constraints = self.get_pyomo_constraints()
+        else:
+            constraints = ()
+        return ConstrainedHiddenMarkovModel(self.hidden_markov_model, constraints)
 
     def initialize(self, *args, **kwargs):
         """Initialize application-specific state.

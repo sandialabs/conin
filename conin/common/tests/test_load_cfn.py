@@ -12,7 +12,7 @@ from conin.common.conin.log_potential import log_potential
 from conin.constraints import Toulbar2Constraint
 from conin.inference import map_query
 from conin.graphical_models import DiscreteMarkovNetwork
-from conin.markov_network import ConstrainedDiscreteMarkovNetwork
+from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
 
 with try_import() as pytoulbar2_available:
     import pytoulbar2
@@ -175,9 +175,9 @@ def test_abc_constrained_cfn():
     assert isinstance(pgm, ConstrainedDiscreteMarkovNetwork)
 
     # The unconstrained model
-    assert isinstance(pgm.pgm, DiscreteMarkovNetwork)
+    assert isinstance(pgm.model, DiscreteMarkovNetwork)
     assert pgm.nodes == ["A", "B", "C"]
-    assert set(factor_values(pgm.pgm)) == {("A", "B"), ("B", "C"), ("A", "C"), ("A",)}
+    assert set(factor_values(pgm.model)) == {("A", "B"), ("B", "C"), ("A", "C"), ("A",)}
 
     # The constraints are Toulbar2 constraints with a portable description
     assert len(pgm.constraints) == 3
@@ -218,7 +218,7 @@ def test_knapsack_boolean():
     assert con.terms == [("x", "yes", 1), ("y", 1, 2)]
     assert con.rhs == 3
     # Variables that only appear in constraints get uniform factors
-    assert factor_values(pgm.pgm) == {
+    assert factor_values(pgm.model) == {
         ("x",): {"no": 1.0, "yes": 1.0},
         ("y",): {0: 1.0, 1: 1.0},
     }
@@ -325,7 +325,7 @@ def test_abc_constrained_vs_unconstrained():
     assert states == {"A": "s0", "B": "s2", "C": "s1"}
 
     # The extracted unconstrained model has a different MAP solution
-    states = map_query(pgm.pgm, method="toulbar2").solution.states
+    states = map_query(pgm.model, method="toulbar2").solution.states
     assert states == {"A": "s1", "B": "s1", "C": "s1"}
 
 
@@ -405,4 +405,4 @@ def test_dumped_linear_constraints_match_toulbar2():
             assert isinstance(pgm, ConstrainedDiscreteMarkovNetwork)
             assert _conin_solution(pgm) == tb2_solution
             # Each constraint is binding
-            assert _conin_solution(pgm.pgm) != tb2_solution
+            assert _conin_solution(pgm.model) != tb2_solution

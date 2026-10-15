@@ -3,10 +3,18 @@ Constrained Graphical Models
 
 The following constrained probabilistic graphical models are defined in conin.
 
+Base class
+----------
+
+.. autoclass:: conin.constrained_models.ConstrainedGraphicalModel
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Markov networks
 ---------------
 
-.. autoclass:: conin.markov_network.ConstrainedDiscreteMarkovNetwork
+.. autoclass:: conin.constrained_models.ConstrainedDiscreteMarkovNetwork
    :members:
    :undoc-members:
    :show-inheritance:
@@ -14,7 +22,7 @@ Markov networks
 Discrete Bayesian networks
 --------------------------
 
-.. autoclass:: conin.bayesian_network.ConstrainedDiscreteBayesianNetwork
+.. autoclass:: conin.constrained_models.ConstrainedDiscreteBayesianNetwork
    :members:
    :undoc-members:
    :show-inheritance:
@@ -22,7 +30,7 @@ Discrete Bayesian networks
 Hidden Markov models
 --------------------
 
-.. autoclass:: conin.hidden_markov_model.ConstrainedHiddenMarkovModel
+.. autoclass:: conin.constrained_models.ConstrainedHiddenMarkovModel
    :members:
    :undoc-members:
    :show-inheritance:
@@ -30,7 +38,25 @@ Hidden Markov models
 Dynamic Discrete Bayesian networks
 ----------------------------------
 
-.. autoclass:: conin.dynamic_bayesian_network.ConstrainedDynamicDiscreteBayesianNetwork
+.. autoclass:: conin.constrained_models.ConstrainedDynamicDiscreteBayesianNetwork
    :members:
    :undoc-members:
    :show-inheritance:
+
+Representations
+---------------
+
+Constrained models build backend representations lazily with
+``representation(kind)``. Builders are registered per
+``(kind, model_type, constraint_family)``.
+
+.. autoclass:: conin.representations.Representation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autofunction:: conin.representations.register_representation
+
+.. autofunction:: conin.representations.build_representation
+
+.. autofunction:: conin.representations.supported_representations

@@ -9,7 +9,7 @@ from conin.constraints import (
 )
 from conin.util import try_import, MPESolution
 from conin.graphical_models import DiscreteFactor, DiscreteMarkovNetwork
-from conin.markov_network import ConstrainedDiscreteMarkovNetwork
+from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
 
 with try_import() as pgmpy_available:
     from pgmpy.models import DiscreteMarkovNetwork as pgmpy_MarkovNetwork
@@ -165,7 +165,7 @@ def ABC_constrained_pyomo_pgmpy():
     import conin.common.pgmpy
 
     pgm = conin.common.pgmpy.convert_pgmpy_to_conin(pgm.pgm)
-    cpgm = ConstrainedDiscreteMarkovNetwork(pgm, constraints=[constraint_fn])
+    cpgm = ConstrainedDiscreteMarkovNetwork(pgm, constraints=constraint_fn)
     return Munch(pgm=cpgm, solutions=[MPESolution(states={"A": 0, "B": 2, "C": 1})])
 
 
@@ -186,7 +186,7 @@ def ABC_constrained_pyomo_conin():
         def diff(M, s):
             return M.V("A", s) + M.V("B", s) + M.V("C", s) <= 1
 
-    cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=[constraint_fn])
+    cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=constraint_fn)
     return Munch(pgm=cpgm, solutions=[MPESolution(states={"A": 0, "B": 2, "C": 1})])
 
 
@@ -211,7 +211,7 @@ def ABC2_constrained_pyomo_conin():
         def diff(M, s):
             return M.V("A", s) + M.V("B", s) + M.V("C", s) <= 1
 
-    cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=[constraint_fn])
+    cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=constraint_fn)
     return Munch(
         pgm=cpgm,
         solutions=[
@@ -242,7 +242,7 @@ def ABC_constrained_toulbar2_pgmpy():
     import conin.common.pgmpy
 
     pgm = conin.common.pgmpy.convert_pgmpy_to_conin(pgm.pgm)
-    cpgm = ConstrainedDiscreteMarkovNetwork(pgm, constraints=[constraint_fn])
+    cpgm = ConstrainedDiscreteMarkovNetwork(pgm, constraints=constraint_fn)
     return Munch(pgm=cpgm, solutions=[MPESolution(states={"A": 0, "B": 2, "C": 1})])
 
 
@@ -264,7 +264,7 @@ def ABC_constrained_toulbar2_conin():
                 [M.V("A", i), M.V("B", i), M.V("C", i)], "<=", 1
             )
 
-    cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=[constraints])
+    cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=constraints)
     return Munch(pgm=cpgm, solutions=[MPESolution(states={"A": 0, "B": 2, "C": 1})])
 
 
@@ -285,7 +285,7 @@ def ABC_constrained_algebraic_conin():
             model.V("A", s) + model.V("B", s) + model.V("C", s) <= 1 for s in [0, 1, 2]
         ]
 
-    cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=[constraint_fn])
+    cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=constraint_fn)
     return Munch(pgm=cpgm, solutions=[MPESolution(states={"A": 0, "B": 2, "C": 1})])
 
 
@@ -309,7 +309,7 @@ def ABC_constrained_algebraic_pgmpy():
     import conin.common.pgmpy
 
     pgm = conin.common.pgmpy.convert_pgmpy_to_conin(pgm.pgm)
-    cpgm = ConstrainedDiscreteMarkovNetwork(pgm, constraints=[constraint_fn])
+    cpgm = ConstrainedDiscreteMarkovNetwork(pgm, constraints=constraint_fn)
     return Munch(pgm=cpgm, solutions=[MPESolution(states={"A": 0, "B": 2, "C": 1})])
 
 
@@ -334,7 +334,7 @@ def ABC2_constrained_algebraic_conin():
             model.V("A", s) + model.V("B", s) + model.V("C", s) <= 1 for s in [0, 1, 2]
         ]
 
-    cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=[constraint_fn])
+    cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=constraint_fn)
     return Munch(
         pgm=cpgm,
         solutions=[
@@ -360,7 +360,7 @@ def ABC_constrained_oracle_conin():
         values = set(x for x in states.values())
         return len(values) == 3  # All r.v. values are different
 
-    cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=[constraint_fn])
+    cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=constraint_fn)
     return Munch(pgm=cpgm, solutions=[MPESolution(states={"A": 0, "B": 2, "C": 1})])
 
 
@@ -384,7 +384,7 @@ def ABC2_constrained_oracle_conin():
         values = set(x for x in states.values())
         return len(values) == 3  # All r.v. values are different
 
-    cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=[constraint_fn])
+    cpgm = ConstrainedDiscreteMarkovNetwork(pgm.pgm, constraints=constraint_fn)
     return Munch(
         pgm=cpgm,
         solutions=[

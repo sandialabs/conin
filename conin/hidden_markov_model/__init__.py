@@ -1,6 +1,5 @@
 """Constrained hidden Markov model interfaces and helpers."""
 
-from .constrained_hmm import ConstrainedHiddenMarkovModel
 from .chmm import CHMM
 from .chmm_algebraic import *
 from .chmm_oracle import *

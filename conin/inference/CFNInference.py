@@ -2,22 +2,19 @@ from ovld import ovld
 from conin.util import try_import
 
 from conin.graphical_models import HiddenMarkovModel
-from conin.hidden_markov_model import (
-    ConstrainedHiddenMarkovModel,
-    CHMM,
-)
+from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.graphical_models import DiscreteMarkovNetwork
-from conin.markov_network import ConstrainedDiscreteMarkovNetwork
+from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
 from .mn import (
     inference_toulbar2_map_query_MN,
 )
 from conin.graphical_models import DiscreteBayesianNetwork
-from conin.bayesian_network import ConstrainedDiscreteBayesianNetwork
+from conin.constrained_models import ConstrainedDiscreteBayesianNetwork
 from .bn import (
     inference_toulbar2_map_query_BN,
 )
 from conin.graphical_models import DynamicDiscreteBayesianNetwork
-from conin.dynamic_bayesian_network import ConstrainedDynamicDiscreteBayesianNetwork
+from conin.constrained_models import ConstrainedDynamicDiscreteBayesianNetwork
 from .dbn import (
     inference_toulbar2_map_query_DDBN,
 )
@@ -48,7 +45,7 @@ def _map_query_Toulbar2(
         f"Expected one of: DiscreteMarkovNetwork, ConstrainedDiscreteMarkovNetwork, "
         f"DiscreteBayesianNetwork, ConstrainedDiscreteBayesianNetwork, "
         f"DynamicDiscreteBayesianNetwork, ConstrainedDynamicDiscreteBayesianNetwork, "
-        f"HiddenMarkovModel, ConstrainedHiddenMarkovModel, CHMM."
+        f"HiddenMarkovModel, ConstrainedHiddenMarkovModel."
     )
 
 
@@ -191,7 +188,7 @@ def _map_query_Toulbar2(
     )
 
 
-# Dynamic models: HiddenMarkovModel, ConstrainedHiddenMarkovModel, and CHMM
+# Dynamic models: HiddenMarkovModel and ConstrainedHiddenMarkovModel
 
 
 @ovld
@@ -220,29 +217,6 @@ def _map_query_Toulbar2(
 @ovld
 def _map_query_Toulbar2(
     pgm: ConstrainedHiddenMarkovModel,
-    *,
-    variables=None,
-    evidence=None,
-    show_progress=False,
-    timing=False,
-    start=0,
-    stop=None,
-    options={},
-):
-    return inference_toulbar2_map_query_HMM(
-        pgm=pgm,
-        start=start,
-        stop=stop,
-        variables=variables,
-        evidence=evidence,
-        timing=timing,
-        **options,
-    )
-
-
-@ovld
-def _map_query_Toulbar2(
-    pgm: CHMM,
     *,
     variables=None,
     evidence=None,

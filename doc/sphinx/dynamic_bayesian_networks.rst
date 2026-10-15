@@ -95,7 +95,7 @@ to stay fixed across the first two time steps:
 
    import pyomo.environ as pyo
    from conin import pyomo_constraint_fn
-   from conin.dynamic_bayesian_network import ConstrainedDynamicDiscreteBayesianNetwork
+   from conin.constrained_models import ConstrainedDynamicDiscreteBayesianNetwork
    from conin.examples.dynamic_bayesian_network import simple1_DDBN_conin
 
    base = simple1_DDBN_conin().pgm
@@ -108,7 +108,7 @@ to stay fixed across the first two time steps:
 
    constrained = ConstrainedDynamicDiscreteBayesianNetwork(
        base,
-       constraints=[constraints],
+       constraints=constraints,
    )
 
 Toulbar2 constraints
@@ -120,7 +120,7 @@ Toulbar2:
 .. code-block:: python
 
    from conin import toulbar2_constraint_fn
-   from conin.dynamic_bayesian_network import ConstrainedDynamicDiscreteBayesianNetwork
+   from conin.constrained_models import ConstrainedDynamicDiscreteBayesianNetwork
    from conin.examples.dynamic_bayesian_network import simple1_DDBN_conin
 
    base = simple1_DDBN_conin().pgm
@@ -140,7 +140,7 @@ Toulbar2:
 
    constrained = ConstrainedDynamicDiscreteBayesianNetwork(
        base,
-       constraints=[constraints],
+       constraints=constraints,
    )
 
 Oracle constraints with node scoping
@@ -152,7 +152,7 @@ set of nodes:
 .. code-block:: python
 
    from conin import oracle_constraint_fn
-   from conin.dynamic_bayesian_network import ConstrainedDynamicDiscreteBayesianNetwork
+   from conin.constrained_models import ConstrainedDynamicDiscreteBayesianNetwork
    from conin.examples.dynamic_bayesian_network import simple1_DDBN_conin
 
    base = simple1_DDBN_conin().pgm
@@ -168,7 +168,7 @@ set of nodes:
 
    constrained = ConstrainedDynamicDiscreteBayesianNetwork(
        base,
-       constraints=[constraints],
+       constraints=constraints,
    )
 
 Notes

@@ -122,7 +122,7 @@ choosing the same state:
 
    import pyomo.environ as pyo
    from conin import pyomo_constraint_fn
-   from conin.bayesian_network import ConstrainedDiscreteBayesianNetwork
+   from conin.constrained_models import ConstrainedDiscreteBayesianNetwork
    from conin.examples.bayesian_network import cancer1_BN_conin
 
    base = cancer1_BN_conin().pgm
@@ -133,7 +133,7 @@ choosing the same state:
        model.c.add(model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1)
        model.c.add(model.V("Dyspnoea", 0) + model.V("Xray", 0) <= 1)
 
-   constrained = ConstrainedDiscreteBayesianNetwork(base, constraints=[constraints])
+   constrained = ConstrainedDiscreteBayesianNetwork(base, constraints=constraints)
 
 Toulbar2 constraints
 ^^^^^^^^^^^^^^^^^^^^
@@ -144,7 +144,7 @@ interface:
 .. code-block:: python
 
    from conin import toulbar2_constraint_fn
-   from conin.bayesian_network import ConstrainedDiscreteBayesianNetwork
+   from conin.constrained_models import ConstrainedDiscreteBayesianNetwork
    from conin.examples.bayesian_network import cancer1_BN_conin
 
    base = cancer1_BN_conin().pgm
@@ -162,7 +162,7 @@ interface:
            1,
        )
 
-   constrained = ConstrainedDiscreteBayesianNetwork(base, constraints=[constraints])
+   constrained = ConstrainedDiscreteBayesianNetwork(base, constraints=constraints)
 
 Oracle constraints with node scoping
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -173,7 +173,7 @@ auxiliary CPD:
 .. code-block:: python
 
    from conin import oracle_constraint_fn
-   from conin.bayesian_network import ConstrainedDiscreteBayesianNetwork
+   from conin.constrained_models import ConstrainedDiscreteBayesianNetwork
    from conin.examples.bayesian_network import cancer1_BN_conin
 
    base = cancer1_BN_conin().pgm
@@ -182,7 +182,7 @@ auxiliary CPD:
    def constraints(states):
        return states["Dyspnoea"] != states["Xray"]
 
-   constrained = ConstrainedDiscreteBayesianNetwork(base, constraints=[constraints])
+   constrained = ConstrainedDiscreteBayesianNetwork(base, constraints=constraints)
 
 Notes
 -----

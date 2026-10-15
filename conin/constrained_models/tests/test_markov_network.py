@@ -3,7 +3,9 @@
 import pytest
 
 from conin.graphical_models import DiscreteFactor, DiscreteMarkovNetwork
-from conin.markov_network import ConstrainedDiscreteMarkovNetwork
+from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
+from conin.constraints import pyomo_constraint_fn
+from conin.exceptions import InvalidInputError
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -24,18 +26,28 @@ def _make_simple_mn():
     return mn
 
 
+def _make_constraint():
+    """A trivial Pyomo constraint (never applied in these tests)."""
+
+    @pyomo_constraint_fn()
+    def dummy(model):
+        return model
+
+    return dummy
+
+
 # ---------------------------------------------------------------------------
 # ConstrainedDiscreteMarkovNetwork tests
 # ---------------------------------------------------------------------------
 
 
 class TestConstrainedDiscreteMarkovNetwork:
-    def test_wraps_pgm(self):
+    def test_wraps_model(self):
         mn = _make_simple_mn()
         cmn = ConstrainedDiscreteMarkovNetwork(mn)
-        assert cmn.pgm is mn
+        assert cmn.model is mn
 
-    def test_nodes_delegates_to_pgm(self):
+    def test_nodes_delegates_to_model(self):
         mn = _make_simple_mn()
         cmn = ConstrainedDiscreteMarkovNetwork(mn)
         assert cmn.nodes == mn.nodes
@@ -48,26 +60,37 @@ class TestConstrainedDiscreteMarkovNetwork:
     def test_default_constraints_empty(self):
         mn = _make_simple_mn()
         cmn = ConstrainedDiscreteMarkovNetwork(mn)
-        assert cmn.constraints == []
+        assert cmn.constraints == ()
 
     def test_constraints_kwarg(self):
         mn = _make_simple_mn()
-        sentinel = object()
-        cmn = ConstrainedDiscreteMarkovNetwork(mn, constraints=[sentinel])
-        assert cmn.constraints == [sentinel]
+        c = _make_constraint()
+        cmn = ConstrainedDiscreteMarkovNetwork(mn, constraints=[c])
+        assert isinstance(cmn.constraints, tuple)
+        assert cmn.constraints == (c,)
 
-    def test_constraints_setter(self):
+    def test_constraints_kwarg_rejects_non_constraint(self):
+        mn = _make_simple_mn()
+        with pytest.raises(InvalidInputError):
+            ConstrainedDiscreteMarkovNetwork(mn, constraints=[object()])
+
+    def test_constraints_is_read_only(self):
         mn = _make_simple_mn()
         cmn = ConstrainedDiscreteMarkovNetwork(mn)
-        sentinel = object()
-        cmn.constraints = [sentinel]
-        assert cmn.constraints == [sentinel]
+        with pytest.raises(AttributeError):
+            cmn.constraints = [_make_constraint()]
+        assert cmn.constraints == ()
 
-    def test_constraints_setter_requires_list(self):
+    def test_single_constraint_is_wrapped(self):
         mn = _make_simple_mn()
-        cmn = ConstrainedDiscreteMarkovNetwork(mn)
-        with pytest.raises(AssertionError):
-            cmn.constraints = "not-a-list"
+        c = _make_constraint()
+        cmn = ConstrainedDiscreteMarkovNetwork(mn, constraints=c)
+        assert cmn.constraints == (c,)
+
+    def test_string_constraints_rejected(self):
+        mn = _make_simple_mn()
+        with pytest.raises(InvalidInputError):
+            ConstrainedDiscreteMarkovNetwork(mn, constraints="not-a-list")
 
     def test_check_model_delegates(self):
         mn = _make_simple_mn()

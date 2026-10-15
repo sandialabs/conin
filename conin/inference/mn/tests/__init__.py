@@ -1,1 +1,1 @@
-# conin.markov_network/tests
+# conin.inference.mn.tests

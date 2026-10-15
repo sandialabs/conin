@@ -5,7 +5,7 @@ import pytest
 
 from conin import mvr_constraint_fn
 from conin.exceptions import InvalidInputError
-from conin.hidden_markov_model import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.graphical_models import HiddenMarkovModel
 from conin.constraints.mvr import HomMVR, InhomMVR, MVR_MatVecRepn
 from conin.hidden_markov_model.chmm_mvr import MVR_CHMM
@@ -433,15 +433,16 @@ def test_constrained_hmm_initializes_mvr_backend_from_functor():
         )
 
     chmm = ConstrainedHiddenMarkovModel(
-        hmm=hmm,
-        constraints=[forbid_state_constraint],
+        hmm,
+        constraints=forbid_state_constraint,
+        data={"forbidden_state": forbidden_state},
     )
-    chmm.initialize_chmm(data={"forbidden_state": forbidden_state})
 
-    assert chmm.constraint_type == "mvr"
-    assert isinstance(chmm.chmm, MVR_CHMM)
-    assert len(chmm.chmm.constraints) == 1
-    assert isinstance(chmm.chmm.constraints[0], HomMVR)
+    assert chmm.constraint_family == "mvr"
+    repn = chmm.representation("mvr")
+    assert isinstance(repn.chmm, MVR_CHMM)
+    assert len(repn.mvrs) == 1
+    assert isinstance(repn.mvrs[0], HomMVR)
 
 
 # ===========================

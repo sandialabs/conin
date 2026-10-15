@@ -4,7 +4,7 @@ import munch
 from pyomo.common.timing import TicTocTimer
 
 import conin.common
-from conin.markov_network import ConstrainedDiscreteMarkovNetwork
+from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
 from conin.constraints import Toulbar2Constraint
 from conin.constraints.algebraic import (
     add_algebraic_constraints_to_toulbar2_model,
@@ -103,7 +103,7 @@ def create_toulbar2_map_query_model_MN(
     verbose = options.pop("verbose", -1)
 
     cpgm = pgm if isinstance(pgm, ConstrainedDiscreteMarkovNetwork) else None
-    pgm = cpgm.pgm if cpgm is not None else pgm
+    pgm = cpgm.model if cpgm is not None else pgm
 
     if write_uai_file:
         conin.common.save_model(pgm, write_uai_file)

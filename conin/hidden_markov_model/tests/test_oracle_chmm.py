@@ -15,24 +15,22 @@ class Test_Oracle_CHMM:
     def test_construct_model(self):
         cpgm = tc.create_chmm1_oracle()
 
-        assert cpgm.chmm.hmm.start_vec == [
-            cpgm.hidden_markov_model.get_start_probs()[h]
-            for h in cpgm.hidden_markov_model.hidden_states
+        assert cpgm.representation("oracle").hmm.start_vec == [
+            cpgm.model.get_start_probs()[h] for h in cpgm.model.hidden_states
         ]
 
     def test_construct_model2(self):
         cpgm = tc.create_chmm1_oracle()
 
         _hmm = HiddenMarkovModel(
-            start_probs=cpgm.hidden_markov_model.get_start_probs(),
-            emission_probs=cpgm.hidden_markov_model.get_emission_probs(),
-            transition_probs=cpgm.hidden_markov_model.get_transition_probs(),
+            start_probs=cpgm.model.get_start_probs(),
+            emission_probs=cpgm.model.get_emission_probs(),
+            transition_probs=cpgm.model.get_transition_probs(),
         )
         _chmm = Oracle_CHMM(hmm=_hmm.repn)
 
         assert _chmm.hmm.start_vec == [
-            cpgm.hidden_markov_model.get_start_probs()[h]
-            for h in cpgm.hidden_markov_model.hidden_states
+            cpgm.model.get_start_probs()[h] for h in cpgm.model.hidden_states
         ]
 
     def test_construct_model3(self):
@@ -50,24 +48,24 @@ class Test_Oracle_CHMM:
         pass_seq = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         fail_seq2 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
-        assert not cpgm.chmm.is_feasible(fail_seq1)
-        assert cpgm.chmm.is_feasible(pass_seq)
-        assert not cpgm.chmm.is_feasible(fail_seq2)
+        assert not cpgm.representation("oracle").is_feasible(fail_seq1)
+        assert cpgm.representation("oracle").is_feasible(pass_seq)
+        assert not cpgm.representation("oracle").is_feasible(fail_seq2)
 
     def test_is_valid_hidden_state(self):
         cpgm = tc.create_chmm1_oracle()
-        assert cpgm.hidden_markov_model.is_valid_hidden_state("h0")
-        assert cpgm.hidden_markov_model.is_valid_hidden_state("h1")
-        assert not cpgm.hidden_markov_model.is_valid_hidden_state("invalid")
-        assert not cpgm.hidden_markov_model.is_valid_hidden_state("")
+        assert cpgm.model.is_valid_hidden_state("h0")
+        assert cpgm.model.is_valid_hidden_state("h1")
+        assert not cpgm.model.is_valid_hidden_state("invalid")
+        assert not cpgm.model.is_valid_hidden_state("")
 
     def test_set_seed_affects_generation(self):
         # Calling set_seed with the same value should produce identical sequences.
         chmm = tc.create_chmm1_oracle()
-        chmm.hidden_markov_model.set_seed(42)
-        seq1 = chmm.hidden_markov_model.generate_hidden(10)
-        chmm.hidden_markov_model.set_seed(42)
-        seq2 = chmm.hidden_markov_model.generate_hidden(10)
+        chmm.model.set_seed(42)
+        seq1 = chmm.model.generate_hidden(10)
+        chmm.model.set_seed(42)
+        seq2 = chmm.model.generate_hidden(10)
         assert seq1 == seq2
 
     def test_generate(self):

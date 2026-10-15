@@ -41,7 +41,10 @@ def _available(name):
 
 # fmt: off
 NOTEBOOKS = [
-    ("conin.bayesian_network", "ConstrainedDiscreteBayesianNetwork", "constraints.ipynb, inference.ipynb"),
+    ("conin.constrained_models", "ConstrainedDiscreteBayesianNetwork", "constraints.ipynb, inference.ipynb"),
+    ("conin.constrained_models", "ConstrainedDiscreteMarkovNetwork", "constraints.ipynb, inference.ipynb"),
+    ("conin.constrained_models", "ConstrainedDynamicDiscreteBayesianNetwork", "constraints.ipynb, inference.ipynb"),
+    ("conin.constrained_models", "ConstrainedHiddenMarkovModel", "MVR/formula.ipynb, MVR/regex_tutorial.ipynb, constraints.ipynb, inference.ipynb"),
     ("conin.constraints", "OracleConstraint", "constraints.ipynb, inference.ipynb"),
     ("conin.constraints", "algebraic_constraint_fn", "constraints.ipynb"),
     ("conin.constraints", "mvr_constraint_fn", "MVR/regex_tutorial.ipynb"),
@@ -67,7 +70,6 @@ NOTEBOOKS = [
     ("conin.constraints.oracle_library", "has_minimum_number_of_occurences_constraint", "constraints.ipynb, inference.ipynb"),
     ("conin.constraints.oracle_library", "not_constraint", "constraints.ipynb"),
     ("conin.constraints.oracle_library", "or_constraints", "constraints.ipynb"),
-    ("conin.dynamic_bayesian_network", "ConstrainedDynamicDiscreteBayesianNetwork", "constraints.ipynb, inference.ipynb"),
     ("conin.exceptions", "InvalidInputError", "MVR/regex_tutorial.ipynb"),
     ("conin.graphical_models", "DiscreteBayesianNetwork", "BN_basics.ipynb, constraints.ipynb, inference.ipynb"),
     ("conin.graphical_models", "DiscreteCPD", "BN_basics.ipynb, DBN_basics.ipynb, constraints.ipynb, inference.ipynb"),
@@ -77,9 +79,7 @@ NOTEBOOKS = [
     ("conin.graphical_models", "ExpressionVariable", "DBN_basics.ipynb, constraints.ipynb, inference.ipynb"),
     ("conin.graphical_models", "HiddenMarkovModel", "HMM_basics.ipynb, MVR/formula.ipynb, MVR/learning.ipynb, MVR/marginal_map.ipynb, MVR/overview.ipynb, MVR/regex_tutorial.ipynb, MVR/sampling.ipynb, MVR/sat_prob.ipynb, MVR/sat_time.ipynb, MVR/viterbi.ipynb, constraints.ipynb, inference.ipynb"),
     ("conin.graphical_models", "random_hmm", "HMM_basics.ipynb"),
-    ("conin.hidden_markov_model", "ConstrainedHiddenMarkovModel", "MVR/regex_tutorial.ipynb, constraints.ipynb, inference.ipynb"),
     ("conin.hidden_markov_model.chmm_mvr", "MVR_CHMM", "MVR/formula.ipynb, MVR/learning.ipynb, MVR/marginal_map.ipynb, MVR/overview.ipynb, MVR/sampling.ipynb, MVR/sat_prob.ipynb, MVR/sat_time.ipynb, MVR/viterbi.ipynb"),
-    ("conin.hidden_markov_model.constrained_hmm", "ConstrainedHiddenMarkovModel", "MVR/formula.ipynb"),
     ("conin.hidden_markov_model.inference", "viterbi", "MVR/viterbi.ipynb"),
     ("conin.hidden_markov_model.inference.marginal_map_mvr", "marginal_map_torch_mvr_chmm", "MVR/marginal_map.ipynb, MVR/overview.ipynb", "torch"),
     ("conin.hidden_markov_model.inference.viterbi_mvr", "viterbi_torch_mvr_chmm", "MVR/marginal_map.ipynb, MVR/overview.ipynb, MVR/viterbi.ipynb", "torch"),
@@ -91,7 +91,6 @@ NOTEBOOKS = [
     ("conin.hidden_markov_model.sampling.ffbs_mvr", "ffbs_torch_mvr_chmm", "MVR/formula.ipynb, MVR/overview.ipynb, MVR/sampling.ipynb, MVR/sat_prob.ipynb", "torch"),
     ("conin.hidden_markov_model.sampling.stopped_sampling_mvr", "stopped_sampling_torch_mvr_chmm", "MVR/overview.ipynb, MVR/sampling.ipynb", "torch"),
     ("conin.inference", "map_query", "inference.ipynb"),
-    ("conin.markov_network", "ConstrainedDiscreteMarkovNetwork", "constraints.ipynb, inference.ipynb"),
 ]
 
 SPHINX_CODE = [
@@ -99,11 +98,14 @@ SPHINX_CODE = [
     ("conin", "oracle_constraint_fn", "bayesian_networks.rst, dynamic_bayesian_networks.rst, hidden_markov_models.rst, markov_networks.rst"),
     ("conin", "pyomo_constraint_fn", "bayesian_networks.rst, dynamic_bayesian_networks.rst, hidden_markov_models.rst, markov_networks.rst"),
     ("conin", "toulbar2_constraint_fn", "bayesian_networks.rst, dynamic_bayesian_networks.rst, hidden_markov_models.rst, markov_networks.rst"),
-    ("conin.bayesian_network", "ConstrainedDiscreteBayesianNetwork", "bayesian_networks.rst"),
     ("conin.common", "is_polytree", "model_conversion_io.rst"),
     ("conin.common", "load_model", "model_conversion_io.rst"),
     ("conin.common", "log_potential", "model_conversion_io.rst, quickstart.rst"),
     ("conin.common", "save_model", "model_conversion_io.rst"),
+    ("conin.constrained_models", "ConstrainedDiscreteBayesianNetwork", "bayesian_networks.rst"),
+    ("conin.constrained_models", "ConstrainedDiscreteMarkovNetwork", "markov_networks.rst"),
+    ("conin.constrained_models", "ConstrainedDynamicDiscreteBayesianNetwork", "dynamic_bayesian_networks.rst"),
+    ("conin.constrained_models", "ConstrainedHiddenMarkovModel", "hidden_markov_models.rst"),
     ("conin.constraints", "OracleConstraint", "hidden_markov_models.rst"),
     ("conin.constraints.oracle_library", "all_diff_constraint", "api_oracle_constraints.rst"),
     ("conin.constraints.oracle_library", "always_appears_after_constraint", "api_oracle_constraints.rst"),
@@ -123,7 +125,6 @@ SPHINX_CODE = [
     ("conin.constraints.oracle_library", "occurs_only_in_time_frame_constraint", "api_oracle_constraints.rst"),
     ("conin.constraints.oracle_library", "or_constraints", "api_oracle_constraints.rst"),
     ("conin.constraints.oracle_library", "xor_constraints", "api_oracle_constraints.rst"),
-    ("conin.dynamic_bayesian_network", "ConstrainedDynamicDiscreteBayesianNetwork", "dynamic_bayesian_networks.rst"),
     ("conin.examples.bayesian_network", "cancer1_BN_conin", "bayesian_networks.rst"),
     ("conin.examples.bayesian_network", "simple1_BN_conin", "examples.rst, model_conversion_io.rst"),
     ("conin.examples.dynamic_bayesian_network", "simple0_DDBN_conin", "examples.rst"),
@@ -143,14 +144,11 @@ SPHINX_CODE = [
     ("conin.graphical_models", "create_dbn_from_hmm", "model_conversion_io.rst"),
     ("conin.graphical_models", "create_mn_from_bn", "model_conversion_io.rst"),
     ("conin.graphical_models", "random_hmm", "hidden_markov_models.rst"),
-    ("conin.hidden_markov_model", "ConstrainedHiddenMarkovModel", "hidden_markov_models.rst"),
     ("conin.hidden_markov_model", "learning", "hmm_learning.rst"),
     ("conin.inference", "map_query", "backends.rst, inference.rst, model_conversion_io.rst, quickstart.rst"),
-    ("conin.markov_network", "ConstrainedDiscreteMarkovNetwork", "markov_networks.rst"),
 ]
 
 SPHINX_AUTODOC = [
-    ("conin.bayesian_network", "ConstrainedDiscreteBayesianNetwork", "api_constrained_graphical_models.rst"),
     ("conin.common", "is_polytree", "model_conversion_io.rst"),
     ("conin.common", "load_model", "model_conversion_io.rst"),
     ("conin.common", "log_potential", "model_conversion_io.rst"),
@@ -161,6 +159,11 @@ SPHINX_AUTODOC = [
     ("conin.common.conin.load_uai", "load_conin_model_from_uai", "model_conversion_io.rst"),
     ("conin.common.conin.save_model", "save_model_uai", "model_conversion_io.rst"),
     ("conin.common.pgmpy", "convert_pgmpy_to_conin", "model_conversion_io.rst", "pgmpy"),
+    ("conin.constrained_models", "ConstrainedDiscreteBayesianNetwork", "api_constrained_graphical_models.rst"),
+    ("conin.constrained_models", "ConstrainedDiscreteMarkovNetwork", "api_constrained_graphical_models.rst"),
+    ("conin.constrained_models", "ConstrainedDynamicDiscreteBayesianNetwork", "api_constrained_graphical_models.rst"),
+    ("conin.constrained_models", "ConstrainedGraphicalModel", "api_constrained_graphical_models.rst"),
+    ("conin.constrained_models", "ConstrainedHiddenMarkovModel", "api_constrained_graphical_models.rst"),
     ("conin.constraints", "AlgebraicConstraint", "api_constraints.rst"),
     ("conin.constraints", "Constraint", "api_constraints.rst"),
     ("conin.constraints", "FactorOracleConstraint", "api_constraints.rst"),
@@ -173,7 +176,6 @@ SPHINX_AUTODOC = [
     ("conin.constraints", "toulbar2_constraint_fn", "api_constraints.rst"),
     ("conin.constraints.algebraic.add_constraints_toulbar2", None, "api_constraints.rst"),
     ("conin.constraints.oracle_library", None, "api_oracle_constraints.rst"),
-    ("conin.dynamic_bayesian_network", "ConstrainedDynamicDiscreteBayesianNetwork", "api_constrained_graphical_models.rst"),
     ("conin.graphical_models", "DiscreteBayesianNetwork", "api_graphical_models.rst"),
     ("conin.graphical_models", "DiscreteCPD", "api_graphical_models.rst"),
     ("conin.graphical_models", "DiscreteFactor", "api_graphical_models.rst"),
@@ -184,13 +186,15 @@ SPHINX_AUTODOC = [
     ("conin.graphical_models", "create_bn_from_dbn", "model_conversion_io.rst"),
     ("conin.graphical_models", "create_dbn_from_hmm", "model_conversion_io.rst"),
     ("conin.graphical_models", "create_mn_from_bn", "model_conversion_io.rst"),
-    ("conin.hidden_markov_model", "ConstrainedHiddenMarkovModel", "api_constrained_graphical_models.rst"),
     ("conin.hidden_markov_model.learning", "add_unknowns", "hmm_learning.rst"),
     ("conin.hidden_markov_model.learning", "convert_to_simulations", "hmm_learning.rst"),
     ("conin.hidden_markov_model.learning", "mcem", "hmm_learning.rst"),
     ("conin.hidden_markov_model.learning", "supervised_learning", "hmm_learning.rst"),
     ("conin.inference", "map_query", "api_inference.rst"),
-    ("conin.markov_network", "ConstrainedDiscreteMarkovNetwork", "api_constrained_graphical_models.rst"),
+    ("conin.representations", "Representation", "api_constrained_graphical_models.rst"),
+    ("conin.representations", "build_representation", "api_constrained_graphical_models.rst"),
+    ("conin.representations", "register_representation", "api_constrained_graphical_models.rst"),
+    ("conin.representations", "supported_representations", "api_constrained_graphical_models.rst"),
 ]
 
 SPHINX_EXAMPLE_TABLES = [
@@ -236,15 +240,17 @@ SPHINX_EXAMPLE_TABLES = [
 ]
 
 EXAMPLES_MODULES = [
-    ("conin.bayesian_network", "ConstrainedDiscreteBayesianNetwork", "conin/examples/bayesian_network.py"),
     ("conin.common.pgmpy", "MapCPD", "conin/examples/bayesian_network.py, conin/examples/dynamic_bayesian_network.py", "pgmpy"),
     ("conin.common.pgmpy", "convert_pgmpy_to_conin", "conin/examples/bayesian_network.py, conin/examples/dynamic_bayesian_network.py, conin/examples/markov_network.py", "pgmpy"),
+    ("conin.constrained_models", "ConstrainedDiscreteBayesianNetwork", "conin/examples/bayesian_network.py"),
+    ("conin.constrained_models", "ConstrainedDiscreteMarkovNetwork", "conin/examples/markov_network.py"),
+    ("conin.constrained_models", "ConstrainedDynamicDiscreteBayesianNetwork", "conin/examples/dynamic_bayesian_network.py"),
+    ("conin.constrained_models", "ConstrainedHiddenMarkovModel", "conin/examples/hidden_markov_model.py"),
     ("conin.constraints", "OracleConstraint", "conin/examples/hidden_markov_model.py"),
     ("conin.constraints", "algebraic_constraint_fn", "conin/examples/bayesian_network.py, conin/examples/dynamic_bayesian_network.py, conin/examples/hidden_markov_model.py, conin/examples/markov_network.py"),
     ("conin.constraints", "oracle_constraint_fn", "conin/examples/bayesian_network.py, conin/examples/dynamic_bayesian_network.py, conin/examples/hidden_markov_model.py, conin/examples/markov_network.py"),
     ("conin.constraints", "pyomo_constraint_fn", "conin/examples/bayesian_network.py, conin/examples/dynamic_bayesian_network.py, conin/examples/hidden_markov_model.py, conin/examples/markov_network.py"),
     ("conin.constraints", "toulbar2_constraint_fn", "conin/examples/bayesian_network.py, conin/examples/dynamic_bayesian_network.py, conin/examples/hidden_markov_model.py, conin/examples/markov_network.py"),
-    ("conin.dynamic_bayesian_network", "ConstrainedDynamicDiscreteBayesianNetwork", "conin/examples/dynamic_bayesian_network.py"),
     ("conin.graphical_models", "DiscreteBayesianNetwork", "conin/examples/bayesian_network.py"),
     ("conin.graphical_models", "DiscreteCPD", "conin/examples/bayesian_network.py, conin/examples/dynamic_bayesian_network.py"),
     ("conin.graphical_models", "DiscreteFactor", "conin/examples/markov_network.py"),
@@ -252,15 +258,18 @@ EXAMPLES_MODULES = [
     ("conin.graphical_models", "DynamicDiscreteBayesianNetwork", "conin/examples/dynamic_bayesian_network.py"),
     ("conin.graphical_models", "ExpressionVariable", "conin/examples/dynamic_bayesian_network.py"),
     ("conin.graphical_models", "HiddenMarkovModel", "conin/examples/hidden_markov_model.py"),
-    ("conin.hidden_markov_model.constrained_hmm", "ConstrainedHiddenMarkovModel", "conin/examples/hidden_markov_model.py"),
     ("conin.hidden_markov_model.hmm_application", "HMMApplication", "conin/examples/hidden_markov_model.py"),
-    ("conin.markov_network", "ConstrainedDiscreteMarkovNetwork", "conin/examples/markov_network.py"),
     ("conin.util", "MPESolution", "conin/examples/bayesian_network.py, conin/examples/dynamic_bayesian_network.py, conin/examples/markov_network.py"),
     ("conin.util", "try_import", "conin/examples/bayesian_network.py, conin/examples/dynamic_bayesian_network.py, conin/examples/markov_network.py"),
 ]
 
 RESTRUCTURE_PLAN_API = [
     ("conin", "Constraint", "RESTRUCTURE_PLAN.md §5"),
+    ("conin.constrained_models", "ConstrainedDiscreteBayesianNetwork", "RESTRUCTURE_PLAN.md §5"),
+    ("conin.constrained_models", "ConstrainedDiscreteMarkovNetwork", "RESTRUCTURE_PLAN.md §5"),
+    ("conin.constrained_models", "ConstrainedDynamicDiscreteBayesianNetwork", "RESTRUCTURE_PLAN.md §5"),
+    ("conin.constrained_models", "ConstrainedGraphicalModel", "RESTRUCTURE_PLAN.md §5"),
+    ("conin.constrained_models", "ConstrainedHiddenMarkovModel", "RESTRUCTURE_PLAN.md §5"),
     ("conin.constraints", "FactorOracleConstraint", "RESTRUCTURE_PLAN.md §5"),
     ("conin.constraints.mvr", "BaseMVR", "RESTRUCTURE_PLAN.md §5"),
     ("conin.constraints.mvr", "HomMVR", "RESTRUCTURE_PLAN.md §5"),
@@ -272,6 +281,9 @@ RESTRUCTURE_PLAN_API = [
     ("conin.constraints.mvr", "mvr_forbid_state", "RESTRUCTURE_PLAN.md §5"),
     ("conin.constraints.mvr", "mvr_not_yet", "RESTRUCTURE_PLAN.md §5"),
     ("conin.constraints.oracle_library", None, "RESTRUCTURE_PLAN.md §5"),
+    ("conin.representations", "Representation", "RESTRUCTURE_PLAN.md §5"),
+    ("conin.representations", "build_representation", "RESTRUCTURE_PLAN.md §5"),
+    ("conin.representations", "register_representation", "RESTRUCTURE_PLAN.md §5"),
 ]
 # fmt: on
 

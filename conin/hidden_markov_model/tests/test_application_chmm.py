@@ -136,13 +136,15 @@ class Test_Application_CHMM:
 
     def test_oracle_type(self, app):
         chmm = app.create_chmm("oracle")
-        assert isinstance(chmm.chmm, Oracle_CHMM)
-        assert app.hidden_markov_model == chmm.hidden_markov_model
+        assert isinstance(chmm.representation("oracle").chmm, Oracle_CHMM)
+        assert app.hidden_markov_model == chmm.model
 
     def test_algebraic_type(self, app):
         chmm = app.create_chmm("pyomo")
-        assert isinstance(chmm.chmm, PyomoAlgebraic_CHMM)
-        assert app.hidden_markov_model == chmm.hidden_markov_model
+        assert isinstance(
+            chmm.representation("pyomo_network_flow").chmm, PyomoAlgebraic_CHMM
+        )
+        assert app.hidden_markov_model == chmm.model
 
     def test_hmm_equality_setter(self, app):
         hmm = HiddenMarkovModel(
@@ -162,9 +164,9 @@ class Test_Application_CHMM:
         )
         app.hidden_markov_model = hmm
         chmm = app.create_chmm("oracle")
-        assert app.hidden_markov_model == chmm.hidden_markov_model
+        assert app.hidden_markov_model == chmm.model
         chmm = app.create_chmm("pyomo")
-        assert app.hidden_markov_model == chmm.hidden_markov_model
+        assert app.hidden_markov_model == chmm.model
 
     def test_get_internal_hmm(self, app):
         repn = app.hidden_markov_model.repn

@@ -4,7 +4,7 @@ import conin
 from conin.graphical_models import HiddenMarkovModel
 from conin.hidden_markov_model.inference import lp_inference, ip_inference
 from conin.graphical_models import create_dbn_from_hmm
-from conin.hidden_markov_model import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.inference.dbn.inference_pyomo import create_pyomo_map_query_model_DDBN
 
 logger = logging.getLogger("conin")
@@ -13,11 +13,7 @@ logger = logging.getLogger("conin")
 def create_pyomo_map_query_model_HMM(
     *, pgm, start=0, stop=None, variables=None, evidence=None, **options
 ):
-    pgm_ = (
-        pgm.hidden_markov_model
-        if isinstance(pgm, ConstrainedHiddenMarkovModel)
-        else pgm
-    )
+    pgm_ = pgm.model if isinstance(pgm, ConstrainedHiddenMarkovModel) else pgm
 
     assert stop is not None, "Expecting evidence (observations) for an HMM"
 

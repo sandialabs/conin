@@ -9,6 +9,7 @@ with try_import() as or_topas_available:
 
 from conin.hidden_markov_model.inference.recursive_a_star import *
 from conin.hidden_markov_model import *
+from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.hidden_markov_model.inference import a_star
 from conin.constraints.oracle_library import *
 
@@ -64,11 +65,7 @@ def constraints(lb, ub):
 @pytest.fixture
 def chmm(hmm, constraints):
 
-    # chmm = Oracle_CHMM()
-    chmm = ConstrainedHiddenMarkovModel(hmm=hmm)
-    for constraint in constraints:
-        chmm.add_constraint(constraint)
-    return chmm
+    return ConstrainedHiddenMarkovModel(hmm, constraints)
 
 
 @pytest.fixture

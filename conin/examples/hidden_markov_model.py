@@ -6,7 +6,7 @@ from conin.constraints import (
     oracle_constraint_fn,
     algebraic_constraint_fn,
 )
-from conin.hidden_markov_model.constrained_hmm import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.graphical_models import HiddenMarkovModel
 from conin.hidden_markov_model.hmm_application import HMMApplication
 
@@ -178,8 +178,7 @@ def create_chmm1_oracle():
     )
     constraints = [num_zeros_greater_than_nine, num_zeros_less_than_thirteen]
 
-    chmm = ConstrainedHiddenMarkovModel(hmm=hmm, constraints=constraints)
-    chmm.initialize_chmm()
+    chmm = ConstrainedHiddenMarkovModel(hmm, constraints=constraints)
     return chmm
 
 
@@ -203,8 +202,7 @@ def create_chmm1_oracle_ve():
     )
     constraints = [num_zeros_greater_than_nine, num_zeros_less_than_thirteen]
 
-    chmm = ConstrainedHiddenMarkovModel(hmm=hmm, constraints=constraints)
-    chmm.initialize_chmm()
+    chmm = ConstrainedHiddenMarkovModel(hmm, constraints=constraints)
     return chmm
 
 
@@ -221,8 +219,7 @@ def create_chmm1_pyomo():
 
     constraints = [num_zeros_greater_than_nine, num_zeros_less_than_thirteen]
 
-    chmm = ConstrainedHiddenMarkovModel(hmm=hmm, constraints=constraints)
-    chmm.initialize_chmm()
+    chmm = ConstrainedHiddenMarkovModel(hmm, constraints=constraints)
     return chmm
 
 
@@ -239,8 +236,7 @@ def create_chmm1_algebraic():
 
     constraints = [num_zeros_greater_than_nine, num_zeros_less_than_thirteen]
 
-    chmm = ConstrainedHiddenMarkovModel(hmm=hmm, constraints=constraints)
-    chmm.initialize_chmm()
+    chmm = ConstrainedHiddenMarkovModel(hmm, constraints=constraints)
     return chmm
 
 
@@ -262,8 +258,7 @@ def create_chmm1_pyomo_aos():
 
     constraints = [num_zeros_less_than_thirteen]
 
-    chmm = ConstrainedHiddenMarkovModel(hmm=hmm, constraints=constraints)
-    chmm.initialize_chmm()
+    chmm = ConstrainedHiddenMarkovModel(hmm, constraints=constraints)
     return chmm
 
 
@@ -285,8 +280,7 @@ def create_chmm1_algebraic_aos():
 
     constraints = [num_zeros_less_than_thirteen]
 
-    chmm = ConstrainedHiddenMarkovModel(hmm=hmm, constraints=constraints)
-    chmm.initialize_chmm()
+    chmm = ConstrainedHiddenMarkovModel(hmm, constraints=constraints)
     return chmm
 
 
@@ -311,8 +305,7 @@ def create_chmm2_pyomo_aos():
 
     constraints = [num_ones_less_than_thirteen]
 
-    chmm = ConstrainedHiddenMarkovModel(hmm=hmm, constraints=constraints)
-    chmm.initialize_chmm()
+    chmm = ConstrainedHiddenMarkovModel(hmm, constraints=constraints)
     return chmm
 
 
@@ -337,8 +330,7 @@ def create_chmm2_algebraic_aos():
 
     constraints = [num_ones_less_than_thirteen]
 
-    chmm = ConstrainedHiddenMarkovModel(hmm=hmm, constraints=constraints)
-    chmm.initialize_chmm()
+    chmm = ConstrainedHiddenMarkovModel(hmm, constraints=constraints)
     return chmm
 
 
@@ -355,8 +347,7 @@ def create_chmm1_toulbar2():
 
     constraints = [num_zeros_greater_than_nine, num_zeros_less_than_thirteen]
 
-    chmm = ConstrainedHiddenMarkovModel(hmm=hmm, constraints=constraints)
-    chmm.initialize_chmm()
+    chmm = ConstrainedHiddenMarkovModel(hmm, constraints=constraints)
     return chmm
 
 

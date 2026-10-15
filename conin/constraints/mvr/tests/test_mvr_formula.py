@@ -3,7 +3,7 @@ import warnings
 import pytest
 
 from conin.exceptions import InvalidInputError
-from conin.hidden_markov_model.constrained_hmm import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.constraints.mvr.formula import build_mvr, build_mvr_functor
 
 from conin.constraints.mvr.primitives import (
@@ -383,12 +383,12 @@ def test_build_mvr_functor_reports_a_syntax_error_before_the_model_is_known():
 def test_formula_drives_the_mvr_backend_end_to_end():
     hmm = make_hmm()
     chmm = ConstrainedHiddenMarkovModel(
-        hmm=hmm, constraints=build_mvr_functor("never a and reach b")
+        hmm, constraints=build_mvr_functor("never a and reach b")
     )
-    chmm.initialize_chmm()
 
-    assert chmm.constraint_type == "mvr"
-    assert len(chmm.chmm.constraints) == 2
-    assert language(list(chmm.chmm.constraints)) == language(
+    assert chmm.constraint_family == "mvr"
+    mvrs = chmm.representation("mvr").mvrs
+    assert len(mvrs) == 2
+    assert language(list(mvrs)) == language(
         [mvr_forbid_state(hmm, ["a"]), mvr_visit_state(hmm, ["b"])]
     )

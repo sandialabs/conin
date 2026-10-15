@@ -133,8 +133,15 @@ fixed observed sequence, then refit the HMM with ``supervised_learning``.
 
 At a high level, the application object is expected to provide:
 
-- ``generate_hidden(observed)`` for sampling a feasible hidden sequence.
-- ``hmm`` with a ``log_probability(observed, hidden)`` method.
+- ``generate_hidden(time_steps)`` for sampling a feasible hidden sequence;
+  ``mcem`` calls it as ``app.generate_hidden(len(observed))``.
+- ``model`` (for example a ``ConstrainedHiddenMarkovModel``) or
+  ``hidden_markov_model`` (for example an ``HMMApplication``): the starting HMM,
+  which must provide ``log_probability(observed, hidden)``.
+
+The re-estimated HMM is kept locally and is not written back to ``app``, so
+sampling keeps using the application's original model. ``mcem`` returns the
+final average log-probability, not the fitted HMM.
 
 Because this path is less stable and more application-specific, prefer
 ``supervised_learning`` for labeled data and treat ``mcem`` as an advanced API.
