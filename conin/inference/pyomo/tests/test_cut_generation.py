@@ -12,11 +12,11 @@ import pyomo.opt
 
 from conin.util import State
 from conin.examples import markov_network as examples
-from conin.inference.mn import inference_pyomo_map_query_MN
-from conin.inference.mn.inference_pyomo import (
-    create_pyomo_map_query_model_MN,
+from conin.inference.pyomo import inference_pyomo_map_query_MN
+from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
+from conin.inference.pyomo import solve_pyomo_map_query_model
+from conin.representations.pyomo.common import (
     create_MN_pyomo_map_query_model_from_factorial_repn,
-    solve_pyomo_map_query_model,
     has_omitted_c5,
 )
 
@@ -63,8 +63,9 @@ def random_factor_repn(seed, N=10, M=15, k=3, max_vars=3, density=1.0):
 
 def test_omit_c5_model():
     pgm = examples.ABC_conin().pgm
-    full = create_pyomo_map_query_model_MN(pgm=pgm)
-    small = create_pyomo_map_query_model_MN(pgm=pgm, omit_c5=True)
+    repn = ConstrainedDiscreteMarkovNetwork(pgm).representation("pyomo")
+    full = repn.create_model()
+    small = repn.create_model(omit_c5=True)
 
     assert not has_omitted_c5(full)
     assert hasattr(full, "c5")

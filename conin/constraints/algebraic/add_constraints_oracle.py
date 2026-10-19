@@ -1,4 +1,3 @@
-import pprint
 import pyomo.environ as pyo
 from pyomo.core.expr.visitor import identify_variables
 
@@ -9,27 +8,6 @@ from conin.util import try_import, State
 
 with try_import() as smoek_available:
     import smoek
-
-
-class PyomoVarWrapper(dict):
-    def __init__(self, *arg, **kw):
-        super(PyomoVarWrapper, self).__init__(*arg, **kw)
-
-    def pprint(self):  # pragma:nocover
-        pprint.pprint(self)
-
-    def __call__(self, *args):
-        if len(args) == 2:
-            r, s = args
-        elif len(args) == 3:
-            r, i, s = args
-            r = (r, i)
-        else:
-            raise ValueError("There must be either 2 or 3 arguments")
-
-        if type(s) is not State:
-            s = State(s)
-        return dict.__getitem__(self, (r, s))
 
 
 def create_oracle_constraints_from_algebraic(*, pgm, constraints, data, name=None):
@@ -106,6 +84,8 @@ def create_oracle_constraints_from_algebraic(*, pgm, constraints, data, name=Non
             v = getattr(pyomo_model, pyomo_var_name)
             node_map[v] = k
             tmp[k, State(s)] = v
+    from conin.representations.pyomo.common import PyomoVarWrapper
+
     pyomo_model.V = PyomoVarWrapper(tmp)
 
     pyomo_model = smoek.pymodel.pyomo.generate(

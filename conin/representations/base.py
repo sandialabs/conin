@@ -45,6 +45,10 @@ _REGISTRY = {}
 # (e.g. conin.hidden_markov_model) that themselves import the constrained models.
 _BUILTIN_MODULES = (
     "conin.representations.oracle.hmm",
+    "conin.representations.pyomo.mn",
+    "conin.representations.pyomo.bn",
+    "conin.representations.pyomo.dbn",
+    "conin.representations.pyomo.hmm",
     "conin.representations.pyomo.hmm_network_flow",
     "conin.representations.mvr.hmm",
 )

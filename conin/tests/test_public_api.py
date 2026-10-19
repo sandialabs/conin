@@ -284,11 +284,20 @@ RESTRUCTURE_PLAN_API = [
     ("conin.constraints.mvr", "mvr_forbid_state", "RESTRUCTURE_PLAN.md §5"),
     ("conin.constraints.mvr", "mvr_not_yet", "RESTRUCTURE_PLAN.md §5"),
     ("conin.constraints.oracle_library", None, "RESTRUCTURE_PLAN.md §5"),
+    ("conin.inference.pyomo", "inference_pyomo_map_query_BN", "RESTRUCTURE_PLAN.md §5"),
+    ("conin.inference.pyomo", "inference_pyomo_map_query_DDBN", "RESTRUCTURE_PLAN.md §5"),
+    ("conin.inference.pyomo", "inference_pyomo_map_query_HMM", "RESTRUCTURE_PLAN.md §5"),
+    ("conin.inference.pyomo", "inference_pyomo_map_query_MN", "RESTRUCTURE_PLAN.md §5"),
+    ("conin.inference.pyomo", "ip_inference", "RESTRUCTURE_PLAN.md §5"),
+    ("conin.inference.pyomo", "lp_inference", "RESTRUCTURE_PLAN.md §5"),
+    ("conin.inference.pyomo", "solve_pyomo_map_query_model", "RESTRUCTURE_PLAN.md §5"),
     ("conin.io", "load_model", "RESTRUCTURE_PLAN.md §5"),
     ("conin.io", "save_model", "RESTRUCTURE_PLAN.md §5"),
     ("conin.representations", "Representation", "RESTRUCTURE_PLAN.md §5"),
     ("conin.representations", "build_representation", "RESTRUCTURE_PLAN.md §5"),
     ("conin.representations", "register_representation", "RESTRUCTURE_PLAN.md §5"),
+    ("conin.representations.pyomo", "PyomoNetworkFlowHMMRepresentation", "RESTRUCTURE_PLAN.md §5"),
+    ("conin.representations.pyomo", "PyomoVarWrapper", "RESTRUCTURE_PLAN.md §5"),
 ]
 # fmt: on
 

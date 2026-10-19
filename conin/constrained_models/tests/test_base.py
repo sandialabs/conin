@@ -171,6 +171,24 @@ def test_with_constraints_and_with_model(counting_kind):
     assert _Counting.builds == 3
 
 
+def test_ensure():
+    mn = _mn()
+    c = ConstrainedDiscreteMarkovNetwork(mn, [pyomo_c])
+    # an instance of the class is returned as is (constraints, data and cache kept)
+    assert ConstrainedDiscreteMarkovNetwork.ensure(c) is c
+    # a bare model is wrapped with no constraints
+    w = ConstrainedDiscreteMarkovNetwork.ensure(mn)
+    assert type(w) is ConstrainedDiscreteMarkovNetwork
+    assert w.model is mn and w.constraints == () and w.data is None
+    # anything else is rejected by the constructor
+    with pytest.raises(InvalidInputError, match="expects a DiscreteMarkovNetwork"):
+        ConstrainedDiscreteMarkovNetwork.ensure(tc.create_hmm1())
+    with pytest.raises(InvalidInputError, match="expects a HiddenMarkovModel"):
+        ConstrainedHiddenMarkovModel.ensure(c)
+    with pytest.raises(TypeError, match="does not define model_type"):
+        ConstrainedGraphicalModel.ensure(mn)
+
+
 # --- registry, laziness, caching, get_copy ------------------------------------
 
 
@@ -215,7 +233,11 @@ def test_supported_representations_hmm():
     for pair in [
         ("oracle", None),
         ("oracle", "oracle"),
+        ("pyomo", None),
+        ("pyomo", "algebraic"),
+        ("pyomo", "pyomo"),
         ("pyomo_network_flow", None),
+        ("pyomo_network_flow", "algebraic"),
         ("pyomo_network_flow", "pyomo"),
         ("mvr", "mvr"),
     ]:

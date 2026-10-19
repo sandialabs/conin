@@ -4,9 +4,9 @@ import pyomo.environ as pyo
 import pyomo.opt
 
 from conin.util import try_import
-from conin.inference.mn.inference_pyomo import (
-    create_pyomo_map_query_model_MN,
-    solve_pyomo_map_query_model,
+from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
+from conin.inference.pyomo import solve_pyomo_map_query_model
+from conin.representations.pyomo.common import (
     create_MN_pyomo_map_query_model_from_factorial_repn,
 )
 from conin.inference.mn.factor_repn import (
@@ -74,7 +74,9 @@ def test_example6():
         assert J == J_
         assert v == v_
         assert w == w_
-        model = create_pyomo_map_query_model_MN(pgm=pgm)
+        model = (
+            ConstrainedDiscreteMarkovNetwork(pgm).representation("pyomo").create_model()
+        )
         results = solve_pyomo_map_query_model(model, solver=mip_solver)
         assert results.solution.states == {"A": 0, "B": 1}
 
@@ -86,7 +88,9 @@ def test_example6():
         assert J == J_
         assert v == v_
         assert w == w_
-        model = create_pyomo_map_query_model_MN(pgm=pgm)
+        model = (
+            ConstrainedDiscreteMarkovNetwork(pgm).representation("pyomo").create_model()
+        )
         results = solve_pyomo_map_query_model(model, solver=mip_solver)
         assert results.solution.states == {"A": 0, "B": 1}
 
@@ -431,7 +435,7 @@ def test_variable_name_clash_raises(a, b):
     from conin.exceptions import InvalidInputError
 
     with pytest.raises(InvalidInputError, match="internal variable name"):
-        create_pyomo_map_query_model_MN(pgm=_two_node_MN(a, b))
+        ConstrainedDiscreteMarkovNetwork(_two_node_MN(a, b)).representation("pyomo")
 
 
 def test_factor_name_clash_raises():

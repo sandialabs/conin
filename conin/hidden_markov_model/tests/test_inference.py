@@ -14,7 +14,7 @@ from conin.hidden_markov_model.inference import a_star
 from conin.constraints.oracle_library import *
 
 # from conin.hidden_markov_model.oracle_chmm import Oracle_CHMM
-from conin.hidden_markov_model.inference import ip_inference
+from conin.inference.pyomo import ip_inference
 
 import conin.examples.hidden_markov_model as tc
 

@@ -1,3 +1,9 @@
+"""Solve the HMM network-flow integer program (``ip_formulation="network_flow"``).
+
+The model is built by the ``"pyomo_network_flow"`` representation
+(:mod:`conin.representations.pyomo.hmm_network_flow`).
+"""
+
 import math
 import munch
 
@@ -32,8 +38,7 @@ def lp_inference(
     if debug:
         tic("Generating Model - START")
     repn = ConstrainedHiddenMarkovModel(hmm).representation("pyomo_network_flow")
-    M = repn.generate_unconstrained_model(observed=observed)
-    data = repn.data
+    M, data = repn.create_model(observed=observed)
     if debug:
         toc("Generating Model - STOP")
     if debug:
@@ -94,8 +99,7 @@ def ip_inference(
     if debug:
         tic("Generating Model - START")
     repn = hmm.representation("pyomo_network_flow")
-    M = repn.generate_model(observed=observed)
-    data = repn.data
+    M, data = repn.create_model(observed=observed)
     T = len(observed)
     if debug:
         toc("Generating Model - STOP")
