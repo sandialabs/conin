@@ -12,7 +12,7 @@ from .common import PyomoFactorRepresentation
 class PyomoDBNRepresentation(PyomoFactorRepresentation):
     """Factor-repn IP of a constrained DBN unrolled over ``start..stop``.
 
-    Structure params (the cache key): ``start`` and ``stop``.  Constraint
+    Structure params: ``start`` and ``stop``.  Constraint
     functions see ``data = Munch(start, stop, variables, evidence, T)`` with
     ``T = list(range(start, stop + 1))``.  ``pgm`` is the unrolled BN.
     """

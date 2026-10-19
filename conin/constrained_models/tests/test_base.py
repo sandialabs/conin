@@ -40,7 +40,7 @@ def tb2_c(model):
 
 
 class _Counting(Representation):
-    """Test representation whose get_copy deep-copies (the default)."""
+    """Test representation that counts its builds."""
 
     builds = 0
 
@@ -134,14 +134,14 @@ def test_repr():
 # --- immutability -------------------------------------------------------------
 
 
-@pytest.mark.parametrize("name", ["model", "constraints", "data", "_cache", "new"])
+@pytest.mark.parametrize("name", ["model", "constraints", "data", "_data", "new"])
 def test_setattr_raises(name):
     c = ConstrainedDiscreteMarkovNetwork(_mn())
     with pytest.raises(AttributeError):
         setattr(c, name, 1)
 
 
-@pytest.mark.parametrize("name", ["model", "_model", "_cache"])
+@pytest.mark.parametrize("name", ["model", "_model", "_data"])
 def test_delattr_raises(name):
     c = ConstrainedDiscreteMarkovNetwork(_mn())
     with pytest.raises(AttributeError):
@@ -153,28 +153,20 @@ def test_with_constraints_and_with_model(counting_kind):
     mn, mn2 = _mn(), _mn()
     data = {"x": 1}
     c = ConstrainedDiscreteMarkovNetwork(mn, [pyomo_c], data=data)
-    c.representation(counting_kind)
-    assert _Counting.builds == 1
-
     c2 = c.with_constraints([])
     assert type(c2) is ConstrainedDiscreteMarkovNetwork
     assert c2.constraints == () and c2.model is mn and c2.data is data
     c3 = c.with_model(mn2)
     assert c3.model is mn2 and c3.constraints == (pyomo_c,) and c3.data is data
 
-    # original unchanged; new objects have empty caches
+    # original unchanged
     assert c.constraints == (pyomo_c,) and c.model is mn
-    c2.representation(counting_kind)
-    c3.representation(counting_kind)
-    assert _Counting.builds == 3
-    c.representation(counting_kind)
-    assert _Counting.builds == 3
 
 
 def test_ensure():
     mn = _mn()
     c = ConstrainedDiscreteMarkovNetwork(mn, [pyomo_c])
-    # an instance of the class is returned as is (constraints, data and cache kept)
+    # an instance of the class is returned as is (constraints and data kept)
     assert ConstrainedDiscreteMarkovNetwork.ensure(c) is c
     # a bare model is wrapped with no constraints
     w = ConstrainedDiscreteMarkovNetwork.ensure(mn)
@@ -189,7 +181,7 @@ def test_ensure():
         ConstrainedGraphicalModel.ensure(mn)
 
 
-# --- registry, laziness, caching, get_copy ------------------------------------
+# --- registry and building -----------------------------------------------------
 
 
 def test_lazy_build(counting_kind):
@@ -197,24 +189,19 @@ def test_lazy_build(counting_kind):
     assert _Counting.builds == 0
 
 
-def test_cache_hits_and_structure_params(counting_kind):
+def test_every_call_builds_a_new_representation(counting_kind):
     c = ConstrainedDiscreteMarkovNetwork(_mn())
     r1 = c.representation(counting_kind, T=3)
     r2 = c.representation(counting_kind, T=3)
-    assert _Counting.builds == 1
-    assert r1 is not r2  # default get_copy deep-copies
-    c.representation(counting_kind, T=4)
     assert _Counting.builds == 2
-    c.representation(counting_kind, T=[1, 2], opts={"a": 1})
-    c.representation(counting_kind, opts={"a": 1}, T=[1, 2])
-    assert _Counting.builds == 3
-
-
-def test_get_copy_isolation(counting_kind):
-    c = ConstrainedDiscreteMarkovNetwork(_mn())
-    r = c.representation(counting_kind)
-    r.payload["values"].append(99)
-    assert c.representation(counting_kind).payload == {"values": [1, 2, 3]}
+    assert r1 is not r2
+    assert r1.params == {"T": 3}
+    # structure params may be unhashable (nothing is used as a cache key)
+    r3 = c.representation(counting_kind, T=[1, 2], opts={"a": 1})
+    assert r3.params == {"T": [1, 2], "opts": {"a": 1}}
+    # the caller owns the result
+    r1.payload["values"].append(99)
+    assert r2.payload == {"values": [1, 2, 3]}
 
 
 def test_unsupported_kind_lists_options(counting_kind):
@@ -269,7 +256,7 @@ def test_copy_and_deepcopy(copier, counting_kind):
     assert c2.data == {"x": 1}
     with pytest.raises(AttributeError):
         c2.model = None
-    c2.representation(counting_kind)  # copies start with an empty cache
+    c2.representation(counting_kind)
     assert _Counting.builds == 2
 
 

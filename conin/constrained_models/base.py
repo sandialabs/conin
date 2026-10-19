@@ -4,18 +4,6 @@ from conin.constraints.base import Constraint
 from conin.exceptions import InvalidInputError
 
 
-def _freeze(value):
-    """Turn a structure parameter into a hashable cache-key component."""
-    if isinstance(value, dict):
-        return tuple(sorted((k, _freeze(v)) for k, v in value.items()))
-    if isinstance(value, (list, tuple)):
-        return tuple(_freeze(v) for v in value)
-    if isinstance(value, (set, frozenset)):
-        return frozenset(_freeze(v) for v in value)
-    hash(value)  # raises TypeError for other unhashable values
-    return value
-
-
 class ConstrainedGraphicalModel:
     """An immutable graphical model paired with an immutable tuple of constraints.
 
@@ -29,8 +17,7 @@ class ConstrainedGraphicalModel:
         (``type(c).family``). ``None`` is treated as no constraints.
     data : object, optional
         Application data passed to the representation builders (e.g. to MVR
-        factories or Pyomo constraint functions). It is not part of the
-        representation cache key.
+        factories or Pyomo constraint functions).
 
     Notes
     -----
@@ -38,11 +25,11 @@ class ConstrainedGraphicalModel:
     ``AttributeError``. Use :meth:`with_constraints` or :meth:`with_model` to
     derive a new object.
 
-    Representations are built lazily by :meth:`representation`, cached on the
-    object, and handed out as ``repn.get_copy()``.
+    Representations are built by :meth:`representation` on every call (they
+    are not cached).
     """
 
-    __slots__ = ("_model", "_constraints", "_family", "_data", "_cache")
+    __slots__ = ("_model", "_constraints", "_family", "_data")
 
     model_type = None
     """type: The unconstrained model class this wrapper accepts (set by subclasses)."""
@@ -68,7 +55,6 @@ class ConstrainedGraphicalModel:
         object.__setattr__(self, "_constraints", constraints)
         object.__setattr__(self, "_family", family)
         object.__setattr__(self, "_data", data)
-        object.__setattr__(self, "_cache", {})
 
     # ------------------------------------------------------------------
     # Validation
@@ -152,11 +138,10 @@ class ConstrainedGraphicalModel:
     # ------------------------------------------------------------------
 
     def representation(self, kind, **structure_params):
-        """Return a copy of the ``kind`` representation of this model.
+        """Build the ``kind`` representation of this model.
 
-        The representation is built on first use with
-        ``builder(self, **structure_params)`` and cached under
-        ``(kind, structure_params)``. Every call returns ``repn.get_copy()``.
+        Calls ``builder(self, **structure_params)``. A new representation is
+        built on every call; nothing is cached, so the caller owns the result.
 
         Raises
         ------
@@ -166,12 +151,7 @@ class ConstrainedGraphicalModel:
         """
         from conin.representations.base import build_representation
 
-        key = (kind, _freeze(structure_params))
-        repn = self._cache.get(key)
-        if repn is None:
-            repn = build_representation(self, kind, **structure_params)
-            self._cache[key] = repn
-        return repn.get_copy()
+        return build_representation(self, kind, **structure_params)
 
     @classmethod
     def ensure(cls, model):
@@ -189,15 +169,12 @@ class ConstrainedGraphicalModel:
         """Return a new object with the same model and data and new constraints.
 
         ``constraints`` is a single constraint or an iterable of constraints,
-        as in the constructor. The new object starts with an empty representation cache.
+        as in the constructor.
         """
         return type(self)(self._model, constraints, data=self._data)
 
     def with_model(self, model):
-        """Return a new object with the same constraints and data and a new model.
-
-        The new object starts with an empty representation cache.
-        """
+        """Return a new object with the same constraints and data and a new model."""
         return type(self)(model, self._constraints, data=self._data)
 
     # ------------------------------------------------------------------
@@ -216,7 +193,6 @@ class ConstrainedGraphicalModel:
         )
 
     def __getstate__(self):
-        # The representation cache is not copied or pickled; copies rebuild lazily.
         return (self._model, self._constraints, self._family, self._data)
 
     def __setstate__(self, state):
@@ -225,7 +201,6 @@ class ConstrainedGraphicalModel:
         object.__setattr__(self, "_constraints", constraints)
         object.__setattr__(self, "_family", family)
         object.__setattr__(self, "_data", data)
-        object.__setattr__(self, "_cache", {})
 
     def __repr__(self):
         names = [getattr(c, "name", type(c).__name__) for c in self._constraints]

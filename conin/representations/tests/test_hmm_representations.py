@@ -54,9 +54,9 @@ def test_oracle_without_constraints_accepts_everything():
     assert repn.partial_is_feasible(T=10, seq=[0, 1])
 
 
-def test_oracle_get_copy_returns_the_cached_object():
+def test_oracle_each_call_builds_a_new_representation():
     cmodel = tc.create_chmm1_oracle()
-    assert cmodel.representation("oracle") is cmodel.representation("oracle")
+    assert cmodel.representation("oracle") is not cmodel.representation("oracle")
 
 
 # ---------------------------------------------------------------------
@@ -90,10 +90,9 @@ def test_pyomo_network_flow_does_not_write_into_user_data():
     assert user_data == munch.Munch(k=1)
 
 
-def test_pyomo_network_flow_get_copy_returns_the_cached_object():
+def test_pyomo_network_flow_one_repn_serves_several_queries():
     cmodel = tc.create_chmm1_pyomo()
     first = cmodel.representation("pyomo_network_flow")
-    assert cmodel.representation("pyomo_network_flow") is first
     # Each query builds a fresh model and fresh per-query data.
     M1, d1 = first.create_model(observed=["o0"] * 5)
     M2, d2 = first.create_model(observed=["o0"] * 7)
@@ -149,7 +148,6 @@ def test_mvr_factories_and_prebuilt_mvrs():
     assert len(repn.mvrs) == 2
     assert all(isinstance(m, BaseMVR) for m in repn.mvrs)
     assert all(list(m.hidden_states) == hmm.hidden_to_external for m in repn.mvrs)
-    # get_copy deep-copies, so repn.hmm is a copy of the model, not the model itself.
     assert repn.hmm.hidden_to_external == hmm.hidden_to_external
 
 
@@ -163,13 +161,16 @@ def test_mvr_mismatched_hidden_states_raise():
         cmodel.representation("mvr")
 
 
-def test_mvr_get_copy_is_a_deep_copy():
+def test_mvr_prebuilt_mvrs_are_not_shared_with_the_user():
     hmm = _hmm()
-    cmodel = ConstrainedHiddenMarkovModel(hmm, mvr_forbid_state(hmm, ["a"]))
+    prebuilt = mvr_forbid_state(hmm, ["a"])
+    cmodel = ConstrainedHiddenMarkovModel(hmm, prebuilt)
     first = cmodel.representation("mvr")
+    assert first.mvrs[0] is not prebuilt
     assert first.mvrs[0].time_range is None
     first.mvrs[0]._time_range = [0, 3]
     assert first.mvrs[0].time_range == [0, 3]
+    assert prebuilt.time_range is None
 
     second = cmodel.representation("mvr")
     assert second is not first

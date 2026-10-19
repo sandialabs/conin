@@ -12,7 +12,7 @@ from .common import Toulbar2FactorRepresentation
 class Toulbar2DBNRepresentation(Toulbar2FactorRepresentation):
     """toulbar2 CFN of a constrained DBN unrolled over ``start..stop``.
 
-    Structure params (the cache key): ``start`` and ``stop``.  Constraint
+    Structure params: ``start`` and ``stop``.  Constraint
     functions see ``data = Munch(start, stop, variables, evidence, T)`` with
     ``T = list(range(start, stop + 1))``.  ``pgm`` and ``uai_model`` are the
     unrolled BN.

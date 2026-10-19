@@ -32,10 +32,14 @@ class MVRHMMRepresentation(Representation):
 
         hmm = cmodel.model
         data = cmodel.data
-        # MVRConstraint factories are called with (hmm, data); prebuilt MVRs
-        # (also in the "mvr" family) are used as they are.
+        # MVRConstraint factories are called with (hmm, data). Prebuilt MVRs
+        # (also in the "mvr" family) are deep-copied: MVRs still have mutable
+        # state until PR 4d (e.g. ``mvr_timerange(..., inplace=True)`` sets
+        # ``_time_range``), and the user's objects must not be changed through
+        # the representation.
         built = [
-            c if isinstance(c, BaseMVR) else c(hmm, data) for c in cmodel.constraints
+            copy.deepcopy(c) if isinstance(c, BaseMVR) else c(hmm, data)
+            for c in cmodel.constraints
         ]
         self.chmm = MVR_CHMM(hidden_markov_model=hmm, constraints=built, data=data)
 
@@ -46,18 +50,6 @@ class MVRHMMRepresentation(Representation):
     @property
     def hmm(self):
         return self.chmm.hidden_markov_model
-
-    def get_copy(self):
-        """Return a copy with deep-copied MVRs that shares the (immutable) HMM.
-
-        MVRs still have mutable state until PR 4d (e.g.
-        ``mvr_timerange(..., inplace=True)`` sets ``_time_range``), so the
-        cached MVRs are never handed out directly.
-        """
-        new = copy.copy(self)
-        new.chmm = copy.copy(self.chmm)
-        new.chmm.constraints = copy.deepcopy(self.chmm.constraints)
-        return new
 
 
 @register_representation("mvr", HiddenMarkovModel, families=(None, "mvr"))

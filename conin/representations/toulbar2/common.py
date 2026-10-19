@@ -1,7 +1,7 @@
 """Shared toulbar2 representation code.
 
 - :class:`Toulbar2FactorRepresentation`: the base class of the ``"toulbar2"``
-  representations (it caches the UAI text and builds a fresh
+  representations (it holds the UAI text and builds a fresh
   ``pytoulbar2.CFN`` per query);
 - :class:`Toulbar2VarWrapper`: ``model.V(...)`` on a CFN;
 - :func:`apply_toulbar2_constraints`: the single constraint applier for the
@@ -132,7 +132,7 @@ def apply_toulbar2_constraints(*, pgm, constraints, model, data):
 class Toulbar2FactorRepresentation(Representation):
     """The toulbar2 cost function network of a constrained MN/BN/DBN/HMM.
 
-    A ``pytoulbar2.CFN`` can't be copied, so the representation caches the
+    A ``pytoulbar2.CFN`` can't be copied, so the representation holds the
     evidence-independent intermediate: the UAI text of ``uai_model`` and the
     constraints.  :meth:`create_model` reads the text into a fresh CFN on
     every call, assigns the evidence and then applies the constraints.
@@ -155,8 +155,8 @@ class Toulbar2FactorRepresentation(Representation):
 
     Notes
     -----
-    Nothing is mutated after construction, so :meth:`get_copy` returns
-    ``self``.
+    Nothing is mutated after construction, so one representation can serve
+    several queries.
     """
 
     kind = "toulbar2"
@@ -246,10 +246,6 @@ class Toulbar2FactorRepresentation(Representation):
         model = pytoulbar2.CFN(verbose=verbose)
         model.Read(filename)
         return model
-
-    def get_copy(self):
-        """Return ``self``: the cached data is never mutated (a CFN is built per query)."""
-        return self
 
 
 def add_algebraic_constraints_to_toulbar2_model(*, pgm, constraints, model, data):

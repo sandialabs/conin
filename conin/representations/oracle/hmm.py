@@ -55,17 +55,6 @@ class OracleHMMRepresentation(Representation):
         """Check whether a partial sequence of internal indices can still be completed."""
         return self.chmm.partial_is_feasible(T=T, seq=seq)
 
-    def get_copy(self):
-        """Return ``self``.
-
-        This is safe because the object holds no per-query state: ``hmm`` is an
-        ``HMM_MatVecRepn`` whose matrices are returned as copies, the wrapped
-        constraints are closures over the user's constraints, and sampling draws
-        from the global NumPy RNG (``HiddenMarkovModel.set_seed``), not from
-        state stored here. Callers must not reassign attributes of ``chmm``.
-        """
-        return self
-
 
 @register_representation("oracle", HiddenMarkovModel, families=(None, "oracle"))
 def build_oracle_hmm_representation(cmodel):

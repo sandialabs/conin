@@ -465,12 +465,11 @@ def tuple_var_index_map(states):
 class PyomoFactorRepresentation(Representation):
     """The factor-repn integer program of a constrained MN/BN/DBN/HMM.
 
-    The representation caches only evidence-independent data: the factor
+    The representation holds only evidence-independent data: the factor
     representation ``(S, J, v, w)`` of the (unrolled) Markov network, the
     variable-name map and the constraints.
     :meth:`create_model` builds a fresh Pyomo model on every call, fixes the
-    evidence and then applies the constraints.  Pyomo's ``clone()`` was slower
-    than a rebuild (RESTRUCTURE_PLAN.md §11, "Pyomo get_copy (PR 4a)").
+    evidence and then applies the constraints.
 
     Attributes
     ----------
@@ -488,9 +487,9 @@ class PyomoFactorRepresentation(Representation):
 
     Notes
     -----
-    Nothing is mutated after construction, so :meth:`get_copy` returns
-    ``self``.  The factor dicts are shared with every model built from them,
-    but the IP builder only reads them.
+    Nothing is mutated after construction, so one representation can serve
+    several queries.  The factor dicts are shared with every model built from
+    them, but the IP builder only reads them.
     """
 
     kind = "pyomo"
@@ -556,7 +555,3 @@ class PyomoFactorRepresentation(Representation):
                 data=self.constraint_data(evidence=evidence, variables=variables),
             )
         return model
-
-    def get_copy(self):
-        """Return ``self``: the cached data is never mutated (models are built per query)."""
-        return self

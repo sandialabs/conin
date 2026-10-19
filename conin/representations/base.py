@@ -9,7 +9,6 @@ The registry is the single source of truth for which (kind, family) pairs a
 model type supports.
 """
 
-import copy
 import importlib
 from abc import ABC
 
@@ -19,22 +18,12 @@ from conin.exceptions import InvalidInputError
 class Representation(ABC):
     """Base class for representations built from a constrained model.
 
-    Constrained models cache their representations and hand out
-    ``repn.get_copy()``, so callers can modify what they get (apply evidence,
-    add per-query options) without touching the cached object.
+    ``cmodel.representation(kind, ...)`` builds a new representation on every
+    call (nothing is cached), so the caller owns what it gets.
     """
 
     kind = None
     """str or None: The representation kind this class is registered under."""
-
-    def get_copy(self):
-        """Return a copy that callers may modify freely.
-
-        The default is ``copy.deepcopy(self)``.  Subclasses override it with a
-        cheaper strategy when it is safe, e.g. returning ``self`` for
-        representations that hold no mutable per-query state.
-        """
-        return copy.deepcopy(self)
 
 
 # (kind, model_type, family) -> builder(cmodel, **structure_params) -> Representation
@@ -127,10 +116,10 @@ def get_representation_builder(kind, model_type, family):
 
 
 def build_representation(cmodel, kind, **structure_params):
-    """Build (without caching) the ``kind`` representation of ``cmodel``.
+    """Build the ``kind`` representation of ``cmodel``.
 
-    Most callers should use ``cmodel.representation(kind, ...)``, which caches
-    the result and returns a copy.
+    Most callers should use ``cmodel.representation(kind, ...)``, which calls
+    this.
 
     Raises
     ------
