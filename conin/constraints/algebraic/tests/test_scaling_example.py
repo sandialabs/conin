@@ -1,4 +1,4 @@
-from conin.constraints.algebraic.add_constraints_toulbar2 import _scale_to_integers
+from conin.representations.toulbar2.common import _scale_to_integers
 
 
 def test_examples():

@@ -168,6 +168,17 @@ def save_model_uai(pgm, name, quiet=True):
     quiet : bool, optional
         Accepted for API compatibility and currently unused.
     """
+    text = _uai_text(pgm)
+    with open(name.split(".")[0] + ".uai", "w") as f:
+        f.write(text)
+
+
+def _uai_text(pgm):
+    """Return the UAI text that :func:`save_model_uai` writes for ``pgm``.
+
+    Variables are numbered in ``pgm.nodes`` order and states in
+    ``pgm.states[node]`` order.
+    """
     if isinstance(pgm, DiscreteBayesianNetwork):
         case = "BAYES"
     elif isinstance(pgm, DynamicDiscreteBayesianNetwork):
@@ -211,18 +222,17 @@ def save_model_uai(pgm, name, quiet=True):
 
         tables += [(table_preamble, table_values)]
 
-    # open file
-    with open(name.split(".")[0] + ".uai", "w") as f:
-        # Preamble
-        f.write(case + "\n")  # network type
-        f.write(str(len(node2id)) + "\n")  # num. nodes
-        f.write(" ".join(sizes) + "\n")  # node domain sizes
-        f.write(str(len(tables)) + "\n")  # num. function tables
-        for table_preamble, _ in tables:
-            f.write(" ".join(table_preamble) + "\n")  # table preamble
+    lines = [
+        case,  # network type
+        str(len(node2id)),  # num. nodes
+        " ".join(sizes),  # node domain sizes
+        str(len(tables)),  # num. function tables
+    ]
+    lines += [" ".join(table_preamble) for table_preamble, _ in tables]
 
-        # Function Tables
-        f.write("\n")
-        for _, table_values in tables:
-            f.write(str(len(table_values)) + "\n")  # len table
-            f.write(" ".join(table_values) + "\n")  # table values
+    # Function Tables
+    lines.append("")
+    for _, table_values in tables:
+        lines.append(str(len(table_values)))  # len table
+        lines.append(" ".join(table_values))  # table values
+    return "\n".join(lines) + "\n"

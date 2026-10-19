@@ -239,6 +239,9 @@ def test_supported_representations_hmm():
         ("pyomo_network_flow", None),
         ("pyomo_network_flow", "algebraic"),
         ("pyomo_network_flow", "pyomo"),
+        ("toulbar2", None),
+        ("toulbar2", "algebraic"),
+        ("toulbar2", "toulbar2"),
         ("mvr", "mvr"),
     ]:
         assert pair in pairs

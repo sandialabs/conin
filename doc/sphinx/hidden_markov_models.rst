@@ -99,14 +99,15 @@ used by constraint functions and MVR factories is passed to the constructor
 with ``data=``.
 
 Backend representations are built lazily and cached by
-``representation(kind)``. HMMs register four kinds: ``"oracle"`` (for no
+``representation(kind)``. HMMs register five kinds: ``"oracle"`` (for no
 constraints or oracle constraints), ``"pyomo"`` (the integer program of the
 unrolled model; no constraints, Pyomo or algebraic constraints),
 ``"pyomo_network_flow"`` (the network-flow integer program; no constraints,
-Pyomo or algebraic constraints) and ``"mvr"`` (no constraints or MVR
-constraints; the built MVRs are ``chmm.representation("mvr").mvrs``).
-Toulbar2 and factor-oracle constraints have no HMM representation yet;
-``map_query`` consumes them directly.
+Pyomo or algebraic constraints), ``"toulbar2"`` (the cost function network of
+the unrolled model; no constraints, Toulbar2 or algebraic constraints) and
+``"mvr"`` (no constraints or MVR constraints; the built MVRs are
+``chmm.representation("mvr").mvrs``). Factor-oracle constraints have no HMM
+representation yet; ``map_query`` consumes them directly.
 
 Oracle constraints
 ^^^^^^^^^^^^^^^^^^

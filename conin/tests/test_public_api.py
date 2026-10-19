@@ -169,7 +169,6 @@ SPHINX_AUTODOC = [
     ("conin.constraints", "oracle_constraint_fn", "api_constraints.rst"),
     ("conin.constraints", "pyomo_constraint_fn", "api_constraints.rst"),
     ("conin.constraints", "toulbar2_constraint_fn", "api_constraints.rst"),
-    ("conin.constraints.algebraic.add_constraints_toulbar2", None, "api_constraints.rst"),
     ("conin.constraints.oracle_library", None, "api_oracle_constraints.rst"),
     ("conin.graphical_models", "DiscreteBayesianNetwork", "api_graphical_models.rst"),
     ("conin.graphical_models", "DiscreteCPD", "api_graphical_models.rst"),
@@ -195,6 +194,7 @@ SPHINX_AUTODOC = [
     ("conin.representations", "build_representation", "api_constrained_graphical_models.rst"),
     ("conin.representations", "register_representation", "api_constrained_graphical_models.rst"),
     ("conin.representations", "supported_representations", "api_constrained_graphical_models.rst"),
+    ("conin.representations.toulbar2.common", None, "api_constraints.rst"),
 ]
 
 SPHINX_EXAMPLE_TABLES = [
@@ -291,6 +291,11 @@ RESTRUCTURE_PLAN_API = [
     ("conin.inference.pyomo", "ip_inference", "RESTRUCTURE_PLAN.md §5"),
     ("conin.inference.pyomo", "lp_inference", "RESTRUCTURE_PLAN.md §5"),
     ("conin.inference.pyomo", "solve_pyomo_map_query_model", "RESTRUCTURE_PLAN.md §5"),
+    ("conin.inference.toulbar2", "inference_toulbar2_map_query_BN", "RESTRUCTURE_PLAN.md §5"),
+    ("conin.inference.toulbar2", "inference_toulbar2_map_query_DDBN", "RESTRUCTURE_PLAN.md §5"),
+    ("conin.inference.toulbar2", "inference_toulbar2_map_query_HMM", "RESTRUCTURE_PLAN.md §5"),
+    ("conin.inference.toulbar2", "inference_toulbar2_map_query_MN", "RESTRUCTURE_PLAN.md §5"),
+    ("conin.inference.toulbar2", "solve_toulbar2_map_query_model", "RESTRUCTURE_PLAN.md §5"),
     ("conin.io", "load_model", "RESTRUCTURE_PLAN.md §5"),
     ("conin.io", "save_model", "RESTRUCTURE_PLAN.md §5"),
     ("conin.representations", "Representation", "RESTRUCTURE_PLAN.md §5"),
@@ -298,6 +303,7 @@ RESTRUCTURE_PLAN_API = [
     ("conin.representations", "register_representation", "RESTRUCTURE_PLAN.md §5"),
     ("conin.representations.pyomo", "PyomoNetworkFlowHMMRepresentation", "RESTRUCTURE_PLAN.md §5"),
     ("conin.representations.pyomo", "PyomoVarWrapper", "RESTRUCTURE_PLAN.md §5"),
+    ("conin.representations.toulbar2", "Toulbar2VarWrapper", "RESTRUCTURE_PLAN.md §5"),
 ]
 # fmt: on
 

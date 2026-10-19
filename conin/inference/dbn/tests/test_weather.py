@@ -3,7 +3,7 @@ import pyomo.opt
 
 from conin.util import try_import
 from conin.inference.pyomo import inference_pyomo_map_query_DDBN
-from conin.inference.dbn import inference_toulbar2_map_query_DDBN
+from conin.inference.toulbar2 import inference_toulbar2_map_query_DDBN
 
 from conin.examples import dynamic_bayesian_network as examples
 

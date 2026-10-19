@@ -1,6 +1,6 @@
 # Conin Restructure Plan
 
-Status: **In progress.** PR 0 is merged into `main` (#241). PR 1 is merged into `restructure` (#242). PR 2 is merged into `restructure` (#243). PR 3 is merged into `restructure` (#244). PR 4 is split into sub-PRs 4f, 4a, 4b, 4e, 4c, 4d (in that order, stacked branches); 4f is done (branch `restructure-pr4f-io`, off `restructure`, merged as #245); 4a is done (branch `restructure-pr4a-pyomo`, off 4f). The later PRs target the `restructure` branch.
+Status: **In progress.** PR 0 is merged into `main` (#241). PR 1 is merged into `restructure` (#242). PR 2 is merged into `restructure` (#243). PR 3 is merged into `restructure` (#244). PR 4 is split into sub-PRs 4f, 4a, 4b, 4e, 4c, 4d (in that order, stacked branches); 4f is done (branch `restructure-pr4f-io`, off `restructure`, merged as #245); 4a is done (branch `restructure-pr4a-pyomo`, off 4f, merged as #246); 4b is done (branch `restructure-pr4b-toulbar2`, off 4a). The later PRs target the `restructure` branch.
 This file lives at the repo root while the work is in progress. Delete it in the final PR.
 
 All decisions are recorded in §11; §12 lists what is still open. Critiques of the
@@ -107,6 +107,19 @@ conin/
   hidden_markov_model/   chmm_algebraic.py and inference/lp.py removed
   constraints/algebraic/ add_constraints_pyomo.py removed (now representations/pyomo/common.py)
 ```
+After PR 4b:
+```
+conin/
+  representations/toulbar2/ common.py (Toulbar2VarWrapper, apply_toulbar2_constraints, Toulbar2FactorRepresentation,
+                         add_algebraic_constraints_to_toulbar2_model + add_toulbar2_constraints (smoek->toulbar2)),
+                         mn.py bn.py dbn.py hmm.py (Toulbar2{MN,BN,DBN,HMM}Representation, kind "toulbar2"), tests/
+  inference/toulbar2/    solve.py (solve_toulbar2_map_query_model + inference_toulbar2_map_query_MN), bn.py dbn.py hmm.py
+                         (inference_toulbar2_map_query_{BN,DDBN,HMM})
+  inference/{mn,bn,dbn}/ no toulbar2 code left: empty __init__ + tests/ (+ mn/factor_repn.py, until 4e)
+  inference/hmm/         removed
+  constraints/algebraic/ add_constraints_toulbar2.py removed (now representations/toulbar2/common.py)
+  io/uai.py              save_model_uai writes the text of the private _uai_text(pgm) (shared with the toulbar2 repns)
+```
 
 ### 2.2 Problems the restructure should fix
 - **The constrained wrappers are inconsistent.**
@@ -125,23 +138,24 @@ conin/
   - inside "model" classes: `PyomoAlgebraic_CHMM.generate_model` (PR 3: reached only through the
     "pyomo_network_flow" repn; **4a: replaced by `PyomoNetworkFlowHMMRepresentation.create_model`**);
   - inside inference functions: `create_*_map_query_model_*` (**4a: the Pyomo ones are removed; the
-    "pyomo" representations build the models**; toulbar2 remains for 4b), and `lp_inference`
+    "pyomo" representations build the models**; **4b: the toulbar2 ones too, the "toulbar2" representations build the CFNs**), and `lp_inference`
     builds a CHMM (PR 3: uses `representation("pyomo_network_flow")`; 4a: `create_model(observed=)`);
   - inside the dispatch layer: `VariableElimination._add_*_constraints_as_evidence` (remains; 4e).
 - **Almost nothing is cached.** Only `HiddenMarkovModel.repn` is. The
   HMM→DBN→BN→MN→factor-repn→Pyomo chain is rebuilt on every query (4a: cached up to the factor repn,
-  per `(start, stop)`, when the same constrained model is reused; `map_query` on a bare model still wraps it anew each call).
+  per `(start, stop)`, when the same constrained model is reused; 4b: the toulbar2 chain is cached up to the UAI text; `map_query` on a bare model still wraps it anew each call).
 - **There is a lot of duplication:**
   - 3 copies of `PyomoVarWrapper` (**4a: one, in `representations/pyomo/common.py`**);
-  - the MN and BN toulbar2 builders are near-identical;
+  - the MN and BN toulbar2 builders are near-identical (**4b: one `Toulbar2FactorRepresentation.create_model`**);
   - every ovld dispatcher has identical Constrained/unconstrained overload pairs;
   - there are 3 separate `add_constraints` dispatchers (**4a: the Pyomo one is
-    `representations/pyomo/common.apply_pyomo_constraints`**; toulbar2 in 4b).
+    `representations/pyomo/common.apply_pyomo_constraints`**; **4b: the toulbar2 one is
+    `representations/toulbar2/common.apply_toulbar2_constraints`**).
 - **The imports are tangled.**
   - `constraints` lazily imports MN, BN and HMM.
   - `operators.py` and `mvr_operators` import each other (a cycle).
   - Some code uses implicit attribute-path imports (`conin.inference.mn.inference_pyomo.solve_…`)
-    that only work because of import order (**4a: gone from the Pyomo code**; the toulbar2 modules still have them).
+    that only work because of import order (**4a: gone from the Pyomo code; 4b: gone from the toulbar2 code**).
 - `mvr_common.py` mixes representation building with torch kernels.
 - `recursive_a_star` relies on an undeclared duck-typed protocol on an
   `HMMApplication` subclass instead of a constraint object.
@@ -204,6 +218,20 @@ conin/
   evidence, omit_c5) are byte-identical to the old path.
 - **After the PR 4a follow-ups** (`_validate_bn_query` merges the two BN query helpers; `ConstrainedGraphicalModel.ensure`):
   **1116 passed, 193 skipped, 0 errors** in `.venv-opencode` (+1, `test_base.test_ensure`).
+- **PR 4b branch point** (`restructure-pr4b-toulbar2` off `restructure-pr4a-pyomo` = 994ce9a; `restructure` = last-fetched
+  `origin/restructure` 08f9d95 is its merge, same tree): 1116 passed, 193 skipped, 0 errors (re-run).
+- **After PR 4b:** **1151 passed, 193 skipped, 0 errors** in `.venv-opencode` (+35). New:
+  `representations/toulbar2/tests/test_toulbar2_representations.py` (29: registry pairs, repn classes and get_copy, the
+  cached UAI text = `save_model` output, the var-wrapper state order, two gets give independent CFNs, evidence isolation,
+  cache keys, `verbose`/`write_uai_file` not cache keys, `write_uai_file` with a dotted directory, the constraint `data`
+  each model passes, the two §9 regression groups) and +6 `test_public_api.py` rows (`conin.inference.toulbar2.*`,
+  `conin.representations.toulbar2.Toulbar2VarWrapper`; the `conin.constraints.algebraic.add_constraints_toulbar2` module
+  row moved to `conin.representations.toulbar2.common`): 239 passed, 9 skipped. Rewritten:
+  `test_base.test_supported_representations_hmm` (+3 toulbar2 pairs). No test removed. Commit 1 (rename-only) gave
+  1116/193. In the `conin_scaling_experiments` venv (pgmpy): `test_MAP_Inference.py` 69 passed, 41 skipped (unchanged).
+  The UAI text, solutions, primal bounds, constraint `data` and `M.V` are identical to the old path on 26 cases
+  (MN/BN/DBN/HMM; unconstrained, toulbar2, algebraic, evidence, `solution_with_evidence`, list/dict HMM evidence,
+  `write_uai_file`).
 - pgmpy, or_topas, gurobi and glpk are not installed in `.venv-opencode`; torch is broken
   there; greenery is missing.
 - PR 0 adds `doc/notebooks/MVR/*.ipynb` to the CI notebook job and fixes the
@@ -259,9 +287,9 @@ conin/
 │   │   ├── common.py           # ONE PyomoVarWrapper, apply_pyomo_constraints, IP-from-factor-repn, c5 constraints, smoek->pyomo, PyomoFactorRepresentation
 │   │   ├── mn.py  bn.py  dbn.py  hmm.py   # Pyomo{MN,BN,DBN,HMM}Representation ("pyomo")
 │   │   └── hmm_network_flow.py # PyomoNetworkFlowHMMRepresentation, from PyomoAlgebraic_CHMM (ip_formulation="network_flow")
-│   ├── toulbar2/
-│   │   ├── common.py           # UAI->CFN, Toulbar2VarWrapper, smoek->toulbar2 linear translator
-│   │   └── mn.py  bn.py  dbn.py  hmm.py
+│   ├── toulbar2/               # (PR 4b: done)
+│   │   ├── common.py           # Toulbar2VarWrapper, apply_toulbar2_constraints, smoek->toulbar2 linear translator, Toulbar2FactorRepresentation (UAI text -> fresh CFN)
+│   │   └── mn.py  bn.py  dbn.py  hmm.py   # Toulbar2{MN,BN,DBN,HMM}Representation ("toulbar2")
 │   ├── mvr/
 │   │   ├── hmm.py              # MVRRepresentation (replaces MVR_CHMM): aligned MVRs + static context
 │   │   └── kernels.py          # shared torch kernels from mvr_common.py (used by inference/learning/sampling/queries)
@@ -272,7 +300,7 @@ conin/
 │   ├── map_query.py            # public entry point (method -> repn kind -> ovld on repn type)
 │   ├── unconstrained/          # viterbi.py, a_star core search (a_star_)
 │   ├── pyomo/                  # (PR 4a) solve.py (generic solve/parse); mn/bn/dbn/hmm.py (per-model post-processing); hmm_network_flow.py (lp_inference, ip_inference, from lp.py)
-│   ├── toulbar2/               # solve.py, per-model post-processing
+│   ├── toulbar2/               # (PR 4b) solve.py (solve_toulbar2_map_query_model + MN); bn/dbn/hmm.py (per-model post-processing)
 │   ├── variable_elimination/   # VE on factor repn; custom_VE.py moves here
 │   ├── mvr/                    # viterbi.py, marginal_map.py
 │   ├── oracle/                 # a_star_hmm.py
@@ -304,7 +332,9 @@ Removed outright:
 - `create_algebraic_chmm`, `Xgenerate_hidden`, and the duplicated `PyomoVarWrapper`s;
 - (PR 4a, done) `Algebraic_CHMM`, `PyomoAlgebraic_CHMM`, `CallableDict`, `create_algebraic_chmm`, `Xgenerate_hidden`,
   `create_pyomo_map_query_model_{MN,BN,DDBN,HMM}` and the `add_constraints` dispatcher in `inference/mn/inference_pyomo.py`
-  (replaced by `apply_pyomo_constraints`).
+  (replaced by `apply_pyomo_constraints`);
+- (PR 4b, done) `create_toulbar2_map_query_model_{MN,BN,DDBN,HMM}`, the `add_constraints` dispatcher in
+  `inference/mn/inference_toulbar2.py` (replaced by `apply_toulbar2_constraints`) and the `conin.inference.hmm` package.
 
 Kept even though untested (they have plausible uses): `factor_repn.get_factor_value`, and
 similar code. Rule for subagents: **delete only code that becomes redundant because of the
@@ -454,6 +484,24 @@ class ConstrainedGraphicalModel:
     `x_binary=True`, `y_binary=False`. `create_model(*, observed, Tmax=None)` returns `(model, data)`, where `data` is a
     shallow copy of the application data with `.hmm` = the index sets. `M.V` is the shared `PyomoVarWrapper`
     (keys `(("H", t), State(h))`).
+- (PR 4b) Registered: `"toulbar2"` for MN, BN, DBN and HMM (None, "toulbar2", "algebraic"). The toulbar2 representations:
+  - `Toulbar2FactorRepresentation` (base; `representations/toulbar2/common.py`) holds `uai_text` (the UAI text of
+    `uai_model`, byte-identical to `conin.io.save_model`'s output), `uai_model` (the MN, the BN, or the unrolled BN for
+    DBNs/HMMs; its `nodes`/`states_of` order fixes the CFN variable and value indices), `pgm` (the model the constraint
+    applier sees: MN, BN, the unrolled BN for DBNs, the DBN for HMMs, as before), `constraints`, `nodes`.
+    `create_model(*, evidence=None, variables=None, verbose=-1, write_uai_file=None, timing=False)` writes the text to a
+    temp file (or exactly to `write_uai_file`), reads it into a fresh `pytoulbar2.CFN(verbose=)`, attaches a fresh
+    `Toulbar2VarWrapper` as `M.V`, `M.states` and `M.V_evidence`, `Assign`s the evidence
+    (`uai_model.states_of(k).index(v)`), then applies the constraints with `constraint_data(evidence=, variables=)`: the same
+    layout as the Pyomo repns (MN/BN `Munch(variables, evidence)`; DBN `+start, stop, T`; HMM
+    `Munch(start, stop, variables, evidence, hmm=Munch(T, hidden_to_internal))`; HMM evidence keyed `("E", t)`). The
+    constrained model's own `data` is **not** passed (unchanged; §9 row for PR 5).
+  - Structure params / cache key: MN, BN `()`; DBN `start=0, stop=1`; HMM `start=0, stop` (required). `verbose`,
+    `write_uai_file`, `variables` and the solve options are per-query.
+  - The builders build on each other: HMM → `create_dbn_from_hmm` → `build_toulbar2_dbn_representation`
+    (`create_bn_from_dbn`) → `build_toulbar2_bn_representation`. The MN builder uses the MN directly.
+  - The toulbar2 paths take no `prune_network`/`create_MN` (they reach `solve_toulbar2_map_query_model` and raise
+    `TypeError`, as before), so 4a's `_validate_bn_query` is not shared.
 
 ### 4.4 Caching and copy-on-get
 - Representations are cached on the constrained model.
@@ -469,7 +517,7 @@ class ConstrainedGraphicalModel:
   | (PR 3) pyomo_network_flow HMM | a fresh wrapper with a shallow copy of `data` (the CHMM writes `data.hmm` per query) |
   | (PR 4a) Pyomo (`"pyomo"`, MN/BN/DBN/HMM) | `self`: the repn caches the evidence-independent factor repn; `create_model()` rebuilds a fresh Pyomo model per query (`clone()` was 1.6–2.4× slower than a rebuild, §11) |
   | (PR 4a) pyomo_network_flow HMM | `self`: `create_model(observed=)` builds the model and a per-query shallow copy of `data` (the model depends on the observations) |
-  | toulbar2                   | cache the intermediate (UAI text + constraint/evidence spec); rebuild a fresh `pytoulbar2.CFN` on each get |
+  | (PR 4b) toulbar2 (MN/BN/DBN/HMM) | `self`: the repn caches the UAI text and the constraints; `create_model()` reads a fresh `pytoulbar2.CFN` per query and applies evidence (`Assign`) and constraints to it (CFNs can't be copied) |
 
 - Evidence and per-query options are applied to the *copy* by the inference
   code. They are never applied to the cached object.
@@ -554,6 +602,8 @@ from conin.examples.hidden_markov_model import create_hmm1, create_chmm1_pyomo
 from conin.io import load_model, save_model
 from conin.inference.pyomo import inference_pyomo_map_query_MN, ..., lp_inference, ip_inference, solve_pyomo_map_query_model
 from conin.representations.pyomo import PyomoVarWrapper, PyomoNetworkFlowHMMRepresentation, ...
+from conin.inference.toulbar2 import inference_toulbar2_map_query_MN, ..., solve_toulbar2_map_query_model
+from conin.representations.toulbar2 import Toulbar2VarWrapper, Toulbar2MNRepresentation, ...
 from conin.common import log_potential, is_polytree, convert_pgmpy_to_conin
 ```
 
@@ -622,6 +672,21 @@ Breaking changes (these go in the CHANGELOG for 2.0):
 - (PR 4a) `map_query(hmm, method="integer_program", ip_formulation="network_flow")` raises `InvalidInputError` for
   evidence that is not a list or dict (it returned `None`). `prune_network=False`/`create_MN=False` are accepted
   (they raised `TypeError` from the solver).
+- (PR 4b) The toulbar2 inference code moves to `conin.inference.toulbar2`: `inference_toulbar2_map_query_{MN,BN,DDBN,HMM}`
+  (were `conin.inference.{mn,bn,dbn,hmm}[.inference_toulbar2]`) and `solve_toulbar2_map_query_model` (was
+  `conin.inference.mn.inference_toulbar2`). Names and signatures are unchanged. `conin.inference.hmm` is removed, and
+  `conin.inference.{mn,bn,dbn}` no longer export anything.
+- (PR 4b) `create_toulbar2_map_query_model_{MN,BN,DDBN,HMM}` are removed. Use
+  `Constrained*(model, constraints).representation("toulbar2", [start=, stop=]).create_model(evidence=..., verbose=...)`.
+  `Toulbar2VarWrapper` (was `conin.inference.mn.inference_toulbar2`) moves to `conin.representations.toulbar2`;
+  `add_algebraic_constraints_to_toulbar2_model` and `add_toulbar2_constraints` move to
+  `conin.representations.toulbar2.common` (were `conin.constraints.algebraic[.add_constraints_toulbar2]`;
+  `conin.constraints.algebraic` no longer exports `add_algebraic_constraints_to_toulbar2_model`).
+- (PR 4b) `map_query(..., method="toulbar2", verbose=...)` works for every model type (it raised `TypeError` from
+  `solve_toulbar2_map_query_model`). The DBN/HMM toulbar2 paths return the `"pytoulbar2 not available"` result when
+  pytoulbar2 is missing (they raised `NameError`).
+- (PR 4b) `write_uai_file=` writes exactly that file (it used `save_model`, which writes `name.split(".")[0] + ".uai"`, so a
+  path with a dot in a directory name wrote elsewhere and the read failed, and a non-`.uai` name raised `RuntimeError`).
 - New: `map_query(..., method="mvr_viterbi")`.
 
 ---
@@ -643,7 +708,7 @@ detection keeps the diffs reviewable.
 | 2 | Constraints → containers | move + small refactor | **DONE (branch `restructure-pr2-constraints`).** Split `constraint.py`. Move the oracle library and the MVR spec code (mvr, primitives, operators, formula) into `constraints/`. Merge `operators.py` (removes the cycle). Add `family`. Split `FactorOracleConstraint`. Move `_materialise` into a temporary home in `representations/factor/`. |
 | 3 | `ConstrainedGraphicalModel` + representation framework | **design** | **DONE (branch `restructure-pr3-constrained-models`).** Base class, registry, cache, `get_copy`, immutability. Port the four constrained classes. Builders initially wrap the *existing* create functions, so behaviour stays identical. Update every `initialize_chmm` and `.chmm` call site (examples, tests, docs). |
 | 4a | Pyomo repns + `inference/pyomo` | refactor | **DONE (branch `restructure-pr4a-pyomo`, off 4f).** One `PyomoVarWrapper` and one constraint applier. Split create from solve. Network-flow repn. Fix Pyomo-path bugs from §9. |
-| 4b | toulbar2 repns + `inference/toulbar2` | refactor | Dedupe the MN/BN builders. Implement the rebuild-on-get strategy. Fix toulbar2 bugs. |
+| 4b | toulbar2 repns + `inference/toulbar2` | refactor | **DONE (branch `restructure-pr4b-toulbar2`, off 4a).** Dedupe the MN/BN builders. Implement the rebuild-on-get strategy. Fix toulbar2 bugs. |
 | 4c | Oracle + Recursive (A*), oracle sampling, mcem | refactor | `Oracle_CHMM` becomes `OracleRepresentation`. Add `RecursiveConstraint`, decouple `HMMApplication` and move it to `applications/`. Fix the A* pruning bugs. |
 | 4d | MVR | refactor | `chmm_mvr` and `mvr_common` become repn plus kernels. Move inference, learning, sampling and queries. Update all MVR notebooks. |
 | 4e | Factor / VE | refactor | VE constraint handling moves into the factor repn. Move `custom_VE`. Fix the VE evidence bugs. |
@@ -701,7 +766,7 @@ dependencies, and no new top-level imports of optional backends.
 ---
 
 ## 8. Testing strategy
-- PR 0 adds a public-API smoke test and records the baseline counts (959 passed / 195 skipped / 0 errors; see §2.3). After PR 1: 962 passed / 195 skipped. After PR 2: 1009 passed / 195 skipped (+47 new tests). After PR 3: 1074 passed / 195 skipped (+65). After the PR 3 follow-ups: 1075 passed / 195 skipped. After PR 4f: 1076 passed / 193 skipped (−4 passed and −2 skipped deleted loader tests, +5 `test_public_api.py` rows). After PR 4a: 1115 passed / 193 skipped (+30 Pyomo representation tests, +9 `test_public_api.py` rows); 1116 / 193 after the 4a follow-ups (+1, `test_ensure`).
+- PR 0 adds a public-API smoke test and records the baseline counts (959 passed / 195 skipped / 0 errors; see §2.3). After PR 1: 962 passed / 195 skipped. After PR 2: 1009 passed / 195 skipped (+47 new tests). After PR 3: 1074 passed / 195 skipped (+65). After the PR 3 follow-ups: 1075 passed / 195 skipped. After PR 4f: 1076 passed / 193 skipped (−4 passed and −2 skipped deleted loader tests, +5 `test_public_api.py` rows). After PR 4a: 1115 passed / 193 skipped (+30 Pyomo representation tests, +9 `test_public_api.py` rows); 1116 / 193 after the 4a follow-ups (+1, `test_ensure`). After PR 4b: 1151 passed / 193 skipped (+29 toulbar2 representation tests, +6 `test_public_api.py` rows).
 - Every PR must keep the pass count ≥ baseline, after adjusting for deliberately deleted tests.
 - PR 3 adds tests for:
   - immutability (setattr raises; `with_*` returns a new object);
@@ -710,7 +775,7 @@ dependencies, and no new top-level imports of optional backends.
   - cache hits;
   - `get_copy` isolation (mutating a returned Pyomo model doesn't affect the next get).
   (PR 3: all done, using a test representation registered in the test; the Pyomo `get_copy` test moves to 4a.
-  PR 4a: done, `test_mutating_a_returned_model_does_not_affect_the_next_one`.)
+  PR 4a: done, `test_mutating_a_returned_model_does_not_affect_the_next_one`. PR 4b: `test_two_gets_give_independent_models`.)
 - Each bug fix gets a regression test.
 - Notebooks run in CI, including `MVR/`.
 
@@ -726,13 +791,16 @@ dependencies, and no new top-level imports of optional backends.
 | The `CHMM` overloads in the AStar/Optimization/CFN dispatchers are broken | 3 (removed) |
 | VE: the ConstrainedMN overload replaces user evidence with `{}`; the MN factor oracle forces an existing scope node to 1 | 4e |
 | VE: `_add_{bn,mn}_constraints_as_evidence` return `None` for an empty constraint list, and their `TypeError` strings were missing the `f` prefix | 2 (fixed, regression tests in `inference/tests/test_variable_elimination_helpers.py`) |
-| `solve_toulbar2_map_query_model` rejects extra `**options` (e.g. `verbose`) | 4b |
-| The DBN/HMM toulbar2 paths don't check that pytoulbar2 is available | 4b |
+| `solve_toulbar2_map_query_model` rejects extra `**options` (e.g. `verbose`) | 4b (fixed: the inference functions pop `verbose` and pass it to `create_model()`; `solve` keeps its signature and still rejects unknown options; `test_verbose_option_is_accepted` (MN/BN/DBN/HMM), `test_unknown_options_still_raise`) |
+| The DBN/HMM toulbar2 paths don't check that pytoulbar2 is available | 4b (fixed: all four return the `"pytoulbar2 not available"` result; `test_pytoulbar2_not_available` (MN/BN/DBN/HMM)) |
+| `save_model_uai` writes to `name.split(".")[0] + ".uai"`: a dot in a directory name (e.g. `/a.b/out.uai`, `./out.uai`) writes the wrong file. This is likely why ~66 toulbar2/UAI tests fail with `TMPDIR=/projects/.conin-scratch/tmp` (the old toulbar2 path wrote its temp UAI file through it; since 4b the toulbar2 path writes the cached text directly, but `save_model` and the IO tests still hit it) | 6 (found in 4b; use `os.path.splitext`) |
+| pytoulbar2 keeps the input format in a global option: after `CFN.Read("x.cfn")`, later toulbar2 queries in the same process fail with "wrong problem file format" until `pytoulbar2.pytb2.option.cfn = False` (conin never reads `.cfn` with pytoulbar2 itself, only the tests do) | 6 (found in 4b; reset the option in `Toulbar2FactorRepresentation._read`) |
+| The toulbar2 paths pass `variables` to the constraint functions but otherwise ignore it (the MN docstring said "Ignoring variables for now"); `prune_network`/`create_MN` reach `solve_toulbar2_map_query_model` and raise `TypeError` (the Pyomo paths raise `RuntimeError` via `_validate_bn_query`) | 5 (found in 4b; decide whether to share the Pyomo query checks) |
 | The HMM `network_flow` branch can return `None` | 4a (fixed: `InvalidInputError`; `test_network_flow_rejects_unsupported_{evidence,model}` in `representations/pyomo/tests/test_pyomo_representations.py`) |
 | `CallableDict.__getitem__` returns `KeyError` instead of raising it (it was `__call__`, for a bad arity; a missing key also returned `None`) | 4a (fixed: `CallableDict` replaced by `PyomoVarWrapper`; `test_network_flow_V_{lookups,bad_arity_raises,missing_key_raises}`) |
 | BN/DBN/HMM Pyomo paths forwarded `prune_network=False`/`create_MN=False` to `solve_pyomo_map_query_model`, which raised `TypeError` | 4a (fixed; `test_bn_prune_network_false_is_accepted`) |
 | `solve_pyomo_map_query_model` and `ip_inference` (or_topas) `pop("topas_method")` from the caller's `solver_options`, mutating it (a second call with the same dict uses `"balas"`) | 6 (found in 4a) |
-| The MN/BN/DBN/HMM `"pyomo"` paths never pass the constrained model's `data` to constraint functions (only network flow does), so `Constrained*(..., data=d)` is ignored there | 5 (found in 4a; decide whether to merge `cmodel.data` into the per-query data) |
+| The MN/BN/DBN/HMM `"pyomo"` and (4b) `"toulbar2"` paths never pass the constrained model's `data` to constraint functions (only network flow does), so `Constrained*(..., data=d)` is ignored there | 5 (found in 4a; decide whether to merge `cmodel.data` into the per-query data) |
 | `ConstrainedDynamicDiscreteBayesianNetwork.nodes` is not a property | 3 (fixed, regression test in `constrained_models/tests/test_dynamic_bayesian_network.py`) |
 | `a_star` on an unconstrained `ConstrainedHiddenMarkovModel` raised `AttributeError` (a bare `CHMM` has no `is_feasible`) | 3 (fixed as a side effect of the "oracle" repn) |
 | `mcem` calls `app.generate_hidden` twice per sample (it scores one sequence and trains on another) | 4c |
@@ -828,6 +896,13 @@ dependencies, and no new top-level imports of optional backends.
 | Network-flow `x_binary`/`y_binary` (PR 4a) | Kept as structure params (defaults `True`/`False`); `cache_indices` dropped (index sets are per query) |
 | Network flow + "algebraic" (PR 4a) | Registered and tested |
 | Constrained model: composition vs inheritance (PR 4a) | Keep composition (`cmodel.model`). Inheritance from the unconstrained class would let bare-model code (Viterbi, `save_model`, converters, samplers, learning) silently drop the constraints, make inherited builders like `with_factor` return the base type, and turn `with_model` into copy-and-rebuild. The wrap-if-bare boilerplate is handled by the `ensure(pgm)` classmethod instead (and by PR 5's `map_query` normalisation) |
+| toulbar2 cached intermediate (PR 4b) | The UAI text of the (unrolled) model (via the private `conin.io.uai._uai_text`, byte-identical to `save_model`) plus that model and the constraints; a fresh CFN is read per query; `get_copy()` returns `self`. Measured on this emulated CPU (best of 3), per query: weather DBN stop=4 old path 0.012 s / cached `create_model` 0.004 s; stop=20 0.042 / 0.012 s; 5×4 HMM T=50 0.060 / 0.015 s (the repn build, unroll + text, is 0.004 / 0.018 / 0.028 s, once) |
+| toulbar2 evidence and per-query options (PR 4b) | Evidence is `Assign`ed on the fresh CFN, as before. `verbose` and `write_uai_file` are `create_model()` options (as `omit_c5` in 4a); the inference functions pop `verbose` from `**options` so `solve_toulbar2_map_query_model` keeps its signature and still rejects unknown options |
+| toulbar2 cache key (PR 4b) | `()` for MN/BN, `(start, stop)` for DBN/HMM (HMM `stop` required), as for "pyomo" |
+| `create_toulbar2_map_query_model_*` (PR 4b) | Removed (the "toulbar2" repns' `create_model` replaces them). `conin.representations.toulbar2.common` is public: `Toulbar2VarWrapper`, `apply_toulbar2_constraints`, `Toulbar2FactorRepresentation`, `add_algebraic_constraints_to_toulbar2_model`, `add_toulbar2_constraints` (its `__all__`, which also keeps Sphinx autodoc off the mocked `pytoulbar2`; `_scale_to_integers` stays private). `conin.constraints.algebraic` no longer re-exports the translator |
+| `inference/toulbar2/` layout (PR 4b) | `solve.py` (`solve_toulbar2_map_query_model` + `inference_toulbar2_map_query_MN`, as the old MN module), `bn.py`, `dbn.py`, `hmm.py`; `conin/inference/hmm/` deleted; `conin.inference.{mn,bn,dbn}` keep their tests (and `mn/factor_repn.py` until 4e) |
+| toulbar2 `write_uai_file` (PR 4b) | Writes the cached UAI text to exactly that path and reads the CFN from it |
+| Bugs found in 4b outside its §9 rows (PR 4b) | `save_model_uai`'s path bug and the pytoulbar2 `option.cfn` leak are recorded in §9 for PR 6, not fixed in 4b |
 | Constructor names / CHMM overloads | First parameter is `model` (no `hmm=`/`pgm=` alias); the broken `CHMM` overloads in the AStar/Optimization/CFN dispatchers are removed in PR 3 |
 
 ---
@@ -835,5 +910,9 @@ dependencies, and no new top-level imports of optional backends.
 ## 12. Open questions
 
 None blocking. These can be settled during PR 3 (the design PR):
-- (Pyomo `get_copy()`: settled in PR 4a, rebuild; see §11.)
+- (Pyomo `get_copy()`: settled in PR 4a, rebuild; see §11. toulbar2: settled in PR 4b, UAI text + fresh CFN.)
+- **Where the cross-backend per-model inference tests go once `inference/{mn,bn,dbn}/` hold no code** (after 4e; from
+  4b). `conin/inference/{mn,bn,dbn}/tests/` exercise pyomo, toulbar2, VE and `map_query`. Options:
+  `inference/tests/{mn,bn,dbn}/`, flattened `inference/tests/test_<model>_*.py`, or keep the folders for tests only.
+  Decide in a follow-up after 4e.
 - (`with_model` cache behaviour, the `Representation` signatures and the registration decorator were settled in PR 3; see §11.)
