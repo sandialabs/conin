@@ -98,8 +98,8 @@ constraints); mixing families raises ``InvalidInputError``. Application data
 used by constraint functions and MVR factories is passed to the constructor
 with ``data=``.
 
-Backend representations are built lazily and cached by
-``representation(kind)``. HMMs register five kinds: ``"oracle"`` (for no
+Backend representations are built by ``representation(kind)``; each call
+builds a new one. HMMs register five kinds: ``"oracle"`` (for no
 constraints or oracle constraints), ``"pyomo"`` (the integer program of the
 unrolled model; no constraints, Pyomo or algebraic constraints),
 ``"pyomo_network_flow"`` (the network-flow integer program; no constraints,

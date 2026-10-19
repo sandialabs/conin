@@ -12,7 +12,7 @@ from .dbn import build_pyomo_dbn_representation
 class PyomoHMMRepresentation(PyomoFactorRepresentation):
     """Factor-repn IP of a constrained HMM unrolled (as a DBN) over ``start..stop``.
 
-    Structure params (the cache key): ``start`` and ``stop``.  The hidden
+    Structure params: ``start`` and ``stop``.  The hidden
     nodes are ``("H", t)`` and the observed nodes ``("E", t)``; evidence must
     be keyed by ``("E", t)``.  Constraint functions see
     ``data = Munch(start, stop, variables, evidence,

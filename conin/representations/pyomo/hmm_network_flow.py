@@ -241,10 +241,10 @@ class PyomoNetworkFlowHMMRepresentation(Representation):
 
     Notes
     -----
-    Structure params (the cache key): ``x_binary`` and ``y_binary``.
+    Structure params: ``x_binary`` and ``y_binary``.
     Constraint functions see ``M.V("H", t, h)`` (a :class:`PyomoVarWrapper`
     over ``M.hmm.x``) and ``M.hmm``.  Nothing is mutated after construction,
-    so :meth:`get_copy` returns ``self``.
+    so one representation can serve several queries.
     """
 
     kind = "pyomo_network_flow"
@@ -297,10 +297,6 @@ class PyomoNetworkFlowHMMRepresentation(Representation):
                 pgm=hmm, constraints=self.constraints, model=M, data=data
             )
         return M, data
-
-    def get_copy(self):
-        """Return ``self``: models and per-query data are built by :meth:`create_model`."""
-        return self
 
 
 @register_representation(

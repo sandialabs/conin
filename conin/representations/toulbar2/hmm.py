@@ -12,7 +12,7 @@ from .dbn import build_toulbar2_dbn_representation
 class Toulbar2HMMRepresentation(Toulbar2FactorRepresentation):
     """toulbar2 CFN of a constrained HMM unrolled (as a DBN) over ``start..stop``.
 
-    Structure params (the cache key): ``start`` and ``stop``.  The hidden
+    Structure params: ``start`` and ``stop``.  The hidden
     nodes are ``("H", t)`` and the observed nodes ``("E", t)``; evidence must
     be keyed by ``("E", t)``.  Constraint functions see
     ``data = Munch(start, stop, variables, evidence,

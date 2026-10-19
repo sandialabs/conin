@@ -109,68 +109,63 @@ def test_pyomo_representation_classes(cmodel, params, cls):
 
 
 # ---------------------------------------------------------------------
-# get_copy isolation and caching (§8)
+# One representation serves several queries; structure params
 # ---------------------------------------------------------------------
 
 
 def test_mutating_a_returned_model_does_not_affect_the_next_one():
-    cmodel = mex.ABC_constrained_pyomo_conin().pgm
-    M1 = cmodel.representation("pyomo").create_model()
+    repn = mex.ABC_constrained_pyomo_conin().pgm.representation("pyomo")
+    M1 = repn.create_model()
     n_constraints = M1.nconstraints()
     M1.extra = pyo.Constraint(expr=M1.V("A", 0) == 1)
     M1.V("B", 1).fix(1)
     M1.del_component(M1.c1)
 
-    M2 = cmodel.representation("pyomo").create_model()
+    M2 = repn.create_model()
     assert M2 is not M1
     assert M2.nconstraints() == n_constraints
     assert not hasattr(M2, "extra")
     assert not any(var.is_fixed() for var in M2.x.values())
 
 
-def test_evidence_never_reaches_the_cached_representation():
+def test_evidence_does_not_change_the_representation():
     cmodel = ConstrainedDiscreteMarkovNetwork(mex.ABC_conin().pgm)
     repn = cmodel.representation("pyomo")
     S_before = {k: list(v) for k, v in repn.S.items()}
     M1 = repn.create_model(evidence={"B": 0})
     assert M1.V("B", 0).is_fixed()
-    M2 = cmodel.representation("pyomo").create_model()
+    M2 = repn.create_model()
     assert not any(var.is_fixed() for var in M2.x.values())
     assert repn.S == S_before
-    assert cmodel.representation("pyomo") is repn
 
 
-def test_omit_c5_is_a_create_model_option_not_a_cache_key():
-    cmodel = ConstrainedDiscreteMarkovNetwork(mex.ABC_conin().pgm)
-    repn = cmodel.representation("pyomo")
+def test_omit_c5_is_a_create_model_option():
+    repn = ConstrainedDiscreteMarkovNetwork(mex.ABC_conin().pgm).representation("pyomo")
     assert hasattr(repn.create_model(), "c5")
     assert not hasattr(repn.create_model(omit_c5=True), "c5")
-    assert cmodel.representation("pyomo") is repn
 
 
-def test_dbn_cache_is_keyed_by_start_and_stop():
+def test_dbn_structure_params_start_and_stop():
     cmodel = ConstrainedDynamicDiscreteBayesianNetwork(dex.weather_conin().pgm)
     r4 = cmodel.representation("pyomo", stop=4)
-    assert cmodel.representation("pyomo", stop=4) is r4
     r5 = cmodel.representation("pyomo", stop=5)
-    assert r5 is not r4
     assert (r4.start, r4.stop, r5.stop) == (0, 4, 5)
     assert len(r5.nodes) > len(r4.nodes)
 
 
-def test_hmm_cache_is_keyed_by_start_and_stop():
+def test_hmm_structure_params_start_and_stop():
     cmodel = ConstrainedHiddenMarkovModel(hex_.create_hmm1())
-    r = cmodel.representation("pyomo", stop=4)
-    assert cmodel.representation("pyomo", stop=4) is r
-    assert cmodel.representation("pyomo", stop=5) is not r
+    r4 = cmodel.representation("pyomo", stop=4)
+    r5 = cmodel.representation("pyomo", stop=5)
+    assert (r4.start, r4.stop, r5.stop) == (0, 4, 5)
+    assert len(r5.nodes) > len(r4.nodes)
 
 
-def test_network_flow_cache_is_keyed_by_variable_domains():
+def test_network_flow_structure_params_variable_domains():
     cmodel = ConstrainedHiddenMarkovModel(hex_.create_hmm1())
     default = cmodel.representation("pyomo_network_flow")
     assert (default.x_binary, default.y_binary) == (True, False)
     relaxed = cmodel.representation("pyomo_network_flow", x_binary=False)
-    assert relaxed is not default
     M, _ = relaxed.create_model(observed=["o0", "o1"])
     assert not M.hmm.x[0, 0].is_binary()
     M, _ = default.create_model(observed=["o0", "o1"])

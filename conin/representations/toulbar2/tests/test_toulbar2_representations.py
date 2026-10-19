@@ -103,11 +103,10 @@ def test_toulbar2_representation_classes(cmodel, params, cls):
     repn = cmodel.representation("toulbar2", **params)
     assert type(repn) is cls
     assert repn.kind == "toulbar2"
-    assert repn.get_copy() is repn
 
 
 # ---------------------------------------------------------------------
-# The cached UAI text is what save_model writes (parity with the old path)
+# The UAI text is what save_model writes (parity with the old path)
 # ---------------------------------------------------------------------
 
 
@@ -143,20 +142,22 @@ def test_var_wrapper_follows_the_state_order():
 
 
 # ---------------------------------------------------------------------
-# get_copy isolation, evidence isolation and caching (§4.4, §8)
+# One representation serves several queries; structure params
 # ---------------------------------------------------------------------
 
 
 @skipif_toulbar2_not_available
-def test_two_gets_give_independent_models():
-    cmodel = ConstrainedDiscreteMarkovNetwork(mex.ABC_conin().pgm)
+def test_two_create_models_give_independent_cfns():
+    repn = ConstrainedDiscreteMarkovNetwork(mex.ABC_conin().pgm).representation(
+        "toulbar2"
+    )
     expected = mex.ABC_conin().solutions[0].states
 
-    M1 = cmodel.representation("toulbar2").create_model()
+    M1 = repn.create_model()
     M1.Assign(M1.V["A"], 0)
     M1.AddGeneralizedLinearConstraint([M1.V("B", 0)], ">=", 1)
 
-    M2 = cmodel.representation("toulbar2").create_model()
+    M2 = repn.create_model()
     assert M2 is not M1
     assert M2.V is not M1.V
     assert M2.V_evidence == set()
@@ -164,44 +165,43 @@ def test_two_gets_give_independent_models():
 
 
 @skipif_toulbar2_not_available
-def test_evidence_never_reaches_the_cached_representation():
-    cmodel = ConstrainedDiscreteMarkovNetwork(mex.ABC_conin().pgm)
-    repn = cmodel.representation("toulbar2")
+def test_evidence_does_not_change_the_representation():
+    repn = ConstrainedDiscreteMarkovNetwork(mex.ABC_conin().pgm).representation(
+        "toulbar2"
+    )
     text = repn.uai_text
     M1 = repn.create_model(evidence={"B": 0})
     assert M1.V_evidence == {"B"}
-    M2 = cmodel.representation("toulbar2").create_model()
+    M2 = repn.create_model()
     assert M2.V_evidence == set()
     assert repn.uai_text == text
-    assert cmodel.representation("toulbar2") is repn
 
 
-def test_dbn_cache_is_keyed_by_start_and_stop():
+def test_dbn_structure_params_start_and_stop():
     cmodel = ConstrainedDynamicDiscreteBayesianNetwork(dex.weather_conin().pgm)
     r4 = cmodel.representation("toulbar2", stop=4)
-    assert cmodel.representation("toulbar2", stop=4) is r4
     r5 = cmodel.representation("toulbar2", stop=5)
-    assert r5 is not r4
     assert (r4.start, r4.stop, r5.stop) == (0, 4, 5)
     assert len(r5.nodes) > len(r4.nodes)
 
 
-def test_hmm_cache_is_keyed_by_start_and_stop():
+def test_hmm_structure_params_start_and_stop():
     cmodel = ConstrainedHiddenMarkovModel(hex_.create_hmm1())
-    r = cmodel.representation("toulbar2", stop=4)
-    assert cmodel.representation("toulbar2", stop=4) is r
-    assert cmodel.representation("toulbar2", stop=5) is not r
+    r4 = cmodel.representation("toulbar2", stop=4)
+    r5 = cmodel.representation("toulbar2", stop=5)
+    assert (r4.start, r4.stop, r5.stop) == (0, 4, 5)
+    assert len(r5.nodes) > len(r4.nodes)
 
 
 @skipif_toulbar2_not_available
-def test_verbose_and_write_uai_file_are_not_cache_keys(tmp_path):
-    cmodel = ConstrainedDiscreteMarkovNetwork(mex.ABC_conin().pgm)
-    repn = cmodel.representation("toulbar2")
+def test_write_uai_file_writes_the_uai_text(tmp_path):
+    repn = ConstrainedDiscreteMarkovNetwork(mex.ABC_conin().pgm).representation(
+        "toulbar2"
+    )
     filename = str(tmp_path / "out.uai")
     repn.create_model(verbose=-1, write_uai_file=filename)
     with open(filename) as f:
         assert f.read() == repn.uai_text
-    assert cmodel.representation("toulbar2") is repn
 
 
 @skipif_toulbar2_not_available

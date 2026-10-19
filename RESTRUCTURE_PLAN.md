@@ -16,7 +16,7 @@ original sketch are in §10.
    a Pyomo model, a toulbar2 CFN, aligned MVRs, wrapped oracles, factor tables, and so on.
 3. Make `constraints/` a set of simple *containers* with no backend logic.
 4. Make a constrained model simple: an immutable graphical model, an immutable
-   tuple of same-family constraints, and representations that are built lazily and cached.
+   tuple of same-family constraints, and representations built on demand (not cached; see §4.4).
 5. Organize algorithms (inference, learning, sampling, queries) **by
    representation/backend**, so generic code (e.g. Pyomo solve logic) is shared.
 6. Keep the public API concepts (`map_query` with ovld dispatch, constraint
@@ -143,7 +143,7 @@ conin/
   - inside the dispatch layer: `VariableElimination._add_*_constraints_as_evidence` (remains; 4e).
 - **Almost nothing is cached.** Only `HiddenMarkovModel.repn` is. The
   HMM→DBN→BN→MN→factor-repn→Pyomo chain is rebuilt on every query (4a: cached up to the factor repn,
-  per `(start, stop)`, when the same constrained model is reused; 4b: the toulbar2 chain is cached up to the UAI text; `map_query` on a bare model still wraps it anew each call).
+  per `(start, stop)`, when the same constrained model is reused; 4b: the toulbar2 chain is cached up to the UAI text; `map_query` on a bare model still wraps it anew each call). **The representation cache was removed after 4b (§4.4, §11): every `representation()` call builds a new repn again; a repn's `create_model()` can still be called for several queries.**
 - **There is a lot of duplication:**
   - 3 copies of `PyomoVarWrapper` (**4a: one, in `representations/pyomo/common.py`**);
   - the MN and BN toulbar2 builders are near-identical (**4b: one `Toulbar2FactorRepresentation.create_model`**);
@@ -281,7 +281,7 @@ conin/
 │   └── dynamic_bayesian_network.py
 ├── representations/
 │   ├── __init__.py
-│   ├── base.py                 # Representation ABC (get_copy), registry, build_representation()
+│   ├── base.py                 # Representation ABC, registry, build_representation()
 │   ├── factor/                 # factor repn (S,J,v,w), BN->MN skeleton, FactorOracle -> factor/CPD (materialise.py: materialise_factor_oracle, since PR 2)
 │   ├── pyomo/                  # (PR 4a: done)
 │   │   ├── common.py           # ONE PyomoVarWrapper, apply_pyomo_constraints, IP-from-factor-repn, c5 constraints, smoek->pyomo, PyomoFactorRepresentation
@@ -403,13 +403,12 @@ class ConstrainedGraphicalModel:
         self._model = model                   # already immutable
         self._constraints = tuple(constraints)
         self._family = ...                    # derived
-        self._data = data                     # passed to builders, not part of the cache key
-        self._cache = {}                      # key -> Representation
+        self._data = data                     # passed to builders
 
     @property model / constraints / constraint_family / data   # read-only
-    def representation(self, kind, **structure_params):    # build lazily, cache, return repn.get_copy()
-    def with_constraints(self, constraints):               # new object, empty cache
-    def with_model(self, model):                           # new object, empty cache (used by learning)
+    def representation(self, kind, **structure_params):    # builds a new repn on every call (no cache, after 4b)
+    def with_constraints(self, constraints):               # new object
+    def with_model(self, model):                           # new object (used by learning)
     @classmethod
     def ensure(cls, model):                                # (PR 4a) model if isinstance(model, cls) else cls(model)
 ```
@@ -419,7 +418,7 @@ class ConstrainedGraphicalModel:
   model must not be silently accepted, with its constraints dropped, by code written for bare models (§11).
 - The object is fully immutable: no `add_constraint`, no setters, no `initialize_chmm`.
   (PR 3) It uses `__slots__`, and `__setattr__`/`__delattr__` raise `AttributeError`. `copy`, `deepcopy` and
-  pickle work (`__getstate__`/`__setstate__`); copies start with an empty cache.
+  pickle work (`__getstate__`/`__setstate__`).
 - (PR 3) `constraints` is a single `Constraint` (wrapped into a 1-tuple) or an iterable (list, tuple, generator)
   of `Constraint`; a string or a non-`Constraint` element raises `InvalidInputError`, as do mixed families and
   a wrong model type.
@@ -456,11 +455,11 @@ class ConstrainedGraphicalModel:
 - Each backend has exactly one function that applies constraints of a given family.
   This replaces the 3 duplicated `add_constraints` dispatchers.
 - (PR 3) API, in `conin/representations/base.py`:
-  - `Representation` (ABC): class attribute `kind`, and `get_copy()` (default `copy.deepcopy(self)`);
+  - `Representation` (ABC): class attribute `kind` (`get_copy()` was removed with the cache after 4b);
   - `@register_representation(kind, model_type, families=(None,))` registers `builder(cmodel, **structure_params)`
     under each `(kind, model_type, family)`; `None` means "no constraints"; re-registering a key with another
     builder raises `ValueError`; `unregister_representation(...)` is for tests;
-  - `build_representation(cmodel, kind, **structure_params)` (uncached; `cmodel.representation()` caches it),
+  - `build_representation(cmodel, kind, **structure_params)` (`cmodel.representation()` calls it),
     `supported_representations(model_type)` (sorted `(kind, family)` pairs) and `get_representation_builder(...)`;
   - the built-in builder modules are imported lazily on first registry use, because they import
     `conin.hidden_markov_model`, which imports the constrained models.
@@ -476,7 +475,7 @@ class ConstrainedGraphicalModel:
     variables=)`, which is today's layout: MN/BN `Munch(variables, evidence)`; DBN `+start, stop, T`; HMM
     `Munch(start, stop, variables, evidence, hmm=Munch(T, hidden_to_internal))`. HMM evidence is keyed `("E", t)`.
     The constrained model's own `data` is **not** passed on these paths (unchanged from before 4a).
-  - Structure params / cache key: MN, BN `()`; DBN `start=0, stop=1`; HMM `start=0, stop` (required).
+  - Structure params: MN, BN `()`; DBN `start=0, stop=1`; HMM `start=0, stop` (required).
     `omit_c5` (`use_cut_generation`), `variables`, `prune_network` and `create_MN` are **not** structure params.
   - The builders build on each other: HMM → `create_dbn_from_hmm` → DBN builder (`create_bn_from_dbn`) → BN builder
     (`skeleton_mn_of_bn`: one factor per CPD) → MN builder (`factor_representation_of_mn`).
@@ -496,38 +495,28 @@ class ConstrainedGraphicalModel:
     layout as the Pyomo repns (MN/BN `Munch(variables, evidence)`; DBN `+start, stop, T`; HMM
     `Munch(start, stop, variables, evidence, hmm=Munch(T, hidden_to_internal))`; HMM evidence keyed `("E", t)`). The
     constrained model's own `data` is **not** passed (unchanged; §9 row for PR 5).
-  - Structure params / cache key: MN, BN `()`; DBN `start=0, stop=1`; HMM `start=0, stop` (required). `verbose`,
+  - Structure params: MN, BN `()`; DBN `start=0, stop=1`; HMM `start=0, stop` (required). `verbose`,
     `write_uai_file`, `variables` and the solve options are per-query.
   - The builders build on each other: HMM → `create_dbn_from_hmm` → `build_toulbar2_dbn_representation`
     (`create_bn_from_dbn`) → `build_toulbar2_bn_representation`. The MN builder uses the MN directly.
   - The toulbar2 paths take no `prune_network`/`create_MN` (they reach `solve_toulbar2_map_query_model` and raise
     `TypeError`, as before), so 4a's `_validate_bn_query` is not shared.
 
-### 4.4 Caching and copy-on-get
-- Representations are cached on the constrained model.
-  `cmodel.representation(kind, ...)` always returns `repn.get_copy()`.
-- `Representation.get_copy()` defaults to `copy.deepcopy(self)`. Each subclass
-  overrides it with whatever is safest and cheapest:
-
-  | Representation             | `get_copy()` strategy |
-  |----------------------------|------------------------|
-  | Factor (S,J,v,w), oracle, recursive, MVR | immutable (frozen data, read-only arrays) → return `self` |
-  | (PR 3) oracle HMM (wraps `Oracle_CHMM`) | `self` (no per-query state; sampling uses the global NumPy RNG) |
-  | (PR 3) MVR HMM (wraps `MVR_CHMM`) | shallow copy with deep-copied MVRs (MVRs are mutable until 4d); the HMM is shared |
-  | (PR 3) pyomo_network_flow HMM | a fresh wrapper with a shallow copy of `data` (the CHMM writes `data.hmm` per query) |
-  | (PR 4a) Pyomo (`"pyomo"`, MN/BN/DBN/HMM) | `self`: the repn caches the evidence-independent factor repn; `create_model()` rebuilds a fresh Pyomo model per query (`clone()` was 1.6–2.4× slower than a rebuild, §11) |
-  | (PR 4a) pyomo_network_flow HMM | `self`: `create_model(observed=)` builds the model and a per-query shallow copy of `data` (the model depends on the observations) |
-  | (PR 4b) toulbar2 (MN/BN/DBN/HMM) | `self`: the repn caches the UAI text and the constraints; `create_model()` reads a fresh `pytoulbar2.CFN` per query and applies evidence (`Assign`) and constraints to it (CFNs can't be copied) |
-
-- Evidence and per-query options are applied to the *copy* by the inference
-  code. They are never applied to the cached object.
-- **Cache key:** `(kind, structure_params)`. Structure params are whatever changes the
-  model's shape: `T` for HMMs, `(start, stop)` for DBNs, `ip_formulation`, and so on.
-  Evidence is never part of the key for Pyomo or toulbar2, because it is applied after
-  `get_copy()`. For VE, evidence changes the factors, so VE caches only the
-  evidence-independent factor representation.
-- The cache has no size limit (one entry per distinct structure). This can be revisited if memory becomes a problem.
-- (Settled in PR 4a, §11) `clone()` is slower than a rebuild, so the Pyomo repns rebuild per query.
+### 4.4 Caching (removed after PR 4b)
+- **Representations are not cached.** `cmodel.representation(kind, **structure_params)` calls the
+  builder on every call and returns the new object; the caller owns it. There is no `get_copy()`.
+- PR 3 added a per-object cache keyed by `(kind, structure_params)` with copy-on-get (`get_copy()`, default
+  `deepcopy`, overridden per class), and 4a/4b relied on it. It was removed after 4b because nothing reused it:
+  `map_query` on a bare model wraps it anew per call (`ensure`), learning calls `with_model` every iteration, and no
+  code or notebook queried one constrained object repeatedly. Before PR 3 everything was rebuilt per query, so this
+  is not a regression. The plain rule ("every call builds a new repn") removes the reasoning about mutation after
+  build, evidence leaking into a cached object and which parameters are cache keys.
+- What stays from 4a/4b: **structure params** (`start, stop`, `x_binary, y_binary`, ...) are build arguments;
+  **per-query** inputs (evidence, `variables`, `omit_c5`, `verbose`, `write_uai_file`) are `create_model()` options,
+  and the Pyomo/toulbar2/network-flow repns are not mutated by `create_model()`, so one repn can serve several queries.
+  If caching is needed later, it can be added inside `representation()` without an API change.
+- The MVR repn deep-copies prebuilt MVR constraints at build time (MVRs are mutable until 4d), so the user's MVR
+  objects are never changed through a repn.
 
 ### 4.5 Inference dispatch (keeps ovld + `map_query`)
 ```
@@ -665,7 +654,7 @@ Breaking changes (these go in the CHANGELOG for 2.0):
 - (PR 4a) `PyomoAlgebraic_CHMM`, `Algebraic_CHMM`, `CallableDict` and `create_algebraic_chmm` are removed (no longer
   exported by `conin.hidden_markov_model`); `representation("pyomo_network_flow")` is a
   `PyomoNetworkFlowHMMRepresentation`: `generate_model`/`generate_unconstrained_model` → `create_model(observed=)`,
-  which returns `(model, data)`; `.chmm` and `.data` are gone; `get_copy()` returns the cached object.
+  which returns `(model, data)`; `.chmm` and `.data` are gone.
 - (PR 4a) On network-flow models, `M.V` is a `PyomoVarWrapper`: a missing variable raises `KeyError` (it returned
   `None`), a wrong number of arguments raises `ValueError` (it returned a `KeyError`), and direct indexing uses
   `M.V[("H", t), State(h)]`.
@@ -687,6 +676,9 @@ Breaking changes (these go in the CHANGELOG for 2.0):
   pytoulbar2 is missing (they raised `NameError`).
 - (PR 4b) `write_uai_file=` writes exactly that file (it used `save_model`, which writes `name.split(".")[0] + ".uai"`, so a
   path with a dot in a directory name wrote elsewhere and the read failed, and a non-`.uai` name raised `RuntimeError`).
+- (After 4b) `cmodel.representation(kind, ...)` builds a new representation on every call (no cache, no
+  `Representation.get_copy()`; neither was in a release). The `"mvr"` representation holds deep copies of prebuilt MVR
+  constraints, not the user's objects.
 - New: `map_query(..., method="mvr_viterbi")`.
 
 ---
@@ -766,14 +758,14 @@ dependencies, and no new top-level imports of optional backends.
 ---
 
 ## 8. Testing strategy
-- PR 0 adds a public-API smoke test and records the baseline counts (959 passed / 195 skipped / 0 errors; see §2.3). After PR 1: 962 passed / 195 skipped. After PR 2: 1009 passed / 195 skipped (+47 new tests). After PR 3: 1074 passed / 195 skipped (+65). After the PR 3 follow-ups: 1075 passed / 195 skipped. After PR 4f: 1076 passed / 193 skipped (−4 passed and −2 skipped deleted loader tests, +5 `test_public_api.py` rows). After PR 4a: 1115 passed / 193 skipped (+30 Pyomo representation tests, +9 `test_public_api.py` rows); 1116 / 193 after the 4a follow-ups (+1, `test_ensure`). After PR 4b: 1151 passed / 193 skipped (+29 toulbar2 representation tests, +6 `test_public_api.py` rows).
+- PR 0 adds a public-API smoke test and records the baseline counts (959 passed / 195 skipped / 0 errors; see §2.3). After PR 1: 962 passed / 195 skipped. After PR 2: 1009 passed / 195 skipped (+47 new tests). After PR 3: 1074 passed / 195 skipped (+65). After the PR 3 follow-ups: 1075 passed / 195 skipped. After PR 4f: 1076 passed / 193 skipped (−4 passed and −2 skipped deleted loader tests, +5 `test_public_api.py` rows). After PR 4a: 1115 passed / 193 skipped (+30 Pyomo representation tests, +9 `test_public_api.py` rows); 1116 / 193 after the 4a follow-ups (+1, `test_ensure`). After PR 4b: 1151 passed / 193 skipped (+29 toulbar2 representation tests, +6 `test_public_api.py` rows). After removing the representation cache: 1150 passed / 193 skipped (−1: the two PR 3 cache/get_copy tests merged into `test_every_call_builds_a_new_representation`).
 - Every PR must keep the pass count ≥ baseline, after adjusting for deliberately deleted tests.
 - PR 3 adds tests for:
   - immutability (setattr raises; `with_*` returns a new object);
   - mixed-family rejection;
   - lazy building (nothing built at `__init__`);
-  - cache hits;
-  - `get_copy` isolation (mutating a returned Pyomo model doesn't affect the next get).
+  - cache hits (removed with the cache after 4b);
+  - `get_copy` isolation (mutating a returned Pyomo model doesn't affect the next get; after 4b: the next `create_model()`).
   (PR 3: all done, using a test representation registered in the test; the Pyomo `get_copy` test moves to 4a.
   PR 4a: done, `test_mutating_a_returned_model_does_not_affect_the_next_one`. PR 4b: `test_two_gets_give_independent_models`.)
 - Each bug fix gets a regression test.
@@ -816,7 +808,8 @@ dependencies, and no new top-level imports of optional backends.
 
 - **[C1] Copy-on-get can't be one strategy.** Pyomo `clone()` is about as costly as a
   build, and pytoulbar2 CFNs can't be copied at all. Resolution:
-  `Representation.get_copy()` lets each class choose, with `deepcopy` as the default (§4.4).
+  `Representation.get_copy()` lets each class choose, with `deepcopy` as the default (§4.4). (After 4b the cache
+  and `get_copy()` are gone; the Pyomo/toulbar2 repns build a fresh model or CFN in `create_model()`.)
 - **[C2] A representation is not purely a function of (model, constraints).**
   HMM and DBN representations depend on the horizon `T` / `start, stop`, so the cache is
   keyed by structure parameters as well (§4.4).
@@ -844,7 +837,7 @@ dependencies, and no new top-level imports of optional backends.
 
 | Topic | Decision |
 |-------|----------|
-| Caching | Cache representations; a getter returns `repn.get_copy()`, which defaults to deepcopy and is overridden per class |
+| Caching | ~~Cache representations; a getter returns `repn.get_copy()`~~. **Superseded after 4b: no cache, no `get_copy()`; `representation()` builds on every call (§4.4)** |
 | Constrained-model mutability | Fully immutable; use `with_constraints` / `with_model` |
 | Oracle split | `OracleConstraint` (predicate) and `FactorOracleConstraint` (with nodes) |
 | MVR_CHMM | Becomes `MVRRepresentation`; prebuilt MVRs are valid constraints ("mvr" family) |
@@ -868,7 +861,7 @@ dependencies, and no new top-level imports of optional backends.
 | Wrapped-model property | `.model` only, no aliases |
 | Tests | Stay next to the code |
 | Unconstrained models in `map_query` | Wrapped as `Constrained*(gm, ())`; the wrapper is transparent to all methods |
-| Cache size | Unbounded per object |
+| Cache size | (Moot after 4b: no cache) |
 | `mvr_timerange` | Non-mutating by default |
 | Multiple `RecursiveConstraint`s | Combined automatically (tuple of states) |
 | DBN `.t` leak | Fixed in PR 1 |
@@ -879,7 +872,7 @@ dependencies, and no new top-level imports of optional backends.
 | MVR in PR 3 | `MVR_CHMM` and the torch algorithms are untouched until 4d; the `"mvr"` repn wraps `MVR_CHMM` and already exposes `.mvrs` |
 | Constrained-class location | PR 3 `git mv`s them to `constrained_models/` (rename-only first commit) and deletes the empty `markov_network/`, `bayesian_network/`, `dynamic_bayesian_network/` packages |
 | Representation API (PR 3) | `Representation` ABC with `kind` and `get_copy()`; `@register_representation(kind, model_type, families=(None,))`; `build_representation(cmodel, kind, **params)`; `supported_representations(model_type)` (§4.3) |
-| `with_model` / `with_constraints` cache (PR 3) | Always start with an empty cache |
+| `with_model` / `with_constraints` cache (PR 3) | Always start with an empty cache (moot after 4b) |
 | Single constraint (after PR 3) | `Constrained*(model, c)` is accepted (wrapped as `(c,)`); single-element lists dropped in examples/docs/tests |
 | Accepted constraint families (after PR 3) | Derived from the representation registry at the end of PR 4; `supported_families` is removed then. Not stored on constraint classes (§4.2) |
 | `ConstrainedHiddenMarkovModel` model type (PR 3) | Requires `HiddenMarkovModel`; `HMM_MatVecRepn` is rejected (no caller passed one) |
@@ -902,6 +895,7 @@ dependencies, and no new top-level imports of optional backends.
 | `create_toulbar2_map_query_model_*` (PR 4b) | Removed (the "toulbar2" repns' `create_model` replaces them). `conin.representations.toulbar2.common` is public: `Toulbar2VarWrapper`, `apply_toulbar2_constraints`, `Toulbar2FactorRepresentation`, `add_algebraic_constraints_to_toulbar2_model`, `add_toulbar2_constraints` (its `__all__`, which also keeps Sphinx autodoc off the mocked `pytoulbar2`; `_scale_to_integers` stays private). `conin.constraints.algebraic` no longer re-exports the translator |
 | `inference/toulbar2/` layout (PR 4b) | `solve.py` (`solve_toulbar2_map_query_model` + `inference_toulbar2_map_query_MN`, as the old MN module), `bn.py`, `dbn.py`, `hmm.py`; `conin/inference/hmm/` deleted; `conin.inference.{mn,bn,dbn}` keep their tests (and `mn/factor_repn.py` until 4e) |
 | toulbar2 `write_uai_file` (PR 4b) | Writes the cached UAI text to exactly that path and reads the CFN from it |
+| Representation cache (after 4b) | Removed: `_cache`, `_freeze`, `Representation.get_copy()` and its 5 overrides. Nothing reused cached repns (bare-model `map_query` wraps per call; learning uses `with_model` per iteration). Structure params vs `create_model()` options stay; a cache can be re-added inside `representation()` without an API change. The MVR repn deep-copies prebuilt MVRs at build time (took over from `get_copy`) |
 | Bugs found in 4b outside its §9 rows (PR 4b) | `save_model_uai`'s path bug and the pytoulbar2 `option.cfn` leak are recorded in §9 for PR 6, not fixed in 4b |
 | Constructor names / CHMM overloads | First parameter is `model` (no `hmm=`/`pgm=` alias); the broken `CHMM` overloads in the AStar/Optimization/CFN dispatchers are removed in PR 3 |
 
@@ -910,7 +904,7 @@ dependencies, and no new top-level imports of optional backends.
 ## 12. Open questions
 
 None blocking. These can be settled during PR 3 (the design PR):
-- (Pyomo `get_copy()`: settled in PR 4a, rebuild; see §11. toulbar2: settled in PR 4b, UAI text + fresh CFN.)
+- (Pyomo `get_copy()`: settled in PR 4a, rebuild; see §11. toulbar2: settled in PR 4b, UAI text + fresh CFN. The cache and `get_copy()` were removed after 4b.)
 - **Where the cross-backend per-model inference tests go once `inference/{mn,bn,dbn}/` hold no code** (after 4e; from
   4b). `conin/inference/{mn,bn,dbn}/tests/` exercise pyomo, toulbar2, VE and `map_query`. Options:
   `inference/tests/{mn,bn,dbn}/`, flattened `inference/tests/test_<model>_*.py`, or keep the folders for tests only.
