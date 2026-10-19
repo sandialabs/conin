@@ -80,10 +80,9 @@ files are loaded as Toulbar2 constraints. Loading does not require
 ``pytoulbar2``, but inference with the loaded constraints does; see
 :doc:`model_conversion_io`.
 
-When ``pytoulbar2`` is unavailable, some static-model Toulbar2 helpers return
-an empty result object with a termination condition indicating that
-``pytoulbar2`` is not available. Dynamic Bayesian network and HMM Toulbar2
-inference paths should be treated as requiring ``pytoulbar2`` at runtime.
+When ``pytoulbar2`` is unavailable, ``map_query(..., method="toulbar2")``
+returns an empty result object whose termination condition is
+``"pytoulbar2 not available"``.
 
 Smoek Algebraic Constraints
 ---------------------------

@@ -1,137 +1,40 @@
-import os.path
-import tempfile
+"""Solve a toulbar2 MAP query model, and MAP inference for (constrained) Markov networks.
+
+The models are built by the ``"toulbar2"`` representations
+(:mod:`conin.representations.toulbar2`).
+"""
+
 import munch
 from pyomo.common.timing import TicTocTimer
 
-from conin.io import save_model
 from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
-from conin.constraints import Toulbar2Constraint
-from conin.constraints.algebraic import AlgebraicConstraint
-from conin.representations.toulbar2.common import (
-    add_algebraic_constraints_to_toulbar2_model,
-)
 from conin.util import try_import
 
 with try_import() as pytoulbar2_available:
     import pytoulbar2
 
-
-class Toulbar2VarWrapper(object):
-    def __init__(self, pgm):
-        self._V = {name: i for i, name in enumerate(pgm.nodes)}
-        self._V_state = {
-            (name, state): i
-            for name in pgm.nodes
-            for i, state in enumerate(pgm.states_of(name))
-        }
-
-    def __len__(self):
-        return len(self._V)
-
-    def __call__(self, *args, coef=1):
-        if len(args) == 2:
-            r, s = args
-        elif len(args) == 3:
-            r, i, s = args
-            r = (r, i)
-        else:
-            raise ValueError("There must be either 2 or 3 arguments")
-
-        return (self._V[r], self._V_state[r, s], coef)
-
-    def __getitem__(self, r):
-        return self._V[r]
-
-    def items(self):
-        for k, v in self._V.items():
-            yield k, v
+_NOT_AVAILABLE = "pytoulbar2 not available"
 
 
-def add_constraints(*, pgm, constraints, model, data):
-    """Add constraints to a Toulbar2 model.
-
-    Parameters
-    ----------
-    pgm : ConstrainedDiscreteMarkovNetwork
-        The constrained graphical model.
-    model : pytoulbar2.CFN
-        The Toulbar2 constraint satisfaction network model.
-    data : munch.Munch
-        Data dictionary containing variables and evidence.
-
-    Returns
-    -------
-    pytoulbar2.CFN
-        The model with constraints added.
-    """
-    if len(constraints) == 0:
-        return model
-
-    if isinstance(constraints[0], Toulbar2Constraint):
-        for func in constraints:
-            assert isinstance(
-                func, Toulbar2Constraint
-            ), f"Unexpected constraint type ({type(func)}) when performing inference with Toulbar2. If the first constraint is a Toulbar2 constraint, then all subsequent constraints must be the same."
-            model = func(model, data)
-        return model
-
-    if isinstance(constraints[0], AlgebraicConstraint):
-        return add_algebraic_constraints_to_toulbar2_model(
-            pgm=pgm, constraints=constraints, model=model, data=data
-        )
-
-    raise TypeError(
-        f"Unexpected constraint type ({type(constraints[0])}) when performing inference with Toulbar2. Only Toulbar2Constraint is supported."
+def _not_available():
+    return munch.Munch(
+        solution=None,
+        solutions=[],
+        termination_condition=_NOT_AVAILABLE,
+        solvetime=0.0,
     )
 
 
-def create_toulbar2_map_query_model_MN(
-    *,
-    pgm,
-    variables=None,
-    evidence=None,
-    timing=False,
-    write_uai_file=None,
-    **options,
-):
-    """
-    Ignoring variables for now
-    """
-    if timing:  # pragma:nocover
-        timer = TicTocTimer()
-        timer.tic("create_toulbar2_map_query_model_MN - START")
+def _create_model(repn, *, evidence, variables, timing, write_uai_file, options):
+    """Pop the per-query ``verbose`` option and build a fresh CFN from ``repn``."""
     verbose = options.pop("verbose", -1)
-
-    cpgm = pgm if isinstance(pgm, ConstrainedDiscreteMarkovNetwork) else None
-    pgm = cpgm.model if cpgm is not None else pgm
-
-    if write_uai_file:
-        save_model(pgm, write_uai_file)
-        model = pytoulbar2.CFN(verbose=verbose)
-        model.Read(write_uai_file)
-    else:
-        with tempfile.TemporaryDirectory() as tempdir:
-            filename = os.path.join(tempdir, "model.uai")
-            save_model(pgm, filename)
-            model = pytoulbar2.CFN(verbose=verbose)
-            model.Read(filename)
-
-    model.V = Toulbar2VarWrapper(pgm)
-    model.states = {i: pgm.states_of(name) for i, name in enumerate(pgm.nodes)}
-
-    model.V_evidence = set()
-    if evidence:
-        for k, v in evidence.items():
-            model.Assign(model.V[k], pgm.states_of(k).index(v))
-            model.V_evidence.add(k)
-
-    if cpgm is not None and cpgm.constraints:
-        data = munch.Munch(variables=variables, evidence=evidence)
-        add_constraints(pgm=cpgm, constraints=cpgm.constraints, model=model, data=data)
-
-    if timing:  # pragma:nocover
-        timer.toc("create_toulbar2_map_query_model_MN - STOP")
-    return model
+    return repn.create_model(
+        evidence=evidence,
+        variables=variables,
+        verbose=verbose,
+        write_uai_file=write_uai_file,
+        timing=timing,
+    )
 
 
 def solve_toulbar2_map_query_model(
@@ -178,20 +81,33 @@ def inference_toulbar2_map_query_MN(
     write_uai_file=None,
     **options,
 ):
-    if not pytoulbar2_available:  # pragma:nocover
-        return munch.Munch(
-            solution=None,
-            solutions=[],
-            termination_condition="pytoulbar2 not available",
-            solvetime=0.0,
-        )
+    """MAP query on a Markov network with toulbar2.
 
-    model = create_toulbar2_map_query_model_MN(
-        pgm=pgm,
-        variables=variables,
+    Parameters
+    ----------
+    pgm : DiscreteMarkovNetwork or ConstrainedDiscreteMarkovNetwork
+    variables : list, optional
+        Passed to the constraint functions as ``data.variables``.
+    evidence : dict, optional
+        ``{node: state}``.
+    timing : bool, optional
+        Print timing information.
+    write_uai_file : str, optional
+        Write the UAI file that toulbar2 reads to this path.
+    **options
+        ``verbose`` (the toulbar2 verbosity, default ``-1``) and the options of
+        :func:`solve_toulbar2_map_query_model`.
+    """
+    if not pytoulbar2_available:  # pragma:nocover
+        return _not_available()
+
+    cmodel = ConstrainedDiscreteMarkovNetwork.ensure(pgm)
+    model = _create_model(
+        cmodel.representation("toulbar2"),
         evidence=evidence,
+        variables=variables,
         timing=timing,
         write_uai_file=write_uai_file,
-        **options,
+        options=options,
     )
     return solve_toulbar2_map_query_model(model, timing=timing, **options)

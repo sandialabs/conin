@@ -1,18 +1,255 @@
+"""Shared toulbar2 representation code.
+
+- :class:`Toulbar2FactorRepresentation`: the base class of the ``"toulbar2"``
+  representations (it caches the UAI text and builds a fresh
+  ``pytoulbar2.CFN`` per query);
+- :class:`Toulbar2VarWrapper`: ``model.V(...)`` on a CFN;
+- :func:`apply_toulbar2_constraints`: the single constraint applier for the
+  toulbar2-backend families (``"toulbar2"`` and ``"algebraic"``);
+- :func:`add_algebraic_constraints_to_toulbar2_model` and
+  :func:`add_toulbar2_constraints`: the smoek -> toulbar2 linear translator.
+"""
+
+import os.path
+import tempfile
 from fractions import Fraction
 from math import gcd
 from functools import reduce
 
+import munch
 import pyomo.environ as pyo
 from pyomo.repn import generate_standard_repn
 from pyomo.common.collections import ComponentMap
+from pyomo.common.timing import TicTocTimer
 
 from conin.constraints import Toulbar2Constraint
+from conin.constraints.algebraic.decorators import AlgebraicConstraint
+from conin.io.uai import _uai_text
+from conin.representations.base import Representation
 from conin.util import try_import, State
 
 with try_import() as smoek_available:
     import smoek
 
-from conin.constraints.algebraic.decorators import AlgebraicConstraint
+with try_import() as pytoulbar2_available:
+    import pytoulbar2
+
+__all__ = [
+    "Toulbar2VarWrapper",
+    "apply_toulbar2_constraints",
+    "Toulbar2FactorRepresentation",
+    "add_algebraic_constraints_to_toulbar2_model",
+    "add_toulbar2_constraints",
+]
+
+
+class Toulbar2VarWrapper(object):
+    """``model.V`` on a toulbar2 CFN.
+
+    ``V(node, state, coef=1)`` (or ``V(name, t, state, coef=1)`` for the
+    time-indexed node ``(name, t)``) returns the ``(variable index, value
+    index, coef)`` triple used by pytoulbar2's linear-constraint API;
+    ``V[node]`` returns the variable index.  Variables are numbered in
+    ``pgm.nodes`` order and values in ``pgm.states_of(node)`` order, as in the
+    UAI file.
+    """
+
+    def __init__(self, pgm):
+        self._V = {name: i for i, name in enumerate(pgm.nodes)}
+        self._V_state = {
+            (name, state): i
+            for name in pgm.nodes
+            for i, state in enumerate(pgm.states_of(name))
+        }
+
+    def __len__(self):
+        return len(self._V)
+
+    def __call__(self, *args, coef=1):
+        if len(args) == 2:
+            r, s = args
+        elif len(args) == 3:
+            r, i, s = args
+            r = (r, i)
+        else:
+            raise ValueError("There must be either 2 or 3 arguments")
+
+        return (self._V[r], self._V_state[r, s], coef)
+
+    def __getitem__(self, r):
+        return self._V[r]
+
+    def items(self):
+        for k, v in self._V.items():
+            yield k, v
+
+
+def apply_toulbar2_constraints(*, pgm, constraints, model, data):
+    """Apply constraints of a toulbar2-backend family to a toulbar2 ``model``.
+
+    This is the single constraint applier for the ``"toulbar2"``
+    representations.
+
+    Parameters
+    ----------
+    pgm : GraphicalModel
+        The model the constraints are written against (the MN, the BN, the
+        unrolled BN of a DBN, or the DBN of an HMM).  The algebraic translator
+        reads its ``states_of``.
+    constraints : sequence of Toulbar2Constraint or AlgebraicConstraint
+        Constraints of one family.
+    model : pytoulbar2.CFN
+        The model; constraint functions see ``model.V(...)``.
+    data : munch.Munch
+        Passed to each constraint function.
+
+    Returns
+    -------
+    pytoulbar2.CFN
+        The model with constraints added.
+    """
+    if len(constraints) == 0:
+        return model
+
+    if isinstance(constraints[0], Toulbar2Constraint):
+        for func in constraints:
+            assert isinstance(
+                func, Toulbar2Constraint
+            ), f"Unexpected constraint type ({type(func)}) when performing inference with Toulbar2. If the first constraint is a Toulbar2 constraint, then all subsequent constraints must be the same."
+            model = func(model, data)
+        return model
+
+    if isinstance(constraints[0], AlgebraicConstraint):
+        return add_algebraic_constraints_to_toulbar2_model(
+            pgm=pgm, constraints=constraints, model=model, data=data
+        )
+
+    raise TypeError(
+        f"Unexpected constraint type ({type(constraints[0])}) when performing inference with Toulbar2. Only Toulbar2Constraint is supported."
+    )
+
+
+class Toulbar2FactorRepresentation(Representation):
+    """The toulbar2 cost function network of a constrained MN/BN/DBN/HMM.
+
+    A ``pytoulbar2.CFN`` can't be copied, so the representation caches the
+    evidence-independent intermediate: the UAI text of ``uai_model`` and the
+    constraints.  :meth:`create_model` reads the text into a fresh CFN on
+    every call, assigns the evidence and then applies the constraints.
+
+    Attributes
+    ----------
+    uai_text : str
+        The UAI text of ``uai_model`` (what :func:`conin.io.save_model` writes).
+    uai_model : DiscreteMarkovNetwork or DiscreteBayesianNetwork
+        The model the CFN is read from (the MN, the BN or the unrolled BN).
+        Its ``nodes`` and ``states_of`` order fix the CFN variable and value
+        indices.
+    pgm : GraphicalModel
+        The model passed to the constraint applier (the MN, the BN, the
+        unrolled BN of a DBN, or the DBN of an HMM).
+    constraints : tuple
+        The user constraints (family ``"toulbar2"`` or ``"algebraic"``).
+    nodes : tuple
+        The nodes of ``uai_model``.
+
+    Notes
+    -----
+    Nothing is mutated after construction, so :meth:`get_copy` returns
+    ``self``.
+    """
+
+    kind = "toulbar2"
+
+    def __init__(self, *, uai_model, pgm, constraints, uai_text=None):
+        self.uai_model = uai_model
+        self.uai_text = _uai_text(uai_model) if uai_text is None else uai_text
+        self.pgm = pgm
+        self.constraints = tuple(constraints)
+        self.nodes = tuple(uai_model.nodes)
+
+    def constraint_data(self, *, evidence=None, variables=None):
+        """The ``data`` object passed to the constraint functions for a query.
+
+        Subclasses add their structure fields (``T``, ``start``, ``hmm``, ...).
+        The constrained model's own ``data`` is not passed (as before PR 4b).
+        """
+        return munch.Munch(variables=variables, evidence=evidence)
+
+    def create_model(
+        self,
+        *,
+        evidence=None,
+        variables=None,
+        verbose=-1,
+        write_uai_file=None,
+        timing=False,
+    ):
+        """Build a fresh ``pytoulbar2.CFN`` for one query.
+
+        Parameters
+        ----------
+        evidence : dict, optional
+            ``{node: state}``; each node is assigned with ``CFN.Assign``.
+        variables : list, optional
+            Passed to the constraint functions as ``data.variables``.
+        verbose : int, optional
+            The toulbar2 verbosity (``-1``: no messages).
+        write_uai_file : str, optional
+            Write the UAI text to this file (and read the CFN from it).
+        timing : bool, optional
+            Print timing information.
+
+        Returns
+        -------
+        pytoulbar2.CFN
+            With ``V`` (a :class:`Toulbar2VarWrapper`), ``states``
+            (variable index -> states) and ``V_evidence`` (the assigned nodes).
+        """
+        if timing:  # pragma:nocover
+            timer = TicTocTimer()
+            timer.tic("toulbar2 create_model - START")
+
+        if write_uai_file:
+            model = self._read(write_uai_file, verbose)
+        else:
+            with tempfile.TemporaryDirectory() as tempdir:
+                model = self._read(os.path.join(tempdir, "model.uai"), verbose)
+
+        pgm = self.uai_model
+        model.V = Toulbar2VarWrapper(pgm)
+        model.states = {i: pgm.states_of(name) for i, name in enumerate(pgm.nodes)}
+
+        model.V_evidence = set()
+        if evidence:
+            for k, v in evidence.items():
+                model.Assign(model.V[k], pgm.states_of(k).index(v))
+                model.V_evidence.add(k)
+
+        if self.constraints:
+            apply_toulbar2_constraints(
+                pgm=self.pgm,
+                constraints=self.constraints,
+                model=model,
+                data=self.constraint_data(evidence=evidence, variables=variables),
+            )
+
+        if timing:  # pragma:nocover
+            timer.toc("toulbar2 create_model - STOP")
+        return model
+
+    def _read(self, filename, verbose):
+        if not pytoulbar2_available:
+            raise ImportError("pytoulbar2 is required to build a toulbar2 model")
+        with open(filename, "w") as f:
+            f.write(self.uai_text)
+        model = pytoulbar2.CFN(verbose=verbose)
+        model.Read(filename)
+        return model
+
+    def get_copy(self):
+        """Return ``self``: the cached data is never mutated (a CFN is built per query)."""
+        return self
 
 
 def add_algebraic_constraints_to_toulbar2_model(*, pgm, constraints, model, data):

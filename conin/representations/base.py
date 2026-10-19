@@ -50,6 +50,10 @@ _BUILTIN_MODULES = (
     "conin.representations.pyomo.dbn",
     "conin.representations.pyomo.hmm",
     "conin.representations.pyomo.hmm_network_flow",
+    "conin.representations.toulbar2.mn",
+    "conin.representations.toulbar2.bn",
+    "conin.representations.toulbar2.dbn",
+    "conin.representations.toulbar2.hmm",
     "conin.representations.mvr.hmm",
 )
 _builtins_loaded = False
