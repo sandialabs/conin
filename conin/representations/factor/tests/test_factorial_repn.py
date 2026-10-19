@@ -9,7 +9,7 @@ from conin.inference.pyomo import solve_pyomo_map_query_model
 from conin.representations.pyomo.common import (
     create_MN_pyomo_map_query_model_from_factorial_repn,
 )
-from conin.inference.mn.factor_repn import (
+from conin.representations.factor.factor_repn import (
     extract_factor_representation,
     State,
 )

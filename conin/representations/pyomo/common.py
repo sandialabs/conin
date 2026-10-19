@@ -430,7 +430,7 @@ def factor_representation_of_mn(mn):
     Tuple nodes (e.g. the time-indexed nodes of an unrolled DBN) are mapped to
     flat names like ``"A_0"``; other nodes are used as-is.
     """
-    from conin.inference.mn.factor_repn import extract_factor_representation_
+    from conin.representations.factor.factor_repn import extract_factor_representation_
 
     var_index_map = tuple_var_index_map(mn.states)
     S, J, v, w = extract_factor_representation_(mn.states, mn.factors, var_index_map)

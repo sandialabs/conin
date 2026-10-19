@@ -11,7 +11,6 @@ with try_import() as pgmpy_available:
         MarkovNetwork,
     )  # DiscreteMarkovNetwork
     import pgmpy.metrics
-    from .custom_VE import logprob_VE
 
 
 def set_backend_(torch_bool):
@@ -117,6 +116,9 @@ def log_prob_v2(
         raise TypeError(
             "pgm must be pgmpy DiscreteBayesianNetwork or DiscreteMarkovNetwork"
         )
+
+    # Imported here: conin.inference imports conin.common.pgmpy (import cycle).
+    from conin.inference.variable_elimination.custom_VE import logprob_VE
 
     infer_pgm = logprob_VE(pgm)
 
