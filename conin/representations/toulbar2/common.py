@@ -12,7 +12,7 @@ from conin.util import try_import, State
 with try_import() as smoek_available:
     import smoek
 
-from .decorators import AlgebraicConstraint
+from conin.constraints.algebraic.decorators import AlgebraicConstraint
 
 
 def add_algebraic_constraints_to_toulbar2_model(*, pgm, constraints, model, data):

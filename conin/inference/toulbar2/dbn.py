@@ -2,9 +2,10 @@ import munch
 import conin.constrained_models
 from conin.graphical_models import create_bn_from_dbn
 from conin.constrained_models import ConstrainedDynamicDiscreteBayesianNetwork
-from conin.inference.bn.inference_toulbar2 import (
+from .bn import (
     create_toulbar2_map_query_model_BN,
 )
+from .solve import add_constraints, solve_toulbar2_map_query_model
 
 
 def create_toulbar2_map_query_model_DDBN(
@@ -31,7 +32,7 @@ def create_toulbar2_map_query_model_DDBN(
             evidence=evidence,
             T=list(range(start, stop + 1)),
         )
-        conin.inference.mn.inference_toulbar2.add_constraints(
+        add_constraints(
             pgm=bn, constraints=pgm.constraints, model=model, data=data
         )
 
@@ -57,6 +58,4 @@ def inference_toulbar2_map_query_DDBN(
         write_uai_file=write_uai_file,
         **options,
     )
-    return conin.inference.mn.inference_toulbar2.solve_toulbar2_map_query_model(
-        model, **options
-    )
+    return solve_toulbar2_map_query_model(model, **options)

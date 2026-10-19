@@ -2,9 +2,10 @@ import munch
 import conin.constrained_models
 from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.graphical_models import create_dbn_from_hmm
-from conin.inference.dbn.inference_toulbar2 import (
+from .dbn import (
     create_toulbar2_map_query_model_DDBN,
 )
+from .solve import add_constraints, solve_toulbar2_map_query_model
 
 
 def create_toulbar2_map_query_model_HMM(
@@ -38,7 +39,7 @@ def create_toulbar2_map_query_model_HMM(
                 hidden_to_internal=pgm_.hidden_to_internal,
             ),
         )
-        conin.inference.mn.inference_toulbar2.add_constraints(
+        add_constraints(
             pgm=dbn, constraints=pgm.constraints, model=model, data=data
         )
 
@@ -67,9 +68,7 @@ def inference_toulbar2_map_query_HMM(
         write_uai_file=write_uai_file,
         **options,
     )
-    results = conin.inference.mn.inference_toulbar2.solve_toulbar2_map_query_model(
-        model, **options
-    )
+    results = solve_toulbar2_map_query_model(model, **options)
     if type(evidence) is list:
         results.solution.states = [
             results.solution.states["H", i] for i in range(start, stop + 1)

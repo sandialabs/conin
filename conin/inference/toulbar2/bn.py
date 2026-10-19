@@ -4,7 +4,7 @@ import munch
 from pyomo.common.timing import TicTocTimer
 
 from conin.util import try_import
-from conin.inference.mn.inference_toulbar2 import (
+from .solve import (
     solve_toulbar2_map_query_model,
     Toulbar2VarWrapper,
     add_constraints,

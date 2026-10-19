@@ -169,7 +169,6 @@ SPHINX_AUTODOC = [
     ("conin.constraints", "oracle_constraint_fn", "api_constraints.rst"),
     ("conin.constraints", "pyomo_constraint_fn", "api_constraints.rst"),
     ("conin.constraints", "toulbar2_constraint_fn", "api_constraints.rst"),
-    ("conin.constraints.algebraic.add_constraints_toulbar2", None, "api_constraints.rst"),
     ("conin.constraints.oracle_library", None, "api_oracle_constraints.rst"),
     ("conin.graphical_models", "DiscreteBayesianNetwork", "api_graphical_models.rst"),
     ("conin.graphical_models", "DiscreteCPD", "api_graphical_models.rst"),
@@ -195,6 +194,7 @@ SPHINX_AUTODOC = [
     ("conin.representations", "build_representation", "api_constrained_graphical_models.rst"),
     ("conin.representations", "register_representation", "api_constrained_graphical_models.rst"),
     ("conin.representations", "supported_representations", "api_constrained_graphical_models.rst"),
+    ("conin.representations.toulbar2.common", None, "api_constraints.rst"),
 ]
 
 SPHINX_EXAMPLE_TABLES = [

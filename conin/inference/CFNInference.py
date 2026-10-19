@@ -5,22 +5,16 @@ from conin.graphical_models import HiddenMarkovModel
 from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.graphical_models import DiscreteMarkovNetwork
 from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
-from .mn import (
+from .toulbar2 import (
     inference_toulbar2_map_query_MN,
+    inference_toulbar2_map_query_BN,
+    inference_toulbar2_map_query_DDBN,
+    inference_toulbar2_map_query_HMM,
 )
 from conin.graphical_models import DiscreteBayesianNetwork
 from conin.constrained_models import ConstrainedDiscreteBayesianNetwork
-from .bn import (
-    inference_toulbar2_map_query_BN,
-)
 from conin.graphical_models import DynamicDiscreteBayesianNetwork
 from conin.constrained_models import ConstrainedDynamicDiscreteBayesianNetwork
-from .dbn import (
-    inference_toulbar2_map_query_DDBN,
-)
-from .hmm import (
-    inference_toulbar2_map_query_HMM,
-)
 
 with try_import() as pgmpy_available:
     import pgmpy.models
