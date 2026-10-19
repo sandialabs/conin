@@ -1,7 +1,7 @@
 """Materialisation of factor oracle constraints.
 
-This module is a temporary home for materialisation until the factor
-representation lands (restructure PR 3/4e).
+Used by :func:`conin.representations.factor.apply_factor_constraints`, the
+constraint applier of the ``"factor"`` representations.
 """
 
 import itertools

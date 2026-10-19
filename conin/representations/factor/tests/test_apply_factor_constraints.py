@@ -1,4 +1,9 @@
-"""Regression tests for the constraint helpers in VariableElimination.py."""
+"""Tests for the factor constraint applier (moved from VariableElimination.py).
+
+The first two groups are the PR 2 regression tests for
+``_add_{bn,mn}_constraints_as_evidence`` (empty constraint list; the
+``TypeError`` message), rewritten for :func:`apply_factor_constraints`.
+"""
 
 import pytest
 
@@ -9,10 +14,7 @@ from conin.graphical_models import (
     DiscreteFactor,
     DiscreteMarkovNetwork,
 )
-from conin.inference.VariableElimination import (
-    _add_bn_constraints_as_evidence,
-    _add_mn_constraints_as_evidence,
-)
+from conin.representations.factor import apply_factor_constraints
 
 
 def _mn():
@@ -29,36 +31,58 @@ def _bn():
     )
 
 
-@pytest.mark.parametrize(
-    "helper, pgm_factory",
-    [
-        (_add_mn_constraints_as_evidence, _mn),
-        (_add_bn_constraints_as_evidence, _bn),
-    ],
-)
-def test_no_constraints_returns_pgm(helper, pgm_factory):
+@pytest.mark.parametrize("pgm_factory", [_mn, _bn])
+def test_no_constraints_returns_pgm(pgm_factory):
     pgm = pgm_factory()
-    evidence = {}
-    assert helper(pgm, [], None, evidence) is pgm
+    new_pgm, evidence = apply_factor_constraints(pgm=pgm, constraints=[])
+    assert new_pgm is pgm
     assert evidence == {}
 
 
-@pytest.mark.parametrize(
-    "helper, pgm_factory",
-    [
-        (_add_mn_constraints_as_evidence, _mn),
-        (_add_bn_constraints_as_evidence, _bn),
-    ],
-)
-def test_unexpected_constraint_type_message(helper, pgm_factory):
+@pytest.mark.parametrize("pgm_factory", [_mn, _bn])
+def test_unexpected_constraint_type_message(pgm_factory):
     con = OracleConstraint(func=lambda states: True, name="plain")
     with pytest.raises(TypeError, match="OracleConstraint"):
-        helper(pgm_factory(), [con], None, {})
+        apply_factor_constraints(pgm=pgm_factory(), constraints=[con])
 
 
-def test_factor_oracle_still_accepted():
+def test_unexpected_model_type():
+    con = FactorOracleConstraint(func=lambda s: True, nodes=["A"])
+    with pytest.raises(TypeError, match="Unexpected model type"):
+        apply_factor_constraints(pgm=object(), constraints=[con])
+
+
+def test_mn_factor_oracle_adds_a_factor_and_no_evidence():
+    """§9 (PR 4e): the MN path used to force the last scope node to 1."""
+    pgm = _mn()
     con = FactorOracleConstraint(func=lambda s: s["A"] != s["B"], nodes=["A", "B"])
-    evidence = {}
-    new_pgm = _add_mn_constraints_as_evidence(_mn(), [con], None, evidence)
-    assert new_pgm is not None
-    assert list(evidence.values()) == [1]
+    new_pgm, evidence = apply_factor_constraints(pgm=pgm, constraints=[con])
+    assert evidence == {}
+    assert len(new_pgm.factors) == len(pgm.factors) + 1
+    assert new_pgm.factors[-1].nodes == ["A", "B"]
+    assert len(pgm.factors) == 1  # the input model is unchanged
+
+
+def test_bn_factor_oracle_adds_a_cpd_node_and_its_evidence():
+    pgm = _bn()
+    con = FactorOracleConstraint(func=lambda s: s["A"] == 1, nodes=["A"], name="c")
+    new_pgm, evidence = apply_factor_constraints(pgm=pgm, constraints=[con])
+    assert evidence == {("c", -1): 1}
+    assert ("c", -1) in new_pgm.nodes
+    assert ("c", -1) not in pgm.nodes
+
+
+def test_data_is_passed_to_node_scope_and_predicate():
+    seen = []
+
+    def nodes(data):
+        seen.append(("nodes", data))
+        return ["A"]
+
+    def func(states, data):
+        seen.append(("func", data))
+        return True
+
+    con = FactorOracleConstraint(func=func, nodes=nodes)
+    apply_factor_constraints(pgm=_bn(), constraints=[con], data="D")
+    assert ("nodes", "D") in seen and ("func", "D") in seen

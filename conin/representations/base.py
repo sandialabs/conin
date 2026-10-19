@@ -43,6 +43,10 @@ _BUILTIN_MODULES = (
     "conin.representations.toulbar2.bn",
     "conin.representations.toulbar2.dbn",
     "conin.representations.toulbar2.hmm",
+    "conin.representations.factor.mn",
+    "conin.representations.factor.bn",
+    "conin.representations.factor.dbn",
+    "conin.representations.factor.hmm",
     "conin.representations.mvr.hmm",
 )
 _builtins_loaded = False
