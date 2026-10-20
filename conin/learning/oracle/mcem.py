@@ -1,7 +1,7 @@
 import munch
 import math
 
-from .supervised import supervised_learning
+from conin.learning.unconstrained.supervised import supervised_learning
 
 nan = float("nan")
 

@@ -10,10 +10,8 @@ from conin.hidden_markov_model import *
 from conin.graphical_models import HiddenMarkovModel
 from conin.constraints.oracle_library import *
 from conin import pyomo_constraint_fn
-from conin.hidden_markov_model.inference import (
-    viterbi,
-    a_star,
-)
+from conin.inference.unconstrained import viterbi
+from conin.inference.oracle import a_star
 from conin.inference.pyomo import lp_inference, ip_inference
 from conin.representations.pyomo import PyomoNetworkFlowHMMRepresentation
 

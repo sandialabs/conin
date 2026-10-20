@@ -1,6 +1,6 @@
 import munch
 
-from . import learning
+from conin import learning
 from conin.constrained_models import ConstrainedHiddenMarkovModel
 
 

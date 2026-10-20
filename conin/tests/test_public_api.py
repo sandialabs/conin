@@ -80,7 +80,6 @@ NOTEBOOKS = [
     ("conin.graphical_models", "HiddenMarkovModel", "HMM_basics.ipynb, MVR/formula.ipynb, MVR/learning.ipynb, MVR/marginal_map.ipynb, MVR/overview.ipynb, MVR/regex_tutorial.ipynb, MVR/sampling.ipynb, MVR/sat_prob.ipynb, MVR/sat_time.ipynb, MVR/viterbi.ipynb, constraints.ipynb, inference.ipynb"),
     ("conin.graphical_models", "random_hmm", "HMM_basics.ipynb"),
     ("conin.hidden_markov_model.chmm_mvr", "MVR_CHMM", "MVR/formula.ipynb, MVR/learning.ipynb, MVR/marginal_map.ipynb, MVR/overview.ipynb, MVR/sampling.ipynb, MVR/sat_prob.ipynb, MVR/sat_time.ipynb, MVR/viterbi.ipynb"),
-    ("conin.hidden_markov_model.inference", "viterbi", "MVR/viterbi.ipynb"),
     ("conin.hidden_markov_model.inference.marginal_map_mvr", "marginal_map_torch_mvr_chmm", "MVR/marginal_map.ipynb, MVR/overview.ipynb", "torch"),
     ("conin.hidden_markov_model.inference.viterbi_mvr", "viterbi_torch_mvr_chmm", "MVR/marginal_map.ipynb, MVR/overview.ipynb, MVR/viterbi.ipynb", "torch"),
     ("conin.hidden_markov_model.learning.baum_welch_mvr", "baum_welch_mvr_chmm", "MVR/learning.ipynb, MVR/overview.ipynb", "torch"),
@@ -91,6 +90,7 @@ NOTEBOOKS = [
     ("conin.hidden_markov_model.sampling.ffbs_mvr", "ffbs_torch_mvr_chmm", "MVR/formula.ipynb, MVR/overview.ipynb, MVR/sampling.ipynb, MVR/sat_prob.ipynb", "torch"),
     ("conin.hidden_markov_model.sampling.stopped_sampling_mvr", "stopped_sampling_torch_mvr_chmm", "MVR/overview.ipynb, MVR/sampling.ipynb", "torch"),
     ("conin.inference", "map_query", "inference.ipynb"),
+    ("conin.inference.unconstrained", "viterbi", "MVR/viterbi.ipynb"),
 ]
 
 SPHINX_CODE = [
@@ -144,10 +144,10 @@ SPHINX_CODE = [
     ("conin.graphical_models", "create_dbn_from_hmm", "model_conversion_io.rst"),
     ("conin.graphical_models", "create_mn_from_bn", "model_conversion_io.rst"),
     ("conin.graphical_models", "random_hmm", "hidden_markov_models.rst"),
-    ("conin.hidden_markov_model", "learning", "hmm_learning.rst"),
     ("conin.inference", "map_query", "backends.rst, inference.rst, model_conversion_io.rst, quickstart.rst"),
     ("conin.io", "load_model", "model_conversion_io.rst"),
     ("conin.io", "save_model", "model_conversion_io.rst"),
+    ("conin.learning", None, "hmm_learning.rst"),
 ]
 
 SPHINX_AUTODOC = [
@@ -183,16 +183,16 @@ SPHINX_AUTODOC = [
     ("conin.graphical_models", "create_bn_from_dbn", "model_conversion_io.rst"),
     ("conin.graphical_models", "create_dbn_from_hmm", "model_conversion_io.rst"),
     ("conin.graphical_models", "create_mn_from_bn", "model_conversion_io.rst"),
-    ("conin.hidden_markov_model.learning", "add_unknowns", "hmm_learning.rst"),
-    ("conin.hidden_markov_model.learning", "convert_to_simulations", "hmm_learning.rst"),
-    ("conin.hidden_markov_model.learning", "mcem", "hmm_learning.rst"),
-    ("conin.hidden_markov_model.learning", "supervised_learning", "hmm_learning.rst"),
     ("conin.inference", "map_query", "api_inference.rst"),
     ("conin.io", "load_model", "model_conversion_io.rst"),
     ("conin.io", "save_model", "model_conversion_io.rst"),
     ("conin.io.cfn", "load_conin_model_from_cfn", "model_conversion_io.rst"),
     ("conin.io.uai", "load_conin_model_from_uai", "model_conversion_io.rst"),
     ("conin.io.uai", "save_model_uai", "model_conversion_io.rst"),
+    ("conin.learning", "add_unknowns", "hmm_learning.rst"),
+    ("conin.learning", "convert_to_simulations", "hmm_learning.rst"),
+    ("conin.learning", "mcem", "hmm_learning.rst"),
+    ("conin.learning", "supervised_learning", "hmm_learning.rst"),
     ("conin.representations", "Representation", "api_constrained_graphical_models.rst"),
     ("conin.representations", "build_representation", "api_constrained_graphical_models.rst"),
     ("conin.representations", "register_representation", "api_constrained_graphical_models.rst"),

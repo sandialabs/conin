@@ -3,5 +3,3 @@
 from .chmm import CHMM
 from .chmm_oracle import *
 from .hmm_application import HMMApplication
-from .learning import supervised_learning
-from .learning import *

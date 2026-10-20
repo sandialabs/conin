@@ -7,10 +7,10 @@ from conin.util import try_import
 with try_import() as or_topas_available:
     import or_topas.aos as aos
 
-from conin.hidden_markov_model.inference.recursive_a_star import *
+from conin.inference.recursive.a_star_hmm import *
 from conin.hidden_markov_model import *
 from conin.constrained_models import ConstrainedHiddenMarkovModel
-from conin.hidden_markov_model.inference import a_star
+from conin.inference.oracle import a_star
 from conin.constraints.oracle_library import *
 
 # from conin.hidden_markov_model.oracle_chmm import Oracle_CHMM
