@@ -1,6 +1,14 @@
+"""The factor representation ``(S, J, v, w)`` of a Markov network.
+
+Also the helpers that build it for the IP formulations: the BN -> MN skeleton
+(:func:`skeleton_mn_of_bn`), the tuple-node name map
+(:func:`tuple_var_index_map`) and :func:`factor_representation_of_mn`.
+"""
+
 from math import log
 from conin.exceptions import InvalidInputError
 from conin.util import State
+from conin.graphical_models import DiscreteMarkovNetwork
 
 
 def _check_unique_variable_names(pgm_states, var_index_map):
@@ -126,3 +134,37 @@ def extract_factor_representation_(pgm_states, pgm_factors, var_index_map=None):
                 w[i, j] = log(values[j] / total)
 
     return S, J, v, w
+
+
+def factor_representation_of_mn(mn):
+    """Return ``(S, J, v, w, var_index_map)`` for a :class:`DiscreteMarkovNetwork`.
+
+    Tuple nodes (e.g. the time-indexed nodes of an unrolled DBN) are mapped to
+    flat names like ``"A_0"``; other nodes are used as-is.
+    """
+    var_index_map = tuple_var_index_map(mn.states)
+    S, J, v, w = extract_factor_representation_(mn.states, mn.factors, var_index_map)
+    return S, J, v, w, var_index_map
+
+
+def skeleton_mn_of_bn(bn):
+    """The Markov network skeleton used for the IP of a Bayesian network.
+
+    It has one factor per CPD (no moralisation or variable elimination).
+    """
+    return DiscreteMarkovNetwork(
+        states=bn.states, factors=[cpd.to_factor() for cpd in bn.cpds]
+    )
+
+
+def tuple_var_index_map(states):
+    """Map tuple nodes (e.g. ``("A", 0)``) to flat names (``"A_0"``).
+
+    Returns ``None`` when no node is a tuple, so the nodes are used as-is.
+    """
+    nodes_ = list(states.keys())
+    if any(type(v) is tuple for v in nodes_):
+        return {
+            v: "_".join(str(i) for i in v) if type(v) is tuple else v for v in nodes_
+        }
+    return None

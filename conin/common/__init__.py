@@ -1,4 +1,4 @@
-from .log_potential import log_potential
+from .log_potential import log_potential, log_probability
 from .is_polytree import is_polytree
 from .pgmpy import (
     convert_pgmpy_to_conin,
