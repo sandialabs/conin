@@ -112,19 +112,42 @@ loaded as zero-valued factor entries, not as CONIN constraints.
 Model Utilities
 ---------------
 
-``log_potential`` evaluates a fully specified assignment for a CONIN Markov or
-Bayesian network. The current implementation requires values for every model
-node; it does not marginalize over latent variables.
+``log_probability`` and ``log_potential`` evaluate a total assignment: every
+variable has a value, so nothing is summed out.
 
-.. code-block:: python
+- ``log_probability(model, assignment, *, observed=None)`` returns ``log P(x)``
+  for a Bayesian network, a dynamic Bayesian network (``{(name, t): state}``
+  over the times ``0..stop``) or an HMM (the hidden states, plus the
+  ``observed`` states). It raises ``InvalidInputError`` for Markov networks and
+  constrained models, whose probabilities need an inference query.
+- ``log_potential`` takes the same arguments. It also accepts Markov networks,
+  where it returns the sum of the log factors (``log P(x) + log Z``), and
+  constrained models, where it returns ``-inf`` if a constraint is violated.
+  Constraints of the ``"oracle"``, ``"factor_oracle"``, ``"algebraic"`` and
+  ``"mvr"`` families are checked with the models' ``is_feasible`` method;
+  ``"pyomo"`` and ``"toulbar2"`` constraints raise ``NotImplementedError``.
 
-   from conin.examples.bayesian_network import simple1_BN_conin
-   from conin.common import is_polytree, log_potential
+pgmpy models are converted to CONIN models first. Marginal and conditional
+log-probabilities, which sum out variables, are not provided.
 
-   pgm = simple1_BN_conin().pgm
+.. doctest:: model_utilities
 
-   assert is_polytree(pgm)
-   value = log_potential(pgm, {"A": 0, "B": 1})
+   >>> from conin.examples.bayesian_network import (
+   ...     cancer1_BN_constrained_oracle_conin,
+   ...     simple1_BN_conin,
+   ... )
+   >>> from conin.common import is_polytree, log_potential, log_probability
+   >>> pgm = simple1_BN_conin().pgm
+   >>> is_polytree(pgm)
+   True
+   >>> round(log_probability(pgm, {"A": 0, "B": 1}), 6)
+   -0.328504
+   >>> cpgm = cancer1_BN_constrained_oracle_conin().pgm
+   >>> x = {"Cancer": 1, "Dyspnoea": 0, "Pollution": 0, "Smoker": 1, "Xray": 1}
+   >>> cpgm.is_feasible(x), round(log_potential(cpgm, x), 6)
+   (True, -1.890152)
+   >>> cpgm.is_feasible({**x, "Xray": 0}), log_potential(cpgm, {**x, "Xray": 0})
+   (False, -inf)
 
 ``is_polytree`` accepts CONIN ``DiscreteBayesianNetwork`` instances and checks
 whether the underlying undirected graph is singly connected.
@@ -159,6 +182,8 @@ Reference
 .. autofunction:: conin.io.load_model
 
 .. autofunction:: conin.io.save_model
+
+.. autofunction:: conin.common.log_probability
 
 .. autofunction:: conin.common.log_potential
 

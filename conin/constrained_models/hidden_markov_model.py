@@ -116,24 +116,63 @@ class ConstrainedHiddenMarkovModel(ConstrainedGraphicalModel):
         hidden = self.generate_hidden(time_steps)
         return self.generate_observed_from_hidden(hidden)
 
-    def is_feasible(self, seq):
-        """Check whether a sequence satisfies all configured constraints.
+    def is_feasible(self, seq, observed=None):
+        """Check whether a hidden-state sequence satisfies all configured constraints.
 
         Parameters
         ----------
-        seq : list
-            Sequence of external hidden-state labels.
+        seq : list or dict
+            Sequence of external hidden-state labels (a list, or a dict keyed
+            by the times ``0..T-1``).
+        observed : list or dict, optional
+            The observed labels, needed only by ``"factor_oracle"`` and
+            ``"algebraic"`` constraints that refer to the ``("E", t)`` nodes.
 
         Returns
         -------
         bool
             ``True`` if every constraint is satisfied and ``False`` otherwise.
+
+            * ``"oracle"`` predicates see ``{t: hidden}``;
+            * ``"factor_oracle"`` and ``"algebraic"`` constraints see the
+              nodes ``("H", t)`` (and ``("E", t)``) of the unrolled model, as
+              for variable elimination; ``"algebraic"`` needs smoek;
+            * ``"mvr"`` constraints are run along the sequence (see
+              :func:`~conin.constrained_models.feasibility.mvr_accepts`).
+
+            Constraint functions that take a second argument see
+            ``data = Munch(hmm=Munch(T=list(range(T))))``.  ``MVRConstraint``
+            factories are called with ``(hmm, self.data)``.
+
+        Raises
+        ------
+        InvalidInputError
+            For an empty or badly keyed sequence, unknown labels, or a
+            constraint that needs observations that were not given.
+        NotImplementedError
+            For ``"pyomo"`` and ``"toulbar2"`` constraints, whose functions can
+            add variables to the backend model.
         """
-        states = {i: v for i, v in enumerate(seq)}
-        for constraint in self.constraints:
-            if not constraint(states):
-                return False
-        return True
+        from .feasibility import (
+            check_constraints,
+            hmm_constraint_data,
+            hmm_sequences,
+            hmm_state_space,
+        )
+
+        hidden, observed = hmm_sequences(self.model, seq, observed)
+        T = len(hidden)
+        factor_assignment = {("H", t): h for t, h in enumerate(hidden)}
+        if observed is not None:
+            factor_assignment.update({("E", t): o for t, o in enumerate(observed)})
+        return check_constraints(
+            self,
+            assignment=dict(enumerate(hidden)),
+            factor_assignment=factor_assignment,
+            state_space=hmm_state_space(self.model, T),
+            data=hmm_constraint_data(T),
+            hidden=hidden,
+        )
 
     def partial_is_feasible(self, *, T, seq):
         """Check whether a partial sequence can still be extended feasibly.

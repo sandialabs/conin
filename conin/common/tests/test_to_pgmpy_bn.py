@@ -183,9 +183,12 @@ def test_cancer_model_conversion():
 
 @require_pgmpy
 def test_model_equivalence():
-    """Test that converted models produce equivalent results to original conin models."""
-    from conin.common.pgmpy import log_potential as pgmpy_log_potential
-    from conin.common.log_potential import log_potential_conin as conin_log_potential
+    """The conin -> pgmpy conversion keeps the probability of every assignment.
+
+    ``log_probability`` converts the pgmpy model back to conin, so this checks
+    the round trip.  pgmpy's own probability is checked too.
+    """
+    from conin.common import log_probability
 
     # Create test model
     conin_pgm = DiscreteBayesianNetwork(
@@ -209,8 +212,8 @@ def test_model_equivalence():
 
     for assignment in test_cases:
         # Calculate log potentials
-        conin_log_pot = conin_log_potential(conin_pgm, assignment)
-        pgmpy_log_pot = pgmpy_log_potential(pgmpy_pgm, assignment)
+        conin_log_pot = log_probability(conin_pgm, assignment)
+        pgmpy_log_pot = log_probability(pgmpy_pgm, assignment)
 
         # They should be approximately equal
         np.testing.assert_almost_equal(
@@ -219,6 +222,8 @@ def test_model_equivalence():
             decimal=10,
             err_msg=f"Log potentials differ for assignment {assignment}",
         )
+        pgmpy_prob = pgmpy_pgm.get_state_probability(assignment)
+        np.testing.assert_almost_equal(np.exp(conin_log_pot), pgmpy_prob, decimal=10)
 
 
 @require_pgmpy

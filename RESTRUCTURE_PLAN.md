@@ -1,6 +1,6 @@
 # Conin Restructure Plan
 
-Status: **In progress.** PR 0 is merged into `main` (#241). PR 1 is merged into `restructure` (#242). PR 2 is merged into `restructure` (#243). PR 3 is merged into `restructure` (#244). PR 4 is split into sub-PRs 4f, 4a, 4b, 4e, 4c, 4d (in that order, stacked branches); 4f is done (branch `restructure-pr4f-io`, off `restructure`, merged as #245); 4a is done (branch `restructure-pr4a-pyomo`, off 4f, merged as #246); 4b is done (branch `restructure-pr4b-toulbar2`, off 4a, merged as #247); the representation cache was removed after 4b (#248); 4e is done (branch `restructure-pr4e-factor`, off `restructure` 3cf8d04). The later PRs target the `restructure` branch.
+Status: **In progress.** PR 0 is merged into `main` (#241). PR 1 is merged into `restructure` (#242). PR 2 is merged into `restructure` (#243). PR 3 is merged into `restructure` (#244). PR 4 is split into sub-PRs 4f, 4a, 4b, 4e, 4c, 4d (in that order, stacked branches); 4f is done (branch `restructure-pr4f-io`, off `restructure`, merged as #245); 4a is done (branch `restructure-pr4a-pyomo`, off 4f, merged as #246); 4b is done (branch `restructure-pr4b-toulbar2`, off 4a, merged as #247); the representation cache was removed after 4b (#248); 4e is done (branch `restructure-pr4e-factor`, off `restructure` 3cf8d04; its follow-up removes the dead pgmpy log-probability code and adds `log_probability` and `is_feasible`). The later PRs target the `restructure` branch.
 This file lives at the repo root while the work is in progress. Delete it in the final PR.
 
 All decisions are recorded in §11; §12 lists what is still open. Critiques of the
@@ -131,6 +131,14 @@ conin/
                          (inference_variable_elimination_map_query_{MN,BN,DDBN,HMM}), custom_VE.py (from common/pgmpy/)
   inference/VariableElimination.py  the ovld dispatcher only (calls the functions above; native pgmpy MN/BN overloads unchanged)
   inference/{mn,bn,dbn}/ no code left: empty __init__ + tests/
+```
+After the PR 4e follow-up:
+```
+  common/                __init__ (log_potential, log_probability, is_polytree, convert_*), log_potential.py
+                         (log_probability + log_potential for conin and pgmpy models), is_polytree.py,
+                         pgmpy/ (to_conin, to_pgmpy_bn, to_pgmpy_mn, mapcpd, polytree), tests/
+  common/pgmpy/log_potential.py, inference/variable_elimination/custom_VE.py   deleted (dead code)
+  constrained_models/    feasibility.py (is_feasible checks: oracle, factor_oracle, algebraic, mvr), tests/test_feasibility.py
 ```
 
 ### 2.2 Problems the restructure should fix
@@ -275,6 +283,17 @@ conin/
 
 ---
 
+- **After the PR 4e follow-up** (dead pgmpy log-probability code removed; `log_probability`/`log_potential`/`is_feasible`):
+  **1269 passed, 204 skipped, 0 errors** in `.venv-opencode` (+88 passed, +2 skipped). Rewritten:
+  `common/tests/test_log_potential.py` (2 tests → 62: MN/BN/DBN/HMM values against hand computations and
+  normalisation, sparse factors, input errors, constrained models of every checkable family, pgmpy conversion).
+  New: `constrained_models/tests/test_feasibility.py` (27: every family, the HMM `is_feasible` §9 regression tests,
+  MVR windows). +4 `test_public_api.py` rows (`log_probability` ×3, `cancer1_BN_constrained_oracle_conin`): 255 passed,
+  9 skipped. Changed: `test_to_pgmpy_bn.test_model_equivalence` (uses `log_probability`, also checks pgmpy's
+  `get_state_probability`), `test_factor_representations._brute_force` (`log_potential`). Sphinx doctest: 62 tests,
+  0 failures; HTML builds. In the `conin_scaling_experiments` venv with smoek on `PYTHONPATH`: `conin/common`,
+  `conin/constrained_models`, `conin/representations`, `test_load_cfn.py`, `test_public_api.py`, the oracle/application
+  CHMM tests: 540 passed, 0 skipped; `test_MAP_Inference.py` 69 passed, 41 skipped (unchanged).
 ## 3. Target layout
 
 ```text
@@ -308,6 +327,7 @@ conin/
 ├── constrained_models/
 │   ├── __init__.py
 │   ├── base.py                 # ConstrainedGraphicalModel
+│   ├── feasibility.py          # (4e follow-up) is_feasible checks of total assignments
 │   ├── hidden_markov_model.py  # ConstrainedHiddenMarkovModel (+ generate_hidden, is_feasible helpers)
 │   ├── bayesian_network.py     # ConstrainedDiscreteBayesianNetwork
 │   ├── markov_network.py       # ConstrainedDiscreteMarkovNetwork
@@ -335,7 +355,7 @@ conin/
 │   ├── unconstrained/          # viterbi.py, a_star core search (a_star_)
 │   ├── pyomo/                  # (PR 4a) solve.py (generic solve/parse); mn/bn/dbn/hmm.py (per-model post-processing); hmm_network_flow.py (lp_inference, ip_inference, from lp.py)
 │   ├── toulbar2/               # (PR 4b) solve.py (solve_toulbar2_map_query_model + MN); bn/dbn/hmm.py (per-model post-processing)
-│   ├── variable_elimination/   # (PR 4e) solve.py (pgmpy VE runner); mn/bn/dbn/hmm.py (inference_variable_elimination_map_query_*); custom_VE.py (from common/pgmpy/)
+│   ├── variable_elimination/   # (PR 4e) solve.py (pgmpy VE runner); mn/bn/dbn/hmm.py (inference_variable_elimination_map_query_*)
 │   ├── mvr/                    # viterbi.py, marginal_map.py
 │   ├── oracle/                 # a_star_hmm.py
 │   └── recursive/              # a_star_hmm.py
@@ -351,7 +371,7 @@ conin/
 ├── applications/               # hmm_application.py (HMMApplication)
 ├── examples/                   # markov_network.py, bayesian_network.py, dynamic_bayesian_network.py, hidden_markov_model.py (from */examples.py)
 ├── io/                         # (PR 4f) file IO: uai.py, cfn.py, pgmpy_files.py, unified load_model.py/save_model.py, convert_pgm.py CLI
-├── common/                     # (PR 4f) non-IO helpers: log_potential.py, is_polytree.py, pgmpy/ (pgmpy<->conin conversion, MapCPD)
+├── common/                     # (PR 4f) non-IO helpers: log_potential.py (log_probability, log_potential), is_polytree.py, pgmpy/ (pgmpy<->conin conversion, MapCPD)
 ├── mediation_variables/        # UNTOUCHED (research prototype)
 └── util/
 ```
@@ -477,7 +497,12 @@ class ConstrainedGraphicalModel:
   - the model type check;
   - as ovld/registry keys;
   - HMM-specific helpers (`generate_hidden`, `generate_observed`,
-    `is_feasible`, `partial_is_feasible`), which delegate to a representation.
+    `partial_is_feasible`), which delegate to a representation.
+- (4e follow-up) All four classes have `is_feasible(assignment)` (HMM: `is_feasible(seq, observed=None)`) for a
+  total assignment, in `constrained_models/feasibility.py`. It evaluates the `"oracle"`, `"factor_oracle"`,
+  `"algebraic"` (compiled as for VE; needs smoek) and `"mvr"` (run along the sequence) families, with the `data` the
+  `"factor"` representation passes (`None`, `Munch(T)`, `Munch(hmm=Munch(T))`). `"pyomo"`/`"toulbar2"` raise
+  `NotImplementedError`: their functions can add variables, so checking them is an IP/CFN feasibility problem.
 - `cmodel.model` replaces `.pgm` and `.hidden_markov_model`, with no aliases.
 
 ### 4.3 Building representations
@@ -656,7 +681,7 @@ from conin.inference.toulbar2 import inference_toulbar2_map_query_MN, ..., solve
 from conin.representations.toulbar2 import Toulbar2VarWrapper, Toulbar2MNRepresentation, ...
 from conin.inference.variable_elimination import inference_variable_elimination_map_query_MN, ..., solve_variable_elimination_map_query_model
 from conin.representations.factor import FactorRepresentation, FactorMNRepresentation, ..., apply_factor_constraints
-from conin.common import log_potential, is_polytree, convert_pgmpy_to_conin
+from conin.common import log_potential, log_probability, is_polytree, convert_pgmpy_to_conin
 ```
 
 Breaking changes (these go in the CHANGELOG for 2.0):
@@ -741,7 +766,7 @@ Breaking changes (these go in the CHANGELOG for 2.0):
   path with a dot in a directory name wrote elsewhere and the read failed, and a non-`.uai` name raised `RuntimeError`).
 - (PR 4e) The variable-elimination code moves to `conin.inference.variable_elimination`: new public
   `inference_variable_elimination_map_query_{MN,BN,DDBN,HMM}` and `solve_variable_elimination_map_query_model`;
-  `conin.common.pgmpy.custom_VE` → `conin.inference.variable_elimination.custom_VE` (`logprob_VE`; still needs pgmpy at import).
+  `conin.common.pgmpy.custom_VE` is removed (see the 4e follow-up below).
   The private `_add_{bn,mn}_constraints_as_evidence` helpers of `conin.inference.VariableElimination` are removed; use
   `conin.representations.factor.apply_factor_constraints(pgm=, constraints=, data=)`, which returns `(new_pgm, evidence)`.
 - (PR 4e) `conin.inference.mn.factor_repn` → `conin.representations.factor.factor_repn`. `factor_representation_of_mn`,
@@ -754,6 +779,20 @@ Breaking changes (these go in the CHANGELOG for 2.0):
   applied.
 - (PR 4e) `map_query(..., method="variable_elimination")` with a constraint family VE does not support ("pyomo",
   "toulbar2", "oracle", "mvr") raises `InvalidInputError` from the registry (it raised `TypeError`).
+- (4e follow-up) Removed as dead, untested code: `conin.common.pgmpy.log_potential` (the module: `log_potential`,
+  `log_probability`, `log_prob_v2`, `set_backend_`, `Log`) and `conin.common.pgmpy.custom_VE` (`logprob_VE`). Nothing used
+  them; `log_prob_v2` always raised `TypeError` with current pgmpy and `logprob_VE.logprobs` crashed without evidence.
+  `conin.common.log_potential` now accepts pgmpy models by converting them to conin.
+- (4e follow-up) `conin.common.log_potential(model, assignment, *, observed=None)`: `evidence=` is removed (it was
+  merged into the assignment, so it returned the joint, not the conditional; pass a total assignment instead), and
+  `conin.common.log_potential.log_potential_conin` is removed (use `log_potential`). It now accepts DBNs, HMMs and
+  constrained models (`-inf` for an infeasible assignment), a factor entry that is not given uses the factor's
+  `default_value` (it raised `KeyError`), and an assignment that is not total raises `InvalidInputError` (was
+  `AssertionError`). New: `conin.common.log_probability` (BN, DBN, HMM; refuses MNs and constrained models).
+- (4e follow-up) `ConstrainedHiddenMarkovModel.is_feasible(seq, observed=None)` checks `"factor_oracle"`,
+  `"algebraic"` and `"mvr"` constraints correctly (it called every constraint as an oracle with `{t: h}`) and raises
+  `NotImplementedError` for `"pyomo"`/`"toulbar2"`; `seq` may be a dict keyed by time. New: `is_feasible` on the MN,
+  BN and DBN constrained classes.
 - (After 4b) `cmodel.representation(kind, ...)` builds a new representation on every call (no cache, no
   `Representation.get_copy()`; neither was in a release). The `"mvr"` representation holds deep copies of prebuilt MVR
   constraints, not the user's objects.
@@ -781,7 +820,7 @@ detection keeps the diffs reviewable.
 | 4b | toulbar2 repns + `inference/toulbar2` | refactor | **DONE (branch `restructure-pr4b-toulbar2`, off 4a).** Dedupe the MN/BN builders. Implement the rebuild-on-get strategy. Fix toulbar2 bugs. |
 | 4c | Oracle + Recursive (A*), oracle sampling, mcem | refactor | `Oracle_CHMM` becomes `OracleRepresentation`. Add `RecursiveConstraint`, decouple `HMMApplication` and move it to `applications/`. Fix the A* pruning bugs. |
 | 4d | MVR | refactor | `chmm_mvr` and `mvr_common` become repn plus kernels. Move inference, learning, sampling and queries. Update all MVR notebooks. |
-| 4e | Factor / VE | refactor | **DONE (branch `restructure-pr4e-factor`, off `restructure` 3cf8d04).** VE constraint handling moves into the factor repn (`apply_factor_constraints`, run at build time). Move `custom_VE` and `factor_repn`. `conin.inference.variable_elimination`. Fix the VE evidence bugs. |
+| 4e | Factor / VE | refactor | **DONE (branch `restructure-pr4e-factor`, off `restructure` 3cf8d04).** VE constraint handling moves into the factor repn (`apply_factor_constraints`, run at build time). Move `factor_repn`. `conin.inference.variable_elimination`. Fix the VE evidence bugs. Follow-up (same branch): delete the dead pgmpy log-probability code (`custom_VE`, `log_prob_v2`); `log_probability`/`log_potential` for every model; `is_feasible` for every constrained model. |
 | 4f | `common/` → `io/` + `common/`; remove pgmax/pomegranate | move + delete | **DONE (branch `restructure-pr4f-io`).** Rename-only first commit, then the folds and deletions; pyagrum removed too (§11). Independent of 3 and 4a–e. It can happen right after PR 1. |
 | 5 | Dispatch rewrite | **design** | `map_query` → repn → ovld on the repn type. Remove the duplicated overloads. Add `method="mvr_viterbi"`. |
 | 6 | Docs + cleanup | docs | Sphinx API pages, prose docs, AGENTS.md (examples location), CHANGELOG, version 2.0. Delete this plan file. |
@@ -836,7 +875,7 @@ dependencies, and no new top-level imports of optional backends.
 ---
 
 ## 8. Testing strategy
-- PR 0 adds a public-API smoke test and records the baseline counts (959 passed / 195 skipped / 0 errors; see §2.3). After PR 1: 962 passed / 195 skipped. After PR 2: 1009 passed / 195 skipped (+47 new tests). After PR 3: 1074 passed / 195 skipped (+65). After the PR 3 follow-ups: 1075 passed / 195 skipped. After PR 4f: 1076 passed / 193 skipped (−4 passed and −2 skipped deleted loader tests, +5 `test_public_api.py` rows). After PR 4a: 1115 passed / 193 skipped (+30 Pyomo representation tests, +9 `test_public_api.py` rows); 1116 / 193 after the 4a follow-ups (+1, `test_ensure`). After PR 4b: 1151 passed / 193 skipped (+29 toulbar2 representation tests, +6 `test_public_api.py` rows). After removing the representation cache: 1150 passed / 193 skipped (−1: the two PR 3 cache/get_copy tests merged into `test_every_call_builds_a_new_representation`). After PR 4e: 1181 passed / 202 skipped (+25 factor representation tests, of which 9 skip without pgmpy; the 5 VE helper tests rewritten as 8; +12 `test_public_api.py` rows).
+- PR 0 adds a public-API smoke test and records the baseline counts (959 passed / 195 skipped / 0 errors; see §2.3). After PR 1: 962 passed / 195 skipped. After PR 2: 1009 passed / 195 skipped (+47 new tests). After PR 3: 1074 passed / 195 skipped (+65). After the PR 3 follow-ups: 1075 passed / 195 skipped. After PR 4f: 1076 passed / 193 skipped (−4 passed and −2 skipped deleted loader tests, +5 `test_public_api.py` rows). After PR 4a: 1115 passed / 193 skipped (+30 Pyomo representation tests, +9 `test_public_api.py` rows); 1116 / 193 after the 4a follow-ups (+1, `test_ensure`). After PR 4b: 1151 passed / 193 skipped (+29 toulbar2 representation tests, +6 `test_public_api.py` rows). After removing the representation cache: 1150 passed / 193 skipped (−1: the two PR 3 cache/get_copy tests merged into `test_every_call_builds_a_new_representation`). After PR 4e: 1181 passed / 202 skipped (+25 factor representation tests, of which 9 skip without pgmpy; the 5 VE helper tests rewritten as 8; +12 `test_public_api.py` rows). After the 4e follow-up: 1269 passed / 204 skipped (`test_log_potential.py` rewritten, 2 → 62 tests; new `test_feasibility.py`, 26; +4 `test_public_api.py` rows).
 - Every PR must keep the pass count ≥ baseline, after adjusting for deliberately deleted tests.
 - PR 3 adds tests for:
   - immutability (setattr raises; `with_*` returns a new object);
@@ -861,6 +900,12 @@ dependencies, and no new top-level imports of optional backends.
 | `mcem` replaces the HMM but the oracle keeps sampling from the old one; it also scores one sample and stores another | 4c |
 | The `CHMM` overloads in the AStar/Optimization/CFN dispatchers are broken | 3 (removed) |
 | VE: the ConstrainedMN overload replaces user evidence with `{}`; the MN factor oracle forces an existing scope node to 1 | 4e (fixed: the MN applier adds the constraint factor and no evidence; the query keeps the user evidence. `test_constrained_mn_keeps_user_evidence`, `test_constrained_mn_does_not_force_a_scope_node_to_one`, `test_constrained_mn_partial_query_has_only_the_query_variables` in `representations/factor/tests/test_factor_representations.py`; `test_mn_factor_oracle_adds_a_factor_and_no_evidence` in `test_apply_factor_constraints.py`) |
+| `ConstrainedHiddenMarkovModel.is_feasible` calls every constraint as an oracle with `{t: h}` (wrong for `"factor_oracle"`, `"mvr"`, `"pyomo"`, `"algebraic"`, `"toulbar2"`) | 4e follow-up (fixed: `constrained_models/feasibility.py`; `test_hmm_oracle_and_factor_oracle`, `test_hmm_mvr`, `test_hmm_pyomo_not_supported` in `constrained_models/tests/test_feasibility.py`) |
+| `log_potential` on an MN with a sparse dict factor raises `KeyError` instead of using the factor's `default_value` | 4e follow-up (fixed; `test_mn_missing_factor_entries_use_default_value`). Other consumers (UAI writer, pgmpy MN converter, factor repn) still index missing entries directly | 
+| `log_potential(..., evidence=e)` returned the joint `log P(x, e)` (it merged `e` into `x`), which reads like a conditional | 4e follow-up (removed `evidence`; `test_no_evidence_argument`) |
+| `conin.common.pgmpy.log_prob_v2` always raised `TypeError` (pgmpy's `to_markov_model()` returns a `DiscreteMarkovNetwork`, not a `MarkovNetwork`); `logprob_VE.logprobs` without evidence raised `AttributeError` (a leftover tqdm call) and with evidence returned the unnormalised joint | 4e follow-up (deleted as dead code) |
+| `HiddenMarkovModel.log_probability` raises `ValueError` (`math.log(0)`) for a zero-probability sequence | – (found in the 4e follow-up; `conin.common.log_probability` returns `-inf`; the method is unchanged) |
+| `convert_pgmpy_to_conin` on a pgmpy `DynamicBayesianNetwork` turns the slice-0 and slice-1 CPDs of a node into two copies of one `(name, t)` template (e.g. `simple1_DDBN_pgmpy`'s `(B, 0)` and `(B, 1)`), so the unrolled BN has two CPDs for `(B, 0)` and `(B, 1)`; `check_model()` doesn't catch it | 6 (found in the 4e follow-up; `log_probability` raises `InvalidInputError` "more than one CPD"; `test_pgmpy_dbn_with_duplicate_cpds_is_refused`) |
 | VE: `_add_{bn,mn}_constraints_as_evidence` return `None` for an empty constraint list, and their `TypeError` strings were missing the `f` prefix | 2 (fixed, regression tests in `inference/tests/test_variable_elimination_helpers.py`) |
 | `solve_toulbar2_map_query_model` rejects extra `**options` (e.g. `verbose`) | 4b (fixed: the inference functions pop `verbose` and pass it to `create_model()`; `solve` keeps its signature and still rejects unknown options; `test_verbose_option_is_accepted` (MN/BN/DBN/HMM), `test_unknown_options_still_raise`) |
 | The DBN/HMM toulbar2 paths don't check that pytoulbar2 is available | 4b (fixed: all four return the `"pytoulbar2 not available"` result; `test_pytoulbar2_not_available` (MN/BN/DBN/HMM)) |
@@ -981,7 +1026,9 @@ dependencies, and no new top-level imports of optional backends.
 | VE engine (PR 4e) | Keep pgmpy: the factor repn holds the materialised conin model (`ve_model`) and `create_model()` converts it with `convert_conin_to_pgmpy_{bn,mn}`; VE does not run on `(S, J, v, w)` (no behaviour risk) |
 | Factor structure params (PR 4e) | `()` for MN/BN; `start=0, stop=1` for DBN; `start=0, stop` (required) for HMM, as for "pyomo"/"toulbar2". The HMM dispatcher keeps `stop = len(evidence) - 1` (it ignores `stop`, as before) |
 | VE constraint `data` (PR 4e) | Unchanged: MN/BN `None`; DBN `Munch(T)`; HMM `Munch(hmm=Munch(T))`. It holds no evidence, so constraints are materialised once at build time; the query evidence is merged per query (`query_evidence`). Aligning it with the Pyomo/toulbar2 layout is left to PR 5 (with the `cmodel.data` row in §9) |
-| VE public names (PR 4e) | `conin.inference.variable_elimination` (`solve.py`, `mn.py`, `bn.py`, `dbn.py`, `hmm.py`, `custom_VE.py`) with `inference_variable_elimination_map_query_{MN,BN,DDBN,HMM}` and `solve_variable_elimination_map_query_model`; `conin.representations.factor` with `FactorRepresentation`, `Factor{MN,BN,DBN,HMM}Representation`, `apply_factor_constraints`. `custom_VE` is not imported by the package `__init__` (it needs pgmpy at import); `log_prob_v2` imports it lazily (an import cycle via `conin.inference` otherwise) |
+| VE public names (PR 4e) | `conin.inference.variable_elimination` (`solve.py`, `mn.py`, `bn.py`, `dbn.py`, `hmm.py`, `custom_VE.py`) with `inference_variable_elimination_map_query_{MN,BN,DDBN,HMM}` and `solve_variable_elimination_map_query_model`; `conin.representations.factor` with `FactorRepresentation`, `Factor{MN,BN,DBN,HMM}Representation`, `apply_factor_constraints`. `custom_VE.py` was moved here in 4e and deleted in the 4e follow-up (dead code; the "import cycle" that motivated a lazy import in `log_prob_v2` never broke imports, but it was a layering inversion: `common` importing `inference`) |
+| Total-assignment scores (4e follow-up) | `conin.common.log_probability(model, x, *, observed=None)` (BN, DBN, HMM: exact `log P(x)`; refuses MN and constrained models) and `conin.common.log_potential` (same args; also MN = `log P + log Z`, and constrained models = `-inf` if infeasible, else the unconstrained value, not renormalised). DBN assignments are `{(name, t): s}` over `0..stop` (unrolled with `create_bn_from_dbn(start=0)`); HMM assignments are the hidden sequence (list or dict keyed by time, as in `map_query` solutions) plus `observed`. No `evidence` argument. pgmpy models are converted to conin. Both stay in `common/` (no inference) |
+| Feasibility checks (4e follow-up) | `is_feasible` on every constrained model, in `constrained_models/feasibility.py`: `"oracle"`, `"factor_oracle"`, `"algebraic"` (smoek-compiled predicate, as for VE) and `"mvr"` (the torch algorithms' window semantics) only. `"pyomo"`/`"toulbar2"` raise `NotImplementedError` (a function may add variables, making the check an IP/CFN feasibility problem). The constraint `data` is the `"factor"` representation's |
 | Factor-repn helpers (PR 4e) | `inference/mn/factor_repn.py` → `representations/factor/factor_repn.py`; `factor_representation_of_mn`, `skeleton_mn_of_bn`, `tuple_var_index_map` move there from `representations/pyomo/common.py` (the pyomo builders import them) |
 | MN constraint factor (PR 4e) | The MN applier adds the materialised factor (0 on infeasible assignments) and no evidence. The old code also fixed the last scope node to `1`, which was the §9 bug |
 | Constructor names / CHMM overloads | First parameter is `model` (no `hmm=`/`pgm=` alias); the broken `CHMM` overloads in the AStar/Optimization/CFN dispatchers are removed in PR 3 |
@@ -996,4 +1043,8 @@ None blocking. These can be settled during PR 3 (the design PR):
   they now hold no code: empty `__init__` + `tests/`). `conin/inference/{mn,bn,dbn}/tests/` exercise pyomo, toulbar2, VE and `map_query`. Options:
   `inference/tests/{mn,bn,dbn}/`, flattened `inference/tests/test_<model>_*.py`, or keep the folders for tests only.
   Decide in a follow-up after 4e.
+- **Marginal and conditional log-probabilities** (`log P(X=x | E=e)` with the other variables summed out, and the
+  probability under constraints, `P(x) / P(C)`): a new inference query, in the spirit of `map_query`. Not started; the
+  deleted `log_probability`/`log_prob_v2`/`logprob_VE` were drafts of it (pgmpy VE). Decide after PR 5 whether it goes
+  through `map_query`-style dispatch and which backends support it.
 - (`with_model` cache behaviour, the `Representation` signatures and the registration decorator were settled in PR 3; see §11.)
