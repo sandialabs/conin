@@ -2,6 +2,12 @@ from conin.exceptions import InvalidInputError
 from conin.graphical_models import HiddenMarkovModel
 
 from .base import ConstrainedGraphicalModel
+from .feasibility import (
+    check_constraints,
+    hmm_constraint_data,
+    hmm_sequences,
+    hmm_state_space,
+)
 
 
 class ConstrainedHiddenMarkovModel(ConstrainedGraphicalModel):
@@ -153,13 +159,6 @@ class ConstrainedHiddenMarkovModel(ConstrainedGraphicalModel):
             For ``"pyomo"`` and ``"toulbar2"`` constraints, whose functions can
             add variables to the backend model.
         """
-        from .feasibility import (
-            check_constraints,
-            hmm_constraint_data,
-            hmm_sequences,
-            hmm_state_space,
-        )
-
         hidden, observed = hmm_sequences(self.model, seq, observed)
         T = len(hidden)
         factor_assignment = {("H", t): h for t, h in enumerate(hidden)}

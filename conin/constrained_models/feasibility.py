@@ -20,6 +20,7 @@ feasibility problem of that model; they raise ``NotImplementedError``.
 
 import munch
 
+from conin.constraints.algebraic import create_oracle_constraints_from_algebraic
 from conin.constraints.mvr import BaseMVR, InhomMVR
 from conin.exceptions import InvalidInputError
 
@@ -144,10 +145,6 @@ def check_constraints(
         )
 
     if family == "algebraic":
-        from conin.constraints.algebraic import (
-            create_oracle_constraints_from_algebraic,
-        )
-
         oracles = create_oracle_constraints_from_algebraic(
             pgm=state_space, constraints=list(constraints), data=data
         )

@@ -1,7 +1,7 @@
 """Shared Pyomo helpers for the ``"pyomo"`` and ``"pyomo_network_flow"`` representations.
 
 * :class:`PyomoVarWrapper`: the ``model.V(...)`` accessor that user constraint
-  functions see;
+  functions see (defined in :mod:`conin.util.var_wrapper`, re-exported here);
 * :func:`apply_pyomo_constraints`: the single constraint applier for the
   Pyomo-backend families (``"pyomo"`` and ``"algebraic"``), including the
   smoek->Pyomo translation (:func:`add_algebraic_constraints_to_pyomo_model`);
@@ -14,7 +14,6 @@
 """
 
 from collections import defaultdict
-import pprint
 
 import munch
 import pyomo.environ as pe
@@ -24,6 +23,7 @@ from conin.constraints import PyomoConstraint
 from conin.constraints.algebraic import AlgebraicConstraint
 from conin.representations.base import Representation
 from conin.util import try_import, State
+from conin.util.var_wrapper import PyomoVarWrapper
 
 with try_import() as smoek_available:
     import smoek
@@ -59,40 +59,6 @@ complexity analysis would be too pessimistic.
 Similarly, the number of constraints in c4 is O(Mc), so the total number
 of constraints is O(N + M + Mcl + Mc) = O(N + Mcl).
 """
-
-
-class PyomoVarWrapper(dict):
-    """Map ``(node, State(value))`` to a Pyomo variable; callable as ``V(node, value)``.
-
-    ``V(r, s)`` looks up ``(r, State(s))`` and ``V(r, t, s)`` looks up
-    ``((r, t), State(s))`` (the time-indexed nodes of DBNs and HMMs).
-
-    Raises
-    ------
-    ValueError
-        If called with other than 2 or 3 arguments.
-    KeyError
-        If the variable does not exist.
-    """
-
-    def __init__(self, *arg, **kw):
-        super(PyomoVarWrapper, self).__init__(*arg, **kw)
-
-    def pprint(self):  # pragma:nocover
-        pprint.pprint(self)
-
-    def __call__(self, *args):
-        if len(args) == 2:
-            r, s = args
-        elif len(args) == 3:
-            r, i, s = args
-            r = (r, i)
-        else:
-            raise ValueError("There must be either 2 or 3 arguments")
-
-        if type(s) is not State:
-            s = State(s)
-        return dict.__getitem__(self, (r, s))
 
 
 def add_algebraic_constraints_to_pyomo_model(*, pgm, constraints, model, data):

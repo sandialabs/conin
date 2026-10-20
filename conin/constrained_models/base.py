@@ -2,6 +2,7 @@
 
 from conin.constraints.base import Constraint
 from conin.exceptions import InvalidInputError
+from conin.representations.base import build_representation
 
 
 class ConstrainedGraphicalModel:
@@ -149,8 +150,6 @@ class ConstrainedGraphicalModel:
             If no builder is registered for ``(kind, model_type,
             constraint_family)``. The message lists the supported pairs.
         """
-        from conin.representations.base import build_representation
-
         return build_representation(self, kind, **structure_params)
 
     @classmethod

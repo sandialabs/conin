@@ -13,12 +13,14 @@
 import copy
 import dataclasses
 
+from conin.common.pgmpy import convert_conin_to_pgmpy_bn, convert_conin_to_pgmpy_mn
 from conin.constraints import FactorOracleConstraint
 from conin.constraints.algebraic import (
     AlgebraicConstraint,
     create_oracle_constraints_from_algebraic,
 )
 from conin.graphical_models import DiscreteBayesianNetwork, DiscreteMarkovNetwork
+from conin.io import save_model
 from conin.representations.base import Representation
 
 from .materialise import materialise_factor_oracle
@@ -155,14 +157,6 @@ class FactorRepresentation(Representation):
         -------
         pgmpy.models.DiscreteMarkovNetwork or pgmpy.models.DiscreteBayesianNetwork
         """
-        # Imported here: conin.io and conin.common.pgmpy are not needed to
-        # build the representation.
-        from conin.io import save_model
-        from conin.common.pgmpy import (
-            convert_conin_to_pgmpy_bn,
-            convert_conin_to_pgmpy_mn,
-        )
-
         if write_uai_file:
             save_model(self.ve_model, write_uai_file)
         if isinstance(self.ve_model, DiscreteBayesianNetwork):

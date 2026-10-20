@@ -1,6 +1,7 @@
 from conin.graphical_models import DiscreteMarkovNetwork
 
 from .base import ConstrainedGraphicalModel
+from .feasibility import StateSpace, check_constraints, check_total_assignment
 
 
 class ConstrainedDiscreteMarkovNetwork(ConstrainedGraphicalModel):
@@ -58,8 +59,6 @@ class ConstrainedDiscreteMarkovNetwork(ConstrainedGraphicalModel):
             For ``"pyomo"`` and ``"toulbar2"`` constraints, whose functions can
             add variables to the backend model.
         """
-        from .feasibility import StateSpace, check_constraints, check_total_assignment
-
         states = self.model.states
         check_total_assignment(states, assignment)
         return check_constraints(

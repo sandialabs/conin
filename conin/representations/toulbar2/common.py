@@ -27,6 +27,7 @@ from conin.constraints.algebraic.decorators import AlgebraicConstraint
 from conin.io.uai import _uai_text
 from conin.representations.base import Representation
 from conin.util import try_import, State
+from conin.util.var_wrapper import PyomoVarWrapper
 
 with try_import() as smoek_available:
     import smoek
@@ -274,7 +275,6 @@ def add_algebraic_constraints_to_toulbar2_model(*, pgm, constraints, model, data
             pyomo_model.V_to_tb2[pyomo_model.V_conin_temp[ctr]] = model.V(k, s)
             tmp[k, State(s)] = pyomo_model.V_conin_temp[ctr]
             ctr += 1
-    from conin.representations.pyomo.common import PyomoVarWrapper
 
     pyomo_model.V = PyomoVarWrapper(tmp)
 
