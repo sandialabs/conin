@@ -260,6 +260,15 @@ def test_network_flow_V_lookups():
     assert M.V[("H", 0), State("h1")] is M.hmm.x[0, 1]
 
 
+def test_var_wrapper_is_one_class():
+    # PyomoVarWrapper lives in conin.util.var_wrapper (so conin.constraints.algebraic
+    # can use it without an import cycle) and is re-exported here.
+    import conin.representations.pyomo.common as pyomo_common
+    from conin.util.var_wrapper import PyomoVarWrapper as util_wrapper
+
+    assert PyomoVarWrapper is util_wrapper is pyomo_common.PyomoVarWrapper
+
+
 def test_network_flow_V_bad_arity_raises():
     repn = ConstrainedHiddenMarkovModel(hex_.create_hmm1()).representation(
         "pyomo_network_flow"

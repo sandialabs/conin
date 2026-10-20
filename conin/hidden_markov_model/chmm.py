@@ -1,5 +1,5 @@
 from munch import Munch
-from conin.graphical_models import HMM_MatVecRepn
+from conin.graphical_models import HMM_MatVecRepn, HiddenMarkovModel
 
 
 class CHMM:
@@ -36,8 +36,6 @@ class CHMM:
             )
         self.hmm = hmm
         if hidden_markov_model:
-            from conin.graphical_models import HiddenMarkovModel
-
             if not isinstance(hidden_markov_model, HiddenMarkovModel):
                 raise ValueError(
                     f"The hidden_markov_model argument must be a HiddenMarkovModel instance: {type(hidden_markov_model)=}"

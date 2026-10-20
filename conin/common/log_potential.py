@@ -17,6 +17,7 @@ pgmpy models are converted with :func:`conin.common.pgmpy.convert_pgmpy_to_conin
 
 import math
 
+from conin.common.pgmpy import convert_pgmpy_to_conin
 from conin.exceptions import InvalidInputError
 from conin.graphical_models import (
     DiscreteBayesianNetwork,
@@ -184,8 +185,6 @@ def _as_conin(model):
     if isinstance(model, (GraphicalModel, ConstrainedGraphicalModel)):
         return model
     if type(model).__module__.startswith("pgmpy."):
-        from conin.common.pgmpy import convert_pgmpy_to_conin
-
         return convert_pgmpy_to_conin(model)
     raise TypeError(f"Unexpected model type: {type(model)}")
 

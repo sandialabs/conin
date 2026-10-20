@@ -1,6 +1,14 @@
 from conin.graphical_models import DynamicDiscreteBayesianNetwork
 
 from .base import ConstrainedGraphicalModel
+from .feasibility import (
+    StateSpace,
+    check_constraints,
+    check_total_assignment,
+    dbn_constraint_data,
+    dbn_horizon,
+    dbn_states,
+)
 
 
 class ConstrainedDynamicDiscreteBayesianNetwork(ConstrainedGraphicalModel):
@@ -59,15 +67,6 @@ class ConstrainedDynamicDiscreteBayesianNetwork(ConstrainedGraphicalModel):
             For ``"pyomo"`` and ``"toulbar2"`` constraints, whose functions can
             add variables to the backend model.
         """
-        from .feasibility import (
-            StateSpace,
-            check_constraints,
-            check_total_assignment,
-            dbn_constraint_data,
-            dbn_horizon,
-            dbn_states,
-        )
-
         stop = dbn_horizon(self.model, assignment)
         states = dbn_states(self.model, stop)
         check_total_assignment(states, assignment)

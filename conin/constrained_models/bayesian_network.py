@@ -1,6 +1,7 @@
 from conin.graphical_models import DiscreteBayesianNetwork
 
 from .base import ConstrainedGraphicalModel
+from .feasibility import StateSpace, check_constraints, check_total_assignment
 
 
 class ConstrainedDiscreteBayesianNetwork(ConstrainedGraphicalModel):
@@ -58,8 +59,6 @@ class ConstrainedDiscreteBayesianNetwork(ConstrainedGraphicalModel):
             For ``"pyomo"`` and ``"toulbar2"`` constraints, whose functions can
             add variables to the backend model.
         """
-        from .feasibility import StateSpace, check_constraints, check_total_assignment
-
         states = self.model.states
         check_total_assignment(states, assignment)
         return check_constraints(

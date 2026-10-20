@@ -5,6 +5,7 @@ from conin.constraints.oracle import oracle_constraint_fn
 from .bridge import ConinVarNode
 from .decorators import AlgebraicConstraint
 from conin.util import try_import, State
+from conin.util.var_wrapper import PyomoVarWrapper
 
 with try_import() as smoek_available:
     import smoek
@@ -84,7 +85,6 @@ def create_oracle_constraints_from_algebraic(*, pgm, constraints, data, name=Non
             v = getattr(pyomo_model, pyomo_var_name)
             node_map[v] = k
             tmp[k, State(s)] = v
-    from conin.representations.pyomo.common import PyomoVarWrapper
 
     pyomo_model.V = PyomoVarWrapper(tmp)
 
