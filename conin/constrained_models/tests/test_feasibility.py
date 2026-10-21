@@ -41,15 +41,32 @@ require_smoek = pytest.mark.skipif(not smoek_available, reason="smoek not instal
 # ---------------------------------------------------------------------
 
 
-def test_mn_oracle_and_factor_oracle():
+def test_mn_factor_oracle():
     mn = mn_examples.ABC_conin().pgm
-    for c in [
-        OracleConstraint(func=lambda s: s["A"] != s["B"]),
-        FactorOracleConstraint(func=lambda s: s["A"] != s["B"], nodes=["A", "B"]),
-    ]:
+    for nodes in [["A", "B"], ["A", "B", "C"]]:
+        c = FactorOracleConstraint(func=lambda s: s["A"] != s["B"], nodes=nodes)
         cmodel = ConstrainedDiscreteMarkovNetwork(mn, c)
         assert cmodel.is_feasible({"A": 0, "B": 1, "C": 0})
         assert not cmodel.is_feasible({"A": 1, "B": 1, "C": 0})
+
+
+@pytest.mark.parametrize(
+    "cls, pgm",
+    [
+        (ConstrainedDiscreteMarkovNetwork, lambda: mn_examples.ABC_conin().pgm),
+        (
+            ConstrainedDiscreteBayesianNetwork,
+            lambda: bn_examples.cancer1_BN_conin().pgm,
+        ),
+    ],
+)
+def test_oracle_constraints_are_rejected_without_an_oracle_representation(cls, pgm):
+    # No representation of an MN or BN is registered for the "oracle" family,
+    # so the constrained model refuses it (use FactorOracleConstraint).
+    with pytest.raises(
+        InvalidInputError, match="does not support constraint family 'oracle'"
+    ):
+        cls(pgm(), OracleConstraint(func=lambda s: True))
 
 
 def test_factor_oracle_sees_only_its_scope():
@@ -72,8 +89,8 @@ def test_all_constraints_must_hold():
     cmodel = ConstrainedDiscreteMarkovNetwork(
         mn,
         [
-            OracleConstraint(func=lambda s: s["A"] == 0),
-            OracleConstraint(func=lambda s: s["B"] == 0),
+            FactorOracleConstraint(func=lambda s: s["A"] == 0, nodes=["A"]),
+            FactorOracleConstraint(func=lambda s: s["B"] == 0, nodes=["B"]),
         ],
     )
     assert cmodel.is_feasible({"A": 0, "B": 0, "C": 0})

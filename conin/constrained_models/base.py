@@ -2,7 +2,10 @@
 
 from conin.constraints.base import Constraint
 from conin.exceptions import InvalidInputError
-from conin.representations.base import build_representation
+from conin.representations.base import (
+    build_representation,
+    supported_representations,
+)
 
 
 class ConstrainedGraphicalModel:
@@ -15,7 +18,10 @@ class ConstrainedGraphicalModel:
     constraints : Constraint or iterable of Constraint, optional
         The constraints: a single constraint, or a list, tuple or other
         iterable of constraints. They must all belong to one constraint family
-        (``type(c).family``). ``None`` is treated as no constraints.
+        (``type(c).family``), and the family must be supported for
+        ``model_type``: some representation builder must be registered for it
+        (see :func:`conin.representations.supported_representations`).
+        ``None`` is treated as no constraints.
     data : object, optional
         Application data passed to the representation builders (e.g. to MVR
         factories or Pyomo constraint functions).
@@ -34,9 +40,6 @@ class ConstrainedGraphicalModel:
 
     model_type = None
     """type: The unconstrained model class this wrapper accepts (set by subclasses)."""
-
-    supported_families = None
-    """tuple or None: Constraint families accepted at construction (``None`` = any)."""
 
     def __init__(self, model, constraints=(), *, data=None):
         if self.model_type is None:
@@ -98,17 +101,24 @@ class ConstrainedGraphicalModel:
                 f"constraint family, found {sorted(map(str, families))}"
             )
         family = families[0] if families else None
-        if (
-            family is not None
-            and self.supported_families is not None
-            and family not in self.supported_families
-        ):
-            raise InvalidInputError(
-                f"{type(self).__name__} does not support constraint family "
-                f"{family!r}; supported families: "
-                f"{[f for f in self.supported_families if f is not None]}"
-            )
+        if family is not None:
+            # A family is accepted iff some representation builder is registered
+            # for (model_type, family): the registry is the single record of
+            # what is supported.
+            supported = self._supported_families()
+            if family not in supported:
+                raise InvalidInputError(
+                    f"{type(self).__name__} does not support constraint family "
+                    f"{family!r}; supported families: {supported}"
+                )
         return family
+
+    @classmethod
+    def _supported_families(cls):
+        """The sorted families of the builders registered for ``model_type``."""
+        return sorted(
+            {f for _, f in supported_representations(cls.model_type) if f is not None}
+        )
 
     # ------------------------------------------------------------------
     # Read-only properties

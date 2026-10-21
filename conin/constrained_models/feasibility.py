@@ -4,7 +4,8 @@ Used by the ``is_feasible`` methods of the constrained models and by
 :func:`conin.common.log_potential`.  Only the constraint families whose check
 is a direct evaluation are supported:
 
-* ``"oracle"``: the predicate is called with the assignment;
+* ``"oracle"``: the predicate is called with the assignment (HMMs only: the
+  other models accept no oracle constraints);
 * ``"factor_oracle"``: the predicate is called with the assignment restricted
   to the constraint's node scope;
 * ``"algebraic"``: the constraints are compiled into one predicate (as for

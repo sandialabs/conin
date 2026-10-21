@@ -123,8 +123,9 @@ variable has a value, so nothing is summed out.
 - ``log_potential`` takes the same arguments. It also accepts Markov networks,
   where it returns the sum of the log factors (``log P(x) + log Z``), and
   constrained models, where it returns ``-inf`` if a constraint is violated.
-  Constraints of the ``"oracle"``, ``"factor_oracle"``, ``"algebraic"`` and
-  ``"mvr"`` families are checked with the models' ``is_feasible`` method;
+  Constraints of the ``"oracle"`` and ``"recursive"`` (HMMs), ``"factor_oracle"``,
+  ``"algebraic"`` and ``"mvr"`` (HMMs) families are checked with the models'
+  ``is_feasible`` method;
   ``"pyomo"`` and ``"toulbar2"`` constraints raise ``NotImplementedError``.
 
 pgmpy models are converted to CONIN models first. Marginal and conditional

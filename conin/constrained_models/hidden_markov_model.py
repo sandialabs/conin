@@ -52,16 +52,6 @@ class ConstrainedHiddenMarkovModel(ConstrainedGraphicalModel):
     __slots__ = ()
 
     model_type = HiddenMarkovModel
-    supported_families = (
-        None,
-        "oracle",
-        "factor_oracle",
-        "pyomo",
-        "algebraic",
-        "toulbar2",
-        "mvr",
-        "recursive",
-    )
 
     def generate_hidden(self, time_steps):
         """Generate a feasible sequence of hidden states.
