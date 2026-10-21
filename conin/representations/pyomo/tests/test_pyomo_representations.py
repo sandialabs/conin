@@ -1,4 +1,4 @@
-"""Tests for the "pyomo" and "pyomo_network_flow" representations (PR 4a)."""
+"""Tests for the "pyomo" and "pyomo_network_flow" representations."""
 
 import munch
 import pyomo.environ as pyo
@@ -173,7 +173,7 @@ def test_network_flow_structure_params_variable_domains():
 
 
 # ---------------------------------------------------------------------
-# Constraint data seen by user functions (unchanged by PR 4a)
+# Constraint data seen by user functions
 # ---------------------------------------------------------------------
 
 
@@ -223,7 +223,7 @@ def test_constraint_data_hmm():
 
 
 # ---------------------------------------------------------------------
-# §9: the HMM network_flow branch could return None
+# Regression: the HMM network_flow branch could return None
 # ---------------------------------------------------------------------
 
 
@@ -245,7 +245,7 @@ def test_network_flow_rejects_unsupported_model():
 
 
 # ---------------------------------------------------------------------
-# §9: CallableDict returned (rather than raised) KeyError; replaced by PyomoVarWrapper
+# Regression: V lookups returned (rather than raised) KeyError
 # ---------------------------------------------------------------------
 
 

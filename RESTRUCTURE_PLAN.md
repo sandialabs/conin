@@ -1,6 +1,6 @@
 # Conin Restructure Plan
 
-Status: **In progress.** PR 0 is merged into `main` (#241). PR 1 is merged into `restructure` (#242). PR 2 is merged into `restructure` (#243). PR 3 is merged into `restructure` (#244). PR 4 is split into sub-PRs 4f, 4a, 4b, 4e, 4c, 4d (in that order, stacked branches); 4f is done (branch `restructure-pr4f-io`, off `restructure`, merged as #245); 4a is done (branch `restructure-pr4a-pyomo`, off 4f, merged as #246); 4b is done (branch `restructure-pr4b-toulbar2`, off 4a, merged as #247); the representation cache was removed after 4b (#248); 4e is done (branch `restructure-pr4e-factor`, off `restructure` 3cf8d04; its follow-up removes the dead pgmpy log-probability code and adds `log_probability` and `is_feasible`; a second follow-up removes the last import cycle and moves the unneeded function-level imports to the top of their modules; merged as #249/#250); 4c is done (branch `restructure-pr4c-oracle`, off `restructure` 657c29f). Next: 4d, then PR 5, PR 5b (scoring) and PR 6. The later PRs target the `restructure` branch.
+Status: **In progress.** PR 0 is merged into `main` (#241). PR 1 is merged into `restructure` (#242). PR 2 is merged into `restructure` (#243). PR 3 is merged into `restructure` (#244). PR 4 is split into sub-PRs 4f, 4a, 4b, 4e, 4c, 4d (in that order, stacked branches); 4f is done (branch `restructure-pr4f-io`, off `restructure`, merged as #245); 4a is done (branch `restructure-pr4a-pyomo`, off 4f, merged as #246); 4b is done (branch `restructure-pr4b-toulbar2`, off 4a, merged as #247); the representation cache was removed after 4b (#248); 4e is done (branch `restructure-pr4e-factor`, off `restructure` 3cf8d04; its follow-up removes the dead pgmpy log-probability code and adds `log_probability` and `is_feasible`; a second follow-up removes the last import cycle and moves the unneeded function-level imports to the top of their modules; merged as #249/#250); 4c is done (branch `restructure-pr4c-oracle`, off `restructure` 657c29f); a comment-only cleanup PR removes the PR-number and plan-section references from the code (branch `restructure-comment-cleanup`, off 4c; rule in §6). Next: 4d, then PR 5, PR 5b (scoring) and PR 6. The later PRs target the `restructure` branch.
 This file lives at the repo root while the work is in progress. Delete it in the final PR.
 
 All decisions are recorded in §11; §12 lists what is still open. Critiques of the
@@ -946,6 +946,7 @@ detection keeps the diffs reviewable.
 | 4a | Pyomo repns + `inference/pyomo` | refactor | **DONE (branch `restructure-pr4a-pyomo`, off 4f).** One `PyomoVarWrapper` and one constraint applier. Split create from solve. Network-flow repn. Fix Pyomo-path bugs from §9. |
 | 4b | toulbar2 repns + `inference/toulbar2` | refactor | **DONE (branch `restructure-pr4b-toulbar2`, off 4a).** Dedupe the MN/BN builders. Implement the rebuild-on-get strategy. Fix toulbar2 bugs. |
 | 4c | Oracle + Recursive (A*), oracle sampling, mcem | refactor | **DONE (branch `restructure-pr4c-oracle`, off `restructure` 657c29f).** `Oracle_CHMM` becomes `OracleHMMRepresentation`; `CHMM` deleted. Add `RecursiveConstraint` and the `"recursive"` repn; `recursive_a_star` takes a constrained HMM. `HMMApplication` deleted (not moved; §11). Viterbi, A*, recursive A*, the learning helpers and rejection sampling move to `inference/{unconstrained,oracle,recursive}`, `learning/` and `sampling/oracle/`. Fix the A*, recursive A* and mcem bugs and two oracle-library partial functions. |
+| 4c′ | Remove restructure references from the code | comments | **DONE (branch `restructure-comment-cleanup`, off 4c).** Comment, docstring and test-label changes only: the PR-number, §-number and `RESTRUCTURE_PLAN` references added by PRs 2–4c are reworded to describe the behaviour or the bug, `test_public_api.py`'s `RESTRUCTURE_PLAN_API` group becomes `PUBLIC_API` (test ids `public_api:...`; the `used_in` label `"RESTRUCTURE_PLAN.md §5"` becomes `"public API"`), and two `test_hmm_representations.py` tests named after the old `Oracle_CHMM` are renamed (`..._matches_the_reference...`). No test is added or removed (full suite in the `conin_scaling_experiments` venv, where torch now imports: 1694 passed / 123 skipped / 0 failed). The rule that stops new ones is in this section. |
 | 4d | MVR | refactor | `chmm_mvr` and `mvr_common` become repn plus kernels. Move inference, learning, sampling and queries. Update all MVR notebooks. |
 | 4e | Factor / VE | refactor | **DONE (branch `restructure-pr4e-factor`, off `restructure` 3cf8d04).** VE constraint handling moves into the factor repn (`apply_factor_constraints`, run at build time). Move `factor_repn`. `conin.inference.variable_elimination`. Fix the VE evidence bugs. Follow-up (same branch): delete the dead pgmpy log-probability code (`custom_VE`, `log_prob_v2`); `log_probability`/`log_potential` for every model; `is_feasible` for every constrained model. Second follow-up: remove the `constraints.algebraic` ↔ `representations.pyomo` import cycle and move the function-level imports that no cycle needs to the top of their modules. |
 | 4f | `common/` → `io/` + `common/`; remove pgmax/pomegranate | move + delete | **DONE (branch `restructure-pr4f-io`).** Rename-only first commit, then the folds and deletions; pyagrum removed too (§11). Independent of 3 and 4a–e. It can happen right after PR 1. |
@@ -958,6 +959,18 @@ Dependencies: 0 → 1 → 2 → 3 → {4a, 4b, 4c, 4d, 4e} → 5 → 5b → 6. 4
 
 Bugs are fixed inside the backend PR that touches the code (§9). Each fix gets its own
 test and is called out in the PR description.
+
+**No restructure references in the code.** Code, comments, docstrings, test names and
+test ids must not mention PR numbers ("PR 4c", "before PR 4e", "moves out in PR 4d"),
+sections of this plan ("§9", "RESTRUCTURE_PLAN") or the restructure itself. People
+read the code long after this plan is deleted (PR 6). Say what the code does, or for a
+regression test, what the bug was (e.g. "a_star used to check the parent prefix, so the
+pruning never fired"). Put the PR number, the plan section and the "when" in the plan,
+the commit message and the PR description instead. Notes about temporary states ("kept
+until the MVR code moves") are fine if they don't name a PR, and must be removed when
+the state ends. Before committing, check with
+`rg -n -i '\bPR ?[0-9]|§[0-9]|RESTRUCTURE' conin doc --glob '!RESTRUCTURE_PLAN.md'`
+(it should find nothing).
 
 ---
 
@@ -998,7 +1011,8 @@ Parallel fan-out:
 
 A shared "conventions" snippet goes into every prompt. It covers file naming, test
 placement, docstring style (numpydoc, as used now), `try_import` for optional
-dependencies, and no new top-level imports of optional backends.
+dependencies, no new top-level imports of optional backends, and no PR numbers or
+plan-section references in code, comments or docstrings (§6).
 
 ---
 

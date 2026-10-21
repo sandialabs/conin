@@ -237,8 +237,8 @@ def test_supported_representations_hmm():
         ("mvr", "mvr"),
     ]:
         assert pair in pairs
-    # (PR 4c) "oracle" is not registered for "algebraic" (its compilation needs
-    # the horizon, which the oracle representation does not have).
+    # "oracle" is not registered for "algebraic" (its compilation needs the
+    # horizon, which the oracle representation does not have).
     assert ("oracle", "algebraic") not in pairs
 
 

@@ -493,7 +493,7 @@ def test_pgmpy_bn():
 def test_pgmpy_dbn_with_duplicate_cpds_is_refused():
     """convert_pgmpy_to_conin turns simple1_DDBN_pgmpy's CPDs of (B, 0) and
     (B, 1) into two copies of the template CPD of (B, t); unrolled, (B, 0) and
-    (B, 1) each get two CPDs (§9)."""
+    (B, 1) each get two CPDs."""
     pgm = dbn_examples.simple1_DDBN_pgmpy().pgm
     a = {("A", 0): 0, ("A", 1): 0, ("B", 0): 1, ("B", 1): 1}
     with pytest.raises(InvalidInputError, match="more than one CPD"):

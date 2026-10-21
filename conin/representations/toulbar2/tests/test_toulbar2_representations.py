@@ -1,4 +1,4 @@
-"""Tests for the "toulbar2" representations (PR 4b)."""
+"""Tests for the "toulbar2" representations."""
 
 import os
 
@@ -106,7 +106,7 @@ def test_toulbar2_representation_classes(cmodel, params, cls):
 
 
 # ---------------------------------------------------------------------
-# The UAI text is what save_model writes (parity with the old path)
+# The UAI text is what save_model writes
 # ---------------------------------------------------------------------
 
 
@@ -217,7 +217,7 @@ def test_write_uai_file_uses_the_exact_path(tmp_path):
 
 
 # ---------------------------------------------------------------------
-# Constraint data seen by user functions (unchanged by PR 4b)
+# Constraint data seen by user functions
 # ---------------------------------------------------------------------
 
 
@@ -270,7 +270,7 @@ def test_constraint_data_hmm():
 
 
 # ---------------------------------------------------------------------
-# §9: solve_toulbar2_map_query_model rejected extra **options (e.g. verbose)
+# Regression: solve_toulbar2_map_query_model rejected extra **options (e.g. verbose)
 # ---------------------------------------------------------------------
 
 
@@ -299,7 +299,7 @@ def test_unknown_options_still_raise():
 
 
 # ---------------------------------------------------------------------
-# §9: the DBN/HMM toulbar2 paths didn't check that pytoulbar2 is available
+# Regression: the DBN/HMM toulbar2 paths didn't check that pytoulbar2 is available
 # ---------------------------------------------------------------------
 
 

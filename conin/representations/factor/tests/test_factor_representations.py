@@ -1,4 +1,4 @@
-"""Tests for the "factor" representations and variable elimination (PR 4e)."""
+"""Tests for the "factor" representations and variable elimination."""
 
 import munch
 import pytest
@@ -86,7 +86,7 @@ def test_factor_rejects_pyomo_constraints():
 
 
 def test_variable_elimination_rejects_pyomo_constraints():
-    """Was a TypeError from the old VE constraint helper."""
+    """Regression: this used to raise a TypeError."""
     example = bex.cancer1_BN_constrained_pyomo_conin()
     with pytest.raises(InvalidInputError, match="No 'factor' representation"):
         map_query(example.pgm, method="variable_elimination")
@@ -136,7 +136,7 @@ def test_dbn_structure_params():
     cmodel = ConstrainedDynamicDiscreteBayesianNetwork(dbn)
     default = cmodel.representation("factor")
     assert (default.start, default.stop) == (0, 1)
-    # (start > 0 fails in create_bn_from_dbn for every backend; §9.)
+    # (start > 0 fails in create_bn_from_dbn for every backend.)
     repn = cmodel.representation("factor", start=0, stop=3)
     assert (repn.start, repn.stop) == (0, 3)
     assert repn.constraint_data() == munch.Munch(T=[0, 1, 2, 3])
@@ -156,7 +156,7 @@ def test_hmm_structure_params():
 
 
 # ---------------------------------------------------------------------
-# The constraint data each model passes (unchanged from before PR 4e)
+# The constraint data each model passes
 # ---------------------------------------------------------------------
 
 
@@ -272,7 +272,7 @@ def test_write_uai_file_writes_the_constrained_model(tmp_path):
 
 
 # ---------------------------------------------------------------------
-# §9 regression tests (PR 4e)
+# Regression tests
 # ---------------------------------------------------------------------
 
 
@@ -297,7 +297,7 @@ def _brute_force(pgm, constraint, evidence=None):
 
 @skipif_pgmpy_not_available
 def test_constrained_mn_keeps_user_evidence():
-    """§9: the ConstrainedMN overload replaced the user evidence with {}."""
+    """Regression: the ConstrainedMN overload replaced the user evidence with {}."""
     pgm = mex.ABC_conin().pgm
     con = _abc_all_different()
     cmodel = ConstrainedDiscreteMarkovNetwork(pgm, con)
@@ -311,7 +311,7 @@ def test_constrained_mn_keeps_user_evidence():
 
 @skipif_pgmpy_not_available
 def test_constrained_mn_does_not_force_a_scope_node_to_one():
-    """§9: the MN factor oracle fixed the last scope node to 1 as evidence."""
+    """Regression: the MN factor oracle fixed the last scope node to 1 as evidence."""
 
     # With the old code, C (the last scope node) was fixed to 1, so a
     # constraint that requires C == 0 was infeasible.
@@ -329,7 +329,7 @@ def test_constrained_mn_does_not_force_a_scope_node_to_one():
 
 @skipif_pgmpy_not_available
 def test_constrained_mn_partial_query_has_only_the_query_variables():
-    """§9 side effect: the forced scope node is no longer added to the result."""
+    """The result has only the query variables (no forced scope node)."""
     cmodel = mex.ABC_constrained_oracle_conin().pgm
     results = map_query(cmodel, method="variable_elimination", variables=["A", "B"])
     assert set(results.solution.states) == {"A", "B"}

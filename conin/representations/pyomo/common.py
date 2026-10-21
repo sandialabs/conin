@@ -436,7 +436,7 @@ class PyomoFactorRepresentation(Representation):
         """The ``data`` object passed to the constraint functions for a query.
 
         Subclasses add their structure fields (``T``, ``start``, ``hmm``, ...).
-        The constrained model's own ``data`` is not passed (as before PR 4a).
+        The constrained model's own ``data`` is not passed.
         """
         return munch.Munch(variables=variables, evidence=evidence)
 
