@@ -34,6 +34,7 @@ _REGISTRY = {}
 # conin.constrained_models.feasibility) that themselves import the constrained
 # models.
 _BUILTIN_MODULES = (
+    "conin.representations.matvec.hmm",
     "conin.representations.oracle.hmm",
     "conin.representations.recursive.hmm",
     "conin.representations.pyomo.mn",

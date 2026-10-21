@@ -45,7 +45,6 @@ class Test_HMM1:
 
     def test_start_vec(self):
         hmm = tc.create_hmm1()
-        hmm.initialize()
         assert hmm.start_vec == [0.4, 0.6]
 
     def test_start_vec_negative(self):
@@ -57,7 +56,6 @@ class Test_HMM1:
                 start_probs=_start_probs,
                 transition_probs=hmm.get_transition_probs(),
                 emission_probs=hmm.get_emission_probs(),
-                initialize=True,
             )
 
     def test_start_vec_new_hidden_state(self):
@@ -69,7 +67,6 @@ class Test_HMM1:
                 start_probs=_start_probs,
                 transition_probs=hmm.get_transition_probs(),
                 emission_probs=hmm.get_emission_probs(),
-                initialize=True,
             )
 
     def test_start_vec_sum_to_one(self):
@@ -81,12 +78,10 @@ class Test_HMM1:
                 start_probs=_start_probs,
                 transition_probs=hmm.get_transition_probs(),
                 emission_probs=hmm.get_emission_probs(),
-                initialize=True,
             )
 
     def test_transition_matrix(self):
         hmm = tc.create_hmm1()
-        hmm.initialize()
         assert hmm.transition_mat == [[0.9, 0.1], [0.2, 0.8]]
 
     def test_transition_mat_negative(self):
@@ -98,7 +93,6 @@ class Test_HMM1:
                 start_probs=hmm.get_start_probs(),
                 transition_probs=_transition_probs,
                 emission_probs=hmm.get_emission_probs(),
-                initialize=True,
             )
 
     def test_transition_mat_sum_to_one(self):
@@ -110,7 +104,6 @@ class Test_HMM1:
                 start_probs=hmm.get_start_probs(),
                 transition_probs=_transition_probs,
                 emission_probs=hmm.get_emission_probs(),
-                initialize=True,
             )
 
     def test_transition_mat_filled_out(self):
@@ -122,7 +115,6 @@ class Test_HMM1:
                 start_probs=hmm.get_start_probs(),
                 transition_probs=_transition_probs,
                 emission_probs=hmm.get_emission_probs(),
-                initialize=True,
             )
 
     def test_transition_mat_extra_label(self):
@@ -134,12 +126,10 @@ class Test_HMM1:
                 start_probs=hmm.get_start_probs(),
                 transition_probs=_transition_probs,
                 emission_probs=hmm.get_emission_probs(),
-                initialize=True,
             )
 
     def test_emission_matrix(self):
         hmm = tc.create_hmm1()
-        hmm.initialize()
         assert hmm.emission_mat == [[0.7, 0.3], [0.4, 0.6]]
 
     def test_emission_mat_negative(self):
@@ -151,7 +141,6 @@ class Test_HMM1:
                 start_probs=hmm.get_start_probs(),
                 transition_probs=hmm.get_transition_probs(),
                 emission_probs=_emission_probs,
-                initialize=True,
             )
 
     def test_emission_mat_sum_to_one(self):
@@ -163,7 +152,6 @@ class Test_HMM1:
                 start_probs=hmm.get_start_probs(),
                 transition_probs=hmm.get_transition_probs(),
                 emission_probs=_emission_probs,
-                initialize=True,
             )
 
     def test_emission_mat_filled_out(self):
@@ -175,7 +163,6 @@ class Test_HMM1:
                 start_probs=hmm.get_start_probs(),
                 transition_probs=hmm.get_transition_probs(),
                 emission_probs=_emission_probs,
-                initialize=True,
             )
 
     def test_emission_mat_extra_label(self):
@@ -187,7 +174,6 @@ class Test_HMM1:
                 start_probs=hmm.get_start_probs(),
                 transition_probs=hmm.get_transition_probs(),
                 emission_probs=_emission_probs,
-                initialize=True,
             )
 
     def test_get_hidden_states(self):
@@ -197,56 +183,6 @@ class Test_HMM1:
     def test_get_observable_states(self):
         hmm = tc.create_hmm1()
         assert hmm.get_observable_states() == ["o0", "o1"]
-
-    def test_generate_hidden_length(self):
-        hmm = tc.create_hmm1()
-        assert len(hmm.generate_hidden(self.T)) == self.T
-        with pytest.raises(InvalidInputError):
-            hmm.generate_hidden(-1)
-
-    def test_generate_hidden_output(self):
-        hmm = tc.create_hmm1()
-        for h in hmm.generate_hidden(self.T):
-            assert h in {"h0", "h1"}
-
-    def test_generate_hidden_from_state(self):
-        hmm = tc.create_hmm1()
-        # Make sure that we start in state h0 so we test sequences of length at
-        # least 2
-        start_probs = hmm.get_start_probs()
-        tranisition_probs = hmm.get_transition_probs()
-        emission_probs = hmm.get_emission_probs()
-        start_probs = {"h0": 1, "h1": 0}
-        hmm = HiddenMarkovModel(
-            start_probs=start_probs,
-            emission_probs=emission_probs,
-            transition_probs=tranisition_probs,
-        )
-        # This should be all h0's followed by h1
-        vec = hmm.generate_hidden_until_state("h1")
-        assert all(val == "h0" for val in vec[:-1])
-
-    def test_generate_observed_from_hidden_length(self):
-        hmm = tc.create_hmm1()
-        hidden = hmm.generate_hidden(self.T)
-        assert len(hmm.generate_observed_from_hidden(hidden)) == self.T
-
-    def test_generate_observed_from_hidden_output(self):
-        hmm = tc.create_hmm1()
-        hidden = hmm.generate_hidden(self.T)
-        for o in hmm.generate_observed_from_hidden(hidden):
-            assert o in {"o0", "o1"}
-
-    def test_generate_observed_length(self):
-        hmm = tc.create_hmm1()
-        assert len(hmm.generate_observed(self.T)) == self.T
-        with pytest.raises(InvalidInputError):
-            hmm.generate_observed(-1)
-
-    def test_generate_observed_output(self):
-        hmm = tc.create_hmm1()
-        for h in hmm.generate_observed(self.T):
-            assert h in {"o0", "o1"}
 
     def test_hmm_is_valid_observed_state(self):
         hmm = tc.create_hmm1()
@@ -409,7 +345,6 @@ class Test_HMM_Util:
             observed_states=observed_states,
             seed=1,
         )
-        hmm.initialize()
         assert set(hmm.get_hidden_states()) == set(hidden_states)
         assert set(hmm.get_observable_states()) == set(observed_states)
 
@@ -457,7 +392,6 @@ class Test_HMM_Constructor:
             start_probs={"b": 1.0},
             transition_probs={("c", "a"): 1.0, ("b", "c"): 1.0, ("a", "a"): 1.0},
             emission_probs={("c", "y"): 1.0, ("b", "x"): 1.0, ("a", "z"): 1.0},
-            initialize=True,
         )
         assert hmm.hidden_to_external == ["a", "b", "c"]
         assert hmm.hidden_to_internal == {"a": 0, "b": 1, "c": 2}
@@ -479,15 +413,41 @@ class Test_HMM_Constructor:
         assert hmm2.transition_mat == hmm.transition_mat
         assert hmm2.emission_mat == hmm.emission_mat
 
-    def test_initialize_flag(self):
+    def test_no_cached_numeric_representation(self):
         hmm = tc.create_hmm1()
         args = dict(
             start_probs=hmm.get_start_probs(),
             transition_probs=hmm.get_transition_probs(),
             emission_probs=hmm.get_emission_probs(),
         )
-        assert HiddenMarkovModel(**args)._repn is None
-        assert HiddenMarkovModel(**args, initialize=True)._repn is not None
+        with pytest.raises(TypeError):
+            HiddenMarkovModel(**args, initialize=True)
+        for name in ("repn", "initialize", "generate_hidden", "generate_observed"):
+            assert not hasattr(hmm, name)
+
+    @pytest.mark.parametrize(
+        "name, key, value",
+        [
+            ("start_probs", "h0", -0.6),
+            ("start_probs", "h0", 0.6),
+            ("transition_probs", ("h0", "h0"), 0.8),
+            ("emission_probs", ("h0", "o0"), -0.4),
+        ],
+    )
+    def test_constructor_validates_probabilities(self, name, key, value):
+        # The probabilities used to be checked only when the numeric
+        # representation was first built (initialize=True or the first query),
+        # so an invalid HMM could be created and used with other backends.
+        hmm = tc.create_hmm1()
+        args = dict(
+            start_probs=hmm.get_start_probs(),
+            transition_probs=hmm.get_transition_probs(),
+            emission_probs=hmm.get_emission_probs(),
+        )
+        args[name] = dict(args[name])
+        args[name][key] = value
+        with pytest.raises(InvalidInputError):
+            HiddenMarkovModel(**args)
 
     def test_inputs_are_copied(self):
         start_probs = {"h0": 1.0}

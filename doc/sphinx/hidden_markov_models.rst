@@ -38,7 +38,27 @@ transition, and emission probabilities and then passes them to the
 
 The hidden and observed state labels are available from ``hmm.hidden_states``
 and ``hmm.observed_states``. Internally, states are indexed in sorted label
-order.
+order. The constructor checks that the probabilities are nonnegative and that
+the start probabilities and each row of transition and emission probabilities
+sum to 1 (``InvalidInputError`` otherwise).
+
+Sequences are sampled with ``conin.sampling.unconstrained`` (NumPy's global
+random state, which ``hmm.set_seed`` seeds):
+
+.. code-block:: python
+
+   from conin.sampling.unconstrained import (
+       generate_hidden,
+       generate_observed,
+       generate_observed_from_hidden,
+   )
+
+   hidden = generate_hidden(hmm, 5)
+   observed = generate_observed_from_hidden(hmm, hidden)
+   assert len(generate_observed(hmm, 5)) == 5
+
+For a constrained HMM with oracle constraints, use
+``conin.sampling.oracle.rejection_sample_hidden(chmm, time_steps)``.
 
 Random HMMs
 -----------
@@ -99,7 +119,10 @@ used by constraint functions and MVR factories is passed to the constructor
 with ``data=``.
 
 Backend representations are built by ``representation(kind)``; each call
-builds a new one. HMMs register these kinds: ``"oracle"`` (feasibility checks
+builds a new one. HMMs register these kinds: ``"matvec"`` (the HMM
+parameters as read-only NumPy arrays on internal indices, with their logarithms;
+no constraints only; used by Viterbi, A*, sampling and the torch MVR kernels),
+``"oracle"`` (feasibility checks
 for A* and rejection sampling; no constraints or oracle constraints),
 ``"recursive"`` (for recursive A*; no constraints or recursive constraints),
 ``"factor"`` (variable elimination; no constraints, factor-oracle or algebraic

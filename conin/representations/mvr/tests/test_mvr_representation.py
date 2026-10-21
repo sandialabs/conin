@@ -56,7 +56,6 @@ def make_random_hmm(
         start_probs=start_probs,
         transition_probs=transition_probs,
         emission_probs=emission_probs,
-        initialize=True,
     )
 
     return hmm

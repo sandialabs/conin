@@ -22,10 +22,12 @@ from conin.constraints.mvr import BaseMVR, InhomMVR, MVR_MatVecRepn, mvr_timeran
 from conin.constraints.mvr.primitives import mvr_forbid_state, mvr_visit_state
 from conin.exceptions import InvalidInputError
 from conin.graphical_models import HiddenMarkovModel
+from conin.representations.matvec import MatVecHMMRepresentation
 from conin.representations.mvr import MVRHMMRepresentation
 from conin.representations.oracle import OracleHMMRepresentation
 from conin.representations.recursive import RecursiveHMMRepresentation
 from conin.sampling.oracle import rejection_sample_hidden
+from conin.sampling.unconstrained import generate_hidden
 from conin.inference.pyomo import ip_inference
 
 # ---------------------------------------------------------------------
@@ -51,7 +53,8 @@ def test_oracle_representation_class_and_attributes():
     assert isinstance(repn, OracleHMMRepresentation)
     assert repn.kind == "oracle"
     assert repn.model is cmodel.model
-    assert repn.hmm is cmodel.model.repn
+    assert isinstance(repn.hmm, MatVecHMMRepresentation)
+    assert repn.hmm.model is cmodel.model
     # The user's constraints, not wrapped copies.
     assert repn.constraints is cmodel.constraints
     assert not hasattr(repn, "chmm")
@@ -126,11 +129,12 @@ def test_oracle_checks_do_not_change_the_representation():
 
 def _reference_generate_hidden(cmodel, time_steps, max_failures=1000):
     """Reference rejection sampler: resample until every constraint holds."""
-    hmm = cmodel.model.repn
-    hidden = hmm.generate_hidden(time_steps)
+    hmm = cmodel.model
+    h2i = hmm.hidden_to_internal
+    hidden = [h2i[h] for h in generate_hidden(hmm, time_steps)]
     ctr = 0
     while not _reference_is_feasible(cmodel, hidden):
-        hidden = hmm.generate_hidden(time_steps)
+        hidden = [h2i[h] for h in generate_hidden(hmm, time_steps)]
         ctr += 1
         if ctr > max_failures:
             raise RuntimeError("failed")
@@ -145,18 +149,16 @@ def test_rejection_sampling_matches_the_reference(seed):
     cmodel.model.set_seed(seed)
     new = [rejection_sample_hidden(cmodel, 20) for _ in range(3)]
     assert new == expected
-    cmodel.model.set_seed(seed)
-    assert [cmodel.generate_hidden(20) for _ in range(3)] == expected
 
 
 def test_rejection_sampling_bare_hmm_is_unconstrained_sampling():
     hmm = tc.create_hmm1()
     hmm.set_seed(5)
-    expected = hmm.generate_hidden(12)
+    expected = generate_hidden(hmm, 12)
     hmm.set_seed(5)
     assert rejection_sample_hidden(hmm, 12) == expected
     hmm.set_seed(5)
-    assert ConstrainedHiddenMarkovModel(hmm).generate_hidden(12) == expected
+    assert rejection_sample_hidden(ConstrainedHiddenMarkovModel(hmm), 12) == expected
 
 
 def test_rejection_sampling_gives_up_after_max_failures():

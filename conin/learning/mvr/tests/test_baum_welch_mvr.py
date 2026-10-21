@@ -356,9 +356,10 @@ def test_em_write_back_preserves_indexing_and_rebuilds_repn(hmm, observed):
     assert fitted.hidden_to_external == hmm.hidden_to_external
     assert fitted.observed_to_external == hmm.observed_to_external
 
-    # A stale repn would leave inference running on the pre-fit parameters.
-    # Row sums are not checked: HMM_MatVecRepn validates those on initialize.
-    assert fitted.repn.transition_mat == fitted.transition_mat
+    # Stale arrays would leave inference running on the pre-fit parameters.
+    # Row sums are not checked: the HiddenMarkovModel constructor validates them.
+    repn = ConstrainedHiddenMarkovModel(fitted).representation("matvec")
+    assert repn.transition_mat.tolist() == fitted.transition_mat
 
 
 def test_em_stops_at_the_convergence_tolerance(hmm, observed):
@@ -443,7 +444,6 @@ def make_sparse_hmm(hidden_states, observed_states):
         start_probs={h: 1.0 / len(hidden_states) for h in hidden_states},
         transition_probs=transition,
         emission_probs=emission,
-        initialize=True,
     )
 
     return hmm

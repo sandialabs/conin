@@ -1,7 +1,9 @@
-"""Rejection sampling of feasible hidden-state sequences (from ``Oracle_CHMM.generate_hidden``)."""
+"""Rejection sampling of feasible hidden-state sequences."""
 
 from conin.exceptions import InvalidInputError
 from conin.graphical_models import HiddenMarkovModel
+from conin.sampling.unconstrained import generate_hidden
+from conin.sampling.unconstrained.hmm import _hidden_indices
 
 
 def rejection_sample_hidden(hmm, time_steps, *, max_failures=1000):
@@ -36,7 +38,7 @@ def rejection_sample_hidden(hmm, time_steps, *, max_failures=1000):
     """
     if isinstance(hmm, HiddenMarkovModel):
         # No constraints: every sample is feasible (same random draws).
-        return hmm.generate_hidden(time_steps)
+        return generate_hidden(hmm, time_steps)
     if not hasattr(hmm, "representation") or not isinstance(
         getattr(hmm, "model", None), HiddenMarkovModel
     ):
@@ -45,10 +47,12 @@ def rejection_sample_hidden(hmm, time_steps, *, max_failures=1000):
             f"ConstrainedHiddenMarkovModel, got {type(hmm).__name__}"
         )
     repn = hmm.representation("oracle")
-    hidden = repn.hmm.generate_hidden(time_steps)
+    start = repn.hmm.start_vec.tolist()
+    transition = repn.hmm.transition_mat.tolist()
+    hidden = _hidden_indices(start, transition, time_steps)
     ctr = 0
     while not repn.is_feasible(hidden):
-        hidden = repn.hmm.generate_hidden(time_steps)
+        hidden = _hidden_indices(start, transition, time_steps)
         ctr += 1
         if ctr > max_failures:
             raise RuntimeError(

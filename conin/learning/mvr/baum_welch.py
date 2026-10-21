@@ -247,7 +247,6 @@ def _rebuild_hmm(hmm, start, transition, emission):
             for i, h in enumerate(hidden)
             for j, o in enumerate(observed)
         },
-        initialize=True,
     )
     if new_hmm.hidden_to_external != hidden or new_hmm.observed_to_external != observed:
         raise InvalidInputError(  # pragma: no cover

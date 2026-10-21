@@ -9,52 +9,23 @@ from conin.util import Util
 from conin.graphical_models.base import GraphicalModel
 
 
-def _validate_start_vec(start_vec, check_errors=True):
-    """Validate (optionally) and copy a starting-probability vector.
-
-    Parameters
-    ----------
-    start_vec : array-like
-        Starting probabilities for hidden states.
-    check_errors : bool, optional
-        If ``True``, validate that entries are nonnegative and sum to 1.
-
-    Returns
-    -------
-    list
-        A fresh copy of ``start_vec``.
+def _validate_start_vec(start_vec):
+    """Check that the starting probabilities are nonnegative and sum to 1.
 
     Raises
     ------
     InvalidInputError
         If ``start_vec`` contains negative entries or does not sum to 1.
     """
-    if check_errors:
-        # Confirm that the start_vec is non-negative
-        for prob in start_vec:
-            if not prob >= 0:
-                raise InvalidInputError("start_probs values must be positive floats.")
-        # Confirm that the start_vec sums to one
-        if not np.isclose(sum(start_vec), 1):
-            raise InvalidInputError("start_prob values must sum to 1.")
-
-    return list(start_vec)
+    for prob in start_vec:
+        if not prob >= 0:
+            raise InvalidInputError("start_probs values must be positive floats.")
+    if not np.isclose(sum(start_vec), 1):
+        raise InvalidInputError("start_prob values must sum to 1.")
 
 
-def _validate_transition_mat(transition_mat, check_errors=True):
-    """Validate (optionally) and copy a hidden-state transition matrix.
-
-    Parameters
-    ----------
-    transition_mat : array-like
-        Transition probabilities between hidden states.
-    check_errors : bool, optional
-        If ``True``, validate that entries are nonnegative and each row sums to 1.
-
-    Returns
-    -------
-    list
-        A fresh copy of ``transition_mat`` (list of lists).
+def _validate_transition_mat(transition_mat):
+    """Check that the transition probabilities are nonnegative and each row sums to 1.
 
     Raises
     ------
@@ -62,34 +33,17 @@ def _validate_transition_mat(transition_mat, check_errors=True):
         If ``transition_mat`` contains negative entries or rows that do not sum to
         1.
     """
-    if check_errors:
-        # Non-negative transition probabilities
-        for h1 in range(len(transition_mat)):
-            for h2 in range(len(transition_mat[h1])):
-                if not transition_mat[h1][h2] >= 0:
-                    raise InvalidInputError("Transition_mat must be positive floats.")
-        # Rows sum to 1
-        for vec in transition_mat:
-            if not np.isclose(sum(vec), 1):
-                raise InvalidInputError("Transition_mat rows do not sum to 1.")
-
-    return [list(row) for row in transition_mat]
+    for row in transition_mat:
+        for prob in row:
+            if not prob >= 0:
+                raise InvalidInputError("Transition_mat must be positive floats.")
+    for vec in transition_mat:
+        if not np.isclose(sum(vec), 1):
+            raise InvalidInputError("Transition_mat rows do not sum to 1.")
 
 
-def _validate_emission_mat(emission_mat, check_errors=True):
-    """Validate (optionally) and copy an emission probability matrix.
-
-    Parameters
-    ----------
-    emission_mat : array-like
-        Emission probabilities from hidden states to observed states.
-    check_errors : bool, optional
-        If ``True``, validate that entries are nonnegative and each row sums to 1.
-
-    Returns
-    -------
-    list
-        A fresh copy of ``emission_mat`` (list of lists).
+def _validate_emission_mat(emission_mat):
+    """Check that the emission probabilities are nonnegative and each row sums to 1.
 
     Raises
     ------
@@ -97,236 +51,13 @@ def _validate_emission_mat(emission_mat, check_errors=True):
         If ``emission_mat`` contains negative entries or rows that do not sum to
         1.
     """
-    if check_errors:
-        # Non-negative emission probabilities
-        for h1 in range(len(emission_mat)):
-            for h2 in range(len(emission_mat[h1])):
-                if not emission_mat[h1][h2] >= 0:
-                    raise InvalidInputError("Emission_mat must be positive floats.")
-        # Rows sum to 1
-        for vec in emission_mat:
-            if not np.isclose(sum(vec), 1):
-                raise InvalidInputError(
-                    f"Emission_mat rows do not sum to 1: {sum(vec)}"
-                )
-
-    return [list(row) for row in emission_mat]
-
-
-class HMM_MatVecRepn:
-    """Matrix/vector representation of a hidden Markov model.
-
-    Parameters
-    ----------
-    start_vec : array-like
-        Starting probabilities for hidden states.
-    transition_mat : array-like
-        Transition probabilities between hidden states.
-    emission_mat : array-like
-        Emission probabilities from hidden states to observed states.
-    check_errors : bool, optional
-        If ``True``, validate probabilities and dimensions during
-        initialization.
-    """
-
-    def __init__(self, *, start_vec, transition_mat, emission_mat, check_errors=True):
-        self._start_vec = _validate_start_vec(start_vec, check_errors=check_errors)
-        self._transition_mat = _validate_transition_mat(
-            transition_mat, check_errors=check_errors
-        )
-        self._emission_mat = _validate_emission_mat(
-            emission_mat, check_errors=check_errors
-        )
-        if check_errors:
-            self._check_dimensions()
-        self._load_dimensions()
-
-    @property
-    def start_vec(self):
-        """Return a copy of the starting probability vector.
-
-        Returns
-        -------
-        list
-            Starting probabilities for hidden states.
-        """
-        return list(self._start_vec)
-
-    @property
-    def transition_mat(self):
-        """Return a copy of the hidden-state transition matrix.
-
-        Returns
-        -------
-        list
-            Transition probabilities between hidden states.
-        """
-        return [list(row) for row in self._transition_mat]
-
-    @property
-    def emission_mat(self):
-        """Return a copy of the emission probability matrix.
-
-        Returns
-        -------
-        list
-            Emission probabilities from hidden states to observed states.
-        """
-        return [list(row) for row in self._emission_mat]
-
-    @property
-    def num_hidden_states(self):
-        """Return the number of hidden states."""
-        return self._num_hidden_states
-
-    @property
-    def num_observed_states(self):
-        """Return the number of observed states."""
-        return self._num_observed_states
-
-    @property
-    def hidden_states(self):
-        """Return the range of hidden-state indices."""
-        return self._hidden_states
-
-    @property
-    def observed_states(self):
-        """Return the range of observed-state indices."""
-        return self._observed_states
-
-    def _check_dimensions(self):
-        """Validate that the model arrays have compatible dimensions.
-
-        Raises
-        ------
-        InvalidInputError
-            If the starting vector, transition matrix, and emission matrix do not have
-            compatible shapes.
-        """
-        correct_dimension = True
-
-        if len(self._start_vec) != len(self._transition_mat):
-            correct_dimension = False  # pragma: no cover
-        for vec in self._transition_mat:
-            if len(self._start_vec) != len(vec):
-                correct_dimension = False  # pragma: no cover
-
-        if len(self._start_vec) != len(self._emission_mat):
-            correct_dimension = False  # pragma: no cover
-        for vec in self._emission_mat:
-            if len(self._emission_mat[0]) != len(vec):
-                correct_dimension = False  # pragma: no cover
-
-        if not correct_dimension:
-            raise InvalidInputError(
-                "Dimensions do not line up correctly in check_dimensions, you shouldn't see this."  # pragma: no cover
-            )
-
-    def _load_dimensions(self):
-        """Compute and cache hidden-state and observed-state dimensions."""
-        self._num_hidden_states = len(self._start_vec)
-        self._num_observed_states = len(self._emission_mat[0])
-        self._hidden_states = range(self._num_hidden_states)
-        self._observed_states = range(self._num_observed_states)
-
-    def generate_hidden(self, time_steps):
-        """Generate a sequence of hidden-state indices.
-
-        Parameters
-        ----------
-        time_steps : int
-            Number of time steps for which to generate hidden states.
-
-        Returns
-        -------
-        list
-            Generated hidden-state indices.
-
-        Raises
-        ------
-        InvalidInputError
-            If ``time_steps`` is negative.
-        """
-        if time_steps < 0:
-            raise InvalidInputError("In generate_hidden time_steps > 0.")
-        hidden = []
-
-        # Sample the first hidden state
-        hidden.append(Util.sample_from_vec(self._start_vec))
-
-        # Sample subsequent hidden states
-        for t in range(time_steps - 1):
-            hidden.append(Util.sample_from_vec(self._transition_mat[hidden[t]]))
-
-        return hidden
-
-    def generate_hidden_until_state(self, h):
-        """Generate hidden-state indices until a target state is reached.
-
-        Parameters
-        ----------
-        h : int
-            Target hidden-state index at which sampling stops.
-
-        Returns
-        -------
-        list
-            Generated hidden-state indices ending in ``h``.
-        """
-        hidden = []
-
-        # Sample the first hidden state
-        hidden.append(Util.sample_from_vec(self._start_vec))
-
-        # Sample until the last hidden state is h
-        while hidden[-1] != h:
-            hidden.append(Util.sample_from_vec(self._transition_mat[hidden[-1]]))
-
-        return hidden
-
-    def generate_observed_from_hidden(self, hidden):
-        """Generate observed-state indices from hidden-state indices.
-
-        Parameters
-        ----------
-        hidden : list
-            Hidden-state indices used to sample observations.
-
-        Returns
-        -------
-        list
-            Generated observed-state indices.
-        """
-        observed = []
-        time_steps = len(hidden)
-
-        for t in range(time_steps):
-            observed.append(Util.sample_from_vec(self._emission_mat[hidden[t]]))
-
-        return observed
-
-    def generate_observed(self, time_steps):
-        """Generate observed-state indices from the model.
-
-        Parameters
-        ----------
-        time_steps : int
-            Number of time steps for which to generate observed states.
-
-        Returns
-        -------
-        list
-            Generated observed-state indices.
-
-        Raises
-        ------
-        InvalidInputError
-            If ``time_steps`` is negative.
-        """
-        if time_steps < 0:
-            raise InvalidInputError("In generate_observed time_steps > 0.")
-        hidden = self.generate_hidden(time_steps)
-        return self.generate_observed_from_hidden(hidden)
+    for row in emission_mat:
+        for prob in row:
+            if not prob >= 0:
+                raise InvalidInputError("Emission_mat must be positive floats.")
+    for vec in emission_mat:
+        if not np.isclose(sum(vec), 1):
+            raise InvalidInputError(f"Emission_mat rows do not sum to 1: {sum(vec)}")
 
 
 class HiddenMarkovModel(GraphicalModel):
@@ -341,15 +72,14 @@ class HiddenMarkovModel(GraphicalModel):
     emission_probs : dict
         Mapping from ``(hidden_state, observed_state)`` pairs to emission
         probabilities.
-    initialize : bool, optional
-        If ``True``, immediately construct (and validate) the numeric
-        representation.
 
     Raises
     ------
     InvalidInputError
-        If any of the probability dictionaries is empty, or if they are
-        inconsistent with each other.
+        If any of the probability dictionaries is empty, if they are
+        inconsistent with each other, or if a probability is negative or the
+        start probabilities, a row of transition probabilities or a row of
+        emission probabilities do not sum to 1.
 
     Notes
     -----
@@ -366,7 +96,6 @@ class HiddenMarkovModel(GraphicalModel):
         start_probs,
         transition_probs,
         emission_probs,
-        initialize=False,
     ):
         start_probs = dict(start_probs)
         transition_probs = dict(transition_probs)
@@ -412,7 +141,10 @@ class HiddenMarkovModel(GraphicalModel):
                 )
             emission_mat[hidden_to_internal[h]][observed_to_internal[o]] = prob
 
-        self._repn = None
+        _validate_start_vec(start_vec)
+        _validate_transition_mat(transition_mat)
+        _validate_emission_mat(emission_mat)
+
         self._start_vec = start_vec
         self._transition_mat = transition_mat
         self._emission_mat = emission_mat
@@ -423,23 +155,9 @@ class HiddenMarkovModel(GraphicalModel):
         self._num_hidden_states = num_hidden_states
         self._num_observed_states = num_observed_states
 
-        if initialize:
-            self.initialize(avoid_reinitialization=True)
-
     def __str__(self):
         """Return a readable dictionary-style representation of the model."""
         return pprint.pformat(self.to_dict(tolerance=1e-3), indent=4, sort_dicts=True)
-
-    @property
-    def repn(self):
-        """Return the numeric matrix/vector representation of the model.
-
-        Returns
-        -------
-        HMM_MatVecRepn
-            Numeric representation of the model.
-        """
-        return self.initialize()
 
     @property
     def start_vec(self):
@@ -507,30 +225,6 @@ class HiddenMarkovModel(GraphicalModel):
             Observed-state labels in internal index order.
         """
         return self.observed_to_external
-
-    def initialize(self, avoid_reinitialization=True):
-        """Construct the numeric matrix/vector representation of the model.
-
-        Parameters
-        ----------
-        avoid_reinitialization : bool, optional
-            If ``True``, reuse an existing representation when one is already
-            available.
-
-        Returns
-        -------
-        HMM_MatVecRepn
-            Numeric representation of the model.
-        """
-        if avoid_reinitialization and self._repn is not None:
-            return self._repn
-
-        self._repn = HMM_MatVecRepn(
-            start_vec=self._start_vec,
-            transition_mat=self._transition_mat,
-            emission_mat=self._emission_mat,
-        )
-        return self._repn
 
     def is_valid_observed_state(self, o):
         """Check whether an observed-state label is valid.
@@ -683,74 +377,6 @@ class HiddenMarkovModel(GraphicalModel):
             num_hidden=self._num_hidden_states,
             num_observed=self._num_observed_states,
         )
-
-    # Generation
-    def generate_hidden(self, time_steps):
-        """Generate a sequence of hidden-state labels.
-
-        Parameters
-        ----------
-        time_steps : int
-            Number of hidden states to generate.
-
-        Returns
-        -------
-        list
-            Generated hidden-state labels.
-        """
-        internal_hidden = self.repn.generate_hidden(time_steps)
-        return [self._hidden_to_external[h] for h in internal_hidden]
-
-    def generate_hidden_until_state(self, h):
-        """Generate hidden-state labels until a target state is reached.
-
-        Parameters
-        ----------
-        h : Any
-            Target hidden-state label at which sampling stops.
-
-        Returns
-        -------
-        list
-            Generated hidden-state labels ending in ``h``.
-        """
-        internal_hidden = self.repn.generate_hidden_until_state(
-            self._hidden_to_internal[h]
-        )
-        return [self._hidden_to_external[h] for h in internal_hidden]
-
-    def generate_observed_from_hidden(self, hidden):
-        """Generate observed-state labels from hidden-state labels.
-
-        Parameters
-        ----------
-        hidden : list
-            Hidden-state labels from which to generate observations.
-
-        Returns
-        -------
-        list
-            Generated observed-state labels.
-        """
-        internal_hidden = [self._hidden_to_internal[h] for h in hidden]
-        internal_observed = self.repn.generate_observed_from_hidden(internal_hidden)
-        return [self._observed_to_external[o] for o in internal_observed]
-
-    def generate_observed(self, time_steps):
-        """Generate observed-state labels from the model.
-
-        Parameters
-        ----------
-        time_steps : int
-            Number of time steps for which to generate observations.
-
-        Returns
-        -------
-        list
-            Generated observed-state labels.
-        """
-        internal_observed = self.repn.generate_observed(time_steps)
-        return [self._observed_to_external[o] for o in internal_observed]
 
     def log_probability(self, observed, hidden):
         """Compute the joint log-probability of aligned observed and hidden states.

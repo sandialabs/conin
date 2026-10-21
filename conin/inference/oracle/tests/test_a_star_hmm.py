@@ -66,7 +66,8 @@ class CountingOracle:
 def test_pruning_rejects_the_extended_prefix_not_its_parent():
     # Regression: a_star_ checked
     # partial_is_feasible(seq) on the parent instead of the extension newSeq,
-    # and `or isinstance(hmm, HMM_MatVecRepn)` made the condition always true.
+    # and an `or isinstance(hmm, ...)` test on the numeric HMM made the
+    # condition always true.
     # "no h0 at all": every extension by h0 must be cut at once.
     counter = CountingOracle(
         func=lambda states: "h0" not in states.values(),

@@ -3,6 +3,7 @@ import math
 
 from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.learning.unconstrained.supervised import supervised_learning
+from conin.sampling.oracle import rejection_sample_hidden
 
 nan = float("nan")
 
@@ -28,7 +29,7 @@ def mcem(
 
     Each iteration samples ``samples_per_iteration`` feasible hidden sequences
     from the current model (rejection sampling, see
-    :meth:`ConstrainedHiddenMarkovModel.generate_hidden`), scores each one with
+    :func:`conin.sampling.oracle.rejection_sample_hidden`), scores each one with
     the current HMM, and re-estimates the HMM from them with
     :func:`~conin.learning.supervised_learning`.  The next iteration samples
     from the re-estimated HMM (``app.with_model(new_hmm)``), with the same
@@ -86,7 +87,7 @@ def mcem(
         simulations = []
         log_prob = 0.0
         for _ in range(samples_per_iteration):
-            feasible_hidden = cmodel.generate_hidden(len(observed))
+            feasible_hidden = rejection_sample_hidden(cmodel, len(observed))
             log_prob = log_prob + cmodel.model.log_probability(
                 observed, feasible_hidden
             )
