@@ -153,6 +153,7 @@ SPHINX_CODE = [
     ("conin.sampling.unconstrained", "generate_observed_from_hidden", "hidden_markov_models.rst"),
     ("conin.scoring", "log_potential", "model_conversion_io.rst"),
     ("conin.scoring", "log_probability", "model_conversion_io.rst, quickstart.rst"),
+    ("conin.scoring", "log_probability_query", "model_conversion_io.rst, quickstart.rst"),
 ]
 
 SPHINX_AUTODOC = [
@@ -204,6 +205,7 @@ SPHINX_AUTODOC = [
     ("conin.representations.toulbar2.common", None, "api_constraints.rst"),
     ("conin.scoring", "log_potential", "model_conversion_io.rst"),
     ("conin.scoring", "log_probability", "model_conversion_io.rst"),
+    ("conin.scoring", "log_probability_query", "model_conversion_io.rst"),
 ]
 
 SPHINX_EXAMPLE_TABLES = [
@@ -352,6 +354,7 @@ PUBLIC_API = [
     ("conin.sampling.unconstrained", "generate_observed_from_hidden", "public API"),
     ("conin.scoring", "log_potential", "public API"),
     ("conin.scoring", "log_probability", "public API"),
+    ("conin.scoring", "log_probability_query", "public API"),
 ]
 # fmt: on
 

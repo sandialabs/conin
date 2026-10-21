@@ -58,7 +58,9 @@ Evaluate an Assignment
 assignment of a Bayesian network, a dynamic Bayesian network or an HMM.
 ``conin.scoring.log_potential`` also accepts Markov networks (where it returns
 the unnormalised log-probability) and constrained models (where it returns
-``-inf`` if a constraint is violated). See :doc:`model_conversion_io`.
+``-inf`` if a constraint is violated). ``conin.scoring.log_probability_query``
+computes marginal and conditional log-probabilities, also under constraints.
+See :doc:`model_conversion_io`.
 
 .. doctest:: quickstart
 

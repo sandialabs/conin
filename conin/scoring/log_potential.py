@@ -10,7 +10,8 @@ out, so no inference is needed.
   constrained model it is ``-inf`` when a constraint is violated.
 
 Marginal and conditional log-probabilities (with variables summed out, or given
-evidence) need inference and are not provided here.
+evidence, or under the constraints) need inference: see
+:func:`conin.scoring.log_probability_query`.
 
 pgmpy models are converted with :func:`conin.common.pgmpy.convert_pgmpy_to_conin`.
 """
