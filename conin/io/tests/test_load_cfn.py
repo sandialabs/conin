@@ -296,9 +296,6 @@ def _toulbar2_solution(filename=None, string=None):
     m = pytoulbar2.CFN(verbose=-1)
     m.Read(filename)
     res = m.Solve()
-    # pytoulbar2 keeps the input format in a global option, which prevents
-    # reading UAI files (as done by map_query) after reading a CFN file.
-    pytoulbar2.pytb2.option.cfn = False
     return None if res is None else list(res[0])
 
 
