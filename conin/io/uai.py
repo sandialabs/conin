@@ -164,12 +164,12 @@ def save_model_uai(pgm, name, quiet=True):
     pgm : DiscreteBayesianNetwork or DynamicDiscreteBayesianNetwork or DiscreteMarkovNetwork
         Model to write.
     name : str
-        Output filename. The saved file uses the ``.uai`` suffix.
+        Output filename. Its extension (if any) is replaced by ``.uai``.
     quiet : bool, optional
         Accepted for API compatibility and currently unused.
     """
     text = _uai_text(pgm)
-    with open(name.split(".")[0] + ".uai", "w") as f:
+    with open(os.path.splitext(name)[0] + ".uai", "w") as f:
         f.write(text)
 
 

@@ -206,8 +206,8 @@ def test_write_uai_file_writes_the_uai_text(tmp_path):
 
 @skipif_toulbar2_not_available
 def test_write_uai_file_uses_the_exact_path(tmp_path):
-    # save_model_uai writes to name.split(".")[0] + ".uai", which is wrong for
-    # a dotted directory; the toulbar2 path writes the given file.
+    # The toulbar2 path writes exactly the given file, also in a dotted
+    # directory.
     d = tmp_path / "a.b"
     d.mkdir()
     filename = str(d / "out.uai")

@@ -223,3 +223,26 @@ def test_save_model_tiny_bn(tiny_bn_orig, tiny_bn_permuted):
     assert filecmp.cmp(fname_orig, fname_permuted)
     os.remove(fname_orig)
     os.remove(fname_permuted)
+
+
+#
+# Paths with dots
+#
+
+
+@pytest.mark.parametrize(
+    "subdir,name",
+    [("a.b", "out.uai"), ("a.b", "out"), ("", "./out.uai"), ("", "out.v1.uai")],
+)
+def test_save_model_uai_paths_with_dots(asia_uai, tmp_path, monkeypatch, subdir, name):
+    # save_model_uai used to write to name.split(".")[0] + ".uai", so a dot in a
+    # directory name or a "./" prefix wrote another file (e.g. "./out.uai" wrote
+    # ".uai").
+    monkeypatch.chdir(tmp_path)
+    directory = tmp_path / subdir
+    directory.mkdir(exist_ok=True)
+    fname = os.path.join(str(directory), name) if subdir else name
+    conin.io.save_model_uai(asia_uai, fname)
+    expected = os.path.splitext(fname)[0] + ".uai"
+    assert sorted(os.listdir(directory)) == [os.path.basename(expected)]
+    assert load_model(expected).nodes == asia_uai.nodes
