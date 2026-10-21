@@ -2,7 +2,6 @@ import math
 from math import prod
 
 from conin.exceptions import InvalidInputError
-
 from conin.util import try_import
 from conin.graphical_models import DiscreteMarkovNetwork, DiscreteFactor
 from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
@@ -48,7 +47,6 @@ def convert_pgmpy_to_DiscreteMarkovNetwork(pgmpy_pgm):
 
 def convert_pgmpy_to_DiscreteBayesianNetwork(pgmpy_pgm):
     cpds = []
-    templates = {}
     for cpd in pgmpy_pgm.get_cpds():
 
         if len(cpd.variables) == 1:  # parents == []
