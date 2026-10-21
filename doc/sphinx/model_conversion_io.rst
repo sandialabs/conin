@@ -40,6 +40,12 @@ specified inclusive time horizon. The HMM conversion creates dynamic variables
    assert sorted(dbn.dynamic_states) == ["E", "H"]
    assert len(bn.nodes) == 6
 
+``create_bn_from_dbn`` unrolls from ``start=0`` (the DBN's initial CPDs
+describe time 0; another ``start`` raises ``InvalidInputError``) to ``stop``
+inclusive; ``stop=0`` gives one time step. The ``start`` argument of
+``map_query`` with ``integer_program``, ``toulbar2`` and
+``variable_elimination`` on DBNs and HMMs follows the same rule.
+
 UAI Files
 ---------
 

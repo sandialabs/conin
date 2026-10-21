@@ -47,6 +47,8 @@ test = [
     ]
 regex = ["greenery"]
 pgmpy = ["pgmpy"]
+toulbar2 = ["pytoulbar2"]
+torch = ["torch"]
 
 [tool.setuptools.packages.find]
 where = ["."]

@@ -307,7 +307,16 @@ oracle constraint. ``create_chmm1_recursive`` expresses the condition of
 
 ``map_query(chmm, method="a_star", evidence=observed)`` runs
 ``recursive_a_star`` when the constraints are recursive, and A* with the oracle
-representation otherwise.
+representation otherwise. Through ``map_query`` the result has the usual
+shape (``solution``, and solutions with ``states``, keyed by time for dict
+evidence); a direct ``recursive_a_star`` call returns ``solutions`` with
+``hidden`` and ``log_likelihood`` only, and no ``solution``.
+
+Because prefixes with the same ``(last hidden state, length, constraint
+state)`` are merged, ``recursive_a_star`` with ``num_solutions > 1`` returns
+at most one sequence per merged class, so its solutions are not always the
+``k`` most likely sequences. Use ``a_star`` with an oracle constraint when you
+need the ``k`` best.
 
 Notes
 -----

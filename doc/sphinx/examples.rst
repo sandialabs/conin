@@ -168,12 +168,14 @@ Selected hidden Markov model examples live in
      - Three-state HMM configured for all-optimal-solution testing.
    * - ``create_chmm1_oracle``
      - Constrained HMM using oracle sequence constraints.
-   * - ``create_chmm1_oracle``
-     - Constrained HMM using oracle constraints for variable-elimination workflows.
+   * - ``create_chmm1_oracle_ve``
+     - Constrained HMM using factor-oracle constraints for variable-elimination workflows.
    * - ``create_chmm1_recursive``
      - Constrained HMM using a recursive constraint (for ``recursive_a_star``).
    * - ``create_chmm1_pyomo``
      - Constrained HMM using Pyomo constraints.
+   * - ``create_chmm1_algebraic``
+     - Constrained HMM using algebraic constraints (Pyomo, Toulbar2 and variable elimination).
    * - ``create_chmm1_toulbar2``
      - Constrained HMM using Toulbar2 constraints.
    * - ``create_chmm1_pyomo_aos``
