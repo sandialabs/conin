@@ -34,10 +34,10 @@ def save_conin_model(pgm, name, quiet=True):
     if name.endswith(".bif") and pgmpy_available:
         if isinstance(pgm, DiscreteBayesianNetwork):
             _pgm = convert_conin_to_pgmpy_bn(pgm)
-            pgmpy_files.save_model(_pgm, name, quiet)
+            return pgmpy_files.save_model(_pgm, name, quiet)
         elif isinstance(pgm, DiscreteMarkovNetwork):
             _pgm = convert_conin_to_pgmpy_mn(pgm)
-            pgmpy_files.save_model(_pgm, name, quiet)
+            return pgmpy_files.save_model(_pgm, name, quiet)
         else:
             raise RuntimeError(
                 f"Cannot save conin model.  Unexpected conin model type {type(pgm)}"

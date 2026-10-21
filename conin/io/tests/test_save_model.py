@@ -246,3 +246,18 @@ def test_save_model_uai_paths_with_dots(asia_uai, tmp_path, monkeypatch, subdir,
     expected = os.path.splitext(fname)[0] + ".uai"
     assert sorted(os.listdir(directory)) == [os.path.basename(expected)]
     assert load_model(expected).nodes == asia_uai.nodes
+
+
+#
+# BIF
+#
+
+
+@pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
+def test_save_conin_bn_as_bif(cancer_bn_uai, tmp_path):
+    # save_model wrote the .bif file of a CONIN model but did not return, so it
+    # then raised "Unknown format specified by filename suffix".
+    fname = str(tmp_path / "cancer.bif")
+    save_model(cancer_bn_uai, fname)
+    loaded = load_model(fname)
+    assert sorted(loaded.nodes) == sorted(cancer_bn_uai.nodes)
