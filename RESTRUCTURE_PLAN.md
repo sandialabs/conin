@@ -1,6 +1,6 @@
 # Conin Restructure Plan
 
-Status: **In progress.** PR 0 is merged into `main` (#241). PR 1 is merged into `restructure` (#242). PR 2 is merged into `restructure` (#243). PR 3 is merged into `restructure` (#244). PR 4 is split into sub-PRs 4f, 4a, 4b, 4e, 4c, 4d (in that order, stacked branches); 4f is done (branch `restructure-pr4f-io`, off `restructure`, merged as #245); 4a is done (branch `restructure-pr4a-pyomo`, off 4f, merged as #246); 4b is done (branch `restructure-pr4b-toulbar2`, off 4a, merged as #247); the representation cache was removed after 4b (#248); 4e is done (branch `restructure-pr4e-factor`, off `restructure` 3cf8d04; its follow-up removes the dead pgmpy log-probability code and adds `log_probability` and `is_feasible`; a second follow-up removes the last import cycle and moves the unneeded function-level imports to the top of their modules; merged as #249/#250); 4c is done (branch `restructure-pr4c-oracle`, off `restructure` 657c29f); a comment-only cleanup PR removes the PR-number and plan-section references from the code (branch `restructure-comment-cleanup`, off 4c; rule in §6). Next: 4d, then PR 5, PR 5b (scoring) and PR 6. The later PRs target the `restructure` branch.
+Status: **In progress.** PR 0 is merged into `main` (#241). PR 1 is merged into `restructure` (#242). PR 2 is merged into `restructure` (#243). PR 3 is merged into `restructure` (#244). PR 4 is split into sub-PRs 4f, 4a, 4b, 4e, 4c, 4d (in that order, stacked branches); 4f is done (branch `restructure-pr4f-io`, off `restructure`, merged as #245); 4a is done (branch `restructure-pr4a-pyomo`, off 4f, merged as #246); 4b is done (branch `restructure-pr4b-toulbar2`, off 4a, merged as #247); the representation cache was removed after 4b (#248); 4e is done (branch `restructure-pr4e-factor`, off `restructure` 3cf8d04; its follow-up removes the dead pgmpy log-probability code and adds `log_probability` and `is_feasible`; a second follow-up removes the last import cycle and moves the unneeded function-level imports to the top of their modules; merged as #249/#250); 4c is done (branch `restructure-pr4c-oracle`, off `restructure` 657c29f); a comment-only cleanup PR removes the PR-number and plan-section references from the code (branch `restructure-comment-cleanup`, off 4c; rule in §6). Next: 4d, then 4g (the unconstrained HMM matrix/vector representation), PR 5, PR 5b (scoring) and PR 6. The later PRs target the `restructure` branch.
 This file lives at the repo root while the work is in progress. Delete it in the final PR.
 
 All decisions are recorded in §11; §12 lists what is still open. Critiques of the
@@ -700,7 +700,7 @@ map_query(pgm, method=..., evidence=..., ...)
        integer_program      -> "pyomo" | "pyomo_network_flow" (ip_formulation)
        toulbar2             -> "toulbar2"
        a_star               -> "oracle" | "recursive" (picked by constraint family)
-       viterbi              -> unconstrained only
+       viterbi              -> unconstrained only (4g: the unconstrained HMM repn, §4.8)
        variable_elimination -> "factor"
        mvr_viterbi  (NEW)   -> "mvr"
   3. repn = cmodel.representation(kind, **structure_params)
@@ -750,6 +750,37 @@ map_query(pgm, method=..., evidence=..., ...)
   Example: `conin.examples.hidden_markov_model.create_chmm1_recursive(lb=10, ub=12)`.
 
 ---
+
+### 4.8 The unconstrained HMM representation (PR 4g)
+
+`HiddenMarkovModel` stores `_start_vec`, `_transition_mat` and `_emission_mat` on internal indices.
+`HMM_MatVecRepn` holds a validated copy of the same lists plus sampling methods, built lazily and cached on
+the model (`initialize()`, `avoid_reinitialization`, `initialize=True`). That machinery dates from mutable
+HMMs. Problems with it:
+- It duplicates the model's data, and the same property name means different things:
+  `HMM_MatVecRepn.hidden_states` is `range(n)`, `HiddenMarkovModel.hidden_states` is the external labels.
+- `viterbi` and `a_star` accept an HMM, a constrained HMM or a raw `HMM_MatVecRepn`, and branch on
+  `isinstance(hmm, HMM_MatVecRepn)`. Every other backend takes a representation.
+- On the immutable branch, `transition_mat` / `emission_mat` return copies, and A* reads
+  `hmm.transition_mat[h1][h2]` inside its loops, so each access copies the whole matrix (not yet timed).
+- Viterbi is the only method in §4.5 with no representation kind ("unconstrained only").
+
+Target (PR 4g, §6):
+- A registered representation of the bare HMM (`HiddenMarkovModel`, family `None` only), built by
+  `ConstrainedHiddenMarkovModel(hmm, ()).representation(<kind>)` like any other repn (bare models are
+  already wrapped this way, §4.5). It holds read-only numpy arrays on internal indices, probably plus the
+  log arrays, and is rebuilt per call like the other repns (§4.4).
+- Viterbi, A*, recursive A*, rejection sampling and MVR's `_hmm_to_torch` read it. The oracle and
+  recursive repns hold one instead of `model.repn`.
+- `HMM_MatVecRepn`, `hmm.repn`, `initialize()` / `initialize=True` and the `isinstance` input branches
+  are removed (no shims; the MVR notebooks use `hmm.repn` and `initialize=True`, and
+  `HMM_MatVecRepn` is exported from `conin.graphical_models`, so §5 and the notebooks change too).
+- Layering: `graphical_models` must not import `representations`, so `HiddenMarkovModel.generate_*`
+  either samples from the model's own private arrays or moves to `sampling/`.
+- It is a representation of the model alone, not of a (model, constraints) pair; that is a small
+  stretch of the §4.3 definition, accepted for the uniform dispatch.
+
+Open questions, to settle at the start of 4g: §12.
 
 ## 5. Public API after the restructure (sketch)
 
@@ -948,13 +979,14 @@ detection keeps the diffs reviewable.
 | 4c | Oracle + Recursive (A*), oracle sampling, mcem | refactor | **DONE (branch `restructure-pr4c-oracle`, off `restructure` 657c29f).** `Oracle_CHMM` becomes `OracleHMMRepresentation`; `CHMM` deleted. Add `RecursiveConstraint` and the `"recursive"` repn; `recursive_a_star` takes a constrained HMM. `HMMApplication` deleted (not moved; §11). Viterbi, A*, recursive A*, the learning helpers and rejection sampling move to `inference/{unconstrained,oracle,recursive}`, `learning/` and `sampling/oracle/`. Fix the A*, recursive A* and mcem bugs and two oracle-library partial functions. |
 | 4c′ | Remove restructure references from the code | comments | **DONE (branch `restructure-comment-cleanup`, off 4c).** Comment, docstring and test-label changes only: the PR-number, §-number and `RESTRUCTURE_PLAN` references added by PRs 2–4c are reworded to describe the behaviour or the bug, `test_public_api.py`'s `RESTRUCTURE_PLAN_API` group becomes `PUBLIC_API` (test ids `public_api:...`; the `used_in` label `"RESTRUCTURE_PLAN.md §5"` becomes `"public API"`), and two `test_hmm_representations.py` tests named after the old `Oracle_CHMM` are renamed (`..._matches_the_reference...`). No test is added or removed (full suite in the `conin_scaling_experiments` venv, where torch now imports: 1694 passed / 123 skipped / 0 failed). The rule that stops new ones is in this section. |
 | 4d | MVR | refactor | `chmm_mvr` and `mvr_common` become repn plus kernels. Move inference, learning, sampling and queries. Update all MVR notebooks. |
+| 4g | Unconstrained HMM matrix/vector representation | refactor + delete | After 4d (which rewrites `mvr_common` and the MVR notebooks, the heaviest `hmm.repn` users), before 5 (so Viterbi has a representation kind to dispatch on). Replace `HMM_MatVecRepn` and the cached `HiddenMarkovModel.repn` with a registered representation of the bare HMM (`HiddenMarkovModel`, family `None` only): read-only numpy arrays on internal indices, probably plus the log arrays that Viterbi and A* each compute now. Viterbi, A*, recursive A*, rejection sampling and MVR's `_hmm_to_torch` use it; the oracle and recursive repns hold one instead of `model.repn`. Remove `HMM_MatVecRepn`, `hmm.repn`, `initialize()` / `initialize=True` and the `isinstance(hmm, HMM_MatVecRepn)` input branches of `viterbi` and `a_star`. Rationale and open questions: §4.8, §12. |
 | 4e | Factor / VE | refactor | **DONE (branch `restructure-pr4e-factor`, off `restructure` 3cf8d04).** VE constraint handling moves into the factor repn (`apply_factor_constraints`, run at build time). Move `factor_repn`. `conin.inference.variable_elimination`. Fix the VE evidence bugs. Follow-up (same branch): delete the dead pgmpy log-probability code (`custom_VE`, `log_prob_v2`); `log_probability`/`log_potential` for every model; `is_feasible` for every constrained model. Second follow-up: remove the `constraints.algebraic` ↔ `representations.pyomo` import cycle and move the function-level imports that no cycle needs to the top of their modules. |
 | 4f | `common/` → `io/` + `common/`; remove pgmax/pomegranate | move + delete | **DONE (branch `restructure-pr4f-io`).** Rename-only first commit, then the folds and deletions; pyagrum removed too (§11). Independent of 3 and 4a–e. It can happen right after PR 1. |
 | 5 | Dispatch rewrite | **design** | `map_query` → repn → ovld on the repn type. Remove the duplicated overloads. Add `method="mvr_viterbi"`. |
 | 5b | Scoring | move + feature | After 5, before 6 (so the 2.0 docs and CHANGELOG describe the final paths). New `conin/scoring/` package beside `inference/`. First commit, rename-only: `common/log_potential.py` → `scoring/` (`log_probability`, `log_potential`), with every importer updated (no `conin.common` re-export, per the no-shims rule; a breaking change in §5). Then the marginal and conditional log-probability query (`log P(X=x \| E=e)` with the other variables summed out, and the probability under constraints, `P(x) / P(C)`), dispatched like the PR 5 `map_query` (method → repn kind → ovld on the repn type), on the backends that can compute it (VE on the `"factor"` repn first). Restores `common/` as a bottom layer (it no longer imports `constrained_models`). Decide the query's API and backends at the start of the PR. |
 | 6 | Docs + cleanup | docs | Sphinx API pages, prose docs, AGENTS.md (examples location), CHANGELOG, version 2.0. Delete this plan file. |
 
-Dependencies: 0 → 1 → 2 → 3 → {4a, 4b, 4c, 4d, 4e} → 5 → 5b → 6. 4f can go anywhere after 1.
+Dependencies: 0 → 1 → 2 → 3 → {4a, 4b, 4c, 4d, 4e} → 4g → 5 → 5b → 6. 4f can go anywhere after 1; 4g needs 4c and 4d.
 4a–4e can be done in parallel.
 
 Bugs are fixed inside the backend PR that touches the code (§9). Each fix gets its own
@@ -1201,4 +1233,10 @@ None blocking. These can be settled during PR 3 (the design PR):
 - **The marginal/conditional log-probability query's API and backends** (PR 5b, §6): its name and signature, whether it
   shares `map_query`'s dispatch, and which backends compute it (VE on the `"factor"` repn first; the deleted
   `log_prob_v2`/`logprob_VE` were pgmpy-VE drafts of it). Decide at the start of 5b, after PR 5 settles dispatch.
+- **The unconstrained HMM representation** (PR 4g, §4.8). Decide at the start of 4g:
+  1. its kind name (`"matvec"`, `"arrays"`, ...);
+  2. whether `HiddenMarkovModel` keeps its `generate_*` sampling methods (sampling from private arrays) or
+     they move to `sampling/`;
+  3. whether `hmm.repn` survives as a convenience or is removed outright;
+  4. whether to time the A* matrix-copy cost first (the copying properties are read inside its loops).
 - (`with_model` cache behaviour, the `Representation` signatures and the registration decorator were settled in PR 3; see §11.)
