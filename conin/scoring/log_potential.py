@@ -10,7 +10,8 @@ out, so no inference is needed.
   constrained model it is ``-inf`` when a constraint is violated.
 
 Marginal and conditional log-probabilities (with variables summed out, or given
-evidence) need inference and are not provided here.
+evidence, or under the constraints) need inference: see
+:func:`conin.scoring.log_probability_query`.
 
 pgmpy models are converted with :func:`conin.common.pgmpy.convert_pgmpy_to_conin`.
 """
@@ -78,7 +79,7 @@ def log_probability(model, assignment, *, observed=None):
     Examples
     --------
     >>> from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
-    >>> from conin.common import log_probability
+    >>> from conin.scoring import log_probability
     >>> bn = DiscreteBayesianNetwork(
     ...     states={"A": [0, 1], "B": [0, 1]},
     ...     cpds=[
@@ -158,7 +159,7 @@ def log_potential(model, assignment, *, observed=None):
     Examples
     --------
     >>> from conin.graphical_models import DiscreteFactor, DiscreteMarkovNetwork
-    >>> from conin.common import log_potential
+    >>> from conin.scoring import log_potential
     >>> mn = DiscreteMarkovNetwork(
     ...     states={"A": [0, 1], "B": [0, 1]},
     ...     factors=[DiscreteFactor(nodes=["A", "B"], values=[1, 2, 3, 4])],

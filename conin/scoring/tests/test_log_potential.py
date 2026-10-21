@@ -1,10 +1,10 @@
-"""Tests of conin.common.log_probability and conin.common.log_potential."""
+"""Tests of conin.scoring.log_probability and conin.scoring.log_potential."""
 
 import math
 
 import pytest
 
-from conin.common import log_potential, log_probability
+from conin.scoring import log_potential, log_probability
 from conin.constrained_models import (
     ConstrainedDiscreteBayesianNetwork,
     ConstrainedDiscreteMarkovNetwork,

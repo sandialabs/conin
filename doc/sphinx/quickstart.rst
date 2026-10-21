@@ -54,15 +54,17 @@ The following example creates a two-node Bayesian network with one root node
 Evaluate an Assignment
 ----------------------
 
-``conin.common.log_probability`` returns the log-probability of a total
+``conin.scoring.log_probability`` returns the log-probability of a total
 assignment of a Bayesian network, a dynamic Bayesian network or an HMM.
-``conin.common.log_potential`` also accepts Markov networks (where it returns
+``conin.scoring.log_potential`` also accepts Markov networks (where it returns
 the unnormalised log-probability) and constrained models (where it returns
-``-inf`` if a constraint is violated). See :doc:`model_conversion_io`.
+``-inf`` if a constraint is violated). ``conin.scoring.log_probability_query``
+computes marginal and conditional log-probabilities, also under constraints.
+See :doc:`model_conversion_io`.
 
 .. doctest:: quickstart
 
-   >>> from conin.common import log_probability
+   >>> from conin.scoring import log_probability
    >>> value = log_probability(pgm, {"A": 0, "B": 1})
    >>> round(value, 6)
    -0.328504

@@ -128,8 +128,35 @@ variable has a value, so nothing is summed out.
   ``is_feasible`` method;
   ``"pyomo"`` and ``"toulbar2"`` constraints raise ``NotImplementedError``.
 
-pgmpy models are converted to CONIN models first. Marginal and conditional
-log-probabilities, which sum out variables, are not provided.
+pgmpy models are converted to CONIN models first.
+
+``log_probability_query(model, assignment, *, evidence=None,
+method="variable_elimination", start=0, stop=None)`` computes a marginal or
+conditional log-probability, ``log P(X = x | E = e)``, where the variables in
+neither ``assignment`` nor ``evidence`` are summed out. For a constrained
+model it is the probability under the constraints, ``log P(X = x | E = e, C)``
+(``C``: every constraint holds), and Markov networks are normalised. It returns
+a float (``-inf`` for probability zero) and raises ``InvalidInputError`` if the
+evidence (with the constraints) has probability zero.
+
+- ``assignment`` and ``evidence`` are dicts. The variables of a dynamic
+  Bayesian network are ``(name, t)``; those of an HMM are ``("H", t)`` (hidden)
+  and ``("E", t)`` (observed), so ``{("E", t): o, ...}`` with no evidence is
+  the likelihood of the observations.
+- Dynamic models are unrolled over ``start..stop``; ``stop`` defaults to the
+  largest time in the query (at least ``start + 1``). With constraints, it sets
+  the time steps the constraints see.
+- ``method="variable_elimination"`` (the only method, which needs pgmpy) runs on
+  the ``"factor"`` representation: unconstrained models and the
+  ``"factor_oracle"`` and ``"algebraic"`` constraint families. Other families
+  raise ``InvalidInputError``.
+
+.. code-block:: python
+
+   from conin.scoring import log_probability_query
+
+   log_probability_query(pgm, {"Cancer": 1}, evidence={"Xray": 1})
+   log_probability_query(cpgm, {"Cancer": 1})  # log P(Cancer=1 | constraints)
 
 .. doctest:: model_utilities
 
@@ -137,7 +164,8 @@ log-probabilities, which sum out variables, are not provided.
    ...     cancer1_BN_constrained_oracle_conin,
    ...     simple1_BN_conin,
    ... )
-   >>> from conin.common import is_polytree, log_potential, log_probability
+   >>> from conin.common import is_polytree
+   >>> from conin.scoring import log_potential, log_probability
    >>> pgm = simple1_BN_conin().pgm
    >>> is_polytree(pgm)
    True
@@ -184,9 +212,11 @@ Reference
 
 .. autofunction:: conin.io.save_model
 
-.. autofunction:: conin.common.log_probability
+.. autofunction:: conin.scoring.log_probability
 
-.. autofunction:: conin.common.log_potential
+.. autofunction:: conin.scoring.log_potential
+
+.. autofunction:: conin.scoring.log_probability_query
 
 .. autofunction:: conin.common.is_polytree
 

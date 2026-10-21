@@ -280,7 +280,7 @@ def _brute_force(pgm, constraint, evidence=None):
     """The constrained MAP assignment of a small MN, by enumeration."""
     import itertools
 
-    from conin.common import log_potential
+    from conin.scoring import log_potential
 
     evidence = evidence or {}
     nodes = list(pgm.nodes)
