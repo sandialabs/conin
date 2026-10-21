@@ -1,3 +1,3 @@
 """Inference algorithms for models without constraints (Viterbi)."""
 
-from .viterbi import viterbi, viterbi_
+from .viterbi import viterbi

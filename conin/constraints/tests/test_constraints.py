@@ -276,20 +276,25 @@ class Test_Common_Constraints:
         assert occurs_at_least_once_in_time_frame_constraint(
             6, lower_t=0, upper_t=10
         ).partial_func(8, seq)
-        assert not occurs_at_least_once_in_time_frame_constraint(7).partial_func(
-            8, seq
-        )  # 1 occurs before the range
+        # Without upper_t the window ends at T: a prefix shorter than T can
+        # still get val (PR 4c fix; these returned False before), a full one
+        # cannot.
+        assert occurs_at_least_once_in_time_frame_constraint(7).partial_func(8, seq)
+        assert not occurs_at_least_once_in_time_frame_constraint(7).partial_func(7, seq)
         assert occurs_at_least_once_in_time_frame_constraint(5, upper_t=6).partial_func(
             8, seq
         )  # 5 is at the end
+        assert occurs_at_least_once_in_time_frame_constraint(1, lower_t=1).partial_func(
+            8, seq
+        )
         assert not occurs_at_least_once_in_time_frame_constraint(
             1, lower_t=1
         ).partial_func(
-            8, seq
-        )  # 1 is at the start
-        assert not occurs_at_least_once_in_time_frame_constraint(1).partial_func(
+            7, seq
+        )  # 1 is only at the start
+        assert occurs_at_least_once_in_time_frame_constraint(1).partial_func(
             2, _d([])
-        )  # No occurrences in an empty sequence
+        )  # An empty prefix can still be completed
 
     def test_or_constraints(self):
         constraint1 = has_minimum_number_of_occurences_constraint(val="h", count=3)

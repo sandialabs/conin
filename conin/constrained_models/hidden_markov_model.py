@@ -1,5 +1,6 @@
 from conin.exceptions import InvalidInputError
 from conin.graphical_models import HiddenMarkovModel
+from conin.sampling.oracle import rejection_sample_hidden
 
 from .base import ConstrainedGraphicalModel
 from .feasibility import (
@@ -19,7 +20,8 @@ class ConstrainedHiddenMarkovModel(ConstrainedGraphicalModel):
         Hidden Markov model to wrap.
     constraints : Constraint or iterable of Constraint, optional
         Constraints of one family: ``"oracle"``, ``"factor_oracle"``,
-        ``"pyomo"``, ``"algebraic"``, ``"toulbar2"`` or ``"mvr"``.
+        ``"pyomo"``, ``"algebraic"``, ``"toulbar2"``, ``"mvr"`` or
+        ``"recursive"``.
     data : object, optional
         Application data passed to the representation builders (MVR
         factories, Pyomo constraint functions, oracle wrappers).
@@ -28,8 +30,14 @@ class ConstrainedHiddenMarkovModel(ConstrainedGraphicalModel):
     -----
     Registered representations (see :meth:`representation`):
 
-    * ``"oracle"`` (no constraints or ``"oracle"``): sampling and feasibility
-      checks on internal hidden-state indices, used by A*;
+    * ``"oracle"`` (no constraints or ``"oracle"``): feasibility checks on
+      internal hidden-state indices, used by A* and rejection sampling;
+    * ``"recursive"`` (no constraints or ``"recursive"``): the combined
+      recursive constraint, used by recursive A*;
+    * ``"factor"`` (no constraints, ``"factor_oracle"`` or ``"algebraic"``;
+      structure params ``start``, ``stop``): variable elimination;
+    * ``"toulbar2"`` (no constraints, ``"toulbar2"`` or ``"algebraic"``;
+      structure params ``start``, ``stop``): the cost function network;
     * ``"pyomo"`` (no constraints, ``"pyomo"`` or ``"algebraic"``;
       structure params ``start``, ``stop``): the integer program of the
       unrolled model (``ip_formulation="markov_network"``);
@@ -50,10 +58,15 @@ class ConstrainedHiddenMarkovModel(ConstrainedGraphicalModel):
         "algebraic",
         "toulbar2",
         "mvr",
+        "recursive",
     )
 
     def generate_hidden(self, time_steps):
         """Generate a feasible sequence of hidden states.
+
+        Uses rejection sampling
+        (:func:`conin.sampling.oracle.rejection_sample_hidden`), so the
+        constraints must have an ``"oracle"`` representation.
 
         Parameters
         ----------
@@ -65,10 +78,7 @@ class ConstrainedHiddenMarkovModel(ConstrainedGraphicalModel):
         list
             Feasible sequence of external hidden-state labels.
         """
-        return [
-            self.model.hidden_to_external[h]
-            for h in self.representation("oracle").generate_hidden(time_steps)
-        ]
+        return rejection_sample_hidden(self, time_steps)
 
     def generate_observed_from_hidden(self, hidden):
         """Generate observed states from a feasible hidden-state sequence.

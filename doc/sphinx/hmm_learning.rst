@@ -4,8 +4,7 @@ Hidden Markov Model Learning
 ``conin.learning`` contains helpers for estimating HMM
 parameters from simulated or labeled sequences. The supervised-learning path is
 the most direct and best-tested interface. Monte Carlo EM support exists, but it
-is more experimental and expects an application object with domain-specific
-sampling behavior.
+is more experimental.
 
 Simulation Format
 -----------------
@@ -127,21 +126,16 @@ to preserve the original sequences.
 Monte Carlo EM
 --------------
 
-``mcem`` is an experimental Monte Carlo EM helper. It is intended for workflows
-where an application object can sample feasible hidden-state sequences for a
-fixed observed sequence, then refit the HMM with ``supervised_learning``.
+``mcem`` is an experimental Monte Carlo EM helper. ``app`` is a
+``ConstrainedHiddenMarkovModel`` with oracle constraints (or a bare HMM). Each
+iteration samples feasible hidden sequences for a fixed observed sequence by
+rejection sampling (``generate_hidden``), scores each sample under the current
+HMM, and refits the HMM from the samples with ``supervised_learning``. The next
+iteration samples from the refitted HMM (``app.with_model(new_hmm)``, with the
+same constraints and data).
 
-At a high level, the application object is expected to provide:
-
-- ``generate_hidden(time_steps)`` for sampling a feasible hidden sequence;
-  ``mcem`` calls it as ``app.generate_hidden(len(observed))``.
-- ``model`` (for example a ``ConstrainedHiddenMarkovModel``) or
-  ``hidden_markov_model`` (for example an ``HMMApplication``): the starting HMM,
-  which must provide ``log_probability(observed, hidden)``.
-
-The re-estimated HMM is kept locally and is not written back to ``app``, so
-sampling keeps using the application's original model. ``mcem`` returns the
-final average log-probability, not the fitted HMM.
+``app`` is not changed, and ``mcem`` returns the final average
+log-probability, not the fitted HMM.
 
 Because this path is less stable and more application-specific, prefer
 ``supervised_learning`` for labeled data and treat ``mcem`` as an advanced API.

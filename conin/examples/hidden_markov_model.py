@@ -1,5 +1,9 @@
 import pyomo.environ as pe
-from conin.constraints import OracleConstraint, FactorOracleConstraint
+from conin.constraints import (
+    OracleConstraint,
+    FactorOracleConstraint,
+    RecursiveConstraint,
+)
 from conin.constraints import (
     pyomo_constraint_fn,
     toulbar2_constraint_fn,
@@ -8,10 +12,6 @@ from conin.constraints import (
 )
 from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.graphical_models import HiddenMarkovModel
-from conin.hidden_markov_model.hmm_application import HMMApplication
-
-import munch
-import random
 
 """
 This script has a collection of HMM test cases that can be used to
@@ -351,93 +351,23 @@ def create_chmm1_toulbar2():
     return chmm
 
 
-class Num_Zeros(HMMApplication):
+def create_chmm1_recursive(lb=10, ub=12):
+    """Recursive CHMM: the number of ``"h0"`` states is between ``lb`` and ``ub``.
 
-    def __init__(self):
-        self.num_zeros = None
-        super().__init__(self.__class__.__name__)
+    The same condition as :func:`create_chmm1_oracle` (with the defaults),
+    written as a :class:`~conin.constraints.RecursiveConstraint` for
+    :func:`conin.inference.recursive.recursive_a_star`.  The state is the
+    number of ``"h0"`` states so far.
+    """
+    hmm = create_hmm1()
 
-    def initialize(
-        self,
-        *,
-        hmm,
-        oracle_constraints,
-        lb,
-        ub,
-    ):
-        self.hmm = hmm
-        self._oracle_constraints = oracle_constraints
-        self.lb = lb
-        self.ub = ub
+    num_zeros = RecursiveConstraint(
+        initial=lambda h: 1 if h == "h0" else 0,
+        update=lambda n, h: n + 1 if h == "h0" else n,
+        feasible=lambda n: lb <= n <= ub,
+        feasible_partial=lambda n, t, T: n + (T - t) >= lb and n <= ub,
+        name="num_zeros",
+    )
 
-    def run_simulations(
-        self,
-        *,
-        num=1,
-        debug=False,
-        seed=None,
-        with_observations=False,
-        time_steps,
-    ):
-        if seed is not None:
-            random.seed(seed)
-        output = []
-        for n in range(num):
-            res = munch.Munch()
-            hidden = self.oracle.generate_hidden(time_steps)
-            if with_observations:
-                observed = self.oracle.generate_observed_from_hidden(hidden)
-            res = munch.Munch(hidden=hidden, index=n)
-            if with_observations:
-                res.observed = observed
-            output.append(res)
-        return output
-
-    def get_oracle_constraints(self):
-        return self._oracle_constraints
-
-    def get_pyomo_constraints(self):
-        @pyomo_constraint_fn()
-        def constraint(M, D):
-            M.h0_lower = pe.Constraint(
-                expr=sum(M.V("H", t, "h0") for t in D.hmm.T) >= self.lb
-            )
-            M.h0_upper = pe.Constraint(
-                expr=sum(M.V("H", t, "h0") for t in D.hmm.T) <= self.ub
-            )
-
-        return [constraint]
-
-    def get_algebraic_constraints(self):
-        @algebraic_constraint_fn()
-        def constraint(M, D):
-            return [
-                sum(M.V("H", t, "h0") for t in D.hmm.T) >= self.lb,
-                sum(M.V("H", t, "h0") for t in D.hmm.T) <= self.ub,
-            ]
-
-        return [constraint]
-
-    #
-    # The following methods are used by recursive A*
-    #
-
-    def initialize_constraint_data(self, hidden_state):
-        if hidden_state == "h0":
-            return 1
-        else:
-            return 0
-
-    def constraint_data_feasible_partial(self, *, constraint_data, t, time_steps):
-        return (
-            constraint_data + (time_steps - t) >= self.lb
-        ) and constraint_data <= self.ub
-
-    def constraint_data_feasible(self, constraint_data):
-        return constraint_data >= self.lb and constraint_data <= self.ub
-
-    def update_constraint_data(self, *, hidden_state, constraint_data):
-        if hidden_state == "h0":
-            return constraint_data + 1
-        else:
-            return constraint_data
+    chmm = ConstrainedHiddenMarkovModel(hmm, num_zeros)
+    return chmm

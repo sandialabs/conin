@@ -30,10 +30,12 @@ class Representation(ABC):
 _REGISTRY = {}
 
 # Modules that register the built-in builders.  They are imported on first use
-# of the registry, not at ``import conin`` time: they import backend modules
-# (e.g. conin.hidden_markov_model) that themselves import the constrained models.
+# of the registry, not at ``import conin`` time: they import modules (e.g.
+# conin.constrained_models.feasibility) that themselves import the constrained
+# models.
 _BUILTIN_MODULES = (
     "conin.representations.oracle.hmm",
+    "conin.representations.recursive.hmm",
     "conin.representations.pyomo.mn",
     "conin.representations.pyomo.bn",
     "conin.representations.pyomo.dbn",

@@ -228,6 +228,16 @@ def test_hmm_mvr_time_range():
         cmodel.is_feasible(["h0", "h0"])
 
 
+def test_hmm_recursive():
+    cmodel = hmm_examples.create_chmm1_recursive()
+    assert not cmodel.is_feasible(["h0"] * 9)
+    assert cmodel.is_feasible(["h0"] * 10)
+    assert cmodel.is_feasible(["h0"] * 12 + ["h1"] * 3)
+    assert not cmodel.is_feasible(["h0"] * 13)
+    # Only ``feasible`` decides; ``feasible_partial`` is a pruning test.
+    assert cmodel.is_feasible(dict(enumerate(["h1"] + ["h0"] * 11)))
+
+
 def test_hmm_pyomo_not_supported():
     with pytest.raises(NotImplementedError):
         hmm_examples.create_chmm1_pyomo().is_feasible(["h0"] * 3)
