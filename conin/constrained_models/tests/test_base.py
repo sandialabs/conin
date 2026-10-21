@@ -8,7 +8,9 @@ import pytest
 from conin import pyomo_constraint_fn, toulbar2_constraint_fn
 from conin.constrained_models import (
     ConstrainedGraphicalModel,
+    ConstrainedDiscreteBayesianNetwork,
     ConstrainedDiscreteMarkovNetwork,
+    ConstrainedDynamicDiscreteBayesianNetwork,
     ConstrainedHiddenMarkovModel,
 )
 from conin.constraints import OracleConstraint
@@ -119,6 +121,74 @@ def test_mixed_families_rejected_and_named():
     with pytest.raises(InvalidInputError, match="one constraint family") as exc:
         ConstrainedDiscreteMarkovNetwork(_mn(), [pyomo_c, tb2_c])
     assert "pyomo" in str(exc.value) and "toulbar2" in str(exc.value)
+
+
+@pytest.mark.parametrize(
+    "cls, expected",
+    [
+        (
+            ConstrainedDiscreteMarkovNetwork,
+            ["algebraic", "factor_oracle", "pyomo", "toulbar2"],
+        ),
+        (
+            ConstrainedDiscreteBayesianNetwork,
+            ["algebraic", "factor_oracle", "pyomo", "toulbar2"],
+        ),
+        (
+            ConstrainedDynamicDiscreteBayesianNetwork,
+            ["algebraic", "factor_oracle", "pyomo", "toulbar2"],
+        ),
+        (
+            ConstrainedHiddenMarkovModel,
+            [
+                "algebraic",
+                "factor_oracle",
+                "mvr",
+                "oracle",
+                "pyomo",
+                "recursive",
+                "toulbar2",
+            ],
+        ),
+    ],
+)
+def test_accepted_families_come_from_the_registry(cls, expected):
+    assert cls._supported_families() == expected
+    assert expected == sorted(
+        {f for _, f in supported_representations(cls.model_type) if f is not None}
+    )
+
+
+def test_family_without_a_builder_is_rejected_and_named():
+    with pytest.raises(InvalidInputError) as exc:
+        ConstrainedDiscreteMarkovNetwork(_mn(), OracleConstraint(func=lambda s: True))
+    msg = str(exc.value)
+    assert "does not support constraint family 'oracle'" in msg
+    assert "'factor_oracle'" in msg and "'pyomo'" in msg
+
+
+def test_registering_a_builder_makes_a_family_accepted():
+    oracle_c = OracleConstraint(func=lambda s: True)
+    with pytest.raises(InvalidInputError):
+        ConstrainedDiscreteMarkovNetwork(_mn(), oracle_c)
+
+    @register_representation("_test_oracle_mn", DiscreteMarkovNetwork, ("oracle",))
+    def _build(cmodel):
+        return _Counting(cmodel)
+
+    try:
+        c = ConstrainedDiscreteMarkovNetwork(_mn(), oracle_c)
+        assert c.constraint_family == "oracle"
+        assert isinstance(c.representation("_test_oracle_mn"), _Counting)
+    finally:
+        unregister_representation("_test_oracle_mn", DiscreteMarkovNetwork, ("oracle",))
+    with pytest.raises(InvalidInputError):
+        ConstrainedDiscreteMarkovNetwork(_mn(), oracle_c)
+
+
+def test_no_supported_families_attribute():
+    assert not hasattr(ConstrainedGraphicalModel, "supported_families")
+    assert not hasattr(ConstrainedHiddenMarkovModel, "supported_families")
 
 
 def test_base_class_cannot_be_instantiated():
@@ -234,6 +304,7 @@ def test_supported_representations_hmm():
         ("toulbar2", None),
         ("toulbar2", "algebraic"),
         ("toulbar2", "toulbar2"),
+        ("mvr", None),
         ("mvr", "mvr"),
     ]:
         assert pair in pairs

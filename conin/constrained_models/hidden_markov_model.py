@@ -43,23 +43,15 @@ class ConstrainedHiddenMarkovModel(ConstrainedGraphicalModel):
       unrolled model (``ip_formulation="markov_network"``);
     * ``"pyomo_network_flow"`` (no constraints, ``"pyomo"`` or
       ``"algebraic"``): the network-flow integer program;
-    * ``"mvr"`` (``"mvr"``): the built MVRs, aligned to the HMM
-      (``representation("mvr").mvrs``).
+    * ``"mvr"`` (no constraints or ``"mvr"``): the built MVRs, aligned to
+      the HMM (``representation("mvr").mvrs``), used by the torch MVR
+      algorithms (:mod:`conin.inference.mvr`, :mod:`conin.learning.mvr`,
+      :mod:`conin.sampling.mvr`, :mod:`conin.queries.mvr`).
     """
 
     __slots__ = ()
 
     model_type = HiddenMarkovModel
-    supported_families = (
-        None,
-        "oracle",
-        "factor_oracle",
-        "pyomo",
-        "algebraic",
-        "toulbar2",
-        "mvr",
-        "recursive",
-    )
 
     def generate_hidden(self, time_steps):
         """Generate a feasible sequence of hidden states.

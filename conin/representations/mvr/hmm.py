@@ -1,54 +1,120 @@
 """The ``"mvr"`` representation of a constrained HMM.
 
-It wraps :class:`conin.hidden_markov_model.chmm_mvr.MVR_CHMM`, which aligns the
-MVRs' hidden-state axes with the HMM.
+It builds the MVRs of the constrained model and aligns their hidden-state
+axes with the HMM, for the torch MVR algorithms
+(:mod:`conin.inference.mvr`, :mod:`conin.learning.mvr`,
+:mod:`conin.sampling.mvr`, :mod:`conin.queries.mvr`).
 """
 
 import copy
 
-from conin.constraints.mvr import BaseMVR
+from conin.constraints.mvr import BaseMVR, MVR_MatVecRepn
+from conin.exceptions import InvalidInputError
 from conin.graphical_models import HiddenMarkovModel
 from conin.representations.base import Representation, register_representation
 
 
+def align_hidden_states(mvr, hidden_to_external):
+    """Return an MVR whose numeric hidden axis follows ``hidden_to_external``.
+
+    Parameters
+    ----------
+    mvr : HomMVR or InhomMVR
+        An MVR over the same hidden states as the HMM.
+    hidden_to_external : list
+        The HMM's hidden-state labels in internal-index order.
+
+    Returns
+    -------
+    HomMVR or InhomMVR
+        ``mvr`` itself if its hidden states are already in that order,
+        otherwise a shallow copy with a permuted array representation.
+    """
+    if list(mvr.hidden_states) == hidden_to_external:
+        return mvr
+
+    position = {h: i for i, h in enumerate(mvr.hidden_states)}
+    perm = [position[h] for h in hidden_to_external]
+
+    repn = mvr.repn
+    upd_array = repn.upd_array
+
+    aligned = copy.copy(mvr)
+    aligned.hidden_states = list(hidden_to_external)
+
+    # Validation is skipped, since the existing MVR should have validated already.
+    aligned._repn = MVR_MatVecRepn(
+        ini_array=repn.ini_array[perm],
+        upd_array=(
+            [upd_t[perm] for upd_t in upd_array]
+            if isinstance(upd_array, list)
+            else upd_array[perm]
+        ),
+        evl_array=repn.evl_array,
+        check_errors=False,
+    )
+
+    return aligned
+
+
 class MVRHMMRepresentation(Representation):
-    """Built and aligned MVRs of a constrained HMM.
+    """The built MVRs of a constrained HMM, aligned to the HMM.
+
+    ``MVRConstraint`` factories are called with ``(hmm, cmodel.data)``.
+    Prebuilt MVRs are deep-copied, so the user's MVR objects are never
+    changed through the representation.  Each MVR's hidden axis is then put
+    in the HMM's internal hidden-state order, so the torch algorithms can
+    index the MVR arrays and the HMM arrays the same way.
 
     Attributes
     ----------
-    chmm : MVR_CHMM
-        The wrapped object, for the torch MVR algorithms.
-    mvrs : tuple of BaseMVR
-        The built MVRs, aligned to the HMM's hidden-state order.
-    hmm : HiddenMarkovModel
+    model : HiddenMarkovModel
         The wrapped HMM.
+    mvrs : tuple of BaseMVR
+        The built MVRs, aligned to the HMM's hidden-state order, in the order
+        of the constrained model's constraints (empty without constraints).
+
+    Notes
+    -----
+    The representation holds no per-query data: the time horizon,
+    observations, dtype and device are arguments of the algorithms, which
+    build their torch tensors from ``mvrs`` on each call.  Nothing here
+    changes after the build, so one representation can serve several
+    queries.
+
+    Raises
+    ------
+    InvalidInputError
+        If a constraint does not give an MVR, or an MVR's hidden states are
+        not those of the HMM.
     """
 
     kind = "mvr"
 
     def __init__(self, cmodel):
-        from conin.hidden_markov_model.chmm_mvr import MVR_CHMM
-
         hmm = cmodel.model
-        data = cmodel.data
-        # MVRConstraint factories are called with (hmm, data). Prebuilt MVRs
-        # (also in the "mvr" family) are deep-copied: MVRs have mutable
-        # state (e.g. ``mvr_timerange(..., inplace=True)`` sets
-        # ``_time_range``), and the user's objects must not be changed through
-        # the representation.
-        built = [
-            copy.deepcopy(c) if isinstance(c, BaseMVR) else c(hmm, data)
-            for c in cmodel.constraints
-        ]
-        self.chmm = MVR_CHMM(hidden_markov_model=hmm, constraints=built, data=data)
+        hidden_to_external = list(hmm.hidden_to_external)
+        hidden_states = set(hidden_to_external)
 
-    @property
-    def mvrs(self):
-        return tuple(self.chmm.constraints or ())
+        mvrs = []
+        for i, c in enumerate(cmodel.constraints):
+            if isinstance(c, BaseMVR):
+                mvr = copy.deepcopy(c)
+            elif callable(c):
+                mvr = c(hmm, cmodel.data)
+            else:
+                mvr = c
+            if not isinstance(mvr, BaseMVR):
+                raise InvalidInputError(f"Constraint {i} is not an MVR object")
+            if set(mvr.hidden_states) != hidden_states:
+                raise InvalidInputError(
+                    f"Hidden states of constraint {i} do not match those of the "
+                    "hidden Markov model"
+                )
+            mvrs.append(align_hidden_states(mvr, hidden_to_external))
 
-    @property
-    def hmm(self):
-        return self.chmm.hidden_markov_model
+        self.model = hmm
+        self.mvrs = tuple(mvrs)
 
 
 @register_representation("mvr", HiddenMarkovModel, families=(None, "mvr"))

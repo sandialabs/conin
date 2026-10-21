@@ -361,7 +361,7 @@ def test_label_that_cannot_be_escaped_is_a_syntax_error(label):
 
 
 def test_constraints_are_named_after_their_conjunct():
-    # The name is what sat_time_mvr / sat_prob_mvr take as target="...".
+    # The name is what sat_time_torch_mvr_chmm / sat_prob_torch_mvr_chmm take as target="...".
     hmm = make_hmm()
     split = "never a and reach b"
 

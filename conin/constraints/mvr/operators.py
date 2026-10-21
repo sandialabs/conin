@@ -153,9 +153,14 @@ def _combined_time_horizon(mvrs: list[MVR]) -> int | None:
 def mvr_timerange(
     mvrs: list[MVR],
     time_range: list[int] = None,
-    inplace: bool = True,
+    inplace: bool = False,
 ) -> MVR:
-    """Set an MVR's time range, mutating it by default."""
+    """Return the MVR with its time range set to ``time_range``.
+
+    By default this returns a new MVR and leaves the input unchanged (``None``
+    clears the range). ``inplace=True`` sets the range on the input and
+    returns it.
+    """
     mvr = mvrs[0]
 
     if not isinstance(mvr, (HomMVR, InhomMVR)):

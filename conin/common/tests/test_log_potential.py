@@ -11,7 +11,7 @@ from conin.constrained_models import (
     ConstrainedDynamicDiscreteBayesianNetwork,
 )
 from conin.constraints import (
-    OracleConstraint,
+    FactorOracleConstraint,
     pyomo_constraint_fn,
     toulbar2_constraint_fn,
 )
@@ -358,10 +358,10 @@ def test_constrained_without_constraints():
     assert log_potential(cmodel, {"A": 0, "B": 1}) == pytest.approx(math.log(0.9 * 0.8))
 
 
-def test_constrained_mn_oracle():
+def test_constrained_mn_factor_oracle():
     mn = mn_examples.ABC_conin().pgm
     cmodel = ConstrainedDiscreteMarkovNetwork(
-        mn, OracleConstraint(func=lambda s: s["A"] != s["B"])
+        mn, FactorOracleConstraint(func=lambda s: s["A"] != s["B"], nodes=["A", "B"])
     )
     assert log_potential(cmodel, {"A": 2, "B": 1, "C": 1}) == pytest.approx(
         log_potential(mn, {"A": 2, "B": 1, "C": 1})
@@ -388,7 +388,7 @@ def test_constrained_dbn_factor_oracle():
     assert log_potential(cmodel, a) == -math.inf
 
 
-def test_constrained_dbn_oracle_sees_data_T():
+def test_constrained_dbn_factor_oracle_sees_data_T():
     seen = []
 
     def func(states, data):
@@ -396,7 +396,7 @@ def test_constrained_dbn_oracle_sees_data_T():
         return True
 
     cmodel = ConstrainedDynamicDiscreteBayesianNetwork(
-        _dbn(), OracleConstraint(func=func)
+        _dbn(), FactorOracleConstraint(func=func, nodes=[("A", 0)])
     )
     a = {(n, t): 0 for n in "AB" for t in range(3)}
     assert cmodel.is_feasible(a)
@@ -427,7 +427,9 @@ def test_constrained_checks_assignment_before_constraints():
         called.append(states)
         return True
 
-    cmodel = ConstrainedDiscreteBayesianNetwork(_bn(), OracleConstraint(func=func))
+    cmodel = ConstrainedDiscreteBayesianNetwork(
+        _bn(), FactorOracleConstraint(func=func, nodes=["A", "B"])
+    )
     with pytest.raises(InvalidInputError, match="missing"):
         log_potential(cmodel, {"A": 0})
     assert called == []

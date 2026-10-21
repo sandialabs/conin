@@ -48,7 +48,11 @@ Representations
 
 Constrained models build backend representations lazily with
 ``representation(kind)``. Builders are registered per
-``(kind, model_type, constraint_family)``.
+``(kind, model_type, constraint_family)``. The registry also decides which
+constraint families a constrained model accepts: a family is accepted for a
+model type if some builder is registered for it (for example, oracle
+constraints only for hidden Markov models; use ``FactorOracleConstraint`` with
+the other models).
 
 .. autoclass:: conin.representations.Representation
    :members:
