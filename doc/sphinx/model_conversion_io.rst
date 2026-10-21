@@ -137,7 +137,8 @@ log-probabilities, which sum out variables, are not provided.
    ...     cancer1_BN_constrained_oracle_conin,
    ...     simple1_BN_conin,
    ... )
-   >>> from conin.common import is_polytree, log_potential, log_probability
+   >>> from conin.common import is_polytree
+   >>> from conin.scoring import log_potential, log_probability
    >>> pgm = simple1_BN_conin().pgm
    >>> is_polytree(pgm)
    True
@@ -184,9 +185,9 @@ Reference
 
 .. autofunction:: conin.io.save_model
 
-.. autofunction:: conin.common.log_probability
+.. autofunction:: conin.scoring.log_probability
 
-.. autofunction:: conin.common.log_potential
+.. autofunction:: conin.scoring.log_potential
 
 .. autofunction:: conin.common.is_polytree
 

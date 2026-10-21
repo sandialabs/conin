@@ -78,7 +78,7 @@ def log_probability(model, assignment, *, observed=None):
     Examples
     --------
     >>> from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
-    >>> from conin.common import log_probability
+    >>> from conin.scoring import log_probability
     >>> bn = DiscreteBayesianNetwork(
     ...     states={"A": [0, 1], "B": [0, 1]},
     ...     cpds=[
@@ -158,7 +158,7 @@ def log_potential(model, assignment, *, observed=None):
     Examples
     --------
     >>> from conin.graphical_models import DiscreteFactor, DiscreteMarkovNetwork
-    >>> from conin.common import log_potential
+    >>> from conin.scoring import log_potential
     >>> mn = DiscreteMarkovNetwork(
     ...     states={"A": [0, 1], "B": [0, 1]},
     ...     factors=[DiscreteFactor(nodes=["A", "B"], values=[1, 2, 3, 4])],

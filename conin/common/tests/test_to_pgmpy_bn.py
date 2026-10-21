@@ -188,7 +188,7 @@ def test_model_equivalence():
     ``log_probability`` converts the pgmpy model back to conin, so this checks
     the round trip.  pgmpy's own probability is checked too.
     """
-    from conin.common import log_probability
+    from conin.scoring import log_probability
 
     # Create test model
     conin_pgm = DiscreteBayesianNetwork(

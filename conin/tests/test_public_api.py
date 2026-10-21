@@ -99,8 +99,6 @@ SPHINX_CODE = [
     ("conin", "pyomo_constraint_fn", "bayesian_networks.rst, dynamic_bayesian_networks.rst, hidden_markov_models.rst, markov_networks.rst"),
     ("conin", "toulbar2_constraint_fn", "bayesian_networks.rst, dynamic_bayesian_networks.rst, hidden_markov_models.rst, markov_networks.rst"),
     ("conin.common", "is_polytree", "model_conversion_io.rst"),
-    ("conin.common", "log_potential", "model_conversion_io.rst"),
-    ("conin.common", "log_probability", "model_conversion_io.rst, quickstart.rst"),
     ("conin.constrained_models", "ConstrainedDiscreteBayesianNetwork", "bayesian_networks.rst"),
     ("conin.constrained_models", "ConstrainedDiscreteMarkovNetwork", "markov_networks.rst"),
     ("conin.constrained_models", "ConstrainedDynamicDiscreteBayesianNetwork", "dynamic_bayesian_networks.rst"),
@@ -153,12 +151,12 @@ SPHINX_CODE = [
     ("conin.sampling.unconstrained", "generate_hidden", "examples.rst, hidden_markov_models.rst"),
     ("conin.sampling.unconstrained", "generate_observed", "hidden_markov_models.rst"),
     ("conin.sampling.unconstrained", "generate_observed_from_hidden", "hidden_markov_models.rst"),
+    ("conin.scoring", "log_potential", "model_conversion_io.rst"),
+    ("conin.scoring", "log_probability", "model_conversion_io.rst, quickstart.rst"),
 ]
 
 SPHINX_AUTODOC = [
     ("conin.common", "is_polytree", "model_conversion_io.rst"),
-    ("conin.common", "log_potential", "model_conversion_io.rst"),
-    ("conin.common", "log_probability", "model_conversion_io.rst"),
     ("conin.common.pgmpy", "convert_conin_to_pgmpy_bn", "model_conversion_io.rst", "pgmpy"),
     ("conin.common.pgmpy", "convert_conin_to_pgmpy_mn", "model_conversion_io.rst", "pgmpy"),
     ("conin.common.pgmpy", "convert_pgmpy_to_conin", "model_conversion_io.rst", "pgmpy"),
@@ -204,6 +202,8 @@ SPHINX_AUTODOC = [
     ("conin.representations", "register_representation", "api_constrained_graphical_models.rst"),
     ("conin.representations", "supported_representations", "api_constrained_graphical_models.rst"),
     ("conin.representations.toulbar2.common", None, "api_constraints.rst"),
+    ("conin.scoring", "log_potential", "model_conversion_io.rst"),
+    ("conin.scoring", "log_probability", "model_conversion_io.rst"),
 ]
 
 SPHINX_EXAMPLE_TABLES = [
@@ -277,8 +277,6 @@ PUBLIC_API = [
     ("conin", "Constraint", "public API"),
     ("conin.common", "convert_pgmpy_to_conin", "public API", "pgmpy"),
     ("conin.common", "is_polytree", "public API"),
-    ("conin.common", "log_potential", "public API"),
-    ("conin.common", "log_probability", "public API"),
     ("conin.constrained_models", "ConstrainedDiscreteBayesianNetwork", "public API"),
     ("conin.constrained_models", "ConstrainedDiscreteMarkovNetwork", "public API"),
     ("conin.constrained_models", "ConstrainedDynamicDiscreteBayesianNetwork", "public API"),
@@ -352,6 +350,8 @@ PUBLIC_API = [
     ("conin.sampling.unconstrained", "generate_hidden_until_state", "public API"),
     ("conin.sampling.unconstrained", "generate_observed", "public API"),
     ("conin.sampling.unconstrained", "generate_observed_from_hidden", "public API"),
+    ("conin.scoring", "log_potential", "public API"),
+    ("conin.scoring", "log_probability", "public API"),
 ]
 # fmt: on
 

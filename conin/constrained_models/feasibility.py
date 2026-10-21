@@ -1,7 +1,7 @@
 """Feasibility checks of total assignments against the constraints of a model.
 
 Used by the ``is_feasible`` methods of the constrained models and by
-:func:`conin.common.log_potential`.  Only the constraint families whose check
+:func:`conin.scoring.log_potential`.  Only the constraint families whose check
 is a direct evaluation are supported:
 
 * ``"oracle"``: the predicate is called with the assignment (HMMs only: the
