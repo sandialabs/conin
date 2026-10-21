@@ -19,6 +19,7 @@ from conin.constrained_models import (
 )
 from conin.constraints import OracleConstraint
 from conin.exceptions import InvalidInputError
+from conin.graphical_models.hmm_observations import as_sequence
 from conin.inference import map_query
 from conin.inference.oracle import a_star
 from conin.inference.recursive import recursive_a_star
@@ -198,8 +199,8 @@ def test_unknown_ip_formulation_raises_value_error():
         ("dbn", "factor", dict(start=1, stop=3), dict(start=1, stop=3)),
         ("hmm", "pyomo", dict(evidence=OBSERVED), dict(start=0, stop=4)),
         ("hmm", "toulbar2", dict(evidence=OBSERVED, stop=2), dict(start=0, stop=2)),
-        # Variable elimination on an HMM always unrolls over the evidence.
-        ("hmm", "factor", dict(evidence=OBSERVED, stop=2), dict(start=0, stop=4)),
+        ("hmm", "factor", dict(evidence=OBSERVED, stop=2), dict(start=0, stop=2)),
+        ("hmm", "factor", dict(evidence=OBSERVED), dict(start=0, stop=4)),
         ("hmm", "pyomo_network_flow", dict(evidence=OBSERVED), {}),
         ("hmm", "oracle", dict(evidence=OBSERVED, stop=2), {}),
         ("hmm", "matvec", dict(evidence=OBSERVED), {}),
@@ -208,7 +209,16 @@ def test_unknown_ip_formulation_raises_value_error():
 )
 def test_structure_params(model, kind, kwds, params):
     kwds = dict(dict(evidence=None, start=0, stop=None), **kwds)
+    kwds["observed"] = kwds.pop("evidence")
     assert mq._structure_params(kind, _cmodel(model), **kwds) == params
+
+
+@pytest.mark.parametrize("kind", ["pyomo", "toulbar2", "factor"])
+def test_structure_params_stop_past_the_observations(kind):
+    with pytest.raises(InvalidInputError, match="past the last observation"):
+        mq._structure_params(
+            kind, _cmodel("hmm"), observed=OBSERVED, start=0, stop=len(OBSERVED)
+        )
 
 
 # ---------------------------------------------------------------------
@@ -290,6 +300,9 @@ def _query(**kwds):
         options={},
     )
     q.update(kwds)
+    # map_query also passes the HMM observations as a list.
+    if isinstance(q.evidence, (list, tuple, dict)) and "observed" not in kwds:
+        q.observed = as_sequence(q.evidence)
     return q
 
 
@@ -413,13 +426,88 @@ def test_ip_formulation_markov_network_is_accepted_for_every_model():
 # ---------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("evidence", [None, "o0o0", ("o0", "o0")])
+@pytest.mark.parametrize("evidence", [None, "o0o0", {"o0", "o1"}])
 @pytest.mark.parametrize("method", list(mq.METHODS))
-def test_hmm_evidence_must_be_a_list_or_dict(method, evidence):
+def test_hmm_evidence_must_be_a_list_tuple_or_dict(method, evidence):
     # Viterbi and A* used to return None, the solvers raised AssertionError
     # or TypeError.
-    with pytest.raises(InvalidInputError, match="observations as evidence"):
+    with pytest.raises(InvalidInputError, match="a list, a tuple or a dict"):
         map_query(hex_.create_hmm1(), method=method, evidence=evidence)
+
+
+@pytest.mark.parametrize(
+    "evidence,match",
+    [
+        ([], "must not be empty"),
+        ({}, "must not be empty"),
+        ({0: "o0", 2: "o1"}, "keyed by the times 0..T-1"),
+        ({1: "o0", 2: "o1"}, "keyed by the times 0..T-1"),
+    ],
+)
+@pytest.mark.parametrize("method", [m for m in mq.METHODS if m != "mvr_viterbi"])
+def test_hmm_evidence_dict_must_be_keyed_by_every_time(method, evidence, match):
+    # A sparse dict raised KeyError, an empty one IndexError or AssertionError.
+    # (mvr_viterbi reads a sparse {time: label} dict itself.)
+    with pytest.raises(InvalidInputError, match=match):
+        map_query(hex_.create_hmm1(), method=method, evidence=evidence)
+
+
+def _hmm_method_params():
+    return [
+        pytest.param("viterbi", {}),
+        pytest.param("a_star", {}),
+        pytest.param(
+            "integer_program",
+            dict(solver=default_mip_solver),
+            marks=skipif_no_mip_solver,
+        ),
+        pytest.param("toulbar2", {}, marks=skipif_toulbar2_not_available),
+        pytest.param("variable_elimination", {}, marks=skipif_pgmpy_not_available),
+    ]
+
+
+@pytest.mark.parametrize("method,solver", _hmm_method_params())
+def test_hmm_tuple_evidence_is_read_like_a_list(method, solver):
+    hmm = hex_.create_hmm1()
+    as_list = map_query(hmm, method=method, evidence=OBSERVED, **solver)
+    as_tuple = map_query(hmm, method=method, evidence=tuple(OBSERVED), **solver)
+    assert as_tuple.solution.states == as_list.solution.states
+    assert isinstance(as_tuple.solution.states, list)
+
+
+@pytest.mark.parametrize(
+    "method,solver",
+    [p for p in _hmm_method_params() if p.values[0] not in ("viterbi", "a_star")],
+)
+@pytest.mark.parametrize("dict_evidence", [False, True])
+def test_hmm_stop_limits_the_query(method, solver, dict_evidence):
+    # variable_elimination ignored stop and always used every observation.
+    hmm = hex_.create_hmm1()
+    observed = ["o0", "o0", "o1", "o1", "o1", "o0"]
+    evidence = dict(enumerate(observed)) if dict_evidence else observed
+    short = map_query(hmm, method=method, evidence=observed[:3], **solver)
+    results = map_query(hmm, method=method, evidence=evidence, stop=2, **solver)
+    expected = short.solution.states
+    if dict_evidence:
+        expected = dict(enumerate(expected))
+    assert results.solution.states == expected
+
+
+@pytest.mark.parametrize(
+    "method,solver",
+    [p for p in _hmm_method_params() if p.values[0] not in ("viterbi", "a_star")],
+)
+def test_hmm_stop_past_the_last_observation(method, solver):
+    # It raised KeyError (integer_program, toulbar2) or was ignored
+    # (variable_elimination).
+    with pytest.raises(InvalidInputError, match="past the last observation"):
+        map_query(
+            hex_.create_hmm1(),
+            method=method,
+            evidence=OBSERVED,
+            stop=len(OBSERVED),
+            **solver,
+        )
 
 
 # ---------------------------------------------------------------------

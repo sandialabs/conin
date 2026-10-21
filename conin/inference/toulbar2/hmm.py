@@ -1,12 +1,13 @@
 """toulbar2 MAP inference for (constrained) HMMs."""
 
 from conin.constrained_models import ConstrainedHiddenMarkovModel
-from conin.inference._hmm_evidence import (
-    hmm_dbn_evidence,
-    hmm_states_from_dbn,
-    require_hmm_evidence,
+from conin.graphical_models.hmm_observations import (
+    as_sequence,
+    time_range,
+    unrolled_evidence,
 )
-from conin.inference._query_checks import validate_bn_query
+from conin.inference.hmm_results import hidden_states_from_unrolled
+from conin.inference.query_checks import full_query_variables, reject_pruning_options
 
 from .solve import (
     _create_model,
@@ -21,8 +22,9 @@ def _map_query_toulbar2_hmm(repn, *, variables, evidence, write_uai_file, option
     if not pytoulbar2_available:
         return _not_available()
     start, stop = repn.start, repn.stop
-    dbn_evidence = hmm_dbn_evidence(evidence, start, stop)
-    validate_bn_query(options, variables, repn.nodes, evidence=dbn_evidence)
+    dbn_evidence = unrolled_evidence(as_sequence(evidence), start, stop)
+    reject_pruning_options(options)
+    variables = full_query_variables(variables, repn.nodes)
     model = _create_model(
         repn,
         evidence=dbn_evidence,
@@ -32,7 +34,9 @@ def _map_query_toulbar2_hmm(repn, *, variables, evidence, write_uai_file, option
         options=options,
     )
     results = solve_toulbar2_map_query_model(model, **options)
-    return hmm_states_from_dbn(results, evidence, start, stop)
+    return hidden_states_from_unrolled(
+        results, start=start, stop=stop, keyed_by_time=isinstance(evidence, dict)
+    )
 
 
 def inference_toulbar2_map_query_HMM(
@@ -51,11 +55,13 @@ def inference_toulbar2_map_query_HMM(
     ----------
     pgm : HiddenMarkovModel or ConstrainedHiddenMarkovModel
     start, stop : int, optional
-        The time steps (``stop`` defaults to ``len(evidence) - 1``).
+        The time steps (``stop`` defaults to ``len(evidence) - 1``, the last
+        observation; a later ``stop`` raises ``InvalidInputError``).
     variables : list, optional
         Only ``None`` or all unrolled nodes are supported (``RuntimeError``).
-    evidence : list or dict
-        The observations: a list, or a dict keyed by time step.
+    evidence : list, tuple or dict
+        The observations: a list or tuple, or a dict keyed by the times
+        ``0..T-1``.
     write_uai_file : str, optional
         Write the UAI file that toulbar2 reads to this path.
     **options
@@ -70,14 +76,13 @@ def inference_toulbar2_map_query_HMM(
     Raises
     ------
     InvalidInputError
-        For evidence that is not a list or dict.
+        For evidence that is not a list, tuple or dict keyed by ``0..T-1``,
+        or a ``stop`` past the last observation.
     """
     if not pytoulbar2_available:
         return _not_available()
 
-    require_hmm_evidence(evidence)
-    if stop is None:
-        stop = len(evidence) - 1
+    start, stop = time_range(as_sequence(evidence), start, stop)
 
     cmodel = ConstrainedHiddenMarkovModel.ensure(pgm)
     return _map_query_toulbar2_hmm(

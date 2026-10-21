@@ -1,7 +1,7 @@
 """toulbar2 MAP inference for (constrained) Bayesian networks."""
 
 from conin.constrained_models import ConstrainedDiscreteBayesianNetwork
-from conin.inference._query_checks import validate_bn_query
+from conin.inference.query_checks import full_query_variables, reject_pruning_options
 
 from .solve import (
     _create_model,
@@ -17,7 +17,8 @@ def _map_query_toulbar2_bn(
     """Solve a MAP query on the ``"toulbar2"`` representation of a Bayesian network."""
     if not pytoulbar2_available:
         return _not_available()
-    variables = validate_bn_query(options, variables, repn.nodes, evidence=evidence)
+    reject_pruning_options(options)
+    variables = full_query_variables(variables, repn.nodes)
     model = _create_model(
         repn,
         evidence=evidence,

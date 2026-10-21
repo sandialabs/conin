@@ -57,10 +57,13 @@ Viterbi and A* inference
    print(a_star_results.solution.states)
    print(viterbi_results.solution.states)
 
-Both methods accept dense evidence lists or a dictionary such as
-``{0: "o0", 1: "o0", 2: "o1"}``, which returns the hidden states keyed by time
-index. HMM queries need the observations: other evidence raises
-``InvalidInputError``.
+Both methods accept the observations as a list or tuple, or as a dictionary
+keyed by every time ``0..T-1``, such as ``{0: "o0", 1: "o0", 2: "o1"}``, which
+returns the hidden states keyed by time index. HMM queries need the
+observations: other evidence (including a dictionary with missing times)
+raises ``InvalidInputError``. The integer-program, toulbar2 and
+variable-elimination methods infer over the times ``start..stop``, with
+``stop`` defaulting to the last observation.
 
 Optimization and Toulbar2 inference on HMMs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

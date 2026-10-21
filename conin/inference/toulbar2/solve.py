@@ -8,7 +8,7 @@ import munch
 from pyomo.common.timing import TicTocTimer
 
 from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
-from conin.inference._query_checks import validate_mn_query
+from conin.inference.query_checks import full_query_variables
 from conin.util import try_import
 
 with try_import() as pytoulbar2_available:
@@ -44,7 +44,7 @@ def _map_query_toulbar2_mn(
     """Solve a MAP query on the ``"toulbar2"`` representation of a Markov network."""
     if not pytoulbar2_available:  # pragma:nocover
         return _not_available()
-    validate_mn_query(variables)
+    variables = full_query_variables(variables, repn.nodes)
     model = _create_model(
         repn,
         evidence=evidence,

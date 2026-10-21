@@ -29,6 +29,11 @@ from conin.constrained_models import (
     ConstrainedHiddenMarkovModel,
 )
 from conin.exceptions import InvalidInputError
+from conin.graphical_models.hmm_observations import (
+    as_sequence,
+    require_sequence_type,
+    time_range,
+)
 from conin.representations.factor import (
     FactorBNRepresentation,
     FactorDBNRepresentation,
@@ -54,8 +59,7 @@ from conin.representations.toulbar2 import (
 )
 from conin.util import try_import
 
-from ._hmm_evidence import dense_observations, key_solutions_by_time
-from ._hmm_evidence import require_hmm_evidence
+from .hmm_results import key_solutions_by_time
 from .oracle.a_star_hmm import _a_star
 from .pyomo.bn import _map_query_pyomo_bn
 from .pyomo.dbn import _map_query_pyomo_dbn
@@ -166,23 +170,42 @@ def _representation_kind(method, cmodel, options):
     }[method]
 
 
-def _structure_params(kind, cmodel, *, evidence, start, stop):
+def _structure_params(kind, cmodel, *, observed, start, stop):
     """The structure parameters of the ``kind`` representation for this query.
 
     DBNs are unrolled over ``start..stop`` (``stop=None`` means ``1``).  HMMs
-    are unrolled over ``start..stop`` with ``stop = len(evidence) - 1`` by
-    default; variable elimination always uses ``len(evidence) - 1`` (it
-    ignores ``stop``).  The other kinds have no structure parameters here.
+    are unrolled over ``start..stop``, where ``observed`` is the list of
+    observations and ``stop`` defaults to the last one (a later ``stop``
+    raises ``InvalidInputError``).  The other kinds have no structure
+    parameters here.
     """
     if kind not in ("pyomo", "toulbar2", "factor"):
         return {}
     if isinstance(cmodel, ConstrainedDynamicDiscreteBayesianNetwork):
         return dict(start=start, stop=1 if stop is None else stop)
     if isinstance(cmodel, ConstrainedHiddenMarkovModel):
-        if stop is None or kind == "factor":
-            stop = len(evidence) - 1
+        start, stop = time_range(observed, start, stop)
         return dict(start=start, stop=stop)
     return {}
+
+
+def _hmm_observations(method, evidence):
+    """Check the observations of an HMM query; return them as a list.
+
+    The observations are a list or tuple, or a dict keyed by the times
+    ``0..T-1``.  ``mvr_viterbi`` also accepts a sparse ``{time: label}`` dict
+    (it returns ``None`` for it: the MVR Viterbi reads the evidence itself).
+
+    Raises
+    ------
+    InvalidInputError
+        For any other evidence.
+    """
+    what = f"evidence (the observations) of map_query(method={method!r}) on an HMM"
+    if method == "mvr_viterbi":
+        require_sequence_type(evidence, what)
+        return None
+    return as_sequence(evidence, what)
 
 
 def map_query(
@@ -233,8 +256,10 @@ def map_query(
         Observed variable assignments. For static models, a dictionary of
         ``{variable: state}``. For dynamic Bayesian networks, a dictionary
         keyed by ``(variable, time)``. For hidden Markov models, the
-        observations (required): a dense list, or a dictionary keyed by time
-        index (the hidden states are then returned keyed by time index).
+        observations (required): a list or tuple, or a dictionary keyed by
+        the times ``0..T-1`` (the hidden states are then returned keyed by
+        time index); ``mvr_viterbi`` also accepts a sparse ``{time: label}``
+        dictionary.
     show_progress : bool, optional
         Whether to request solver progress reporting when supported.
     timing : bool, optional
@@ -244,9 +269,12 @@ def map_query(
         Initial time index for dynamic models (ignored by static models).
     stop : int, optional
         Final time index for dynamic models (ignored by static models).
-        For DBNs it defaults to ``1``; for HMMs to ``len(evidence) - 1``
-        (``variable_elimination`` on an HMM always uses that).  For
-        ``mvr_viterbi`` the horizon is ``stop + 1`` time steps.
+        For DBNs it defaults to ``1``.  For HMMs, ``integer_program``,
+        ``toulbar2`` and ``variable_elimination`` infer over ``start..stop``,
+        with ``stop`` defaulting to ``len(evidence) - 1`` (a later ``stop``
+        raises ``InvalidInputError``); ``viterbi`` and ``a_star`` use every
+        observation.  For ``mvr_viterbi`` the horizon is ``stop + 1`` time
+        steps.
     options : dict, optional
         Additional keyword arguments forwarded to the selected
         inference helper, such as solver options or output-file settings.
@@ -272,8 +300,9 @@ def map_query(
         If ``pgm`` is not a supported model type.
     InvalidInputError
         If ``method`` does not support the model type or its constraint
-        family (no such representation is registered), or if the evidence
-        of an HMM is not a list or dict.
+        family (no such representation is registered), if the evidence of
+        an HMM is not a list, tuple or dict keyed by ``0..T-1``, or if
+        ``stop`` is past the last observation.
 
     Examples
     --------
@@ -297,16 +326,18 @@ def map_query(
             f"Expected one of: {', '.join(METHODS)}"
         )
     cmodel = _normalise(pgm)
+    observed = None
     if isinstance(cmodel, ConstrainedHiddenMarkovModel):
-        require_hmm_evidence(evidence, f"map_query(method={method!r}) on an HMM")
+        observed = _hmm_observations(method, evidence)
     kind = _representation_kind(method, cmodel, options)
     repn = cmodel.representation(
         kind,
-        **_structure_params(kind, cmodel, evidence=evidence, start=start, stop=stop),
+        **_structure_params(kind, cmodel, observed=observed, start=start, stop=stop),
     )
     query = munch.Munch(
         variables=variables,
         evidence=evidence,
+        observed=observed,
         show_progress=show_progress,
         timing=timing,
         start=start,
@@ -454,9 +485,9 @@ def _solve_map_query(repn: FactorHMMRepresentation, q):
 
 
 def _hmm_search(search, repn, q, **options):
-    """Run an HMM search on dense observations; key the solutions by time for dict evidence."""
-    results = search(repn, observed=dense_observations(q.evidence), **options)
-    if type(q.evidence) is dict:
+    """Run an HMM search on the observations; key the solutions by time for dict evidence."""
+    results = search(repn, observed=q.observed, **options)
+    if isinstance(q.evidence, dict):
         key_solutions_by_time(results)
     return results
 
@@ -496,7 +527,7 @@ def _solve_map_query(repn: MVRHMMRepresentation, q):
     evidence = q.evidence
     if q.stop is not None:
         time_horizon = q.stop + 1
-    elif type(evidence) is dict:
+    elif isinstance(evidence, dict):
         if not evidence:
             raise InvalidInputError(
                 "mvr_viterbi needs a stop time or at least one observation"
@@ -515,7 +546,7 @@ def _solve_map_query(repn: MVRHMMRepresentation, q):
         return_score=True,
         **q.options,
     )
-    states = dict(enumerate(hidden)) if type(evidence) is dict else hidden
+    states = dict(enumerate(hidden)) if isinstance(evidence, dict) else hidden
     soln = munch.Munch(
         states=states,
         hidden=states,

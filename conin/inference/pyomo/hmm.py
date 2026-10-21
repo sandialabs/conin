@@ -11,14 +11,16 @@ import logging
 
 from conin.exceptions import InvalidInputError
 from conin.constrained_models import ConstrainedHiddenMarkovModel
-from conin.inference._hmm_evidence import (
-    dense_observations,
-    hmm_dbn_evidence,
-    hmm_states_from_dbn,
-    key_solutions_by_time,
-    require_hmm_evidence,
+from conin.graphical_models.hmm_observations import (
+    as_sequence,
+    time_range,
+    unrolled_evidence,
 )
-from conin.inference._query_checks import validate_bn_query
+from conin.inference.hmm_results import (
+    hidden_states_from_unrolled,
+    key_solutions_by_time,
+)
+from conin.inference.query_checks import full_query_variables, reject_pruning_options
 
 from .hmm_network_flow import _ip_inference, _lp_inference
 from .solve import solve_pyomo_map_query_model
@@ -30,13 +32,16 @@ def _map_query_pyomo_hmm(repn, *, variables, evidence, options):
     """Solve a MAP query on the ``"pyomo"`` representation of an HMM."""
     use_cut_generation = options.pop("use_cut_generation", None)
     start, stop = repn.start, repn.stop
-    dbn_evidence = hmm_dbn_evidence(evidence, start, stop)
-    validate_bn_query(options, variables, repn.nodes, evidence=dbn_evidence)
+    dbn_evidence = unrolled_evidence(as_sequence(evidence), start, stop)
+    reject_pruning_options(options)
+    variables = full_query_variables(variables, repn.nodes)
     model = repn.create_model(
         evidence=dbn_evidence, variables=variables, omit_c5=use_cut_generation
     )
     results = solve_pyomo_map_query_model(model, evidence=evidence, **options)
-    return hmm_states_from_dbn(results, evidence, start, stop)
+    return hidden_states_from_unrolled(
+        results, start=start, stop=stop, keyed_by_time=isinstance(evidence, dict)
+    )
 
 
 def _map_query_network_flow(repn, *, evidence, options):
@@ -49,12 +54,15 @@ def _map_query_network_flow(repn, *, evidence, options):
         logger.warning(
             "Cut generation is not supported for the HMM 'network_flow' integer programming formulation"
         )
-    require_hmm_evidence(evidence, "The 'network_flow' integer programming formulation")
+    observed = as_sequence(
+        evidence,
+        "evidence (the observations) of the 'network_flow' integer programming formulation",
+    )
     infer = _ip_inference if repn.constraints else _lp_inference
     # TODO: warning about specifying 'variables'
     # TODO: warning about specifying timing
-    results = infer(repn, observed=dense_observations(evidence), **options)
-    if type(evidence) is dict:
+    results = infer(repn, observed=observed, **options)
+    if isinstance(evidence, dict):
         key_solutions_by_time(results)
     return results
 
@@ -74,11 +82,13 @@ def inference_pyomo_map_query_HMM(
     ----------
     pgm : HiddenMarkovModel or ConstrainedHiddenMarkovModel
     start, stop : int, optional
-        The time steps (``stop`` defaults to ``len(evidence) - 1``).
+        The time steps (``stop`` defaults to ``len(evidence) - 1``, the last
+        observation; a later ``stop`` raises ``InvalidInputError``).
     variables : list, optional
         Only ``None`` or all unrolled nodes are supported.
-    evidence : list or dict
-        The observations: a list, or a dict keyed by time step.
+    evidence : list, tuple or dict
+        The observations: a list or tuple, or a dict keyed by the times
+        ``0..T-1``.
     **options
         ``ip_formulation`` (``None``, ``"markov_network"`` or
         ``"network_flow"``), ``use_cut_generation`` (``"markov_network"``
@@ -90,7 +100,8 @@ def inference_pyomo_map_query_HMM(
     Raises
     ------
     InvalidInputError
-        For evidence that is not a list or dict, or a model that is not an HMM.
+        For evidence that is not a list, tuple or dict keyed by ``0..T-1``,
+        a ``stop`` past the last observation, or a model that is not an HMM.
     ValueError
         For an unknown ``ip_formulation``.
     """
@@ -112,9 +123,7 @@ def inference_pyomo_map_query_HMM(
         )
 
     elif ip_formulation is None or ip_formulation == "markov_network":
-        require_hmm_evidence(evidence)
-        if stop is None:
-            stop = len(evidence) - 1
+        start, stop = time_range(as_sequence(evidence), start, stop)
         cmodel = ConstrainedHiddenMarkovModel.ensure(pgm)
         return _map_query_pyomo_hmm(
             cmodel.representation("pyomo", start=start, stop=stop),

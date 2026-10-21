@@ -227,7 +227,7 @@ def test_constraint_data_hmm():
 # ---------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("evidence", [None, ("o0", "o1"), "o0o1"])
+@pytest.mark.parametrize("evidence", [None, "o0o1", {0: "o0", 2: "o1"}])
 def test_network_flow_rejects_unsupported_evidence(evidence):
     with pytest.raises(InvalidInputError, match="network_flow"):
         inference_pyomo_map_query_HMM(

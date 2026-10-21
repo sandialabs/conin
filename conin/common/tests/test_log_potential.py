@@ -291,7 +291,7 @@ def test_hmm_zero_probability_is_minus_inf():
         (["h0"], ["ox"], "not an observed state"),
         ([], [], "must not be empty"),
         ({1: "h0"}, ["o0"], "0..T-1"),
-        ("h0", ["o0"], "list or a dict"),
+        ("h0", ["o0"], "list, a tuple or a dict"),
     ],
 )
 def test_hmm_bad_input(hidden, observed, match):
