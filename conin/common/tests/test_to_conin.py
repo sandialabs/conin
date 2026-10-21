@@ -139,3 +139,16 @@ def test_convert_dbn_refuses_conflicting_slice_cpds():
     )
     with pytest.raises(InvalidInputError, match="same dynamic CPD template"):
         convert_pgmpy_to_conin(G)
+
+
+@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+def test_convert_pgmpy_issue_1177_example():
+    # The example fitted with estimator=MaximumLikelihoodEstimator (a class),
+    # which newer pgmpy versions refuse ("Pass an initialized estimator").
+    from conin.examples.bayesian_network import pgmpy_issue_1177_pgmpy
+
+    model = pgmpy_issue_1177_pgmpy()
+    assert model.check_model()
+    assert len(model.get_cpds()) == 17
+    pgm = convert_pgmpy_to_conin(model)
+    assert len(pgm.nodes) == 17
