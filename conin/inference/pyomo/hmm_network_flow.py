@@ -31,13 +31,56 @@ def lp_inference(
     debug=False,
     quiet=True,
 ):
+    """Solve the network-flow model of an unconstrained HMM.
+
+    Parameters
+    ----------
+    hmm : HiddenMarkovModel
+    observed : list
+        Observed labels.
+    num_solutions : int, optional
+        Must be ``1``.
+    solver, solver_options, debug, quiet
+        The Pyomo solver name, (unused) options, debug output and solver
+        output.
+
+    Returns
+    -------
+    munch.Munch
+        ``observed``, ``solution``, ``solutions`` (each with ``states``,
+        ``hidden`` and ``log_likelihood``), ``termination_condition`` and
+        ``solvetime``.
+    """
+    repn = ConstrainedHiddenMarkovModel(hmm).representation("pyomo_network_flow")
+    return _lp_inference(
+        repn,
+        observed=observed,
+        num_solutions=num_solutions,
+        solver=solver,
+        solver_options=solver_options,
+        debug=debug,
+        quiet=quiet,
+    )
+
+
+def _lp_inference(
+    repn,
+    *,
+    observed,
+    num_solutions=1,
+    solver=default_mip_solver,
+    solver_options=None,
+    debug=False,
+    quiet=True,
+):
+    """:func:`lp_inference` on a ``"pyomo_network_flow"`` representation."""
     assert (
         num_solutions == 1
     ), "ERROR: Support for inferring multiple solutions with an LP model has not been setup"
 
+    hmm = repn.hidden_markov_model
     if debug:
         tic("Generating Model - START")
-    repn = ConstrainedHiddenMarkovModel(hmm).representation("pyomo_network_flow")
     M, data = repn.create_model(observed=observed)
     if debug:
         toc("Generating Model - STOP")
@@ -96,9 +139,49 @@ def ip_inference(
     debug=False,
     quiet=True,
 ):
+    """Solve the network-flow model of a constrained HMM.
+
+    Parameters
+    ----------
+    hmm : ConstrainedHiddenMarkovModel
+        Its constraints must be of family ``"pyomo"`` or ``"algebraic"`` (or
+        none).
+    observed : list
+        Observed labels.
+    solver, solver_options, debug, quiet
+        The Pyomo solver name (``"or_topas"`` enumerates several solutions),
+        its options, debug output and solver output.
+
+    Returns
+    -------
+    munch.Munch
+        ``observed``, ``solution``, ``solutions`` (each with ``states``,
+        ``hidden``, ``log_likelihood`` and ``variables``),
+        ``termination_condition`` and ``solvetime``.
+    """
+    return _ip_inference(
+        hmm.representation("pyomo_network_flow"),
+        observed=observed,
+        solver=solver,
+        solver_options=solver_options,
+        debug=debug,
+        quiet=quiet,
+    )
+
+
+def _ip_inference(
+    repn,
+    *,
+    observed,
+    solver=default_mip_solver,
+    solver_options=None,
+    debug=False,
+    quiet=True,
+):
+    """:func:`ip_inference` on a ``"pyomo_network_flow"`` representation."""
+    hmm = repn.hidden_markov_model
     if debug:
         tic("Generating Model - START")
-    repn = hmm.representation("pyomo_network_flow")
     M, data = repn.create_model(observed=observed)
     T = len(observed)
     if debug:
@@ -185,7 +268,7 @@ def parse_model_solution_pyomo_ip_inference(M, hmm, T, log_likelihood, *, data):
     for t in range(T):
         for a in data.hmm.A:
             if pyo.value(M.hmm.x[t, a]) > 0.5:
-                hidden[t] = hmm.model.hidden_to_external[a]
+                hidden[t] = hmm.hidden_to_external[a]
         assert (
             hidden[t] != "__UNKNOWN__"
         ), f"ERROR: Unexpected missing hidden state at time step {t}"
@@ -213,7 +296,7 @@ def parse_aos_solution_pyomo_ip_inference(aos_solution, M, hmm, T, *, data):
         for a in data.hmm.A:
             aos_var_hmm_x_t_a = aos_solution.variable(M.hmm.x[t, a].name)
             if aos_var_hmm_x_t_a.value > 0.5:
-                hidden[t] = hmm.model.hidden_to_external[a]
+                hidden[t] = hmm.hidden_to_external[a]
         assert (
             hidden[t] != "__UNKNOWN__"
         ), f"ERROR: Unexpected missing hidden state at time step {t}"

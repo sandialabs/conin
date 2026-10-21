@@ -5,6 +5,7 @@ import math
 import numpy as np
 import torch
 
+from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.exceptions import InvalidInputError
 
 from conin.representations.mvr.kernels import (
@@ -17,7 +18,6 @@ from conin.representations.mvr.kernels import (
     _flat_ini_index,
     _hmm_to_torch,
     _maxplus_step,
-    _model_parts,
     _resolve_emit_weights,
 )
 
@@ -78,7 +78,29 @@ def viterbi_torch_mvr_chmm(
     best_logprob : float, optional
         Returned when ``return_score`` is ``True``.
     """
-    hmm, constraints = _model_parts(model)
+    return _viterbi_torch_mvr(
+        ConstrainedHiddenMarkovModel.ensure(model).representation("mvr"),
+        observed,
+        time_horizon=time_horizon,
+        dtype=dtype,
+        device=device,
+        return_augmented=return_augmented,
+        return_score=return_score,
+    )
+
+
+def _viterbi_torch_mvr(
+    repn,
+    observed,
+    *,
+    time_horizon=None,
+    dtype=torch.float32,
+    device="cpu",
+    return_augmented=True,
+    return_score=False,
+):
+    """:func:`viterbi_torch_mvr_chmm` on an ``"mvr"`` representation."""
+    hmm, constraints = repn.model, list(repn.mvrs)
 
     log_start_vec, log_transition_mat, log_emission_mat = _hmm_to_torch(
         hmm,

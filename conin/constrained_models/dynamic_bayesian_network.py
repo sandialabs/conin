@@ -1,3 +1,4 @@
+from conin.util.constraint_data import merge_constraint_data
 from conin.graphical_models import DynamicDiscreteBayesianNetwork
 
 from .base import ConstrainedGraphicalModel
@@ -55,9 +56,10 @@ class ConstrainedDynamicDiscreteBayesianNetwork(ConstrainedGraphicalModel):
         -------
         bool
             ``True`` if every constraint is satisfied (always, without
-            constraints).  Constraint functions see
-            ``data = Munch(T=list(range(stop + 1)))``, as for variable
-            elimination; ``"algebraic"`` constraints need smoek.
+            constraints).  Constraint functions see the model's ``data`` with
+            ``T = list(range(stop + 1))`` set on a copy (``Munch(T=...)`` if it
+            has none), as for variable elimination; ``"algebraic"``
+            constraints need smoek.
 
         Raises
         ------
@@ -75,5 +77,5 @@ class ConstrainedDynamicDiscreteBayesianNetwork(ConstrainedGraphicalModel):
             assignment=assignment,
             factor_assignment=assignment,
             state_space=StateSpace(states),
-            data=dbn_constraint_data(stop),
+            data=merge_constraint_data(self.data, dbn_constraint_data(stop)),
         )

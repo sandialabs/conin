@@ -87,9 +87,12 @@ def viterbi(*, observed, hmm):
     """
     cmodel = ConstrainedHiddenMarkovModel.ensure(hmm)
     # Raises InvalidInputError if there are constraints.
-    repn = cmodel.representation("matvec")
-    hmm = cmodel.model
+    return _viterbi(cmodel.representation("matvec"), observed=observed)
 
+
+def _viterbi(repn, *, observed):
+    """:func:`viterbi` on a ``"matvec"`` representation (external labels)."""
+    hmm = repn.model
     observed_ = [hmm.observed_to_internal[o] for o in observed]
     ans_ = viterbi_(observed=observed_, hmm=repn)
 

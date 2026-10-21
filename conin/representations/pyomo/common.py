@@ -23,6 +23,7 @@ from conin.constraints import PyomoConstraint
 from conin.constraints.algebraic import AlgebraicConstraint
 from conin.representations.base import Representation
 from conin.util import try_import, State
+from conin.util.constraint_data import merge_constraint_data
 from conin.util.var_wrapper import PyomoVarWrapper
 
 with try_import() as smoek_available:
@@ -412,6 +413,9 @@ class PyomoFactorRepresentation(Representation):
         The user constraints (family ``"pyomo"`` or ``"algebraic"``).
     nodes : tuple
         The nodes of the (unrolled) model the IP ranges over.
+    data : object or None
+        The constrained model's application data.  The constraint functions
+        see a copy of it with the fields of :meth:`constraint_data` set.
 
     Notes
     -----
@@ -422,7 +426,9 @@ class PyomoFactorRepresentation(Representation):
 
     kind = "pyomo"
 
-    def __init__(self, *, S, J, v, w, var_index_map, pgm, constraints, nodes):
+    def __init__(
+        self, *, S, J, v, w, var_index_map, pgm, constraints, nodes, data=None
+    ):
         self.S = S
         self.J = J
         self.v = v
@@ -431,12 +437,14 @@ class PyomoFactorRepresentation(Representation):
         self.pgm = pgm
         self.constraints = tuple(constraints)
         self.nodes = tuple(nodes)
+        self.data = data
 
     def constraint_data(self, *, evidence=None, variables=None):
-        """The ``data`` object passed to the constraint functions for a query.
+        """The fields this representation adds to the constraint ``data`` for a query.
 
         Subclasses add their structure fields (``T``, ``start``, ``hmm``, ...).
-        The constrained model's own ``data`` is not passed.
+        The constraint functions see these fields set on a copy of the
+        constrained model's ``data`` (or just these fields if it has none).
         """
         return munch.Munch(variables=variables, evidence=evidence)
 
@@ -480,6 +488,9 @@ class PyomoFactorRepresentation(Representation):
                 pgm=self.pgm,
                 constraints=self.constraints,
                 model=model,
-                data=self.constraint_data(evidence=evidence, variables=variables),
+                data=merge_constraint_data(
+                    self.data,
+                    self.constraint_data(evidence=evidence, variables=variables),
+                ),
             )
         return model

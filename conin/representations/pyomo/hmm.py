@@ -58,4 +58,5 @@ def _build(cmodel, *, start=0, stop=None):
         start=start,
         stop=stop,
         hidden_to_internal=hmm.hidden_to_internal,
+        data=cmodel.data,
     )

@@ -1,6 +1,7 @@
 """Variable elimination MAP inference for (constrained) HMMs."""
 
 from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.inference._hmm_evidence import require_hmm_evidence
 
 from .solve import _solve_repn, _with_timing
 
@@ -21,6 +22,35 @@ def _hmm_states_from_map(map_states, evidence):
     if isinstance(evidence, dict):
         return {i: map_states["H", i] for i in range(len(map_states))}
     return map_states
+
+
+def _map_query_variable_elimination_hmm(
+    repn,
+    *,
+    variables=None,
+    evidence=None,
+    show_progress=False,
+    timing=False,
+    write_uai_file=None,
+):
+    """Solve a MAP query on the ``"factor"`` representation of an HMM."""
+
+    def _execute():
+        results = _solve_repn(
+            repn,
+            variables=variables,
+            evidence=_hmm_evidence_to_dbn(evidence),
+            show_progress=show_progress,
+            timing=timing,
+            write_uai_file=write_uai_file,
+            determine_variables=False,
+        )
+        results.solution.states = _hmm_states_from_map(
+            results.solution.states, evidence
+        )
+        return results
+
+    return _with_timing(timing, _execute)
 
 
 def inference_variable_elimination_map_query_HMM(
@@ -64,25 +94,21 @@ def inference_variable_elimination_map_query_HMM(
     munch.Munch
         ``solution.states`` is a list of hidden states (list evidence) or a
         dict keyed by time step (dict evidence).
+
+    Raises
+    ------
+    InvalidInputError
+        For evidence that is not a list or dict.
     """
+    require_hmm_evidence(evidence)
     if stop is None:
         stop = len(evidence) - 1
     cmodel = ConstrainedHiddenMarkovModel.ensure(pgm)
-
-    def _execute():
-        repn = cmodel.representation("factor", start=start, stop=stop)
-        results = _solve_repn(
-            repn,
-            variables=variables,
-            evidence=_hmm_evidence_to_dbn(evidence),
-            show_progress=show_progress,
-            timing=timing,
-            write_uai_file=write_uai_file,
-            determine_variables=False,
-        )
-        results.solution.states = _hmm_states_from_map(
-            results.solution.states, evidence
-        )
-        return results
-
-    return _with_timing(timing, _execute)
+    return _map_query_variable_elimination_hmm(
+        cmodel.representation("factor", start=start, stop=stop),
+        variables=variables,
+        evidence=evidence,
+        show_progress=show_progress,
+        timing=timing,
+        write_uai_file=write_uai_file,
+    )

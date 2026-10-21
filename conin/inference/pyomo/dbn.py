@@ -2,8 +2,19 @@
 
 from conin.constrained_models import ConstrainedDynamicDiscreteBayesianNetwork
 
-from .bn import _validate_bn_query
+from conin.inference._query_checks import validate_bn_query
+
 from .solve import solve_pyomo_map_query_model
+
+
+def _map_query_pyomo_dbn(repn, *, variables, evidence, options):
+    """Solve a MAP query on the ``"pyomo"`` representation of a DBN."""
+    use_cut_generation = options.pop("use_cut_generation", False)
+    validate_bn_query(options, variables, repn.nodes, evidence=evidence)
+    model = repn.create_model(
+        evidence=evidence, variables=variables, omit_c5=use_cut_generation
+    )
+    return solve_pyomo_map_query_model(model, evidence=evidence, **options)
 
 
 def inference_pyomo_map_query_DDBN(
@@ -29,12 +40,10 @@ def inference_pyomo_map_query_DDBN(
     **options
         As for :func:`~conin.inference.pyomo.inference_pyomo_map_query_BN`.
     """
-    use_cut_generation = options.pop("use_cut_generation", False)
-
     cmodel = ConstrainedDynamicDiscreteBayesianNetwork.ensure(pgm)
-    repn = cmodel.representation("pyomo", start=start, stop=stop)
-    _validate_bn_query(options, variables, repn.nodes, evidence=evidence)
-    model = repn.create_model(
-        evidence=evidence, variables=variables, omit_c5=use_cut_generation
+    return _map_query_pyomo_dbn(
+        cmodel.representation("pyomo", start=start, stop=stop),
+        variables=variables,
+        evidence=evidence,
+        options=options,
     )
-    return solve_pyomo_map_query_model(model, evidence=evidence, **options)

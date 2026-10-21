@@ -54,5 +54,5 @@ def build_toulbar2_dbn_representation(
 )
 def _build(cmodel, *, start=0, stop=1):
     return build_toulbar2_dbn_representation(
-        cmodel.model, cmodel.constraints, start=start, stop=stop
+        cmodel.model, cmodel.constraints, start=start, stop=stop, data=cmodel.data
     )
