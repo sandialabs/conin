@@ -1,8 +1,8 @@
 import pytest
 import unittest
 
-from conin.sampling.dbn import DBNSampler
-import conin.sampling.dbn.tests.examples as tc
+from conin.sampling.unconstrained import DBNSampler
+import conin.sampling.unconstrained.tests.dbn_examples as tc
 
 
 class TestSampler(unittest.TestCase):

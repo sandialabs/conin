@@ -347,6 +347,7 @@ PUBLIC_API = [
     ("conin.sampling.mvr", "ffbs_torch_mvr_chmm", "public API", "torch"),
     ("conin.sampling.mvr", "stopped_sampling_torch_mvr_chmm", "public API", "torch"),
     ("conin.sampling.oracle", "rejection_sample_hidden", "public API"),
+    ("conin.sampling.unconstrained", "DBNSampler", "public API"),
     ("conin.sampling.unconstrained", "generate_hidden", "public API"),
     ("conin.sampling.unconstrained", "generate_hidden_until_state", "public API"),
     ("conin.sampling.unconstrained", "generate_observed", "public API"),
