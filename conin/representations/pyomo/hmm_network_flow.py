@@ -1,8 +1,7 @@
 """The ``"pyomo_network_flow"`` representation of a constrained HMM.
 
 This is the ``ip_formulation="network_flow"`` integer program: a shortest-path
-(network-flow) formulation over the time-expanded hidden-state graph.  It
-replaces ``PyomoAlgebraic_CHMM`` (PR 4a).
+(network-flow) formulation over the time-expanded hidden-state graph.
 
 The model depends on the observations (the index sets prune the infeasible
 transitions and hold the emission log-probabilities), so it is built per query

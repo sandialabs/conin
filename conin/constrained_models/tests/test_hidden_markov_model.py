@@ -273,9 +273,8 @@ def test_integer_states_oracle_sampling_and_feasibility():
 
 @pytest.mark.skipif(not default_mip_solver, reason="No mip solver installed")
 def test_network_flow_constraint_reads_the_application_data():
-    # The §9 row "HMMApplication.create_chmm("pyomo") attaches no data" is moot
-    # (HMMApplication is removed in PR 4c); the constraint it would have broken
-    # reads data.num_zeros and works with Constrained*(..., data=...).
+    # A Pyomo constraint that reads data.num_zeros gets the data passed to
+    # ConstrainedHiddenMarkovModel(..., data=...).
     import munch
     import pyomo.environ as pyo
 

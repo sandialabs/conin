@@ -1,8 +1,7 @@
-"""Tests for the factor constraint applier (moved from VariableElimination.py).
+"""Tests for the factor constraint applier, :func:`apply_factor_constraints`.
 
-The first two groups are the PR 2 regression tests for
-``_add_{bn,mn}_constraints_as_evidence`` (empty constraint list; the
-``TypeError`` message), rewritten for :func:`apply_factor_constraints`.
+The first two groups are regression tests for an empty constraint list and for
+the ``TypeError`` message.
 """
 
 import pytest
@@ -53,7 +52,7 @@ def test_unexpected_model_type():
 
 
 def test_mn_factor_oracle_adds_a_factor_and_no_evidence():
-    """§9 (PR 4e): the MN path used to force the last scope node to 1."""
+    """Regression: the MN path used to force the last scope node to 1."""
     pgm = _mn()
     con = FactorOracleConstraint(func=lambda s: s["A"] != s["B"], nodes=["A", "B"])
     new_pgm, evidence = apply_factor_constraints(pgm=pgm, constraints=[con])

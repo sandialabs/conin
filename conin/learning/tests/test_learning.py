@@ -369,7 +369,7 @@ def _mcem_spy(monkeypatch):
 
 
 def test_mcem_samples_from_the_reestimated_hmm(monkeypatch):
-    # Regression (RESTRUCTURE_PLAN §9, PR 4c): mcem re-estimated the HMM but
+    # Regression: mcem re-estimated the HMM but
     # kept sampling from the original one (app.generate_hidden).
     import conin.examples.hidden_markov_model as tc
 
@@ -399,7 +399,7 @@ def test_mcem_samples_from_the_reestimated_hmm(monkeypatch):
 
 
 def test_mcem_trains_on_the_samples_it_scores(monkeypatch):
-    # Regression (RESTRUCTURE_PLAN §9, PR 4c): mcem called generate_hidden
+    # Regression: mcem called generate_hidden
     # twice per sample, scoring one sequence and training on another.
     import conin.examples.hidden_markov_model as tc
 

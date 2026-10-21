@@ -1,4 +1,4 @@
-"""A* with oracle constraints: the PR 4c pruning fix and the partial functions it relies on."""
+"""A* with oracle constraints: the partial-feasibility pruning and the partial functions it relies on."""
 
 import itertools
 
@@ -64,7 +64,7 @@ class CountingOracle:
 
 
 def test_pruning_rejects_the_extended_prefix_not_its_parent():
-    # Regression (RESTRUCTURE_PLAN §9, PR 4c): a_star_ checked
+    # Regression: a_star_ checked
     # partial_is_feasible(seq) on the parent instead of the extension newSeq,
     # and `or isinstance(hmm, HMM_MatVecRepn)` made the condition always true.
     # "no h0 at all": every extension by h0 must be cut at once.
@@ -88,14 +88,14 @@ def test_pruning_reduces_the_search_without_changing_the_optimum():
     cmodel = tc.create_chmm1_oracle()
     observed = ["o0"] * 20
     expected = ["h1"] * 8 + ["h0"] * 12
-    # Before PR 4c, the pruning never fired and this search needed 983
-    # iterations; it now needs 506.
+    # Without the pruning (it used to never fire) this search needs 983
+    # iterations; with it, 506.
     assert (
         a_star(observed=observed, hmm=cmodel, max_iterations=506).solution.hidden
         == expected
     )
     # One iteration fewer finds no solution. a_star then raises IndexError
-    # (it reads output[0]); that is a separate bug, recorded in §9 for PR 5.
+    # (it reads output[0]); that is a known bug, not what this test checks.
     with pytest.raises(IndexError):
         a_star(observed=observed, hmm=cmodel, max_iterations=505)
 
@@ -128,7 +128,7 @@ def test_chmm1_oracle_matches_brute_force(T, num_solutions):
     ],
 )
 def test_time_frame_constraints_match_brute_force(constraint):
-    # Regression (found in PR 4c): with upper_t=None, the partial functions of
+    # Regression: with upper_t=None, the partial functions of
     # these two library constraints rejected completable prefixes (a prefix
     # ending in val, resp. a prefix without val yet), so the fixed pruning
     # would cut the optimum.

@@ -277,7 +277,7 @@ class Test_Common_Constraints:
             6, lower_t=0, upper_t=10
         ).partial_func(8, seq)
         # Without upper_t the window ends at T: a prefix shorter than T can
-        # still get val (PR 4c fix; these returned False before), a full one
+        # still get val (regression: these returned False), a full one
         # cannot.
         assert occurs_at_least_once_in_time_frame_constraint(7).partial_func(8, seq)
         assert not occurs_at_least_once_in_time_frame_constraint(7).partial_func(7, seq)

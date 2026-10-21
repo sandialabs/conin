@@ -28,13 +28,13 @@ from conin.inference.pyomo import ip_inference
 # ---------------------------------------------------------------------
 
 
-def _old_oracle_is_feasible(cmodel, seq):
-    """What Oracle_CHMM.is_feasible did (before PR 4c), on internal indices."""
+def _reference_is_feasible(cmodel, seq):
+    """Reference check: every constraint on the external labels of ``seq``."""
     h2e = cmodel.model.hidden_to_external
     return all(c({t: h2e[h] for t, h in enumerate(seq)}) for c in cmodel.constraints)
 
 
-def _old_oracle_partial_is_feasible(cmodel, T, seq):
+def _reference_partial_is_feasible(cmodel, T, seq):
     h2e = cmodel.model.hidden_to_external
     states = {t: h2e[h] for t, h in enumerate(seq)}
     return all(c.partial_func(T, states) for c in cmodel.constraints)
@@ -53,16 +53,16 @@ def test_oracle_representation_class_and_attributes():
     assert not hasattr(repn, "generate_hidden")
 
 
-def test_oracle_matches_the_old_oracle_chmm_checks():
+def test_oracle_matches_the_reference_checks():
     cmodel = tc.create_chmm1_oracle()
     repn = cmodel.representation("oracle")
     for seq in ([0] * 9, [0] * 11, [0] * 15, [0] * 10 + [1] * 5, [1] * 12):
-        assert repn.is_feasible(seq) == _old_oracle_is_feasible(cmodel, seq)
-        assert repn.is_feasible(tuple(seq)) == _old_oracle_is_feasible(cmodel, seq)
+        assert repn.is_feasible(seq) == _reference_is_feasible(cmodel, seq)
+        assert repn.is_feasible(tuple(seq)) == _reference_is_feasible(cmodel, seq)
     for T, seq in ((9, [0] * 9), (100, [0] * 9), (100, [0] * 15), (12, [1] * 3)):
-        assert repn.partial_is_feasible(
-            T=T, seq=seq
-        ) == _old_oracle_partial_is_feasible(cmodel, T, seq)
+        assert repn.partial_is_feasible(T=T, seq=seq) == _reference_partial_is_feasible(
+            cmodel, T, seq
+        )
 
 
 def test_oracle_agrees_with_is_feasible_on_external_labels():
@@ -115,16 +115,16 @@ def test_oracle_checks_do_not_change_the_representation():
 
 
 # ---------------------------------------------------------------------
-# Rejection sampling (from Oracle_CHMM.generate_hidden)
+# Rejection sampling
 # ---------------------------------------------------------------------
 
 
-def _old_generate_hidden(cmodel, time_steps, max_failures=1000):
-    """What Oracle_CHMM.generate_hidden did (before PR 4c)."""
+def _reference_generate_hidden(cmodel, time_steps, max_failures=1000):
+    """Reference rejection sampler: resample until every constraint holds."""
     hmm = cmodel.model.repn
     hidden = hmm.generate_hidden(time_steps)
     ctr = 0
-    while not _old_oracle_is_feasible(cmodel, hidden):
+    while not _reference_is_feasible(cmodel, hidden):
         hidden = hmm.generate_hidden(time_steps)
         ctr += 1
         if ctr > max_failures:
@@ -133,15 +133,15 @@ def _old_generate_hidden(cmodel, time_steps, max_failures=1000):
 
 
 @pytest.mark.parametrize("seed", [0, 3, 11])
-def test_rejection_sampling_matches_the_old_oracle_chmm(seed):
+def test_rejection_sampling_matches_the_reference(seed):
     cmodel = tc.create_chmm1_oracle()
     cmodel.model.set_seed(seed)
-    old = [_old_generate_hidden(cmodel, 20) for _ in range(3)]
+    expected = [_reference_generate_hidden(cmodel, 20) for _ in range(3)]
     cmodel.model.set_seed(seed)
     new = [rejection_sample_hidden(cmodel, 20) for _ in range(3)]
-    assert new == old
+    assert new == expected
     cmodel.model.set_seed(seed)
-    assert [cmodel.generate_hidden(20) for _ in range(3)] == old
+    assert [cmodel.generate_hidden(20) for _ in range(3)] == expected
 
 
 def test_rejection_sampling_bare_hmm_is_unconstrained_sampling():

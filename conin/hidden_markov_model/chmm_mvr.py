@@ -46,8 +46,7 @@ class MVR_CHMM:
         The MVRs, aligned to the HMM's hidden-state order.
     data : munch.Munch or object
     hmm : None
-        Kept for the torch code's ``_model_parts`` (the ``CHMM`` base class,
-        removed in PR 4c, had it).
+        Always ``None``; the torch code's ``_model_parts`` reads it.
     """
 
     def __init__(self, *, hidden_markov_model=None, constraints=None, data=None):

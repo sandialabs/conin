@@ -1,4 +1,4 @@
-"""Recursive A*: RecursiveConstraint input, the PR 4c §9 fixes and brute-force parity."""
+"""Recursive A*: RecursiveConstraint input, regression tests and brute-force parity."""
 
 import itertools
 
@@ -42,7 +42,7 @@ def _check_solutions(cmodel, observed, results):
 
     Recursive A* merges prefixes with the same (last state, length, constraint
     state), so for ``num_solutions > 1`` it returns at most one sequence per
-    merged class, not the k best sequences (a limitation recorded in §9).
+    merged class, not the k best sequences (a known limitation).
     """
     best = _brute_force(cmodel, observed, 1)
     assert results.solutions[0].log_likelihood == pytest.approx(best[0][0])
@@ -56,7 +56,7 @@ def _check_solutions(cmodel, observed, results):
 
 
 def test_partial_feasibility_uses_the_new_state():
-    # Regression (RESTRUCTURE_PLAN §9, PR 4c): the extension was checked with
+    # Regression: the extension was checked with
     # the parent's constraint state (and the parent's length t), so a prefix
     # that already broke the bound was kept.
     calls = []
@@ -82,8 +82,8 @@ def test_tight_bound_prunes_at_once():
 
 def test_infeasible_leaves_are_skipped():
     # Without a partial check, infeasible leaves reach the search frontier and
-    # must be skipped, not returned. (The §9 n_infeasible fix moved the counter
-    # to this branch; it is only shown in the debug output.)
+    # must be skipped, not returned. (n_infeasible counts them; it is only
+    # shown in the debug output.)
     no_partial = RecursiveConstraint(
         initial=lambda h: int(h == "h0"),
         update=lambda n, h: n + int(h == "h0"),

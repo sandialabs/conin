@@ -84,7 +84,7 @@ def apply_factor_constraints(*, pgm, constraints, data=None):
             evidence[cpd.node] = 1
         else:
             # The factor is 0 on infeasible assignments, so no evidence is
-            # needed.  (Before PR 4e the last scope node was fixed to 1.)
+            # needed.
             pgm = pgm.with_factor(materialise_factor_oracle(con, pgm, data))
     return pgm, evidence
 
@@ -133,8 +133,7 @@ class FactorRepresentation(Representation):
         """The ``data`` passed to the constraint functions (``None`` for MN/BN).
 
         Subclasses return their structure fields (``T``, ``hmm.T``).  Neither
-        the query evidence nor the constrained model's own ``data`` is passed
-        (as before PR 4e).
+        the query evidence nor the constrained model's own ``data`` is passed.
         """
         return None
 
