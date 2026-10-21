@@ -51,7 +51,6 @@ def make_random_hmm(*, hidden_states, observed_states, seed=0):
             for i, h in enumerate(hidden_states)
             for j, o in enumerate(observed_states)
         },
-        initialize=True,
     )
 
     return hmm
@@ -378,16 +377,16 @@ def as_obs_map(observed):
 
 def score_path(hmm, path, obs_map):
     """Log probability of a hidden path, scoring only the times that are observed."""
-    repn = hmm.repn
+    start, transition, emission = hmm.start_vec, hmm.transition_mat, hmm.emission_mat
     idx = [hmm.hidden_to_internal[h] for h in path]
 
-    score = math.log(repn.start_vec[idx[0]])
+    score = math.log(start[idx[0]])
 
     for t in range(1, len(idx)):
-        score += math.log(repn.transition_mat[idx[t - 1]][idx[t]])
+        score += math.log(transition[idx[t - 1]][idx[t]])
 
     for t, o in obs_map.items():
-        score += math.log(repn.emission_mat[idx[t]][hmm.observed_to_internal[o]])
+        score += math.log(emission[idx[t]][hmm.observed_to_internal[o]])
 
     return score
 

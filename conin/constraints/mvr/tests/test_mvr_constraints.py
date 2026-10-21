@@ -69,7 +69,6 @@ def make_hmm(hidden_states=ALPHABET, observed_states=("o1", "o2")):
         emission_probs={
             (h, o): 1.0 / num_observed for h in hidden_states for o in observed_states
         },
-        initialize=True,
     )
 
     return hmm

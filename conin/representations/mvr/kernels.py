@@ -17,22 +17,16 @@ ACCUM_DTYPE = torch.float64
 
 def _hmm_to_torch(hmm, *, log=False, dtype=torch.float32, device="cpu"):
     """Convert a hidden Markov model into torch tensors, optionally in log space."""
-    repn = hmm.repn
-
-    def convert(array):
-        # Log in the source precision: casting first would flush subnormals to -inf.
-        array = np.asarray(array, dtype=np.float64)
-
-        if log:
-            with np.errstate(divide="ignore"):
-                array = np.log(array)
-
-        return torch.as_tensor(array, dtype=dtype, device=device)
-
-    return (
-        convert(repn.start_vec),
-        convert(repn.transition_mat),
-        convert(repn.emission_mat),
+    repn = ConstrainedHiddenMarkovModel.ensure(hmm).representation("matvec")
+    # The float64 logs are taken before the cast: casting first would flush
+    # subnormals to -inf.
+    if log:
+        arrays = (repn.log_start_vec, repn.log_transition_mat, repn.log_emission_mat)
+    else:
+        arrays = (repn.start_vec, repn.transition_mat, repn.emission_mat)
+    # Copy: the repn arrays are read-only, which torch.as_tensor warns about.
+    return tuple(
+        torch.as_tensor(np.array(array), dtype=dtype, device=device) for array in arrays
     )
 
 

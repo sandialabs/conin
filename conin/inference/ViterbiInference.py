@@ -1,5 +1,5 @@
 from ovld import ovld
-from conin.graphical_models import HiddenMarkovModel, HMM_MatVecRepn
+from conin.graphical_models import HiddenMarkovModel
 from conin.inference.unconstrained import viterbi
 
 
@@ -17,8 +17,7 @@ def _map_query_Viterbi(
 ):
     """Compute a MAP assignment using Viterbi algorithm with multiple dispatch."""
     raise TypeError(
-        f"Unsupported model type: {type(pgm)}. "
-        f"Expected one of: HiddenMarkovModel, HMM_MatVecRepn."
+        f"Unsupported model type: {type(pgm)}. " f"Expected one of: HiddenMarkovModel."
     )
 
 
@@ -39,21 +38,6 @@ def _run_viterbi(pgm, variables, evidence):
 @ovld
 def _map_query_Viterbi(
     pgm: HiddenMarkovModel,
-    *,
-    variables=None,
-    evidence=None,
-    show_progress=False,
-    timing=False,
-    start=0,
-    stop=None,
-    options={},
-):
-    return _run_viterbi(pgm, variables, evidence)
-
-
-@ovld
-def _map_query_Viterbi(
-    pgm: HMM_MatVecRepn,
     *,
     variables=None,
     evidence=None,

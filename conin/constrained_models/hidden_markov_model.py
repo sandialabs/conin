@@ -1,6 +1,4 @@
-from conin.exceptions import InvalidInputError
 from conin.graphical_models import HiddenMarkovModel
-from conin.sampling.oracle import rejection_sample_hidden
 
 from .base import ConstrainedGraphicalModel
 from .feasibility import (
@@ -30,6 +28,9 @@ class ConstrainedHiddenMarkovModel(ConstrainedGraphicalModel):
     -----
     Registered representations (see :meth:`representation`):
 
+    * ``"matvec"`` (no constraints only): the HMM parameters as read-only
+      arrays on internal indices, used by Viterbi, A*, sampling and the torch
+      MVR kernels;
     * ``"oracle"`` (no constraints or ``"oracle"``): feasibility checks on
       internal hidden-state indices, used by A* and rejection sampling;
     * ``"recursive"`` (no constraints or ``"recursive"``): the combined
@@ -52,77 +53,6 @@ class ConstrainedHiddenMarkovModel(ConstrainedGraphicalModel):
     __slots__ = ()
 
     model_type = HiddenMarkovModel
-
-    def generate_hidden(self, time_steps):
-        """Generate a feasible sequence of hidden states.
-
-        Uses rejection sampling
-        (:func:`conin.sampling.oracle.rejection_sample_hidden`), so the
-        constraints must have an ``"oracle"`` representation.
-
-        Parameters
-        ----------
-        time_steps : int
-            Number of hidden states to generate.
-
-        Returns
-        -------
-        list
-            Feasible sequence of external hidden-state labels.
-        """
-        return rejection_sample_hidden(self, time_steps)
-
-    def generate_observed_from_hidden(self, hidden):
-        """Generate observed states from a feasible hidden-state sequence.
-
-        Parameters
-        ----------
-        hidden : list
-            External hidden-state labels from which to generate observations.
-
-        Returns
-        -------
-        list
-            Observed-state labels sampled from the wrapped hidden Markov model.
-
-        Raises
-        ------
-        InvalidInputError
-            If ``hidden`` does not satisfy the configured constraints.
-        """
-        internal_hidden = [self.model.hidden_to_internal[h] for h in hidden]
-        if not self.representation("oracle").is_feasible(internal_hidden):
-            raise InvalidInputError(
-                "ConstrainedHiddenMarkovModel.generate_observed_from_hidden() - The sequence of hidden states is not feasible."
-            )
-        internal_observed = self.model.repn.generate_observed_from_hidden(
-            internal_hidden
-        )
-        return [self.model.observed_to_external[o] for o in internal_observed]
-
-    def generate_observed(self, time_steps):
-        """Generate a feasible hidden-state sequence and sample observations.
-
-        Parameters
-        ----------
-        time_steps : int
-            Number of time steps to generate.
-
-        Returns
-        -------
-        list
-            Observed-state labels sampled from a feasible hidden-state sequence.
-
-        Raises
-        ------
-        InvalidInputError
-            If ``time_steps`` is negative.
-        """
-        if time_steps < 0:
-            raise InvalidInputError("In generate_observed, time_steps must be >= 0.")
-
-        hidden = self.generate_hidden(time_steps)
-        return self.generate_observed_from_hidden(hidden)
 
     def is_feasible(self, seq, observed=None):
         """Check whether a hidden-state sequence satisfies all configured constraints.

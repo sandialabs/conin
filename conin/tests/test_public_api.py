@@ -150,6 +150,9 @@ SPHINX_CODE = [
     ("conin.io", "load_model", "model_conversion_io.rst"),
     ("conin.io", "save_model", "model_conversion_io.rst"),
     ("conin.learning", None, "hmm_learning.rst"),
+    ("conin.sampling.unconstrained", "generate_hidden", "examples.rst, hidden_markov_models.rst"),
+    ("conin.sampling.unconstrained", "generate_observed", "hidden_markov_models.rst"),
+    ("conin.sampling.unconstrained", "generate_observed_from_hidden", "hidden_markov_models.rst"),
 ]
 
 SPHINX_AUTODOC = [
@@ -334,6 +337,7 @@ PUBLIC_API = [
     ("conin.representations.factor", "FactorRepresentation", "public API"),
     ("conin.representations.factor", "apply_factor_constraints", "public API"),
     ("conin.representations.factor.factor_repn", "skeleton_mn_of_bn", "public API"),
+    ("conin.representations.matvec", "MatVecHMMRepresentation", "public API"),
     ("conin.representations.mvr", "MVRHMMRepresentation", "public API"),
     ("conin.representations.oracle", "OracleHMMRepresentation", "public API"),
     ("conin.representations.pyomo", "PyomoNetworkFlowHMMRepresentation", "public API"),
@@ -343,6 +347,11 @@ PUBLIC_API = [
     ("conin.sampling.mvr", "ffbs_torch_mvr_chmm", "public API", "torch"),
     ("conin.sampling.mvr", "stopped_sampling_torch_mvr_chmm", "public API", "torch"),
     ("conin.sampling.oracle", "rejection_sample_hidden", "public API"),
+    ("conin.sampling.unconstrained", "DBNSampler", "public API"),
+    ("conin.sampling.unconstrained", "generate_hidden", "public API"),
+    ("conin.sampling.unconstrained", "generate_hidden_until_state", "public API"),
+    ("conin.sampling.unconstrained", "generate_observed", "public API"),
+    ("conin.sampling.unconstrained", "generate_observed_from_hidden", "public API"),
 ]
 # fmt: on
 

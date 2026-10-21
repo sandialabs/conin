@@ -1,6 +1,6 @@
 # Conin Restructure Plan
 
-Status: **In progress.** PR 0 is merged into `main` (#241). PR 1 is merged into `restructure` (#242). PR 2 is merged into `restructure` (#243). PR 3 is merged into `restructure` (#244). PR 4 is split into sub-PRs 4f, 4a, 4b, 4e, 4c, 4d (in that order, stacked branches); 4f is done (branch `restructure-pr4f-io`, off `restructure`, merged as #245); 4a is done (branch `restructure-pr4a-pyomo`, off 4f, merged as #246); 4b is done (branch `restructure-pr4b-toulbar2`, off 4a, merged as #247); the representation cache was removed after 4b (#248); 4e is done (branch `restructure-pr4e-factor`, off `restructure` 3cf8d04; its follow-up removes the dead pgmpy log-probability code and adds `log_probability` and `is_feasible`; a second follow-up removes the last import cycle and moves the unneeded function-level imports to the top of their modules; merged as #249/#250); 4c is done (branch `restructure-pr4c-oracle`, off `restructure` 657c29f); a comment-only cleanup PR removes the PR-number and plan-section references from the code (branch `restructure-comment-cleanup`, off 4c; rule in §6); 4d is done, including the final step of PR 4 (branch `restructure-pr4d-mvr`, off `restructure` e5b7c04), so PR 4 is complete apart from merging 4d. Next: 4g (the unconstrained HMM matrix/vector representation), PR 5, PR 5b (scoring) and PR 6. The later PRs target the `restructure` branch.
+Status: **In progress.** PR 0 is merged into `main` (#241). PR 1 is merged into `restructure` (#242). PR 2 is merged into `restructure` (#243). PR 3 is merged into `restructure` (#244). PR 4 is split into sub-PRs 4f, 4a, 4b, 4e, 4c, 4d (in that order, stacked branches); 4f is done (branch `restructure-pr4f-io`, off `restructure`, merged as #245); 4a is done (branch `restructure-pr4a-pyomo`, off 4f, merged as #246); 4b is done (branch `restructure-pr4b-toulbar2`, off 4a, merged as #247); the representation cache was removed after 4b (#248); 4e is done (branch `restructure-pr4e-factor`, off `restructure` 3cf8d04; its follow-up removes the dead pgmpy log-probability code and adds `log_probability` and `is_feasible`; a second follow-up removes the last import cycle and moves the unneeded function-level imports to the top of their modules; merged as #249/#250); 4c is done (branch `restructure-pr4c-oracle`, off `restructure` 657c29f); a comment-only cleanup PR removes the PR-number and plan-section references from the code (branch `restructure-comment-cleanup`, off 4c; rule in §6); 4d is done, including the final step of PR 4 (branch `restructure-pr4d-mvr`, off `restructure` e5b7c04), merged as #253; 4g is done (branch `restructure-pr4g-hmm-repn`, off `restructure` b008502, the 4d merge; a follow-up moves `DBNSampler` to `conin.sampling.unconstrained`), so PR 4 is complete apart from merging 4g. Next: PR 5, PR 5b (scoring) and PR 6. The later PRs target the `restructure` branch.
 This file lives at the repo root while the work is in progress. Delete it in the final PR.
 
 All decisions are recorded in §11; §12 lists what is still open. Critiques of the
@@ -177,6 +177,24 @@ conin/
                          `conin/__init__.py` no longer imports it
   constrained_models/    base.py: the accepted families come from the registry (`supported_families` removed)
 ```
+After PR 4g:
+```
+conin/
+  representations/matvec/ hmm.py (MatVecHMMRepresentation, kind "matvec": the HMM parameters as read-only float64 arrays + their
+                         logs on internal indices), tests/test_matvec_representation.py
+  sampling/unconstrained/ hmm.py (generate_hidden, generate_hidden_until_state, generate_observed_from_hidden, generate_observed:
+                         the former HiddenMarkovModel methods, as functions of a bare or unconstrained HMM), tests/test_hmm.py
+  graphical_models/      hidden_markov_model.py: HMM_MatVecRepn, repn, initialize() and the generate_* methods removed;
+                         the constructor validates the probabilities
+  constrained_models/    hidden_markov_model.py: the generate_* methods removed
+```
+After the PR 4g follow-up:
+```
+conin/
+  sampling/unconstrained/ dbn.py (DBNSampler, moved from sampling/dbn/sampling.py), tests/test_dbn.py + tests/dbn_examples.py
+                         (from sampling/dbn/tests/{test_sampling,examples}.py); __init__ also exports DBNSampler
+  sampling/dbn/          removed
+```
 
 ### 2.2 Problems the restructure should fix
 - **The constrained wrappers are inconsistent.**
@@ -200,8 +218,10 @@ conin/
     "pyomo" representations build the models**; **4b: the toulbar2 ones too, the "toulbar2" representations build the CFNs**), and `lp_inference`
     builds a CHMM (PR 3: uses `representation("pyomo_network_flow")`; 4a: `create_model(observed=)`);
   - inside the dispatch layer: `VariableElimination._add_*_constraints_as_evidence` (**4e: replaced by
-    `representations/factor/common.apply_factor_constraints`, run once when the "factor" repn is built**).
-- **Almost nothing is cached.** Only `HiddenMarkovModel.repn` is. The
+    `representations/factor/common.apply_factor_constraints`, run once when the "factor" repn is built**);
+  - inside the model: `HiddenMarkovModel.initialize()` built and cached `HMM_MatVecRepn` (**4g: replaced by the registered
+    `"matvec"` representation; the samplers it held are `conin.sampling.unconstrained`**).
+- **Almost nothing is cached.** Only `HiddenMarkovModel.repn` is (**4g: removed; the `"matvec"` repn is built per call like the others**). The
   HMM→DBN→BN→MN→factor-repn→Pyomo chain is rebuilt on every query (4a: cached up to the factor repn,
   per `(start, stop)`, when the same constrained model is reused; 4b: the toulbar2 chain is cached up to the UAI text; 4e: the VE path builds the "factor" repn (constraints materialised once) and converts to pgmpy per query; `map_query` on a bare model still wraps it anew each call). **The representation cache was removed after 4b (§4.4, §11): every `representation()` call builds a new repn again; a repn's `create_model()` can still be called for several queries.**
 - **There is a lot of duplication:**
@@ -406,6 +426,53 @@ conin/
   Baum-Welch, GEM, sat_prob, sat_time, stopped sampling with and without `min_length`, and the user MVRs' time ranges afterwards;
   3 seeds × 4 constraint sets incl. hidden states out of sorted order, windows, a formula; same torch generator seeds) are
   bit-identical, including 6 identical `InvalidInputError`s.
+- **PR 4g branch point** (`restructure-pr4g-hmm-repn` off `restructure` b008502 = last-fetched `origin/restructure`, the 4d merge
+  (#253), which contains 533878f; `git fetch` is not possible here): 1349 passed, 213 skipped, 0 errors (re-run).
+- **After PR 4g:** **1380 passed, 213 skipped, 0 errors** in `.venv-opencode` (+31; 1554 → 1585 collected). One commit (no file
+  was moved, so there is no rename-only commit; the sampling tests that moved were rewritten as functions). Per file (before → after):
+  - new: `representations/matvec/tests/test_matvec_representation.py` (11: registry pair `("matvec", None)` only and constraints
+    rejected, no structure params, class/attributes/dtypes/logs/internal order on a sparse HMM, a new repn per call and no
+    `hmm.repn`, read-only arrays (built, deepcopy, pickle), arrays not shared with the model, one repn serves several Viterbi
+    queries unchanged, `viterbi`/`a_star` on an unconstrained `ConstrainedHiddenMarkovModel`, `viterbi` rejects constraints);
+    `sampling/unconstrained/tests/test_hmm.py` (16: the 8 `generate_*` tests moved from `graphical_models/tests` and rewritten as
+    function calls, same expectations; new: draws identical to the reference sampler ×3 seeds, unconstrained constrained model gives
+    the same draws, constraints are refused ×4, negative `time_steps` raises before drawing);
+  - `graphical_models/tests/test_hidden_markov_model.py` 58 → 55 (−8 moved `generate_*` tests; `test_initialize_flag` →
+    `test_no_cached_numeric_representation`; +4 `test_constructor_validates_probabilities` (the §9 regression); the
+    `initialize=True`/`initialize()` calls dropped, same expectations);
+  - `constrained_models/tests/test_hidden_markov_model.py` 21 → 20 (removed `test_generate_observed_from_hidden_failure`: it tested
+    the feasibility check of the removed `ConstrainedHiddenMarkovModel.generate_observed_from_hidden`; the other `generate_*`
+    tests use `rejection_sample_hidden` + `conin.sampling.unconstrained`, same expectations; `repn.hmm == pgm.repn` →
+    `isinstance(repn.hmm, MatVecHMMRepresentation)` + equal arrays; `.start_vec ==` lists → `.start_vec.tolist() ==`);
+  - rewritten, same counts: `constrained_models/tests/test_base.py` (`test_hmm_matvec_repn_rejected` passes a matvec repn;
+    `test_supported_representations_hmm` asserts `("matvec", None)` is the only matvec pair;
+    `test_hmm_helpers_require_oracle_family` → `test_hmm_rejection_sampling_requires_oracle_family`, also asserts the methods are
+    gone), `representations/tests/test_hmm_representations.py` (oracle `.hmm` is a matvec repn; the rejection-sampling reference
+    uses `generate_hidden`; the `cmodel.generate_hidden` asserts became `rejection_sample_hidden`),
+    `learning/tests/test_learning.py` (the mcem spy patches `rejection_sample_hidden` in the mcem module instead of the removed
+    method), the torch MVR tests (`initialize=True` dropped; `score_path` reads `hmm.start_vec` etc.; `test_baum_welch_mvr`'s
+    stale-arrays check uses the matvec repn), `constraints/mvr/tests/test_mvr_constraints.py`,
+    `representations/mvr/tests/test_mvr_representation.py` (`initialize=True` dropped);
+  - `test_public_api.py` 286 → 294 (+8 rows, none removed: `conin.sampling.unconstrained.{generate_hidden, generate_observed,
+    generate_observed_from_hidden}` in SPHINX_CODE; `conin.representations.matvec.MatVecHMMRepresentation` and the four
+    `conin.sampling.unconstrained.generate_*` in PUBLIC_API). There was no `HMM_MatVecRepn` row.
+  In `/projects/.conin-scratch/venv` (torch): all 8 torch MVR test files pass (85 + 52 + 154 in three detached runs), and the MVR
+  spec tests + `representations/mvr` + `representations/matvec` + `test_public_api.py` 610 passed. In the `conin_scaling_experiments`
+  venv: `test_MAP_Inference.py` 69 passed, 41 skipped (unchanged). Sphinx doctest: 67 tests, 0 failures; HTML 0 warnings. nbmake:
+  `HMM_basics.ipynb`, `inference.ipynb`, `MVR/regex_tutorial.ipynb` pass; `nbstripout --verify` passes. The other 8 MVR notebooks
+  (left to CI) were run cell by cell with the torch algorithms stubbed: every edited cell ran up to its first torch call, and the
+  helpers defined in the edited cells (path weights, the notebooks' own rejection samplers, the brute-force posterior) were called
+  on the new repn. Parity with the old tree (`git archive b008502`): 174 non-torch results (sampling draws of all four samplers ×4
+  HMMs ×3 seeds, `viterbi`, `map_query` viterbi/a_star with list and dict evidence, `a_star` with 1/3 solutions, unconstrained and
+  2 oracle-constrained models with and without `max_iterations` (incl. 4 identical `IndexError`s), recursive A* bare and
+  constrained, rejection sampling, the old `ConstrainedHiddenMarkovModel.generate_observed` vs rejection sampling +
+  `generate_observed_from_hidden`, mcem) are identical, including the result types (`np.float64` log-likelihoods); 35 torch
+  results (`_hmm_to_torch` plain/log × float32/float64, Viterbi, marginal MAP, forward-backward, Baum-Welch, GEM, FFBS ×2 seeds,
+  sat_prob, sat_time, stopped sampling with and without `min_length`, on an HMM whose labels are not in sorted order; same torch
+  generator seeds) are bit-identical.
+- **After the PR 4g follow-up** (`DBNSampler` → `conin.sampling.unconstrained`): **1381 passed, 213 skipped, 0 errors** in
+  `.venv-opencode` (+1: the `conin.sampling.unconstrained.DBNSampler` `PUBLIC_API` row; `test_public_api.py` 294 → 295). The 12 DBN
+  sampler tests moved unchanged (`sampling/dbn/tests/test_sampling.py` → `sampling/unconstrained/tests/test_dbn.py`; only imports).
 ## 3. Target layout
 
 ```text
@@ -418,7 +485,7 @@ conin/
 │   ├── bayesian_network.py     # DiscreteCPD, DiscreteBayesianNetwork
 │   ├── dynamic_bayesian_network.py
 │   ├── expr.py                 # ExpressionVariable etc.
-│   ├── hidden_markov_model.py  # HiddenMarkovModel, HMM_MatVecRepn, random_hmm
+│   ├── hidden_markov_model.py  # HiddenMarkovModel, random_hmm (4g: HMM_MatVecRepn removed)
 │   └── conversions.py          # create_dbn_from_hmm, create_bn_from_dbn, create_mn_from_bn
 ├── constraints/                # simple containers: no backend logic, no model imports
 │   ├── __init__.py
@@ -440,7 +507,7 @@ conin/
 │   ├── __init__.py
 │   ├── base.py                 # ConstrainedGraphicalModel
 │   ├── feasibility.py          # (4e follow-up) is_feasible checks of total assignments
-│   ├── hidden_markov_model.py  # ConstrainedHiddenMarkovModel (+ generate_hidden, is_feasible helpers)
+│   ├── hidden_markov_model.py  # ConstrainedHiddenMarkovModel (+ is_feasible, partial_is_feasible; 4g: generate_* removed)
 │   ├── bayesian_network.py     # ConstrainedDiscreteBayesianNetwork
 │   ├── markov_network.py       # ConstrainedDiscreteMarkovNetwork
 │   └── dynamic_bayesian_network.py
@@ -459,6 +526,7 @@ conin/
 │   ├── mvr/                    # (PR 4d: done)
 │   │   ├── hmm.py              # MVRHMMRepresentation (replaces MVR_CHMM): model + aligned MVRs; align_hidden_states
 │   │   └── kernels.py          # torch kernels from mvr_common.py (static context built per query; used by inference/learning/sampling/queries)
+│   ├── matvec/hmm.py           # (PR 4g: done) MatVecHMMRepresentation ("matvec"; replaces HMM_MatVecRepn / hmm.repn)
 │   ├── oracle/hmm.py           # (PR 4c: done) OracleHMMRepresentation (replaces Oracle_CHMM); smoek->oracle stays in constraints/algebraic/
 │   └── recursive/hmm.py        # (PR 4c: done) RecursiveHMMRepresentation
 ├── inference/
@@ -476,7 +544,7 @@ conin/
 │   ├── oracle/                 # mcem.py
 │   └── mvr/                    # (PR 4d) baum_welch.py (+ forward_backward), generalized_em.py
 ├── sampling/
-│   ├── unconstrained/          # dbn_forward.py (DBNSampler)
+│   ├── unconstrained/          # (PR 4g) hmm.py (generate_hidden, generate_observed, ...); (4g follow-up) dbn.py (DBNSampler)
 │   ├── oracle/                 # (PR 4c) rejection_hmm.py (rejection_sample_hidden, from Oracle_CHMM.generate_hidden)
 │   └── mvr/                    # (PR 4d) ffbs.py, stopped_sampling.py
 ├── queries/mvr/                # (PR 4d) sat_prob.py, sat_time.py (from other_queries/)
@@ -551,9 +619,9 @@ imports (`from .base import HomMVR`). The package's own tests may import from su
 
 Compatibility matrix (representation kind × constraint family):
 
-| Constraint family           | pyomo | pyomo_network_flow | toulbar2 | factor (VE) | oracle (A*) | mvr | recursive |
-|-----------------------------|:-----:|:------------------:|:--------:|:-----------:|:-----------:|:---:|:---------:|
-| *(none)*                    |  ✓    |  ✓ (HMM)           |   ✓      |   ✓         |  ✓ (HMM)    | ✓ (HMM) | ✓ (HMM) |
+| Constraint family           | pyomo | pyomo_network_flow | toulbar2 | factor (VE) | oracle (A*) | mvr | recursive | matvec |
+|-----------------------------|:-----:|:------------------:|:--------:|:-----------:|:-----------:|:---:|:---------:|:------:|
+| *(none)*                    |  ✓    |  ✓ (HMM)           |   ✓      |   ✓         |  ✓ (HMM)    | ✓ (HMM) | ✓ (HMM) | ✓ (HMM) |
 | PyomoConstraint             |  ✓    |  ✓ (HMM)           |          |             |             |     |           |
 | Toulbar2Constraint          |       |                    |   ✓      |             |             |     |           |
 | AlgebraicConstraint         |  ✓    |  ✓ (HMM)           |   ✓      |   ✓ (via factor oracle) | ✓ (HMM) | |      |
@@ -569,6 +637,8 @@ sampling don't have, and the compiled factor oracle has no partial function; rev
 (PR 4d) Real now: mvr × {none, MVR} (`MVRHMMRepresentation`). Since the end of PR 4 the registry also decides which families a
 constrained model accepts (§4.2): a row with no ✓ for a model type is refused at construction (e.g. `OracleConstraint` and MVRs
 on MN/BN/DBN).
+(PR 4g) Real now: matvec × none (`MatVecHMMRepresentation`, HMM only; no constraint family by design: it is the
+unconstrained HMM's parameters, used by Viterbi, A*, sampling and the MVR kernels).
 Unsupported combinations raise a clear `InvalidInputError` that lists the supported options.
 
 ### 4.2 ConstrainedGraphicalModel
@@ -629,6 +699,9 @@ class ConstrainedGraphicalModel:
     `partial_is_feasible`), which delegate to a representation. (PR 4c) `generate_hidden(time_steps)` calls
     `conin.sampling.oracle.rejection_sample_hidden(self, time_steps)`; `generate_observed_from_hidden` and
     `partial_is_feasible` use `representation("oracle")` (internal indices).
+    (PR 4g) The `generate_*` methods are removed (from `HiddenMarkovModel` too): use
+    `conin.sampling.oracle.rejection_sample_hidden(cmodel, T)` and `conin.sampling.unconstrained.generate_*` (§4.8).
+    `is_feasible` and `partial_is_feasible` stay.
 - (PR 4c) `is_feasible` also checks `"recursive"` constraints (run `initial`/`update` along the sequence, then
   `feasible`). The oracle repn's checks share `feasibility.oracle_accepts`, so A*, rejection sampling and `is_feasible`
   call oracle predicates the same way (2-argument predicates get `data = Munch(hmm=Munch(T=list(range(T))))`; before 4c
@@ -726,7 +799,7 @@ class ConstrainedGraphicalModel:
 - (PR 4c) Registered: `"oracle"` for HMM (None, "oracle"; unchanged pairs, a real class now) and `"recursive"` for HMM
   (None, "recursive"). No structure params (the horizon is per call). The representations:
   - `OracleHMMRepresentation` (`representations/oracle/hmm.py`) holds `model` (the HMM), `hmm` (`model.repn`, the
-    `HMM_MatVecRepn` used by A* and sampling) and `constraints` (the constrained model's tuple, not wrapped or copied).
+    `HMM_MatVecRepn` used by A* and sampling; **4g: a `MatVecHMMRepresentation`**) and `constraints` (the constrained model's tuple, not wrapped or copied).
     `is_feasible(seq)` and `partial_is_feasible(*, T, seq)` take internal indices (list or tuple) and call the user's
     predicates on `{t: external label}`, as `Oracle_CHMM`'s wrapped constraints did. The `.chmm` attribute and
     `generate_hidden` are gone. Build cost: 0.8 ms here, so rebuilding it per call is fine (no cache).
@@ -764,6 +837,22 @@ class ConstrainedGraphicalModel:
   - Read-only arrays: `MVR_MatVecRepn` stores read-only copies of `ini_array`, `upd_array`, `evl_array`, `ini_idx`,
     `next_idx` (and re-freezes them in `__setstate__`, since `deepcopy`/pickle give writeable arrays); the kernels copy them
     (`np.array`) before `torch.as_tensor`.
+- (PR 4g) `"matvec"` for HMM (None only). No structure params. The representation:
+  - `MatVecHMMRepresentation(model)` (`representations/matvec/hmm.py`) holds `model`, `num_hidden_states`,
+    `num_observed_states` and six read-only `float64` arrays on internal indices: `start_vec` (n,), `transition_mat` (n, n),
+    `emission_mat` (n, m) and `log_start_vec`, `log_transition_mat`, `log_emission_mat` (`np.log`, `-inf` at zeros). They are
+    copies of the model's lists (re-frozen in `__setstate__` after deepcopy/pickle). No `hidden_states`/`observed_states`
+    (use `range(n)`; the model's properties are the external labels) and no sampling methods.
+  - Built per call (`ensure(hmm).representation("matvec")`; no cache, §4.4); nothing in it changes after the build, so one repn
+    serves several queries. `OracleHMMRepresentation.hmm` is one (built from `cmodel.model` directly, since the oracle repn's
+    constrained model has constraints).
+  - Users: `viterbi` (`ensure` → `representation("matvec")`; `viterbi_(observed, hmm=repn)` on internal indices, reading the
+    log arrays), `a_star` / `a_star_` (via `oracle.hmm`; the arrays are read once into lists before the search loops),
+    `conin.sampling.unconstrained.generate_*`, `rejection_sample_hidden` (through `oracle.hmm`) and
+    `kernels._hmm_to_torch` (the plain or log arrays, copied before `torch.as_tensor`). Recursive A* still reads
+    `hmm.get_*_probs()` (external labels, read once; no copy cost): unchanged.
+  - Constraints are refused (the registry's `InvalidInputError`), so `viterbi` and the unconstrained samplers never drop
+    constraints silently.
 - (PR 4c) `RecursiveConstraint(*, initial, update, feasible, feasible_partial=None, name=None)` (`conin.constraints`),
   family `"recursive"`: `initial(h) -> state`, `update(state, h) -> state`, `feasible(state) -> bool`,
   `feasible_partial(state, t, T) -> bool` (`t` = prefix length; default always `True`; it must never reject a
@@ -795,7 +884,7 @@ map_query(pgm, method=..., evidence=..., ...)
        integer_program      -> "pyomo" | "pyomo_network_flow" (ip_formulation)
        toulbar2             -> "toulbar2"
        a_star               -> "oracle" | "recursive" (picked by constraint family)
-       viterbi              -> unconstrained only (4g: the unconstrained HMM repn, §4.8)
+       viterbi              -> "matvec" (4g; unconstrained only, §4.8)
        variable_elimination -> "factor"
        mvr_viterbi  (NEW)   -> "mvr"
   3. repn = cmodel.representation(kind, **structure_params)
@@ -882,7 +971,15 @@ Target (PR 4g, §6):
 - It is a representation of the model alone, not of a (model, constraints) pair; that is a small
   stretch of the §4.3 definition, accepted for the uniform dispatch.
 
-Open questions, to settle at the start of 4g: §12.
+(PR 4g, done) Settled (§11 "PR 4g" rows): kind `"matvec"`, class `MatVecHMMRepresentation` with plain **and** log
+arrays (§4.3); the `generate_*` samplers move to `conin.sampling.unconstrained` as functions (the methods are removed from
+`HiddenMarkovModel` and `ConstrainedHiddenMarkovModel`); `hmm.repn`, `initialize()` and `initialize=` are removed outright
+(no convenience); the probability checks moved from `HMM_MatVecRepn` into the `HiddenMarkovModel` constructor; the A*
+matrix-copy cost was timed first (below). Recursive A* and the recursive repn are unchanged (they read
+`get_*_probs()` once, so they never had the copy cost); the oracle repn holds a matvec repn in `.hmm`. The `HMM_MatVecRepn`
+`map_query` overloads are removed with no replacement overload (repn-type dispatch is PR 5).
+Timing of the copying properties in A* (best of 3, this emulated CPU; same results): 5 states T=30: 0.018 s with the old
+copying reads → 0.008 s with list reads; 10 states T=30: 0.098 → 0.022 s; 20 states T=30, `num_solutions=5`: 0.77 → 0.097 s.
 
 ## 5. Public API after the restructure (sketch)
 
@@ -901,6 +998,8 @@ from conin.inference.unconstrained import viterbi
 from conin.inference.oracle import a_star
 from conin.inference.recursive import recursive_a_star
 from conin.sampling.oracle import rejection_sample_hidden
+from conin.sampling.unconstrained import generate_hidden, generate_hidden_until_state, generate_observed, generate_observed_from_hidden
+from conin.representations.matvec import MatVecHMMRepresentation
 from conin.representations.oracle import OracleHMMRepresentation
 from conin.representations.recursive import RecursiveHMMRepresentation
 from conin.sampling.mvr import ffbs_torch_mvr_chmm, stopped_sampling_torch_mvr_chmm
@@ -1082,6 +1181,33 @@ Breaking changes (these go in the CHANGELOG for 2.0):
   Bayesian networks and dynamic Bayesian networks now refuse `"oracle"`, `"mvr"` and `"recursive"` constraints at
   construction (`InvalidInputError`; they were accepted but no inference method supported them; use
   `FactorOracleConstraint` for oracle constraints on these models). Constrained HMMs accept the same families as before.
+- (PR 4g) `HMM_MatVecRepn` (`conin.graphical_models`) is removed, and so are `HiddenMarkovModel.repn`,
+  `HiddenMarkovModel.initialize()` and the `initialize=` constructor argument (no replacement needed: drop `initialize=True`).
+  The HMM parameters as arrays on internal indices are `ConstrainedHiddenMarkovModel(hmm).representation("matvec")`, a
+  `MatVecHMMRepresentation` (`conin.representations.matvec`) with read-only `float64` NumPy arrays `start_vec`,
+  `transition_mat`, `emission_mat` and their logs `log_start_vec`, `log_transition_mat`, `log_emission_mat` (the old
+  `hmm.repn.start_vec` etc. were lists; `hmm.start_vec` etc. still return lists). It has no `hidden_states`/`observed_states`
+  (they were `range(n)`; use `range(repn.num_hidden_states)`) and no sampling methods.
+- (PR 4g) `HiddenMarkovModel.generate_hidden(T)`, `.generate_hidden_until_state(h)`, `.generate_observed_from_hidden(hidden)`
+  and `.generate_observed(T)` are removed; use `conin.sampling.unconstrained.generate_hidden(hmm, T)`,
+  `generate_hidden_until_state(hmm, h)`, `generate_observed_from_hidden(hmm, hidden)` and `generate_observed(hmm, T)` (same
+  labels and the same random draws from NumPy's global state; `hmm.set_seed` stays). They also accept a
+  `ConstrainedHiddenMarkovModel` without constraints and raise `InvalidInputError` if it has constraints.
+- (PR 4g) `ConstrainedHiddenMarkovModel.generate_hidden(T)`, `.generate_observed_from_hidden(hidden)` and
+  `.generate_observed(T)` are removed; use `conin.sampling.oracle.rejection_sample_hidden(cmodel, T)` (same draws) and
+  `conin.sampling.unconstrained.generate_observed_from_hidden(cmodel.model, hidden)` (the old method also checked that
+  `hidden` is feasible; check with `cmodel.is_feasible(hidden)`).
+- (PR 4g) `HiddenMarkovModel(...)` checks its probabilities at construction (nonnegative; start probabilities and each row of
+  transition/emission probabilities sum to 1) and raises `InvalidInputError`; before, they were checked only when the numeric
+  representation was first built (`initialize=True` or the first Viterbi/A*/sampling/MVR call), so invalid HMMs could be
+  created and used with the Pyomo, toulbar2 and VE backends.
+- (PR 4g) `viterbi(observed=, hmm=)` and `a_star(observed=, hmm=)` no longer accept an `HMM_MatVecRepn` with internal indices
+  (use `viterbi_(observed=, hmm=repn)` / `a_star_(observed=, hmm=repn)` with a `MatVecHMMRepresentation`); `viterbi` now also
+  accepts a `ConstrainedHiddenMarkovModel` without constraints (constraints raise `InvalidInputError`).
+  `map_query(..., method="viterbi" | "a_star")` no longer accepts an `HMM_MatVecRepn` (the overloads are removed).
+  `OracleHMMRepresentation.hmm` is a `MatVecHMMRepresentation` (was the `HMM_MatVecRepn`).
+- (4g follow-up) `conin.sampling.dbn.DBNSampler` → `conin.sampling.unconstrained.DBNSampler` (module
+  `conin.sampling.unconstrained.dbn`); `conin.sampling.dbn` is removed. The class is unchanged.
 - New: `map_query(..., method="mvr_viterbi")`.
 
 ---
@@ -1107,14 +1233,14 @@ detection keeps the diffs reviewable.
 | 4c | Oracle + Recursive (A*), oracle sampling, mcem | refactor | **DONE (branch `restructure-pr4c-oracle`, off `restructure` 657c29f).** `Oracle_CHMM` becomes `OracleHMMRepresentation`; `CHMM` deleted. Add `RecursiveConstraint` and the `"recursive"` repn; `recursive_a_star` takes a constrained HMM. `HMMApplication` deleted (not moved; §11). Viterbi, A*, recursive A*, the learning helpers and rejection sampling move to `inference/{unconstrained,oracle,recursive}`, `learning/` and `sampling/oracle/`. Fix the A*, recursive A* and mcem bugs and two oracle-library partial functions. |
 | 4c′ | Remove restructure references from the code | comments | **DONE (branch `restructure-comment-cleanup`, off 4c).** Comment, docstring and test-label changes only: the PR-number, §-number and `RESTRUCTURE_PLAN` references added by PRs 2–4c are reworded to describe the behaviour or the bug, `test_public_api.py`'s `RESTRUCTURE_PLAN_API` group becomes `PUBLIC_API` (test ids `public_api:...`; the `used_in` label `"RESTRUCTURE_PLAN.md §5"` becomes `"public API"`), and two `test_hmm_representations.py` tests named after the old `Oracle_CHMM` are renamed (`..._matches_the_reference...`). No test is added or removed (full suite in the `conin_scaling_experiments` venv, where torch now imports: 1694 passed / 123 skipped / 0 failed). The rule that stops new ones is in this section. |
 | 4d | MVR | refactor | **DONE (branch `restructure-pr4d-mvr`, off `restructure` e5b7c04).** `chmm_mvr` and `mvr_common` become repn (`MVRHMMRepresentation`: model + aligned MVRs) plus kernels. Move inference, learning, sampling and queries to `conin.{inference,learning,sampling,queries}.mvr`; delete `MVR_CHMM` and `conin.hidden_markov_model`. `mvr_timerange` non-mutating by default; MVR arrays read-only. Update all MVR notebooks and cheat sheets. Final step of PR 4 (commit 3): accepted constraint families derived from the registry, `supported_families` removed. |
-| 4g | Unconstrained HMM matrix/vector representation | refactor + delete | After 4d (which rewrites `mvr_common` and the MVR notebooks, the heaviest `hmm.repn` users), before 5 (so Viterbi has a representation kind to dispatch on). Replace `HMM_MatVecRepn` and the cached `HiddenMarkovModel.repn` with a registered representation of the bare HMM (`HiddenMarkovModel`, family `None` only): read-only numpy arrays on internal indices, probably plus the log arrays that Viterbi and A* each compute now. Viterbi, A*, recursive A*, rejection sampling and MVR's `_hmm_to_torch` use it; the oracle and recursive repns hold one instead of `model.repn`. Remove `HMM_MatVecRepn`, `hmm.repn`, `initialize()` / `initialize=True` and the `isinstance(hmm, HMM_MatVecRepn)` input branches of `viterbi` and `a_star`. Rationale and open questions: §4.8, §12. |
+| 4g | Unconstrained HMM matrix/vector representation | refactor + delete | **DONE (branch `restructure-pr4g-hmm-repn`, off `restructure` b008502).** The `"matvec"` repn (`MatVecHMMRepresentation`: plain + log read-only arrays) replaces `HMM_MatVecRepn`/`hmm.repn`/`initialize`; sampling moves to `conin.sampling.unconstrained`; the HMM validates at construction; the `HMM_MatVecRepn` `map_query` overloads are removed (§4.3, §4.8, §5, §11). Original plan: After 4d (which rewrites `mvr_common` and the MVR notebooks, the heaviest `hmm.repn` users), before 5 (so Viterbi has a representation kind to dispatch on). Replace `HMM_MatVecRepn` and the cached `HiddenMarkovModel.repn` with a registered representation of the bare HMM (`HiddenMarkovModel`, family `None` only): read-only numpy arrays on internal indices, probably plus the log arrays that Viterbi and A* each compute now. Viterbi, A*, recursive A*, rejection sampling and MVR's `_hmm_to_torch` use it; the oracle and recursive repns hold one instead of `model.repn`. Remove `HMM_MatVecRepn`, `hmm.repn`, `initialize()` / `initialize=True` and the `isinstance(hmm, HMM_MatVecRepn)` input branches of `viterbi` and `a_star`. Rationale and open questions: §4.8, §12. |
 | 4e | Factor / VE | refactor | **DONE (branch `restructure-pr4e-factor`, off `restructure` 3cf8d04).** VE constraint handling moves into the factor repn (`apply_factor_constraints`, run at build time). Move `factor_repn`. `conin.inference.variable_elimination`. Fix the VE evidence bugs. Follow-up (same branch): delete the dead pgmpy log-probability code (`custom_VE`, `log_prob_v2`); `log_probability`/`log_potential` for every model; `is_feasible` for every constrained model. Second follow-up: remove the `constraints.algebraic` ↔ `representations.pyomo` import cycle and move the function-level imports that no cycle needs to the top of their modules. |
 | 4f | `common/` → `io/` + `common/`; remove pgmax/pomegranate | move + delete | **DONE (branch `restructure-pr4f-io`).** Rename-only first commit, then the folds and deletions; pyagrum removed too (§11). Independent of 3 and 4a–e. It can happen right after PR 1. |
 | 5 | Dispatch rewrite | **design** | `map_query` → repn → ovld on the repn type. Remove the duplicated overloads. Add `method="mvr_viterbi"`. |
 | 5b | Scoring | move + feature | After 5, before 6 (so the 2.0 docs and CHANGELOG describe the final paths). New `conin/scoring/` package beside `inference/`. First commit, rename-only: `common/log_potential.py` → `scoring/` (`log_probability`, `log_potential`), with every importer updated (no `conin.common` re-export, per the no-shims rule; a breaking change in §5). Then the marginal and conditional log-probability query (`log P(X=x \| E=e)` with the other variables summed out, and the probability under constraints, `P(x) / P(C)`), dispatched like the PR 5 `map_query` (method → repn kind → ovld on the repn type), on the backends that can compute it (VE on the `"factor"` repn first). Restores `common/` as a bottom layer (it no longer imports `constrained_models`). Decide the query's API and backends at the start of the PR. |
 | 6 | Docs + cleanup | docs | Sphinx API pages, prose docs, AGENTS.md (examples location), CHANGELOG, version 2.0. Delete this plan file. |
 
-Dependencies: 0 → 1 → 2 → 3 → {4a, 4b, 4c, 4d, 4e} → 4g → 5 → 5b → 6. 4f can go anywhere after 1; 4g needs 4c and 4d.
+Dependencies: 0 → 1 → 2 → 3 → {4a, 4b, 4c, 4d, 4e} → 4g → 5 → 5b → 6 (all of PR 4 done after 4g). 4f can go anywhere after 1; 4g needs 4c and 4d.
 4a–4e can be done in parallel.
 
 Bugs are fixed inside the backend PR that touches the code (§9). Each fix gets its own
@@ -1177,7 +1303,7 @@ plan-section references in code, comments or docstrings (§6).
 ---
 
 ## 8. Testing strategy
-- PR 0 adds a public-API smoke test and records the baseline counts (959 passed / 195 skipped / 0 errors; see §2.3). After PR 1: 962 passed / 195 skipped. After PR 2: 1009 passed / 195 skipped (+47 new tests). After PR 3: 1074 passed / 195 skipped (+65). After the PR 3 follow-ups: 1075 passed / 195 skipped. After PR 4f: 1076 passed / 193 skipped (−4 passed and −2 skipped deleted loader tests, +5 `test_public_api.py` rows). After PR 4a: 1115 passed / 193 skipped (+30 Pyomo representation tests, +9 `test_public_api.py` rows); 1116 / 193 after the 4a follow-ups (+1, `test_ensure`). After PR 4b: 1151 passed / 193 skipped (+29 toulbar2 representation tests, +6 `test_public_api.py` rows). After removing the representation cache: 1150 passed / 193 skipped (−1: the two PR 3 cache/get_copy tests merged into `test_every_call_builds_a_new_representation`). After PR 4e: 1181 passed / 202 skipped (+25 factor representation tests, of which 9 skip without pgmpy; the 5 VE helper tests rewritten as 8; +12 `test_public_api.py` rows). After the 4e follow-up: 1269 passed / 204 skipped (`test_log_potential.py` rewritten, 2 → 62 tests; new `test_feasibility.py`, 26; +4 `test_public_api.py` rows). After the import-cycle follow-up: 1270 passed / 204 skipped (+1). After PR 4c: 1330 passed / 204 skipped (+33 new A* / recursive A* tests, +16 / +3 / +2 / +1 in rewritten files, −8 `test_application_chmm.py`, +13 `test_public_api.py` rows; §2.3). After PR 4d: 1349 passed / 213 skipped (+10 MVR repn tests, −1 in `test_mvr_representation.py`, +7 `test_base.py`, +2 `test_feasibility.py`, +1 `test_mvr_operators.py`, +9 `test_public_api.py` rows; §2.3).
+- PR 0 adds a public-API smoke test and records the baseline counts (959 passed / 195 skipped / 0 errors; see §2.3). After PR 1: 962 passed / 195 skipped. After PR 2: 1009 passed / 195 skipped (+47 new tests). After PR 3: 1074 passed / 195 skipped (+65). After the PR 3 follow-ups: 1075 passed / 195 skipped. After PR 4f: 1076 passed / 193 skipped (−4 passed and −2 skipped deleted loader tests, +5 `test_public_api.py` rows). After PR 4a: 1115 passed / 193 skipped (+30 Pyomo representation tests, +9 `test_public_api.py` rows); 1116 / 193 after the 4a follow-ups (+1, `test_ensure`). After PR 4b: 1151 passed / 193 skipped (+29 toulbar2 representation tests, +6 `test_public_api.py` rows). After removing the representation cache: 1150 passed / 193 skipped (−1: the two PR 3 cache/get_copy tests merged into `test_every_call_builds_a_new_representation`). After PR 4e: 1181 passed / 202 skipped (+25 factor representation tests, of which 9 skip without pgmpy; the 5 VE helper tests rewritten as 8; +12 `test_public_api.py` rows). After the 4e follow-up: 1269 passed / 204 skipped (`test_log_potential.py` rewritten, 2 → 62 tests; new `test_feasibility.py`, 26; +4 `test_public_api.py` rows). After the import-cycle follow-up: 1270 passed / 204 skipped (+1). After PR 4c: 1330 passed / 204 skipped (+33 new A* / recursive A* tests, +16 / +3 / +2 / +1 in rewritten files, −8 `test_application_chmm.py`, +13 `test_public_api.py` rows; §2.3). After PR 4d: 1349 passed / 213 skipped (+10 MVR repn tests, −1 in `test_mvr_representation.py`, +7 `test_base.py`, +2 `test_feasibility.py`, +1 `test_mvr_operators.py`, +9 `test_public_api.py` rows; §2.3). After PR 4g: 1380 passed / 213 skipped (+11 matvec repn tests, +16 in the new `sampling/unconstrained/tests/test_hmm.py` (8 moved), −3 net in `graphical_models/tests/test_hidden_markov_model.py`, −1 in `constrained_models/tests/test_hidden_markov_model.py`, +8 `test_public_api.py` rows; §2.3). After the 4g follow-up (`DBNSampler` moved): 1381 passed / 213 skipped (+1 `test_public_api.py` row).
 - Every PR must keep the pass count ≥ baseline, after adjusting for deliberately deleted tests.
 - PR 3 adds tests for:
   - immutability (setattr raises; `with_*` returns a new object);
@@ -1189,7 +1315,9 @@ plan-section references in code, comments or docstrings (§6).
   PR 4a: done, `test_mutating_a_returned_model_does_not_affect_the_next_one`. PR 4b: `test_two_gets_give_independent_models`.
   PR 4e: `test_two_create_model_calls_give_independent_models`. PR 4d: the "mvr" repn holds no per-query state;
   `test_mvr_prebuilt_mvrs_are_not_shared_with_the_user`, `test_mvr_arrays_are_read_only`,
-  `test_mvr_representation_is_not_changed_by_mvr_timerange`, `test_stopped_sampling_leaves_the_caller_model_untouched`.)
+  `test_mvr_representation_is_not_changed_by_mvr_timerange`, `test_stopped_sampling_leaves_the_caller_model_untouched`.
+  PR 4g: `test_arrays_are_read_only` (built/deepcopy/pickle), `test_one_representation_serves_several_queries`,
+  `test_every_call_builds_a_new_representation` in `representations/matvec/tests/test_matvec_representation.py`.)
 - Each bug fix gets a regression test.
 - Notebooks run in CI, including `MVR/`.
 
@@ -1234,6 +1362,7 @@ plan-section references in code, comments or docstrings (§6).
 | `conin.io.save_model.save_conin_model` (was `common.conin.save_model`): the `.bif` branch writes the file but doesn't return, so it then raises "Unknown format" (`convert_pgm --bif` avoids it by saving with `model_type="pgmpy"`) | 6 (found in 4f) |
 | `backends.rst` calls smoek optional although pyproject requires it; torch and pytoulbar2 aren't declared as extras | 6 |
 | `create_bn_from_dbn(start=s)` with `s > 0` fails (`AttributeError: 'float' object has no attribute 'keys'`): `_unroll_cpds` skips the transition CPDs at `t = start` (their parents are at `start - 1`), so the time-`start` nodes keep the initial CPD whose values are not a dict. Every backend that unrolls DBNs/HMMs (pyomo, toulbar2, VE) is affected; `map_query(..., start=1)` has never worked | 6 (found in 4e; decide whether `start > 0` should be supported at all) |
+| `HiddenMarkovModel` checked its probabilities (≥ 0, rows sum to 1) only when `HMM_MatVecRepn` was first built (`initialize=True`, or the first Viterbi/A*/sampling/MVR use), so an invalid HMM could be constructed and solved with the Pyomo, toulbar2 and VE backends unchecked | 4g (fixed: the constructor validates; `test_constructor_validates_probabilities` (4 cases) in `graphical_models/tests/test_hidden_markov_model.py`; no existing test or example had an invalid HMM) |
 | VE on the unconstrained `weather` DBN (`stop=4`) runs out of memory under pgmpy (the VE weather tests in `test_MAP_Inference.py` are commented out) | – (found in 4e; pgmpy limitation, not a conin bug; noted for PR 5's VE docs) |
 
 ---
@@ -1341,7 +1470,7 @@ plan-section references in code, comments or docstrings (§6).
 | Feasibility checks (4e follow-up) | `is_feasible` on every constrained model, in `constrained_models/feasibility.py`: `"oracle"`, `"factor_oracle"`, `"algebraic"` (smoek-compiled predicate, as for VE) and `"mvr"` (the torch algorithms' window semantics) only. `"pyomo"`/`"toulbar2"` raise `NotImplementedError` (a function may add variables, making the check an IP/CFN feasibility problem). The constraint `data` is the `"factor"` representation's |
 | Factor-repn helpers (PR 4e) | `inference/mn/factor_repn.py` → `representations/factor/factor_repn.py`; `factor_representation_of_mn`, `skeleton_mn_of_bn`, `tuple_var_index_map` move there from `representations/pyomo/common.py` (the pyomo builders import them) |
 | MN constraint factor (PR 4e) | The MN applier adds the materialised factor (0 on infeasible assignments) and no evidence. The old code also fixed the last scope node to `1`, which was the §9 bug |
-| Oracle representation (PR 4c) | `OracleHMMRepresentation` holds `model`, `hmm` (`model.repn`), `constraints` (the user's tuple) and does feasibility only (`is_feasible(seq)`, `partial_is_feasible(*, T, seq)` on internal indices, sharing `feasibility.oracle_accepts`). Rebuilt per call (0.8 ms; no cache) |
+| Oracle representation (PR 4c) | `OracleHMMRepresentation` holds `model`, `hmm` (`model.repn`; 4g: a `MatVecHMMRepresentation`), `constraints` (the user's tuple) and does feasibility only (`is_feasible(seq)`, `partial_is_feasible(*, T, seq)` on internal indices, sharing `feasibility.oracle_accepts`). Rebuilt per call (0.8 ms; no cache) |
 | Oracle + algebraic (PR 4c) | Not registered: compiling needs `T` and may reference `("E", t)`, and the compiled oracle has no partial function. `create_oracle_constraints_from_algebraic` stays in `constraints/algebraic/` (the "factor" repn and `feasibility.py` use it; moving it into a representation module would invert the layering) |
 | RecursiveConstraint (PR 4c) | `RecursiveConstraint(*, initial, update, feasible, feasible_partial=None, name=None)`, family `"recursive"`, no `data` argument; tuple states for several constraints; `"recursive"` added to `ConstrainedHiddenMarkovModel.supported_families` and `is_feasible` |
 | recursive_a_star signature (PR 4c) | `recursive_a_star(*, hmm, observed, ...)` (same keyword as `a_star`); a bare HMM is wrapped with `ensure`. `map_query(method="a_star")` does not route to it (PR 5) |
@@ -1359,6 +1488,17 @@ plan-section references in code, comments or docstrings (§6).
 | MVR test placement (PR 4d) | Next to each module: `{inference,learning,sampling,queries}/mvr/tests/` (file names kept; cross-file helpers imported absolutely), `representations/mvr/tests/test_mvr_representation.py` (the MVR container/`MVR_MatVecRepn` tests and the repn construction tests); the non-torch repn tests are in `representations/tests/test_hmm_representations.py` |
 | Stopped-sampling windows (PR 4d) | A private shallow copy with a new `_time_range` (`_with_time_range`), not `mvr_timerange(..., inplace=False)`: that rebuilds and prunes, which can reorder mediation axes and change the draws |
 | Accepted families from the registry (PR 4d) | Done as decided (§4.2) with a private `_supported_families()` classmethod; oracle constraints on MN/BN/DBN are refused (the 5 tests that built them use `FactorOracleConstraint` now; no example, doc or notebook used them) |
+| Unconstrained HMM representation (PR 4g) | Kind `"matvec"`, class `MatVecHMMRepresentation` in `representations/matvec/hmm.py`, registered for `HiddenMarkovModel` with family `None` only, no structure params. Attributes `model`, `num_hidden_states`, `num_observed_states`, read-only `float64` `start_vec`/`transition_mat`/`emission_mat` **and** `log_start_vec`/`log_transition_mat`/`log_emission_mat` (Viterbi and A* used to take the logs themselves; `np.log` on the array gives the same values as on each entry). No `hidden_states`/`observed_states`, no sampling methods. Rebuilt per call (§4.4) |
+| HMM sampling (PR 4g) | The `generate_*` methods move to `conin.sampling.unconstrained` (`sampling/unconstrained/hmm.py`) as functions with the same names: `generate_hidden(hmm, T)`, `generate_hidden_until_state(hmm, h)`, `generate_observed_from_hidden(hmm, hidden)`, `generate_observed(hmm, T)` (external labels; NumPy's global RNG; identical draws; `hmm.set_seed` stays on the model). They take a bare HMM or an unconstrained `ConstrainedHiddenMarkovModel` (via `representation("matvec")`, so constraints raise `InvalidInputError`). Chosen over keeping the methods on the model (the recommendation): sampling is an algorithm, like the others in `sampling/` |
+| Constrained HMM sampling methods (PR 4g) | `ConstrainedHiddenMarkovModel.generate_hidden` / `generate_observed_from_hidden` / `generate_observed` are removed too (consistency with the HMM; the recommendation was to keep them). `mcem` calls `rejection_sample_hidden` |
+| `hmm.repn` / `initialize` (PR 4g) | Removed outright (no convenience property, no deprecation): `HMM_MatVecRepn`, `HiddenMarkovModel.repn`, `initialize()`, `initialize=`, `avoid_reinitialization`. `_rebuild_hmm` (Baum-Welch) no longer passes `initialize=True` |
+| HMM probability validation (PR 4g) | In the `HiddenMarkovModel` constructor (it was in `HMM_MatVecRepn`, i.e. on `initialize=True` or the first numeric use). `_validate_*` are plain checks now (no `check_errors`, no copy). A full-suite probe before the change showed no test depends on lazy validation |
+| `map_query` `HMM_MatVecRepn` overloads (PR 4g) | Removed from `ViterbiInference.py` and `AStarInference.py` with no replacement overload on `MatVecHMMRepresentation` (repn-type dispatch is PR 5); the `TypeError` messages no longer list `HMM_MatVecRepn`. `map_query` behaviour for HMMs and constrained HMMs is unchanged |
+| `viterbi` / `a_star` inputs (PR 4g) | `viterbi(observed, hmm)` and `a_star(observed, hmm)` take a `HiddenMarkovModel` or `ConstrainedHiddenMarkovModel` (`ensure`); the `isinstance(hmm, HMM_MatVecRepn)` branches are gone. `viterbi_` and `a_star_(..., hmm=)` take a `MatVecHMMRepresentation` on internal indices. `a_star_` reports `np.float64(-val)` so result types match the old numpy-scalar scores |
+| A* matrix reads (PR 4g) | Timed first (§4.8): A* read `hmm.transition_mat[h1][h2]` through copying properties inside its loops; it now reads the repn arrays once into lists (2–8× faster, identical results). Viterbi does the same |
+| Recursive A* (PR 4g) | Unchanged: it reads `hmm.get_*_probs()` once (external labels), so it never had the copy cost; the `"recursive"` repn holds no arrays |
+| Oracle repn `.hmm` (PR 4g) | A `MatVecHMMRepresentation(cmodel.model)` (built directly: `representation("matvec")` on the constrained model would refuse its constraints). `a_star` takes the arrays from `oracle.hmm`; rejection sampling draws from them with the same sampler as `conin.sampling.unconstrained` |
+| `DBNSampler` location (4g follow-up) | `conin/sampling/dbn/sampling.py` → `conin/sampling/unconstrained/dbn.py` (next to `hmm.py`; file named after the model type, not `dbn_forward.py` as first sketched in §3); public name `conin.sampling.unconstrained.DBNSampler`; `conin.sampling.dbn` is removed (no shim). Tests → `sampling/unconstrained/tests/test_dbn.py` and `dbn_examples.py`. Class unchanged |
 | Constructor names / CHMM overloads | First parameter is `model` (no `hmm=`/`pgm=` alias); the broken `CHMM` overloads in the AStar/Optimization/CFN dispatchers are removed in PR 3 |
 
 ---
@@ -1374,12 +1514,11 @@ None blocking. These can be settled during PR 3 (the design PR):
 - **The marginal/conditional log-probability query's API and backends** (PR 5b, §6): its name and signature, whether it
   shares `map_query`'s dispatch, and which backends compute it (VE on the `"factor"` repn first; the deleted
   `log_prob_v2`/`logprob_VE` were pgmpy-VE drafts of it). Decide at the start of 5b, after PR 5 settles dispatch.
-- **The unconstrained HMM representation** (PR 4g, §4.8). Decide at the start of 4g:
-  1. its kind name (`"matvec"`, `"arrays"`, ...);
-  2. whether `HiddenMarkovModel` keeps its `generate_*` sampling methods (sampling from private arrays) or
-     they move to `sampling/`;
-  3. whether `hmm.repn` survives as a convenience or is removed outright;
-  4. whether to time the A* matrix-copy cost first (the copying properties are read inside its loops).
+- (The unconstrained HMM representation: settled in PR 4g, §11 "PR 4g" rows: `"matvec"`; sampling moves to
+  `conin.sampling.unconstrained`; `hmm.repn` removed outright; the A* copy cost was timed, §4.8.)
+- (`DBNSampler`'s location: settled in the 4g follow-up, `conin.sampling.unconstrained`, §11.)
+- **Noted in 4g, not decided:** `conin.sampling.unconstrained.generate_*`, `DBNSampler` and `rejection_sample_hidden` use NumPy's
+  global random state (`hmm.set_seed`), while the torch MVR samplers take a `generator`. Revisit with PR 5/6 if wanted.
 - (`with_model` cache behaviour, the `Representation` signatures and the registration decorator were settled in PR 3; see §11.)
 - (Settled in PR 4d, §11: the MVR static context, `MVR_MatVecRepn` read-only arrays, the MVR public paths, and the fate of
   `conin.hidden_markov_model`, which is deleted.)

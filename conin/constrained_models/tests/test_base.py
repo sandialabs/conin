@@ -22,6 +22,7 @@ from conin.representations import (
     unregister_representation,
     supported_representations,
 )
+from conin.sampling.oracle import rejection_sample_hidden
 import conin.examples.hidden_markov_model as tc
 
 
@@ -108,8 +109,10 @@ def test_wrong_model_type_rejected():
 
 
 def test_hmm_matvec_repn_rejected():
+    hmm = tc.create_hmm1()
+    repn = ConstrainedHiddenMarkovModel(hmm).representation("matvec")
     with pytest.raises(InvalidInputError):
-        ConstrainedHiddenMarkovModel(tc.create_hmm1().repn)
+        ConstrainedHiddenMarkovModel(repn)
 
 
 def test_non_constraint_rejected():
@@ -306,8 +309,11 @@ def test_supported_representations_hmm():
         ("toulbar2", "toulbar2"),
         ("mvr", None),
         ("mvr", "mvr"),
+        ("matvec", None),
     ]:
         assert pair in pairs
+    # "matvec" holds the HMM parameters only: no constraint family.
+    assert [p for p in pairs if p[0] == "matvec"] == [("matvec", None)]
     # "oracle" is not registered for "algebraic" (its compilation needs the
     # horizon, which the oracle representation does not have).
     assert ("oracle", "algebraic") not in pairs
@@ -353,12 +359,19 @@ def test_pickle_roundtrip():
     assert c2.data == {"x": 1} and c2.constraints == ()
 
 
-# --- HMM helpers delegate to the "oracle" representation ------------------------
+# --- HMM rejection sampling uses the "oracle" representation --------------------
 
 
-def test_hmm_helpers_require_oracle_family():
+def test_hmm_rejection_sampling_requires_oracle_family():
     hmm = tc.create_hmm1()
     oc = OracleConstraint(func=lambda s: True)
-    assert ConstrainedHiddenMarkovModel(hmm, [oc]).generate_hidden(3)
+    assert rejection_sample_hidden(ConstrainedHiddenMarkovModel(hmm, oc), 3)
     with pytest.raises(InvalidInputError):
-        ConstrainedHiddenMarkovModel(hmm, [pyomo_c]).generate_hidden(3)
+        rejection_sample_hidden(ConstrainedHiddenMarkovModel(hmm, pyomo_c), 3)
+    # The sampling methods moved to conin.sampling.
+    for name in (
+        "generate_hidden",
+        "generate_observed",
+        "generate_observed_from_hidden",
+    ):
+        assert not hasattr(ConstrainedHiddenMarkovModel, name)

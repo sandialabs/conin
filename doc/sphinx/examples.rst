@@ -186,7 +186,8 @@ Example usage:
 .. code-block:: python
 
    from conin.examples.hidden_markov_model import create_hmm1
+   from conin.sampling.unconstrained import generate_hidden
 
    hmm = create_hmm1()
    observed = ["o0", "o0", "o1"]
-   hidden = hmm.generate_hidden(len(observed))
+   hidden = generate_hidden(hmm, len(observed))

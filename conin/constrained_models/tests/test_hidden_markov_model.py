@@ -7,6 +7,16 @@ from conin.graphical_models import HiddenMarkovModel
 from conin.config import default_mip_solver
 import conin.examples.hidden_markov_model as tc
 import conin.constraints.oracle_library as oc
+from conin.representations.matvec import MatVecHMMRepresentation
+from conin.sampling.oracle import rejection_sample_hidden
+from conin.sampling.unconstrained import (
+    generate_hidden,
+    generate_observed_from_hidden,
+)
+
+
+def _generate_observed(chmm, T):
+    return generate_observed_from_hidden(chmm.model, rejection_sample_hidden(chmm, T))
 
 
 class Test_Oracle_ConstrainedHiddenMarkovModel:
@@ -15,7 +25,7 @@ class Test_Oracle_ConstrainedHiddenMarkovModel:
     def test_construct_model(self):
         cpgm = tc.create_chmm1_oracle()
 
-        assert cpgm.representation("oracle").hmm.start_vec == [
+        assert cpgm.representation("oracle").hmm.start_vec.tolist() == [
             cpgm.model.get_start_probs()[h] for h in cpgm.model.hidden_states
         ]
 
@@ -29,7 +39,7 @@ class Test_Oracle_ConstrainedHiddenMarkovModel:
         )
         _repn = ConstrainedHiddenMarkovModel(_hmm).representation("oracle")
 
-        assert _repn.hmm.start_vec == [
+        assert _repn.hmm.start_vec.tolist() == [
             cpgm.model.get_start_probs()[h] for h in cpgm.model.hidden_states
         ]
 
@@ -37,7 +47,8 @@ class Test_Oracle_ConstrainedHiddenMarkovModel:
         pgm = tc.create_hmm0()
         constraints = [oc.all_diff_constraint]
         repn = ConstrainedHiddenMarkovModel(pgm, constraints).representation("oracle")
-        assert repn.hmm == pgm.repn
+        assert isinstance(repn.hmm, MatVecHMMRepresentation)
+        assert repn.hmm.transition_mat.tolist() == pgm.transition_mat
         assert len(repn.constraints) == 1
 
     def test_internal_is_feasible(self):
@@ -63,14 +74,15 @@ class Test_Oracle_ConstrainedHiddenMarkovModel:
         # Calling set_seed with the same value should produce identical sequences.
         chmm = tc.create_chmm1_oracle()
         chmm.model.set_seed(42)
-        seq1 = chmm.model.generate_hidden(10)
+        seq1 = generate_hidden(chmm.model, 10)
         chmm.model.set_seed(42)
-        seq2 = chmm.model.generate_hidden(10)
+        seq2 = generate_hidden(chmm.model, 10)
         assert seq1 == seq2
 
     def test_generate(self):
         cpgm = tc.create_chmm1_oracle()
-        observed = cpgm.generate_observed_from_hidden(
+        observed = generate_observed_from_hidden(
+            cpgm.model,
             [
                 "h0",
                 "h0",
@@ -83,18 +95,15 @@ class Test_Oracle_ConstrainedHiddenMarkovModel:
                 "h0",
                 "h0",
                 "h0",
-            ]
+            ],
         )
         assert len(observed) == 11
         T = 25
-        observed2 = cpgm.generate_observed(T)
+        observed2 = _generate_observed(cpgm, T)
         assert len(observed2) == T
 
         with pytest.raises(InvalidInputError):
-            cpgm.generate_observed(-1)
-
-        with pytest.raises(InvalidInputError):
-            cpgm.generate_observed_from_hidden(["h0"])
+            _generate_observed(cpgm, -1)
 
     def test_is_feasible(self):
         cpgm = tc.create_chmm1_oracle()
@@ -177,56 +186,50 @@ class Test_Oracle_ConstrainedHiddenMarkovModel:
 
     def test_generate_hidden_length(self):
         chmm = tc.create_chmm1_oracle()
-        assert len(chmm.generate_hidden(self.T)) == self.T
+        assert len(rejection_sample_hidden(chmm, self.T)) == self.T
         with pytest.raises(InvalidInputError):
-            chmm.generate_hidden(-1)
+            rejection_sample_hidden(chmm, -1)
 
     def test_generate_hidden_output(self):
         chmm = tc.create_chmm1_oracle()
-        for h in chmm.generate_hidden(self.T):
+        for h in rejection_sample_hidden(chmm, self.T):
             assert h in {"h0", "h1"}
 
     def test_generate_hidden_constraint(self):
         chmm = tc.create_chmm1_oracle()
-        assert chmm.is_feasible(chmm.generate_hidden(self.T))
+        assert chmm.is_feasible(rejection_sample_hidden(chmm, self.T))
 
     def test_generate_hidden_negative_time_steps(self):
         chmm = tc.create_chmm1_oracle()
         with pytest.raises(InvalidInputError):
-            chmm.generate_hidden(-1)
+            rejection_sample_hidden(chmm, -1)
 
     def test_generate_observed_from_hidden_length(self):
         chmm = tc.create_chmm1_oracle()
-        hidden = chmm.generate_hidden(self.T)
-        assert len(chmm.generate_observed_from_hidden(hidden)) == self.T
-
-    def test_generate_observed_from_hidden_failure(self):
-        chmm = tc.create_chmm1_oracle()
-        hidden = ["h0"]
-        with pytest.raises(InvalidInputError):
-            chmm.generate_observed_from_hidden(hidden)
+        hidden = rejection_sample_hidden(chmm, self.T)
+        assert len(generate_observed_from_hidden(chmm.model, hidden)) == self.T
 
     def test_generate_observed_from_hidden_output(self):
         chmm = tc.create_chmm1_oracle()
-        hidden = chmm.generate_hidden(self.T)
-        for o in chmm.generate_observed_from_hidden(hidden):
+        hidden = rejection_sample_hidden(chmm, self.T)
+        for o in generate_observed_from_hidden(chmm.model, hidden):
             assert o in {"o0", "o1"}
 
     def test_generate_observed_length(self):
         chmm = tc.create_chmm1_oracle()
-        assert len(chmm.generate_observed(self.T)) == self.T
+        assert len(_generate_observed(chmm, self.T)) == self.T
         with pytest.raises(InvalidInputError):
-            chmm.generate_observed(-1)
+            _generate_observed(chmm, -1)
 
     def test_generate_observed_output(self):
         chmm = tc.create_chmm1_oracle()
-        for h in chmm.generate_observed(self.T):
+        for h in _generate_observed(chmm, self.T):
             assert h in {"o0", "o1"}
 
     def test_generate_observed_negative_time_steps(self):
         chmm = tc.create_chmm1_oracle()
         with pytest.raises(InvalidInputError):
-            chmm.generate_observed(-1)
+            _generate_observed(chmm, -1)
 
 
 # ---------------------------------------------------------------------
@@ -265,10 +268,10 @@ def test_integer_states_oracle_sampling_and_feasibility():
 
     hmm.set_seed(1)
     for _ in range(5):
-        hidden = chmm.generate_hidden(20)
+        hidden = rejection_sample_hidden(chmm, 20)
         assert len(hidden) == 20 and hidden.count(0) == 10
         assert chmm.is_feasible(hidden)
-        assert len(chmm.generate_observed_from_hidden(hidden)) == 20
+        assert len(generate_observed_from_hidden(chmm.model, hidden)) == 20
 
 
 @pytest.mark.skipif(not default_mip_solver, reason="No mip solver installed")

@@ -1,6 +1,8 @@
 import pytest
 
 from conin import learning
+from conin.sampling.oracle import rejection_sample_hidden
+from conin.sampling.unconstrained import generate_observed_from_hidden
 import math
 import munch
 
@@ -314,13 +316,15 @@ def test_mcem_runs_and_returns_log_prob():
     #   1. generate_hidden(observed) -> generate_hidden(len(observed))
     #   2. prev_log_prob != nan  -> not math.isnan(prev_log_prob)  (NaN != NaN is always True)
     #   3. math.abs(...)         -> abs(...)  (math.abs does not exist)
-    #   4. app.hmm               -> app.hidden_markov_model  (HMM_MatVecRepn lacks log_probability)
+    #   4. app.hmm               -> app.hidden_markov_model  (the numeric HMM lacked log_probability)
     from conin import learning
     import conin.examples.hidden_markov_model as tc
 
     chmm = tc.create_chmm1_oracle()
     chmm.model.set_seed(0)
-    observed = chmm.generate_observed(11)
+    observed = generate_observed_from_hidden(
+        chmm.model, rejection_sample_hidden(chmm, 11)
+    )
 
     # mcem expects a ConstrainedHiddenMarkovModel (or a bare HMM) as app.
     log_prob = learning.mcem(
@@ -341,20 +345,17 @@ def _mcem_spy(monkeypatch):
 
     # conin.learning.oracle.mcem is also the name of the function.
     mcem_module = sys.modules["conin.learning.oracle.mcem"]
-    from conin.constrained_models import ConstrainedHiddenMarkovModel
 
     record = munch.Munch(sampled_from=[], sampled=[], scored=[], trained=[])
-    orig_generate = ConstrainedHiddenMarkovModel.generate_hidden
+    orig_sample = mcem_module.rejection_sample_hidden
 
-    def generate_hidden(self, time_steps):
-        hidden = orig_generate(self, time_steps)
-        record.sampled_from.append(self.model)
+    def rejection_sample_hidden(cmodel, time_steps):
+        hidden = orig_sample(cmodel, time_steps)
+        record.sampled_from.append(cmodel.model)
         record.sampled.append(hidden)
         return hidden
 
-    monkeypatch.setattr(
-        ConstrainedHiddenMarkovModel, "generate_hidden", generate_hidden
-    )
+    monkeypatch.setattr(mcem_module, "rejection_sample_hidden", rejection_sample_hidden)
 
     orig_supervised = mcem_module.supervised_learning
 
@@ -370,7 +371,7 @@ def _mcem_spy(monkeypatch):
 
 def test_mcem_samples_from_the_reestimated_hmm(monkeypatch):
     # Regression: mcem re-estimated the HMM but
-    # kept sampling from the original one (app.generate_hidden).
+    # kept sampling from the original one (the constrained model it was given).
     import conin.examples.hidden_markov_model as tc
 
     record = _mcem_spy(monkeypatch)
@@ -399,7 +400,7 @@ def test_mcem_samples_from_the_reestimated_hmm(monkeypatch):
 
 
 def test_mcem_trains_on_the_samples_it_scores(monkeypatch):
-    # Regression: mcem called generate_hidden
+    # Regression: mcem sampled
     # twice per sample, scoring one sequence and training on another.
     import conin.examples.hidden_markov_model as tc
 

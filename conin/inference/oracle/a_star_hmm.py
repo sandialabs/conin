@@ -4,7 +4,6 @@ import munch
 import time
 
 from conin.constrained_models import ConstrainedHiddenMarkovModel
-from conin.graphical_models import HMM_MatVecRepn
 
 from dataclasses import dataclass, field
 from typing import Any
@@ -43,7 +42,8 @@ def a_star_(
             extended by a state only if ``oracle.partial_is_feasible`` accepts
             the extended prefix, and a full sequence is a solution only if
             ``oracle.is_feasible`` accepts it.
-        hmm (HMM_MatVecRepn): The numeric HMM (``oracle.hmm`` if omitted)
+        hmm (MatVecHMMRepresentation): The HMM parameters
+            (``representation("matvec")`` of the HMM; ``oracle.hmm`` if omitted)
 
     Raises:
         InsufficientSolutionsError: Not enough solutions given by algorithm
@@ -54,38 +54,31 @@ def a_star_(
     time_steps = len(observed)
 
     if oracle is not None and hmm is None:
-        hmm = oracle.hmm  # HMM_MatVecRepn
+        hmm = oracle.hmm
 
-    # Precompute log probabilities for emission and transmission matrices
-    log_emission_mat = {
-        (h1, o): np.log(hmm.emission_mat[h1][o])
-        for h1 in hmm.hidden_states
-        for o in hmm.observed_states
-        if hmm.emission_mat[h1][o] > 0
-    }
-    log_transition_mat = {
-        (h1, h2): np.log(hmm.transition_mat[h1][h2])
-        for h1 in hmm.hidden_states
-        for h2 in hmm.hidden_states
-        if hmm.transition_mat[h1][h2] > 0
-    }
+    # Read the arrays once: lists are faster to index in the loops below.
+    hidden_states = range(hmm.num_hidden_states)
+    start_vec = hmm.start_vec.tolist()
+    transition_mat = hmm.transition_mat.tolist()
+    emission_mat = hmm.emission_mat.tolist()
+    log_start_vec = hmm.log_start_vec.tolist()
+    log_transition_mat = hmm.log_transition_mat.tolist()
+    log_emission_mat = hmm.log_emission_mat.tolist()
 
     # Precompute V[t][h] - The log-probability of the shortest path starting at time
     #       t in hidden state h
-    V = [[0 for h in hmm.hidden_states] for t in range(time_steps)]
+    V = [[0 for h in hidden_states] for t in range(time_steps)]
     for t in range(time_steps - 2, -1, -1):
         obs = observed[t + 1]
-        for h1 in hmm.hidden_states:
+        for h1 in hidden_states:
             temp = np.inf
-            for h2 in hmm.hidden_states:
-                if (hmm.transition_mat[h1][h2] != 0) and (
-                    hmm.emission_mat[h2][obs] != 0
-                ):
+            for h2 in hidden_states:
+                if (transition_mat[h1][h2] != 0) and (emission_mat[h2][obs] != 0):
                     temp = min(
                         temp,
                         V[t + 1][h2]
-                        - log_transition_mat[h1, h2]
-                        - log_emission_mat[h2, obs],
+                        - log_transition_mat[h1][h2]
+                        - log_emission_mat[h2][obs],
                     )
             V[t][h1] = temp
 
@@ -97,14 +90,14 @@ def a_star_(
     openSet = []
 
     # Initialize the heap with the starting states
-    for h in hmm.hidden_states:
+    for h in hidden_states:
         tempGScore = np.inf
         if oracle is not None and not oracle.partial_is_feasible(
             T=time_steps, seq=(h,)
         ):
             continue
-        if (hmm.start_vec[h] > 0) and (hmm.emission_mat[h][observed[0]] > 0):
-            tempGScore = -np.log(hmm.start_vec[h]) - log_emission_mat[h, observed[0]]
+        if (start_vec[h] > 0) and (emission_mat[h][observed[0]] > 0):
+            tempGScore = -log_start_vec[h] - log_emission_mat[h][observed[0]]
             # Use tuple here b/c Python doesn't hash a list
             gScore[(h,)] = tempGScore
             openSet.append(HeapItem(priority=tempGScore + V[0][h], seq=(h,)))
@@ -120,7 +113,10 @@ def a_star_(
 
         if t == time_steps:
             if oracle is None or oracle.is_feasible(seq):
-                output.append(munch.Munch(states=seq, hidden=seq, log_likelihood=-val))
+                # np.float64, as when the scores were computed with numpy scalars
+                output.append(
+                    munch.Munch(states=seq, hidden=seq, log_likelihood=np.float64(-val))
+                )
                 if len(output) == num_solutions:
                     termination_condition = "ok"
                     break
@@ -131,11 +127,8 @@ def a_star_(
             h1 = seq[t - 1]
             currentGScore = gScore[seq]
             obs = observed[t]
-            for h2 in hmm.hidden_states:
-                if (
-                    hmm.emission_mat[h2][obs] == 0.0
-                    or hmm.transition_mat[h1][h2] == 0.0
-                ):
+            for h2 in hidden_states:
+                if emission_mat[h2][obs] == 0.0 or transition_mat[h1][h2] == 0.0:
                     continue
                 newSeq = seq + (h2,)
                 if oracle is not None and not oracle.partial_is_feasible(
@@ -144,8 +137,8 @@ def a_star_(
                     continue
                 tempGScore = (
                     currentGScore
-                    - log_transition_mat[h1, h2]
-                    - log_emission_mat[h2, obs]
+                    - log_transition_mat[h1][h2]
+                    - log_emission_mat[h2][obs]
                 )
                 gScore[newSeq] = tempGScore
                 heapq.heappush(
@@ -201,8 +194,8 @@ def a_star(
     Parameters
     ----------
     observed : list
-        Observed labels (internal indices for an ``HMM_MatVecRepn``).
-    hmm : HiddenMarkovModel, ConstrainedHiddenMarkovModel or HMM_MatVecRepn
+        Observed labels.
+    hmm : HiddenMarkovModel or ConstrainedHiddenMarkovModel
         The model. Constraints must have an ``"oracle"`` representation (no
         constraints or ``"oracle"`` constraints); others raise
         ``InvalidInputError``.
@@ -215,20 +208,17 @@ def a_star(
         ``observed``, ``solution``, ``solutions`` (each with ``states``,
         ``hidden`` and ``log_likelihood``) and ``termination_condition``.
     """
-    if isinstance(hmm, HMM_MatVecRepn):
-        return a_star_(observed=observed, hmm=hmm, **kwargs)
-
     cmodel = ConstrainedHiddenMarkovModel.ensure(hmm)
     # Raises InvalidInputError for constraint families without an "oracle"
     # representation (anything other than no constraints/"oracle").
     oracle = cmodel.representation("oracle")
+    matvec = oracle.hmm
     if not cmodel.constraints:
         oracle = None
     hmm = cmodel.model
 
     observed_ = [hmm.observed_to_internal[o] for o in observed]
-    hmm_ = hmm.repn  # HMM_MatVecRepn instance associated with the HiddenMarkovModel
-    ans_ = a_star_(observed=observed_, oracle=oracle, hmm=hmm_, **kwargs)
+    ans_ = a_star_(observed=observed_, oracle=oracle, hmm=matvec, **kwargs)
 
     # Convert internal indices back to external labels
     solutions = []

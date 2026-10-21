@@ -129,7 +129,7 @@ Monte Carlo EM
 ``mcem`` is an experimental Monte Carlo EM helper. ``app`` is a
 ``ConstrainedHiddenMarkovModel`` with oracle constraints (or a bare HMM). Each
 iteration samples feasible hidden sequences for a fixed observed sequence by
-rejection sampling (``generate_hidden``), scores each sample under the current
+rejection sampling (``conin.sampling.oracle.rejection_sample_hidden``), scores each sample under the current
 HMM, and refits the HMM from the samples with ``supervised_learning``. The next
 iteration samples from the refitted HMM (``app.with_model(new_hmm)``, with the
 same constraints and data).

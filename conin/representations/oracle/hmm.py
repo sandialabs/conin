@@ -9,6 +9,7 @@ internal hidden-state indices.
 from conin.constrained_models.feasibility import hmm_constraint_data, oracle_accepts
 from conin.graphical_models import HiddenMarkovModel
 from conin.representations.base import Representation, register_representation
+from conin.representations.matvec import MatVecHMMRepresentation
 
 
 class OracleHMMRepresentation(Representation):
@@ -22,8 +23,9 @@ class OracleHMMRepresentation(Representation):
     ----------
     model : HiddenMarkovModel
         The wrapped HMM.
-    hmm : HMM_MatVecRepn
-        Its numeric representation (``model.repn``), used by A* and sampling.
+    hmm : MatVecHMMRepresentation
+        The HMM parameters as arrays (built from ``model``, as
+        ``representation("matvec")`` of the bare HMM), used by A* and sampling.
     constraints : tuple of OracleConstraint
         The constraints of the constrained model (not copied or wrapped).
 
@@ -39,7 +41,7 @@ class OracleHMMRepresentation(Representation):
 
     def __init__(self, cmodel):
         self.model = cmodel.model
-        self.hmm = self.model.repn
+        self.hmm = MatVecHMMRepresentation(self.model)
         self.constraints = cmodel.constraints
         self._hidden_to_external = self.model.hidden_to_external
 
