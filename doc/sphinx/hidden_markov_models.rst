@@ -108,8 +108,11 @@ unrolled model; no constraints, Pyomo or algebraic constraints),
 ``"pyomo_network_flow"`` (the network-flow integer program; no constraints,
 Pyomo or algebraic constraints), ``"toulbar2"`` (the cost function network of
 the unrolled model; no constraints, Toulbar2 or algebraic constraints) and
-``"mvr"`` (no constraints or MVR constraints; the built MVRs are
-``chmm.representation("mvr").mvrs``).
+``"mvr"`` (no constraints or MVR constraints; the built MVRs, aligned to the
+HMM, are ``chmm.representation("mvr").mvrs``). The torch MVR algorithms in
+``conin.inference.mvr``, ``conin.learning.mvr``, ``conin.sampling.mvr`` and
+``conin.queries.mvr`` take a ``ConstrainedHiddenMarkovModel`` with MVR
+constraints; see the notebooks in ``doc/notebooks/MVR``.
 
 Oracle constraints
 ^^^^^^^^^^^^^^^^^^

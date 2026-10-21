@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from conin.exceptions import InvalidInputError
-from conin.hidden_markov_model.chmm_mvr import MVR_CHMM
+from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.constraints.mvr import InhomMVR
 
 # importorskip only catches ImportError; a broken torch install raises OSError.
@@ -22,7 +22,10 @@ from conin.inference.mvr.viterbi import (  # noqa: E402
     viterbi_torch_mvr_chmm,
 )
 
-from conin.queries.mvr.tests.test_sat_time_mvr import make_reach_mvr, mvr_window  # noqa: E402
+from conin.queries.mvr.tests.test_sat_time_mvr import (
+    make_reach_mvr,
+    mvr_window,
+)  # noqa: E402
 from conin.inference.mvr.tests.test_viterbi_mvr import (  # noqa: E402
     as_obs_map,
     make_end_state_inhom_mvr,
@@ -105,7 +108,7 @@ def brute_force_marginal_map(hmm, mvrs, observed, T, query_times):
 
 
 def assert_matches_brute_force(hmm, mvrs, observed, T, query_times):
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=mvrs)
+    model = ConstrainedHiddenMarkovModel(hmm, mvrs)
 
     expected_path, expected_score = brute_force_marginal_map(
         hmm, mvrs, observed, T, query_times
@@ -186,7 +189,7 @@ def test_marginal_map_maximizes_mediation_rather_than_summing_it(
     """Deliberate spec: mediation is maximized, not summed, at query times."""
     mvrs = [make_parity_mvr(hidden_states=hmm.hidden_states, target_state="B")]
     T = len(observed)
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=mvrs)
+    model = ConstrainedHiddenMarkovModel(hmm, mvrs)
 
     actual = marginal_map_torch_mvr_chmm(
         model,
@@ -286,7 +289,7 @@ def test_marginal_map_random_instances_match_brute_force(seed):
     expected_path, _ = brute_force_marginal_map(hmm, mvrs, observed, T, query_times)
 
     if expected_path is None:
-        model = MVR_CHMM(hidden_markov_model=hmm, constraints=mvrs)
+        model = ConstrainedHiddenMarkovModel(hmm, mvrs)
         with pytest.raises(InvalidInputError):
             marginal_map_torch_mvr_chmm(
                 model, observed, query_times=query_times, return_augmented=False
@@ -304,7 +307,7 @@ def test_marginal_map_random_instances_match_brute_force(seed):
 
 def test_marginal_map_over_all_times_equals_viterbi(hmm, observed):
     mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="A")
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[mvr])
+    model = ConstrainedHiddenMarkovModel(hmm, mvr)
 
     expected = viterbi_torch_mvr_chmm(
         model, observed, return_augmented=False, return_score=True
@@ -321,7 +324,7 @@ def test_marginal_map_over_all_times_equals_viterbi(hmm, observed):
 
 def test_marginal_map_differs_from_restricting_viterbi(hmm, observed):
     # Concrete witness that maximizing a marginal differs from restricting MAP.
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[])
+    model = ConstrainedHiddenMarkovModel(hmm)
     query_times = [0, 2, 4]
 
     viterbi_path = viterbi_torch_mvr_chmm(model, observed, return_augmented=False)
@@ -347,7 +350,7 @@ def test_bare_gap_matches_step_by_step_propagation(hmm):
     from conin.inference.mvr import marginal_map as mod
 
     sparse = {0: "o0", 5: "o1"}
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[])
+    model = ConstrainedHiddenMarkovModel(hmm)
 
     fast = marginal_map_torch_mvr_chmm(
         model, sparse, time_horizon=6, query_times=[0, 5], return_score=True
@@ -378,7 +381,7 @@ def test_marginal_map_augmented_path_reports_query_times(hmm, observed):
         forbidden_state="B",
         time_range=[2, 4],
     )
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[mvr])
+    model = ConstrainedHiddenMarkovModel(hmm, mvr)
     query_times = [0, 2, 4]
 
     path, augmented = marginal_map_torch_mvr_chmm(
@@ -401,7 +404,7 @@ def test_marginal_map_augmented_path_reports_query_times(hmm, observed):
 
 
 def test_marginal_map_unsorted_and_duplicate_query_times(hmm, observed):
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[])
+    model = ConstrainedHiddenMarkovModel(hmm)
 
     messy = marginal_map_torch_mvr_chmm(
         model, observed, query_times=[4, 0, 2, 0], return_augmented=False
@@ -422,7 +425,7 @@ def test_marginal_map_unsorted_and_duplicate_query_times(hmm, observed):
     ],
 )
 def test_marginal_map_rejects_bad_query_times(hmm, observed, query_times, message):
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[])
+    model = ConstrainedHiddenMarkovModel(hmm)
 
     with pytest.raises(InvalidInputError, match=message):
         marginal_map_torch_mvr_chmm(model, observed, query_times=query_times)
@@ -433,7 +436,7 @@ def test_marginal_map_raises_on_infeasible_constraints(hmm, observed):
         make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state=h)
         for h in hmm.hidden_states
     ]
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=mvrs)
+    model = ConstrainedHiddenMarkovModel(hmm, mvrs)
 
     with pytest.raises(InvalidInputError, match="No feasible augmented path"):
         marginal_map_torch_mvr_chmm(
@@ -445,7 +448,7 @@ def test_gap_operator_allocation_failure_names_the_cause(hmm, observed):
     from conin.inference.mvr import marginal_map as mod
 
     mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="A")
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[mvr])
+    model = ConstrainedHiddenMarkovModel(hmm, mvr)
 
     original = mod._sum_step
     mod._sum_step = lambda *args, **kwargs: (_ for _ in ()).throw(MemoryError())
@@ -462,7 +465,7 @@ def test_gap_operator_propagates_non_allocation_errors(hmm, observed):
     from conin.inference.mvr import marginal_map as mod
 
     mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="A")
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[mvr])
+    model = ConstrainedHiddenMarkovModel(hmm, mvr)
 
     boom = RuntimeError("some unrelated shape bug")
     original = mod._sum_step

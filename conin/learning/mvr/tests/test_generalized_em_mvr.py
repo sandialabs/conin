@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from conin.exceptions import InvalidInputError
-from conin.hidden_markov_model.chmm_mvr import MVR_CHMM
+from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.constraints.mvr import mvr_count, mvr_current_state, mvr_timerange
 
 # importorskip only catches ImportError; a broken torch install raises OSError.
@@ -106,14 +106,14 @@ def make_case(seed):
     if seed == 0:
         observations, horizons = [["x"], {0: "y"}, {}], [1, 2, 1]
     update = ("start", "transition", "emission") if seed % 2 == 0 else ("transition",)
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=constraints)
+    model = ConstrainedHiddenMarkovModel(hmm, constraints)
     return hmm, model, observations, horizons, update
 
 
 @pytest.mark.parametrize("seed", range(6))
 def test_gem_matches_enumeration(seed):
     hmm, model, observations, horizons, update = make_case(seed)
-    constraints = model.constraints
+    constraints = model.representation("mvr").mvrs
     caller, original = hmm, copy.deepcopy(hmm)
     previous = enumerate_objectives(hmm, constraints, observations, horizons)[0]
     initial = previous
@@ -126,7 +126,7 @@ def test_gem_matches_enumeration(seed):
                 "ignore", message="Initial model has zero-probability"
             )
             fitted, history = generalized_em_mvr_chmm(
-                MVR_CHMM(hidden_markov_model=hmm, constraints=constraints),
+                ConstrainedHiddenMarkovModel(hmm, constraints),
                 observations,
                 time_horizons=horizons,
                 max_iter=1,
@@ -167,13 +167,13 @@ def test_gem_matches_enumeration(seed):
 def test_chain_gradient_matches_finite_differences(seed):
     # The ascent checks above would also pass for Baum-Welch; this pins the Z term.
     hmm, model, observations, horizons, update = make_case(seed)
-    constraints = model.constraints
+    constraints = model.representation("mvr").mvrs
     _, _, posterior, counts = enumerate_objectives(
         hmm, constraints, observations, horizons
     )
     logs = list(_hmm_to_torch(hmm, log=True, dtype=torch.float64))
     contexts = {
-        t: _build_sumprod_ctx(model, {}, time_horizon=t, dtype=torch.float64)
+        t: _build_sumprod_ctx(hmm, constraints, {}, time_horizon=t, dtype=torch.float64)
         for t in set(horizons)
     }
     multiplicities = {t: horizons.count(t) for t in set(horizons)}
@@ -212,7 +212,7 @@ def test_pseudocount_keeps_unobserved_emissions_positive():
     emission = hmm.emission_mat
     emission[0] = [0.5, 0.5, 0.0]
     hmm = _rebuild_hmm(hmm, hmm.start_vec, hmm.transition_mat, emission)
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[])
+    model = ConstrainedHiddenMarkovModel(hmm)
     with pytest.warns(UserWarning, match="emission"):
         fitted, _ = generalized_em_mvr_chmm(model, [["x", "y", "x"]], max_iter=1, tol=0)
     unobserved = np.asarray(fitted.emission_mat)[:, hmm.observed_to_internal["z"]]
@@ -222,7 +222,7 @@ def test_pseudocount_keeps_unobserved_emissions_positive():
 def test_gem_history():
     # Deliberate executable spec: history follows Baum–Welch.
     hmm = make_random_hmm(hidden_states=["A", "B"], observed_states=["x", "y"], seed=8)
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[])
+    model = ConstrainedHiddenMarkovModel(hmm)
     observations = [["x", "x", "y"]]
     fitted, history = generalized_em_mvr_chmm(model, observations, max_iter=2, tol=0)
     assert len(history) == 2
@@ -236,7 +236,7 @@ def test_gem_history():
 
 def test_gem_backtracking_failure_retains_parameters():
     hmm = make_random_hmm(hidden_states=["A", "B"], observed_states=["x", "y"], seed=8)
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[])
+    model = ConstrainedHiddenMarkovModel(hmm)
     with pytest.warns(RuntimeWarning, match="backtracking"):
         fitted, history = generalized_em_mvr_chmm(
             model,
@@ -264,6 +264,6 @@ def test_gem_backtracking_failure_retains_parameters():
 )
 def test_gem_rejects_invalid_arguments(observations, kwargs):
     hmm = make_random_hmm(hidden_states=["A", "B"], observed_states=["x", "y"], seed=8)
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[])
+    model = ConstrainedHiddenMarkovModel(hmm)
     with pytest.raises(InvalidInputError):
         generalized_em_mvr_chmm(model, observations, **kwargs)

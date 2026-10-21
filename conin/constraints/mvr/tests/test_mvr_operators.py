@@ -818,13 +818,14 @@ def test_mvr_timerange():
     contains_a = contains_symbol_mvr("a")
 
     time_range = [1, 3]
-    result = mvr_timerange(contains_a, time_range)
+    result = mvr_timerange(contains_a, time_range, inplace=True)
 
     assert result is contains_a  # inplace=True mutates and returns the input
     assert result.time_range == [1, 3]
     assert result.time_range is not time_range  # the MVR owns its range
 
-    assert mvr_timerange(contains_a).time_range is None  # a bare call clears it
+    # a bare call clears it
+    assert mvr_timerange(contains_a, inplace=True).time_range is None
 
     inhom = trivial_inhom_mvr(time_horizon=3)
 
@@ -852,10 +853,29 @@ def test_mvr_timerange():
 def test_mvr_timerange_inplace_preserves_identity_before_pruning():
     mvr = orphan_state_mvr()
 
-    result = mvr_timerange(mvr, [1, 3])
+    result = mvr_timerange(mvr, [1, 3], inplace=True)
 
     assert result is mvr
     assert result.time_range == [1, 3]
+
+
+def test_mvr_timerange_does_not_mutate_by_default():
+    contains_a = contains_symbol_mvr("a")
+    contains_a.name = "contains_a"
+
+    result = mvr_timerange(contains_a, [1, 3])
+
+    assert result is not contains_a
+    assert contains_a.time_range is None
+    assert result.time_range == [1, 3]
+    assert result.name == "contains_a"
+    assert mvr_timerange(result).time_range is None
+    assert result.time_range == [1, 3]
+
+    inhom = trivial_inhom_mvr(time_horizon=3)
+    windowed = mvr_timerange(inhom, [5, 7])
+    assert windowed is not inhom and inhom.time_range is None
+    assert windowed.time_range == [5, 7]
 
 
 # ---------------------------------------------------------------------

@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from conin.exceptions import InvalidInputError
-from conin.hidden_markov_model.chmm_mvr import MVR_CHMM
+from conin.constrained_models import ConstrainedHiddenMarkovModel
 
 # importorskip only catches ImportError; a broken torch install raises OSError.
 try:
@@ -19,7 +19,10 @@ from conin.sampling.mvr.stopped_sampling import (  # noqa: E402
     stopped_sampling_torch_mvr_chmm,
 )
 
-from conin.sampling.mvr.tests.test_ffbs_mvr import NUM_SAMPLES, null_tv_mean  # noqa: E402
+from conin.sampling.mvr.tests.test_ffbs_mvr import (
+    NUM_SAMPLES,
+    null_tv_mean,
+)  # noqa: E402
 from conin.queries.mvr.tests.test_sat_time_mvr import (  # noqa: E402
     brute_force_sat_time,
     make_reach_mvr,
@@ -71,7 +74,7 @@ def assert_matches_brute_force(hmm, mvrs, target, observed, T=None, seed=0):
     if T is None:
         T = len(observed)
 
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=mvrs)
+    model = ConstrainedHiddenMarkovModel(hmm, mvrs)
     expected = brute_force_stopped_joint(hmm, mvrs, target, observed, T)
 
     if not expected:
@@ -214,7 +217,7 @@ def test_prefix_free_substitution_is_transparent(hmm, observed, target, capsys):
     already._name = target._name
 
     def draw(mvr):
-        model = MVR_CHMM(hidden_markov_model=hmm, constraints=[mvr])
+        model = ConstrainedHiddenMarkovModel(hmm, mvr)
 
         return stopped_sampling_torch_mvr_chmm(
             model,
@@ -231,7 +234,7 @@ def test_prefix_free_substitution_is_transparent(hmm, observed, target, capsys):
 
 
 def test_stopped_sampling_leaves_the_caller_model_untouched(hmm, observed, target):
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[target])
+    model = ConstrainedHiddenMarkovModel(hmm, target)
 
     stored = model.constraints[0]
     constraints = model.constraints
@@ -259,7 +262,7 @@ def test_stopped_sampling_leaves_the_caller_model_untouched(hmm, observed, targe
 def test_min_length_restricts_the_stopping_time(hmm, observed, target, min_length):
     other = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="B")
     mvrs = [target, other]
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=mvrs)
+    model = ConstrainedHiddenMarkovModel(hmm, mvrs)
 
     T = len(observed)
     a, _ = mvr_window(target, T)
@@ -289,7 +292,7 @@ def test_min_length_restricts_the_stopping_time(hmm, observed, target, min_lengt
 
 
 def test_min_length_below_the_window_is_vacuous(hmm, observed, target):
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[target])
+    model = ConstrainedHiddenMarkovModel(hmm, target)
 
     def draw(min_length):
         return stopped_sampling_torch_mvr_chmm(
@@ -316,7 +319,7 @@ def test_min_length_below_the_window_is_vacuous(hmm, observed, target):
     ],
 )
 def test_stopped_sampling_rejects_bad_arguments(hmm, observed, target, kwargs, match):
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[target])
+    model = ConstrainedHiddenMarkovModel(hmm, target)
 
     kwargs = {"target": 0, **kwargs}
 

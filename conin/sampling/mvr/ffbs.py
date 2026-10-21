@@ -19,6 +19,7 @@ from conin.representations.mvr.kernels import (
     _decode_dynamic_augmented_path,
     _dest_at,
     _forward_messages,
+    _model_parts,
 )
 
 # ======================================================================
@@ -129,8 +130,9 @@ def ffbs_torch_mvr_chmm(
 
     Parameters
     ----------
-    model : MVR_CHMM
-        Constrained model carrying a hidden Markov model and MVR constraints.
+    model : ConstrainedHiddenMarkovModel or HiddenMarkovModel
+        Hidden Markov model with ``"mvr"`` constraints (a bare HMM has none).
+        The MVRs come from its ``"mvr"`` representation.
     observed : list or dict
         Observed sequence in external observed-state labels, either a dense list
         timed by position or a sparse ``{time: label}`` map. A time with no
@@ -143,7 +145,7 @@ def ffbs_torch_mvr_chmm(
         required for a map.
     dtype : torch.dtype, optional
         Floating dtype for torch tensors. Defaults to ``float64``, as in
-        ``baum_welch_mvr``.
+        ``baum_welch_mvr_chmm``.
     device : str or torch.device, optional
         Torch device.
     generator : torch.Generator, optional
@@ -165,8 +167,10 @@ def ffbs_torch_mvr_chmm(
     """
     _positive_int("num_samples", num_samples)
 
+    hmm, constraints = _model_parts(model)
     ctx = _build_sumprod_ctx(
-        model,
+        hmm,
+        constraints,
         observed,
         time_horizon=time_horizon,
         dtype=dtype,

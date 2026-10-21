@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import copy
 import math
 import warnings
 from collections import Counter
@@ -101,7 +100,10 @@ def generalized_em_mvr_chmm(
     step_size=1.0,
     max_backtracks=30,
 ):
-    """Fit ``sum_i log P(y_i | constraints)`` by generalized EM on a copy of ``model``.
+    """Fit ``sum_i log P(y_i | constraints)`` by generalized EM, starting from ``model``.
+
+    ``model`` is a ``ConstrainedHiddenMarkovModel`` with ``"mvr"`` constraints
+    (or a bare ``HiddenMarkovModel``); it is not modified.
 
     Arguments shared with ``baum_welch_mvr_chmm`` mean the same, as does ``history``.
     Emissions take the closed-form update; initial vector, transition matrix take gradient steps.
@@ -133,8 +135,7 @@ def generalized_em_mvr_chmm(
     if not observations:
         raise InvalidInputError("observations must contain at least one sequence.")
     horizons = _resolve_time_horizons(observations, time_horizons)
-    working = copy.deepcopy(model)
-    hmm, constraints = _model_parts(working)
+    hmm, constraints = _model_parts(model)
     emission_support = _support_masks(hmm)["emission"]
     log_params = list(_hmm_to_torch(hmm, log=True, dtype=dtype, device=device))
 
@@ -152,7 +153,8 @@ def generalized_em_mvr_chmm(
                     device=device,
                 )
                 prior_contexts[T] = _build_sumprod_ctx(
-                    working,
+                    hmm,
+                    constraints,
                     {},
                     time_horizon=T,
                     dtype=dtype,
@@ -161,7 +163,8 @@ def generalized_em_mvr_chmm(
                 )
             contexts.append(
                 _build_sumprod_ctx(
-                    working,
+                    hmm,
+                    constraints,
                     observed,
                     time_horizon=T,
                     dtype=dtype,

@@ -842,7 +842,7 @@ def _builder(part, formula, name):
 
 
 def build_mvr(hidden_markov_model, formula: str, *, name: str = None) -> list:
-    """Build a list of MVRs, one per top-level conjunct, for MVR_CHMM.
+    """Build a list of MVRs, one per top-level conjunct, for a ConstrainedHiddenMarkovModel.
 
     Names use the formula (or ``name``), indexed when there are multiple results.
     Invalid syntax, unknown states, and invalid arguments raise InvalidInputError.

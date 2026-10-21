@@ -45,7 +45,7 @@ NOTEBOOKS = [
     ("conin.constrained_models", "ConstrainedDiscreteBayesianNetwork", "constraints.ipynb, inference.ipynb"),
     ("conin.constrained_models", "ConstrainedDiscreteMarkovNetwork", "constraints.ipynb, inference.ipynb"),
     ("conin.constrained_models", "ConstrainedDynamicDiscreteBayesianNetwork", "constraints.ipynb, inference.ipynb"),
-    ("conin.constrained_models", "ConstrainedHiddenMarkovModel", "MVR/formula.ipynb, MVR/regex_tutorial.ipynb, constraints.ipynb, inference.ipynb"),
+    ("conin.constrained_models", "ConstrainedHiddenMarkovModel", "MVR/formula.ipynb, MVR/learning.ipynb, MVR/marginal_map.ipynb, MVR/overview.ipynb, MVR/regex_tutorial.ipynb, MVR/sampling.ipynb, MVR/sat_prob.ipynb, MVR/sat_time.ipynb, MVR/viterbi.ipynb, constraints.ipynb, inference.ipynb"),
     ("conin.constraints", "OracleConstraint", "constraints.ipynb, inference.ipynb"),
     ("conin.constraints", "algebraic_constraint_fn", "constraints.ipynb"),
     ("conin.constraints", "mvr_constraint_fn", "MVR/regex_tutorial.ipynb"),
@@ -80,18 +80,17 @@ NOTEBOOKS = [
     ("conin.graphical_models", "ExpressionVariable", "DBN_basics.ipynb, constraints.ipynb, inference.ipynb"),
     ("conin.graphical_models", "HiddenMarkovModel", "HMM_basics.ipynb, MVR/formula.ipynb, MVR/learning.ipynb, MVR/marginal_map.ipynb, MVR/overview.ipynb, MVR/regex_tutorial.ipynb, MVR/sampling.ipynb, MVR/sat_prob.ipynb, MVR/sat_time.ipynb, MVR/viterbi.ipynb, constraints.ipynb, inference.ipynb"),
     ("conin.graphical_models", "random_hmm", "HMM_basics.ipynb"),
-    ("conin.hidden_markov_model.chmm_mvr", "MVR_CHMM", "MVR/formula.ipynb, MVR/learning.ipynb, MVR/marginal_map.ipynb, MVR/overview.ipynb, MVR/sampling.ipynb, MVR/sat_prob.ipynb, MVR/sat_time.ipynb, MVR/viterbi.ipynb"),
     ("conin.inference", "map_query", "inference.ipynb"),
-    ("conin.inference.mvr.marginal_map", "marginal_map_torch_mvr_chmm", "MVR/marginal_map.ipynb, MVR/overview.ipynb", "torch"),
-    ("conin.inference.mvr.viterbi", "viterbi_torch_mvr_chmm", "MVR/marginal_map.ipynb, MVR/overview.ipynb, MVR/viterbi.ipynb", "torch"),
+    ("conin.inference.mvr", "marginal_map_torch_mvr_chmm", "MVR/marginal_map.ipynb, MVR/overview.ipynb", "torch"),
+    ("conin.inference.mvr", "viterbi_torch_mvr_chmm", "MVR/marginal_map.ipynb, MVR/overview.ipynb, MVR/viterbi.ipynb", "torch"),
     ("conin.inference.unconstrained", "viterbi", "MVR/viterbi.ipynb"),
-    ("conin.learning.mvr.baum_welch", "baum_welch_mvr_chmm", "MVR/learning.ipynb, MVR/overview.ipynb", "torch"),
-    ("conin.learning.mvr.baum_welch", "forward_backward_mvr_chmm", "MVR/learning.ipynb, MVR/overview.ipynb, MVR/sat_time.ipynb", "torch"),
-    ("conin.learning.mvr.generalized_em", "generalized_em_mvr_chmm", "MVR/learning.ipynb", "torch"),
-    ("conin.queries.mvr.sat_prob", "sat_prob_torch_mvr_chmm", "MVR/overview.ipynb, MVR/sat_prob.ipynb", "torch"),
-    ("conin.queries.mvr.sat_time", "sat_time_torch_mvr_chmm", "MVR/overview.ipynb, MVR/sampling.ipynb, MVR/sat_time.ipynb", "torch"),
-    ("conin.sampling.mvr.ffbs", "ffbs_torch_mvr_chmm", "MVR/formula.ipynb, MVR/overview.ipynb, MVR/sampling.ipynb, MVR/sat_prob.ipynb", "torch"),
-    ("conin.sampling.mvr.stopped_sampling", "stopped_sampling_torch_mvr_chmm", "MVR/overview.ipynb, MVR/sampling.ipynb", "torch"),
+    ("conin.learning.mvr", "baum_welch_mvr_chmm", "MVR/learning.ipynb, MVR/overview.ipynb", "torch"),
+    ("conin.learning.mvr", "forward_backward_mvr_chmm", "MVR/learning.ipynb, MVR/overview.ipynb, MVR/sat_time.ipynb", "torch"),
+    ("conin.learning.mvr", "generalized_em_mvr_chmm", "MVR/learning.ipynb", "torch"),
+    ("conin.queries.mvr", "sat_prob_torch_mvr_chmm", "MVR/overview.ipynb, MVR/sat_prob.ipynb", "torch"),
+    ("conin.queries.mvr", "sat_time_torch_mvr_chmm", "MVR/overview.ipynb, MVR/sampling.ipynb, MVR/sat_time.ipynb", "torch"),
+    ("conin.sampling.mvr", "ffbs_torch_mvr_chmm", "MVR/formula.ipynb, MVR/overview.ipynb, MVR/sampling.ipynb, MVR/sat_prob.ipynb", "torch"),
+    ("conin.sampling.mvr", "stopped_sampling_torch_mvr_chmm", "MVR/overview.ipynb, MVR/sampling.ipynb", "torch"),
 ]
 
 SPHINX_CODE = [
@@ -294,6 +293,8 @@ PUBLIC_API = [
     ("conin.constraints.mvr", "mvr_forbid_state", "public API"),
     ("conin.constraints.mvr", "mvr_not_yet", "public API"),
     ("conin.constraints.oracle_library", None, "public API"),
+    ("conin.inference.mvr", "marginal_map_torch_mvr_chmm", "public API", "torch"),
+    ("conin.inference.mvr", "viterbi_torch_mvr_chmm", "public API", "torch"),
     ("conin.inference.oracle", "a_star", "public API"),
     ("conin.inference.pyomo", "inference_pyomo_map_query_BN", "public API"),
     ("conin.inference.pyomo", "inference_pyomo_map_query_DDBN", "public API"),
@@ -318,6 +319,11 @@ PUBLIC_API = [
     ("conin.io", "save_model", "public API"),
     ("conin.learning", "mcem", "public API"),
     ("conin.learning", "supervised_learning", "public API"),
+    ("conin.learning.mvr", "baum_welch_mvr_chmm", "public API", "torch"),
+    ("conin.learning.mvr", "forward_backward_mvr_chmm", "public API", "torch"),
+    ("conin.learning.mvr", "generalized_em_mvr_chmm", "public API", "torch"),
+    ("conin.queries.mvr", "sat_prob_torch_mvr_chmm", "public API", "torch"),
+    ("conin.queries.mvr", "sat_time_torch_mvr_chmm", "public API", "torch"),
     ("conin.representations", "Representation", "public API"),
     ("conin.representations", "build_representation", "public API"),
     ("conin.representations", "register_representation", "public API"),
@@ -328,11 +334,14 @@ PUBLIC_API = [
     ("conin.representations.factor", "FactorRepresentation", "public API"),
     ("conin.representations.factor", "apply_factor_constraints", "public API"),
     ("conin.representations.factor.factor_repn", "skeleton_mn_of_bn", "public API"),
+    ("conin.representations.mvr", "MVRHMMRepresentation", "public API"),
     ("conin.representations.oracle", "OracleHMMRepresentation", "public API"),
     ("conin.representations.pyomo", "PyomoNetworkFlowHMMRepresentation", "public API"),
     ("conin.representations.pyomo", "PyomoVarWrapper", "public API"),
     ("conin.representations.recursive", "RecursiveHMMRepresentation", "public API"),
     ("conin.representations.toulbar2", "Toulbar2VarWrapper", "public API"),
+    ("conin.sampling.mvr", "ffbs_torch_mvr_chmm", "public API", "torch"),
+    ("conin.sampling.mvr", "stopped_sampling_torch_mvr_chmm", "public API", "torch"),
     ("conin.sampling.oracle", "rejection_sample_hidden", "public API"),
 ]
 # fmt: on
@@ -366,10 +375,12 @@ def test_public_symbol_exists(module_path, symbol, used_in, requires):
     try:
         module = importlib.import_module(module_path)
         error = None
+        # Inside the try: a package that imports a name lazily (e.g.
+        # conin.inference.mvr) raises the optional dependency's error here.
+        if symbol is not None and not hasattr(module, symbol):
+            error = f"{module_path!r} has no attribute {symbol!r}"
     except Exception as exc:
         module, error = None, f"{type(exc).__name__}: {exc}"
-    if error is None and symbol is not None and not hasattr(module, symbol):
-        error = f"{module_path!r} has no attribute {symbol!r}"
     if error is None:
         return
 

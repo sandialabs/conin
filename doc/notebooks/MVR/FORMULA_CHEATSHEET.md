@@ -7,8 +7,8 @@ shorthand for calls you could write by hand. Worked demo: [`formula.ipynb`](form
 ```python
 from conin.constraints.mvr import build_mvr, build_mvr_functor
 
-build_mvr(hmm, "reach B before A[2]")     # -> list[BaseMVR],       for MVR_CHMM(constraints=...)
-build_mvr_functor("reach B before A[2]")  # -> list[MVRConstraint], for ConstrainedHiddenMarkovModel(constraints=...)
+build_mvr(hmm, "reach B before A[2]")     # -> list[BaseMVR],       for ConstrainedHiddenMarkovModel(hmm, constraints)
+build_mvr_functor("reach B before A[2]")  # -> list[MVRConstraint], for ConstrainedHiddenMarkovModel(hmm, constraints)
 ```
 
 Both return a **list**, one entry per top-level `and`. Downstream algorithms take
@@ -21,7 +21,7 @@ constraint. The two differ only in when the MVR is built:
    `"mvr"` representation (`chmm.representation("mvr")`).
 
 Each result is named after its own formula — `"never A and reach B[0]"` — unless
-you pass `name=`. That name is what `sat_time_mvr` and `sat_prob_mvr` accept as
+you pass `name=`. That name is what `sat_time_torch_mvr_chmm` and `sat_prob_torch_mvr_chmm` accept as
 `target="..."`.
 
 ## 1. Atoms

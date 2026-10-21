@@ -234,6 +234,7 @@ def test_supported_representations_hmm():
         ("toulbar2", None),
         ("toulbar2", "algebraic"),
         ("toulbar2", "toulbar2"),
+        ("mvr", None),
         ("mvr", "mvr"),
     ]:
         assert pair in pairs

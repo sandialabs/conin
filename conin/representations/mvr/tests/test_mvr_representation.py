@@ -7,8 +7,8 @@ from conin import mvr_constraint_fn
 from conin.exceptions import InvalidInputError
 from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.graphical_models import HiddenMarkovModel
-from conin.constraints.mvr import HomMVR, InhomMVR, MVR_MatVecRepn
-from conin.hidden_markov_model.chmm_mvr import MVR_CHMM
+from conin.constraints.mvr import HomMVR, InhomMVR, MVRConstraint, MVR_MatVecRepn
+from conin.representations.mvr import MVRHMMRepresentation
 
 # ===========================
 # Heplers
@@ -360,19 +360,7 @@ def test_direct_mvr_matvec_repn_rejects_invalid_arrays(case, match):
         )
 
 
-def test_mvr_chmm_rejects_missing_hmm():
-    with pytest.raises(
-        InvalidInputError,
-        match="hidden_markov_model is a required argument",
-    ):
-        MVR_CHMM(
-            hidden_markov_model=None,
-            constraints=None,
-            data=None,
-        )
-
-
-def test_mvr_chmm_rejects_mismatched_hidden_states():
+def test_mvr_representation_rejects_mismatched_hidden_states():
     hmm = make_random_hmm(
         hidden_states=["A", "B", "C"],
         observed_states=["o0", "o1"],
@@ -387,30 +375,18 @@ def test_mvr_chmm_rejects_mismatched_hidden_states():
         InvalidInputError,
         match="Hidden states of constraint 0 do not match",
     ):
-        MVR_CHMM(
-            hidden_markov_model=hmm,
-            constraints=[mvr],
-            data=None,
-        )
+        ConstrainedHiddenMarkovModel(hmm, mvr).representation("mvr")
 
 
-def test_mvr_chmm_rejects_non_mvr_constraint():
+def test_mvr_representation_rejects_a_factory_that_returns_no_mvr():
     hmm = make_random_hmm(
         hidden_states=["A", "B", "C"],
         observed_states=["o0", "o1"],
     )
+    bad = MVRConstraint(func=lambda hidden_markov_model: "not an MVR", name="bad")
 
-    bad_constraint = "not an MVR"
-
-    with pytest.raises(
-        InvalidInputError,
-        match="Constraint 0 is not an MVR object",
-    ):
-        MVR_CHMM(
-            hidden_markov_model=hmm,
-            constraints=[bad_constraint],
-            data=None,
-        )
+    with pytest.raises(InvalidInputError, match="not an MVR object"):
+        ConstrainedHiddenMarkovModel(hmm, bad).representation("mvr")
 
 
 def test_constrained_hmm_initializes_mvr_backend_from_functor():
@@ -440,7 +416,8 @@ def test_constrained_hmm_initializes_mvr_backend_from_functor():
 
     assert chmm.constraint_family == "mvr"
     repn = chmm.representation("mvr")
-    assert isinstance(repn.chmm, MVR_CHMM)
+    assert isinstance(repn, MVRHMMRepresentation)
+    assert repn.model is hmm
     assert len(repn.mvrs) == 1
     assert isinstance(repn.mvrs[0], HomMVR)
 

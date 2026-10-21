@@ -457,8 +457,22 @@ class InhomMVR(BaseMVR):
         return ini_array, upd_array, evl_array
 
 
+def _read_only(array):
+    """Return a read-only copy of ``array`` (or of each array in a list)."""
+    if isinstance(array, list):
+        return [_read_only(a) for a in array]
+    array = np.array(array)
+    array.setflags(write=False)
+    return array
+
+
 class MVR_MatVecRepn:
-    """Integer-indexed NumPy representation of a homogeneous or inhomogeneous MVR."""
+    """Integer-indexed NumPy representation of a homogeneous or inhomogeneous MVR.
+
+    The arrays (``ini_array``, ``upd_array``, ``evl_array``, ``ini_idx``,
+    ``next_idx``) are read-only copies of the inputs, so they cannot be
+    changed through an MVR or a representation that shares it.
+    """
 
     def __init__(
         self,
@@ -477,6 +491,16 @@ class MVR_MatVecRepn:
 
         self.load_dimensions()
         self.load_index_maps()
+        self._freeze()
+
+    def _freeze(self):
+        for name in ("ini_array", "upd_array", "evl_array", "ini_idx", "next_idx"):
+            setattr(self, name, _read_only(getattr(self, name)))
+
+    def __setstate__(self, state):
+        # copy.deepcopy and pickle give writeable arrays; make them read-only again.
+        self.__dict__.update(state)
+        self._freeze()
 
     def load_index_maps(self):
         """Cache deterministic initial and successor indices."""

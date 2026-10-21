@@ -15,6 +15,7 @@ from conin.representations.mvr.kernels import (
     _decode_dynamic_augmented_path,
     _initial_sumprod_message,
     _maxplus_step,
+    _model_parts,
     _sum_step,
     _sum_step_backward,
 )
@@ -176,8 +177,9 @@ def marginal_map_torch_mvr_chmm(
 
     Parameters
     ----------
-    model : MVR_CHMM
-        Constrained model carrying a hidden Markov model and MVR constraints.
+    model : ConstrainedHiddenMarkovModel or HiddenMarkovModel
+        Hidden Markov model with ``"mvr"`` constraints (a bare HMM has none).
+        The MVRs come from its ``"mvr"`` representation.
     observed : list or dict
         Observed sequence in external observed-state labels, either a dense
         list timed by position or a sparse ``{time: label}`` map.
@@ -207,8 +209,10 @@ def marginal_map_torch_mvr_chmm(
     best_logprob : float, optional
         Returned when ``return_score`` is ``True``.
     """
+    hmm, constraints = _model_parts(model)
     ctx = _build_sumprod_ctx(
-        model,
+        hmm,
+        constraints,
         observed,
         time_horizon=time_horizon,
         dtype=dtype,

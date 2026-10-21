@@ -220,22 +220,23 @@ def sat_time_torch_mvr_chmm(
 
     Parameters
     ----------
-    model : MVR_CHMM
-        Constrained model carrying a hidden Markov model and MVR constraints.
+    model : ConstrainedHiddenMarkovModel or HiddenMarkovModel
+        Hidden Markov model with ``"mvr"`` constraints (a bare HMM has none).
+        The MVRs come from its ``"mvr"`` representation.
     observed : list or dict
         Observed sequence in external observed-state labels, either a dense list
         timed by position or a sparse ``{time: label}`` map. A time with no
         observation still consumes a transition and still drives every MVR active
         there.
     target : int or str
-        Index into ``model.constraints`` (negative allowed) or an MVR ``name``. A
+        Index into the model's constraints (negative allowed) or an MVR ``name``. A
         name matching no constraint, or more than one, raises.
     time_horizon : int, optional
         Number of time steps. Defaults to ``len(observed)`` for a dense list and is
         required for a map.
     dtype : torch.dtype, optional
         Floating dtype for torch tensors. Defaults to ``float64``, as in
-        ``baum_welch_mvr``.
+        ``baum_welch_mvr_chmm``.
     device : str or torch.device, optional
         Torch device.
     return_log_weights : bool, optional
@@ -250,11 +251,12 @@ def sat_time_torch_mvr_chmm(
     log_weights : torch.Tensor, optional
         unnormalized log weights. probs = normalized weights.
     """
-    _, constraints = _model_parts(model)
+    hmm, constraints = _model_parts(model)
     target = _resolve_target(constraints, target)
 
     ctx = _build_sumprod_ctx(
-        model,
+        hmm,
+        constraints,
         observed,
         time_horizon=time_horizon,
         dtype=dtype,

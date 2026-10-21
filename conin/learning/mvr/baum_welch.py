@@ -9,7 +9,6 @@ is the ordinary exact, closed-form, monotone EM on log P(y, constraints | theta)
 
 from __future__ import annotations
 
-import copy
 import math
 import warnings
 
@@ -233,7 +232,7 @@ def _rebuild_hmm(hmm, start, transition, emission):
     """
     # The constructor orders states by sorted label, and the dense dictionaries
     # below mention every label, so the rebuilt model keeps hmm's internal index
-    # order (and with it the constraint alignment MVR_CHMM established).
+    # order (and with it the alignment of the MVRs of the "mvr" representation).
     hidden = hmm.hidden_to_external
     observed = hmm.observed_to_external
     new_hmm = HiddenMarkovModel(
@@ -279,8 +278,9 @@ def forward_backward_mvr_chmm(
 
     Parameters
     ----------
-    model : MVR_CHMM
-        Constrained model carrying a hidden Markov model and MVR constraints.
+    model : ConstrainedHiddenMarkovModel or HiddenMarkovModel
+        Hidden Markov model with ``"mvr"`` constraints (a bare HMM has none).
+        The MVRs come from its ``"mvr"`` representation.
     observed : list or dict
         Observed sequence in external observed-state labels, either a dense list
         timed by position or a sparse ``{time: label}`` map. A time with no
@@ -310,8 +310,10 @@ def forward_backward_mvr_chmm(
     gamma_augmented : list[torch.Tensor], optional
         Returned when ``return_augmented`` is ``True``.
     """
+    hmm, constraints = _model_parts(model)
     ctx = _build_sumprod_ctx(
-        model,
+        hmm,
+        constraints,
         observed,
         time_horizon=time_horizon,
         dtype=dtype,
@@ -353,10 +355,11 @@ def baum_welch_mvr_chmm(
 
     Parameters
     ----------
-    model : MVR_CHMM
-        Constrained model. It is not modified; the fit runs on a copy, which
-        keeps the constraints aligned to the hidden-state ordering without
-        rebuilding them.
+    model : ConstrainedHiddenMarkovModel or HiddenMarkovModel
+        Hidden Markov model with ``"mvr"`` constraints (a bare HMM has none).
+        It is not modified. The MVRs are built once, from its ``"mvr"``
+        representation, and kept for every iteration: the re-estimated HMMs
+        keep the hidden-state order, so the MVRs stay aligned.
     observations : sequence
         Observed sequences, each a dense list or a sparse ``{time: label}`` map.
     time_horizons : int or sequence of int, optional
@@ -403,8 +406,7 @@ def baum_welch_mvr_chmm(
 
     horizons = _resolve_time_horizons(observations, time_horizons)
 
-    working = copy.deepcopy(model)
-    hmm, constraints = _model_parts(working)
+    hmm, constraints = _model_parts(model)
 
     K = hmm.num_hidden_states
     num_observed = hmm.num_observed_states
@@ -434,7 +436,8 @@ def baum_welch_mvr_chmm(
 
                 counts = _e_step_counts(
                     _build_sumprod_ctx(
-                        working,
+                        hmm,
+                        constraints,
                         observed,
                         time_horizon=horizon,
                         dtype=dtype,
@@ -479,7 +482,6 @@ def baum_welch_mvr_chmm(
             pseudocount,
             update,
         )
-        working.hidden_markov_model = hmm
 
     # tol <= 0 asks for exactly max_iter iterations, so exhausting them is intended.
     if tol > 0 and not converged and len(history) > 1:

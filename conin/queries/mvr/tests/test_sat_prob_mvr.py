@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from conin.exceptions import InvalidInputError
-from conin.hidden_markov_model.chmm_mvr import MVR_CHMM
+from conin.constrained_models import ConstrainedHiddenMarkovModel
 
 # importorskip only catches ImportError; a broken torch install raises OSError.
 try:
@@ -54,7 +54,7 @@ def assert_matches_brute_force(hmm, mvrs, target, observed, T=None):
     if T is None:
         T = len(observed)
 
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=mvrs)
+    model = ConstrainedHiddenMarkovModel(hmm, mvrs)
     expected = brute_force_sat_prob(hmm, mvrs, target, observed, T)
 
     if expected.sum() <= 0.0:
@@ -172,7 +172,7 @@ def test_sat_prob_answers_for_an_unsatisfiable_target_but_raises_for_the_rest(
     unreachable = make_reach_mvr(hidden_states=hmm.hidden_states, target_state="Z")
     other = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="B")
 
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[unreachable, other])
+    model = ConstrainedHiddenMarkovModel(hmm, [unreachable, other])
 
     prob, log_weights = sat_prob_torch_mvr_chmm(
         model, observed, target=0, return_log_weights=True

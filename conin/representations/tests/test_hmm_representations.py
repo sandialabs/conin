@@ -1,6 +1,10 @@
 """Tests for the HMM representations ("oracle", "recursive", "pyomo_network_flow", "mvr")."""
 
+import copy
+import pickle
+
 import munch
+import numpy as np
 import pyomo.environ as pyo
 import pytest
 
@@ -14,10 +18,11 @@ from conin.constraints import (
     pyomo_constraint_fn,
     toulbar2_constraint_fn,
 )
-from conin.constraints.mvr import BaseMVR
+from conin.constraints.mvr import BaseMVR, InhomMVR, MVR_MatVecRepn, mvr_timerange
 from conin.constraints.mvr.primitives import mvr_forbid_state, mvr_visit_state
 from conin.exceptions import InvalidInputError
 from conin.graphical_models import HiddenMarkovModel
+from conin.representations.mvr import MVRHMMRepresentation
 from conin.representations.oracle import OracleHMMRepresentation
 from conin.representations.recursive import RecursiveHMMRepresentation
 from conin.sampling.oracle import rejection_sample_hidden
@@ -337,7 +342,7 @@ def test_mvr_factories_and_prebuilt_mvrs():
     assert len(repn.mvrs) == 2
     assert all(isinstance(m, BaseMVR) for m in repn.mvrs)
     assert all(list(m.hidden_states) == hmm.hidden_to_external for m in repn.mvrs)
-    assert repn.hmm.hidden_to_external == hmm.hidden_to_external
+    assert repn.model is hmm
 
 
 def test_mvr_mismatched_hidden_states_raise():
@@ -357,13 +362,135 @@ def test_mvr_prebuilt_mvrs_are_not_shared_with_the_user():
     first = cmodel.representation("mvr")
     assert first.mvrs[0] is not prebuilt
     assert first.mvrs[0].time_range is None
-    first.mvrs[0]._time_range = [0, 3]
+    mvr_timerange(first.mvrs[0], [0, 3], inplace=True)
     assert first.mvrs[0].time_range == [0, 3]
     assert prebuilt.time_range is None
 
     second = cmodel.representation("mvr")
     assert second is not first
     assert second.mvrs[0].time_range is None
+
+
+def test_mvr_representation_attributes():
+    hmm = _hmm()
+    repn = ConstrainedHiddenMarkovModel(
+        hmm, mvr_forbid_state(hmm, ["a"])
+    ).representation("mvr")
+    assert isinstance(repn, MVRHMMRepresentation)
+    assert repn.kind == "mvr"
+    assert repn.model is hmm
+    assert not hasattr(repn, "chmm")
+    assert not hasattr(repn, "hmm")
+
+
+@pytest.mark.parametrize("model", ["bare", "empty"])
+def test_mvr_representation_without_constraints(model):
+    hmm = _hmm()
+    cmodel = ConstrainedHiddenMarkovModel(hmm) if model == "empty" else hmm
+    repn = ConstrainedHiddenMarkovModel.ensure(cmodel).representation("mvr")
+    assert repn.mvrs == ()
+    assert repn.model is hmm
+
+
+def test_mvr_representation_aligns_hidden_states_to_the_hmm():
+    hmm = _hmm(("c", "a", "b"))  # internal order is sorted: a, b, c
+    assert hmm.hidden_to_external == ["a", "b", "c"]
+    mvr = mvr_forbid_state(hmm, ["a"])
+    reordered = copy.copy(mvr)
+    reordered.hidden_states = ["c", "a", "b"]
+    perm = [2, 0, 1]  # reordered axis -> mvr axis
+    reordered._repn = MVR_MatVecRepn(
+        ini_array=mvr.repn.ini_array[perm],
+        upd_array=mvr.repn.upd_array[perm],
+        evl_array=mvr.repn.evl_array,
+    )
+
+    repn = ConstrainedHiddenMarkovModel(hmm, reordered).representation("mvr")
+    (aligned,) = repn.mvrs
+    assert aligned.hidden_states == ["a", "b", "c"]
+    assert np.array_equal(aligned.repn.ini_array, mvr.repn.ini_array)
+    assert np.array_equal(aligned.repn.upd_array, mvr.repn.upd_array)
+    # the user's (deep-copied) MVR keeps its own order
+    assert reordered.hidden_states == ["c", "a", "b"]
+
+
+def test_mvr_representation_calls_factories_on_each_build():
+    hmm = _hmm()
+    calls = []
+
+    @mvr_constraint_fn()
+    def visit(hidden_markov_model):
+        calls.append(hidden_markov_model)
+        return mvr_visit_state(hidden_markov_model, ["b"])
+
+    cmodel = ConstrainedHiddenMarkovModel(hmm, visit)
+    first = cmodel.representation("mvr")
+    second = cmodel.representation("mvr")
+    assert len(calls) == 2
+    assert first.mvrs[0] is not second.mvrs[0]
+    # a new HMM (as in learning) gets its own MVRs
+    other = _hmm()
+    assert cmodel.with_model(other).representation("mvr").model is other
+    assert calls[-1] is other
+
+
+def test_mvr_arrays_are_read_only():
+    hmm = _hmm()
+    repn = ConstrainedHiddenMarkovModel(
+        hmm, mvr_forbid_state(hmm, ["a"])
+    ).representation("mvr")
+    arrays = repn.mvrs[0].repn
+    for name in ("ini_array", "upd_array", "evl_array", "ini_idx", "next_idx"):
+        array = getattr(arrays, name)
+        assert not array.flags.writeable, name
+        with pytest.raises(ValueError):
+            array[...] = 0
+    for restored in (copy.deepcopy(arrays), pickle.loads(pickle.dumps(arrays))):
+        assert not restored.ini_array.flags.writeable
+        assert not restored.upd_array.flags.writeable
+
+
+def test_mvr_inhom_arrays_are_read_only():
+    hmm = _hmm(("a", "b"))
+    mvr = InhomMVR(
+        hidden_states=["a", "b"],
+        mediation_states=[[0], [0]],
+        ini={"a": 0, "b": 0},
+        upd=[{(0, "a"): 0, (0, "b"): 0}],
+        evl=[{0: True}, {0: True}],
+    )
+    arrays = ConstrainedHiddenMarkovModel(hmm, mvr).representation("mvr").mvrs[0].repn
+    assert all(not a.flags.writeable for a in arrays.upd_array)
+    assert all(not a.flags.writeable for a in arrays.evl_array)
+    assert all(not a.flags.writeable for a in arrays.next_idx)
+
+
+def test_mvr_matvec_repn_copies_its_inputs():
+    ini = np.array([[1.0, 0.0], [0.0, 1.0]])
+    upd = np.zeros((2, 2, 2))
+    upd[:, 0, 0] = upd[:, 1, 1] = 1.0
+    evl = np.array([1.0, 0.0])
+    arrays = MVR_MatVecRepn(ini_array=ini, upd_array=upd, evl_array=evl)
+    ini[0, 0] = 0.0  # the caller's array stays writeable and is not shared
+    assert arrays.ini_array[0, 0] == 1.0
+
+
+def test_mvr_representation_is_not_changed_by_mvr_timerange():
+    hmm = _hmm()
+    repn = ConstrainedHiddenMarkovModel(
+        hmm, mvr_forbid_state(hmm, ["a"])
+    ).representation("mvr")
+    windowed = mvr_timerange(repn.mvrs[0], [1, 2])
+    assert windowed.time_range == [1, 2]
+    assert repn.mvrs[0].time_range is None
+
+
+def test_mvr_other_families_raise():
+    hmm = _hmm()
+    cmodel = ConstrainedHiddenMarkovModel(hmm, OracleConstraint(func=lambda seq: True))
+    with pytest.raises(InvalidInputError) as excinfo:
+        cmodel.representation("mvr")
+    assert "('mvr', 'mvr')" in str(excinfo.value)
 
 
 # ---------------------------------------------------------------------

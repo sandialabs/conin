@@ -10,16 +10,29 @@ import copy
 
 import torch
 
+from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.constraints.mvr import mvr_sattime
 from conin.exceptions import InvalidInputError
 
 from conin.representations.mvr.kernels import NEG_INF, _model_parts
-from conin.constraints.mvr import mvr_sattime
 from conin.queries.mvr.sat_time import _resolve_target, sat_time_torch_mvr_chmm
 from .ffbs import _draw, _positive_int, ffbs_torch_mvr_chmm
 
 # ======================================================================
 # Stopped sampling
 # ======================================================================
+
+
+def _with_time_range(mvr, time_range):
+    """Return a shallow copy of ``mvr`` with another time range; ``mvr`` is unchanged.
+
+    Unlike ``mvr_timerange(..., inplace=False)``, this neither rebuilds nor
+    prunes the MVR, so the mediation axes (and the sampling draws) stay those
+    of ``mvr``.  The copy shares the read-only array representation.
+    """
+    result = copy.copy(mvr)
+    result._time_range = None if time_range is None else list(time_range)
+    return result
 
 
 def stopped_sampling_torch_mvr_chmm(
@@ -38,7 +51,7 @@ def stopped_sampling_torch_mvr_chmm(
     """Sample hidden-state prefixes that stop when a target MVR is first satisfied.
 
     Draws the satisfaction time ``tau`` of the ``target`` from its posterior distribution
-    using ``sat_time_mvr``, then samples a path from ``P(x[0..tau] | observed, all
+    using ``sat_time_torch_mvr_chmm``, then samples a path from ``P(x[0..tau] | observed, all
     constraints, target first accepts at tau)``. The conditioning uses the whole
     observation set and every constraint over the whole horizon, so an observation
     later than ``tau`` still informs the sampled path.
@@ -47,14 +60,15 @@ def stopped_sampling_torch_mvr_chmm(
 
     Parameters
     ----------
-    model : MVR_CHMM
-        Constrained model carrying a hidden Markov model and MVR constraints. It is
-        not modified.
+    model : ConstrainedHiddenMarkovModel or HiddenMarkovModel
+        Hidden Markov model with ``"mvr"`` constraints (a bare HMM has none). It
+        is not modified, and neither are its MVRs.  The MVRs come from its
+        ``"mvr"`` representation.
     observed : list or dict
         Observed sequence in external observed-state labels, either a dense list
         timed by position or a sparse ``{time: label}`` map.
     target : int or str
-        Index into ``model.constraints`` (negative allowed) or an MVR ``name``.
+        Index into the model's constraints (negative allowed) or an MVR ``name``.
     num_samples : int, optional
         Number of prefixes to draw.
     min_length : int, optional
@@ -86,6 +100,7 @@ def stopped_sampling_torch_mvr_chmm(
     if min_length is not None:
         _positive_int("min_length", min_length)
 
+    model = ConstrainedHiddenMarkovModel.ensure(model)
     _, constraints = _model_parts(model)
     index = _resolve_target(constraints, target)
 
@@ -94,15 +109,14 @@ def stopped_sampling_torch_mvr_chmm(
 
     if not prefix_free.prefix:
         # mvr_sattime sets the tag but, like every operator, drops the window.
-        prefix_free = mvr_sattime(constraints[index])
-        prefix_free._time_range = constraints[index]._time_range
+        prefix_free = _with_time_range(
+            mvr_sattime(constraints[index]), constraints[index].time_range
+        )
 
-    constraints = list(constraints)
     constraints[index] = prefix_free
 
-    # CHMM stores the constraint list by reference, so hand it a fresh one.
-    model = copy.copy(model)
-    model.constraints = constraints
+    # The constraints are now built MVRs, so the derived models call no factories.
+    model = model.with_constraints(constraints)
 
     times, _, log_weights = sat_time_torch_mvr_chmm(
         model,
@@ -139,14 +153,11 @@ def stopped_sampling_torch_mvr_chmm(
 
     # Narrowing to [a, tau] puts the target's evl exactly at tau and drops it after.
     for tau, rows in sorted(rows_by_time.items()):
-        narrowed = copy.copy(prefix_free)
-        narrowed._time_range = [int(times[0]), int(tau)]
-
         sub_constraints = list(constraints)
-        sub_constraints[index] = narrowed
-
-        sub_model = copy.copy(model)
-        sub_model.constraints = sub_constraints
+        sub_constraints[index] = _with_time_range(
+            prefix_free, [int(times[0]), int(tau)]
+        )
+        sub_model = model.with_constraints(sub_constraints)
 
         sampled = ffbs_torch_mvr_chmm(
             sub_model,

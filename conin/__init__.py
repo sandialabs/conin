@@ -14,7 +14,6 @@ from .exceptions import InvalidInputError, InsufficientSolutionsError
 from . import __about__
 from . import graphical_models
 from . import constrained_models
-from . import hidden_markov_model
 from .inference import map_query
 
 # import os.path

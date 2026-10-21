@@ -5,8 +5,9 @@ import math
 import numpy as np
 import torch
 
-from conin.exceptions import InvalidInputError
+from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.constraints.mvr import InhomMVR
+from conin.exceptions import InvalidInputError
 
 NEG_INF = float("-inf")
 
@@ -145,11 +146,13 @@ def _build_mvr_factor_info(
     a, b = _validate_time_range(mvr, T)
     is_inhom = isinstance(mvr, InhomMVR)
 
+    # The MVR arrays are read-only; torch.as_tensor warns on (and would share)
+    # a non-writable array, so it gets a copy.
     def to_idx(array):
-        return torch.as_tensor(array, dtype=torch.long, device=device)
+        return torch.as_tensor(np.array(array), dtype=torch.long, device=device)
 
     def to_evl(evl_array):
-        evl = torch.as_tensor(evl_array, dtype=dtype, device=device)
+        evl = torch.as_tensor(np.array(evl_array), dtype=dtype, device=device)
         return torch.log(evl) if log else evl
 
     if is_inhom:
@@ -206,17 +209,21 @@ def _build_static_context(constraints, K, T, *, log, dtype, device):
 
 
 def _model_parts(model):
-    """Pull the hidden Markov model and the MVR constraints out of an MVR_CHMM."""
-    hmm = getattr(model, "hidden_markov_model", None) or getattr(model, "hmm", None)
+    """Return the HMM and the aligned MVRs of a constrained HMM.
 
-    if hmm is None:
-        raise InvalidInputError("Missing hidden_markov_model from MVR_CHMM")
+    ``model`` is a ``ConstrainedHiddenMarkovModel`` (or a bare
+    ``HiddenMarkovModel``, read as one with no constraints).  The MVRs come
+    from its ``"mvr"`` representation, so other constraint families raise
+    ``InvalidInputError``.
+    """
+    repn = ConstrainedHiddenMarkovModel.ensure(model).representation("mvr")
 
-    return hmm, list(getattr(model, "constraints", None) or [])
+    return repn.model, list(repn.mvrs)
 
 
 def _build_sumprod_ctx(
-    model,
+    hmm,
+    constraints,
     observed,
     *,
     time_horizon=None,
@@ -224,8 +231,10 @@ def _build_sumprod_ctx(
     device="cpu",
     static=None,
 ):
-    """Assemble the context the log-space sum-product steps read."""
-    hmm, constraints = _model_parts(model)
+    """Assemble the context the log-space sum-product steps read.
+
+    ``constraints`` are MVRs aligned to ``hmm`` (see ``_model_parts``).
+    """
 
     # Both forms kept: _sum_step contracts against the probability-space matrix,
     # while _maxplus_step and the transition posteriors want the log.

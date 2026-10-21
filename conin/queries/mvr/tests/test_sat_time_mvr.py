@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from conin.exceptions import InvalidInputError
-from conin.hidden_markov_model.chmm_mvr import MVR_CHMM
+from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.constraints.mvr import HomMVR, InhomMVR
 
 # importorskip only catches ImportError; a broken torch install raises OSError.
@@ -105,7 +105,7 @@ def assert_matches_brute_force(hmm, mvrs, target, observed, T=None):
     if T is None:
         T = len(observed)
 
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=mvrs)
+    model = ConstrainedHiddenMarkovModel(hmm, mvrs)
     expected = brute_force_sat_time(hmm, mvrs, target, observed, T)
 
     if expected.sum() <= 0.0:
@@ -239,7 +239,7 @@ def test_sat_time_target_by_index_name_and_negative_index_agree(hmm, observed):
         hidden_states=hmm.hidden_states, target_state="A", name="reach_A"
     )
 
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[forbid, reach])
+    model = ConstrainedHiddenMarkovModel(hmm, [forbid, reach])
 
     by_index = sat_time_torch_mvr_chmm(model, observed, target=1)
     by_negative = sat_time_torch_mvr_chmm(model, observed, target=-1)
@@ -258,7 +258,7 @@ def test_sat_time_target_by_index_name_and_negative_index_agree(hmm, observed):
 def test_sat_time_raises_when_target_is_never_satisfied(hmm, observed):
     # No hidden state is named "Z", so the target can never accept.
     unreachable = make_reach_mvr(hidden_states=hmm.hidden_states, target_state="Z")
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=[unreachable])
+    model = ConstrainedHiddenMarkovModel(hmm, unreachable)
 
     with pytest.raises(InvalidInputError, match="No feasible path"):
         sat_time_torch_mvr_chmm(model, observed, target=0)
@@ -283,7 +283,7 @@ def test_sat_time_rejects_bad_target(hmm, observed, constraints, target, match):
         )
         for _ in constraints
     ]
-    model = MVR_CHMM(hidden_markov_model=hmm, constraints=mvrs)
+    model = ConstrainedHiddenMarkovModel(hmm, mvrs)
 
     with pytest.raises(InvalidInputError, match=match):
         sat_time_torch_mvr_chmm(model, observed, target=target)

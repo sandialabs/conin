@@ -43,8 +43,10 @@ class ConstrainedHiddenMarkovModel(ConstrainedGraphicalModel):
       unrolled model (``ip_formulation="markov_network"``);
     * ``"pyomo_network_flow"`` (no constraints, ``"pyomo"`` or
       ``"algebraic"``): the network-flow integer program;
-    * ``"mvr"`` (``"mvr"``): the built MVRs, aligned to the HMM
-      (``representation("mvr").mvrs``).
+    * ``"mvr"`` (no constraints or ``"mvr"``): the built MVRs, aligned to
+      the HMM (``representation("mvr").mvrs``), used by the torch MVR
+      algorithms (:mod:`conin.inference.mvr`, :mod:`conin.learning.mvr`,
+      :mod:`conin.sampling.mvr`, :mod:`conin.queries.mvr`).
     """
 
     __slots__ = ()
