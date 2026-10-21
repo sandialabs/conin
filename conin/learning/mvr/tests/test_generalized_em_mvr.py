@@ -15,19 +15,19 @@ try:
 except (ImportError, OSError) as exc:
     pytest.skip(f"torch not available: {exc}", allow_module_level=True)
 
-from conin.hidden_markov_model.learning.baum_welch_mvr import (  # noqa: E402
+from conin.learning.mvr.baum_welch import (  # noqa: E402
     _rebuild_hmm,
 )
-from conin.hidden_markov_model.learning.generalized_em_mvr import (  # noqa: E402
+from conin.learning.mvr.generalized_em import (  # noqa: E402
     _chain_gradient,
     _constraint_statistics,
     generalized_em_mvr_chmm,
 )
-from conin.hidden_markov_model.mvr_common import (  # noqa: E402
+from conin.representations.mvr.kernels import (  # noqa: E402
     _build_sumprod_ctx,
     _hmm_to_torch,
 )
-from .test_viterbi_mvr import (  # noqa: E402
+from conin.inference.mvr.tests.test_viterbi_mvr import (  # noqa: E402
     as_obs_map,
     make_end_state_inhom_mvr,
     make_random_hmm,

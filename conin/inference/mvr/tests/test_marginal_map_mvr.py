@@ -15,15 +15,15 @@ try:
 except (ImportError, OSError) as exc:
     pytest.skip(f"torch not available: {exc}", allow_module_level=True)
 
-from conin.hidden_markov_model.inference.marginal_map_mvr import (  # noqa: E402
+from conin.inference.mvr.marginal_map import (  # noqa: E402
     marginal_map_torch_mvr_chmm,
 )
-from conin.hidden_markov_model.inference.viterbi_mvr import (  # noqa: E402
+from conin.inference.mvr.viterbi import (  # noqa: E402
     viterbi_torch_mvr_chmm,
 )
 
-from .test_sat_time_mvr import make_reach_mvr, mvr_window  # noqa: E402
-from .test_viterbi_mvr import (  # noqa: E402
+from conin.queries.mvr.tests.test_sat_time_mvr import make_reach_mvr, mvr_window  # noqa: E402
+from conin.inference.mvr.tests.test_viterbi_mvr import (  # noqa: E402
     as_obs_map,
     make_end_state_inhom_mvr,
     make_forbid_mvr,
@@ -344,7 +344,7 @@ def test_marginal_map_differs_from_restricting_viterbi(hmm, observed):
 
 
 def test_bare_gap_matches_step_by_step_propagation(hmm):
-    from conin.hidden_markov_model.inference import marginal_map_mvr as mod
+    from conin.inference.mvr import marginal_map as mod
 
     sparse = {0: "o0", 5: "o1"}
     model = MVR_CHMM(hidden_markov_model=hmm, constraints=[])
@@ -442,7 +442,7 @@ def test_marginal_map_raises_on_infeasible_constraints(hmm, observed):
 
 
 def test_gap_operator_allocation_failure_names_the_cause(hmm, observed):
-    from conin.hidden_markov_model.inference import marginal_map_mvr as mod
+    from conin.inference.mvr import marginal_map as mod
 
     mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="A")
     model = MVR_CHMM(hidden_markov_model=hmm, constraints=[mvr])
@@ -459,7 +459,7 @@ def test_gap_operator_allocation_failure_names_the_cause(hmm, observed):
 
 
 def test_gap_operator_propagates_non_allocation_errors(hmm, observed):
-    from conin.hidden_markov_model.inference import marginal_map_mvr as mod
+    from conin.inference.mvr import marginal_map as mod
 
     mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="A")
     model = MVR_CHMM(hidden_markov_model=hmm, constraints=[mvr])

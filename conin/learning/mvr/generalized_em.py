@@ -11,7 +11,7 @@ import torch
 
 from conin.exceptions import InvalidInputError
 
-from ..mvr_common import (
+from conin.representations.mvr.kernels import (
     ACCUM_DTYPE,
     _build_static_context,
     _build_sumprod_ctx,
@@ -20,7 +20,7 @@ from ..mvr_common import (
     _model_parts,
     _resolve_horizon,
 )
-from .baum_welch_mvr import (
+from .baum_welch import (
     _e_step_counts,
     _normalize_on_support,
     _rebuild_hmm,

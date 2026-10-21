@@ -15,7 +15,7 @@ try:
 except (ImportError, OSError) as exc:
     pytest.skip(f"torch not available: {exc}", allow_module_level=True)
 
-from conin.hidden_markov_model.inference.viterbi_mvr import (  # noqa: E402
+from conin.inference.mvr.viterbi import (  # noqa: E402
     viterbi_torch_mvr_chmm,
 )
 

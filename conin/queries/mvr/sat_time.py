@@ -13,7 +13,7 @@ import torch
 
 from conin.exceptions import InvalidInputError
 
-from ..mvr_common import (
+from conin.representations.mvr.kernels import (
     ACCUM_DTYPE,
     NEG_INF,
     _build_static_context,

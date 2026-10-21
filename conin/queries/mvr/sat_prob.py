@@ -10,14 +10,14 @@ import torch
 
 from conin.exceptions import InvalidInputError
 
-from ..mvr_common import (
+from conin.representations.mvr.kernels import (
     ACCUM_DTYPE,
     _build_sumprod_ctx,
     _initial_sumprod_message,
     _model_parts,
     _sum_step,
 )
-from .sat_time_mvr import _detach_target, _resolve_target, _split_on_target
+from .sat_time import _detach_target, _resolve_target, _split_on_target
 
 # ======================================================================
 # Helpers

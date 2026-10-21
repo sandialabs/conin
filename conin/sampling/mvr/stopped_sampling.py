@@ -12,10 +12,10 @@ import torch
 
 from conin.exceptions import InvalidInputError
 
-from ..mvr_common import NEG_INF, _model_parts
+from conin.representations.mvr.kernels import NEG_INF, _model_parts
 from conin.constraints.mvr import mvr_sattime
-from ..other_queries.sat_time_mvr import _resolve_target, sat_time_torch_mvr_chmm
-from .ffbs_mvr import _draw, _positive_int, ffbs_torch_mvr_chmm
+from conin.queries.mvr.sat_time import _resolve_target, sat_time_torch_mvr_chmm
+from .ffbs import _draw, _positive_int, ffbs_torch_mvr_chmm
 
 # ======================================================================
 # Stopped sampling

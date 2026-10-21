@@ -14,11 +14,11 @@ try:
 except (ImportError, OSError) as exc:
     pytest.skip(f"torch not available: {exc}", allow_module_level=True)
 
-from conin.hidden_markov_model.other_queries.sat_time_mvr import (  # noqa: E402
+from conin.queries.mvr.sat_time import (  # noqa: E402
     sat_time_torch_mvr_chmm,
 )
 
-from .test_viterbi_mvr import (  # noqa: E402
+from conin.inference.mvr.tests.test_viterbi_mvr import (  # noqa: E402
     as_obs_map,
     make_end_state_inhom_mvr,
     make_forbid_mvr,
