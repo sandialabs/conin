@@ -248,10 +248,7 @@ def _log_bn(bn, assignment):
 def _log_dbn(dbn, assignment):
     stop = dbn_horizon(dbn, assignment)
     if stop == 0:
-        raise InvalidInputError(
-            "A DBN assignment must cover at least the times 0..1 "
-            "(create_bn_from_dbn needs start < stop)"
-        )
+        raise InvalidInputError("A DBN assignment must cover at least the times 0..1")
     bn = create_bn_from_dbn(dbn=dbn, start=0, stop=stop)
     return _log_bn(bn, assignment)
 

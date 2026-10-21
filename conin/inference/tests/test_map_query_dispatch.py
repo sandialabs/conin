@@ -611,3 +611,39 @@ def test_dbn_stop_defaults_to_one(method, solver):
     explicit = map_query(dbn, method=method, stop=1, **solver)
     assert results.solution.states == explicit.solution.states
     assert {t for _, t in results.solution.states} == {0, 1}
+
+
+@pytest.mark.parametrize("method,solver", _hmm_method_params())
+@pytest.mark.parametrize("observation", ["o0", "o1"])
+@pytest.mark.parametrize("dict_evidence", [False, True])
+def test_hmm_with_one_observation(method, solver, observation, dict_evidence):
+    # integer_program, toulbar2 and variable_elimination raised a bare
+    # AssertionError from create_bn_from_dbn (stop == start == 0).
+    hmm = hex_.create_hmm1()
+    evidence = {0: observation} if dict_evidence else [observation]
+    results = map_query(hmm, method=method, evidence=evidence, **solver)
+    expected = viterbi(observed=[observation], hmm=hmm).solution.states
+    if dict_evidence:
+        expected = dict(enumerate(expected))
+    assert results.solution.states == expected
+
+
+@pytest.mark.parametrize(
+    "method,solver",
+    [p for p in _hmm_method_params() if p.values[0] not in ("viterbi", "a_star")],
+)
+def test_dbn_with_one_time_step(method, solver):
+    dbn = dex.simple1_DDBN_conin().pgm
+    results = map_query(dbn, method=method, stop=0, **solver)
+    assert sorted(results.solution.states) == [("A", 0), ("B", 0)]
+    # P(A0 = 0) = 0.9, P(B0 = 1 | A0 = 0) = 0.8
+    assert results.solution.states == {("A", 0): 0, ("B", 0): 1}
+
+
+@pytest.mark.parametrize("kind", ["pyomo", "toulbar2", "factor"])
+@pytest.mark.parametrize("model", ["dbn", "hmm"])
+def test_unrolling_from_a_later_start_is_refused(kind, model):
+    # create_bn_from_dbn(start > 0) failed with an AttributeError for every
+    # DBN with a transition CPD.
+    with pytest.raises(InvalidInputError, match="only be unrolled from start=0"):
+        _cmodel(model).representation(kind, start=1, stop=3)
