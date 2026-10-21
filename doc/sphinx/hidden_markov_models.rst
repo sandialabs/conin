@@ -99,15 +99,17 @@ used by constraint functions and MVR factories is passed to the constructor
 with ``data=``.
 
 Backend representations are built by ``representation(kind)``; each call
-builds a new one. HMMs register five kinds: ``"oracle"`` (for no
-constraints or oracle constraints), ``"pyomo"`` (the integer program of the
+builds a new one. HMMs register these kinds: ``"oracle"`` (feasibility checks
+for A* and rejection sampling; no constraints or oracle constraints),
+``"recursive"`` (for recursive A*; no constraints or recursive constraints),
+``"factor"`` (variable elimination; no constraints, factor-oracle or algebraic
+constraints), ``"pyomo"`` (the integer program of the
 unrolled model; no constraints, Pyomo or algebraic constraints),
 ``"pyomo_network_flow"`` (the network-flow integer program; no constraints,
 Pyomo or algebraic constraints), ``"toulbar2"`` (the cost function network of
 the unrolled model; no constraints, Toulbar2 or algebraic constraints) and
 ``"mvr"`` (no constraints or MVR constraints; the built MVRs are
-``chmm.representation("mvr").mvrs``). Factor-oracle constraints have no HMM
-representation yet; ``map_query`` consumes them directly.
+``chmm.representation("mvr").mvrs``).
 
 Oracle constraints
 ^^^^^^^^^^^^^^^^^^
@@ -240,6 +242,41 @@ Oracle constraints with node scoping
 
 ``oracle_constraint_fn(nodes=...)`` creates a ``FactorOracleConstraint``, which
 ``map_query(..., method="variable_elimination")`` expands into auxiliary factors.
+
+Recursive constraints
+^^^^^^^^^^^^^^^^^^^^^
+
+A ``RecursiveConstraint`` summarises a prefix of the hidden sequence in a
+hashable state, updated one hidden state at a time. ``recursive_a_star`` merges
+prefixes with the same state, which can make it much faster than A* with an
+oracle constraint. ``create_chmm1_recursive`` expresses the condition of
+``create_chmm1_oracle`` this way:
+
+.. testcode::
+
+   from conin.constrained_models import ConstrainedHiddenMarkovModel
+   from conin.constraints import RecursiveConstraint
+   from conin.examples.hidden_markov_model import create_hmm1
+   from conin.inference.recursive import recursive_a_star
+
+   lb, ub = 10, 12
+   num_zeros = RecursiveConstraint(
+       initial=lambda h: 1 if h == "h0" else 0,
+       update=lambda n, h: n + 1 if h == "h0" else n,
+       feasible=lambda n: lb <= n <= ub,
+       feasible_partial=lambda n, t, T: n + (T - t) >= lb and n <= ub,
+   )
+   chmm = ConstrainedHiddenMarkovModel(create_hmm1(), num_zeros)
+
+   results = recursive_a_star(hmm=chmm, observed=["o0"] * 15)
+   print(results.solutions[0].hidden.count("h0"))
+
+.. testoutput::
+
+   12
+
+``map_query(..., method="a_star")`` does not use recursive constraints yet; call
+``recursive_a_star`` directly.
 
 Notes
 -----

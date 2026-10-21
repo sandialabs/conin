@@ -1,6 +1,6 @@
 from ovld import ovld
 from conin.graphical_models import HiddenMarkovModel, HMM_MatVecRepn
-from conin.hidden_markov_model.inference import viterbi
+from conin.inference.unconstrained import viterbi
 
 
 @ovld

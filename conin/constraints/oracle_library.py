@@ -391,8 +391,7 @@ def occurs_only_in_time_frame_constraint(val, *, lower_t=None, upper_t=None):
         Constraint that evaluates sequences according to this rule.
     """
 
-    @oracle_constraint_fn(name=constraint_name(), same_partial_as_func=True)
-    def constraint(states):
+    def func(states):
         seq = _as_seq(states)
         lower = 0 if lower_t is None else lower_t
         upper = len(seq) if upper_t is None else upper_t
@@ -401,7 +400,19 @@ def occurs_only_in_time_frame_constraint(val, *, lower_t=None, upper_t=None):
             seq[upper - 1 : len(seq)].count(val) == 0
         )
 
-    return constraint
+    def partial_func(T, states):
+        # The forbidden indices of the full sequence (of length T), as in
+        # func; the prefix is infeasible iff it already has val at one of them.
+        seq = _as_seq(states)
+        lower = 0 if lower_t is None else lower_t
+        upper = T if upper_t is None else upper_t
+        full = range(T)
+        forbidden = set(full[0:lower]) | set(full[upper - 1 : T])
+        return not any(seq[i] == val for i in forbidden if i < len(seq))
+
+    return OracleConstraint(
+        func=func, partial_func=partial_func, name=constraint_name()
+    )
 
 
 def occurs_at_least_once_in_time_frame_constraint(val, *, lower_t=None, upper_t=None):
@@ -430,13 +441,15 @@ def occurs_at_least_once_in_time_frame_constraint(val, *, lower_t=None, upper_t=
         return seq[lower:upper].count(val) >= 1
 
     def partial_func(T, states):
+        # The window of the full sequence (of length T), as in func; the prefix
+        # can still be completed unless the whole window is in it and has no val.
         seq = _as_seq(states)
         lower = 0 if lower_t is None else lower_t
-        upper = len(seq) if upper_t is None else upper_t
-        if len(seq) < upper or lower > len(seq):
+        upper = T if upper_t is None else upper_t
+        window = range(T)[lower:upper]
+        if any(i >= len(seq) for i in window):
             return True
-        else:
-            return func(states)
+        return any(seq[i] == val for i in window)
 
     return OracleConstraint(func=func, partial_func=partial_func)
 

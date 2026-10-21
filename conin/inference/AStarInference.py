@@ -1,7 +1,7 @@
 from ovld import ovld
 from conin.graphical_models import HiddenMarkovModel, HMM_MatVecRepn
 from conin.constrained_models import ConstrainedHiddenMarkovModel
-from conin.hidden_markov_model.inference import a_star
+from conin.inference.oracle import a_star
 
 
 @ovld

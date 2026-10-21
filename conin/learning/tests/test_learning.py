@@ -1,7 +1,8 @@
 import pytest
 
-from conin.hidden_markov_model import learning
+from conin import learning
 import math
+import munch
 
 
 def test_add_unknowns():
@@ -314,14 +315,14 @@ def test_mcem_runs_and_returns_log_prob():
     #   2. prev_log_prob != nan  -> not math.isnan(prev_log_prob)  (NaN != NaN is always True)
     #   3. math.abs(...)         -> abs(...)  (math.abs does not exist)
     #   4. app.hmm               -> app.hidden_markov_model  (HMM_MatVecRepn lacks log_probability)
-    from conin.hidden_markov_model import learning
+    from conin import learning
     import conin.examples.hidden_markov_model as tc
 
     chmm = tc.create_chmm1_oracle()
     chmm.model.set_seed(0)
     observed = chmm.generate_observed(11)
 
-    # mcem expects a ConstrainedHiddenMarkovModel as app, not the internal Oracle_CHMM.
+    # mcem expects a ConstrainedHiddenMarkovModel (or a bare HMM) as app.
     log_prob = learning.mcem(
         app=chmm,
         observed=observed,
@@ -332,3 +333,106 @@ def test_mcem_runs_and_returns_log_prob():
     )
     assert isinstance(log_prob, float)
     assert log_prob < 0  # log-probability of any sequence is negative
+
+
+def _mcem_spy(monkeypatch):
+    """Record what mcem samples, scores and trains on (and from which HMM)."""
+    import sys
+
+    # conin.learning.oracle.mcem is also the name of the function.
+    mcem_module = sys.modules["conin.learning.oracle.mcem"]
+    from conin.constrained_models import ConstrainedHiddenMarkovModel
+
+    record = munch.Munch(sampled_from=[], sampled=[], scored=[], trained=[])
+    orig_generate = ConstrainedHiddenMarkovModel.generate_hidden
+
+    def generate_hidden(self, time_steps):
+        hidden = orig_generate(self, time_steps)
+        record.sampled_from.append(self.model)
+        record.sampled.append(hidden)
+        return hidden
+
+    monkeypatch.setattr(
+        ConstrainedHiddenMarkovModel, "generate_hidden", generate_hidden
+    )
+
+    orig_supervised = mcem_module.supervised_learning
+
+    def supervised_learning(*, simulations, **kwargs):
+        record.trained.append([sim.hidden for sim in simulations])
+        hmm = orig_supervised(simulations=simulations, **kwargs)
+        record.fitted = getattr(record, "fitted", []) + [hmm]
+        return hmm
+
+    monkeypatch.setattr(mcem_module, "supervised_learning", supervised_learning)
+    return record
+
+
+def test_mcem_samples_from_the_reestimated_hmm(monkeypatch):
+    # Regression (RESTRUCTURE_PLAN §9, PR 4c): mcem re-estimated the HMM but
+    # kept sampling from the original one (app.generate_hidden).
+    import conin.examples.hidden_markov_model as tc
+
+    record = _mcem_spy(monkeypatch)
+    chmm = tc.create_chmm1_oracle()
+    chmm.model.set_seed(0)
+    observed = ["o0"] * 11
+    learning.mcem(
+        app=chmm,
+        observed=observed,
+        hidden_states=["h0", "h1"],
+        observable_states=["o0", "o1"],
+        max_iterations=3,
+        samples_per_iteration=2,
+        convergence_tolerance=-1,  # run every iteration
+    )
+    # 2 samples per iteration; iteration k > 0 samples from the HMM fitted in
+    # iteration k - 1, not from the original one.
+    assert record.sampled_from[0] is chmm.model and record.sampled_from[1] is chmm.model
+    n_iter = len(record.trained)
+    assert n_iter >= 2
+    for k in range(1, n_iter):
+        assert record.sampled_from[2 * k] is record.fitted[k - 1]
+        assert record.sampled_from[2 * k + 1] is record.fitted[k - 1]
+    # The user's model is not changed.
+    assert chmm.model is not record.fitted[-1]
+
+
+def test_mcem_trains_on_the_samples_it_scores(monkeypatch):
+    # Regression (RESTRUCTURE_PLAN §9, PR 4c): mcem called generate_hidden
+    # twice per sample, scoring one sequence and training on another.
+    import conin.examples.hidden_markov_model as tc
+
+    record = _mcem_spy(monkeypatch)
+    chmm = tc.create_chmm1_oracle()
+    chmm.model.set_seed(1)
+    observed = ["o0", "o1"] * 6
+    log_prob = learning.mcem(
+        app=chmm,
+        observed=observed,
+        hidden_states=["h0", "h1"],
+        observable_states=["o0", "o1"],
+        max_iterations=1,
+        samples_per_iteration=3,
+    )
+    # One draw per sample, and those are the training sequences.
+    assert len(record.sampled) == 3
+    assert record.trained == [record.sampled]
+    expected = sum(chmm.model.log_probability(observed, h) for h in record.sampled) / 3
+    assert log_prob == pytest.approx(expected)
+
+
+def test_mcem_accepts_a_bare_hmm():
+    import conin.examples.hidden_markov_model as tc
+
+    hmm = tc.create_hmm1()
+    hmm.set_seed(2)
+    log_prob = learning.mcem(
+        app=hmm,
+        observed=["o0"] * 5,
+        hidden_states=["h0", "h1"],
+        observable_states=["o0", "o1"],
+        max_iterations=2,
+        samples_per_iteration=2,
+    )
+    assert log_prob < 0

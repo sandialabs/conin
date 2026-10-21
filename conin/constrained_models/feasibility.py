@@ -11,7 +11,9 @@ is a direct evaluation are supported:
   variable elimination, with
   :func:`~conin.constraints.algebraic.create_oracle_constraints_from_algebraic`;
   needs smoek) and evaluated like a factor oracle;
-* ``"mvr"``: each MVR is run along the hidden sequence (HMMs only).
+* ``"mvr"``: each MVR is run along the hidden sequence (HMMs only);
+* ``"recursive"``: each recursive constraint is run along the hidden sequence
+  (HMMs only).
 
 ``"pyomo"`` and ``"toulbar2"`` constraint functions can add their own
 variables and constraints to the backend model, so checking them is a
@@ -110,7 +112,8 @@ def check_constraints(
         Passed to constraint functions that take a second argument (and to
         callable node scopes).
     hidden : list, optional
-        The hidden-state sequence (HMMs; used by ``"mvr"`` constraints).
+        The hidden-state sequence (HMMs; used by ``"mvr"`` and
+        ``"recursive"`` constraints).
 
     Returns
     -------
@@ -137,7 +140,7 @@ def check_constraints(
         )
 
     if family == "oracle":
-        return all(_call(c, assignment, data, c.num_args) for c in constraints)
+        return all(oracle_accepts(c, assignment, data) for c in constraints)
 
     if family == "factor_oracle":
         return all(
@@ -153,15 +156,37 @@ def check_constraints(
     if family == "mvr":
         return all(mvr_accepts(mvr, hidden) for mvr in build_mvrs(cmodel))
 
+    if family == "recursive":
+        return all(recursive_accepts(c, hidden) for c in constraints)
+
     raise NotImplementedError(  # pragma: no cover
         f"Feasibility checks are not supported for {family!r} constraints"
     )
 
 
-def _call(constraint, assignment, data, num_args):
-    if num_args == 2:
+def oracle_accepts(constraint, assignment, data):
+    """Evaluate an ``OracleConstraint`` on a total assignment.
+
+    The predicate is called as ``func(assignment, data)`` if it takes two
+    arguments, else as ``func(assignment)``.
+    """
+    if constraint.num_args == 2:
         return bool(constraint(assignment, data))
     return bool(constraint(assignment))
+
+
+def recursive_accepts(constraint, hidden):
+    """Return whether a ``RecursiveConstraint`` accepts a total hidden sequence.
+
+    The state is ``initial(hidden[0])``, then ``update(state, h)`` for each
+    later hidden state, and the sequence is accepted iff ``feasible(state)``.
+    Like recursive A*, this checks only ``feasible`` (``feasible_partial`` is a
+    pruning test).
+    """
+    state = constraint.initial(hidden[0])
+    for h in hidden[1:]:
+        state = constraint.update(state, h)
+    return bool(constraint.feasible(state))
 
 
 def _check_factor_oracle(constraint, assignment, data):

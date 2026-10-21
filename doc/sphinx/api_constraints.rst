@@ -24,6 +24,11 @@ Constraint classes
    :undoc-members:
    :show-inheritance:
 
+.. autoclass:: conin.constraints.RecursiveConstraint
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 .. autoclass:: conin.constraints.PyomoConstraint
    :members:
    :undoc-members:

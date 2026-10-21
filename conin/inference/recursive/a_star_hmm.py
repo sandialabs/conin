@@ -3,6 +3,8 @@ import time
 import numpy as np
 import munch
 
+from conin.constrained_models import ConstrainedHiddenMarkovModel
+
 
 class Recursive_Heap_Item:
     __slots__ = [
@@ -140,31 +142,50 @@ class Unique_Heapq:
 
 def recursive_a_star(
     *,
-    hmm_app,
+    hmm,
     observed,
     num_solutions=1,
     debug=False,
     max_iterations=None,
     max_time=None,
 ):
-    """
-    This is a tailored version of the A* algorithm -- copied and modified
-    from conin.hmm.inference.viterbi.
+    """A* search for the most likely hidden states under recursive constraints.
 
-    Paramters:
-        hmm_app: HMM_Application
-        observed: List of observed states
-        num_solutions: Number of solutions we wish to find
-        debug: Whether to have additional printing
-        max_iterations: Maximum number of iterations
-        max_time: Maximum time of algorithm
+    A tailored version of :func:`conin.inference.oracle.a_star`: search nodes
+    are ``(last hidden state, prefix length, constraint state)``, so prefixes
+    with the same constraint state are merged.
+
+    Parameters
+    ----------
+    hmm : ConstrainedHiddenMarkovModel or HiddenMarkovModel
+        The model.  Its constraints must be :class:`~conin.constraints.RecursiveConstraint`
+        objects (or none); other families raise ``InvalidInputError``.
+    observed : list
+        Observed labels.
+    num_solutions : int, optional
+        Number of solutions to find.
+    debug : bool, optional
+        Print progress every 100 iterations.
+    max_iterations : int, optional
+        Maximum number of iterations.
+    max_time : float, optional
+        Maximum time in seconds.
+
+    Returns
+    -------
+    munch.Munch
+        ``observed``, ``solutions`` (each with ``hidden`` and
+        ``log_likelihood``), ``termination_condition``,
+        ``knowledge_state_times`` and ``objective_values``.
     """
     start_time = time.time()
     knowledge_state_times_output = []
     obj_vals = []
 
     # Initalize variables
-    hmm = hmm_app.hmm
+    cmodel = ConstrainedHiddenMarkovModel.ensure(hmm)
+    constraint = cmodel.representation("recursive")
+    hmm = cmodel.model
     time_steps = len(observed)
 
     start_probs = hmm.get_start_probs()
@@ -216,11 +237,9 @@ def recursive_a_star(
             and (emission_probs[(h, observed[0])] > 0)
         ):
             gScore = -np.log(start_probs[h]) - log_emission_probs[(h, observed[0])]
-            constraint_data = hmm_app.initialize_constraint_data(h)
+            constraint_data = constraint.initial(h)
 
-            if hmm_app.constraint_data_feasible_partial(
-                constraint_data=constraint_data, t=1, time_steps=time_steps
-            ):
+            if constraint.feasible_partial(constraint_data, 1, time_steps):
                 item = Recursive_Heap_Item(
                     priority=gScore + V[(0, h)],
                     last_element=h,
@@ -252,14 +271,14 @@ def recursive_a_star(
             seq = get_seq.pop(item)
 
             if t == time_steps:
-                if hmm_app.constraint_data_feasible(constraint_data):
+                if constraint.feasible(constraint_data):
                     output.append(munch.Munch(hidden=list(seq), log_likelihood=-val))
                     obj_vals.append(-val)
                     if len(output) == num_solutions:
                         termination_condition = "ok"
                         break
-                    else:
-                        n_infeasible += 1
+                else:
+                    n_infeasible += 1
 
             else:
                 obs = observed[t]
@@ -269,13 +288,9 @@ def recursive_a_star(
                         or transition_probs.get((h1, h2), 0.0) == 0.0
                     ):
                         continue
-                    new_constraint_data = hmm_app.update_constraint_data(
-                        hidden_state=h2, constraint_data=constraint_data
-                    )
-                    if hmm_app.constraint_data_feasible_partial(
-                        constraint_data=constraint_data,
-                        t=t,
-                        time_steps=time_steps,
+                    new_constraint_data = constraint.update(constraint_data, h2)
+                    if constraint.feasible_partial(
+                        new_constraint_data, t + 1, time_steps
                     ):
                         new_gScore = (
                             gScore

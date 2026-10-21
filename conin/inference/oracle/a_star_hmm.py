@@ -3,7 +3,8 @@ import numpy as np
 import munch
 import time
 
-from conin.graphical_models import HiddenMarkovModel, HMM_MatVecRepn
+from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.graphical_models import HMM_MatVecRepn
 
 from dataclasses import dataclass, field
 from typing import Any
@@ -23,7 +24,7 @@ class HeapItem:
 def a_star_(
     *,
     observed,
-    chmm=None,
+    oracle=None,
     hmm=None,
     num_solutions=1,
     max_iterations=None,
@@ -36,7 +37,13 @@ def a_star_(
     This works for constrained hmms or hmm where we require multiple solutions
 
     Parameters:
-        observed (list): The states we perform inference on
+        observed (list): The internal indices of the observed states
+        oracle (OracleHMMRepresentation, optional): The feasibility checks
+            (``representation("oracle")`` of a constrained HMM). A prefix is
+            extended by a state only if ``oracle.partial_is_feasible`` accepts
+            the extended prefix, and a full sequence is a solution only if
+            ``oracle.is_feasible`` accepts it.
+        hmm (HMM_MatVecRepn): The numeric HMM (``oracle.hmm`` if omitted)
 
     Raises:
         InsufficientSolutionsError: Not enough solutions given by algorithm
@@ -46,8 +53,8 @@ def a_star_(
     # Initalize variables
     time_steps = len(observed)
 
-    if chmm:  # CHMM
-        hmm = chmm.hmm  # HMM_MatVecRepn or HiddenMarkovModel
+    if oracle is not None and hmm is None:
+        hmm = oracle.hmm  # HMM_MatVecRepn
 
     # Precompute log probabilities for emission and transmission matrices
     log_emission_mat = {
@@ -92,6 +99,10 @@ def a_star_(
     # Initialize the heap with the starting states
     for h in hmm.hidden_states:
         tempGScore = np.inf
+        if oracle is not None and not oracle.partial_is_feasible(
+            T=time_steps, seq=(h,)
+        ):
+            continue
         if (hmm.start_vec[h] > 0) and (hmm.emission_mat[h][observed[0]] > 0):
             tempGScore = -np.log(hmm.start_vec[h]) - log_emission_mat[h, observed[0]]
             # Use tuple here b/c Python doesn't hash a list
@@ -108,7 +119,7 @@ def a_star_(
         t = len(seq)
 
         if t == time_steps:
-            if chmm is None or chmm.is_feasible(seq):
+            if oracle is None or oracle.is_feasible(seq):
                 output.append(munch.Munch(states=seq, hidden=seq, log_likelihood=-val))
                 if len(output) == num_solutions:
                     termination_condition = "ok"
@@ -126,20 +137,21 @@ def a_star_(
                     or hmm.transition_mat[h1][h2] == 0.0
                 ):
                     continue
-                if (
-                    chmm is None or chmm.partial_is_feasible(T=time_steps, seq=seq)
-                ) or (isinstance(hmm, HMM_MatVecRepn)):
-                    tempGScore = (
-                        currentGScore
-                        - log_transition_mat[h1, h2]
-                        - log_emission_mat[h2, obs]
-                    )
-                    newSeq = seq + (h2,)
-                    gScore[newSeq] = tempGScore
-                    heapq.heappush(
-                        openSet,
-                        HeapItem(priority=tempGScore + V[t][h2], seq=newSeq),
-                    )
+                newSeq = seq + (h2,)
+                if oracle is not None and not oracle.partial_is_feasible(
+                    T=time_steps, seq=newSeq
+                ):
+                    continue
+                tempGScore = (
+                    currentGScore
+                    - log_transition_mat[h1, h2]
+                    - log_emission_mat[h2, obs]
+                )
+                gScore[newSeq] = tempGScore
+                heapq.heappush(
+                    openSet,
+                    HeapItem(priority=tempGScore + V[t][h2], seq=newSeq),
+                )
 
         iteration += 1
         if (max_iterations is not None) and (iteration >= max_iterations):
@@ -184,20 +196,39 @@ def a_star(
     hmm,
     **kwargs,
 ):
+    """A* search for the most likely hidden states of an (oracle-)constrained HMM.
+
+    Parameters
+    ----------
+    observed : list
+        Observed labels (internal indices for an ``HMM_MatVecRepn``).
+    hmm : HiddenMarkovModel, ConstrainedHiddenMarkovModel or HMM_MatVecRepn
+        The model. Constraints must have an ``"oracle"`` representation (no
+        constraints or ``"oracle"`` constraints); others raise
+        ``InvalidInputError``.
+    **kwargs
+        ``num_solutions``, ``max_iterations``, ``max_time``, ``debug``.
+
+    Returns
+    -------
+    munch.Munch
+        ``observed``, ``solution``, ``solutions`` (each with ``states``,
+        ``hidden`` and ``log_likelihood``) and ``termination_condition``.
+    """
     if isinstance(hmm, HMM_MatVecRepn):
         return a_star_(observed=observed, hmm=hmm, **kwargs)
 
-    if isinstance(hmm, HiddenMarkovModel):
-        chmm = None
-    else:  # ConstrainedHiddenMarkovModel
-        # Raises InvalidInputError for constraint families without an
-        # "oracle" representation (anything other than no constraints/"oracle").
-        chmm = hmm.representation("oracle")
-        hmm = hmm.model
+    cmodel = ConstrainedHiddenMarkovModel.ensure(hmm)
+    # Raises InvalidInputError for constraint families without an "oracle"
+    # representation (anything other than no constraints/"oracle").
+    oracle = cmodel.representation("oracle")
+    if not cmodel.constraints:
+        oracle = None
+    hmm = cmodel.model
 
     observed_ = [hmm.observed_to_internal[o] for o in observed]
     hmm_ = hmm.repn  # HMM_MatVecRepn instance associated with the HiddenMarkovModel
-    ans_ = a_star_(observed=observed_, chmm=chmm, hmm=hmm_, **kwargs)
+    ans_ = a_star_(observed=observed_, oracle=oracle, hmm=hmm_, **kwargs)
 
     # Convert internal indices back to external labels
     solutions = []

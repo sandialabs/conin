@@ -1,8 +1,10 @@
 import copy
 
+from munch import Munch
+
 from conin.exceptions import InvalidInputError
-from . import chmm
 from conin.constraints.mvr import BaseMVR, MVR_MatVecRepn
+from conin.graphical_models import HiddenMarkovModel
 
 
 def _align_hidden_states(mvr, hidden_to_external):
@@ -34,12 +36,27 @@ def _align_hidden_states(mvr, hidden_to_external):
     return aligned
 
 
-class MVR_CHMM(chmm.CHMM):
-    """Constrained HMM whose MVR hidden axes are aligned when built."""
+class MVR_CHMM:
+    """Constrained HMM whose MVR hidden axes are aligned when built.
+
+    Attributes
+    ----------
+    hidden_markov_model : HiddenMarkovModel
+    constraints : list of BaseMVR or None
+        The MVRs, aligned to the HMM's hidden-state order.
+    data : munch.Munch or object
+    hmm : None
+        Kept for the torch code's ``_model_parts`` (the ``CHMM`` base class,
+        removed in PR 4c, had it).
+    """
 
     def __init__(self, *, hidden_markov_model=None, constraints=None, data=None):
         if hidden_markov_model is None:
             raise InvalidInputError("hidden_markov_model is a required argument")
+        if not isinstance(hidden_markov_model, HiddenMarkovModel):
+            raise ValueError(
+                f"The hidden_markov_model argument must be a HiddenMarkovModel instance: {type(hidden_markov_model)=}"
+            )
         # Align constraints once so algorithms can index their arrays directly.
         if constraints:
             hidden_to_external = list(hidden_markov_model.hidden_to_external)
@@ -57,6 +74,7 @@ class MVR_CHMM(chmm.CHMM):
 
             constraints = aligned
 
-        super().__init__(
-            hidden_markov_model=hidden_markov_model, data=data, constraints=constraints
-        )
+        self.hmm = None
+        self.hidden_markov_model = hidden_markov_model
+        self.constraints = constraints
+        self.data = Munch() if data is None else data

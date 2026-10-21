@@ -1,15 +1,15 @@
 import pytest
 
 from conin import *
-from conin.hidden_markov_model import *
+from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.graphical_models import HiddenMarkovModel
-from conin.hidden_markov_model.chmm_oracle import Oracle_CHMM
 
+from conin.config import default_mip_solver
 import conin.examples.hidden_markov_model as tc
 import conin.constraints.oracle_library as oc
 
 
-class Test_Oracle_CHMM:
+class Test_Oracle_ConstrainedHiddenMarkovModel:
     T = 25
 
     def test_construct_model(self):
@@ -27,18 +27,18 @@ class Test_Oracle_CHMM:
             emission_probs=cpgm.model.get_emission_probs(),
             transition_probs=cpgm.model.get_transition_probs(),
         )
-        _chmm = Oracle_CHMM(hmm=_hmm.repn)
+        _repn = ConstrainedHiddenMarkovModel(_hmm).representation("oracle")
 
-        assert _chmm.hmm.start_vec == [
+        assert _repn.hmm.start_vec == [
             cpgm.model.get_start_probs()[h] for h in cpgm.model.hidden_states
         ]
 
     def test_construct_model3(self):
         pgm = tc.create_hmm0()
         constraints = [oc.all_diff_constraint]
-        chmm = Oracle_CHMM(hmm=pgm.repn, constraints=constraints)
-        assert chmm.hmm == pgm.repn
-        assert len(chmm.constraints) == 1
+        repn = ConstrainedHiddenMarkovModel(pgm, constraints).representation("oracle")
+        assert repn.hmm == pgm.repn
+        assert len(repn.constraints) == 1
 
     def test_internal_is_feasible(self):
         cpgm = tc.create_chmm1_oracle()
@@ -227,3 +227,69 @@ class Test_Oracle_CHMM:
         chmm = tc.create_chmm1_oracle()
         with pytest.raises(InvalidInputError):
             chmm.generate_observed(-1)
+
+
+# ---------------------------------------------------------------------
+# Ported from the deleted hidden_markov_model/tests/test_application_chmm.py
+# (the Num_Zeros HMMApplication), on ConstrainedHiddenMarkovModel.
+# ---------------------------------------------------------------------
+
+
+def _num_zeros_hmm():
+    p_stay, p_err = 0.6, 0.3
+    return HiddenMarkovModel(
+        start_probs={0: 0.5, 1: 0.5},
+        transition_probs={
+            (0, 0): p_stay,
+            (0, 1): 1 - p_stay,
+            (1, 0): 1 - p_stay,
+            (1, 1): p_stay,
+        },
+        emission_probs={
+            (0, 0): 1 - p_err,
+            (0, 1): p_err,
+            (1, 0): p_err,
+            (1, 1): 1 - p_err,
+        },
+    )
+
+
+def test_integer_states_oracle_sampling_and_feasibility():
+    hmm = _num_zeros_hmm()
+    chmm = ConstrainedHiddenMarkovModel(
+        hmm, oc.has_exact_number_of_occurences_constraint(val=0, count=10)
+    )
+    assert not chmm.is_feasible([0] * 9)
+    assert chmm.is_feasible([0] * 10)
+    assert not chmm.is_feasible([0] * 11)
+
+    hmm.set_seed(1)
+    for _ in range(5):
+        hidden = chmm.generate_hidden(20)
+        assert len(hidden) == 20 and hidden.count(0) == 10
+        assert chmm.is_feasible(hidden)
+        assert len(chmm.generate_observed_from_hidden(hidden)) == 20
+
+
+@pytest.mark.skipif(not default_mip_solver, reason="No mip solver installed")
+def test_network_flow_constraint_reads_the_application_data():
+    # The §9 row "HMMApplication.create_chmm("pyomo") attaches no data" is moot
+    # (HMMApplication is removed in PR 4c); the constraint it would have broken
+    # reads data.num_zeros and works with Constrained*(..., data=...).
+    import munch
+    import pyomo.environ as pyo
+
+    from conin.inference.pyomo import ip_inference
+
+    @pyomo_constraint_fn()
+    def num_zeros(M, data):
+        T = list(list(M.hmm.x.index_set().subsets())[0])
+        M.num_zeros = pyo.Constraint(
+            expr=sum(M.hmm.x[t, 0] for t in T) == data.num_zeros
+        )
+
+    chmm = ConstrainedHiddenMarkovModel(
+        _num_zeros_hmm(), num_zeros, data=munch.Munch(num_zeros=3)
+    )
+    results = ip_inference(hmm=chmm, observed=[0] * 8, solver=default_mip_solver)
+    assert results.solution.hidden.count(0) == 3

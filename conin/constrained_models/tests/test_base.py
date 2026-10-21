@@ -223,6 +223,8 @@ def test_supported_representations_hmm():
         ("factor", "factor_oracle"),
         ("oracle", None),
         ("oracle", "oracle"),
+        ("recursive", None),
+        ("recursive", "recursive"),
         ("pyomo", None),
         ("pyomo", "algebraic"),
         ("pyomo", "pyomo"),
@@ -235,6 +237,9 @@ def test_supported_representations_hmm():
         ("mvr", "mvr"),
     ]:
         assert pair in pairs
+    # (PR 4c) "oracle" is not registered for "algebraic" (its compilation needs
+    # the horizon, which the oracle representation does not have).
+    assert ("oracle", "algebraic") not in pairs
 
 
 def test_duplicate_registration_rejected(counting_kind):

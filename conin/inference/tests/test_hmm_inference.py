@@ -7,13 +7,12 @@ from conin.util import try_import
 with try_import() as or_topas_available:
     import or_topas.aos as aos
 
-from conin.hidden_markov_model.inference.recursive_a_star import *
-from conin.hidden_markov_model import *
+from conin.inference.recursive import recursive_a_star
+from conin.inference.recursive.a_star_hmm import Recursive_Heap_Item, Unique_Heapq
 from conin.constrained_models import ConstrainedHiddenMarkovModel
-from conin.hidden_markov_model.inference import a_star
+from conin.inference.oracle import a_star
 from conin.constraints.oracle_library import *
 
-# from conin.hidden_markov_model.oracle_chmm import Oracle_CHMM
 from conin.inference.pyomo import ip_inference
 
 import conin.examples.hidden_markov_model as tc
@@ -69,10 +68,8 @@ def chmm(hmm, constraints):
 
 
 @pytest.fixture
-def recursive_app(hmm, constraints, lb, ub):
-    app = tc.Num_Zeros()
-    app.initialize(hmm=hmm, oracle_constraints=constraints, lb=lb, ub=ub)
-    return app
+def recursive_chmm(lb, ub):
+    return tc.create_chmm1_recursive(lb, ub)
 
 
 @pytest.fixture
@@ -240,16 +237,14 @@ class Test_Unique_Heap:
 
 class Test_Inference_a_star:
 
-    def test_a_star(self, chmm, recursive_app):
+    def test_a_star(self, chmm, recursive_chmm):
         observed = ["o1", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0"]
 
         # inference1 = Inference(statistical_model=chmm)
         # inferred1 = inference1(observed).solutions[0].hidden
 
         inferred2 = (
-            recursive_a_star(hmm_app=recursive_app, observed=observed)
-            .solutions[0]
-            .hidden
+            recursive_a_star(hmm=recursive_chmm, observed=observed).solutions[0].hidden
         )
 
         # assert inferred1 == inferred2
@@ -267,16 +262,14 @@ class Test_Inference_a_star:
             "h0",
         ]
 
-    def test_a_star_2(self, chmm, recursive_app):
+    def test_a_star_2(self, chmm, recursive_chmm):
         observed = ["o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1"]
 
         # inference1 = Inference(statistical_model=chmm)
         # inferred1 = inference1(observed).solutions[0].hidden
 
         inferred2 = (
-            recursive_a_star(hmm_app=recursive_app, observed=observed)
-            .solutions[0]
-            .hidden
+            recursive_a_star(hmm=recursive_chmm, observed=observed).solutions[0].hidden
         )
 
         # assert inferred1 == inferred2
@@ -294,7 +287,7 @@ class Test_Inference_a_star:
             "h0",
         ]
 
-    def test_a_star_mult(self, chmm, recursive_app):
+    def test_a_star_mult(self, chmm, recursive_chmm):
         observed = [
             "o1",
             "o0",
@@ -313,7 +306,7 @@ class Test_Inference_a_star:
         # inferred1 = inference1(observed)
 
         inferred2 = recursive_a_star(
-            hmm_app=recursive_app, observed=observed, num_solutions=2
+            hmm=recursive_chmm, observed=observed, num_solutions=2
         )
 
         # assert inferred1.termination_condition == "ok"
@@ -327,26 +320,26 @@ class Test_Inference_a_star:
             ["h1", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"],
         ]
 
-    def test_a_star_no_solution(self, chmm, recursive_app):
+    def test_a_star_no_solution(self, chmm, recursive_chmm):
         observed = ["o0"]
 
         # inference1 = Inference(statistical_model=chmm)
         # inferred1 = inference1(observed)
 
-        inferred2 = recursive_a_star(hmm_app=recursive_app, observed=observed)
+        inferred2 = recursive_a_star(hmm=recursive_chmm, observed=observed)
 
         # assert inferred1.termination_condition == "error: no feasible solutions"
 
         assert inferred2.termination_condition == "error: no feasible solutions"
 
-    def test_a_star_not_enough_solutions(self, chmm, recursive_app):
+    def test_a_star_not_enough_solutions(self, chmm, recursive_chmm):
         observed = ["o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1"]
 
         # inference1 = Inference(statistical_model=chmm, num_solutions=2)
         # inferred1 = inference1(observed)
 
         inferred2 = recursive_a_star(
-            hmm_app=recursive_app, observed=observed, num_solutions=2
+            hmm=recursive_chmm, observed=observed, num_solutions=2
         )
         # assert inferred1.termination_condition == "ok"
         assert inferred2.termination_condition == "ok"

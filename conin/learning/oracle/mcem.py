@@ -1,7 +1,8 @@
 import munch
 import math
 
-from .supervised import supervised_learning
+from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.learning.unconstrained.supervised import supervised_learning
 
 nan = float("nan")
 
@@ -23,6 +24,36 @@ def mcem(
     transition_tolerance=None,
     emission_tolerance=None,
 ):
+    """Monte Carlo EM for an HMM with oracle constraints.
+
+    Each iteration samples ``samples_per_iteration`` feasible hidden sequences
+    from the current model (rejection sampling, see
+    :meth:`ConstrainedHiddenMarkovModel.generate_hidden`), scores each one with
+    the current HMM, and re-estimates the HMM from them with
+    :func:`~conin.learning.supervised_learning`.  The next iteration samples
+    from the re-estimated HMM (``app.with_model(new_hmm)``), with the same
+    constraints and data.
+
+    Parameters
+    ----------
+    app : ConstrainedHiddenMarkovModel or HiddenMarkovModel
+        The starting model; a bare HMM is sampled without constraints.  It is
+        not changed.
+    observed : list
+        Observed labels.
+    hidden_states, observable_states : list
+        Passed to ``supervised_learning``.
+    samples_per_iteration, max_iterations, convergence_tolerance : optional
+        Defaults 10, 100 and 1e-4.
+    start_tolerance, transition_tolerance, emission_tolerance : float, optional
+        Passed to ``supervised_learning`` (default 1e-4).
+
+    Returns
+    -------
+    float
+        The average ``log P(observed, hidden)`` of the last iteration's
+        samples, under the HMM they were sampled from.
+    """
     assert len(observed) > 0, "No observed states"
     assert (
         hidden_states is not None and len(hidden_states) != 0
@@ -43,13 +74,9 @@ def mcem(
     if emission_tolerance is None:
         emission_tolerance = 1e-4
 
-    # The model is kept in a local variable and is not written back to ``app``
-    # (a ConstrainedHiddenMarkovModel is immutable). Sampling still uses
-    # app.generate_hidden(), i.e. the original model, not the re-estimated one;
-    # this stale-oracle bug is RESTRUCTURE_PLAN section 9 / PR 4c.
-    hmm = getattr(app, "model", None)
-    if hmm is None:
-        hmm = app.hidden_markov_model  # e.g. an HMMApplication
+    # The re-estimated model is kept locally (a ConstrainedHiddenMarkovModel is
+    # immutable) and is not written back to ``app``.
+    cmodel = ConstrainedHiddenMarkovModel.ensure(app)
 
     prev_log_prob = nan
     iteration = 0
@@ -59,14 +86,11 @@ def mcem(
         simulations = []
         log_prob = 0.0
         for _ in range(samples_per_iteration):
-            feasible_hidden = app.generate_hidden(len(observed))
-            log_prob = log_prob + hmm.log_probability(observed, feasible_hidden)
-            simulations.append(
-                munch.Munch(
-                    observed=observed,
-                    hidden=app.generate_hidden(len(observed)),
-                )
+            feasible_hidden = cmodel.generate_hidden(len(observed))
+            log_prob = log_prob + cmodel.model.log_probability(
+                observed, feasible_hidden
             )
+            simulations.append(munch.Munch(observed=observed, hidden=feasible_hidden))
 
         log_prob /= samples_per_iteration
 
@@ -79,6 +103,7 @@ def mcem(
             transition_tolerance=transition_tolerance,
             emission_tolerance=emission_tolerance,
         )
+        cmodel = cmodel.with_model(hmm)
 
         if iteration >= max_iterations:
             break

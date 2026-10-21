@@ -1,4 +1,4 @@
-"""Tests for the HMM representations ("oracle", "pyomo_network_flow", "mvr")."""
+"""Tests for the HMM representations ("oracle", "recursive", "pyomo_network_flow", "mvr")."""
 
 import munch
 import pyomo.environ as pyo
@@ -8,6 +8,8 @@ import conin.examples.hidden_markov_model as tc
 from conin.config import default_mip_solver
 from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.constraints import (
+    OracleConstraint,
+    RecursiveConstraint,
     mvr_constraint_fn,
     pyomo_constraint_fn,
     toulbar2_constraint_fn,
@@ -16,7 +18,9 @@ from conin.constraints.mvr import BaseMVR
 from conin.constraints.mvr.primitives import mvr_forbid_state, mvr_visit_state
 from conin.exceptions import InvalidInputError
 from conin.graphical_models import HiddenMarkovModel
-from conin.hidden_markov_model.chmm_oracle import Oracle_CHMM
+from conin.representations.oracle import OracleHMMRepresentation
+from conin.representations.recursive import RecursiveHMMRepresentation
+from conin.sampling.oracle import rejection_sample_hidden
 from conin.inference.pyomo import ip_inference
 
 # ---------------------------------------------------------------------
@@ -24,32 +28,73 @@ from conin.inference.pyomo import ip_inference
 # ---------------------------------------------------------------------
 
 
-def test_oracle_matches_a_directly_built_oracle_chmm():
+def _old_oracle_is_feasible(cmodel, seq):
+    """What Oracle_CHMM.is_feasible did (before PR 4c), on internal indices."""
+    h2e = cmodel.model.hidden_to_external
+    return all(c({t: h2e[h] for t, h in enumerate(seq)}) for c in cmodel.constraints)
+
+
+def _old_oracle_partial_is_feasible(cmodel, T, seq):
+    h2e = cmodel.model.hidden_to_external
+    states = {t: h2e[h] for t, h in enumerate(seq)}
+    return all(c.partial_func(T, states) for c in cmodel.constraints)
+
+
+def test_oracle_representation_class_and_attributes():
     cmodel = tc.create_chmm1_oracle()
-    hmm = cmodel.model
     repn = cmodel.representation("oracle")
-    direct = Oracle_CHMM(
-        hmm=hmm.repn,
-        constraints=list(cmodel.constraints),
-        hidden_to_external=hmm.hidden_to_external,
-    )
+    assert isinstance(repn, OracleHMMRepresentation)
+    assert repn.kind == "oracle"
+    assert repn.model is cmodel.model
+    assert repn.hmm is cmodel.model.repn
+    # The user's constraints, not wrapped copies.
+    assert repn.constraints is cmodel.constraints
+    assert not hasattr(repn, "chmm")
+    assert not hasattr(repn, "generate_hidden")
 
+
+def test_oracle_matches_the_old_oracle_chmm_checks():
+    cmodel = tc.create_chmm1_oracle()
+    repn = cmodel.representation("oracle")
     for seq in ([0] * 9, [0] * 11, [0] * 15, [0] * 10 + [1] * 5, [1] * 12):
-        assert repn.is_feasible(seq) == direct.is_feasible(seq)
-    for T, seq in ((9, [0] * 9), (100, [0] * 9), (100, [0] * 15)):
-        assert repn.partial_is_feasible(T=T, seq=seq) == direct.partial_is_feasible(
+        assert repn.is_feasible(seq) == _old_oracle_is_feasible(cmodel, seq)
+        assert repn.is_feasible(tuple(seq)) == _old_oracle_is_feasible(cmodel, seq)
+    for T, seq in ((9, [0] * 9), (100, [0] * 9), (100, [0] * 15), (12, [1] * 3)):
+        assert repn.partial_is_feasible(
             T=T, seq=seq
-        )
+        ) == _old_oracle_partial_is_feasible(cmodel, T, seq)
 
-    hmm.set_seed(3)
-    sampled = repn.generate_hidden(20)
-    hmm.set_seed(3)
-    assert sampled == direct.generate_hidden(20)
+
+def test_oracle_agrees_with_is_feasible_on_external_labels():
+    cmodel = tc.create_chmm1_oracle()
+    repn = cmodel.representation("oracle")
+    h2e = cmodel.model.hidden_to_external
+    for seq in ([0] * 9, [0] * 11, [0] * 10 + [1] * 5, [1] * 12):
+        assert repn.is_feasible(seq) == cmodel.is_feasible([h2e[h] for h in seq])
+
+
+def test_oracle_two_argument_predicates_get_the_constraint_data():
+    seen = []
+
+    def at_most_half_h0(states, data):
+        seen.append(data)
+        return sum(1 for v in states.values() if v == "h0") <= len(data.hmm.T) // 2
+
+    cmodel = ConstrainedHiddenMarkovModel(
+        tc.create_hmm1(), OracleConstraint(func=at_most_half_h0)
+    )
+    repn = cmodel.representation("oracle")
+    assert repn.is_feasible([0, 0, 1, 1])
+    assert not repn.is_feasible([0, 0, 0, 1])
+    assert seen[0] == munch.Munch(hmm=munch.Munch(T=[0, 1, 2, 3]))
+    # The same answer as ConstrainedHiddenMarkovModel.is_feasible.
+    assert cmodel.is_feasible(["h0", "h0", "h1", "h1"])
+    assert not cmodel.is_feasible(["h0", "h0", "h0", "h1"])
 
 
 def test_oracle_without_constraints_accepts_everything():
     repn = ConstrainedHiddenMarkovModel(tc.create_hmm1()).representation("oracle")
-    assert repn.constraints == []
+    assert repn.constraints == ()
     assert repn.is_feasible([0, 1, 0])
     assert repn.partial_is_feasible(T=10, seq=[0, 1])
 
@@ -57,6 +102,150 @@ def test_oracle_without_constraints_accepts_everything():
 def test_oracle_each_call_builds_a_new_representation():
     cmodel = tc.create_chmm1_oracle()
     assert cmodel.representation("oracle") is not cmodel.representation("oracle")
+
+
+def test_oracle_checks_do_not_change_the_representation():
+    cmodel = tc.create_chmm1_oracle()
+    repn = cmodel.representation("oracle")
+    before = dict(vars(repn))
+    for seq in ([0] * 11, [1] * 12):
+        repn.is_feasible(seq)
+        repn.partial_is_feasible(T=20, seq=seq)
+    assert vars(repn) == before
+
+
+# ---------------------------------------------------------------------
+# Rejection sampling (from Oracle_CHMM.generate_hidden)
+# ---------------------------------------------------------------------
+
+
+def _old_generate_hidden(cmodel, time_steps, max_failures=1000):
+    """What Oracle_CHMM.generate_hidden did (before PR 4c)."""
+    hmm = cmodel.model.repn
+    hidden = hmm.generate_hidden(time_steps)
+    ctr = 0
+    while not _old_oracle_is_feasible(cmodel, hidden):
+        hidden = hmm.generate_hidden(time_steps)
+        ctr += 1
+        if ctr > max_failures:
+            raise RuntimeError("failed")
+    return [cmodel.model.hidden_to_external[h] for h in hidden]
+
+
+@pytest.mark.parametrize("seed", [0, 3, 11])
+def test_rejection_sampling_matches_the_old_oracle_chmm(seed):
+    cmodel = tc.create_chmm1_oracle()
+    cmodel.model.set_seed(seed)
+    old = [_old_generate_hidden(cmodel, 20) for _ in range(3)]
+    cmodel.model.set_seed(seed)
+    new = [rejection_sample_hidden(cmodel, 20) for _ in range(3)]
+    assert new == old
+    cmodel.model.set_seed(seed)
+    assert [cmodel.generate_hidden(20) for _ in range(3)] == old
+
+
+def test_rejection_sampling_bare_hmm_is_unconstrained_sampling():
+    hmm = tc.create_hmm1()
+    hmm.set_seed(5)
+    expected = hmm.generate_hidden(12)
+    hmm.set_seed(5)
+    assert rejection_sample_hidden(hmm, 12) == expected
+    hmm.set_seed(5)
+    assert ConstrainedHiddenMarkovModel(hmm).generate_hidden(12) == expected
+
+
+def test_rejection_sampling_gives_up_after_max_failures():
+    never = OracleConstraint(func=lambda states: False)
+    cmodel = ConstrainedHiddenMarkovModel(tc.create_hmm1(), never)
+    with pytest.raises(RuntimeError, match="after 3 trials"):
+        rejection_sample_hidden(cmodel, 5, max_failures=3)
+
+
+def test_rejection_sampling_rejects_other_families():
+    with pytest.raises(InvalidInputError):
+        rejection_sample_hidden(tc.create_chmm1_pyomo(), 5)
+    with pytest.raises(InvalidInputError):
+        rejection_sample_hidden(tc.create_chmm1_recursive(), 5)
+    with pytest.raises(InvalidInputError):
+        rejection_sample_hidden("not a model", 5)
+
+
+# ---------------------------------------------------------------------
+# "recursive"
+# ---------------------------------------------------------------------
+
+
+def _count(name, h0="h0"):
+    return RecursiveConstraint(
+        initial=lambda h: int(h == h0),
+        update=lambda n, h: n + int(h == h0),
+        feasible=lambda n: n >= 1,
+        feasible_partial=lambda n, t, T: n + (T - t) >= 1,
+        name=name,
+    )
+
+
+def test_recursive_representation_combines_states_into_tuples():
+    c1 = _count("has_h0", "h0")
+    c2 = _count("has_h1", "h1")
+    cmodel = ConstrainedHiddenMarkovModel(tc.create_hmm1(), [c1, c2])
+    repn = cmodel.representation("recursive")
+    assert isinstance(repn, RecursiveHMMRepresentation)
+    assert repn.kind == "recursive"
+    assert repn.constraints is cmodel.constraints
+    assert repn.model is cmodel.model
+
+    s = repn.initial("h0")
+    assert s == (1, 0)
+    s = repn.update(s, "h0")
+    assert s == (2, 0)
+    assert not repn.feasible(s)
+    assert repn.feasible_partial(s, 2, 3)
+    assert not repn.feasible_partial(s, 2, 2)
+    s = repn.update(s, "h1")
+    assert s == (2, 1)
+    assert repn.feasible(s)
+
+
+def test_recursive_without_constraints():
+    repn = ConstrainedHiddenMarkovModel(tc.create_hmm1()).representation("recursive")
+    assert repn.initial("h0") == ()
+    assert repn.update((), "h1") == ()
+    assert repn.feasible(())
+    assert repn.feasible_partial((), 1, 5)
+
+
+def test_recursive_default_feasible_partial_is_always_true():
+    c = RecursiveConstraint(
+        initial=lambda h: h, update=lambda s, h: h, feasible=lambda s: s == "h0"
+    )
+    assert c.feasible_partial("h1", 1, 5)
+    assert c.name == "<lambda>"
+    assert c.family == "recursive"
+
+
+def test_recursive_constraint_rejects_non_callables():
+    with pytest.raises(InvalidInputError):
+        RecursiveConstraint(initial=1, update=lambda s, h: s, feasible=lambda s: True)
+    with pytest.raises(InvalidInputError):
+        RecursiveConstraint(
+            initial=lambda h: 0,
+            update=lambda s, h: s,
+            feasible=lambda s: True,
+            feasible_partial="no",
+        )
+
+
+def test_recursive_each_call_builds_a_new_representation():
+    cmodel = tc.create_chmm1_recursive()
+    assert cmodel.representation("recursive") is not cmodel.representation("recursive")
+
+
+def test_recursive_rejects_other_families():
+    with pytest.raises(InvalidInputError):
+        tc.create_chmm1_oracle().representation("recursive")
+    with pytest.raises(InvalidInputError):
+        tc.create_chmm1_recursive().representation("oracle")
 
 
 # ---------------------------------------------------------------------
