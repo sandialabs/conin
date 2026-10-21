@@ -33,4 +33,5 @@ def _build(cmodel, *, start=0, stop=None):
         start=start,
         stop=stop,
         cls=FactorHMMRepresentation,
+        data=cmodel.data,
     )

@@ -19,5 +19,5 @@ class Toulbar2MNRepresentation(Toulbar2FactorRepresentation):
 def _build(cmodel):
     mn = cmodel.model
     return Toulbar2MNRepresentation(
-        uai_model=mn, pgm=mn, constraints=cmodel.constraints
+        uai_model=mn, pgm=mn, constraints=cmodel.constraints, data=cmodel.data
     )

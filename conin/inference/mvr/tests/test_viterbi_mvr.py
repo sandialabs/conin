@@ -494,3 +494,112 @@ def test_viterbi_rejects_inhom_mvr_too_short_for_extended_horizon(hmm, observed)
         viterbi_torch_mvr_chmm(
             model, observed, time_horizon=len(observed) + 1, return_augmented=False
         )
+
+
+# ===========================
+# map_query(method="mvr_viterbi")
+# ===========================
+
+
+def test_map_query_mvr_viterbi_matches_viterbi_torch_mvr_chmm(hmm, observed):
+    from conin.inference import map_query
+
+    mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="B")
+    model = ConstrainedHiddenMarkovModel(hmm, mvr)
+    path, augmented, score = viterbi_torch_mvr_chmm(
+        model, observed, return_augmented=True, return_score=True
+    )
+
+    results = map_query(model, method="mvr_viterbi", evidence=observed)
+
+    assert sorted(results) == [
+        "observed",
+        "solution",
+        "solutions",
+        "termination_condition",
+    ]
+    assert results.solution.states == path
+    assert results.solution.hidden == path
+    assert results.solution.log_likelihood == score
+    assert results.solution.augmented == augmented
+    assert results.solutions == [results.solution]
+    assert results.termination_condition == "ok"
+    assert results.observed == observed
+    assert "B" not in results.solution.states
+
+
+def test_map_query_mvr_viterbi_bare_hmm_is_viterbi(hmm, observed):
+    from conin.inference import map_query
+
+    results = map_query(hmm, method="mvr_viterbi", evidence=observed)
+    reference = map_query(hmm, method="viterbi", evidence=observed)
+    assert results.solution.states == reference.solution.states
+    assert results.solution.log_likelihood == pytest.approx(
+        reference.solution.log_likelihood, abs=1e-4
+    )
+
+
+def test_map_query_mvr_viterbi_dict_evidence(hmm, observed):
+    from conin.inference import map_query
+
+    mvr = make_parity_mvr(hidden_states=hmm.hidden_states, target_state="A")
+    model = ConstrainedHiddenMarkovModel(hmm, mvr)
+    sparse = {0: observed[0], 3: observed[3]}
+
+    # A dict is sparse observations; the horizon is stop + 1, or the last
+    # observed time + 1.
+    path, score = viterbi_torch_mvr_chmm(
+        model, sparse, time_horizon=4, return_augmented=False, return_score=True
+    )
+    results = map_query(model, method="mvr_viterbi", evidence=sparse)
+    assert results.solution.states == dict(enumerate(path))
+    assert results.solution.log_likelihood == score
+
+    path6, _ = viterbi_torch_mvr_chmm(
+        model, sparse, time_horizon=6, return_augmented=False, return_score=True
+    )
+    results6 = map_query(model, method="mvr_viterbi", evidence=sparse, stop=5)
+    assert results6.solution.states == dict(enumerate(path6))
+
+
+def test_map_query_mvr_viterbi_options(hmm, observed):
+    from conin.inference import map_query
+
+    model = ConstrainedHiddenMarkovModel(
+        hmm, make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="C")
+    )
+    path, score = viterbi_torch_mvr_chmm(
+        model,
+        observed,
+        dtype=torch.float64,
+        return_augmented=False,
+        return_score=True,
+    )
+    results = map_query(
+        model, method="mvr_viterbi", evidence=observed, dtype=torch.float64
+    )
+    assert results.solution.states == path
+    assert results.solution.log_likelihood == score
+
+
+def test_map_query_mvr_viterbi_errors(hmm, observed):
+    from conin.inference import map_query
+
+    model = ConstrainedHiddenMarkovModel(
+        hmm, make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="B")
+    )
+    with pytest.raises(InvalidInputError, match="start must be 0"):
+        map_query(model, method="mvr_viterbi", evidence=observed, start=1)
+    with pytest.raises(InvalidInputError, match="stop time or at least one"):
+        map_query(model, method="mvr_viterbi", evidence={})
+    # An infeasible lattice raises, as viterbi_torch_mvr_chmm does.
+    forbid_all = [
+        make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state=h)
+        for h in hmm.hidden_states
+    ]
+    with pytest.raises(InvalidInputError, match="No feasible augmented path"):
+        map_query(
+            ConstrainedHiddenMarkovModel(hmm, forbid_all),
+            method="mvr_viterbi",
+            evidence=observed,
+        )

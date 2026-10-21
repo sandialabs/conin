@@ -26,6 +26,7 @@ import munch
 from conin.constraints.algebraic import create_oracle_constraints_from_algebraic
 from conin.constraints.mvr import BaseMVR, InhomMVR
 from conin.exceptions import InvalidInputError
+from conin.graphical_models.hmm_observations import as_sequence
 
 UNSUPPORTED_FAMILIES = ("pyomo", "toulbar2")
 
@@ -320,7 +321,8 @@ def dbn_constraint_data(stop):
 def hmm_sequences(hmm, hidden, observed=None):
     """Return ``(hidden, observed)`` as lists of labels, checked against ``hmm``.
 
-    ``hidden`` and ``observed`` are lists, or dicts keyed by ``0..T-1``.
+    ``hidden`` and ``observed`` are lists or tuples, or dicts keyed by
+    ``0..T-1``.
     ``observed`` may be ``None``.
 
     Raises
@@ -329,7 +331,7 @@ def hmm_sequences(hmm, hidden, observed=None):
         For an empty or badly keyed sequence, unknown labels, or different
         lengths.
     """
-    hidden = _as_sequence(hidden, "hidden")
+    hidden = as_sequence(hidden, "hidden sequence")
     for h in hidden:
         if h not in hmm.hidden_to_internal:
             raise InvalidInputError(
@@ -337,7 +339,7 @@ def hmm_sequences(hmm, hidden, observed=None):
             )
     if observed is None:
         return hidden, None
-    observed = _as_sequence(observed, "observed")
+    observed = as_sequence(observed, "observed sequence")
     if len(observed) != len(hidden):
         raise InvalidInputError(
             f"The hidden ({len(hidden)}) and observed ({len(observed)}) "
@@ -350,25 +352,6 @@ def hmm_sequences(hmm, hidden, observed=None):
                 f"{hmm.observed_states}"
             )
     return hidden, observed
-
-
-def _as_sequence(seq, what):
-    if isinstance(seq, dict):
-        if not all(type(t) is int for t in seq) or set(seq) != set(range(len(seq))):
-            raise InvalidInputError(
-                f"A {what} dict must be keyed by the times 0..T-1; got {list(seq)}"
-            )
-        seq = [seq[t] for t in range(len(seq))]
-    elif isinstance(seq, (list, tuple)):
-        seq = list(seq)
-    else:
-        raise InvalidInputError(
-            f"The {what} sequence must be a list or a dict keyed by time, got "
-            f"{type(seq).__name__}"
-        )
-    if not seq:
-        raise InvalidInputError(f"The {what} sequence must not be empty")
-    return seq
 
 
 def hmm_constraint_data(T):

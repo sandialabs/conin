@@ -1,3 +1,4 @@
+from conin.util.constraint_data import merge_constraint_data
 from conin.graphical_models import HiddenMarkovModel
 
 from .base import ConstrainedGraphicalModel
@@ -78,8 +79,9 @@ class ConstrainedHiddenMarkovModel(ConstrainedGraphicalModel):
             * ``"mvr"`` constraints are run along the sequence (see
               :func:`~conin.constrained_models.feasibility.mvr_accepts`).
 
-            Constraint functions that take a second argument see
-            ``data = Munch(hmm=Munch(T=list(range(T))))``.  ``MVRConstraint``
+            Constraint functions that take a second argument see the model's
+            ``data`` with ``hmm = Munch(T=list(range(T)))`` set on a copy
+            (``Munch(hmm=Munch(T=...))`` if it has none).  ``MVRConstraint``
             factories are called with ``(hmm, self.data)``.
 
         Raises
@@ -101,7 +103,7 @@ class ConstrainedHiddenMarkovModel(ConstrainedGraphicalModel):
             assignment=dict(enumerate(hidden)),
             factor_assignment=factor_assignment,
             state_space=hmm_state_space(self.model, T),
-            data=hmm_constraint_data(T),
+            data=merge_constraint_data(self.data, hmm_constraint_data(T)),
             hidden=hidden,
         )
 

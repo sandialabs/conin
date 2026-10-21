@@ -19,4 +19,6 @@ class FactorMNRepresentation(FactorRepresentation):
     "factor", DiscreteMarkovNetwork, families=(None, "factor_oracle", "algebraic")
 )
 def _build(cmodel):
-    return FactorMNRepresentation(pgm=cmodel.model, constraints=cmodel.constraints)
+    return FactorMNRepresentation(
+        pgm=cmodel.model, constraints=cmodel.constraints, data=cmodel.data
+    )

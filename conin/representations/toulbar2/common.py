@@ -27,6 +27,7 @@ from conin.constraints.algebraic.decorators import AlgebraicConstraint
 from conin.io.uai import _uai_text
 from conin.representations.base import Representation
 from conin.util import try_import, State
+from conin.util.constraint_data import merge_constraint_data
 from conin.util.var_wrapper import PyomoVarWrapper
 
 with try_import() as smoek_available:
@@ -153,6 +154,9 @@ class Toulbar2FactorRepresentation(Representation):
         The user constraints (family ``"toulbar2"`` or ``"algebraic"``).
     nodes : tuple
         The nodes of ``uai_model``.
+    data : object or None
+        The constrained model's application data.  The constraint functions
+        see a copy of it with the fields of :meth:`constraint_data` set.
 
     Notes
     -----
@@ -162,18 +166,20 @@ class Toulbar2FactorRepresentation(Representation):
 
     kind = "toulbar2"
 
-    def __init__(self, *, uai_model, pgm, constraints, uai_text=None):
+    def __init__(self, *, uai_model, pgm, constraints, uai_text=None, data=None):
         self.uai_model = uai_model
         self.uai_text = _uai_text(uai_model) if uai_text is None else uai_text
         self.pgm = pgm
         self.constraints = tuple(constraints)
         self.nodes = tuple(uai_model.nodes)
+        self.data = data
 
     def constraint_data(self, *, evidence=None, variables=None):
-        """The ``data`` object passed to the constraint functions for a query.
+        """The fields this representation adds to the constraint ``data`` for a query.
 
         Subclasses add their structure fields (``T``, ``start``, ``hmm``, ...).
-        The constrained model's own ``data`` is not passed.
+        The constraint functions see these fields set on a copy of the
+        constrained model's ``data`` (or just these fields if it has none).
         """
         return munch.Munch(variables=variables, evidence=evidence)
 
@@ -232,7 +238,10 @@ class Toulbar2FactorRepresentation(Representation):
                 pgm=self.pgm,
                 constraints=self.constraints,
                 model=model,
-                data=self.constraint_data(evidence=evidence, variables=variables),
+                data=merge_constraint_data(
+                    self.data,
+                    self.constraint_data(evidence=evidence, variables=variables),
+                ),
             )
 
         if timing:  # pragma:nocover

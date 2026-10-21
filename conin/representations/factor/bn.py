@@ -19,4 +19,6 @@ class FactorBNRepresentation(FactorRepresentation):
     "factor", DiscreteBayesianNetwork, families=(None, "factor_oracle", "algebraic")
 )
 def _build(cmodel):
-    return FactorBNRepresentation(pgm=cmodel.model, constraints=cmodel.constraints)
+    return FactorBNRepresentation(
+        pgm=cmodel.model, constraints=cmodel.constraints, data=cmodel.data
+    )

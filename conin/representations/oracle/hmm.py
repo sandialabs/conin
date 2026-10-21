@@ -10,6 +10,7 @@ from conin.constrained_models.feasibility import hmm_constraint_data, oracle_acc
 from conin.graphical_models import HiddenMarkovModel
 from conin.representations.base import Representation, register_representation
 from conin.representations.matvec import MatVecHMMRepresentation
+from conin.util.constraint_data import merge_constraint_data
 
 
 class OracleHMMRepresentation(Representation):
@@ -28,12 +29,15 @@ class OracleHMMRepresentation(Representation):
         ``representation("matvec")`` of the bare HMM), used by A* and sampling.
     constraints : tuple of OracleConstraint
         The constraints of the constrained model (not copied or wrapped).
+    data : object or None
+        The constrained model's application data.
 
     Notes
     -----
     Nothing here changes after the build, so one representation can serve
     several searches or samples.  A predicate ``func(states, data)`` gets
-    ``data = Munch(hmm=Munch(T=list(range(T))))`` for a sequence of length
+    a copy of the application data with ``hmm = Munch(T=list(range(T)))`` set
+    (``Munch(hmm=Munch(T=...))`` if there is none) for a sequence of length
     ``T``, as in ``ConstrainedHiddenMarkovModel.is_feasible``.
     """
 
@@ -43,6 +47,7 @@ class OracleHMMRepresentation(Representation):
         self.model = cmodel.model
         self.hmm = MatVecHMMRepresentation(self.model)
         self.constraints = cmodel.constraints
+        self.data = cmodel.data
         self._hidden_to_external = self.model.hidden_to_external
 
     def _external(self, seq):
@@ -64,7 +69,7 @@ class OracleHMMRepresentation(Representation):
         if not self.constraints:
             return True
         states = self._external(seq)
-        data = hmm_constraint_data(len(seq))
+        data = merge_constraint_data(self.data, hmm_constraint_data(len(seq)))
         return all(oracle_accepts(c, states, data) for c in self.constraints)
 
     def partial_is_feasible(self, *, T, seq):

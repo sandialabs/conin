@@ -1,8 +1,24 @@
 """Pyomo MAP inference for (constrained) Markov networks."""
 
 from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
+from conin.inference.query_checks import full_query_variables
 
 from .solve import solve_pyomo_map_query_model
+
+
+def _map_query_pyomo_mn(repn, *, variables, evidence, timing, options):
+    """Solve a MAP query on the ``"pyomo"`` representation of a Markov network."""
+    use_cut_generation = options.pop("use_cut_generation", False)
+    variables = full_query_variables(variables, repn.nodes)
+    model = repn.create_model(
+        evidence=evidence,
+        variables=variables,
+        omit_c5=use_cut_generation,
+        timing=timing,
+    )
+    return solve_pyomo_map_query_model(
+        model, timing=timing, evidence=evidence, **options
+    )
 
 
 def inference_pyomo_map_query_MN(
@@ -19,7 +35,7 @@ def inference_pyomo_map_query_MN(
     ----------
     pgm : DiscreteMarkovNetwork or ConstrainedDiscreteMarkovNetwork
     variables : list, optional
-        Not supported (raises ``RuntimeError``).
+        Only ``None`` or all nodes are supported (``RuntimeError``).
     evidence : dict, optional
         ``{node: state}``.
     timing : bool, optional
@@ -29,18 +45,11 @@ def inference_pyomo_map_query_MN(
         cuts with gurobi) and the options of
         :func:`~conin.inference.pyomo.solve_pyomo_map_query_model`.
     """
-    use_cut_generation = options.pop("use_cut_generation", False)
-
-    if variables:  # pragma:nocover
-        raise RuntimeError("VariableElimination is not supported for CONIN models")
-
     cmodel = ConstrainedDiscreteMarkovNetwork.ensure(pgm)
-    model = cmodel.representation("pyomo").create_model(
-        evidence=evidence,
+    return _map_query_pyomo_mn(
+        cmodel.representation("pyomo"),
         variables=variables,
-        omit_c5=use_cut_generation,
+        evidence=evidence,
         timing=timing,
-    )
-    return solve_pyomo_map_query_model(
-        model, timing=timing, evidence=evidence, **options
+        options=options,
     )

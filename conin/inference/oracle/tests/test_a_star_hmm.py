@@ -95,10 +95,51 @@ def test_pruning_reduces_the_search_without_changing_the_optimum():
         a_star(observed=observed, hmm=cmodel, max_iterations=506).solution.hidden
         == expected
     )
-    # One iteration fewer finds no solution. a_star then raises IndexError
-    # (it reads output[0]); that is a known bug, not what this test checks.
-    with pytest.raises(IndexError):
-        a_star(observed=observed, hmm=cmodel, max_iterations=505)
+    # One iteration fewer finds no solution.
+    results = a_star(observed=observed, hmm=cmodel, max_iterations=505)
+    assert results.solution is None and results.solutions == []
+
+
+# ---------------------------------------------------------------------
+# Regression: a_star raised IndexError when it found no solution
+# (it read output[0], or popped an empty heap)
+# ---------------------------------------------------------------------
+
+
+def test_no_solution_within_max_iterations_is_reported():
+    cmodel = tc.create_chmm1_oracle()
+    results = a_star(observed=["o0"] * 20, hmm=cmodel, max_iterations=505)
+    assert results.solution is None
+    assert results.solutions == []
+    assert results.termination_condition == "error: no feasible solutions"
+    assert results.observed == ["o0"] * 20
+
+
+def test_infeasible_model_is_reported():
+    # At least 10 "h0" states cannot fit in 5 time steps: the heap empties.
+    cmodel = tc.create_chmm1_oracle()
+    results = a_star(observed=["o0"] * 5, hmm=cmodel)
+    assert results.solution is None
+    assert results.solutions == []
+    assert results.termination_condition == "error: no feasible solutions"
+
+
+def test_fewer_solutions_than_asked_for_are_returned():
+    hmm = tc.create_hmm1()
+    never_h1 = OracleConstraint(func=lambda states: "h1" not in states.values())
+    cmodel = ConstrainedHiddenMarkovModel(hmm, never_h1)
+    results = a_star(observed=["o0"] * 3, hmm=cmodel, num_solutions=3)
+    assert [s.hidden for s in results.solutions] == [["h0"] * 3]
+    assert results.solution == results.solutions[0]
+    assert results.termination_condition == "ok"
+
+
+def test_map_query_a_star_without_a_solution():
+    from conin.inference import map_query
+
+    results = map_query(tc.create_chmm1_oracle(), method="a_star", evidence=["o0"] * 5)
+    assert results.solution is None and results.solutions == []
+    assert results.termination_condition == "error: no feasible solutions"
 
 
 @pytest.mark.parametrize("T", [11, 12, 13, 14])

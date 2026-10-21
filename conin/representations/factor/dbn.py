@@ -26,11 +26,11 @@ class FactorDBNRepresentation(FactorRepresentation):
 
 
 def build_factor_dbn_representation(
-    dbn, constraints=(), *, start, stop, cls=FactorDBNRepresentation
+    dbn, constraints=(), *, start, stop, cls=FactorDBNRepresentation, data=None
 ):
     """Unroll ``dbn`` over ``start..stop`` and build its ``"factor"`` representation."""
     bn = create_bn_from_dbn(dbn=dbn, start=start, stop=stop)
-    return cls(pgm=bn, constraints=constraints, start=start, stop=stop)
+    return cls(pgm=bn, constraints=constraints, start=start, stop=stop, data=data)
 
 
 @register_representation(
@@ -40,5 +40,5 @@ def build_factor_dbn_representation(
 )
 def _build(cmodel, *, start=0, stop=1):
     return build_factor_dbn_representation(
-        cmodel.model, cmodel.constraints, start=start, stop=stop
+        cmodel.model, cmodel.constraints, start=start, stop=stop, data=cmodel.data
     )

@@ -116,7 +116,9 @@ tuple in ``.constraints``. All constraints must belong to one constraint family,
 which is available as ``.constraint_family`` (``None`` when there are no
 constraints); mixing families raises ``InvalidInputError``. Application data
 used by constraint functions and MVR factories is passed to the constructor
-with ``data=``.
+with ``data=``. Every backend passes it on: constraint functions that take a
+``data`` argument see a copy of it with the backend's own fields (such as
+``data.hmm.T``) set.
 
 Backend representations are built by ``representation(kind)``; each call
 builds a new one. HMMs register these kinds: ``"matvec"`` (the HMM
@@ -136,6 +138,8 @@ HMM, are ``chmm.representation("mvr").mvrs``). The torch MVR algorithms in
 ``conin.inference.mvr``, ``conin.learning.mvr``, ``conin.sampling.mvr`` and
 ``conin.queries.mvr`` take a ``ConstrainedHiddenMarkovModel`` with MVR
 constraints; see the notebooks in ``doc/notebooks/MVR``.
+``map_query(chmm, method="mvr_viterbi", evidence=observed)`` runs the torch
+MVR Viterbi (``viterbi_torch_mvr_chmm``) through the common entry point.
 
 Oracle constraints
 ^^^^^^^^^^^^^^^^^^
@@ -301,8 +305,9 @@ oracle constraint. ``create_chmm1_recursive`` expresses the condition of
 
    12
 
-``map_query(..., method="a_star")`` does not use recursive constraints yet; call
-``recursive_a_star`` directly.
+``map_query(chmm, method="a_star", evidence=observed)`` runs
+``recursive_a_star`` when the constraints are recursive, and A* with the oracle
+representation otherwise.
 
 Notes
 -----

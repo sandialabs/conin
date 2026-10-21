@@ -2,7 +2,30 @@
 
 from conin.constrained_models import ConstrainedDynamicDiscreteBayesianNetwork
 
-from .solve import _solve_repn, _with_timing
+from .solve import _solve_static
+
+
+def _map_query_variable_elimination_dbn(
+    repn,
+    *,
+    variables=None,
+    evidence=None,
+    show_progress=False,
+    timing=False,
+    write_uai_file=None,
+    solution_with_evidence=False,
+):
+    """Solve a MAP query on the ``"factor"`` representation of a DBN."""
+    return _solve_static(
+        repn,
+        variables=variables,
+        evidence=evidence,
+        show_progress=show_progress,
+        timing=timing,
+        write_uai_file=write_uai_file,
+        solution_with_evidence=solution_with_evidence,
+        determine_variables=False,
+    )
 
 
 def inference_variable_elimination_map_query_DDBN(
@@ -51,21 +74,12 @@ def inference_variable_elimination_map_query_DDBN(
     if stop is None:
         stop = 1
     cmodel = ConstrainedDynamicDiscreteBayesianNetwork.ensure(pgm)
-    solution_with_evidence = solution_with_evidence or len(cmodel.constraints) > 0
-
-    def _execute():
-        repn = cmodel.representation("factor", start=start, stop=stop)
-        results = _solve_repn(
-            repn,
-            variables=variables,
-            evidence=evidence,
-            show_progress=show_progress,
-            timing=timing,
-            write_uai_file=write_uai_file,
-            determine_variables=False,
-        )
-        if solution_with_evidence and evidence:
-            results.solution.states.update(evidence)
-        return results
-
-    return _with_timing(timing, _execute)
+    return _map_query_variable_elimination_dbn(
+        cmodel.representation("factor", start=start, stop=stop),
+        variables=variables,
+        evidence=evidence,
+        show_progress=show_progress,
+        timing=timing,
+        write_uai_file=write_uai_file,
+        solution_with_evidence=solution_with_evidence,
+    )

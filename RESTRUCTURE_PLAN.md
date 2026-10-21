@@ -1,6 +1,6 @@
 # Conin Restructure Plan
 
-Status: **In progress.** PR 0 is merged into `main` (#241). PR 1 is merged into `restructure` (#242). PR 2 is merged into `restructure` (#243). PR 3 is merged into `restructure` (#244). PR 4 is split into sub-PRs 4f, 4a, 4b, 4e, 4c, 4d (in that order, stacked branches); 4f is done (branch `restructure-pr4f-io`, off `restructure`, merged as #245); 4a is done (branch `restructure-pr4a-pyomo`, off 4f, merged as #246); 4b is done (branch `restructure-pr4b-toulbar2`, off 4a, merged as #247); the representation cache was removed after 4b (#248); 4e is done (branch `restructure-pr4e-factor`, off `restructure` 3cf8d04; its follow-up removes the dead pgmpy log-probability code and adds `log_probability` and `is_feasible`; a second follow-up removes the last import cycle and moves the unneeded function-level imports to the top of their modules; merged as #249/#250); 4c is done (branch `restructure-pr4c-oracle`, off `restructure` 657c29f); a comment-only cleanup PR removes the PR-number and plan-section references from the code (branch `restructure-comment-cleanup`, off 4c; rule in §6); 4d is done, including the final step of PR 4 (branch `restructure-pr4d-mvr`, off `restructure` e5b7c04), merged as #253; 4g is done (branch `restructure-pr4g-hmm-repn`, off `restructure` b008502, the 4d merge; a follow-up moves `DBNSampler` to `conin.sampling.unconstrained`), so PR 4 is complete apart from merging 4g. Next: PR 5, PR 5b (scoring) and PR 6. The later PRs target the `restructure` branch.
+Status: **In progress.** PR 0 is merged into `main` (#241). PR 1 is merged into `restructure` (#242). PR 2 is merged into `restructure` (#243). PR 3 is merged into `restructure` (#244). PR 4 is split into sub-PRs 4f, 4a, 4b, 4e, 4c, 4d (in that order, stacked branches); 4f is done (branch `restructure-pr4f-io`, off `restructure`, merged as #245); 4a is done (branch `restructure-pr4a-pyomo`, off 4f, merged as #246); 4b is done (branch `restructure-pr4b-toulbar2`, off 4a, merged as #247); the representation cache was removed after 4b (#248); 4e is done (branch `restructure-pr4e-factor`, off `restructure` 3cf8d04; its follow-up removes the dead pgmpy log-probability code and adds `log_probability` and `is_feasible`; a second follow-up removes the last import cycle and moves the unneeded function-level imports to the top of their modules; merged as #249/#250); 4c is done (branch `restructure-pr4c-oracle`, off `restructure` 657c29f); a comment-only cleanup PR removes the PR-number and plan-section references from the code (branch `restructure-comment-cleanup`, off 4c; rule in §6); 4d is done, including the final step of PR 4 (branch `restructure-pr4d-mvr`, off `restructure` e5b7c04), merged as #253; 4g is done (branch `restructure-pr4g-hmm-repn`, off `restructure` b008502, the 4d merge; a follow-up moves `DBNSampler` to `conin.sampling.unconstrained`), merged as #254, so PR 4 is complete; PR 5 is done (branch `restructure-pr5-dispatch`, off `restructure` 50f9eb1, the 4g merge; a follow-up on the same branch gives HMM observations one reading in `graphical_models/hmm_observations.py`, makes VE honour `stop`, and renames the underscore modules). Next: PR 5b (scoring) and PR 6. The later PRs target the `restructure` branch.
 This file lives at the repo root while the work is in progress. Delete it in the final PR.
 
 All decisions are recorded in §11; §12 lists what is still open. Critiques of the
@@ -194,6 +194,22 @@ conin/
   sampling/unconstrained/ dbn.py (DBNSampler, moved from sampling/dbn/sampling.py), tests/test_dbn.py + tests/dbn_examples.py
                          (from sampling/dbn/tests/{test_sampling,examples}.py); __init__ also exports DBNSampler
   sampling/dbn/          removed
+```
+After PR 5:
+```
+conin/
+  inference/             map_query.py (map_query: normalise -> method -> representation kind -> _solve_map_query, one ovld overload
+                         per representation class; METHODS), hmm_results.py (key_solutions_by_time, hidden_states_from_unrolled:
+                         the shape of HMM MAP results), query_checks.py (reject_pruning_options, full_query_variables: shared by
+                         integer_program and toulbar2; they replace pyomo/bn._validate_bn_query); each backend module has a private repn-level core
+                         (_map_query_pyomo_{mn,bn,dbn,hmm}, _map_query_network_flow, _lp_inference, _ip_inference,
+                         _map_query_toulbar2_{mn,bn,dbn,hmm}, _map_query_variable_elimination_{mn,bn,dbn,hmm}, _viterbi, _a_star,
+                         _recursive_a_star, _viterbi_torch_mvr) that the public function and the overload call
+  inference/{Optimization,CFN,AStar,Viterbi}Inference.py, VariableElimination.py   deleted
+  inference/{mn,bn,dbn}/ removed; their tests are inference/tests/{mn,bn,dbn}/ (rename-only commit)
+  util/                  constraint_data.py (merge_constraint_data: the application data + a representation's fields)
+  graphical_models/      hmm_observations.py (PR 5 follow-up: as_sequence, require_sequence_type, time_range, unrolled_evidence:
+                         the one reading of HMM observations, used by inference, feasibility.hmm_sequences and later scoring)
 ```
 
 ### 2.2 Problems the restructure should fix
@@ -473,6 +489,50 @@ conin/
 - **After the PR 4g follow-up** (`DBNSampler` → `conin.sampling.unconstrained`): **1381 passed, 213 skipped, 0 errors** in
   `.venv-opencode` (+1: the `conin.sampling.unconstrained.DBNSampler` `PUBLIC_API` row; `test_public_api.py` 294 → 295). The 12 DBN
   sampler tests moved unchanged (`sampling/dbn/tests/test_sampling.py` → `sampling/unconstrained/tests/test_dbn.py`; only imports).
+- **PR 5 branch point** (`restructure-pr5-dispatch` off `restructure` 50f9eb1 = last-fetched `origin/restructure`, the 4g merge (#254),
+  which contains 37eac77; `git fetch` is not possible here): 1381 passed, 213 skipped, 0 errors (re-run).
+- **After PR 5:** **1533 passed, 218 skipped, 0 errors** in `.venv-opencode` (+152 passed, +5 skipped; 1594 → 1751 collected). Commit 1
+  (rename-only, `inference/{mn,bn,dbn}/tests` → `inference/tests/{mn,bn,dbn}/`) was checked with those tests (32 passed, 51 skipped,
+  unchanged). Per file (before → after):
+  - new: `inference/tests/test_map_query_dispatch.py` (123: normalisation of bare/constrained/pgmpy models, `TypeError` for non-models
+    ×3 × 6 methods, unknown method, the method → kind table incl. every `ip_formulation` and `a_star` by family, structure params per
+    (model, kind), one overload per representation class (17) and each overload solving, the registry errors for HMM-only methods on
+    MN/BN/DBN and for unsupported families, `ip_formulation` on an MN, HMM evidence `None`/str/tuple ×6 methods → `InvalidInputError`,
+    viterbi on `ConstrainedHiddenMarkovModel(hmm)`, a_star → recursive A* (list/dict, no solution), network flow lp/ip by constraints,
+    DBN `stop=None` → 1 ×3 methods); `inference/tests/test_constraint_data_and_query_checks.py` (30: the two §9 regression groups);
+  - `inference/oracle/tests/test_a_star_hmm.py` 17 → 21 (`test_pruning_reduces_the_search_without_changing_the_optimum` asserts
+    `solution is None` instead of `IndexError`; new: no solution within `max_iterations`, infeasible model, fewer solutions than asked
+    for, `map_query` without a solution);
+  - `inference/mvr/tests/test_viterbi_mvr.py` +5 `mvr_viterbi` tests (torch; skipped in `.venv-opencode`);
+  - no test removed; `test_public_api.py` unchanged (295: no public name added or removed; the dispatchers were private).
+  In the `conin_scaling_experiments` venv: `test_MAP_Inference.py` 69 passed, 41 skipped (unchanged); with smoek on `PYTHONPATH`, the two
+  new files + `inference/tests/{mn,bn,dbn}` + `representations/factor` + `constrained_models` + `test_public_api.py`: 675 passed,
+  9 skipped. In `/projects/.conin-scratch/venv` (torch): `inference/mvr/tests` + `test_public_api.py` 385 passed. Sphinx doctest: 67
+  tests, 0 failures; HTML builds with 0 warnings. Parity with the old tree (`git archive 50f9eb1`, `conin_scaling_experiments` venv +
+  smoek, highs + pytoulbar2 + pgmpy): 833 `map_query` cases (MN/BN/DBN/HMM × conin/pgmpy inputs × every family of the examples × the 5
+  old methods × evidence none/dict/list/str, `variables`, `start`/`stop`, `ip_formulation`, `prune_network`/`create_MN`,
+  `solution_with_evidence`, `num_solutions`, `max_iterations`, unknown options, the error cases): 542 identical (states, result keys,
+  termination conditions, exception types and messages; `solvetime` ignored), 291 changed, every one by an agreed change (§11 "PR 5"
+  rows): 120 HMM-only method on MN/BN/DBN (`TypeError` → registry `InvalidInputError`), 80 HMM evidence `None`/str (`None`,
+  `AssertionError`, `TypeError`, `AttributeError` → `InvalidInputError`; 16 were already `InvalidInputError` with another message),
+  28 viterbi on constrained HMMs (4 now run, 24 registry `InvalidInputError`), 34 toulbar2 query checks (14 partial `variables` now
+  `RuntimeError`, 10 `prune_network`/`create_MN=False` now run, 10 `=True` `TypeError` → `RuntimeError`), 8 DBN `stop=None` (IP and
+  toulbar2 now solve with `stop=1`), 6 a_star with recursive constraints (5 run recursive A*; 1 unknown option now raises
+  recursive A*'s `TypeError`), 3 pgmpy VE with `solution_with_evidence=True` (now honoured), 2 a_star with no solution (`IndexError` →
+  `solution=None`), 2 network flow on `ConstrainedHiddenMarkovModel(hmm)` (lp path: no `solution.variables`), 1 `ip_formulation`
+  on an MN (now solved), 2 MN `integer_program` with `variables` and an unsupported family (the registry error now comes before the
+  partial-query `RuntimeError`), 5 message texts (the unknown-method list adds `mvr_viterbi`; the not-a-model `TypeError` lists every
+  model type for every method).
+- **After the PR 5 follow-up** (same branch; HMM observations and query checks cleaned up, §11 "PR 5 follow-up" rows): **1600 passed,
+  222 skipped, 0 errors** in `.venv-opencode` (+67 passed, +4 skipped; 1751 → 1822 collected). New:
+  `graphical_models/tests/test_hmm_observations.py` (21) and `inference/tests/test_hmm_results_and_query_checks.py` (12);
+  `test_map_query_dispatch.py` 123 → 161 (the HMM evidence test now uses a set instead of a tuple; new: `[]`/`{}`/sparse/badly keyed
+  dicts ×5 methods, tuple evidence ×5 methods, `stop` limits the query ×3 methods × list/dict, `stop` past the last observation
+  ×3 methods + ×3 kinds in `_structure_params`, VE `stop` row of `test_structure_params` changed 4 → 2 plus a default row). Changed
+  expectations: `test_network_flow_rejects_unsupported_evidence` uses a sparse dict instead of a tuple (tuples are accepted now);
+  `test_log_potential.py` matches the new type-error text. In the `conin_scaling_experiments` venv (+ smoek): the touched files +
+  `representations/factor` + `constrained_models` + `test_log_potential.py` + `test_public_api.py`: 752 passed, 5 skipped;
+  `test_MAP_Inference.py` 69 passed, 41 skipped (unchanged). Sphinx doctest/HTML clean. `test_public_api.py` unchanged (no public name).
 ## 3. Target layout
 
 ```text
@@ -531,7 +591,9 @@ conin/
 │   └── recursive/hmm.py        # (PR 4c: done) RecursiveHMMRepresentation
 ├── inference/
 │   ├── __init__.py             # exports map_query
-│   ├── map_query.py            # public entry point (method -> repn kind -> ovld on repn type)
+│   ├── map_query.py            # (PR 5: done) public entry point (normalise -> method -> repn kind -> ovld on repn type)
+│   ├── hmm_results.py          # (PR 5 follow-up) HMM MAP result shaping; query_checks.py: the IP/toulbar2 query checks
+│   ├── tests/                  # (PR 5) the cross-backend tests, incl. mn/ bn/ dbn/ (were inference/{mn,bn,dbn}/tests)
 │   ├── unconstrained/          # viterbi.py (PR 4c; a_star_ stays in oracle/a_star_hmm.py, next to a_star)
 │   ├── pyomo/                  # (PR 4a) solve.py (generic solve/parse); mn/bn/dbn/hmm.py (per-model post-processing); hmm_network_flow.py (lp_inference, ip_inference, from lp.py)
 │   ├── toulbar2/               # (PR 4b) solve.py (solve_toulbar2_map_query_model + MN); bn/dbn/hmm.py (per-model post-processing)
@@ -553,7 +615,7 @@ conin/
 ├── io/                         # (PR 4f) file IO: uai.py, cfn.py, pgmpy_files.py, unified load_model.py/save_model.py, convert_pgm.py CLI
 ├── common/                     # (PR 4f) non-IO helpers: is_polytree.py, pgmpy/ (pgmpy<->conin conversion, MapCPD); log_potential.py until PR 5b moves it to scoring/
 ├── mediation_variables/        # UNTOUCHED (research prototype)
-└── util/
+└── util/                       # (PR 5) + constraint_data.py (merge_constraint_data)
 ```
 
 Removed outright:
@@ -640,6 +702,9 @@ on MN/BN/DBN).
 (PR 4g) Real now: matvec × none (`MatVecHMMRepresentation`, HMM only; no constraint family by design: it is the
 unconstrained HMM's parameters, used by Viterbi, A*, sampling and the MVR kernels).
 Unsupported combinations raise a clear `InvalidInputError` that lists the supported options.
+(PR 5) Unchanged registrations. Oracle × Algebraic stays unregistered (revisited: compiling needs `T` and `("E", t)` at build time,
+i.e. a new structure param, and the compiled oracle has no partial function, so A* could not prune; nothing asks for it).
+`map_query(method="a_star")` now picks the "recursive" column for recursive constraints (§4.5).
 
 ### 4.2 ConstrainedGraphicalModel
 ```python
@@ -744,7 +809,8 @@ class ConstrainedGraphicalModel:
     fixes `model.V(k, State(v))` for the evidence, then applies the constraints with `constraint_data(evidence=,
     variables=)`, which is today's layout: MN/BN `Munch(variables, evidence)`; DBN `+start, stop, T`; HMM
     `Munch(start, stop, variables, evidence, hmm=Munch(T, hidden_to_internal))`. HMM evidence is keyed `("E", t)`.
-    The constrained model's own `data` is **not** passed on these paths (unchanged from before 4a).
+    The constrained model's own `data` is **not** passed on these paths (unchanged from before 4a). **PR 5: it is (§9): the repns keep
+    `cmodel.data` as `.data`, and `create_model` passes `merge_constraint_data(self.data, self.constraint_data(...))`.**
   - Structure params: MN, BN `()`; DBN `start=0, stop=1`; HMM `start=0, stop` (required).
     `omit_c5` (`use_cut_generation`), `variables`, `prune_network` and `create_MN` are **not** structure params.
   - The builders build on each other: HMM → `create_dbn_from_hmm` → DBN builder (`create_bn_from_dbn`) → BN builder
@@ -764,13 +830,14 @@ class ConstrainedGraphicalModel:
     (`uai_model.states_of(k).index(v)`), then applies the constraints with `constraint_data(evidence=, variables=)`: the same
     layout as the Pyomo repns (MN/BN `Munch(variables, evidence)`; DBN `+start, stop, T`; HMM
     `Munch(start, stop, variables, evidence, hmm=Munch(T, hidden_to_internal))`; HMM evidence keyed `("E", t)`). The
-    constrained model's own `data` is **not** passed (unchanged; §9 row for PR 5).
+    constrained model's own `data` is **not** passed (unchanged; §9 row for PR 5). **PR 5: passed, as for "pyomo".**
   - Structure params: MN, BN `()`; DBN `start=0, stop=1`; HMM `start=0, stop` (required). `verbose`,
     `write_uai_file`, `variables` and the solve options are per-query.
   - The builders build on each other: HMM → `create_dbn_from_hmm` → `build_toulbar2_dbn_representation`
     (`create_bn_from_dbn`) → `build_toulbar2_bn_representation`. The MN builder uses the MN directly.
   - The toulbar2 paths take no `prune_network`/`create_MN` (they reach `solve_toulbar2_map_query_model` and raise
-    `TypeError`, as before), so 4a's `_validate_bn_query` is not shared.
+    `TypeError`, as before), so 4a's `_validate_bn_query` is not shared. **PR 5: shared (`conin/inference/query_checks.py` since the
+    PR 5 follow-up), §9.**
 - (PR 4e) Registered: `"factor"` for MN, BN, DBN and HMM (None, "factor_oracle", "algebraic"). VE keeps running through
   pgmpy (§11). The factor representations:
   - `FactorRepresentation` (base; `representations/factor/common.py`) holds `pgm` (the model the constraint applier sees:
@@ -781,7 +848,8 @@ class ConstrainedGraphicalModel:
     `(name, -1)` per constraint, with `constraint_evidence = {(name, -1): 1}`. This is possible because the VE constraint
     `data` holds no evidence. It is today's layout, unchanged: MN/BN `None`; DBN `Munch(T)`; HMM `Munch(hmm=Munch(T))`, with
     `T = list(range(start, stop + 1))` (the old HMM path used `range(len(evidence))`, the same since `start=0`, `stop =
-    len(evidence) - 1`). Neither `variables`, the evidence nor `cmodel.data` is passed (§9 row for PR 5).
+    len(evidence) - 1`). Neither `variables`, the evidence nor `cmodel.data` is passed (§9 row for PR 5). **PR 5: `cmodel.data` is
+    passed (the fields are set on a copy; MN/BN see the data itself); `variables` and the evidence still are not.**
   - Per query: `query_evidence(evidence)` returns a new dict (user evidence + `constraint_evidence`), and
     `create_model(*, write_uai_file=None)` converts `ve_model` into a fresh pgmpy model (`convert_conin_to_pgmpy_{bn,mn}`;
     `write_uai_file` saves `ve_model` with `conin.io.save_model`, as before). `variables`, `show_progress`, `timing` and
@@ -810,7 +878,9 @@ class ConstrainedGraphicalModel:
   - `conin.inference.oracle.a_star(*, observed, hmm, **kwargs)` and `recursive_a_star(*, hmm, observed, ...)` normalise
     with `ConstrainedHiddenMarkovModel.ensure` and call `representation("oracle")` / `representation("recursive")`;
     other families raise the registry's `InvalidInputError`. `a_star_` takes `oracle=` (was `chmm=`).
-  - `map_query(method="a_star")` is unchanged: it does not route recursive constraints to `recursive_a_star` (PR 5).
+  - `map_query(method="a_star")` is unchanged: it does not route recursive constraints to `recursive_a_star` (PR 5). **PR 5: it does.**
+  - (PR 5) `OracleHMMRepresentation.data` is `cmodel.data`; 2-argument predicates get `merge_constraint_data(data, Munch(hmm=Munch(T)))`
+    (A*, rejection sampling and `is_feasible` agree).
 - (PR 4d) `"mvr"` for HMM (None, "mvr"; unchanged pairs, a real class now). No structure params. The representation:
   - `MVRHMMRepresentation` (`representations/mvr/hmm.py`) holds `model` (the HMM) and `mvrs` (a tuple of `BaseMVR`, one per
     constraint, in order; `()` without constraints). Build: `MVRConstraint` factories are called with `(hmm, cmodel.data)`;
@@ -897,6 +967,60 @@ map_query(pgm, method=..., evidence=..., ...)
   `ConstrainedHiddenMarkovModel(hmm, ())`.
 - The return shape is unchanged: a Munch with `solution`, `solutions`,
   `termination_condition` and `solvetime`.
+
+(PR 5, done) The final design (`conin/inference/map_query.py`):
+1. **Normalise** (`_normalise`): a `ConstrainedGraphicalModel` is used as it is; a pgmpy `DiscreteMarkovNetwork` /
+   `DiscreteBayesianNetwork` / `DynamicBayesianNetwork` is converted with `convert_pgmpy_to_conin` (also for VE: the native pgmpy VE
+   path is gone); a bare model is wrapped as `Constrained*(model)`. Anything else raises `TypeError("Unsupported model type: ...
+   Expected one of: <the 4 model types, the 4 constrained classes, the 3 pgmpy classes>")`. For HMMs, the evidence must be a list,
+   tuple or dict keyed by exactly `0..T-1` (`_hmm_observations` → `graphical_models.hmm_observations.as_sequence`,
+   `InvalidInputError`; `mvr_viterbi` only checks the type, it reads a sparse `{t: label}` dict itself) before anything is built;
+   the dense list is passed on as `query.observed`.
+2. **Method → kind** (`_representation_kind`, a small function; `METHODS` lists the six methods, an unknown one raises `ValueError`):
+
+   | method | kind | notes |
+   |---|---|---|
+   | `integer_program` | `"pyomo"` / `"pyomo_network_flow"` | pops `ip_formulation` for every model type: `None`/`"markov_network"` → pyomo, `"network_flow"` → network flow, else `ValueError` |
+   | `toulbar2` | `"toulbar2"` | |
+   | `variable_elimination` | `"factor"` | |
+   | `a_star` | `"recursive"` if `constraint_family == "recursive"`, else `"oracle"` | |
+   | `viterbi` | `"matvec"` | constraints → registry `InvalidInputError` |
+   | `mvr_viterbi` | `"mvr"` | new |
+3. **Structure params** (`_structure_params`): "pyomo"/"toulbar2"/"factor" on a DBN: `start`, `stop` (`None` → 1, every method); on
+   an HMM: `start`, `stop` (`time_range`: `None` → `len(evidence) - 1`, a `stop` past the last observation → `InvalidInputError`;
+   since the PR 5 follow-up "factor" honours `stop` too); no
+   other kind has structure params here (`x_binary`/`y_binary` keep their defaults, `Tmax` is not used). Then
+   `repn = cmodel.representation(kind, **params)`; unsupported (model type, family) pairs raise the registry's `InvalidInputError`
+   (also for HMM-only methods on MN/BN/DBN).
+4. **Dispatch**: `_solve_map_query(repn, query)` (`query` = Munch of variables, evidence, observed (the dense HMM observations, else
+   `None`), show_progress, timing, start, stop, options), **one ovld overload per representation class, 17**: `Pyomo{MN,BN,DBN,HMM}Representation`,
+   `PyomoNetworkFlowHMMRepresentation`, `Toulbar2{MN,BN,DBN,HMM}Representation`, `Factor{MN,BN,DBN,HMM}Representation`,
+   `MatVecHMMRepresentation`, `OracleHMMRepresentation`, `RecursiveHMMRepresentation`, `MVRHMMRepresentation`. No fallback overload
+   (the normalisation and the registry raise first).
+- Each overload calls a **private repn-level core** in the backend module; the public function (`inference_pyomo_map_query_*`,
+  `inference_toulbar2_map_query_*`, `inference_variable_elimination_map_query_*`, `lp_inference`, `ip_inference`, `viterbi`, `a_star`,
+  `recursive_a_star`, `viterbi_torch_mvr_chmm`) is `ensure` + `representation(...)` + the same core (one implementation; public
+  signatures unchanged). Per-option handling is unchanged: the pyomo cores pop `use_cut_generation` (and BN/DBN/HMM
+  `prune_network`/`create_MN` via `reject_pruning_options`; partial `variables` via `full_query_variables`) and forward the rest to `solve_pyomo_map_query_model` (unknown options →
+  `TypeError`); toulbar2 pops `verbose`, `write_uai_file` (+ the same checks) and forwards to `solve_toulbar2_map_query_model`; VE
+  reads `write_uai_file`/`solution_with_evidence` and ignores the rest; viterbi ignores every option; a_star/recursive A* forward them
+  (unknown → `TypeError`); mvr_viterbi forwards them to the kernel (`dtype`, `device`).
+- Network flow (`_map_query_network_flow`): `_lp_inference` when the repn has no constraints, `_ip_inference` otherwise (the same rule
+  in `inference_pyomo_map_query_HMM`); dict evidence is densified and the solutions keyed by time.
+- **Returns per method** (unchanged except as listed in §5): integer_program/toulbar2/VE `solution` (`states`), `solutions`,
+  `termination_condition` (not VE), `solvetime`; HMM IP/toulbar2/VE `states` a list (list evidence) or dict by time; network flow,
+  viterbi, a_star: `observed`, `solution` (`states`, `hidden`, `log_likelihood`, + `variables` for ip), `solutions`,
+  `termination_condition` (+ `solvetime` for network flow); a_star with recursive constraints: the same shape (`states` = `hidden`),
+  plus `knowledge_state_times`, `objective_values`; no solution: `solution=None`, `solutions=[]`. **mvr_viterbi**:
+  `Munch(observed, solution, solutions=[solution], termination_condition="ok")`, `solution = Munch(states, hidden, log_likelihood,
+  augmented)` (`return_score=True`, `return_augmented=True`; float32 by default, `dtype=`/`device=` forwarded); list evidence is dense;
+  dict evidence is sparse `{t: label}` and the states come back keyed by time; `time_horizon = stop + 1`, else `len(list)` or
+  `max(dict) + 1`; `start != 0` and an empty dict without `stop` raise `InvalidInputError`; an infeasible lattice raises the kernel's
+  `InvalidInputError`. torch is imported on the first `mvr_viterbi` call (`import conin` does not import it).
+- Import layering: `map_query.py` imports the backend cores at the top (no cycle; nothing imports `map_query.py` but
+  `conin.inference`); the only function-level import is `conin.inference.mvr.viterbi` (torch). `hmm_results.py` and
+  `query_checks.py` import nothing; `graphical_models/hmm_observations.py` imports only `conin.exceptions`, so every layer above
+  `graphical_models` (constrained_models, inference, scoring) can use it.
 
 ### 4.6 MVR specifics
 - `MVR_CHMM` is removed. `MVRRepresentation` takes its role:
@@ -1208,7 +1332,60 @@ Breaking changes (these go in the CHANGELOG for 2.0):
   `OracleHMMRepresentation.hmm` is a `MatVecHMMRepresentation` (was the `HMM_MatVecRepn`).
 - (4g follow-up) `conin.sampling.dbn.DBNSampler` → `conin.sampling.unconstrained.DBNSampler` (module
   `conin.sampling.unconstrained.dbn`); `conin.sampling.dbn` is removed. The class is unchanged.
-- New: `map_query(..., method="mvr_viterbi")`.
+- (PR 5, additive) `map_query(..., method="mvr_viterbi")`: the torch MVR Viterbi on the `"mvr"` representation. The solution has
+  `states`, `hidden`, `log_likelihood` and `augmented` (the decoded augmented path); dict evidence is sparse and the states come back
+  keyed by time; `stop + 1` is the time horizon; `dtype`/`device` are forwarded (default float32, "cpu"); `start` must be 0.
+- (PR 5) `map_query` normalises every model to a constrained model and dispatches on the representation type. The private
+  dispatcher modules `conin.inference.{OptimizationInference, CFNInference, AStarInference, ViterbiInference, VariableElimination}`
+  (and their `_map_query_*` functions) are removed; use `map_query` or the public per-backend functions.
+- (PR 5) `conin.inference.mn`, `conin.inference.bn` and `conin.inference.dbn` (empty packages) are removed.
+- (PR 5) `map_query(..., method="viterbi" | "a_star")` on a Markov network, Bayesian network or DBN raises `InvalidInputError` (no
+  such representation is registered) instead of `TypeError`. A non-model still raises `TypeError("Unsupported model type: ...")`.
+- (PR 5) HMM queries need list or dict evidence: `evidence=None` (or any other type) raises `InvalidInputError` for every method
+  (`viterbi`/`a_star` returned `None`, `integer_program`/`toulbar2` raised `AssertionError`, `variable_elimination` `TypeError`).
+  The public `inference_{pyomo,toulbar2,variable_elimination}_map_query_HMM` functions raise the same error.
+- (PR 5 follow-up) HMM observations are read one way everywhere (`map_query`, the public HMM functions, `lp_inference`/`ip_inference`
+  via map_query, `log_probability`, `log_potential`, `is_feasible`): a non-empty list or tuple, or a dict keyed by exactly the times
+  `0..T-1`. A sparse or badly keyed dict, or an empty sequence, raises `InvalidInputError` (it raised `KeyError`, `IndexError` or
+  `AssertionError`); tuple evidence now works in `map_query` (it raised `InvalidInputError`) and returns list states. `mvr_viterbi`
+  still takes a sparse `{t: label}` dict. The error messages changed ("... must be a list, a tuple or a dict keyed by the times
+  0..T-1").
+- (PR 5 follow-up) `map_query(hmm, method="variable_elimination", stop=s)` and `inference_variable_elimination_map_query_HMM(stop=s)`
+  infer over `start..s` (`stop` was ignored, every observation was used). For integer_program, toulbar2 and variable_elimination, a
+  `stop` past the last observation raises `InvalidInputError` (IP/toulbar2 raised `KeyError`).
+- (PR 5 follow-up) The integer-program/toulbar2 query-check messages changed: a partial `variables` raises `RuntimeError("Partial MAP
+  queries are only supported by method='variable_elimination'; ...")` (was "VariableElimination is not supported for CONIN models" or
+  "CONIN does not currently support the generation of discrete Markov networks ..."); `prune_network=True`/`create_MN=True` raise
+  `RuntimeError("<option>=True is not supported for CONIN models")`. On an MN, `variables` naming every node is now a full query (it
+  raised `RuntimeError`).
+- (PR 5) `map_query(ConstrainedHiddenMarkovModel(hmm), method="viterbi")` works (it raised `TypeError`); with constraints it raises
+  `InvalidInputError` (was `TypeError`).
+- (PR 5) `map_query(..., method="a_star")` with `RecursiveConstraint`s runs `recursive_a_star` (it raised `InvalidInputError`). Its
+  solutions have `states`, `hidden` and `log_likelihood` (dicts keyed by time for dict evidence) and the result also has
+  `knowledge_state_times` and `objective_values`.
+- (PR 5) `a_star` (and `a_star_`, `map_query(method="a_star")`) returns `solution=None` with the solutions found so far (`[]`) and
+  `termination_condition="error: no feasible solutions"` (or `"ok"` when `num_solutions > 1` and some were found) when it finds no
+  solution (infeasible model, or `max_iterations`/`max_time` reached first); it raised `IndexError`.
+- (PR 5) The constrained model's `data` (`Constrained*(model, constraints, data=d)`) reaches the constraint functions on every
+  backend: "pyomo", "toulbar2", "factor" (VE), the oracle representation (A*, rejection sampling) and `is_feasible` (it was passed only
+  by network flow and the MVR factories). Functions see a shallow copy of `d` with the backend's fields set (`T`, `hmm`, `start`,
+  `stop`, `variables`, `evidence`, ...; as items for a dict/Munch, as attributes otherwise); a backend field replaces an application
+  field of the same name; without `data` they see exactly what they saw before. The repns of these kinds have a `data` attribute.
+- (PR 5) toulbar2 queries apply the integer-program query checks: a partial `variables` raises `RuntimeError` (it was ignored and every
+  variable was returned; all nodes is still a full query), and `prune_network`/`create_MN` are accepted when `False` and raise
+  `RuntimeError` when `True` (both raised `TypeError`).
+- (PR 5) `map_query(dbn, method="integer_program" | "toulbar2")` with `stop=None` (the default) unrolls over `0..1`, as
+  `variable_elimination` and the public `inference_*_DDBN` functions do (it raised `TypeError`).
+- (PR 5) `ip_formulation` is understood for every model type: `"markov_network"` on an MN/BN/DBN is the default formulation (it
+  raised `TypeError`), `"network_flow"` raises `InvalidInputError` (no such representation).
+- (PR 5) `ip_formulation="network_flow"` on a `ConstrainedHiddenMarkovModel` without constraints uses `lp_inference`, as a bare HMM
+  does (it used `ip_inference`, whose solutions also have `variables`; `solver="or_topas"` therefore needs constraints, or a direct
+  `ip_inference` call). Applies to `map_query` and `inference_pyomo_map_query_HMM`.
+- (PR 5) `map_query(pgmpy_model, method="variable_elimination")` converts the pgmpy MN/BN to CONIN like every other path (it ran pgmpy
+  VE on the model directly): the MAP states are the same (checked on 20 cases), and `solution_with_evidence`/`write_uai_file` are now
+  honoured for pgmpy inputs.
+- (PR 5) The unknown-`method` `ValueError` lists `mvr_viterbi`; the not-a-model `TypeError` lists the same model types for every
+  method.
 
 ---
 
@@ -1236,7 +1413,7 @@ detection keeps the diffs reviewable.
 | 4g | Unconstrained HMM matrix/vector representation | refactor + delete | **DONE (branch `restructure-pr4g-hmm-repn`, off `restructure` b008502).** The `"matvec"` repn (`MatVecHMMRepresentation`: plain + log read-only arrays) replaces `HMM_MatVecRepn`/`hmm.repn`/`initialize`; sampling moves to `conin.sampling.unconstrained`; the HMM validates at construction; the `HMM_MatVecRepn` `map_query` overloads are removed (§4.3, §4.8, §5, §11). Original plan: After 4d (which rewrites `mvr_common` and the MVR notebooks, the heaviest `hmm.repn` users), before 5 (so Viterbi has a representation kind to dispatch on). Replace `HMM_MatVecRepn` and the cached `HiddenMarkovModel.repn` with a registered representation of the bare HMM (`HiddenMarkovModel`, family `None` only): read-only numpy arrays on internal indices, probably plus the log arrays that Viterbi and A* each compute now. Viterbi, A*, recursive A*, rejection sampling and MVR's `_hmm_to_torch` use it; the oracle and recursive repns hold one instead of `model.repn`. Remove `HMM_MatVecRepn`, `hmm.repn`, `initialize()` / `initialize=True` and the `isinstance(hmm, HMM_MatVecRepn)` input branches of `viterbi` and `a_star`. Rationale and open questions: §4.8, §12. |
 | 4e | Factor / VE | refactor | **DONE (branch `restructure-pr4e-factor`, off `restructure` 3cf8d04).** VE constraint handling moves into the factor repn (`apply_factor_constraints`, run at build time). Move `factor_repn`. `conin.inference.variable_elimination`. Fix the VE evidence bugs. Follow-up (same branch): delete the dead pgmpy log-probability code (`custom_VE`, `log_prob_v2`); `log_probability`/`log_potential` for every model; `is_feasible` for every constrained model. Second follow-up: remove the `constraints.algebraic` ↔ `representations.pyomo` import cycle and move the function-level imports that no cycle needs to the top of their modules. |
 | 4f | `common/` → `io/` + `common/`; remove pgmax/pomegranate | move + delete | **DONE (branch `restructure-pr4f-io`).** Rename-only first commit, then the folds and deletions; pyagrum removed too (§11). Independent of 3 and 4a–e. It can happen right after PR 1. |
-| 5 | Dispatch rewrite | **design** | `map_query` → repn → ovld on the repn type. Remove the duplicated overloads. Add `method="mvr_viterbi"`. |
+| 5 | Dispatch rewrite | **design** | **DONE (branch `restructure-pr5-dispatch`, off `restructure` 50f9eb1).** `map_query` → repn → ovld on the repn type (§4.5). Remove the duplicated overloads (the five dispatcher modules are deleted). Add `method="mvr_viterbi"`. Also: a_star → recursive A* for recursive constraints, the three §9 rows (cmodel `data`, toulbar2 query checks, a_star no solution), the §12 test-location question (rename-only commit), §11 "PR 5" rows. |
 | 5b | Scoring | move + feature | After 5, before 6 (so the 2.0 docs and CHANGELOG describe the final paths). New `conin/scoring/` package beside `inference/`. First commit, rename-only: `common/log_potential.py` → `scoring/` (`log_probability`, `log_potential`), with every importer updated (no `conin.common` re-export, per the no-shims rule; a breaking change in §5). Then the marginal and conditional log-probability query (`log P(X=x \| E=e)` with the other variables summed out, and the probability under constraints, `P(x) / P(C)`), dispatched like the PR 5 `map_query` (method → repn kind → ovld on the repn type), on the backends that can compute it (VE on the `"factor"` repn first). Restores `common/` as a bottom layer (it no longer imports `constrained_models`). Decide the query's API and backends at the start of the PR. |
 | 6 | Docs + cleanup | docs | Sphinx API pages, prose docs, AGENTS.md (examples location), CHANGELOG, version 2.0. Delete this plan file. |
 
@@ -1303,7 +1480,7 @@ plan-section references in code, comments or docstrings (§6).
 ---
 
 ## 8. Testing strategy
-- PR 0 adds a public-API smoke test and records the baseline counts (959 passed / 195 skipped / 0 errors; see §2.3). After PR 1: 962 passed / 195 skipped. After PR 2: 1009 passed / 195 skipped (+47 new tests). After PR 3: 1074 passed / 195 skipped (+65). After the PR 3 follow-ups: 1075 passed / 195 skipped. After PR 4f: 1076 passed / 193 skipped (−4 passed and −2 skipped deleted loader tests, +5 `test_public_api.py` rows). After PR 4a: 1115 passed / 193 skipped (+30 Pyomo representation tests, +9 `test_public_api.py` rows); 1116 / 193 after the 4a follow-ups (+1, `test_ensure`). After PR 4b: 1151 passed / 193 skipped (+29 toulbar2 representation tests, +6 `test_public_api.py` rows). After removing the representation cache: 1150 passed / 193 skipped (−1: the two PR 3 cache/get_copy tests merged into `test_every_call_builds_a_new_representation`). After PR 4e: 1181 passed / 202 skipped (+25 factor representation tests, of which 9 skip without pgmpy; the 5 VE helper tests rewritten as 8; +12 `test_public_api.py` rows). After the 4e follow-up: 1269 passed / 204 skipped (`test_log_potential.py` rewritten, 2 → 62 tests; new `test_feasibility.py`, 26; +4 `test_public_api.py` rows). After the import-cycle follow-up: 1270 passed / 204 skipped (+1). After PR 4c: 1330 passed / 204 skipped (+33 new A* / recursive A* tests, +16 / +3 / +2 / +1 in rewritten files, −8 `test_application_chmm.py`, +13 `test_public_api.py` rows; §2.3). After PR 4d: 1349 passed / 213 skipped (+10 MVR repn tests, −1 in `test_mvr_representation.py`, +7 `test_base.py`, +2 `test_feasibility.py`, +1 `test_mvr_operators.py`, +9 `test_public_api.py` rows; §2.3). After PR 4g: 1380 passed / 213 skipped (+11 matvec repn tests, +16 in the new `sampling/unconstrained/tests/test_hmm.py` (8 moved), −3 net in `graphical_models/tests/test_hidden_markov_model.py`, −1 in `constrained_models/tests/test_hidden_markov_model.py`, +8 `test_public_api.py` rows; §2.3). After the 4g follow-up (`DBNSampler` moved): 1381 passed / 213 skipped (+1 `test_public_api.py` row).
+- PR 0 adds a public-API smoke test and records the baseline counts (959 passed / 195 skipped / 0 errors; see §2.3). After PR 1: 962 passed / 195 skipped. After PR 2: 1009 passed / 195 skipped (+47 new tests). After PR 3: 1074 passed / 195 skipped (+65). After the PR 3 follow-ups: 1075 passed / 195 skipped. After PR 4f: 1076 passed / 193 skipped (−4 passed and −2 skipped deleted loader tests, +5 `test_public_api.py` rows). After PR 4a: 1115 passed / 193 skipped (+30 Pyomo representation tests, +9 `test_public_api.py` rows); 1116 / 193 after the 4a follow-ups (+1, `test_ensure`). After PR 4b: 1151 passed / 193 skipped (+29 toulbar2 representation tests, +6 `test_public_api.py` rows). After removing the representation cache: 1150 passed / 193 skipped (−1: the two PR 3 cache/get_copy tests merged into `test_every_call_builds_a_new_representation`). After PR 4e: 1181 passed / 202 skipped (+25 factor representation tests, of which 9 skip without pgmpy; the 5 VE helper tests rewritten as 8; +12 `test_public_api.py` rows). After the 4e follow-up: 1269 passed / 204 skipped (`test_log_potential.py` rewritten, 2 → 62 tests; new `test_feasibility.py`, 26; +4 `test_public_api.py` rows). After the import-cycle follow-up: 1270 passed / 204 skipped (+1). After PR 4c: 1330 passed / 204 skipped (+33 new A* / recursive A* tests, +16 / +3 / +2 / +1 in rewritten files, −8 `test_application_chmm.py`, +13 `test_public_api.py` rows; §2.3). After PR 4d: 1349 passed / 213 skipped (+10 MVR repn tests, −1 in `test_mvr_representation.py`, +7 `test_base.py`, +2 `test_feasibility.py`, +1 `test_mvr_operators.py`, +9 `test_public_api.py` rows; §2.3). After PR 4g: 1380 passed / 213 skipped (+11 matvec repn tests, +16 in the new `sampling/unconstrained/tests/test_hmm.py` (8 moved), −3 net in `graphical_models/tests/test_hidden_markov_model.py`, −1 in `constrained_models/tests/test_hidden_markov_model.py`, +8 `test_public_api.py` rows; §2.3). After the 4g follow-up (`DBNSampler` moved): 1381 passed / 213 skipped (+1 `test_public_api.py` row). After PR 5: 1533 passed / 218 skipped (+123 `test_map_query_dispatch.py`, +30 `test_constraint_data_and_query_checks.py`, +4 in `test_a_star_hmm.py`, +5 torch `mvr_viterbi` tests (skipped here); none removed; §2.3). After the PR 5 follow-up: 1600 passed / 222 skipped (§2.3).
 - Every PR must keep the pass count ≥ baseline, after adjusting for deliberately deleted tests.
 - PR 3 adds tests for:
   - immutability (setattr raises; `with_*` returns a new object);
@@ -1343,19 +1520,19 @@ plan-section references in code, comments or docstrings (§6).
 | The DBN/HMM toulbar2 paths don't check that pytoulbar2 is available | 4b (fixed: all four return the `"pytoulbar2 not available"` result; `test_pytoulbar2_not_available` (MN/BN/DBN/HMM)) |
 | `save_model_uai` writes to `name.split(".")[0] + ".uai"`: a dot in a directory name (e.g. `/a.b/out.uai`, `./out.uai`) writes the wrong file. This is likely why ~66 toulbar2/UAI tests fail with `TMPDIR=/projects/.conin-scratch/tmp` (the old toulbar2 path wrote its temp UAI file through it; since 4b the toulbar2 path writes the cached text directly, but `save_model` and the IO tests still hit it) | 6 (found in 4b; use `os.path.splitext`) |
 | pytoulbar2 keeps the input format in a global option: after `CFN.Read("x.cfn")`, later toulbar2 queries in the same process fail with "wrong problem file format" until `pytoulbar2.pytb2.option.cfn = False` (conin never reads `.cfn` with pytoulbar2 itself, only the tests do) | 6 (found in 4b; reset the option in `Toulbar2FactorRepresentation._read`) |
-| The toulbar2 paths pass `variables` to the constraint functions but otherwise ignore it (the MN docstring said "Ignoring variables for now"); `prune_network`/`create_MN` reach `solve_toulbar2_map_query_model` and raise `TypeError` (the Pyomo paths raise `RuntimeError` via `_validate_bn_query`) | 5 (found in 4b; decide whether to share the Pyomo query checks) |
+| The toulbar2 paths pass `variables` to the constraint functions but otherwise ignore it (the MN docstring said "Ignoring variables for now"); `prune_network`/`create_MN` reach `solve_toulbar2_map_query_model` and raise `TypeError` (the Pyomo paths raise `RuntimeError` via `_validate_bn_query`) | 5 (fixed: the checks are shared, `conin/inference/_query_checks.py`; `test_toulbar2_partial_variables_raise_runtime_error`, `test_partial_variables_raise_the_same_error_on_both_backends`, `test_toulbar2_all_variables_is_a_full_query`, `test_toulbar2_prune_network_and_create_MN` in `inference/tests/test_constraint_data_and_query_checks.py`) |
 | The HMM `network_flow` branch can return `None` | 4a (fixed: `InvalidInputError`; `test_network_flow_rejects_unsupported_{evidence,model}` in `representations/pyomo/tests/test_pyomo_representations.py`) |
 | `CallableDict.__getitem__` returns `KeyError` instead of raising it (it was `__call__`, for a bad arity; a missing key also returned `None`) | 4a (fixed: `CallableDict` replaced by `PyomoVarWrapper`; `test_network_flow_V_{lookups,bad_arity_raises,missing_key_raises}`) |
 | BN/DBN/HMM Pyomo paths forwarded `prune_network=False`/`create_MN=False` to `solve_pyomo_map_query_model`, which raised `TypeError` | 4a (fixed; `test_bn_prune_network_false_is_accepted`) |
 | `solve_pyomo_map_query_model` and `ip_inference` (or_topas) `pop("topas_method")` from the caller's `solver_options`, mutating it (a second call with the same dict uses `"balas"`) | 6 (found in 4a) |
-| The MN/BN/DBN/HMM `"pyomo"` and (4b) `"toulbar2"` paths never pass the constrained model's `data` to constraint functions (only network flow does), so `Constrained*(..., data=d)` is ignored there | 5 (found in 4a; decide whether to merge `cmodel.data` into the per-query data) |
+| The MN/BN/DBN/HMM `"pyomo"` and (4b) `"toulbar2"` paths never pass the constrained model's `data` to constraint functions (only network flow does), so `Constrained*(..., data=d)` is ignored there | 5 (fixed for "pyomo", "toulbar2", "factor", the oracle repn and `is_feasible`: `merge_constraint_data` in `conin/util/constraint_data.py`; `test_application_data_reaches_the_constraint_functions` (5), `test_without_application_data_the_fields_are_unchanged`, `test_a_representation_field_replaces_an_application_field`, `test_attribute_style_application_data`, `test_factor_representation_passes_the_application_data`, `test_variable_elimination_uses_the_application_data`, `test_oracle_predicates_see_the_application_data`, `test_is_feasible_passes_the_application_data`, `test_is_feasible_dbn_sets_T_on_a_copy_of_the_application_data`, `test_integer_program_solves_with_the_application_data` in `inference/tests/test_constraint_data_and_query_checks.py`) |
 | `ConstrainedDynamicDiscreteBayesianNetwork.nodes` is not a property | 3 (fixed, regression test in `constrained_models/tests/test_dynamic_bayesian_network.py`) |
 | `a_star` on an unconstrained `ConstrainedHiddenMarkovModel` raised `AttributeError` (a bare `CHMM` has no `is_feasible`) | 3 (fixed as a side effect of the "oracle" repn) |
 | `mcem` calls `app.generate_hidden` twice per sample (it scores one sequence and trains on another) | 4c (fixed with the row above) |
 | `HMMApplication.create_chmm("pyomo")` attaches no `data`, so constraints that read application data (e.g. `data.num_zeros` in test_application_chmm) would fail if solved | 4c (moot: `HMMApplication` is deleted; `test_network_flow_constraint_reads_the_application_data` in `constrained_models/tests/test_hidden_markov_model.py` solves that constraint with `ConstrainedHiddenMarkovModel(..., data=Munch(num_zeros=3))`) |
 | The examples' `Num_Zeros.run_simulations` used `self.oracle`, which was never set (`AttributeError`) | 4c (found; moot: the class is deleted; `create_chmm1_recursive` replaces its recursive-A* use) |
 | `occurs_only_in_time_frame_constraint` (`same_partial_as_func=True`) and `occurs_at_least_once_in_time_frame_constraint` with `upper_t=None` have `partial_func`s that reject completable prefixes (the window end was taken from the prefix length, not `T`); harmless before 4c because A* never pruned | 4c (found and fixed: partials use `T`; a brute-force check over all prefixes of length ≤ 4 finds no unsound partial in the library. `test_time_frame_constraints_match_brute_force`, `test_time_frame_partial_functions_accept_completable_prefixes`; 4 expectations changed in `test_constraints.test_occurs_at_least_once_in_time_frame`) |
-| `a_star` raises `IndexError` (`output[0]`, or `heappop` on an empty heap) when it finds no solution (infeasible model, or `max_iterations`/`max_time` reached first); `recursive_a_star` returns `termination_condition="error: no feasible solutions"` instead | 5 (found in 4c; decide the no-solution result shape with the dispatch rewrite; `test_pruning_reduces_the_search_without_changing_the_optimum` pins the `IndexError`) |
+| `a_star` raises `IndexError` (`output[0]`, or `heappop` on an empty heap) when it finds no solution (infeasible model, or `max_iterations`/`max_time` reached first); `recursive_a_star` returns `termination_condition="error: no feasible solutions"` instead | 5 (fixed: `solution=None`, the solutions found, the termination condition the search computes; `test_no_solution_within_max_iterations_is_reported`, `test_infeasible_model_is_reported`, `test_fewer_solutions_than_asked_for_are_returned`, `test_map_query_a_star_without_a_solution` in `inference/oracle/tests/test_a_star_hmm.py`; `test_pruning_reduces_the_search_without_changing_the_optimum` asserts `solution is None`) |
 | `recursive_a_star` with `num_solutions > 1` merges prefixes with equal `(last state, length, constraint state)`, so it returns at most one sequence per merged class, not the k best sequences (e.g. `RecursiveConstraint` "exactly two h0" on `["o0"] * 4` skips the 3rd best) | – (found in 4c; inherent to the algorithm; documented in `inference/recursive/tests/test_a_star_hmm.py`) |
 | `MVR/formula.ipynb` prose says `MVR_HMM`/`MVRFunctor` (typos for `MVR_CHMM`/`MVRConstraint`) | 4d (fixed: `ConstrainedHiddenMarkovModel`/`MVRConstraint`; prose only, no test) |
 | `DynamicDiscreteBayesianNetwork.t` is public and gets mutated by `create_bn_from_dbn` and `DBNSampler` (an immutability leak) | 1 (fixed: `create_bn_from_dbn` restores `t`; `DBNSampler` works on a deep copy) |
@@ -1363,7 +1540,9 @@ plan-section references in code, comments or docstrings (§6).
 | `backends.rst` calls smoek optional although pyproject requires it; torch and pytoulbar2 aren't declared as extras | 6 |
 | `create_bn_from_dbn(start=s)` with `s > 0` fails (`AttributeError: 'float' object has no attribute 'keys'`): `_unroll_cpds` skips the transition CPDs at `t = start` (their parents are at `start - 1`), so the time-`start` nodes keep the initial CPD whose values are not a dict. Every backend that unrolls DBNs/HMMs (pyomo, toulbar2, VE) is affected; `map_query(..., start=1)` has never worked | 6 (found in 4e; decide whether `start > 0` should be supported at all) |
 | `HiddenMarkovModel` checked its probabilities (≥ 0, rows sum to 1) only when `HMM_MatVecRepn` was first built (`initialize=True`, or the first Viterbi/A*/sampling/MVR use), so an invalid HMM could be constructed and solved with the Pyomo, toulbar2 and VE backends unchecked | 4g (fixed: the constructor validates; `test_constructor_validates_probabilities` (4 cases) in `graphical_models/tests/test_hidden_markov_model.py`; no existing test or example had an invalid HMM) |
-| VE on the unconstrained `weather` DBN (`stop=4`) runs out of memory under pgmpy (the VE weather tests in `test_MAP_Inference.py` are commented out) | – (found in 4e; pgmpy limitation, not a conin bug; noted for PR 5's VE docs) |
+| VE on the unconstrained `weather` DBN (`stop=4`) runs out of memory under pgmpy (the VE weather tests in `test_MAP_Inference.py` are commented out) | – (found in 4e; pgmpy limitation, not a conin bug; PR 5 did not change the VE docs, so a note belongs to PR 6's docs) |
+| `pgmpy_issue_1177_pgmpy` (`conin.examples.bayesian_network`) fails with the installed pgmpy 1.1.2: `model.fit(data, estimator=MaximumLikelihoodEstimator)` must now get an estimator instance ("Pass an initialized estimator, for example `DiscreteMLE()`") | 6 (found in 5; no test builds it) |
+| `recursive_a_star` documents `solutions` with `hidden` only and returns no `solution`; `map_query(method="a_star")` adds `states` and `solution` for it, but the direct call keeps the old shape | – (found in 5; left as is, the public signature and result were kept) |
 
 ---
 
@@ -1461,8 +1640,8 @@ plan-section references in code, comments or docstrings (§6).
 | Representation cache (after 4b) | Removed: `_cache`, `_freeze`, `Representation.get_copy()` and its 5 overrides. Nothing reused cached repns (bare-model `map_query` wraps per call; learning uses `with_model` per iteration). Structure params vs `create_model()` options stay; a cache can be re-added inside `representation()` without an API change. The MVR repn deep-copies prebuilt MVRs at build time (took over from `get_copy`) |
 | Bugs found in 4b outside its §9 rows (PR 4b) | `save_model_uai`'s path bug and the pytoulbar2 `option.cfn` leak are recorded in §9 for PR 6, not fixed in 4b |
 | VE engine (PR 4e) | Keep pgmpy: the factor repn holds the materialised conin model (`ve_model`) and `create_model()` converts it with `convert_conin_to_pgmpy_{bn,mn}`; VE does not run on `(S, J, v, w)` (no behaviour risk) |
-| Factor structure params (PR 4e) | `()` for MN/BN; `start=0, stop=1` for DBN; `start=0, stop` (required) for HMM, as for "pyomo"/"toulbar2". The HMM dispatcher keeps `stop = len(evidence) - 1` (it ignores `stop`, as before) |
-| VE constraint `data` (PR 4e) | Unchanged: MN/BN `None`; DBN `Munch(T)`; HMM `Munch(hmm=Munch(T))`. It holds no evidence, so constraints are materialised once at build time; the query evidence is merged per query (`query_evidence`). Aligning it with the Pyomo/toulbar2 layout is left to PR 5 (with the `cmodel.data` row in §9) |
+| Factor structure params (PR 4e) | `()` for MN/BN; `start=0, stop=1` for DBN; `start=0, stop` (required) for HMM, as for "pyomo"/"toulbar2". The HMM dispatcher keeps `stop = len(evidence) - 1` (it ignores `stop`, as before) (PR 5 follow-up: it honours `stop`) |
+| VE constraint `data` (PR 4e) | Unchanged: MN/BN `None`; DBN `Munch(T)`; HMM `Munch(hmm=Munch(T))`. It holds no evidence, so constraints are materialised once at build time; the query evidence is merged per query (`query_evidence`). Aligning it with the Pyomo/toulbar2 layout is left to PR 5 (with the `cmodel.data` row in §9). **PR 5: the application data is merged in (see "Constraint `data` (PR 5)"); the fields stay the VE ones (no `variables`/`evidence`), since the constraints are materialised at build time** |
 | VE public names (PR 4e) | `conin.inference.variable_elimination` (`solve.py`, `mn.py`, `bn.py`, `dbn.py`, `hmm.py`, `custom_VE.py`) with `inference_variable_elimination_map_query_{MN,BN,DDBN,HMM}` and `solve_variable_elimination_map_query_model`; `conin.representations.factor` with `FactorRepresentation`, `Factor{MN,BN,DBN,HMM}Representation`, `apply_factor_constraints`. `custom_VE.py` was moved here in 4e and deleted in the 4e follow-up (dead code; the "import cycle" that motivated a lazy import in `log_prob_v2` never broke imports, but it was a layering inversion: `common` importing `inference`) |
 | Total-assignment scores (4e follow-up) | `conin.common.log_probability(model, x, *, observed=None)` (BN, DBN, HMM: exact `log P(x)`; refuses MN and constrained models) and `conin.common.log_potential` (same args; also MN = `log P + log Z`, and constrained models = `-inf` if infeasible, else the unconstrained value, not renormalised). DBN assignments are `{(name, t): s}` over `0..stop` (unrolled with `create_bn_from_dbn(start=0)`); HMM assignments are the hidden sequence (list or dict keyed by time, as in `map_query` solutions) plus `observed`. No `evidence` argument. pgmpy models are converted to conin. Both stay in `common/` (no inference) |
 | Import layering (4e follow-up 2) | No import cycles between modules: every function-level import of a conin module that a cycle needed was removed or hoisted. `PyomoVarWrapper` lives in `conin/util/var_wrapper.py` (`conin.constraints.algebraic` needs it, and `conin.representations.pyomo` imports `conin.constraints`); its public name stays `conin.representations.pyomo.PyomoVarWrapper`. Still function-level by choice: the `conin.common.pgmpy` imports in `conin/examples/*` and `conin.inference.*` (inside `try_import`/pgmpy-only paths), ~~`representations/mvr/hmm.py` → `hidden_markov_model.chmm_mvr`~~ (4c removed the oracle one; 4d removed this one), and `decorators.py`'s doctest import of `conin`. `conin/__init__.py` imports `inference.map_query` eagerly, so importing any submodule loads all of inference (≈7 s here); making that lazy is left for later |
@@ -1471,9 +1650,9 @@ plan-section references in code, comments or docstrings (§6).
 | Factor-repn helpers (PR 4e) | `inference/mn/factor_repn.py` → `representations/factor/factor_repn.py`; `factor_representation_of_mn`, `skeleton_mn_of_bn`, `tuple_var_index_map` move there from `representations/pyomo/common.py` (the pyomo builders import them) |
 | MN constraint factor (PR 4e) | The MN applier adds the materialised factor (0 on infeasible assignments) and no evidence. The old code also fixed the last scope node to `1`, which was the §9 bug |
 | Oracle representation (PR 4c) | `OracleHMMRepresentation` holds `model`, `hmm` (`model.repn`; 4g: a `MatVecHMMRepresentation`), `constraints` (the user's tuple) and does feasibility only (`is_feasible(seq)`, `partial_is_feasible(*, T, seq)` on internal indices, sharing `feasibility.oracle_accepts`). Rebuilt per call (0.8 ms; no cache) |
-| Oracle + algebraic (PR 4c) | Not registered: compiling needs `T` and may reference `("E", t)`, and the compiled oracle has no partial function. `create_oracle_constraints_from_algebraic` stays in `constraints/algebraic/` (the "factor" repn and `feasibility.py` use it; moving it into a representation module would invert the layering) |
+| Oracle + algebraic (PR 4c) | Not registered: compiling needs `T` and may reference `("E", t)`, and the compiled oracle has no partial function. `create_oracle_constraints_from_algebraic` stays in `constraints/algebraic/` (the "factor" repn and `feasibility.py` use it; moving it into a representation module would invert the layering). **PR 5: revisited, still not registered** (it would need a `T` structure param and A* could not prune) |
 | RecursiveConstraint (PR 4c) | `RecursiveConstraint(*, initial, update, feasible, feasible_partial=None, name=None)`, family `"recursive"`, no `data` argument; tuple states for several constraints; `"recursive"` added to `ConstrainedHiddenMarkovModel.supported_families` and `is_feasible` |
-| recursive_a_star signature (PR 4c) | `recursive_a_star(*, hmm, observed, ...)` (same keyword as `a_star`); a bare HMM is wrapped with `ensure`. `map_query(method="a_star")` does not route to it (PR 5) |
+| recursive_a_star signature (PR 4c) | `recursive_a_star(*, hmm, observed, ...)` (same keyword as `a_star`); a bare HMM is wrapped with `ensure`. `map_query(method="a_star")` does not route to it (PR 5) (**PR 5: it does, see "a_star and recursive constraints (PR 5)"**) |
 | Rejection sampling (PR 4c) | `conin.sampling.oracle.rejection_sample_hidden(hmm, time_steps, *, max_failures=1000)` → external labels, same RNG draws as `Oracle_CHMM.generate_hidden`; `ConstrainedHiddenMarkovModel.generate_hidden` delegates to it. A bare HMM is sampled with `hmm.generate_hidden` |
 | mcem (PR 4c) | Keeps `app=`; `app` is a `ConstrainedHiddenMarkovModel` (or bare HMM, via `ensure`); one draw per sample; `cmodel.with_model(new_hmm)` each iteration; still returns the final average log-probability |
 | PR 4c module layout | `inference/unconstrained/viterbi.py`; `inference/oracle/a_star_hmm.py` (`a_star` and its core `a_star_`, kept together); `inference/recursive/a_star_hmm.py`; `learning/{unconstrained,oracle}/`; `sampling/oracle/rejection_hmm.py`. `conin.learning` exports the four learning names. `conin.hidden_markov_model` keeps only the MVR code until 4d (**4d: deleted**) |
@@ -1493,13 +1672,29 @@ plan-section references in code, comments or docstrings (§6).
 | Constrained HMM sampling methods (PR 4g) | `ConstrainedHiddenMarkovModel.generate_hidden` / `generate_observed_from_hidden` / `generate_observed` are removed too (consistency with the HMM; the recommendation was to keep them). `mcem` calls `rejection_sample_hidden` |
 | `hmm.repn` / `initialize` (PR 4g) | Removed outright (no convenience property, no deprecation): `HMM_MatVecRepn`, `HiddenMarkovModel.repn`, `initialize()`, `initialize=`, `avoid_reinitialization`. `_rebuild_hmm` (Baum-Welch) no longer passes `initialize=True` |
 | HMM probability validation (PR 4g) | In the `HiddenMarkovModel` constructor (it was in `HMM_MatVecRepn`, i.e. on `initialize=True` or the first numeric use). `_validate_*` are plain checks now (no `check_errors`, no copy). A full-suite probe before the change showed no test depends on lazy validation |
-| `map_query` `HMM_MatVecRepn` overloads (PR 4g) | Removed from `ViterbiInference.py` and `AStarInference.py` with no replacement overload on `MatVecHMMRepresentation` (repn-type dispatch is PR 5); the `TypeError` messages no longer list `HMM_MatVecRepn`. `map_query` behaviour for HMMs and constrained HMMs is unchanged |
+| `map_query` `HMM_MatVecRepn` overloads (PR 4g) | Removed from `ViterbiInference.py` and `AStarInference.py` with no replacement overload on `MatVecHMMRepresentation` (repn-type dispatch is PR 5); the `TypeError` messages no longer list `HMM_MatVecRepn`. `map_query` behaviour for HMMs and constrained HMMs is unchanged. (PR 5: `MatVecHMMRepresentation` has its overload; a user can't pass a repn to `map_query`, only a model) |
 | `viterbi` / `a_star` inputs (PR 4g) | `viterbi(observed, hmm)` and `a_star(observed, hmm)` take a `HiddenMarkovModel` or `ConstrainedHiddenMarkovModel` (`ensure`); the `isinstance(hmm, HMM_MatVecRepn)` branches are gone. `viterbi_` and `a_star_(..., hmm=)` take a `MatVecHMMRepresentation` on internal indices. `a_star_` reports `np.float64(-val)` so result types match the old numpy-scalar scores |
 | A* matrix reads (PR 4g) | Timed first (§4.8): A* read `hmm.transition_mat[h1][h2]` through copying properties inside its loops; it now reads the repn arrays once into lists (2–8× faster, identical results). Viterbi does the same |
 | Recursive A* (PR 4g) | Unchanged: it reads `hmm.get_*_probs()` once (external labels), so it never had the copy cost; the `"recursive"` repn holds no arrays |
 | Oracle repn `.hmm` (PR 4g) | A `MatVecHMMRepresentation(cmodel.model)` (built directly: `representation("matvec")` on the constrained model would refuse its constraints). `a_star` takes the arrays from `oracle.hmm`; rejection sampling draws from them with the same sampler as `conin.sampling.unconstrained` |
 | `DBNSampler` location (4g follow-up) | `conin/sampling/dbn/sampling.py` → `conin/sampling/unconstrained/dbn.py` (next to `hmm.py`; file named after the model type, not `dbn_forward.py` as first sketched in §3); public name `conin.sampling.unconstrained.DBNSampler`; `conin.sampling.dbn` is removed (no shim). Tests → `sampling/unconstrained/tests/test_dbn.py` and `dbn_examples.py`. Class unchanged |
 | Constructor names / CHMM overloads | First parameter is `model` (no `hmm=`/`pgm=` alias); the broken `CHMM` overloads in the AStar/Optimization/CFN dispatchers are removed in PR 3 |
+| Dispatch layout (PR 5) | Everything in `conin/inference/map_query.py`: `map_query`, `_normalise`, `_representation_kind`, `_structure_params`, and one ovld function `_solve_map_query(repn, query)` with one overload per representation class (17). The five dispatcher modules are deleted (nothing moved, so no rename-only commit for them). Each backend's public function and the overload call one private repn-level core (`_map_query_<backend>_<model>`, `_map_query_network_flow`, `_lp_inference`, `_ip_inference`, `_viterbi`, `_a_star`, `_recursive_a_star`, `_viterbi_torch_mvr`); public signatures unchanged |
+| Method → kind (PR 5) | A small function, not an ovld on the family: the table in §4.5. `ip_formulation` is popped for every model type (`"network_flow"` on MN/BN/DBN → registry `InvalidInputError`; unknown → `ValueError`) |
+| Errors (PR 5) | A non-model: `TypeError("Unsupported model type: ...")` from the normalisation. A model type or family the method can't handle (incl. viterbi/a_star/mvr_viterbi on MN/BN/DBN): the registry's `InvalidInputError`. HMM evidence that is not a list or dict: `InvalidInputError` for every method (and in the public HMM functions); since the follow-up, tuples are accepted and dicts must be keyed `0..T-1` (row "HMM observations") |
+| Viterbi on `ConstrainedHiddenMarkovModel(hmm)` (PR 5) | Allowed (falls out of the uniform dispatch; constraints → registry `InvalidInputError`) |
+| `mvr_viterbi` (PR 5) | As in §4.5: `solution = Munch(states, hidden, log_likelihood, augmented)`, `solutions=[solution]`, `termination_condition="ok"`, `observed`; float32 default (`dtype`/`device` forwarded); list = dense, dict = sparse with time-keyed states; `time_horizon = stop + 1`, else `len(list)` / `max(dict) + 1`; `start != 0` → `InvalidInputError`; infeasible → the kernel's `InvalidInputError`; torch imported on first use |
+| Toulbar2 query checks (PR 5) | Shared with the Pyomo paths (`conin/inference/query_checks.py` since the PR 5 follow-up: `reject_pruning_options`, `full_query_variables`; they replace `pyomo/bn._validate_bn_query`): `variables` must be `None`/empty or every node, for MN too (follow-up; an MN with all nodes named was a `RuntimeError`), else `RuntimeError` naming `method='variable_elimination'`; `prune_network`/`create_MN=True` → `RuntimeError`, `False` accepted |
+| HMM observations (PR 5 follow-up) | One reading for every HMM query and for `hmm_sequences` (`log_probability`, `log_potential`, `is_feasible`): a non-empty list or tuple, or a dict keyed by exactly `0..T-1` (`conin/graphical_models/hmm_observations.py`, internal, no public export; it sits below constrained_models so scoring can use it too). Anything else → `InvalidInputError` (a sparse dict was a `KeyError`, `[]` an `IndexError`/`AssertionError`, a tuple an `InvalidInputError` in `map_query`). The torch MVR algorithms are the documented exception: a dict is sparse `{t: label}` (`require_sequence_type` checks only the type). The old `_hmm_evidence.py` (input half), the VE `_hmm_evidence_to_dbn`/`_hmm_states_from_map` copies and `feasibility._as_sequence` are gone |
+| HMM `stop` (PR 5 follow-up) | integer_program, toulbar2 and variable_elimination infer over `start..stop` (`time_range`; `stop=None` → the last observation); a `stop` past the last observation → `InvalidInputError` (it was a `KeyError` for IP/toulbar2). VE no longer ignores `stop`. viterbi/a_star use every observation (unchanged) |
+| Underscore modules (PR 5 follow-up) | No leading-underscore modules: `inference/_hmm_evidence.py` → `inference/hmm_results.py` (the result-shaping half; `hmm_states_from_dbn` → `hidden_states_from_unrolled(results, *, start, stop, keyed_by_time)`), `inference/_query_checks.py` → `inference/query_checks.py` (option popping and the partial-query check split into two functions; messages name the option / `method='variable_elimination'`). Neither is re-exported from `conin.inference` |
+| Constraint `data` (PR 5) | "pyomo", "toulbar2", "factor", the oracle repn and `is_feasible` pass the application data: `merge_constraint_data(app_data, fields)` (`conin/util/constraint_data.py`) sets the representation's fields on a shallow copy (items for dicts/Munch, attributes otherwise; a field replaces an application field of the same name); `fields` itself when there is no application data (so the old layout exactly). The repns keep `cmodel.data` as `.data` (a new attribute of `PyomoFactorRepresentation`, `Toulbar2FactorRepresentation`, `FactorRepresentation`, `OracleHMMRepresentation`; not a structure param). The oracle repn was included so that A*, rejection sampling and `is_feasible` give 2-argument predicates the same `data` |
+| a_star with no solution (PR 5) | `solution=None`, `solutions` = what was found, the termination condition the search computes (`"error: no feasible solutions"` for `num_solutions=1`, `"ok"` for more, as recursive A*); `a_star_` stops when the heap is empty |
+| a_star and recursive constraints (PR 5) | `map_query(method="a_star")` with family `"recursive"` uses the `"recursive"` repn and `_recursive_a_star`; the result is shaped like A*'s (`solution`, solutions with `states` = `hidden`, dicts for dict evidence) and keeps `knowledge_state_times`/`objective_values`. `recursive_a_star` itself is unchanged |
+| pgmpy inputs (PR 5) | Converted with `convert_pgmpy_to_conin` on every path, VE included (the native pgmpy VE overloads and `_execute_pgmpy_model_query` are deleted; identical states on 20 cases) |
+| DBN `stop=None` (PR 5) | Means `1` for every method (IP and toulbar2 raised `TypeError`) |
+| Network flow without constraints (PR 5) | `lp_inference` for `ConstrainedHiddenMarkovModel(hmm)` too (the empty wrapper is transparent), in `map_query` and in `inference_pyomo_map_query_HMM` |
+| Cross-backend per-model tests (PR 5) | `conin/inference/{mn,bn,dbn}/tests/` → `conin/inference/tests/{mn,bn,dbn}/` (rename-only commit; the empty `conin.inference.{mn,bn,dbn}` packages are removed) |
 
 ---
 
@@ -1507,13 +1702,13 @@ plan-section references in code, comments or docstrings (§6).
 
 None blocking. These can be settled during PR 3 (the design PR):
 - (Pyomo `get_copy()`: settled in PR 4a, rebuild; see §11. toulbar2: settled in PR 4b, UAI text + fresh CFN. The cache and `get_copy()` were removed after 4b.)
-- **Where the cross-backend per-model inference tests go once `inference/{mn,bn,dbn}/` hold no code** (from 4b; after 4e
-  they now hold no code: empty `__init__` + `tests/`). `conin/inference/{mn,bn,dbn}/tests/` exercise pyomo, toulbar2, VE and `map_query`. Options:
-  `inference/tests/{mn,bn,dbn}/`, flattened `inference/tests/test_<model>_*.py`, or keep the folders for tests only.
-  Decide in a follow-up after 4e.
+- (Where the cross-backend per-model inference tests go: settled in PR 5, `inference/tests/{mn,bn,dbn}/`; §11.)
 - **The marginal/conditional log-probability query's API and backends** (PR 5b, §6): its name and signature, whether it
   shares `map_query`'s dispatch, and which backends compute it (VE on the `"factor"` repn first; the deleted
-  `log_prob_v2`/`logprob_VE` were pgmpy-VE drafts of it). Decide at the start of 5b, after PR 5 settles dispatch.
+  `log_prob_v2`/`logprob_VE` were pgmpy-VE drafts of it). Decide at the start of 5b. PR 5's dispatch, to copy: `_normalise` (pgmpy →
+  conin, bare → `Constrained*(model)`), a method → kind function, `_structure_params`, then one ovld overload per representation class
+  calling a private repn-level core (§4.5); `conin/inference/map_query.py` is the template. `_normalise` and `_structure_params` are
+  private to `map_query.py`; if 5b reuses them, move them to a shared private module rather than importing privates across packages.
 - (The unconstrained HMM representation: settled in PR 4g, §11 "PR 4g" rows: `"matvec"`; sampling moves to
   `conin.sampling.unconstrained`; `hmm.repn` removed outright; the A* copy cost was timed, §4.8.)
 - (`DBNSampler`'s location: settled in the 4g follow-up, `conin.sampling.unconstrained`, §11.)

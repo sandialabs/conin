@@ -8,6 +8,7 @@ import munch
 from pyomo.common.timing import TicTocTimer
 
 from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
+from conin.inference.query_checks import full_query_variables
 from conin.util import try_import
 
 with try_import() as pytoulbar2_available:
@@ -35,6 +36,24 @@ def _create_model(repn, *, evidence, variables, timing, write_uai_file, options)
         write_uai_file=write_uai_file,
         timing=timing,
     )
+
+
+def _map_query_toulbar2_mn(
+    repn, *, variables, evidence, timing, write_uai_file, options
+):
+    """Solve a MAP query on the ``"toulbar2"`` representation of a Markov network."""
+    if not pytoulbar2_available:  # pragma:nocover
+        return _not_available()
+    variables = full_query_variables(variables, repn.nodes)
+    model = _create_model(
+        repn,
+        evidence=evidence,
+        variables=variables,
+        timing=timing,
+        write_uai_file=write_uai_file,
+        options=options,
+    )
+    return solve_toulbar2_map_query_model(model, timing=timing, **options)
 
 
 def solve_toulbar2_map_query_model(
@@ -87,7 +106,7 @@ def inference_toulbar2_map_query_MN(
     ----------
     pgm : DiscreteMarkovNetwork or ConstrainedDiscreteMarkovNetwork
     variables : list, optional
-        Passed to the constraint functions as ``data.variables``.
+        Not supported (raises ``RuntimeError``, as the integer-program query).
     evidence : dict, optional
         ``{node: state}``.
     timing : bool, optional
@@ -102,12 +121,11 @@ def inference_toulbar2_map_query_MN(
         return _not_available()
 
     cmodel = ConstrainedDiscreteMarkovNetwork.ensure(pgm)
-    model = _create_model(
+    return _map_query_toulbar2_mn(
         cmodel.representation("toulbar2"),
-        evidence=evidence,
         variables=variables,
+        evidence=evidence,
         timing=timing,
         write_uai_file=write_uai_file,
         options=options,
     )
-    return solve_toulbar2_map_query_model(model, timing=timing, **options)

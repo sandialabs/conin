@@ -27,4 +27,6 @@ def build_toulbar2_bn_representation(
     "toulbar2", DiscreteBayesianNetwork, families=(None, "toulbar2", "algebraic")
 )
 def _build(cmodel):
-    return build_toulbar2_bn_representation(cmodel.model, cmodel.constraints)
+    return build_toulbar2_bn_representation(
+        cmodel.model, cmodel.constraints, data=cmodel.data
+    )

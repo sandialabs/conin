@@ -32,7 +32,7 @@ class PyomoDBNRepresentation(PyomoFactorRepresentation):
         )
 
 
-def build_pyomo_dbn_representation(dbn, constraints=(), *, start, stop):
+def build_pyomo_dbn_representation(dbn, constraints=(), *, start, stop, data=None):
     """Unroll ``dbn`` over ``start..stop`` and build its ``"pyomo"`` representation."""
     bn = create_bn_from_dbn(dbn=dbn, start=start, stop=stop)
     base = build_pyomo_bn_representation(bn)
@@ -47,6 +47,7 @@ def build_pyomo_dbn_representation(dbn, constraints=(), *, start, stop):
         nodes=base.nodes,
         start=start,
         stop=stop,
+        data=data,
     )
 
 
@@ -55,5 +56,5 @@ def build_pyomo_dbn_representation(dbn, constraints=(), *, start, stop):
 )
 def _build(cmodel, *, start=0, stop=1):
     return build_pyomo_dbn_representation(
-        cmodel.model, cmodel.constraints, start=start, stop=stop
+        cmodel.model, cmodel.constraints, start=start, stop=stop, data=cmodel.data
     )

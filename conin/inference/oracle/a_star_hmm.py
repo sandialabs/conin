@@ -45,8 +45,9 @@ def a_star_(
         hmm (MatVecHMMRepresentation): The HMM parameters
             (``representation("matvec")`` of the HMM; ``oracle.hmm`` if omitted)
 
-    Raises:
-        InsufficientSolutionsError: Not enough solutions given by algorithm
+    Returns:
+        munch.Munch: ``observed``, ``solution`` (``None`` if no solution was
+        found), ``solutions`` and ``termination_condition``.
     """
     start_time = time.time()
 
@@ -107,7 +108,7 @@ def a_star_(
     n_infeasible = 0
     termination_condition = "unknown"
     output = []
-    while True:
+    while openSet:
         val, seq = heapq.heappop(openSet)
         t = len(seq)
 
@@ -176,7 +177,7 @@ def a_star_(
 
     ans = munch.Munch(
         observed=observed,
-        solution=output[0],
+        solution=output[0] if output else None,
         solutions=output,
         termination_condition=termination_condition,
     )
@@ -207,15 +208,22 @@ def a_star(
     munch.Munch
         ``observed``, ``solution``, ``solutions`` (each with ``states``,
         ``hidden`` and ``log_likelihood``) and ``termination_condition``.
+        If no feasible sequence is found (the constraints exclude every
+        sequence, or ``max_iterations``/``max_time`` stops the search first),
+        ``solution`` is ``None`` and ``solutions`` holds what was found.
     """
     cmodel = ConstrainedHiddenMarkovModel.ensure(hmm)
     # Raises InvalidInputError for constraint families without an "oracle"
     # representation (anything other than no constraints/"oracle").
-    oracle = cmodel.representation("oracle")
+    return _a_star(cmodel.representation("oracle"), observed=observed, **kwargs)
+
+
+def _a_star(oracle, *, observed, **kwargs):
+    """:func:`a_star` on an ``"oracle"`` representation (external labels)."""
     matvec = oracle.hmm
-    if not cmodel.constraints:
+    hmm = oracle.model
+    if not oracle.constraints:
         oracle = None
-    hmm = cmodel.model
 
     observed_ = [hmm.observed_to_internal[o] for o in observed]
     ans_ = a_star_(observed=observed_, oracle=oracle, hmm=matvec, **kwargs)
@@ -230,7 +238,7 @@ def a_star(
 
     return munch.Munch(
         observed=observed,
-        solution=solutions[0],
+        solution=solutions[0] if solutions else None,
         solutions=solutions,
         termination_condition=ans_.termination_condition,
     )

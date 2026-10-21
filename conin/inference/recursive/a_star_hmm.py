@@ -178,14 +178,33 @@ def recursive_a_star(
         ``log_likelihood``), ``termination_condition``,
         ``knowledge_state_times`` and ``objective_values``.
     """
+    cmodel = ConstrainedHiddenMarkovModel.ensure(hmm)
+    return _recursive_a_star(
+        cmodel.representation("recursive"),
+        observed=observed,
+        num_solutions=num_solutions,
+        debug=debug,
+        max_iterations=max_iterations,
+        max_time=max_time,
+    )
+
+
+def _recursive_a_star(
+    constraint,
+    *,
+    observed,
+    num_solutions=1,
+    debug=False,
+    max_iterations=None,
+    max_time=None,
+):
+    """:func:`recursive_a_star` on a ``"recursive"`` representation."""
     start_time = time.time()
     knowledge_state_times_output = []
     obj_vals = []
 
     # Initalize variables
-    cmodel = ConstrainedHiddenMarkovModel.ensure(hmm)
-    constraint = cmodel.representation("recursive")
-    hmm = cmodel.model
+    hmm = constraint.model
     time_steps = len(observed)
 
     start_probs = hmm.get_start_probs()

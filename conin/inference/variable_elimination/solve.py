@@ -97,3 +97,37 @@ def _solve_repn(
         evidence=query_evidence,
         show_progress=show_progress,
     )
+
+
+def _solve_static(
+    repn,
+    *,
+    variables,
+    evidence,
+    show_progress,
+    timing,
+    write_uai_file,
+    solution_with_evidence,
+    determine_variables,
+):
+    """Solve a MN/BN/DBN query on ``repn``; add the evidence to the solution if asked.
+
+    The evidence is always added when the model has constraints.
+    """
+    solution_with_evidence = solution_with_evidence or len(repn.constraints) > 0
+
+    def _execute():
+        results = _solve_repn(
+            repn,
+            variables=variables,
+            evidence=evidence,
+            show_progress=show_progress,
+            timing=timing,
+            write_uai_file=write_uai_file,
+            determine_variables=determine_variables,
+        )
+        if solution_with_evidence and evidence:
+            results.solution.states.update(evidence)
+        return results
+
+    return _with_timing(timing, _execute)

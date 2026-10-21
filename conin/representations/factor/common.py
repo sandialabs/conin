@@ -22,6 +22,7 @@ from conin.constraints.algebraic import (
 from conin.graphical_models import DiscreteBayesianNetwork, DiscreteMarkovNetwork
 from conin.io import save_model
 from conin.representations.base import Representation
+from conin.util.constraint_data import merge_constraint_data
 
 from .materialise import materialise_factor_oracle
 
@@ -117,23 +118,31 @@ class FactorRepresentation(Representation):
         models); empty for Markov networks.
     nodes : tuple
         The nodes of ``pgm`` (without the constraint nodes).
+    data : object or None
+        The constrained model's application data.  The constraint functions
+        see a copy of it with the fields of :meth:`constraint_data` set.
     """
 
     kind = "factor"
 
-    def __init__(self, *, pgm, constraints):
+    def __init__(self, *, pgm, constraints, data=None):
         self.pgm = pgm
         self.constraints = tuple(constraints)
         self.nodes = tuple(pgm.nodes)
+        self.data = data
         self.ve_model, self.constraint_evidence = apply_factor_constraints(
-            pgm=pgm, constraints=self.constraints, data=self.constraint_data()
+            pgm=pgm,
+            constraints=self.constraints,
+            data=merge_constraint_data(data, self.constraint_data()),
         )
 
     def constraint_data(self):
-        """The ``data`` passed to the constraint functions (``None`` for MN/BN).
+        """The fields this representation adds to the constraint ``data`` (``None`` for MN/BN).
 
-        Subclasses return their structure fields (``T``, ``hmm.T``).  Neither
-        the query evidence nor the constrained model's own ``data`` is passed.
+        Subclasses return their structure fields (``T``, ``hmm.T``).  The
+        constraint functions see these fields set on a copy of the constrained
+        model's ``data`` (the model's ``data`` itself for MN/BN, ``None`` if it
+        has none).  The query evidence is not passed.
         """
         return None
 

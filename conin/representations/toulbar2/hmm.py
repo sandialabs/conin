@@ -54,4 +54,5 @@ def _build(cmodel, *, start=0, stop=None):
         cls=Toulbar2HMMRepresentation,
         pgm=dbn,
         hidden_to_internal=hmm.hidden_to_internal,
+        data=cmodel.data,
     )

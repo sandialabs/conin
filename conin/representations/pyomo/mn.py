@@ -15,7 +15,7 @@ class PyomoMNRepresentation(PyomoFactorRepresentation):
     """
 
 
-def build_pyomo_mn_representation(mn, constraints=()):
+def build_pyomo_mn_representation(mn, constraints=(), *, data=None):
     """Build the ``"pyomo"`` representation of a :class:`DiscreteMarkovNetwork`."""
     S, J, v, w, var_index_map = factor_representation_of_mn(mn)
     return PyomoMNRepresentation(
@@ -27,6 +27,7 @@ def build_pyomo_mn_representation(mn, constraints=()):
         pgm=mn,
         constraints=constraints,
         nodes=mn.nodes,
+        data=data,
     )
 
 
@@ -34,4 +35,6 @@ def build_pyomo_mn_representation(mn, constraints=()):
     "pyomo", DiscreteMarkovNetwork, families=(None, "pyomo", "algebraic")
 )
 def _build(cmodel):
-    return build_pyomo_mn_representation(cmodel.model, cmodel.constraints)
+    return build_pyomo_mn_representation(
+        cmodel.model, cmodel.constraints, data=cmodel.data
+    )

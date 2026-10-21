@@ -48,7 +48,7 @@ class ConstrainedDiscreteMarkovNetwork(ConstrainedGraphicalModel):
             ``True`` if every constraint is satisfied (always, without
             constraints).  ``"oracle"`` and ``"factor_oracle"`` predicates see
             the assignment (restricted to their node scope for factor oracles)
-            and ``data=None``; ``"algebraic"`` constraints are compiled into a
+            and the model's ``data``; ``"algebraic"`` constraints are compiled into a
             predicate (this needs smoek).
 
         Raises
@@ -66,5 +66,5 @@ class ConstrainedDiscreteMarkovNetwork(ConstrainedGraphicalModel):
             assignment=assignment,
             factor_assignment=assignment,
             state_space=StateSpace(states),
-            data=None,
+            data=self.data,
         )

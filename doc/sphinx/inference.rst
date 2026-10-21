@@ -57,9 +57,13 @@ Viterbi and A* inference
    print(a_star_results.solution.states)
    print(viterbi_results.solution.states)
 
-Both methods accept dense evidence lists. Methods that also support a dictionary
-form can use a mapping such as ``{0: "o0", 1: "o0", 2: "o1"}`` when you want the
-returned hidden states keyed by time index.
+Both methods accept the observations as a list or tuple, or as a dictionary
+keyed by every time ``0..T-1``, such as ``{0: "o0", 1: "o0", 2: "o1"}``, which
+returns the hidden states keyed by time index. HMM queries need the
+observations: other evidence (including a dictionary with missing times)
+raises ``InvalidInputError``. The integer-program, toulbar2 and
+variable-elimination methods infer over the times ``start..stop``, with
+``stop`` defaulting to the last observation.
 
 Optimization and Toulbar2 inference on HMMs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -110,8 +114,11 @@ The constrained examples from
 ``conin.examples.hidden_markov_model`` can be used with the same ``map_query``
 entry point.
 For example, the Pyomo-constrained model ``create_chmm1_pyomo()`` works with
-``method="integer_program"``, and the Toulbar2-constrained model
-``create_chmm1_toulbar2()`` works with ``method="toulbar2"``.
+``method="integer_program"``, the Toulbar2-constrained model
+``create_chmm1_toulbar2()`` works with ``method="toulbar2"``, and the oracle and
+recursive models ``create_chmm1_oracle()`` and ``create_chmm1_recursive()``
+work with ``method="a_star"``. HMMs with MVR constraints work with
+``method="mvr_viterbi"`` (requires torch).
 
 .. code-block:: python
 
