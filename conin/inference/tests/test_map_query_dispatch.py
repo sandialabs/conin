@@ -17,6 +17,7 @@ from conin.constrained_models import (
     ConstrainedDynamicDiscreteBayesianNetwork,
     ConstrainedHiddenMarkovModel,
 )
+from conin.constrained_models.normalise import as_constrained_model
 from conin.constraints import OracleConstraint
 from conin.exceptions import InvalidInputError
 from conin.graphical_models.hmm_observations import as_sequence
@@ -101,14 +102,14 @@ def _cmodel(kind):
     ids=["mn", "bn", "dbn", "hmm"],
 )
 def test_bare_models_are_wrapped_with_no_constraints(model, cls):
-    cmodel = mq._normalise(model())
+    cmodel = as_constrained_model(model())
     assert type(cmodel) is cls
     assert cmodel.constraints == ()
 
 
 def test_constrained_models_are_used_as_they_are():
     cmodel = hex_.create_chmm1_oracle()
-    assert mq._normalise(cmodel) is cmodel
+    assert as_constrained_model(cmodel) is cmodel
 
 
 @skipif_pgmpy_not_available
@@ -123,7 +124,7 @@ def test_constrained_models_are_used_as_they_are():
 )
 def test_pgmpy_models_are_converted(example, cls):
     pgm = example().pgm
-    cmodel = mq._normalise(getattr(pgm, "pgm", pgm))
+    cmodel = as_constrained_model(getattr(pgm, "pgm", pgm))
     assert type(cmodel) is cls
     assert cmodel.constraints == ()
 

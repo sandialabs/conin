@@ -22,12 +22,10 @@ import munch
 from ovld import ovld
 
 from conin.constrained_models import (
-    ConstrainedDiscreteBayesianNetwork,
-    ConstrainedDiscreteMarkovNetwork,
     ConstrainedDynamicDiscreteBayesianNetwork,
-    ConstrainedGraphicalModel,
     ConstrainedHiddenMarkovModel,
 )
+from conin.constrained_models.normalise import as_constrained_model
 from conin.exceptions import InvalidInputError
 from conin.graphical_models.hmm_observations import (
     as_sequence,
@@ -57,7 +55,6 @@ from conin.representations.toulbar2 import (
     Toulbar2HMMRepresentation,
     Toulbar2MNRepresentation,
 )
-from conin.util import try_import
 
 from .hmm_results import key_solutions_by_time
 from .oracle.a_star_hmm import _a_star
@@ -76,10 +73,6 @@ from .variable_elimination.dbn import _map_query_variable_elimination_dbn
 from .variable_elimination.hmm import _map_query_variable_elimination_hmm
 from .variable_elimination.mn import _map_query_variable_elimination_mn
 
-with try_import() as pgmpy_available:
-    import pgmpy.models
-    from conin.common.pgmpy import convert_pgmpy_to_conin
-
 METHODS = (
     "integer_program",
     "toulbar2",
@@ -90,54 +83,9 @@ METHODS = (
 )
 """The ``method`` values of :func:`map_query`."""
 
-_CONSTRAINED_CLASSES = (
-    ConstrainedDiscreteMarkovNetwork,
-    ConstrainedDiscreteBayesianNetwork,
-    ConstrainedDynamicDiscreteBayesianNetwork,
-    ConstrainedHiddenMarkovModel,
-)
-
-_PGMPY_CLASSES = (
-    (
-        pgmpy.models.DiscreteMarkovNetwork,
-        pgmpy.models.DiscreteBayesianNetwork,
-        pgmpy.models.DynamicBayesianNetwork,
-    )
-    if pgmpy_available
-    else ()
-)
-
-
 # ---------------------------------------------------------------------
 # Steps 1-3: normalise, pick the representation kind, build it
 # ---------------------------------------------------------------------
-
-
-def _normalise(pgm):
-    """Return ``pgm`` as a constrained CONIN model.
-
-    pgmpy models are converted to CONIN models, and bare CONIN models are
-    wrapped with no constraints.
-
-    Raises
-    ------
-    TypeError
-        If ``pgm`` is not a supported model.
-    """
-    if isinstance(pgm, ConstrainedGraphicalModel):
-        return pgm
-    if isinstance(pgm, _PGMPY_CLASSES):
-        pgm = convert_pgmpy_to_conin(pgm)
-    for cls in _CONSTRAINED_CLASSES:
-        if isinstance(pgm, cls.model_type):
-            return cls(pgm)
-    expected = []
-    for cls in _CONSTRAINED_CLASSES:
-        expected += [cls.model_type.__name__, cls.__name__]
-    expected += [f"pgmpy.models.{cls.__name__}" for cls in _PGMPY_CLASSES]
-    raise TypeError(
-        f"Unsupported model type: {type(pgm)}. Expected one of: {', '.join(expected)}."
-    )
 
 
 def _representation_kind(method, cmodel, options):
@@ -325,7 +273,7 @@ def map_query(
             f"Unsupported inference type: {method}. "
             f"Expected one of: {', '.join(METHODS)}"
         )
-    cmodel = _normalise(pgm)
+    cmodel = as_constrained_model(pgm)
     observed = None
     if isinstance(cmodel, ConstrainedHiddenMarkovModel):
         observed = _hmm_observations(method, evidence)
