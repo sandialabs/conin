@@ -268,6 +268,9 @@ I/O and conversion
   model type").
 - conin.common.pgmpy.log_potential and conin.common.pgmpy.custom_VE (dead,
   untested code) are removed.
+- conin/mediation_variables (an unused NumPy prototype of the mediation
+  variable algorithms, with its notebooks) is removed; the MVR algorithms are
+  in conin.inference.mvr, conin.learning.mvr and conin.sampling.mvr.
 - New extras: toulbar2 (pytoulbar2) and torch.
 
 Bug fixes
