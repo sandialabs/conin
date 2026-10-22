@@ -11,7 +11,7 @@ Conditional Probability Distributions
 can be supplied as a list ordered by the node's state list, while CPDs with
 parents can be supplied as a dictionary keyed by parent assignments.
 
-.. code-block:: python
+.. testcode::
 
    from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
 
@@ -36,7 +36,7 @@ Bayesian networks
 The ``simple1_BN_conin`` example is a good starting point because it has only
 two nodes and one conditional dependency.
 
-.. code-block:: python
+.. testcode::
 
    from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
 
@@ -56,7 +56,7 @@ two nodes and one conditional dependency.
 A larger example is ``cancer1_BN_conin``, which uses explicit state names and a
 node with two parents:
 
-.. code-block:: python
+.. testcode::
 
    from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
 
@@ -118,7 +118,7 @@ Pyomo constraints
 ``cancer1_BN_constrained_pyomo_conin`` prevents ``Dyspnoea`` and ``Xray`` from
 choosing the same state:
 
-.. code-block:: python
+.. testcode::
 
    import pyomo.environ as pyo
    from conin import pyomo_constraint_fn
@@ -141,7 +141,7 @@ Toulbar2 constraints
 ``cancer1_BN_constrained_toulbar2_conin`` uses the Toulbar2 linear-constraint
 interface:
 
-.. code-block:: python
+.. testcode::
 
    from conin import toulbar2_constraint_fn
    from conin.constrained_models import ConstrainedDiscreteBayesianNetwork
@@ -170,7 +170,7 @@ Oracle constraints with node scoping
 ``cancer1_BN_constrained_oracle_conin`` creates a binary constraint as an
 auxiliary CPD:
 
-.. code-block:: python
+.. testcode::
 
    from conin import oracle_constraint_fn
    from conin.constrained_models import ConstrainedDiscreteBayesianNetwork

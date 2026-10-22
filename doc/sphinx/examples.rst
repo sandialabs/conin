@@ -56,7 +56,7 @@ Selected Markov network examples live in ``conin.examples.markov_network``.
 
 Example usage:
 
-.. code-block:: python
+.. testcode::
 
    from conin.examples.markov_network import ABC_conin
 
@@ -95,7 +95,7 @@ Selected Bayesian network examples live in ``conin.examples.bayesian_network``.
 
 Example usage:
 
-.. code-block:: python
+.. testcode::
 
    from conin.examples.bayesian_network import simple1_BN_conin
 
@@ -137,7 +137,7 @@ Selected dynamic Bayesian network examples live in
 
 Example usage:
 
-.. code-block:: python
+.. testcode::
 
    from conin.examples.dynamic_bayesian_network import simple0_DDBN_conin
 
@@ -185,7 +185,7 @@ Selected hidden Markov model examples live in
 
 Example usage:
 
-.. code-block:: python
+.. testcode::
 
    from conin.examples.hidden_markov_model import create_hmm1
    from conin.sampling.unconstrained import generate_hidden

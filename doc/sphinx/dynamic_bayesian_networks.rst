@@ -16,7 +16,7 @@ Dynamic Bayesian networks
 The simplest example is ``simple0_DDBN_conin``, which contains one dynamic node
 with an initial distribution and one transition CPD.
 
-.. code-block:: python
+.. testcode::
 
    from conin.graphical_models import (
        DynamicDiscreteBayesianNetwork,
@@ -44,7 +44,7 @@ validated when they are unrolled for inference.
 
 The ``simple1_DDBN_conin`` example introduces two dynamic nodes:
 
-.. code-block:: python
+.. testcode::
 
    from conin.graphical_models import (
        DynamicDiscreteBayesianNetwork,
@@ -91,7 +91,7 @@ Pyomo constraints
 ``simple1_DDBN_constrained_pyomo_conin`` requires the values of ``A`` and ``B``
 to stay fixed across the first two time steps:
 
-.. code-block:: python
+.. testcode::
 
    import pyomo.environ as pyo
    from conin import pyomo_constraint_fn
@@ -117,7 +117,7 @@ Toulbar2 constraints
 ``simple1_DDBN_constrained_toulbar2_conin`` expresses the same condition with
 Toulbar2:
 
-.. code-block:: python
+.. testcode::
 
    from conin import toulbar2_constraint_fn
    from conin.constrained_models import ConstrainedDynamicDiscreteBayesianNetwork
@@ -149,7 +149,7 @@ Oracle constraints with node scoping
 ``simple1_DDBN_constrained_oracle_conin`` creates a constraint over a generated
 set of nodes:
 
-.. code-block:: python
+.. testcode::
 
    from conin import oracle_constraint_fn
    from conin.constrained_models import ConstrainedDynamicDiscreteBayesianNetwork

@@ -65,13 +65,15 @@ Use ``map_query(..., method="integer_program")`` for Pyomo-backed inference.
 
 You can also pass a solver explicitly to ``map_query``:
 
-.. code-block:: python
+.. testcode::
+   :skipif: not mip_solver_available
 
+   from conin.config import default_mip_solver
    from conin.inference import map_query
    from conin.examples.markov_network import ABC_conin
 
    pgm = ABC_conin().pgm
-   results = map_query(pgm, method="integer_program", solver="highs")
+   results = map_query(pgm, method="integer_program", solver=default_mip_solver)
 
 If no supported solver is installed, Pyomo model construction may still work,
 but optimization-based inference will not be able to solve the model.

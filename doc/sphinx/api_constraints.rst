@@ -59,7 +59,7 @@ expressions.
 
 Use the two-argument ``model.V(node, state)`` form for static graphical models:
 
-.. code-block:: python
+.. testcode::
 
    from conin import algebraic_constraint_fn
 
@@ -70,7 +70,7 @@ Use the two-argument ``model.V(node, state)`` form for static graphical models:
 Use the three-argument ``model.V(node, time, state)`` form for dynamic models
 and hidden Markov models:
 
-.. code-block:: python
+.. testcode::
 
    from conin import algebraic_constraint_fn
 
@@ -88,7 +88,7 @@ it may call ``model.add_components(...)`` to register smoek components
 ``None``. The ``add_components`` approach is useful for indexed constraints over
 a range:
 
-.. code-block:: python
+.. testcode::
 
    from conin import algebraic_constraint_fn
    import smoek as smk

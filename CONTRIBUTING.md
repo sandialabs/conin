@@ -14,11 +14,22 @@ python -m pip install -e .[docs]
 python -m sphinx -b html doc/sphinx doc/sphinx/_build/html
 ```
 
-When documentation examples change, also run the Sphinx doctest builder:
+Every Python example in the documentation is a Sphinx ``testcode`` or
+``doctest`` block, so it is run by the doctest builder (use ``testcode``
+rather than ``code-block:: python`` for new examples):
 
 ```
 python -m sphinx -b doctest doc/sphinx doc/sphinx/_build/doctest
+python -m sphinx -W --keep-going -b html doc/sphinx doc/sphinx/_build/html
 ```
+
+The CI ``docs`` job runs both, with warnings treated as errors. Examples that
+need an optional backend declare it with ``:skipif:`` (``not pgmpy_available``,
+``not toulbar2_available``, ``not mip_solver_available``; see
+``doctest_global_setup`` in ``doc/sphinx/conf.py``), so the docs also build
+without the backends; the CI job installs them and sets
+``CONIN_DOCS_REQUIRE_BACKENDS=1``, so there every example runs. No example
+may need torch: torch is mocked for the API pages.
 
 Code Organisation
 -----------------
@@ -36,8 +47,7 @@ model type.
 - Optional dependencies are imported with ``conin.util.try_import``; tests
   that need them skip when they are missing.
 - There are no compatibility aliases for moved names: when a public name
-  moves, update every importer (code, tests, docs, notebooks) and
-  ``conin/tests/test_public_api.py``.
+  moves, update every importer (code, tests, docs, notebooks).
 - Code is formatted with ``black``.
 
 Pull Requests
