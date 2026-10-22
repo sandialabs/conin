@@ -56,7 +56,7 @@ Selected Markov network examples live in ``conin.examples.markov_network``.
 
 Example usage:
 
-.. code-block:: python
+.. testcode::
 
    from conin.examples.markov_network import ABC_conin
 
@@ -95,7 +95,7 @@ Selected Bayesian network examples live in ``conin.examples.bayesian_network``.
 
 Example usage:
 
-.. code-block:: python
+.. testcode::
 
    from conin.examples.bayesian_network import simple1_BN_conin
 
@@ -137,7 +137,7 @@ Selected dynamic Bayesian network examples live in
 
 Example usage:
 
-.. code-block:: python
+.. testcode::
 
    from conin.examples.dynamic_bayesian_network import simple0_DDBN_conin
 
@@ -168,12 +168,14 @@ Selected hidden Markov model examples live in
      - Three-state HMM configured for all-optimal-solution testing.
    * - ``create_chmm1_oracle``
      - Constrained HMM using oracle sequence constraints.
-   * - ``create_chmm1_oracle``
-     - Constrained HMM using oracle constraints for variable-elimination workflows.
+   * - ``create_chmm1_oracle_ve``
+     - Constrained HMM using factor-oracle constraints for variable-elimination workflows.
    * - ``create_chmm1_recursive``
      - Constrained HMM using a recursive constraint (for ``recursive_a_star``).
    * - ``create_chmm1_pyomo``
      - Constrained HMM using Pyomo constraints.
+   * - ``create_chmm1_algebraic``
+     - Constrained HMM using algebraic constraints (Pyomo, Toulbar2 and variable elimination).
    * - ``create_chmm1_toulbar2``
      - Constrained HMM using Toulbar2 constraints.
    * - ``create_chmm1_pyomo_aos``
@@ -183,7 +185,7 @@ Selected hidden Markov model examples live in
 
 Example usage:
 
-.. code-block:: python
+.. testcode::
 
    from conin.examples.hidden_markov_model import create_hmm1
    from conin.sampling.unconstrained import generate_hidden

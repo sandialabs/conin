@@ -205,9 +205,24 @@ def test_write_uai_file_writes_the_uai_text(tmp_path):
 
 
 @skipif_toulbar2_not_available
+@pytest.mark.parametrize("name", ["small.cfn", "cancer_mn_compressed.cfn.gz"])
+def test_map_query_after_reading_a_cfn_file_with_pytoulbar2(name):
+    # pytoulbar2 keeps the format of the last file it read in global options
+    # (cfn, gz, ...); before they were reset, a toulbar2 query after a user had
+    # read a .cfn file failed with "wrong problem file format".
+    filename = os.path.join(
+        os.path.dirname(__file__), "..", "..", "..", "io", "tests", name
+    )
+    m = pytoulbar2.CFN(verbose=-1)
+    m.Read(filename)
+    results = map_query(mex.ABC_conin().pgm, method="toulbar2")
+    assert results.solution.states == mex.ABC_conin().solutions[0].states
+
+
+@skipif_toulbar2_not_available
 def test_write_uai_file_uses_the_exact_path(tmp_path):
-    # save_model_uai writes to name.split(".")[0] + ".uai", which is wrong for
-    # a dotted directory; the toulbar2 path writes the given file.
+    # The toulbar2 path writes exactly the given file, also in a dotted
+    # directory.
     d = tmp_path / "a.b"
     d.mkdir()
     filename = str(d / "out.uai")

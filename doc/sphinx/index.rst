@@ -21,3 +21,4 @@ behavior in the codebase.
    hmm_learning
    backends
    pgm_api
+   architecture

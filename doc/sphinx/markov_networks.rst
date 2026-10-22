@@ -13,7 +13,7 @@ flat list interpreted in the model's state order.
 For multi-node factors, dictionary values are the most explicit representation
 and avoid ambiguity about Cartesian-product ordering.
 
-.. code-block:: python
+.. testcode::
 
    from conin.graphical_models import DiscreteFactor
 
@@ -35,7 +35,7 @@ The smallest complete example in ``conin.examples.markov_network`` is
 ``example6_conin``. It builds a two-node Markov network with one unary factor
 for each node and one pairwise factor.
 
-.. code-block:: python
+.. testcode::
 
    from conin.graphical_models import DiscreteMarkovNetwork, DiscreteFactor
 
@@ -61,7 +61,7 @@ for each node and one pairwise factor.
 For a slightly larger example, ``ABC_conin`` defines three variables with
 pairwise interactions:
 
-.. code-block:: python
+.. testcode::
 
    import numpy as np
    from conin.graphical_models import DiscreteMarkovNetwork, DiscreteFactor
@@ -98,7 +98,7 @@ Pyomo constraints
 ``ABC_constrained_pyomo_conin`` uses ``@pyomo_constraint_fn`` to add algebraic
 constraints to the optimization model:
 
-.. code-block:: python
+.. testcode::
 
    from conin import pyomo_constraint_fn
    from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
@@ -123,7 +123,7 @@ Toulbar2 constraints
 ``ABC_constrained_toulbar2_conin`` expresses the same all-different constraint
 with the Toulbar2 interface:
 
-.. code-block:: python
+.. testcode::
 
    from conin import toulbar2_constraint_fn
    from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
@@ -150,7 +150,7 @@ Oracle constraints with node scoping
 
 ``ABC_constrained_oracle_conin`` creates the constraint as an auxiliary factor:
 
-.. code-block:: python
+.. testcode::
 
    from conin import oracle_constraint_fn
    from conin.constrained_models import ConstrainedDiscreteMarkovNetwork

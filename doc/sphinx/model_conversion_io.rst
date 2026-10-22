@@ -11,7 +11,7 @@ Core Conversions
 Bayesian networks can be converted to Markov networks by transforming each CPD
 into a factor.
 
-.. code-block:: python
+.. testcode::
 
    from conin.graphical_models import create_mn_from_bn
    from conin.examples.bayesian_network import simple1_BN_conin
@@ -27,7 +27,7 @@ Bayesian networks can then be unrolled into static Bayesian networks over a
 specified inclusive time horizon. The HMM conversion creates dynamic variables
 ``H`` for hidden states and ``E`` for emitted observations.
 
-.. code-block:: python
+.. testcode::
 
    from conin.graphical_models import create_bn_from_dbn
    from conin.graphical_models import create_dbn_from_hmm
@@ -40,6 +40,12 @@ specified inclusive time horizon. The HMM conversion creates dynamic variables
    assert sorted(dbn.dynamic_states) == ["E", "H"]
    assert len(bn.nodes) == 6
 
+``create_bn_from_dbn`` unrolls from ``start=0`` (the DBN's initial CPDs
+describe time 0; another ``start`` raises ``InvalidInputError``) to ``stop``
+inclusive; ``stop=0`` gives one time step. The ``start`` argument of
+``map_query`` with ``integer_program``, ``toulbar2`` and
+``variable_elimination`` on DBNs and HMMs follows the same rule.
+
 UAI Files
 ---------
 
@@ -50,7 +56,7 @@ models, ``save_model`` currently writes UAI files and ``load_model`` reads
 Hidden Markov models use their own JSON methods, ``write_to_file`` and
 ``read_from_file``; see :doc:`hidden_markov_models` for an example.
 
-.. code-block:: python
+.. testcode::
 
    from conin.examples.bayesian_network import simple1_BN_conin
    from conin.io import load_model, save_model
@@ -78,7 +84,17 @@ get zero factor values. CFN files that Toulbar2 writes from probabilistic
 models store costs as negative log-probabilities multiplied by ``10**7``, so
 load them with ``cost_scale=1e7``:
 
-.. code-block:: python
+.. testsetup:: cfn
+
+   import os
+   import shutil
+   import conin.io
+
+   _cfn_dir = os.path.join(os.path.dirname(conin.io.__file__), "tests")
+   shutil.copy(os.path.join(_cfn_dir, "cancer_mn.cfn"), "model.cfn")
+   shutil.copy(os.path.join(_cfn_dir, "abc_constrained.cfn"), "constrained_model.cfn")
+
+.. testcode:: cfn
 
    from conin.io import load_model
 
@@ -92,7 +108,8 @@ constraints, ``load_model`` returns a ``ConstrainedDiscreteMarkovNetwork``
 whose constraints are Toulbar2 constraints, and the unconstrained model is
 available as its ``model`` attribute:
 
-.. code-block:: python
+.. testcode:: cfn
+   :skipif: not toulbar2_available
 
    from conin.io import load_model
    from conin.inference import map_query
@@ -151,10 +168,17 @@ evidence (with the constraints) has probability zero.
   ``"factor_oracle"`` and ``"algebraic"`` constraint families. Other families
   raise ``InvalidInputError``.
 
-.. code-block:: python
+.. testcode::
+   :skipif: not pgmpy_available
 
+   from conin.examples.bayesian_network import (
+       cancer1_BN_conin,
+       cancer1_BN_constrained_oracle_conin,
+   )
    from conin.scoring import log_probability_query
 
+   pgm = cancer1_BN_conin().pgm
+   cpgm = cancer1_BN_constrained_oracle_conin().pgm
    log_probability_query(pgm, {"Cancer": 1}, evidence={"Xray": 1})
    log_probability_query(cpgm, {"Cancer": 1})  # log P(Cancer=1 | constraints)
 
@@ -202,32 +226,4 @@ not installed.
 Reference
 ---------
 
-.. autofunction:: conin.graphical_models.create_mn_from_bn
-
-.. autofunction:: conin.graphical_models.create_bn_from_dbn
-
-.. autofunction:: conin.graphical_models.create_dbn_from_hmm
-
-.. autofunction:: conin.io.load_model
-
-.. autofunction:: conin.io.save_model
-
-.. autofunction:: conin.scoring.log_probability
-
-.. autofunction:: conin.scoring.log_potential
-
-.. autofunction:: conin.scoring.log_probability_query
-
-.. autofunction:: conin.common.is_polytree
-
-.. autofunction:: conin.io.uai.load_conin_model_from_uai
-
-.. autofunction:: conin.io.cfn.load_conin_model_from_cfn
-
-.. autofunction:: conin.io.uai.save_model_uai
-
-.. autofunction:: conin.common.pgmpy.convert_conin_to_pgmpy_bn
-
-.. autofunction:: conin.common.pgmpy.convert_conin_to_pgmpy_mn
-
-.. autofunction:: conin.common.pgmpy.convert_pgmpy_to_conin
+The functions on this page are documented in :doc:`api_scoring_io`.

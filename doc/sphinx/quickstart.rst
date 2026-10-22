@@ -78,12 +78,18 @@ in :doc:`backends`.
 
 For example, with ``pgmpy`` installed:
 
-.. code-block:: python
+.. testcode:: quickstart
+   :skipif: not pgmpy_available
 
    from conin.inference import map_query
 
    result = map_query(pgm, method="variable_elimination")
-   print(result.solution.states)
+   print(sorted(result.solution.states.items()))
+
+.. testoutput:: quickstart
+   :skipif: not pgmpy_available
+
+   [('A', 0), ('B', 1)]
 
 Next Steps
 ----------

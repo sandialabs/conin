@@ -253,9 +253,33 @@ class Toulbar2FactorRepresentation(Representation):
             raise ImportError("pytoulbar2 is required to build a toulbar2 model")
         with open(filename, "w") as f:
             f.write(self.uai_text)
+        _reset_toulbar2_input_format()
         model = pytoulbar2.CFN(verbose=verbose)
         model.Read(filename)
         return model
+
+
+# pytoulbar2 keeps the format of the last file it read in global options and
+# never clears them, so after a user reads e.g. a ``.cfn`` or ``.cfn.gz`` file
+# with pytoulbar2, reading a plain UAI file fails ("wrong problem file format").
+_TOULBAR2_INPUT_FORMAT_OPTIONS = (
+    "bz2",
+    "cfn",
+    "gz",
+    "lp",
+    "opb",
+    "qpbo",
+    "wcnf",
+    "xmlflag",
+    "xz",
+)
+
+
+def _reset_toulbar2_input_format():
+    option = pytoulbar2.pytb2.option
+    for name in _TOULBAR2_INPUT_FORMAT_OPTIONS:
+        if hasattr(option, name):
+            setattr(option, name, False)
 
 
 def add_algebraic_constraints_to_toulbar2_model(*, pgm, constraints, model, data):

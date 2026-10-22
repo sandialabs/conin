@@ -19,6 +19,10 @@ with try_import() as pgmpy_available:
     from pgmpy.estimators.MLE import (
         MaximumLikelihoodEstimator as pgmpy_MaximumLikelihoodEstimator,
     )
+
+with try_import() as pgmpy_discrete_mle_available:
+    # Newer pgmpy versions fit with an estimator instance, e.g. DiscreteMLE().
+    from pgmpy.parameter_estimator import DiscreteMLE as pgmpy_DiscreteMLE
     from pgmpy.factors.discrete import TabularCPD as pgmpy_TabularCPD
 
 with try_import() as smoek_available:
@@ -897,7 +901,10 @@ def pgmpy_issue_1177_pgmpy(debug=False):
             "SHKJ",
         ],
     )
-    model.fit(data, estimator=pgmpy_MaximumLikelihoodEstimator)
+    if pgmpy_discrete_mle_available:
+        model.fit(data, estimator=pgmpy_DiscreteMLE())
+    else:
+        model.fit(data, estimator=pgmpy_MaximumLikelihoodEstimator)
     return model
 
 

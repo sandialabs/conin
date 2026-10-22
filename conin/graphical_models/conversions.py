@@ -1,5 +1,6 @@
 import copy
 
+from conin.exceptions import InvalidInputError
 from conin.graphical_models.markov_network import DiscreteMarkovNetwork
 from conin.graphical_models.bayesian_network import (
     DiscreteCPD,
@@ -28,7 +29,44 @@ def _all_cpds(*args):
 
 
 def create_bn_from_dbn(*, dbn, start, stop):
-    assert start < stop
+    """Unroll a dynamic Bayesian network into a Bayesian network.
+
+    Parameters
+    ----------
+    dbn : DynamicDiscreteBayesianNetwork
+        The model to unroll. It is not changed.
+    start : int
+        The first time step. Only ``0`` is supported: the CPDs of the first
+        unrolled time step are the DBN's initial CPDs, which describe time 0.
+    stop : int
+        The last time step (inclusive), ``stop >= start``. ``stop == start``
+        unrolls one time step.
+
+    Returns
+    -------
+    DiscreteBayesianNetwork
+        The network over the nodes ``(name, t)`` for ``t`` in ``start..stop``
+        (plus the DBN's static nodes).
+
+    Raises
+    ------
+    InvalidInputError
+        If ``start != 0`` or ``stop < start``.
+    """
+    if start != 0:
+        # The transition CPDs at time `start` have parents at `start - 1`, which
+        # are not unrolled, so the time-`start` nodes would keep the initial
+        # CPDs of time 0 (this used to fail later with an AttributeError).
+        # Starting later would need the marginal distribution at `start`.
+        raise InvalidInputError(
+            f"A dynamic Bayesian network can only be unrolled from start=0; "
+            f"got start={start}"
+        )
+    if stop < start:
+        raise InvalidInputError(
+            f"A dynamic Bayesian network is unrolled over start..stop with "
+            f"stop >= start; got start={start}, stop={stop}"
+        )
 
     #
     # Copy non-dynamic states

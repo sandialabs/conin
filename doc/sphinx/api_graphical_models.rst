@@ -50,3 +50,17 @@ Dynamic Bayesian networks
    :members:
    :undoc-members:
    :show-inheritance:
+
+Expressions and conversions
+---------------------------
+
+.. autoclass:: conin.graphical_models.ExpressionVariable
+   :show-inheritance:
+
+.. autofunction:: conin.graphical_models.random_hmm
+
+.. autofunction:: conin.graphical_models.create_mn_from_bn
+
+.. autofunction:: conin.graphical_models.create_bn_from_dbn
+
+.. autofunction:: conin.graphical_models.create_dbn_from_hmm

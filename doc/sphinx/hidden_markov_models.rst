@@ -11,7 +11,7 @@ The ``create_hmm1`` example is a compact starting point. It defines start,
 transition, and emission probabilities and then passes them to the
 ``HiddenMarkovModel`` constructor.
 
-.. code-block:: python
+.. testcode::
 
    from conin.graphical_models import HiddenMarkovModel
 
@@ -45,7 +45,7 @@ sum to 1 (``InvalidInputError`` otherwise).
 Sequences are sampled with ``conin.sampling.unconstrained`` (NumPy's global
 random state, which ``hmm.set_seed`` seeds):
 
-.. code-block:: python
+.. testcode::
 
    from conin.sampling.unconstrained import (
        generate_hidden,
@@ -66,7 +66,7 @@ Random HMMs
 Use ``random_hmm`` to create a reproducible HMM with randomly generated start,
 transition, and emission probabilities over a specified state space.
 
-.. code-block:: python
+.. testcode::
 
    from conin.graphical_models import random_hmm
 
@@ -88,7 +88,7 @@ probabilities to a JSON file and load them back later. This HMM-specific JSON
 format is separate from the UAI file support described in
 :doc:`model_conversion_io`.
 
-.. code-block:: python
+.. testcode::
 
    from conin.graphical_models import HiddenMarkovModel
    from conin.examples.hidden_markov_model import create_hmm1
@@ -147,7 +147,7 @@ Oracle constraints
 ``create_chmm1_oracle`` uses two oracle constraints to restrict the number of
 ``"h0"`` states in the hidden sequence.
 
-.. code-block:: python
+.. testcode::
 
    from conin.graphical_models import HiddenMarkovModel
    from conin.constrained_models import ConstrainedHiddenMarkovModel
@@ -175,7 +175,7 @@ Pyomo constraints
 
 ``create_chmm1_pyomo`` expresses the same condition algebraically:
 
-.. code-block:: python
+.. testcode::
 
    import pyomo.environ as pe
    import conin
@@ -206,7 +206,7 @@ Toulbar2 constraints
 
 ``create_chmm1_toulbar2`` uses the Toulbar2 linear-constraint interface:
 
-.. code-block:: python
+.. testcode::
 
    from conin import toulbar2_constraint_fn
    from conin.constrained_models import ConstrainedHiddenMarkovModel
@@ -243,7 +243,7 @@ Oracle constraints with node scoping
 
 ``create_chmm1_oracle_ve`` adds the same logic through generated factors:
 
-.. code-block:: python
+.. testcode::
 
    from conin import oracle_constraint_fn
    from conin.constrained_models import ConstrainedHiddenMarkovModel
@@ -307,7 +307,16 @@ oracle constraint. ``create_chmm1_recursive`` expresses the condition of
 
 ``map_query(chmm, method="a_star", evidence=observed)`` runs
 ``recursive_a_star`` when the constraints are recursive, and A* with the oracle
-representation otherwise.
+representation otherwise. Through ``map_query`` the result has the usual
+shape (``solution``, and solutions with ``states``, keyed by time for dict
+evidence); a direct ``recursive_a_star`` call returns ``solutions`` with
+``hidden`` and ``log_likelihood`` only, and no ``solution``.
+
+Because prefixes with the same ``(last hidden state, length, constraint
+state)`` are merged, ``recursive_a_star`` with ``num_solutions > 1`` returns
+at most one sequence per merged class, so its solutions are not always the
+``k`` most likely sequences. Use ``a_star`` with an oracle constraint when you
+need the ``k`` best.
 
 Notes
 -----

@@ -63,6 +63,27 @@ def solve_toulbar2_map_query_model(
     solution_with_evidence=False,
     timing=False,
 ):
+    """Solve a toulbar2 MAP query model.
+
+    Parameters
+    ----------
+    model : pytoulbar2.CFN
+        A model built by the ``create_model()`` method of a ``"toulbar2"``
+        representation (it has the ``V``, ``states`` and ``V_evidence``
+        attributes that map the CFN variables back to the model's nodes).
+    solution_with_fixed, solution_with_evidence : bool, optional
+        Include the evidence variables in the solution (the two names are
+        synonyms).
+    timing : bool, optional
+        Print timing information.
+
+    Returns
+    -------
+    munch.Munch
+        ``solution`` (with ``states``, ``{node: state}``, and the CFN
+        ``primal_bound``), ``solutions`` (``[solution]``),
+        ``termination_condition`` (``"ok"``) and ``solvetime``.
+    """
     solution_with_evidence = solution_with_fixed or solution_with_evidence
     if timing:  # pragma:nocover
         timer = TicTocTimer()

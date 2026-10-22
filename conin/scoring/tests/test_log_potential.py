@@ -492,11 +492,11 @@ def test_pgmpy_bn():
 
 
 @require_pgmpy
-def test_pgmpy_dbn_with_duplicate_cpds_is_refused():
-    """convert_pgmpy_to_conin turns simple1_DDBN_pgmpy's CPDs of (B, 0) and
-    (B, 1) into two copies of the template CPD of (B, t); unrolled, (B, 0) and
-    (B, 1) each get two CPDs."""
+def test_pgmpy_dbn_matches_the_conin_dbn():
+    """simple1_DDBN_pgmpy holds the CPD of B for slices 0 and 1; converted, they
+    used to become two copies of the template CPD of (B, t), so the unrolled
+    network had two CPDs for each (B, t) and log_probability refused it."""
     pgm = dbn_examples.simple1_DDBN_pgmpy().pgm
+    conin_pgm = dbn_examples.simple1_DDBN_conin().pgm
     a = {("A", 0): 0, ("A", 1): 0, ("B", 0): 1, ("B", 1): 1}
-    with pytest.raises(InvalidInputError, match="more than one CPD"):
-        log_probability(pgm, a)
+    assert log_probability(pgm, a) == pytest.approx(log_probability(conin_pgm, a))

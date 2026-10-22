@@ -55,8 +55,8 @@ def solve_pyomo_map_query_model(
         if not or_topas_available:  # pragma:nocover
             raise RuntimeError("or_topas not installed")
 
-        if solver_options is None:
-            solver_options = dict()
+        # Copy, so that popping topas_method leaves the caller's dict unchanged.
+        solver_options = dict(solver_options or {})
         topas_method = solver_options.pop("topas_method", "balas")
 
         if timing:  # pragma:nocover

@@ -1,5 +1,7 @@
+import math
 from math import prod
 
+from conin.exceptions import InvalidInputError
 from conin.util import try_import
 from conin.graphical_models import DiscreteMarkovNetwork, DiscreteFactor
 from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
@@ -69,6 +71,12 @@ def convert_pgmpy_to_DiscreteBayesianNetwork(pgmpy_pgm):
     return pgm
 
 
+def _same_values(a, b):
+    return len(a) == len(b) and all(
+        math.isclose(x, y, rel_tol=1e-12, abs_tol=1e-15) for x, y in zip(a, b)
+    )
+
+
 def _as_tuple(var, t, offset):
     if type(var):
         return (var[0], t + (var[1] - offset))
@@ -89,6 +97,7 @@ def convert_pgmpy_to_DynamicDiscreteBayesianNetwork(pgmpy_pgm):
     t = ExpressionVariable()
 
     cpds = []
+    templates = {}
     for cpd in pgmpy_pgm.get_cpds():
 
         if len(cpd.variables) == 1:  # parents == []
@@ -112,6 +121,22 @@ def convert_pgmpy_to_DynamicDiscreteBayesianNetwork(pgmpy_pgm):
             else:
                 offset = cpd.variable.time_slice
 
+            # pgmpy may hold the same CPD for several time slices (e.g.
+            # initialize_initial_state adds the slice-1 copy of an intra-slice
+            # CPD). They give the same (name, t) template, so keep one: two
+            # templates for one node would give the unrolled network two CPDs
+            # per node.
+            key = tuple((var[0], var[1] - offset) for var in cpd.variables)
+            if key in templates:
+                if not _same_values(templates[key], values):
+                    raise InvalidInputError(
+                        f"The pgmpy CPDs of {cpd.variable!r} and of another time "
+                        f"slice give the same dynamic CPD template {key!r} with "
+                        f"different values"
+                    )
+                continue
+            templates[key] = values
+
             cpds.append(
                 DiscreteCPD(
                     node=_as_tuple(cpd.variable, t, offset),
@@ -126,6 +151,29 @@ def convert_pgmpy_to_DynamicDiscreteBayesianNetwork(pgmpy_pgm):
 
 
 def convert_pgmpy_to_conin(pgmpy_pgm):
+    """Convert a pgmpy model to the matching CONIN model.
+
+    Parameters
+    ----------
+    pgmpy_pgm : pgmpy.models.DiscreteMarkovNetwork or DiscreteBayesianNetwork or DynamicBayesianNetwork
+        The model to convert.
+
+    Returns
+    -------
+    DiscreteMarkovNetwork or DiscreteBayesianNetwork or DynamicDiscreteBayesianNetwork
+        The CONIN model. A dynamic Bayesian network's nodes are ``(name, t)``;
+        CPDs that pgmpy holds for several time slices become one CPD template.
+
+    Raises
+    ------
+    ImportError
+        If pgmpy is not installed.
+    ValueError
+        For another model type.
+    InvalidInputError
+        If two time slices of a dynamic Bayesian network have different CPDs
+        for the same template.
+    """
     if not pgmpy_available:
         raise ImportError("Cannot convert a pgmpy model without importing pgmpy")
 

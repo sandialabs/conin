@@ -13,7 +13,7 @@ Learning helpers use a list of simulation records. Each record has aligned
 ``hidden`` and ``observed`` sequences, plus an ``index`` field. The
 ``convert_to_simulations`` helper creates this format from parallel lists.
 
-.. code-block:: python
+.. testcode::
 
    from conin import learning
 
@@ -35,7 +35,7 @@ Supervised Learning
 ``supervised_learning`` estimates start, transition, and emission probabilities
 from simulations where both hidden and observed states are known.
 
-.. code-block:: python
+.. testcode::
 
    from conin import learning
 
@@ -76,9 +76,13 @@ Unobserved States and Priors
 The ``hidden_states`` and ``observable_states`` arguments define the full state
 spaces, not just states present in the training data. If a hidden state has no
 observed outgoing transitions or emissions, ``supervised_learning`` uses uniform
-probabilities unless a prior dictionary is supplied.
+probabilities unless a prior dictionary is supplied. A prior replaces the whole
+row of every such state, and the entries it does not list are 0, so it must
+give each of these rows probabilities that sum to 1 (here ``h1`` is never
+left and ``h2`` is never visited); otherwise the ``HiddenMarkovModel``
+constructor raises ``InvalidInputError``.
 
-.. code-block:: python
+.. testcode::
 
    from conin import learning
 
@@ -93,10 +97,11 @@ probabilities unless a prior dictionary is supplied.
        start_tolerance=0,
        transition_tolerance=0,
        emission_tolerance=0,
-       transition_prior={("h2", "h2"): 1.0},
+       transition_prior={("h1", "h1"): 1.0, ("h2", "h2"): 1.0},
        emission_prior={("h2", "o2"): 1.0},
    )
 
+   assert hmm.get_transition_probs()["h1", "h1"] == 1.0
    assert hmm.get_transition_probs()["h2", "h2"] == 1.0
    assert hmm.get_emission_probs()["h2", "o2"] == 1.0
 
@@ -106,7 +111,7 @@ Unknown Hidden States
 ``add_unknowns`` replaces hidden-state values that occur at most ``num`` times
 with a token. This is useful for collapsing rare labels before fitting a model.
 
-.. code-block:: python
+.. testcode::
 
    from conin import learning
 
