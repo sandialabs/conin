@@ -180,6 +180,12 @@ Representations (new)
   "recursive", "mvr". Every representation() call builds a new object;
   structure parameters (start, stop, ...) are build arguments and per-query
   inputs go to create_model().
+- representation("oracle") is an OracleHMMRepresentation (model, hmm,
+  constraints), representation("mvr") an MVRHMMRepresentation (model, mvrs:
+  deep copies of prebuilt MVRs, aligned to the HMM) and
+  representation("pyomo_network_flow") a PyomoNetworkFlowHMMRepresentation
+  whose create_model(observed=) returns (model, data); their .chmm, .hmm,
+  .data and generate_* attributes are gone.
 - On network-flow models, M.V is a PyomoVarWrapper: a missing variable raises
   KeyError and a wrong number of arguments ValueError (they returned None and
   a KeyError).
@@ -199,6 +205,8 @@ Inference
 - A* prunes with the oracle constraints' partial_func (it never did), so it
   needs fewer iterations; with no solution it returns solution=None and
   termination_condition="error: no feasible solutions" (it raised IndexError).
+  Oracle predicates that take (states, data) work with A* and rejection
+  sampling (they raised TypeError).
 - HMM observations are read one way everywhere: a non-empty list or tuple, or
   a dict keyed by exactly 0..T-1 (InvalidInputError otherwise; evidence=None
   is refused for every method). integer_program, toulbar2 and
@@ -255,7 +263,9 @@ I/O and conversion
   model_type="conin" or "pgmpy". The convert_pgm script is
   conin.io.convert_pgm:main (same name and options).
 - pgmax, pomegranate and pyagrum support (converters, loaders, model_type
-  values and the pgmax/pomegranate/pyagrum/pgm-all extras) is removed.
+  values and the pgmax/pomegranate/pyagrum/pgm-all extras) is removed;
+  load_model with those model_type values raises RuntimeError("Unexpected
+  model type").
 - conin.common.pgmpy.log_potential and conin.common.pgmpy.custom_VE (dead,
   untested code) are removed.
 - New extras: toulbar2 (pytoulbar2) and torch.
