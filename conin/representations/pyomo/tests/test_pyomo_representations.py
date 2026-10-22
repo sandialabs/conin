@@ -333,3 +333,44 @@ def test_bn_unsupported_build_options_raise(option):
 
     with pytest.raises(RuntimeError):
         inference_pyomo_map_query_BN(pgm=bex.cancer1_BN_conin().pgm, **{option: True})
+
+
+# ---------------------------------------------------------------------
+# inference_pyomo_map_query_HMM: the ip_formulation branches
+# ---------------------------------------------------------------------
+
+
+def test_hmm_unknown_ip_formulation_raises():
+    with pytest.raises(ValueError, match="Unexpected ip_formulation value: 'bogus'"):
+        inference_pyomo_map_query_HMM(
+            pgm=hex_.create_hmm1(), evidence=["o0", "o1"], ip_formulation="bogus"
+        )
+
+
+@pytest.mark.skipif(not default_mip_solver, reason="No mip solver installed")
+@pytest.mark.parametrize("ip_formulation", [None, "markov_network", "network_flow"])
+@pytest.mark.parametrize("evidence", [["o0", "o1", "o1"], {0: "o0", 1: "o1", 2: "o1"}])
+def test_hmm_ip_formulations_agree(ip_formulation, evidence):
+    results = inference_pyomo_map_query_HMM(
+        pgm=hex_.create_hmm1(),
+        evidence=evidence,
+        ip_formulation=ip_formulation,
+        solver=default_mip_solver,
+    )
+    expected = ["h1", "h1", "h1"]
+    if isinstance(evidence, dict):
+        expected = dict(enumerate(expected))
+    assert results.solution.states == expected
+
+
+@pytest.mark.skipif(not default_mip_solver, reason="No mip solver installed")
+def test_network_flow_warns_about_cut_generation(caplog):
+    with caplog.at_level("WARNING", logger="conin"):
+        inference_pyomo_map_query_HMM(
+            pgm=hex_.create_hmm1(),
+            evidence=["o0", "o1"],
+            ip_formulation="network_flow",
+            use_cut_generation=True,
+            solver=default_mip_solver,
+        )
+    assert "Cut generation is not supported" in caplog.text

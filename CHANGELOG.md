@@ -315,6 +315,19 @@ Bug fixes
   returned without writing), and the load_model message names the file.
 - The timing=True output of variable elimination prints its STOP line with
   the elapsed time.
+- mcem stops when the average log-probability converges (it never updated
+  the previous value, so it always ran max_iterations iterations), and no
+  longer asserts that the Monte Carlo estimate never increases.
+- The UAI reader joins every pair of nodes in a Markov-network factor (it
+  joined only the last node to the others, so pgmpy rejected the converted
+  model: saving such a model as .bif failed). A truncated UAI file raises
+  ValueError (was StopIteration). Saving a DBN with dynamic nodes as UAI
+  raises InvalidInputError asking to unroll it (was KeyError).
+- The CFN reader rejects an object as a variable domain and a cost function
+  whose costs are all infinite (it gave NaN factor values).
+- mvr_precedence rejects MVRs that are neither HomMVR nor InhomMVR
+  (InvalidInputError; was TypeError), and an MVR constraint function without
+  arguments raises ValueError when it is defined (it failed when called).
 
 Known issues
 

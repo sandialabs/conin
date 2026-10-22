@@ -224,3 +224,14 @@ def test_pgmpy_load_model_unknown_suffix_names_the_file(tmp_path):
     name.write_text("")
     with pytest.raises(RuntimeError, match="model.txt"):
         module.load_model(str(name))
+
+
+def test_uai_markov_network_edges_join_every_pair_of_factor_nodes():
+    # The UAI reader joined only the last node of each factor to the others.
+    import itertools
+
+    pgm = load_model(os.path.join(cwd, "cancer_mn.uai"))
+    edges = {frozenset(e) for e in pgm.edges}
+    for factor in pgm.factors:
+        for a, b in itertools.combinations(factor.nodes, 2):
+            assert frozenset((a, b)) in edges

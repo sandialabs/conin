@@ -63,16 +63,14 @@ def make_temp_copy(source_file):
     temp_dir = tempfile.gettempdir()
     temp_path = os.path.join(temp_dir, "test_" + basename)
 
-    # Ensure the temp file doesn't already exist
+    # Ensure the temp file doesn't already exist.  The counter goes before the
+    # whole suffix (asia_compressed_1.bif.gz, not asia_compressed.bif_1.gz),
+    # since convert_pgm reads the format from it.
     counter = 0
-    original_temp_path = temp_path
+    stem, dot, suffix = ("test_" + basename).partition(".")
     while os.path.exists(temp_path):
         counter += 1
-        name_parts = original_temp_path.rsplit(".", 1)
-        if len(name_parts) == 2:
-            temp_path = f"{name_parts[0]}_{counter}.{name_parts[1]}"
-        else:
-            temp_path = f"{original_temp_path}_{counter}"
+        temp_path = os.path.join(temp_dir, f"{stem}_{counter}{dot}{suffix}")
 
     # Copy source to temp
     shutil.copy(source_file, temp_path)
