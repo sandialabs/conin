@@ -10,7 +10,7 @@ with try_import() as pgmpy_available:
 
 with try_import() as pgmpy_readwrite_available:
     import pgmpy.readwrite
-    from conin.common.pgmpy import convert_pgmpy_to_conin
+    from conin.pgmpy import convert_pgmpy_to_conin
 
 
 cwd = os.path.join(
@@ -19,7 +19,7 @@ cwd = os.path.join(
 
 
 def test_convert_pgmpy_to_conin_requires_pgmpy(monkeypatch):
-    module = importlib.import_module("conin.common.pgmpy.to_conin")
+    module = importlib.import_module("conin.pgmpy.to_conin")
     monkeypatch.setattr(module, "pgmpy_available", False)
 
     with pytest.raises(ImportError, match="pgmpy"):

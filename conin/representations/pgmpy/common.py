@@ -1,19 +1,19 @@
-"""Shared code of the ``"factor"`` representations (variable elimination).
+"""Shared code of the ``"pgmpy"`` representations (variable elimination).
 
-- :func:`apply_factor_constraints`: the single constraint applier for the
-  factor-backend families (``"factor_oracle"`` and ``"algebraic"``, the latter
+- :func:`apply_pgmpy_constraints`: the single constraint applier for the
+  ``"pgmpy"`` backend families (``"factor_oracle"`` and ``"algebraic"``, the latter
   via :func:`~conin.constraints.algebraic.create_oracle_constraints_from_algebraic`).
   It materialises each constraint into a factor (Markov network) or a CPD of
   a new binary node (Bayesian network) with
-  :func:`~conin.representations.factor.materialise_factor_oracle`;
-- :class:`FactorRepresentation`: the base class of the MN/BN/DBN/HMM
-  ``"factor"`` representations.
+  :func:`~conin.representations.pgmpy.materialise_factor_oracle`;
+- :class:`PgmpyRepresentation`: the base class of the MN/BN/DBN/HMM
+  ``"pgmpy"`` representations.
 """
 
 import copy
 import dataclasses
 
-from conin.common.pgmpy import convert_conin_to_pgmpy_bn, convert_conin_to_pgmpy_mn
+from conin.pgmpy import convert_conin_to_pgmpy_bn, convert_conin_to_pgmpy_mn
 from conin.constraints import FactorOracleConstraint
 from conin.constraints.algebraic import (
     AlgebraicConstraint,
@@ -27,8 +27,8 @@ from conin.util.constraint_data import merge_constraint_data
 from .materialise import materialise_factor_oracle
 
 
-def apply_factor_constraints(*, pgm, constraints, data=None):
-    """Add constraints of a factor-backend family to ``pgm``.
+def apply_pgmpy_constraints(*, pgm, constraints, data=None):
+    """Add constraints of a family of the ``"pgmpy"`` backend to ``pgm``.
 
     Parameters
     ----------
@@ -90,7 +90,7 @@ def apply_factor_constraints(*, pgm, constraints, data=None):
     return pgm, evidence
 
 
-class FactorRepresentation(Representation):
+class PgmpyRepresentation(Representation):
     """The factor model of a constrained MN/BN/DBN/HMM, used by variable elimination.
 
     The constraints are materialised once, when the representation is built
@@ -123,14 +123,14 @@ class FactorRepresentation(Representation):
         see a copy of it with the fields of :meth:`constraint_data` set.
     """
 
-    kind = "factor"
+    kind = "pgmpy"
 
     def __init__(self, *, pgm, constraints, data=None):
         self.pgm = pgm
         self.constraints = tuple(constraints)
         self.nodes = tuple(pgm.nodes)
         self.data = data
-        self.ve_model, self.constraint_evidence = apply_factor_constraints(
+        self.ve_model, self.constraint_evidence = apply_pgmpy_constraints(
             pgm=pgm,
             constraints=self.constraints,
             data=merge_constraint_data(data, self.constraint_data()),

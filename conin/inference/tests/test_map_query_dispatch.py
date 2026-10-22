@@ -25,11 +25,11 @@ from conin.inference import map_query
 from conin.inference.oracle import a_star
 from conin.inference.recursive import recursive_a_star
 from conin.inference.unconstrained import viterbi
-from conin.representations.factor import (
-    FactorBNRepresentation,
-    FactorDBNRepresentation,
-    FactorHMMRepresentation,
-    FactorMNRepresentation,
+from conin.representations.pgmpy import (
+    PgmpyBNRepresentation,
+    PgmpyDBNRepresentation,
+    PgmpyHMMRepresentation,
+    PgmpyMNRepresentation,
 )
 from conin.representations.matvec import MatVecHMMRepresentation
 from conin.representations.mvr import MVRHMMRepresentation
@@ -154,7 +154,7 @@ def test_unknown_method_raises_value_error():
         ("integer_program", {"ip_formulation": "markov_network"}, "pyomo"),
         ("integer_program", {"ip_formulation": "network_flow"}, "pyomo_network_flow"),
         ("toulbar2", {}, "toulbar2"),
-        ("variable_elimination", {}, "factor"),
+        ("variable_elimination", {}, "pgmpy"),
         ("a_star", {}, "oracle"),
         ("viterbi", {}, "matvec"),
         ("mvr_viterbi", {}, "mvr"),
@@ -197,11 +197,11 @@ def test_unknown_ip_formulation_raises_value_error():
         ("bn", "toulbar2", {}, {}),
         ("dbn", "pyomo", {}, dict(start=0, stop=1)),
         ("dbn", "toulbar2", dict(stop=3), dict(start=0, stop=3)),
-        ("dbn", "factor", dict(start=1, stop=3), dict(start=1, stop=3)),
+        ("dbn", "pgmpy", dict(start=1, stop=3), dict(start=1, stop=3)),
         ("hmm", "pyomo", dict(evidence=OBSERVED), dict(start=0, stop=4)),
         ("hmm", "toulbar2", dict(evidence=OBSERVED, stop=2), dict(start=0, stop=2)),
-        ("hmm", "factor", dict(evidence=OBSERVED, stop=2), dict(start=0, stop=2)),
-        ("hmm", "factor", dict(evidence=OBSERVED), dict(start=0, stop=4)),
+        ("hmm", "pgmpy", dict(evidence=OBSERVED, stop=2), dict(start=0, stop=2)),
+        ("hmm", "pgmpy", dict(evidence=OBSERVED), dict(start=0, stop=4)),
         ("hmm", "pyomo_network_flow", dict(evidence=OBSERVED), {}),
         ("hmm", "oracle", dict(evidence=OBSERVED, stop=2), {}),
         ("hmm", "matvec", dict(evidence=OBSERVED), {}),
@@ -214,7 +214,7 @@ def test_structure_params(model, kind, kwds, params):
     assert mq._structure_params(kind, _cmodel(model), **kwds) == params
 
 
-@pytest.mark.parametrize("kind", ["pyomo", "toulbar2", "factor"])
+@pytest.mark.parametrize("kind", ["pyomo", "toulbar2", "pgmpy"])
 def test_structure_params_stop_past_the_observations(kind):
     with pytest.raises(InvalidInputError, match="past the last observation"):
         mq._structure_params(
@@ -237,10 +237,10 @@ REPRESENTATION_CLASSES = [
     Toulbar2BNRepresentation,
     Toulbar2DBNRepresentation,
     Toulbar2HMMRepresentation,
-    FactorMNRepresentation,
-    FactorBNRepresentation,
-    FactorDBNRepresentation,
-    FactorHMMRepresentation,
+    PgmpyMNRepresentation,
+    PgmpyBNRepresentation,
+    PgmpyDBNRepresentation,
+    PgmpyHMMRepresentation,
     MatVecHMMRepresentation,
     OracleHMMRepresentation,
     RecursiveHMMRepresentation,
@@ -273,10 +273,10 @@ def test_no_overload_for_other_objects():
         ("bn", "toulbar2", {}, Toulbar2BNRepresentation),
         ("dbn", "toulbar2", {}, Toulbar2DBNRepresentation),
         ("hmm", "toulbar2", dict(stop=4), Toulbar2HMMRepresentation),
-        ("mn", "factor", {}, FactorMNRepresentation),
-        ("bn", "factor", {}, FactorBNRepresentation),
-        ("dbn", "factor", {}, FactorDBNRepresentation),
-        ("hmm", "factor", dict(stop=4), FactorHMMRepresentation),
+        ("mn", "pgmpy", {}, PgmpyMNRepresentation),
+        ("bn", "pgmpy", {}, PgmpyBNRepresentation),
+        ("dbn", "pgmpy", {}, PgmpyDBNRepresentation),
+        ("hmm", "pgmpy", dict(stop=4), PgmpyHMMRepresentation),
         ("hmm", "matvec", {}, MatVecHMMRepresentation),
         ("hmm", "oracle", {}, OracleHMMRepresentation),
         ("hmm", "recursive", {}, RecursiveHMMRepresentation),
@@ -640,7 +640,7 @@ def test_dbn_with_one_time_step(method, solver):
     assert results.solution.states == {("A", 0): 0, ("B", 0): 1}
 
 
-@pytest.mark.parametrize("kind", ["pyomo", "toulbar2", "factor"])
+@pytest.mark.parametrize("kind", ["pyomo", "toulbar2", "pgmpy"])
 @pytest.mark.parametrize("model", ["dbn", "hmm"])
 def test_unrolling_from_a_later_start_is_refused(kind, model):
     # create_bn_from_dbn(start > 0) failed with an AttributeError for every

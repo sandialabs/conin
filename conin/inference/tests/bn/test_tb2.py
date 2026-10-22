@@ -45,7 +45,7 @@ def test_tb2_BN_conin_mip():
 @skipif_pgmpy_not_available
 @skipif_no_mip_solvers
 def test_tb2_BN_pgmpy_mip():
-    from conin.common.pgmpy import convert_pgmpy_to_conin
+    from conin.pgmpy import convert_pgmpy_to_conin
 
     example = examples.tb2_BN_pgmpy()
     q = example.solutions[0].states
@@ -57,7 +57,7 @@ def test_tb2_BN_pgmpy_mip():
 @skipif_pgmpy_not_available
 @skipif_no_mip_solvers
 def test_tb2_BN_pgmpy_mapcpd_mip():
-    from conin.common.pgmpy import convert_pgmpy_to_conin
+    from conin.pgmpy import convert_pgmpy_to_conin
 
     example = examples.tb2_BN_pgmpy_mapcpd()
     q = example.solutions[0].states
@@ -84,7 +84,7 @@ def test_tb2_BN_conin_toulbar2():
 @skipif_pgmpy_not_available
 @skipif_toulbar2_not_available
 def test_tb2_BN_pgmpy_toulbar2():
-    from conin.common.pgmpy import convert_pgmpy_to_conin
+    from conin.pgmpy import convert_pgmpy_to_conin
 
     example = examples.tb2_BN_pgmpy()
     q = example.solutions[0].states
@@ -96,7 +96,7 @@ def test_tb2_BN_pgmpy_toulbar2():
 @skipif_pgmpy_not_available
 @skipif_toulbar2_not_available
 def test_tb2_BN_pgmpy_mapcpd_toulbar2():
-    from conin.common.pgmpy import convert_pgmpy_to_conin
+    from conin.pgmpy import convert_pgmpy_to_conin
 
     example = examples.tb2_BN_pgmpy_mapcpd()
     q = example.solutions[0].states

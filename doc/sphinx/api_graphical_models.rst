@@ -64,3 +64,5 @@ Expressions and conversions
 .. autofunction:: conin.graphical_models.create_bn_from_dbn
 
 .. autofunction:: conin.graphical_models.create_dbn_from_hmm
+
+.. autofunction:: conin.graphical_models.is_polytree

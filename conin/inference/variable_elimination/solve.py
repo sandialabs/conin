@@ -17,7 +17,7 @@ def solve_variable_elimination_map_query_model(
     Parameters
     ----------
     model : pgmpy.models.DiscreteMarkovNetwork or pgmpy.models.DiscreteBayesianNetwork
-        E.g. from ``cmodel.representation("factor").create_model()``.
+        E.g. from ``cmodel.representation("pgmpy").create_model()``.
     variables : list, optional
         The query variables (default: every node not in ``evidence``).
     evidence : dict, optional

@@ -3,7 +3,7 @@
 from conin.graphical_models import DiscreteMarkovNetwork
 from conin.representations.base import register_representation
 
-from conin.representations.factor.factor_repn import factor_representation_of_mn
+from .factor_repn import factor_representation_of_mn
 
 from .common import PyomoFactorRepresentation
 

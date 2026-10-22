@@ -1,12 +1,12 @@
-"""The ``"factor"`` representation of a (constrained) Markov network."""
+"""The ``"pgmpy"`` representation of a (constrained) Markov network."""
 
 from conin.graphical_models import DiscreteMarkovNetwork
 from conin.representations.base import register_representation
 
-from .common import FactorRepresentation
+from .common import PgmpyRepresentation
 
 
-class FactorMNRepresentation(FactorRepresentation):
+class PgmpyMNRepresentation(PgmpyRepresentation):
     """Factor model of a constrained Markov network.
 
     Each constraint adds a factor over its scope (``0`` on infeasible
@@ -16,9 +16,9 @@ class FactorMNRepresentation(FactorRepresentation):
 
 
 @register_representation(
-    "factor", DiscreteMarkovNetwork, families=(None, "factor_oracle", "algebraic")
+    "pgmpy", DiscreteMarkovNetwork, families=(None, "factor_oracle", "algebraic")
 )
 def _build(cmodel):
-    return FactorMNRepresentation(
+    return PgmpyMNRepresentation(
         pgm=cmodel.model, constraints=cmodel.constraints, data=cmodel.data
     )

@@ -7,7 +7,7 @@ from .cfn import load_conin_model_from_cfn
 
 with try_import() as pgmpy_available:
     import pgmpy  # noqa: F401
-    from conin.common.pgmpy import convert_pgmpy_to_conin
+    from conin.pgmpy import convert_pgmpy_to_conin
     from . import pgmpy_files
 
 

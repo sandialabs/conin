@@ -15,7 +15,7 @@ from .markov_network import ConstrainedDiscreteMarkovNetwork
 
 with try_import() as pgmpy_available:
     import pgmpy.models
-    from conin.common.pgmpy import convert_pgmpy_to_conin
+    from conin.pgmpy import convert_pgmpy_to_conin
 
 CONSTRAINED_CLASSES = (
     ConstrainedDiscreteMarkovNetwork,

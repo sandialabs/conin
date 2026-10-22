@@ -4,7 +4,7 @@ import sys
 import numpy as np
 
 from conin.util import try_import
-from conin.common.pgmpy import convert_conin_to_pgmpy_mn
+from conin.pgmpy import convert_conin_to_pgmpy_mn
 from conin.graphical_models import create_mn_from_bn
 import conin.examples.markov_network
 import conin.examples.bayesian_network
@@ -20,7 +20,7 @@ require_pgmpy = pytest.mark.skipif(not pgmpy_available, reason="pgmpy not instal
 
 def test_import_convert_function():
     """Test that the conversion function can be imported."""
-    from conin.common.pgmpy import convert_conin_to_pgmpy_mn
+    from conin.pgmpy import convert_conin_to_pgmpy_mn
 
     assert callable(convert_conin_to_pgmpy_mn)
 
@@ -28,7 +28,7 @@ def test_import_convert_function():
 @require_pgmpy
 def test_convert_invalid_input():
     """Test error handling for invalid input types."""
-    from conin.common.pgmpy import convert_conin_to_pgmpy_mn
+    from conin.pgmpy import convert_conin_to_pgmpy_mn
 
     with pytest.raises(ValueError, match="Expected conin DiscreteMarkovNetwork"):
         convert_conin_to_pgmpy_mn("not a model")

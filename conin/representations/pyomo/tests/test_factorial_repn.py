@@ -9,7 +9,7 @@ from conin.inference.pyomo import solve_pyomo_map_query_model
 from conin.representations.pyomo.common import (
     create_MN_pyomo_map_query_model_from_factorial_repn,
 )
-from conin.representations.factor.factor_repn import (
+from conin.representations.pyomo.factor_repn import (
     extract_factor_representation,
     State,
 )
@@ -18,7 +18,7 @@ from conin.examples import markov_network as examples
 
 with try_import() as pgmpy_available:
     import pgmpy
-    from conin.common.pgmpy import convert_pgmpy_to_conin
+    from conin.pgmpy import convert_pgmpy_to_conin
 
 mip_solver = pyomo.opt.check_available_solvers("gurobi", "highs", "glpk")
 mip_solver = mip_solver[0] if mip_solver else None

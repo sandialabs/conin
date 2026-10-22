@@ -7,3 +7,4 @@ from .dynamic_bayesian_network import DynamicDiscreteBayesianNetwork
 from .expr import ExpressionVariable
 from .hidden_markov_model import HiddenMarkovModel, random_hmm
 from .conversions import create_mn_from_bn, create_bn_from_dbn, create_dbn_from_hmm
+from .polytree import is_polytree

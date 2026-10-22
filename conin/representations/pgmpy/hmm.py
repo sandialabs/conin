@@ -1,14 +1,14 @@
-"""The ``"factor"`` representation of a (constrained) HMM."""
+"""The ``"pgmpy"`` representation of a (constrained) HMM."""
 
 import munch
 
 from conin.graphical_models import HiddenMarkovModel, create_dbn_from_hmm
 from conin.representations.base import register_representation
 
-from .dbn import FactorDBNRepresentation, build_factor_dbn_representation
+from .dbn import PgmpyDBNRepresentation, build_pgmpy_dbn_representation
 
 
-class FactorHMMRepresentation(FactorDBNRepresentation):
+class PgmpyHMMRepresentation(PgmpyDBNRepresentation):
     """Factor model of a constrained HMM unrolled (as a DBN) over ``start..stop``.
 
     Structure params: ``start`` and ``stop``.  The hidden nodes are
@@ -22,16 +22,16 @@ class FactorHMMRepresentation(FactorDBNRepresentation):
 
 
 @register_representation(
-    "factor", HiddenMarkovModel, families=(None, "factor_oracle", "algebraic")
+    "pgmpy", HiddenMarkovModel, families=(None, "factor_oracle", "algebraic")
 )
 def _build(cmodel, *, start=0, stop=None):
     assert stop is not None, "Expecting evidence (observations) for an HMM"
     dbn = create_dbn_from_hmm(cmodel.model)
-    return build_factor_dbn_representation(
+    return build_pgmpy_dbn_representation(
         dbn,
         cmodel.constraints,
         start=start,
         stop=stop,
-        cls=FactorHMMRepresentation,
+        cls=PgmpyHMMRepresentation,
         data=cmodel.data,
     )

@@ -1,3 +1,9 @@
+"""Interoperability with pgmpy: convert models between pgmpy and CONIN.
+
+pgmpy is optional: this package imports without it, and the functions raise
+``ImportError`` when they need it.
+"""
+
 from .polytree import is_polytree
 from .mapcpd import MapCPD
 from .to_conin import convert_pgmpy_to_conin

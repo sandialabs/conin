@@ -30,11 +30,11 @@ from conin.graphical_models import (
     DynamicDiscreteBayesianNetwork,
     HiddenMarkovModel,
 )
-from conin.representations.factor import (
-    FactorBNRepresentation,
-    FactorDBNRepresentation,
-    FactorHMMRepresentation,
-    FactorMNRepresentation,
+from conin.representations.pgmpy import (
+    PgmpyBNRepresentation,
+    PgmpyDBNRepresentation,
+    PgmpyHMMRepresentation,
+    PgmpyMNRepresentation,
 )
 from conin.scoring import log_potential, log_probability, log_probability_query
 from conin.util import try_import
@@ -495,7 +495,7 @@ def test_unsupported_families_raise_the_registry_error(example):
     if isinstance(cmodel, ConstrainedDynamicDiscreteBayesianNetwork):
         var = ("A", 0)
     with pytest.raises(
-        InvalidInputError, match="No .factor. representation is available"
+        InvalidInputError, match="No .pgmpy. representation is available"
     ):
         log_probability_query(cmodel, {var: 0})
 
@@ -546,7 +546,7 @@ def test_unknown_options_raise_type_error():
 
 def test_methods():
     assert lpq.METHODS == ("variable_elimination",)
-    assert [lpq._representation_kind(m) for m in lpq.METHODS] == ["factor"]
+    assert [lpq._representation_kind(m) for m in lpq.METHODS] == ["pgmpy"]
 
 
 @pytest.mark.parametrize(
@@ -570,10 +570,10 @@ def test_structure_params(model, variables, start, stop, expected):
 @pytest.mark.parametrize(
     "cls",
     [
-        FactorMNRepresentation,
-        FactorBNRepresentation,
-        FactorDBNRepresentation,
-        FactorHMMRepresentation,
+        PgmpyMNRepresentation,
+        PgmpyBNRepresentation,
+        PgmpyDBNRepresentation,
+        PgmpyHMMRepresentation,
     ],
 )
 def test_one_overload_per_representation_class(cls):
@@ -597,9 +597,9 @@ def test_each_model_type_builds_its_factor_representation(model, var, monkeypatc
     state = {"A": 0, "Xray": 0, ("A", 0): 0, ("H", 0): "h0"}[var]
     assert log_probability_query(pgm, {var: state}) == 0.0
     expected = {
-        "A": FactorMNRepresentation,
-        "Xray": FactorBNRepresentation,
-        ("A", 0): FactorDBNRepresentation,
-        ("H", 0): FactorHMMRepresentation,
+        "A": PgmpyMNRepresentation,
+        "Xray": PgmpyBNRepresentation,
+        ("A", 0): PgmpyDBNRepresentation,
+        ("H", 0): PgmpyHMMRepresentation,
     }[var]
     assert seen == [expected]

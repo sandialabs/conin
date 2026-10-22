@@ -20,15 +20,20 @@ Package layout
    a model and a tuple of constraints of one family, plus application data.
 ``conin.representations``
    The registry and the representations built from a constrained model, one
-   subpackage per backend (``pyomo``, ``toulbar2``, ``factor``, ``matvec``,
+   subpackage per backend (``pyomo``, ``toulbar2``, ``pgmpy``, ``matvec``,
    ``oracle``, ``recursive``, ``mvr``).
 ``conin.inference``, ``conin.learning``, ``conin.sampling``, ``conin.scoring``
    Algorithms, organised by representation (``unconstrained``, ``pyomo``,
    ``toulbar2``, ``variable_elimination``, ``oracle``, ``recursive``,
    ``mvr``). ``map_query`` and ``log_probability_query`` are the generic entry
    points.
-``conin.io``, ``conin.common``
-   File I/O, and non-I/O helpers (pgmpy conversion, ``is_polytree``).
+``conin.pgmpy``
+   pgmpy interoperability: converting models between pgmpy and CONIN
+   (``convert_pgmpy_to_conin``, ``convert_conin_to_pgmpy_bn``/``_mn``),
+   ``MapCPD`` and ``is_polytree`` for pgmpy models. Needs pgmpy only when
+   called.
+``conin.io``
+   File I/O (UAI, CFN, BIF, pgmpy models).
 ``conin.examples``
    The example factories used by the docs and the tests.
 ``conin.util``, ``conin.exceptions``
@@ -37,9 +42,12 @@ Package layout
 Layering
 --------
 
-- ``graphical_models``, ``common``, ``util`` and ``exceptions`` are the bottom
-  layer: they import nothing from the packages above them (``common`` imports
-  only ``graphical_models`` and ``util``).
+- ``graphical_models``, ``util`` and ``exceptions`` are the bottom layer: they
+  import nothing from the packages above them.
+- ``pgmpy`` sits just above them (it imports only ``graphical_models``,
+  ``util`` and ``exceptions``) and is imported by ``io``,
+  ``constrained_models`` (to convert pgmpy models), ``representations``,
+  ``scoring`` and ``examples``.
 - ``constraints`` does not import the models.
 - ``constrained_models`` and ``representations`` sit above them; the
   algorithm packages sit above the representations.
@@ -62,7 +70,7 @@ Representations and dispatch
   builder.
 - Each backend has one function that applies the constraints of a family
   (``apply_pyomo_constraints``, ``apply_toulbar2_constraints``,
-  ``apply_factor_constraints``).
+  ``apply_pgmpy_constraints``).
 - ``map_query`` (and ``log_probability_query``) normalise the model (pgmpy
   models are converted, bare models are wrapped as ``Constrained*(model)``),
   map the method to a representation kind, build the representation with its
@@ -89,7 +97,7 @@ No representation cache
    build and about which arguments are cache keys. If one is needed, it can be
    added inside ``representation()`` without an API change.
 Variable elimination uses pgmpy
-   The ``"factor"`` representation materialises the constraints once and
+   The ``"pgmpy"`` representation materialises the constraints once and
    converts the result to a pgmpy model per query; VE does not run on conin's
    own factor tables. This kept the results identical to the earlier
    implementation. pgmpy's memory use limits VE on larger unrolled models.

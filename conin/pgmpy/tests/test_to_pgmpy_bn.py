@@ -5,7 +5,7 @@ import numpy as np
 
 from conin.util import try_import
 from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
-from conin.common.pgmpy import convert_conin_to_pgmpy_bn
+from conin.pgmpy import convert_conin_to_pgmpy_bn
 
 with try_import() as pgmpy_available:
     import pgmpy
@@ -18,7 +18,7 @@ require_pgmpy = pytest.mark.skipif(not pgmpy_available, reason="pgmpy not instal
 
 def test_import_convert_function():
     """Test that the conversion function can be imported."""
-    from conin.common.pgmpy import convert_conin_to_pgmpy_bn
+    from conin.pgmpy import convert_conin_to_pgmpy_bn
 
     assert callable(convert_conin_to_pgmpy_bn)
 
@@ -26,7 +26,7 @@ def test_import_convert_function():
 @require_pgmpy
 def test_convert_invalid_input():
     """Test error handling for invalid input types."""
-    from conin.common.pgmpy import convert_conin_to_pgmpy_bn
+    from conin.pgmpy import convert_conin_to_pgmpy_bn
 
     with pytest.raises(ValueError, match="Expected conin DiscreteBayesianNetwork"):
         convert_conin_to_pgmpy_bn("not a model")

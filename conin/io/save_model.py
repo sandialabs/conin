@@ -5,7 +5,7 @@ from .uai import save_model_uai
 
 with try_import() as pgmpy_available:
     import pgmpy  # noqa: F401
-    from conin.common.pgmpy import (
+    from conin.pgmpy import (
         convert_conin_to_pgmpy_bn,
         convert_conin_to_pgmpy_mn,
     )

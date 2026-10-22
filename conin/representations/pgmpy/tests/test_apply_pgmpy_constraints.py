@@ -1,4 +1,4 @@
-"""Tests for the factor constraint applier, :func:`apply_factor_constraints`.
+"""Tests for the factor constraint applier, :func:`apply_pgmpy_constraints`.
 
 The first two groups are regression tests for an empty constraint list and for
 the ``TypeError`` message.
@@ -13,7 +13,7 @@ from conin.graphical_models import (
     DiscreteFactor,
     DiscreteMarkovNetwork,
 )
-from conin.representations.factor import apply_factor_constraints
+from conin.representations.pgmpy import apply_pgmpy_constraints
 
 
 def _mn():
@@ -33,7 +33,7 @@ def _bn():
 @pytest.mark.parametrize("pgm_factory", [_mn, _bn])
 def test_no_constraints_returns_pgm(pgm_factory):
     pgm = pgm_factory()
-    new_pgm, evidence = apply_factor_constraints(pgm=pgm, constraints=[])
+    new_pgm, evidence = apply_pgmpy_constraints(pgm=pgm, constraints=[])
     assert new_pgm is pgm
     assert evidence == {}
 
@@ -42,20 +42,20 @@ def test_no_constraints_returns_pgm(pgm_factory):
 def test_unexpected_constraint_type_message(pgm_factory):
     con = OracleConstraint(func=lambda states: True, name="plain")
     with pytest.raises(TypeError, match="OracleConstraint"):
-        apply_factor_constraints(pgm=pgm_factory(), constraints=[con])
+        apply_pgmpy_constraints(pgm=pgm_factory(), constraints=[con])
 
 
 def test_unexpected_model_type():
     con = FactorOracleConstraint(func=lambda s: True, nodes=["A"])
     with pytest.raises(TypeError, match="Unexpected model type"):
-        apply_factor_constraints(pgm=object(), constraints=[con])
+        apply_pgmpy_constraints(pgm=object(), constraints=[con])
 
 
 def test_mn_factor_oracle_adds_a_factor_and_no_evidence():
     """Regression: the MN path used to force the last scope node to 1."""
     pgm = _mn()
     con = FactorOracleConstraint(func=lambda s: s["A"] != s["B"], nodes=["A", "B"])
-    new_pgm, evidence = apply_factor_constraints(pgm=pgm, constraints=[con])
+    new_pgm, evidence = apply_pgmpy_constraints(pgm=pgm, constraints=[con])
     assert evidence == {}
     assert len(new_pgm.factors) == len(pgm.factors) + 1
     assert new_pgm.factors[-1].nodes == ["A", "B"]
@@ -65,7 +65,7 @@ def test_mn_factor_oracle_adds_a_factor_and_no_evidence():
 def test_bn_factor_oracle_adds_a_cpd_node_and_its_evidence():
     pgm = _bn()
     con = FactorOracleConstraint(func=lambda s: s["A"] == 1, nodes=["A"], name="c")
-    new_pgm, evidence = apply_factor_constraints(pgm=pgm, constraints=[con])
+    new_pgm, evidence = apply_pgmpy_constraints(pgm=pgm, constraints=[con])
     assert evidence == {("c", -1): 1}
     assert ("c", -1) in new_pgm.nodes
     assert ("c", -1) not in pgm.nodes
@@ -83,5 +83,5 @@ def test_data_is_passed_to_node_scope_and_predicate():
         return True
 
     con = FactorOracleConstraint(func=func, nodes=nodes)
-    apply_factor_constraints(pgm=_bn(), constraints=[con], data="D")
+    apply_pgmpy_constraints(pgm=_bn(), constraints=[con], data="D")
     assert ("nodes", "D") in seen and ("func", "D") in seen

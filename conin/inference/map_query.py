@@ -32,11 +32,11 @@ from conin.graphical_models.hmm_observations import (
     require_sequence_type,
     time_range,
 )
-from conin.representations.factor import (
-    FactorBNRepresentation,
-    FactorDBNRepresentation,
-    FactorHMMRepresentation,
-    FactorMNRepresentation,
+from conin.representations.pgmpy import (
+    PgmpyBNRepresentation,
+    PgmpyDBNRepresentation,
+    PgmpyHMMRepresentation,
+    PgmpyMNRepresentation,
 )
 from conin.representations.matvec import MatVecHMMRepresentation
 from conin.representations.mvr import MVRHMMRepresentation
@@ -112,7 +112,7 @@ def _representation_kind(method, cmodel, options):
         return "recursive" if cmodel.constraint_family == "recursive" else "oracle"
     return {
         "toulbar2": "toulbar2",
-        "variable_elimination": "factor",
+        "variable_elimination": "pgmpy",
         "viterbi": "matvec",
         "mvr_viterbi": "mvr",
     }[method]
@@ -127,7 +127,7 @@ def _structure_params(kind, cmodel, *, observed, start, stop):
     raises ``InvalidInputError``).  The other kinds have no structure
     parameters here.
     """
-    if kind not in ("pyomo", "toulbar2", "factor"):
+    if kind not in ("pyomo", "toulbar2", "pgmpy"):
         return {}
     if isinstance(cmodel, ConstrainedDynamicDiscreteBayesianNetwork):
         return dict(start=start, stop=1 if stop is None else stop)
@@ -181,7 +181,7 @@ def map_query(
     ``integer_program``      ``"pyomo"``, or ``"pyomo_network_flow"``    MN, BN, DBN, HMM
                              with ``ip_formulation="network_flow"``      (network flow: HMM)
     ``toulbar2``             ``"toulbar2"``                              MN, BN, DBN, HMM
-    ``variable_elimination`` ``"factor"``                                MN, BN, DBN, HMM
+    ``variable_elimination`` ``"pgmpy"``                                 MN, BN, DBN, HMM
     ``a_star``               ``"oracle"``, or ``"recursive"`` for        HMM
                              recursive constraints
     ``viterbi``              ``"matvec"`` (no constraints)               HMM
@@ -401,7 +401,7 @@ def _variable_elimination_args(q):
 
 
 @ovld
-def _solve_map_query(repn: FactorMNRepresentation, q):
+def _solve_map_query(repn: PgmpyMNRepresentation, q):
     return _map_query_variable_elimination_mn(
         repn,
         solution_with_evidence=q.options.get("solution_with_evidence", False),
@@ -410,7 +410,7 @@ def _solve_map_query(repn: FactorMNRepresentation, q):
 
 
 @ovld
-def _solve_map_query(repn: FactorBNRepresentation, q):
+def _solve_map_query(repn: PgmpyBNRepresentation, q):
     return _map_query_variable_elimination_bn(
         repn,
         solution_with_evidence=q.options.get("solution_with_evidence", False),
@@ -419,7 +419,7 @@ def _solve_map_query(repn: FactorBNRepresentation, q):
 
 
 @ovld
-def _solve_map_query(repn: FactorDBNRepresentation, q):
+def _solve_map_query(repn: PgmpyDBNRepresentation, q):
     return _map_query_variable_elimination_dbn(
         repn,
         solution_with_evidence=q.options.get("solution_with_evidence", False),
@@ -428,7 +428,7 @@ def _solve_map_query(repn: FactorDBNRepresentation, q):
 
 
 @ovld
-def _solve_map_query(repn: FactorHMMRepresentation, q):
+def _solve_map_query(repn: PgmpyHMMRepresentation, q):
     return _map_query_variable_elimination_hmm(repn, **_variable_elimination_args(q))
 
 

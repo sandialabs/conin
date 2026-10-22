@@ -1,7 +1,7 @@
 """Materialisation of factor oracle constraints.
 
-Used by :func:`conin.representations.factor.apply_factor_constraints`, the
-constraint applier of the ``"factor"`` representations.
+Used by :func:`conin.representations.pgmpy.apply_pgmpy_constraints`, the
+constraint applier of the ``"pgmpy"`` representations.
 """
 
 import itertools

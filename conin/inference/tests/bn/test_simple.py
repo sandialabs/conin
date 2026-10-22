@@ -8,7 +8,7 @@ from conin.examples import bayesian_network as examples
 with try_import() as pgmpy_available:
     from pgmpy.inference import VariableElimination
 
-from conin.common.pgmpy import convert_pgmpy_to_conin
+from conin.pgmpy import convert_pgmpy_to_conin
 
 with try_import() as pytoulbar2_available:
     import pytoulbar2

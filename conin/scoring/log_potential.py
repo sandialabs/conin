@@ -13,12 +13,12 @@ Marginal and conditional log-probabilities (with variables summed out, or given
 evidence, or under the constraints) need inference: see
 :func:`conin.scoring.log_probability_query`.
 
-pgmpy models are converted with :func:`conin.common.pgmpy.convert_pgmpy_to_conin`.
+pgmpy models are converted with :func:`conin.pgmpy.convert_pgmpy_to_conin`.
 """
 
 import math
 
-from conin.common.pgmpy import convert_pgmpy_to_conin
+from conin.pgmpy import convert_pgmpy_to_conin
 from conin.exceptions import InvalidInputError
 from conin.graphical_models import (
     DiscreteBayesianNetwork,

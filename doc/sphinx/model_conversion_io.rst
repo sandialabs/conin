@@ -164,7 +164,7 @@ evidence (with the constraints) has probability zero.
   largest time in the query (at least ``start + 1``). With constraints, it sets
   the time steps the constraints see.
 - ``method="variable_elimination"`` (the only method, which needs pgmpy) runs on
-  the ``"factor"`` representation: unconstrained models and the
+  the ``"pgmpy"`` representation: unconstrained models and the
   ``"factor_oracle"`` and ``"algebraic"`` constraint families. Other families
   raise ``InvalidInputError``.
 
@@ -188,7 +188,7 @@ evidence (with the constraints) has probability zero.
    ...     cancer1_BN_constrained_oracle_conin,
    ...     simple1_BN_conin,
    ... )
-   >>> from conin.common import is_polytree
+   >>> from conin.graphical_models import is_polytree
    >>> from conin.scoring import log_potential, log_probability
    >>> pgm = simple1_BN_conin().pgm
    >>> is_polytree(pgm)
@@ -202,8 +202,9 @@ evidence (with the constraints) has probability zero.
    >>> cpgm.is_feasible({**x, "Xray": 0}), log_potential(cpgm, {**x, "Xray": 0})
    (False, -inf)
 
-``is_polytree`` accepts CONIN ``DiscreteBayesianNetwork`` instances and checks
-whether the underlying undirected graph is singly connected.
+``conin.graphical_models.is_polytree`` accepts CONIN ``DiscreteBayesianNetwork``
+instances and checks whether the underlying undirected graph is singly
+connected; ``conin.pgmpy.is_polytree`` does the same for pgmpy models.
 
 Optional Backend Conversions
 ----------------------------
@@ -214,9 +215,11 @@ requirements.
 
 ``pgmpy`` support includes:
 
-- ``conin.common.pgmpy.convert_pgmpy_to_conin``
-- ``conin.common.pgmpy.convert_conin_to_pgmpy_bn``
-- ``conin.common.pgmpy.convert_conin_to_pgmpy_mn``
+- ``conin.pgmpy.convert_pgmpy_to_conin``
+- ``conin.pgmpy.convert_conin_to_pgmpy_bn``
+- ``conin.pgmpy.convert_conin_to_pgmpy_mn``
+- ``conin.pgmpy.MapCPD`` (build a pgmpy ``TabularCPD`` from a dictionary)
+- ``conin.pgmpy.is_polytree`` (for pgmpy models)
 - ``conin.io.load_model(..., model_type="pgmpy")``
 - ``conin.io.save_model(..., model_type="pgmpy")``
 

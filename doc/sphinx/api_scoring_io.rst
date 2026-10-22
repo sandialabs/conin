@@ -26,16 +26,24 @@ File I/O
 The ``convert_pgm`` console script (``conin.io.convert_pgm``) converts model
 files between formats; run ``convert_pgm --help`` for its options.
 
-pgmpy conversion and utilities
-------------------------------
+pgmpy interoperability
+----------------------
 
-.. autofunction:: conin.common.convert_pgmpy_to_conin
+``conin.pgmpy`` converts models between pgmpy and CONIN in user code (the
+file I/O functions above use it for pgmpy models). It needs pgmpy at call
+time, not at import time.
 
-.. autofunction:: conin.common.convert_conin_to_pgmpy_bn
+.. autofunction:: conin.pgmpy.convert_pgmpy_to_conin
 
-.. autofunction:: conin.common.convert_conin_to_pgmpy_mn
+.. autofunction:: conin.pgmpy.convert_conin_to_pgmpy_bn
 
-.. autofunction:: conin.common.is_polytree
+.. autofunction:: conin.pgmpy.convert_conin_to_pgmpy_mn
+
+.. autofunction:: conin.pgmpy.MapCPD
+
+.. autofunction:: conin.pgmpy.is_polytree
+
+For CONIN Bayesian networks, use :func:`conin.graphical_models.is_polytree`.
 
 Exceptions
 ----------

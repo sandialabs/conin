@@ -1,12 +1,12 @@
-"""The ``"factor"`` representation of a (constrained) Bayesian network."""
+"""The ``"pgmpy"`` representation of a (constrained) Bayesian network."""
 
 from conin.graphical_models import DiscreteBayesianNetwork
 from conin.representations.base import register_representation
 
-from .common import FactorRepresentation
+from .common import PgmpyRepresentation
 
 
-class FactorBNRepresentation(FactorRepresentation):
+class PgmpyBNRepresentation(PgmpyRepresentation):
     """Factor model of a constrained Bayesian network.
 
     Each constraint adds the CPD of a binary node ``(name, -1)`` whose parents
@@ -16,9 +16,9 @@ class FactorBNRepresentation(FactorRepresentation):
 
 
 @register_representation(
-    "factor", DiscreteBayesianNetwork, families=(None, "factor_oracle", "algebraic")
+    "pgmpy", DiscreteBayesianNetwork, families=(None, "factor_oracle", "algebraic")
 )
 def _build(cmodel):
-    return FactorBNRepresentation(
+    return PgmpyBNRepresentation(
         pgm=cmodel.model, constraints=cmodel.constraints, data=cmodel.data
     )

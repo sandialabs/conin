@@ -1,14 +1,14 @@
-"""The ``"factor"`` representation of a (constrained) dynamic Bayesian network."""
+"""The ``"pgmpy"`` representation of a (constrained) dynamic Bayesian network."""
 
 import munch
 
 from conin.graphical_models import DynamicDiscreteBayesianNetwork, create_bn_from_dbn
 from conin.representations.base import register_representation
 
-from .common import FactorRepresentation
+from .common import PgmpyRepresentation
 
 
-class FactorDBNRepresentation(FactorRepresentation):
+class PgmpyDBNRepresentation(PgmpyRepresentation):
     """Factor model of a constrained DBN unrolled over ``start..stop``.
 
     Structure params: ``start`` and ``stop``.  ``pgm`` is the unrolled BN;
@@ -25,20 +25,20 @@ class FactorDBNRepresentation(FactorRepresentation):
         return munch.Munch(T=list(range(self.start, self.stop + 1)))
 
 
-def build_factor_dbn_representation(
-    dbn, constraints=(), *, start, stop, cls=FactorDBNRepresentation, data=None
+def build_pgmpy_dbn_representation(
+    dbn, constraints=(), *, start, stop, cls=PgmpyDBNRepresentation, data=None
 ):
-    """Unroll ``dbn`` over ``start..stop`` and build its ``"factor"`` representation."""
+    """Unroll ``dbn`` over ``start..stop`` and build its ``"pgmpy"`` representation."""
     bn = create_bn_from_dbn(dbn=dbn, start=start, stop=stop)
     return cls(pgm=bn, constraints=constraints, start=start, stop=stop, data=data)
 
 
 @register_representation(
-    "factor",
+    "pgmpy",
     DynamicDiscreteBayesianNetwork,
     families=(None, "factor_oracle", "algebraic"),
 )
 def _build(cmodel, *, start=0, stop=1):
-    return build_factor_dbn_representation(
+    return build_pgmpy_dbn_representation(
         cmodel.model, cmodel.constraints, start=start, stop=stop, data=cmodel.data
     )

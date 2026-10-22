@@ -9,7 +9,7 @@ from conin.graphical_models import (
     DiscreteCPD,
     DiscreteBayesianNetwork,
 )
-from conin.representations.factor import materialise_factor_oracle
+from conin.representations.pgmpy import materialise_factor_oracle
 
 
 def _mn():
