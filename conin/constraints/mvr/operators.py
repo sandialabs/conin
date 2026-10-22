@@ -1088,6 +1088,11 @@ def mvr_precedence(
         raise InvalidInputError('relation must be one of "<", "<=", ">", ">=".')
 
     mvr1, mvr2 = mvrs
+    for i, mvr in enumerate(mvrs):
+        if not isinstance(mvr, (HomMVR, InhomMVR)):
+            raise InvalidInputError(
+                f"mvrs[{i}] must be an instance of HomMVR or InhomMVR."
+            )
 
     hidden_states = mvrs[0].hidden_states
     bool_states = [False, True]

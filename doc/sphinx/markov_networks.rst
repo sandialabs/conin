@@ -175,7 +175,8 @@ Notes
   construction; use ``with_factor`` to get a new model with an extra factor.
 - ``states`` defines the allowed values for each random variable.
 - ``edges`` can be given explicitly or inferred from the factor scopes.
-- ``check_model()`` is a good final step after constructing the model.
+- ``check_model()`` is a good final step after constructing the model; it
+  raises ``InvalidInputError`` for an inconsistent model.
 - See :doc:`model_conversion_io` for UAI file I/O and Bayesian-network to
   Markov-network conversion.
 - Simpler examples such as ``example6_conin`` and ``ABC_conin`` are usually the

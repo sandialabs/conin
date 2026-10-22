@@ -146,7 +146,7 @@ def test_dbn_structure_params():
 def test_hmm_structure_params():
     hmm = hex_.create_hmm1()
     cmodel = ConstrainedHiddenMarkovModel(hmm)
-    with pytest.raises(AssertionError, match="Expecting evidence"):
+    with pytest.raises(InvalidInputError, match="needs a stop time"):
         cmodel.representation("pgmpy")
     repn = cmodel.representation("pgmpy", stop=3)
     assert (repn.start, repn.stop) == (0, 3)

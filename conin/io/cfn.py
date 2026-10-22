@@ -166,7 +166,8 @@ def _parse_variables(variables):
             if domain <= 0:
                 raise ValueError(f"Variable {name} must have a positive domain size")
             states[name] = list(range(domain))
-        elif isinstance(domain, list) and len(domain) > 0:
+        elif isinstance(domain, list) and len(domain) > 0 and not _is_object(domain):
+            # (An object is parsed as a list of (key, value) pairs.)
             states[name] = [str(v) if isinstance(v, _Name) else v for v in domain]
             if len(set(states[name])) != len(states[name]):
                 raise ValueError(f"Variable {name} has duplicate value names")
@@ -496,6 +497,11 @@ def load_conin_model_from_cfn(filename=None, string=None, cost_scale=1.0):
             continue
         used.update(scope)
         fmin = min(table)
+        if math.isinf(fmin):
+            raise ValueError(
+                f"CFN function {fname} forbids every assignment of its scope "
+                "(all its costs are infinite)"
+            )
         values = []
         for cost in table:
             if bound is not None and cost - fmin + total_min >= bound:

@@ -171,13 +171,11 @@ class DiscreteMarkovNetwork(GraphicalModel):
 
         Raises
         ------
-        RuntimeError
-            If an explicitly provided edge references a node that does not
-            appear in the model.
-        AssertionError
-            If the states, edges, or factors are inconsistent with one another,
-            if any factor value is negative, or if a factor uses an invalid
-            node state.
+        InvalidInputError
+            If an edge or factor references a node that is not in the model,
+            a node has no factor, a factor value is negative, a factor uses
+            an invalid node state, or a list of factor values has the wrong
+            length.
         """
         model_nodes = set(self._states.keys())
 
@@ -189,42 +187,58 @@ class DiscreteMarkovNetwork(GraphicalModel):
 
             # Note: We have an error if the edges contain nodes that aren't in the model.
             # BUT, we may have a model_node that is not in any edge
-            if len(enodes - model_nodes) > 0:
-                raise RuntimeError(
-                    f"Unexpected discrepancy in model nodes: the set of edge nodes contains the following nodes that do not appear in the model: {enodes-model_nodes}"
+            if enodes - model_nodes:
+                raise InvalidInputError(
+                    "Unexpected discrepancy in model nodes: the set of edge nodes "
+                    "contains the following nodes that do not appear in the model: "
+                    f"{enodes - model_nodes}"
                 )
 
         fnodes = set()
         for factor_num, f in enumerate(self._factors):
             for node in f.nodes:
+                if node not in self._states:
+                    raise InvalidInputError(
+                        f"Unexpected node {node!r} in factor {factor_num}"
+                    )
                 fnodes.add(node)
             if type(f.values) is dict:
+                node_states = [self._states[node] for node in f.nodes]
                 for k, v in f.values.items():
-                    assert v >= 0, f"Unexpected negative factor value {v}"
+                    if v < 0:
+                        raise InvalidInputError(f"Unexpected negative factor value {v}")
                     if type(k) is tuple:
                         for i, iv in enumerate(k):
-                            assert (
-                                iv in self._states[f.nodes[i]]
-                            ), f"Unexpected node value {k} for factor {factor_num}: the {i}-th value is {iv} but should be  in {self._states[f.nodes[i]]}"
-                    else:
-                        assert (
-                            k in self._states[f.nodes[0]]
-                        ), f"Unexpected node value {k} in factor {factor_num}"
+                            if iv not in node_states[i]:
+                                raise InvalidInputError(
+                                    f"Unexpected node value {k} for factor "
+                                    f"{factor_num}: the {i}-th value is {iv} but "
+                                    f"should be in {node_states[i]}"
+                                )
+                    elif k not in node_states[0]:
+                        raise InvalidInputError(
+                            f"Unexpected node value {k} in factor {factor_num}"
+                        )
             else:
-                assert (
-                    self.states
-                ), "The states attributes must be specified when the factor values are not a dictionary"
-                for v in f.values:
-                    assert v >= 0
-                # We assert equality to ensure the list of values covers all combinations of
-                # node states
-                nodeset = set(f.nodes)
-                assert len(f.values) == prod(
-                    len(v) if k in nodeset else 1 for k, v in self.states.items()
-                )
+                if any(v < 0 for v in f.values):
+                    raise InvalidInputError(
+                        f"Unexpected negative factor value in factor {factor_num}"
+                    )
+                # The list of values must cover all combinations of node states
+                expected = prod(len(self._states[node]) for node in f.nodes)
+                if len(f.values) != expected:
+                    raise InvalidInputError(
+                        f"Factor {factor_num} has {len(f.values)} values, expected "
+                        f"{expected} (one per combination of the states of "
+                        f"{list(f.nodes)})"
+                    )
 
-        # Note: We assert equality to ensure that all nodes are used in the model
-        assert model_nodes == fnodes
+        # Every node must be used in the model
+        if model_nodes != fnodes:
+            raise InvalidInputError(
+                "Every node must appear in a factor; nodes without a factor: "
+                f"{sorted(map(str, model_nodes - fnodes))}"
+            )
 
     #
     # Nodes

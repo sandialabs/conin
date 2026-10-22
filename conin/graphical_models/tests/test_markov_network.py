@@ -228,7 +228,7 @@ class TestDiscreteMarkovNetwork:
             states={"A": [0, 1]},
             factors=[DiscreteFactor(nodes=["A"], values={0: -1.0, 1: 2.0})],
         )
-        with pytest.raises(AssertionError):
+        with pytest.raises(InvalidInputError):
             mn.check_model()
 
     def test_check_model_invalid_node_state_in_factor(self):
@@ -237,14 +237,14 @@ class TestDiscreteMarkovNetwork:
             states={"A": [0, 1]},
             factors=[DiscreteFactor(nodes=["A"], values={99: 1.0, 0: 1.0})],
         )
-        with pytest.raises(AssertionError):
+        with pytest.raises(InvalidInputError):
             mn.check_model()
 
     def test_check_model_factor_node_not_in_model(self):
         # Factor references node B which is not in states
         mn = _mn({"A": [0, 1]})
         mn._factors = [DiscreteFactor(nodes=["B"], values={0: 1.0, 1: 2.0})]
-        with pytest.raises((AssertionError, KeyError)):
+        with pytest.raises(InvalidInputError):
             mn.check_model()
 
     def test_check_model_edge_node_not_in_model(self):
@@ -253,14 +253,14 @@ class TestDiscreteMarkovNetwork:
             factors=[DiscreteFactor(nodes=["A"], values={0: 1.0, 1: 2.0})],
         )
         mn._edges = [("A", "Z")]  # Z is not in states
-        with pytest.raises(RuntimeError):
+        with pytest.raises(InvalidInputError):
             mn.check_model()
 
     def test_check_model_list_factor_wrong_length(self):
         # Should have 2 values for a binary node, not 3
         mn = _mn({"A": [0, 1]})
         mn._factors = [DiscreteFactor(nodes=["A"], values=[1.0, 2.0, 3.0])]
-        with pytest.raises(AssertionError):
+        with pytest.raises(InvalidInputError):
             mn.check_model()
 
     def test_check_model_missing_node(self):
@@ -269,5 +269,56 @@ class TestDiscreteMarkovNetwork:
             states={"A": [0, 1], "B": [0, 1]},
             factors=[DiscreteFactor(nodes=["A"], values={0: 1.0, 1: 2.0})],
         )
-        with pytest.raises(AssertionError):
+        with pytest.raises(InvalidInputError):
             mn.check_model()
+
+
+# ---------------------------------------------------------------------
+# check_model raises InvalidInputError with a message (it used assert, so the
+# checks vanished under python -O)
+# ---------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "factors,match",
+    [
+        ([DiscreteFactor(nodes=["A"], values={0: -1.0, 1: 2.0})], "negative"),
+        ([DiscreteFactor(nodes=["A"], values=[1.0, -2.0])], "negative"),
+        (
+            [DiscreteFactor(nodes=["A"], values={99: 1.0, 0: 1.0})],
+            "Unexpected node value",
+        ),
+        (
+            [DiscreteFactor(nodes=["A"], values=[1.0, 2.0, 3.0])],
+            "has 3 values, expected 2",
+        ),
+        ([DiscreteFactor(nodes=["B"], values={0: 1.0, 1: 2.0})], "Unexpected node 'B'"),
+    ],
+)
+def test_check_model_messages(factors, match):
+    mn = _mn({"A": [0, 1]})
+    mn._factors = factors
+    with pytest.raises(InvalidInputError, match=match):
+        mn.check_model()
+
+
+def test_check_model_names_the_nodes_without_a_factor():
+    mn = DiscreteMarkovNetwork(
+        states={"A": [0, 1], "B": [0, 1]},
+        factors=[DiscreteFactor(nodes=["A"], values={0: 1.0, 1: 2.0})],
+    )
+    with pytest.raises(InvalidInputError, match=r"without a factor: \['B'\]"):
+        mn.check_model()
+
+
+def test_check_model_list_factor_over_a_subset_of_the_nodes():
+    # The expected length is the product of the cardinalities of the factor's
+    # own nodes.
+    mn = DiscreteMarkovNetwork(
+        states={"A": [0, 1], "B": [0, 1, 2]},
+        factors=[
+            DiscreteFactor(nodes=["A"], values=[1.0, 2.0]),
+            DiscreteFactor(nodes=["A", "B"], values=[1.0] * 6),
+        ],
+    )
+    mn.check_model()

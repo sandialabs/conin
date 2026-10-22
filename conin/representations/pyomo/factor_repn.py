@@ -26,14 +26,6 @@ def _check_unique_variable_names(pgm_states, var_index_map):
         seen[name] = r
 
 
-def get_factor_value(f, values):
-    """
-    This is a wrapper for the DiscreteFactor.get_value() method.  This allows for
-    the specification of node names that are non-strings.
-    """
-    return f.values[tuple(f.name_to_no[var][values[var]] for var in f.variables)]
-
-
 def extract_factor_representation(pgm):
     return extract_factor_representation_(pgm.states, pgm.factors)
 

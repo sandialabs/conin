@@ -4,6 +4,7 @@ import itertools
 import pprint
 from collections import defaultdict
 
+from conin.exceptions import InvalidInputError
 from conin.graphical_models import DiscreteFactor, DiscreteMarkovNetwork
 from conin.graphical_models import DiscreteCPD, DiscreteBayesianNetwork
 from conin.graphical_models import DynamicDiscreteBayesianNetwork
@@ -13,7 +14,8 @@ lineno = 0
 
 def get_lines(filename, string):
     if filename:
-        assert os.path.exists(filename), f"Cannot read missing UAI file {filename}"
+        if not os.path.exists(filename):
+            raise RuntimeError(f"Cannot read missing UAI file {filename}")
         with open(filename, "r") as INPUT:
             for line in INPUT:
                 yield line
@@ -35,6 +37,24 @@ def tokenize(filename, string):
             yield token
 
 
+class _Tokens:
+    """The UAI tokens; running out raises ``ValueError`` (a truncated file)."""
+
+    def __init__(self, tokens):
+        self._tokens = tokens
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        try:
+            return next(self._tokens)
+        except StopIteration:
+            raise ValueError(
+                f"Unexpected end of the UAI data after line {lineno + 1}"
+            ) from None
+
+
 def load_conin_model_from_uai(filename=None, string=None, verbose=False):
     """Load a CONIN model from a UAI file or string.
 
@@ -53,11 +73,18 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
         A Bayesian network for a ``BAYES`` file, else a Markov network. The
         variables are named ``var0``, ``var1``, ... and their states are
         ``0..k-1``.
+
+    Raises
+    ------
+    RuntimeError
+        If ``filename`` does not exist.
+    ValueError
+        If the data ends early or a function table has the wrong length.
     """
     global lineno
     lineno = -1
 
-    tokens = tokenize(filename, string)
+    tokens = _Tokens(tokenize(filename, string))
 
     pgmtype = next(tokens)
     if verbose:  # pragma:nocover
@@ -89,16 +116,6 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
         n = int(next(tokens))
         fun.append([int(next(tokens)) for i in range(n)])
 
-    # Compute edges for MNs
-    if not is_bayes:
-        edges = set()
-        for f in fun:
-            if len(f) == 1:
-                continue
-            child_name = vname[f[-1]]
-            for parent in f[:-1]:
-                edges.add((vname[parent], child_name))
-
     # Parse factor/cpd values
     factors = []
     for f in fun:
@@ -106,9 +123,11 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
         N = 1
         for v in f:
             N *= vcard[v]
-        assert (
-            n == N
-        ), f"Inconsistent function definition at line {lineno}: read {n} but expected {N} from function definition"
+        if n != N:
+            raise ValueError(
+                f"Inconsistent function definition at line {lineno}: read {n} "
+                f"but expected {N} from function definition"
+            )
 
         if is_bayes:
             if verbose:  # pragma:nocover
@@ -167,7 +186,9 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
     if is_bayes:
         pgm = DiscreteBayesianNetwork(states=states, cpds=factors)
     else:
-        pgm = DiscreteMarkovNetwork(states=states, edges=edges, factors=factors)
+        # The edges are inferred from the factor scopes (every pair of nodes in
+        # a factor).
+        pgm = DiscreteMarkovNetwork(states=states, factors=factors)
 
     pgm.check_model()
 
@@ -180,11 +201,18 @@ def save_model_uai(pgm, name, quiet=True):
     Parameters
     ----------
     pgm : DiscreteBayesianNetwork or DynamicDiscreteBayesianNetwork or DiscreteMarkovNetwork
-        Model to write.
+        Model to write.  A dynamic Bayesian network can only be written if it
+        has no dynamic (time-indexed) nodes; unroll it with
+        :func:`~conin.graphical_models.create_bn_from_dbn` first.
     name : str
         Output filename. Its extension (if any) is replaced by ``.uai``.
     quiet : bool, optional
         Accepted for API compatibility and currently unused.
+
+    Raises
+    ------
+    InvalidInputError
+        For a dynamic Bayesian network with dynamic nodes.
     """
     text = _uai_text(pgm)
     with open(os.path.splitext(name)[0] + ".uai", "w") as f:
@@ -201,6 +229,13 @@ def _uai_text(pgm):
         case = "BAYES"
     elif isinstance(pgm, DynamicDiscreteBayesianNetwork):
         case = "BAYES"
+        if pgm.dynamic_nodes:
+            raise InvalidInputError(
+                "A UAI file cannot hold the time-indexed CPD templates of a "
+                "dynamic Bayesian network; unroll it first with "
+                "conin.graphical_models.create_bn_from_dbn(dbn=..., start=0, "
+                "stop=...) and save the Bayesian network"
+            )
     elif isinstance(pgm, DiscreteMarkovNetwork):
         case = "MARKOV"
     else:

@@ -2,6 +2,7 @@
 
 import munch
 
+from conin.exceptions import InvalidInputError
 from conin.graphical_models import HiddenMarkovModel, create_dbn_from_hmm
 from conin.representations.base import register_representation
 
@@ -43,7 +44,10 @@ class Toulbar2HMMRepresentation(Toulbar2FactorRepresentation):
     "toulbar2", HiddenMarkovModel, families=(None, "toulbar2", "algebraic")
 )
 def _build(cmodel, *, start=0, stop=None):
-    assert stop is not None, "Expecting evidence (observations) for an HMM"
+    if stop is None:
+        raise InvalidInputError(
+            "The HMM representation needs a stop time (the last observation)"
+        )
     hmm = cmodel.model
     dbn = create_dbn_from_hmm(hmm=hmm)
     return build_toulbar2_dbn_representation(

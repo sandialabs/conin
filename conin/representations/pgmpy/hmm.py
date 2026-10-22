@@ -2,6 +2,7 @@
 
 import munch
 
+from conin.exceptions import InvalidInputError
 from conin.graphical_models import HiddenMarkovModel, create_dbn_from_hmm
 from conin.representations.base import register_representation
 
@@ -25,7 +26,10 @@ class PgmpyHMMRepresentation(PgmpyDBNRepresentation):
     "pgmpy", HiddenMarkovModel, families=(None, "factor_oracle", "algebraic")
 )
 def _build(cmodel, *, start=0, stop=None):
-    assert stop is not None, "Expecting evidence (observations) for an HMM"
+    if stop is None:
+        raise InvalidInputError(
+            "The HMM representation needs a stop time (the last observation)"
+        )
     dbn = create_dbn_from_hmm(cmodel.model)
     return build_pgmpy_dbn_representation(
         dbn,

@@ -2,7 +2,6 @@ import pyomo.environ as pyo
 from pyomo.core.expr.visitor import identify_variables
 
 from conin.constraints.oracle import oracle_constraint_fn
-from .bridge import ConinVarNode
 from .decorators import AlgebraicConstraint
 from conin.util import try_import, State
 from conin.util.var_wrapper import PyomoVarWrapper
@@ -140,40 +139,6 @@ def create_oracle_constraints_from_algebraic(*, pgm, constraints, data, name=Non
     )
 
     return [oracle_constraint]
-
-
-def _collect_conin_nodes_from_expr(expr, nodes_set):
-    """
-    Recursively walk an expression tree and collect all ConinVarNode references.
-
-    Parameters:
-        expr: The expression node to walk
-        nodes_set: Set to accumulate node names into
-    """
-    # If it's a Constraint wrapper, unwrap it
-    if hasattr(expr, "_expr"):
-        expr = expr._expr
-
-    # Base case: ConinVarNode
-    if isinstance(expr, ConinVarNode):
-        nodes_set.add(expr.node)
-        return
-
-    # Recursive cases: walk children
-    if hasattr(expr, "left") and hasattr(expr, "right"):
-        # Binary expression node
-        _collect_conin_nodes_from_expr(expr.left, nodes_set)
-        _collect_conin_nodes_from_expr(expr.right, nodes_set)
-    elif hasattr(expr, "arg"):
-        # Unary expression node
-        _collect_conin_nodes_from_expr(expr.arg, nodes_set)
-    elif hasattr(expr, "body"):
-        # Inequality or other compound node
-        _collect_conin_nodes_from_expr(expr.body, nodes_set)
-        if hasattr(expr, "left"):
-            _collect_conin_nodes_from_expr(expr.left, nodes_set)
-        if hasattr(expr, "right"):
-            _collect_conin_nodes_from_expr(expr.right, nodes_set)
 
 
 def _generate_constraint_function_code(constraint_strings, num_args):

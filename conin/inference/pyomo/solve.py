@@ -9,6 +9,7 @@ import pyomo.environ as pe
 from pyomo.common.timing import TicTocTimer
 
 from conin.config import default_mip_solver
+from conin.exceptions import InsufficientSolutionsError
 from conin.representations.pyomo.common import C5LazyCutGenerator, has_omitted_c5
 from conin.util import try_import
 
@@ -75,7 +76,10 @@ def solve_pyomo_map_query_model(
         if timing:  # pragma:nocover
             timer.toc("Completed optimization")
 
-        assert len(aos_pm.solutions) > 0, "No solutions found by 'or_topas' solver"
+        if not aos_pm.solutions:
+            raise InsufficientSolutionsError(
+                "No solutions found by the 'or_topas' solver"
+            )
         solutions = [
             parse_aos_solution_pyomo_map_query(model, aos_solution, solution_with_fixed)
             for aos_solution in aos_pm.solutions

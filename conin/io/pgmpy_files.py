@@ -34,7 +34,8 @@ def load_model(name, quiet=True):
                     if not quiet:
                         print(f"Error reading file {name}: {e}")
                     content = None
-                assert content is not None, f"Error loading model with pgmpy: {name}"
+                if content is None:  # pragma:nocover
+                    raise RuntimeError(f"Error loading model with pgmpy: {name}")
 
                 if name.endswith(".bif.gz"):
                     reader = BIFReader(string=content.decode("utf-8"))
@@ -51,7 +52,7 @@ def load_model(name, quiet=True):
             reader = UAIReader(name)
             return reader.get_model()
 
-        raise RuntimeError("Unexpected model type: {name}")
+        raise RuntimeError(f"Unexpected model type: {name}")
 
     if not quiet:  # pragma:nocover
         print(f"  Loading model pgmpy examples: {name}")
@@ -75,3 +76,8 @@ def save_model(pgm, name, quiet=True):
             )
         writer = UAIWriter(pgm)
         writer.write(name)
+
+    else:
+        raise RuntimeError(
+            f"Cannot save a pgmpy model.  Unknown format specified by filename suffix: {name}"
+        )

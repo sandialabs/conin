@@ -1,6 +1,7 @@
 import pytest
 
 from conin import learning
+from conin.exceptions import InvalidInputError
 from conin.sampling.oracle import rejection_sample_hidden
 from conin.sampling.unconstrained import generate_observed_from_hidden
 import math
@@ -231,7 +232,7 @@ def test_supervised_learning_priors():
 
 def test_supervised_learning_no_hidden_states():
     sim = learning.convert_to_simulations(hidden_list=[["h0"]], observed_list=[["o0"]])
-    with pytest.raises(AssertionError):
+    with pytest.raises(InvalidInputError, match="No hidden states"):
         learning.supervised_learning(
             simulations=sim,
             hidden_states=[],
@@ -241,7 +242,7 @@ def test_supervised_learning_no_hidden_states():
 
 def test_supervised_learning_no_observable_states():
     sim = learning.convert_to_simulations(hidden_list=[["h0"]], observed_list=[["o0"]])
-    with pytest.raises(AssertionError):
+    with pytest.raises(InvalidInputError, match="No observable states"):
         learning.supervised_learning(
             simulations=sim,
             hidden_states=["h0"],
@@ -437,3 +438,84 @@ def test_mcem_accepts_a_bare_hmm():
         samples_per_iteration=2,
     )
     assert log_prob < 0
+
+
+# ---------------------------------------------------------------------
+# mcem: convergence, max_iterations and the input checks
+# ---------------------------------------------------------------------
+
+
+def _mcem_args(**kwargs):
+    import conin.examples.hidden_markov_model as tc
+
+    args = dict(
+        app=tc.create_hmm1(),
+        observed=["o0", "o1", "o1", "o0", "o1", "o0"],
+        hidden_states=["h0", "h1"],
+        observable_states=["o0", "o1"],
+        samples_per_iteration=2,
+    )
+    args.update(kwargs)
+    return args
+
+
+def test_mcem_stops_when_the_log_probability_converges(monkeypatch):
+    # It never updated the previous log-probability, so the convergence test
+    # never ran and every call did max_iterations iterations.
+    import numpy as np
+
+    record = _mcem_spy(monkeypatch)
+    np.random.seed(0)
+    learning.mcem(**_mcem_args(max_iterations=50, convergence_tolerance=1e-6))
+    assert 2 <= len(record.trained) < 50
+
+
+def test_mcem_runs_max_iterations_without_convergence(monkeypatch):
+    import numpy as np
+
+    record = _mcem_spy(monkeypatch)
+    np.random.seed(0)
+    learning.mcem(**_mcem_args(max_iterations=4, convergence_tolerance=-1))
+    assert len(record.trained) == 4
+
+
+def test_mcem_default_options(monkeypatch):
+    import numpy as np
+
+    record = _mcem_spy(monkeypatch)
+    np.random.seed(0)
+    args = _mcem_args()
+    del args["samples_per_iteration"]
+    log_prob = learning.mcem(**args)
+    assert len(record.sampled) == 10 * len(record.trained)
+    assert 1 <= len(record.trained) <= 100
+    assert log_prob < 0
+
+
+def test_mcem_a_larger_log_probability_does_not_raise(monkeypatch):
+    # The average log-probability is a Monte Carlo estimate; mcem asserted that
+    # it never increased.  Make it increase on purpose.
+    from conin.graphical_models import HiddenMarkovModel
+
+    scores = iter([-10.0, -5.0, -5.0, -5.0])
+    monkeypatch.setattr(
+        HiddenMarkovModel, "log_probability", lambda self, o, h: next(scores)
+    )
+    log_prob = learning.mcem(**_mcem_args(samples_per_iteration=1, max_iterations=10))
+    # -10, then -5 (larger), then -5 again: converged.
+    assert log_prob == -5.0
+
+
+@pytest.mark.parametrize(
+    "kwargs,match",
+    [
+        (dict(observed=[]), "No observed states"),
+        (dict(hidden_states=[]), "No hidden states"),
+        (dict(hidden_states=None), "No hidden states"),
+        (dict(observable_states=[]), "No observable states"),
+        (dict(observable_states=None), "No observable states"),
+    ],
+)
+def test_mcem_input_checks(kwargs, match):
+    with pytest.raises(InvalidInputError, match=match):
+        learning.mcem(**_mcem_args(**kwargs))

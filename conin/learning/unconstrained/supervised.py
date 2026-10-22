@@ -1,3 +1,4 @@
+from conin.exceptions import InvalidInputError
 from conin.graphical_models import HiddenMarkovModel
 
 # TODO also allows for hidden and observed instead of simulations
@@ -25,12 +26,10 @@ def supervised_learning(
         - X_tolerance: If in a simulation we have a zero in our calculation we replace it with this tolerance
         - X_priors: These are only used for transitions or emissions which are not observed and for which we want some default values
     """
-    assert (
-        hidden_states is not None and len(hidden_states) != 0
-    ), "No hidden states specified"
-    assert (
-        observable_states is not None and len(observable_states) != 0
-    ), "No observable states specified"
+    if hidden_states is None or len(hidden_states) == 0:
+        raise InvalidInputError("No hidden states specified")
+    if observable_states is None or len(observable_states) == 0:
+        raise InvalidInputError("No observable states specified")
     if start_tolerance is None:
         start_tolerance = 1e-4
     if transition_tolerance is None:

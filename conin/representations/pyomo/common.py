@@ -112,9 +112,13 @@ def apply_pyomo_constraints(*, pgm, constraints, model, data):
 
     if isinstance(constraints[0], PyomoConstraint):
         for func in constraints:
-            assert isinstance(
-                func, PyomoConstraint
-            ), f"Unexpected constraint type ({type(func)}) when performing inference with an integer program. If the first constraint is a pyomo constraint, then all subsequent contraints must be the same."
+            if not isinstance(func, PyomoConstraint):
+                raise TypeError(
+                    f"Unexpected constraint type ({type(func)}) when performing "
+                    "inference with an integer program. If the first constraint "
+                    "is a pyomo constraint, then all subsequent constraints must "
+                    "be the same."
+                )
             model = func(model, data)
         return model
 
@@ -249,7 +253,6 @@ def create_MN_pyomo_map_query_model_from_factorial_repn(
     var_index_map=None,
     variables=None,
     timing=False,
-    tuple_repn=True,
     omit_c5=False,
 ):
     #
@@ -279,21 +282,14 @@ def create_MN_pyomo_map_query_model_from_factorial_repn(
     RS = [(r, s) for r, values in S.items() for s in values]
 
     J_keys = list(J.keys())
-    # IJ = [(i, j) for i, values in J.items() for j in values]
     IJ = sorted(w.keys())
     IJset = set(w.keys())
 
-    if tuple_repn:
-        IRS = defaultdict(set)
-        for i, j, r in v:
-            if not (i, j) in IJset:
-                continue
+    # IRS[i, r, s]: the rows j of factor i in which variable r has value s
+    IRS = defaultdict(set)
+    for i, j, r in v:
+        if (i, j) in IJset:
             IRS[i, r, v[i, j, r]].add(j)
-    else:  # pragma:nocover
-        v = {(i, j): [] for i, j in IJ}
-        for i, j, r in v:
-            v[i, j].append(r)
-        IJR = list(v.keys())
 
     # TODO: Figure out how to marginalize everything except the specified
     #           variables
@@ -346,39 +342,15 @@ def create_MN_pyomo_map_query_model_from_factorial_repn(
     if timing:  # pragma:nocover
         timer.toc("c2")
 
-    if tuple_repn:
-        if omit_c5:
-            # The c5 constraints are generated with cut generation when solving
-            model._c5_data = munch.Munch(IRS=IRS)
-            model.c5_cuts = pe.ConstraintList()
-        else:
-            add_c5_constraints(model, IRS)
+    if omit_c5:
+        # The c5 constraints are generated with cut generation when solving
+        model._c5_data = munch.Munch(IRS=IRS)
+        model.c5_cuts = pe.ConstraintList()
+    else:
+        add_c5_constraints(model, IRS)
 
-        if timing:  # pragma:nocover
-            timer.toc("c5")
-
-    else:  # pragma:nocover
-        # Factor i cannot assume configuration j unless its corresponding
-        # variables are set to the correct values
-        def c3_(M, i, j, r):
-            return M.y[i, j] <= M.x[r, v[i, j, r]]
-
-        model.c3 = pe.Constraint(IJR, rule=c3_)
-
-        if timing:  # pragma:nocover
-            timer.toc("c3")
-
-        # If factor i is not in configuration j, then at least one of its
-        # corresponding variables is not set to the values for configuration j
-        def c4_(M, i, j):
-            return sum(M.x[r, v[i, j, r]] for r in model.V.get((i, j), [])) <= M.y[
-                i, j
-            ] + (len(model.V.get((i, j), [])) - 1)
-
-        model.c4 = pe.Constraint(IJ, rule=c4_)
-
-        if timing:  # pragma:nocover
-            timer.toc("c4")
+    if timing:  # pragma:nocover
+        timer.toc("c5")
 
     # Maximize the sum of log-values of all posible factors and configurations
     model.o = pe.Objective(

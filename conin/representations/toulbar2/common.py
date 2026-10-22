@@ -115,9 +115,13 @@ def apply_toulbar2_constraints(*, pgm, constraints, model, data):
 
     if isinstance(constraints[0], Toulbar2Constraint):
         for func in constraints:
-            assert isinstance(
-                func, Toulbar2Constraint
-            ), f"Unexpected constraint type ({type(func)}) when performing inference with Toulbar2. If the first constraint is a Toulbar2 constraint, then all subsequent constraints must be the same."
+            if not isinstance(func, Toulbar2Constraint):
+                raise TypeError(
+                    f"Unexpected constraint type ({type(func)}) when performing "
+                    "inference with Toulbar2. If the first constraint is a "
+                    "Toulbar2 constraint, then all subsequent constraints must "
+                    "be the same."
+                )
             model = func(model, data)
         return model
 
@@ -290,9 +294,13 @@ def add_algebraic_constraints_to_toulbar2_model(*, pgm, constraints, model, data
 
     smoek_model = smoek.model()
     for func in constraints:
-        assert isinstance(
-            func, AlgebraicConstraint
-        ), f"Unexpected constraint type ({type(func)}) when performing inference with Toulbar2. If the first constraint is a  AlgebraicConstraint, then all subsequent constraints must be the same."
+        if not isinstance(func, AlgebraicConstraint):
+            raise TypeError(
+                f"Unexpected constraint type ({type(func)}) when performing "
+                "inference with Toulbar2. If the first constraint is an "
+                "AlgebraicConstraint, then all subsequent constraints must be "
+                "the same."
+            )
         func(smoek_model, data)
     smoek_model._update_smoek_components()
 
@@ -524,7 +532,9 @@ def _scale_to_integers(coefficients, rhs, max_denominator=10**6):
         if common_gcd > 1:
             scaled_coefficients = [c // common_gcd for c in scaled_coefficients]
             scaled_rhs = scaled_rhs // common_gcd
-            lcm_denom = lcm_denom // common_gcd
+            # The values are now scaled by lcm_denom / common_gcd, which is
+            # less than 1 if they were integers with a common factor.
+            return scaled_coefficients, scaled_rhs, lcm_denom / common_gcd
 
     return scaled_coefficients, scaled_rhs, float(lcm_denom)
 

@@ -2,6 +2,7 @@ import munch
 import math
 
 from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.exceptions import InvalidInputError
 from conin.learning.unconstrained.supervised import supervised_learning
 from conin.sampling.oracle import rejection_sample_hidden
 
@@ -45,7 +46,10 @@ def mcem(
     hidden_states, observable_states : list
         Passed to ``supervised_learning``.
     samples_per_iteration, max_iterations, convergence_tolerance : optional
-        Defaults 10, 100 and 1e-4.
+        Defaults 10, 100 and 1e-4.  The iterations stop after
+        ``max_iterations``, or earlier when the average log-probability of the
+        samples changes by less than ``convergence_tolerance`` from one
+        iteration to the next.
     start_tolerance, transition_tolerance, emission_tolerance : float, optional
         Passed to ``supervised_learning`` (default 1e-4).
 
@@ -55,13 +59,12 @@ def mcem(
         The average ``log P(observed, hidden)`` of the last iteration's
         samples, under the HMM they were sampled from.
     """
-    assert len(observed) > 0, "No observed states"
-    assert (
-        hidden_states is not None and len(hidden_states) != 0
-    ), "No hidden states specified"
-    assert (
-        observable_states is not None and len(observable_states) != 0
-    ), "No observable states specified"
+    if len(observed) == 0:
+        raise InvalidInputError("No observed states")
+    if hidden_states is None or len(hidden_states) == 0:
+        raise InvalidInputError("No hidden states specified")
+    if observable_states is None or len(observable_states) == 0:
+        raise InvalidInputError("No observable states specified")
     if samples_per_iteration is None:
         samples_per_iteration = 10
     if max_iterations is None:
@@ -106,14 +109,15 @@ def mcem(
         )
         cmodel = cmodel.with_model(hmm)
 
-        if iteration >= max_iterations:
+        # Stop when the average log-probability of the samples changes by less
+        # than convergence_tolerance.  It is a Monte Carlo estimate, so it need
+        # not increase monotonically.
+        if (
+            not math.isnan(prev_log_prob)
+            and abs(log_prob - prev_log_prob) < convergence_tolerance
+        ):
             break
-        if not math.isnan(prev_log_prob):
-            assert (
-                log_prob < prev_log_prob + convergence_tolerance
-            ), f"Expecting decreasing log-probabilities: curr={log_prob} prev={prev_log_prob}"
-            if abs(log_prob - prev_log_prob) < convergence_tolerance:
-                break
+        prev_log_prob = log_prob
 
         iteration += 1
 
