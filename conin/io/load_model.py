@@ -77,7 +77,8 @@ def load_conin_model(name, quiet=True, **options):
                 if not quiet:
                     print(f"Error reading file {name}: {e}")
                 content = None
-            assert content is not None, f"Error loading model data from {name}"
+            if content is None:  # pragma:nocover
+                raise RuntimeError(f"Error loading model data from {name}")
 
             if name.endswith(".uai.gz"):
                 return load_conin_model_from_uai(string=content.decode("utf-8"))

@@ -290,6 +290,31 @@ Bug fixes
   variable_elimination) no longer raises AssertionError; create_bn_from_dbn
   with start > 0 raises InvalidInputError instead of AttributeError.
 - The pgmpy_issue_1177_pgmpy example works with pgmpy 1.1 (DiscreteMLE()).
+- The network-flow integer program with solver="or_topas" returns solutions
+  with states (they had variable_value instead, so dict evidence failed).
+- A* and recursive A* report "max_iterations: N" or "max_time: ..." in
+  termination_condition when a limit stops the search (it was overwritten
+  with "error: no feasible solutions").
+- generate_hidden, generate_observed and rejection_sample_hidden with
+  time_steps=0 return an empty list (they returned one state).
+- Invalid user input raises an exception instead of failing an assert (the
+  checks were skipped under python -O):
+  - DiscreteMarkovNetwork.check_model and DiscreteBayesianNetwork.check_model
+    raise InvalidInputError (was AssertionError, or RuntimeError for an edge
+    to an unknown node);
+  - the "pyomo", "toulbar2" and "pgmpy" HMM representations without stop,
+    observations that no hidden state can emit in the network-flow model,
+    lp_inference with num_solutions != 1, and supervised_learning/mcem without
+    hidden or observable states raise InvalidInputError;
+  - or_topas without solutions raises InsufficientSolutionsError;
+  - a mixed list of pyomo or toulbar2 constraints raises TypeError;
+  - a UAI file with an inconsistent function table raises ValueError, a
+    missing UAI file RuntimeError (as for CFN files), and MapCPD argument
+    errors ValueError.
+- pgmpy save_model with an unknown file suffix raises RuntimeError (it
+  returned without writing), and the load_model message names the file.
+- The timing=True output of variable elimination prints its STOP line with
+  the elapsed time.
 
 Known issues
 

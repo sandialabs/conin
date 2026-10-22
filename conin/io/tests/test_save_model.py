@@ -261,3 +261,11 @@ def test_save_conin_bn_as_bif(cancer_bn_uai, tmp_path):
     save_model(cancer_bn_uai, fname)
     loaded = load_model(fname)
     assert sorted(loaded.nodes) == sorted(cancer_bn_uai.nodes)
+
+
+@pytest.mark.skipif(not pgmpy_available, reason="pgmpy is not installed")
+def test_pgmpy_save_model_unknown_suffix_raises(tmp_path):
+    # It used to return without writing anything.
+    pgm = load_model(os.path.join(cwd, "asia.uai"), model_type="pgmpy")
+    with pytest.raises(RuntimeError, match="Unknown format.*model.txt"):
+        save_model(pgm, str(tmp_path / "model.txt"), model_type="pgmpy")

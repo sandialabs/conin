@@ -57,7 +57,7 @@ def _with_timing(timing, func):
     result = func()
 
     if timing:
-        timer.tic("map_query - STOP")
+        timer.toc("map_query - STOP")
 
     return result
 

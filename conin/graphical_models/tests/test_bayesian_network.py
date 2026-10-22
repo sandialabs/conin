@@ -202,7 +202,7 @@ class TestDiscreteBayesianNetwork:
         )
         cpd_B = DiscreteCPD(node="B", values=[0.5, 0.5])
         bn._cpds = [cpd_B]
-        with pytest.raises(AssertionError):
+        with pytest.raises(InvalidInputError):
             bn.check_model()
 
     def test_check_model_missing_node(self):
@@ -211,7 +211,7 @@ class TestDiscreteBayesianNetwork:
             states={"A": [0, 1], "B": [0, 1]},
             cpds=[DiscreteCPD(node="A", values=[0.5, 0.5])],
         )
-        with pytest.raises(AssertionError):
+        with pytest.raises(InvalidInputError):
             bn.check_model()
 
 
@@ -244,3 +244,29 @@ class TestCreateMNFromBN:
         # Factor for CPD A should include only A; factor for CPD B should include A and B.
         assert {"A"} in factor_node_sets
         assert {"A", "B"} in factor_node_sets
+
+
+# ---------------------------------------------------------------------
+# check_model raises InvalidInputError with a message (it used assert)
+# ---------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "cpd,match",
+    [
+        (DiscreteCPD(node="A", values=[1.5, -0.5]), "Unexpected cpd value"),
+        (DiscreteCPD(node="A", values=[0.2, 0.3, 0.5]), "has 3 values, expected 2"),
+        (DiscreteCPD(node="A", values={0: 0.5, 7: 0.5}), "Unexpected node value 7"),
+        (
+            DiscreteCPD(node="A", parents=["Z"], values={0: [0.5, 0.5]}),
+            "Unexpected parent 'Z'",
+        ),
+    ],
+)
+def test_check_model_messages(cpd, match):
+    bn = DiscreteBayesianNetwork(
+        states={"A": [0, 1]}, cpds=[DiscreteCPD(node="A", values=[0.5, 0.5])]
+    )
+    bn._cpds = [cpd]
+    with pytest.raises(InvalidInputError, match=match):
+        bn.check_model()

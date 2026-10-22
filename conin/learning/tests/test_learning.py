@@ -1,6 +1,7 @@
 import pytest
 
 from conin import learning
+from conin.exceptions import InvalidInputError
 from conin.sampling.oracle import rejection_sample_hidden
 from conin.sampling.unconstrained import generate_observed_from_hidden
 import math
@@ -231,7 +232,7 @@ def test_supervised_learning_priors():
 
 def test_supervised_learning_no_hidden_states():
     sim = learning.convert_to_simulations(hidden_list=[["h0"]], observed_list=[["o0"]])
-    with pytest.raises(AssertionError):
+    with pytest.raises(InvalidInputError, match="No hidden states"):
         learning.supervised_learning(
             simulations=sim,
             hidden_states=[],
@@ -241,7 +242,7 @@ def test_supervised_learning_no_hidden_states():
 
 def test_supervised_learning_no_observable_states():
     sim = learning.convert_to_simulations(hidden_list=[["h0"]], observed_list=[["o0"]])
-    with pytest.raises(AssertionError):
+    with pytest.raises(InvalidInputError, match="No observable states"):
         learning.supervised_learning(
             simulations=sim,
             hidden_states=["h0"],

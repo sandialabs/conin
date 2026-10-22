@@ -107,12 +107,39 @@ def test_pruning_reduces_the_search_without_changing_the_optimum():
 
 
 def test_no_solution_within_max_iterations_is_reported():
+    # termination_condition says why the search stopped (it was overwritten
+    # with "error: no feasible solutions").
     cmodel = tc.create_chmm1_oracle()
     results = a_star(observed=["o0"] * 20, hmm=cmodel, max_iterations=505)
     assert results.solution is None
     assert results.solutions == []
-    assert results.termination_condition == "error: no feasible solutions"
+    assert results.termination_condition == "max_iterations: 505"
     assert results.observed == ["o0"] * 20
+
+
+def test_max_time_stops_the_search():
+    cmodel = tc.create_chmm1_oracle()
+    results = a_star(observed=["o0"] * 20, hmm=cmodel, max_time=0)
+    assert results.solution is None
+    assert results.termination_condition.startswith("max_time: ")
+
+
+def test_limits_that_are_not_reached_do_not_change_the_result():
+    cmodel = tc.create_chmm1_oracle()
+    observed = ["o0"] * 12
+    expected = a_star(observed=observed, hmm=cmodel)
+    results = a_star(
+        observed=observed, hmm=cmodel, max_iterations=10**6, max_time=10**6
+    )
+    assert results == expected
+    assert results.termination_condition == "ok"
+
+
+def test_debug_prints_progress(capsys):
+    cmodel = tc.create_chmm1_oracle()
+    a_star(observed=["o0"] * 20, hmm=cmodel, max_iterations=250, debug=True)
+    out = capsys.readouterr().out
+    assert "Iteration: 100" in out and "Iteration: 200" in out
 
 
 def test_infeasible_model_is_reported():

@@ -260,24 +260,29 @@ class DiscreteBayesianNetwork(GraphicalModel):
     def check_model(self):
         """Validate that the network structure and CPDs are well formed.
 
-        The method asserts that every CPD references known nodes and that the
+        The method checks that every CPD references known nodes and that the
         probabilities are non-negative, normalized, and cover every possible
         configuration implied by the node states.
 
         Raises
         ------
-        AssertionError
+        InvalidInputError
             If the network contains inconsistent definitions.
         """
         model_nodes = set(self._states.keys())
 
         cnodes = set()
         for f in self._cpds:
-            assert f.node in self._states, f"Unexpected node {f.node} in cpd"
+            if f.node not in self._states:
+                raise InvalidInputError(f"Unexpected node {f.node} in cpd")
             vnodes = set(self._states[f.node])
             cnodes.add(f.node)
             if f.parents is not None:
                 for node in f.parents:
+                    if node not in self._states:
+                        raise InvalidInputError(
+                            f"Unexpected parent {node!r} in the cpd of {f.node!r}"
+                        )
                     cnodes.add(node)
 
             if type(f.values) is dict:
@@ -285,49 +290,67 @@ class DiscreteBayesianNetwork(GraphicalModel):
                     vkey = False
                     if type(v) is list:
                         for val in v:
-                            assert val >= 0 and val <= 1, f"Unexpected cpd value {val}"
+                            if not (0 <= val <= 1):
+                                raise InvalidInputError(f"Unexpected cpd value {val}")
                     elif type(v) is dict:
                         for key, val in v.items():
-                            assert key in vnodes, f"Unexpected cpd state {key}"
-                            assert val >= 0 and val <= 1, f"Unexpected cpd value {val}"
+                            if key not in vnodes:
+                                raise InvalidInputError(f"Unexpected cpd state {key}")
+                            if not (0 <= val <= 1):
+                                raise InvalidInputError(f"Unexpected cpd value {val}")
                     else:
-                        assert (
-                            v >= 0 and v <= 1
-                        ), f"Unexpected cpd value {v} for key {k}"
+                        if not (0 <= v <= 1):
+                            raise InvalidInputError(
+                                f"Unexpected cpd value {v} for key {k}"
+                            )
                         vkey = True
 
                     if vkey:
                         # The key is for the node
-                        assert (
-                            not f.parents and k in vnodes
-                        ), f"Unexpected node value {k} (no parents). Factor values {f.values}"
+                        if f.parents or k not in vnodes:
+                            raise InvalidInputError(
+                                f"Unexpected node value {k} (no parents). "
+                                f"Factor values {f.values}"
+                            )
                     else:
                         # The key is for the parents
+                        if not f.parents:
+                            raise InvalidInputError(
+                                f"The cpd of {f.node!r} has no parents, but its "
+                                f"values are keyed by parent states: {f.values}"
+                            )
                         if type(k) is tuple:
                             for i, iv in enumerate(k):
-                                assert (
-                                    iv in self._states[f.parents[i]]
-                                ), f"Unexpected value {iv} in the {i}-th node value of {k}"
-                        else:
-                            assert (
-                                k in self._states[f.parents[0]]
-                            ), f"Unexpected node value {k} for parents {self._nodes[0]}. Factor values {f.values}"
+                                if iv not in self._states[f.parents[i]]:
+                                    raise InvalidInputError(
+                                        f"Unexpected value {iv} in the {i}-th node "
+                                        f"value of {k}"
+                                    )
+                        elif k not in self._states[f.parents[0]]:
+                            raise InvalidInputError(
+                                f"Unexpected node value {k} for parents "
+                                f"{f.parents}. Factor values {f.values}"
+                            )
             else:
                 for v in f.values:
-                    assert v >= 0 and v <= 1
-                # We assert equality to ensure the list of values covers all combinations of
-                # node states
+                    if not (0 <= v <= 1):
+                        raise InvalidInputError(f"Unexpected cpd value {v}")
+                # The list of values must cover all combinations of node states
+                expected = len(self._states[f.node])
                 if f.parents:
-                    assert len(f.values) == prod(
-                        len(self._states[v]) for v in f.parents
-                    ) * len(self._states[f.node])
-                else:
-                    assert len(f.values) == len(self._states[f.node])
+                    expected *= prod(len(self._states[v]) for v in f.parents)
+                if len(f.values) != expected:
+                    raise InvalidInputError(
+                        f"The cpd of {f.node!r} has {len(f.values)} values, "
+                        f"expected {expected}"
+                    )
 
-        # Note: We assert equality to ensure that all nodes are used in the model
-        assert (
-            model_nodes == cnodes
-        ), f"There are differences between the model nodes and the nodes used in the model\n{sorted(model_nodes)=}\n{sorted(cnodes)=}"
+        # Every node must be used in the model
+        if model_nodes != cnodes:
+            raise InvalidInputError(
+                "There are differences between the model nodes and the nodes used "
+                f"in the model\n{sorted(model_nodes)=}\n{sorted(cnodes)=}"
+            )
 
     #
     # Nodes

@@ -13,7 +13,8 @@ lineno = 0
 
 def get_lines(filename, string):
     if filename:
-        assert os.path.exists(filename), f"Cannot read missing UAI file {filename}"
+        if not os.path.exists(filename):
+            raise RuntimeError(f"Cannot read missing UAI file {filename}")
         with open(filename, "r") as INPUT:
             for line in INPUT:
                 yield line
@@ -106,9 +107,11 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
         N = 1
         for v in f:
             N *= vcard[v]
-        assert (
-            n == N
-        ), f"Inconsistent function definition at line {lineno}: read {n} but expected {N} from function definition"
+        if n != N:
+            raise ValueError(
+                f"Inconsistent function definition at line {lineno}: read {n} "
+                f"but expected {N} from function definition"
+            )
 
         if is_bayes:
             if verbose:  # pragma:nocover

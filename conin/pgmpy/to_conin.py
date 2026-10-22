@@ -78,9 +78,9 @@ def _same_values(a, b):
 
 
 def _as_tuple(var, t, offset):
-    if type(var):
-        return (var[0], t + (var[1] - offset))
-    return (var.node, t + (var.time_slice - offset))
+    # A pgmpy DBN node is a (name, time_slice) tuple or a DynamicNode; both
+    # support indexing.
+    return (var[0], t + (var[1] - offset))
 
 
 def convert_pgmpy_to_DynamicDiscreteBayesianNetwork(pgmpy_pgm):
@@ -116,10 +116,7 @@ def convert_pgmpy_to_DynamicDiscreteBayesianNetwork(pgmpy_pgm):
                 values[i][j] for j in range(len(values[0])) for i in range(len(values))
             ]
 
-            if type(cpd.variable) is tuple:
-                offset = cpd.variable[1]
-            else:
-                offset = cpd.variable.time_slice
+            offset = cpd.variable[1]
 
             # pgmpy may hold the same CPD for several time slices (e.g.
             # initialize_initial_state adds the slice-1 copy of an intra-slice

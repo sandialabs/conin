@@ -2,6 +2,7 @@ import munch
 import math
 
 from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.exceptions import InvalidInputError
 from conin.learning.unconstrained.supervised import supervised_learning
 from conin.sampling.oracle import rejection_sample_hidden
 
@@ -55,13 +56,12 @@ def mcem(
         The average ``log P(observed, hidden)`` of the last iteration's
         samples, under the HMM they were sampled from.
     """
-    assert len(observed) > 0, "No observed states"
-    assert (
-        hidden_states is not None and len(hidden_states) != 0
-    ), "No hidden states specified"
-    assert (
-        observable_states is not None and len(observable_states) != 0
-    ), "No observable states specified"
+    if len(observed) == 0:
+        raise InvalidInputError("No observed states")
+    if hidden_states is None or len(hidden_states) == 0:
+        raise InvalidInputError("No hidden states specified")
+    if observable_states is None or len(observable_states) == 0:
+        raise InvalidInputError("No observable states specified")
     if samples_per_iteration is None:
         samples_per_iteration = 10
     if max_iterations is None:

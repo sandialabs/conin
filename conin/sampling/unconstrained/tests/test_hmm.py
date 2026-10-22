@@ -128,3 +128,19 @@ def test_generate_observed_rejects_negative_time_steps_before_sampling():
     with pytest.raises(InvalidInputError):
         generate_observed(hmm, -1)
     assert (np.random.get_state()[1] == state).all()
+
+
+@pytest.mark.parametrize("generate", [generate_hidden, generate_observed])
+def test_zero_time_steps_gives_an_empty_sequence(generate):
+    # It used to sample the start state anyway and return one label.
+    hmm = tc.create_hmm1()
+    np.random.seed(0)
+    state = np.random.get_state()[1].copy()
+    assert generate(hmm, 0) == []
+    assert (np.random.get_state()[1] == state).all()
+
+
+@pytest.mark.parametrize("generate", [generate_hidden, generate_observed])
+def test_negative_time_steps_message(generate):
+    with pytest.raises(InvalidInputError, match="non-negative, got -2"):
+        generate(tc.create_hmm1(), -2)

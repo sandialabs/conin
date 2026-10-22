@@ -169,7 +169,9 @@ def a_star_(
                 print(f"  ninfeas:   {n_infeasible}")
                 print(f"  time:      {curr_time - start_time}")
 
-    if len(output) < num_solutions:
+    if len(output) < num_solutions and termination_condition == "unknown":
+        # The search space is exhausted.  (If max_iterations or max_time
+        # stopped the search, termination_condition says so.)
         if num_solutions == 1:
             termination_condition = "error: no feasible solutions"
         else:
