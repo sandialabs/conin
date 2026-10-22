@@ -110,12 +110,13 @@ class DBNSampler:
 
     def build_representation(self):
         """
-        Build dictionary representation of nodes in G, i.e.
-        {
-          parents:   [(_node, previous_flag), ...]
-          values:    [value_tuple:probabilty_list, ...]
-          children:  [_node, ...]
-        }
+        Build dictionary representation of nodes in G, i.e.::
+
+            {
+              parents:   [(_node, previous_flag), ...]
+              values:    [value_tuple:probabilty_list, ...]
+              children:  [_node, ...]
+            }
         """
         return {
             _node: {

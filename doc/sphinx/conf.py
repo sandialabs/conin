@@ -34,6 +34,7 @@ extensions = [
 autodoc_mock_imports = [
     "pgmpy",
     "pytoulbar2",
+    "torch",
 ]
 
 autosummary_generate = True

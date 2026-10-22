@@ -208,32 +208,4 @@ not installed.
 Reference
 ---------
 
-.. autofunction:: conin.graphical_models.create_mn_from_bn
-
-.. autofunction:: conin.graphical_models.create_bn_from_dbn
-
-.. autofunction:: conin.graphical_models.create_dbn_from_hmm
-
-.. autofunction:: conin.io.load_model
-
-.. autofunction:: conin.io.save_model
-
-.. autofunction:: conin.scoring.log_probability
-
-.. autofunction:: conin.scoring.log_potential
-
-.. autofunction:: conin.scoring.log_probability_query
-
-.. autofunction:: conin.common.is_polytree
-
-.. autofunction:: conin.io.uai.load_conin_model_from_uai
-
-.. autofunction:: conin.io.cfn.load_conin_model_from_cfn
-
-.. autofunction:: conin.io.uai.save_model_uai
-
-.. autofunction:: conin.common.pgmpy.convert_conin_to_pgmpy_bn
-
-.. autofunction:: conin.common.pgmpy.convert_conin_to_pgmpy_mn
-
-.. autofunction:: conin.common.pgmpy.convert_pgmpy_to_conin
+The functions on this page are documented in :doc:`api_scoring_io`.

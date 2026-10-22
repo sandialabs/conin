@@ -38,3 +38,71 @@ Available Methods
    Uses the torch MVR Viterbi algorithm for hidden Markov models with MVR
    constraints (requires torch). The solution also has ``log_likelihood`` and
    ``augmented`` (the decoded augmented path).
+
+Backend functions
+-----------------
+
+``map_query`` calls one of the functions below. They can also be called
+directly; each takes a bare or constrained model and builds the representation
+it needs.
+
+Unconstrained, oracle and recursive search (HMMs)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autofunction:: conin.inference.unconstrained.viterbi
+
+.. autofunction:: conin.inference.oracle.a_star
+
+.. autofunction:: conin.inference.recursive.recursive_a_star
+
+Pyomo (integer programming)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autofunction:: conin.inference.pyomo.inference_pyomo_map_query_MN
+
+.. autofunction:: conin.inference.pyomo.inference_pyomo_map_query_BN
+
+.. autofunction:: conin.inference.pyomo.inference_pyomo_map_query_DDBN
+
+.. autofunction:: conin.inference.pyomo.inference_pyomo_map_query_HMM
+
+.. autofunction:: conin.inference.pyomo.lp_inference
+
+.. autofunction:: conin.inference.pyomo.ip_inference
+
+.. autofunction:: conin.inference.pyomo.solve_pyomo_map_query_model
+
+Toulbar2
+^^^^^^^^
+
+.. autofunction:: conin.inference.toulbar2.inference_toulbar2_map_query_MN
+
+.. autofunction:: conin.inference.toulbar2.inference_toulbar2_map_query_BN
+
+.. autofunction:: conin.inference.toulbar2.inference_toulbar2_map_query_DDBN
+
+.. autofunction:: conin.inference.toulbar2.inference_toulbar2_map_query_HMM
+
+.. autofunction:: conin.inference.toulbar2.solve_toulbar2_map_query_model
+
+Variable elimination (pgmpy)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autofunction:: conin.inference.variable_elimination.inference_variable_elimination_map_query_MN
+
+.. autofunction:: conin.inference.variable_elimination.inference_variable_elimination_map_query_BN
+
+.. autofunction:: conin.inference.variable_elimination.inference_variable_elimination_map_query_DDBN
+
+.. autofunction:: conin.inference.variable_elimination.inference_variable_elimination_map_query_HMM
+
+.. autofunction:: conin.inference.variable_elimination.solve_variable_elimination_map_query_model
+
+MVR (torch)
+^^^^^^^^^^^
+
+These need torch, which is imported on first use.
+
+.. autofunction:: conin.inference.mvr.viterbi.viterbi_torch_mvr_chmm
+
+.. autofunction:: conin.inference.mvr.marginal_map.marginal_map_torch_mvr_chmm

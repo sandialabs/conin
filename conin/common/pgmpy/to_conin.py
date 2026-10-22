@@ -151,6 +151,29 @@ def convert_pgmpy_to_DynamicDiscreteBayesianNetwork(pgmpy_pgm):
 
 
 def convert_pgmpy_to_conin(pgmpy_pgm):
+    """Convert a pgmpy model to the matching CONIN model.
+
+    Parameters
+    ----------
+    pgmpy_pgm : pgmpy.models.DiscreteMarkovNetwork or DiscreteBayesianNetwork or DynamicBayesianNetwork
+        The model to convert.
+
+    Returns
+    -------
+    DiscreteMarkovNetwork or DiscreteBayesianNetwork or DynamicDiscreteBayesianNetwork
+        The CONIN model. A dynamic Bayesian network's nodes are ``(name, t)``;
+        CPDs that pgmpy holds for several time slices become one CPD template.
+
+    Raises
+    ------
+    ImportError
+        If pgmpy is not installed.
+    ValueError
+        For another model type.
+    InvalidInputError
+        If two time slices of a dynamic Bayesian network have different CPDs
+        for the same template.
+    """
     if not pgmpy_available:
         raise ImportError("Cannot convert a pgmpy model without importing pgmpy")
 

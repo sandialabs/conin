@@ -36,6 +36,24 @@ def tokenize(filename, string):
 
 
 def load_conin_model_from_uai(filename=None, string=None, verbose=False):
+    """Load a CONIN model from a UAI file or string.
+
+    Parameters
+    ----------
+    filename : str, optional
+        Path of a ``.uai`` file.
+    string : str, optional
+        The UAI text (used when ``filename`` is not given).
+    verbose : bool, optional
+        Print the parsed sections.
+
+    Returns
+    -------
+    DiscreteBayesianNetwork or DiscreteMarkovNetwork
+        A Bayesian network for a ``BAYES`` file, else a Markov network. The
+        variables are named ``var0``, ``var1``, ... and their states are
+        ``0..k-1``.
+    """
     global lineno
     lineno = -1
 

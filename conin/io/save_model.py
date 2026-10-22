@@ -13,6 +13,30 @@ with try_import() as pgmpy_available:
 
 
 def save_model(pgm, name, model_type="conin", quiet=True):
+    """Save a probabilistic graphical model to a file.
+
+    Parameters
+    ----------
+    pgm
+        The model: a CONIN ``DiscreteBayesianNetwork``,
+        ``DynamicDiscreteBayesianNetwork`` or ``DiscreteMarkovNetwork`` for
+        ``model_type="conin"``, or a pgmpy model for ``model_type="pgmpy"``.
+    name : str
+        Output file name. CONIN models are saved as ``.uai`` files (see
+        :func:`conin.io.save_model_uai`) or, with pgmpy installed, as ``.bif``
+        files (converted to pgmpy and written by pgmpy).
+    model_type : str, optional
+        ``"conin"`` (default) or ``"pgmpy"``.
+    quiet : bool, optional
+        Accepted for API compatibility.
+
+    Raises
+    ------
+    RuntimeError
+        For an unknown ``model_type`` or file suffix.
+    ImportError
+        For ``model_type="pgmpy"`` without pgmpy.
+    """
 
     if model_type == "conin":
         return save_conin_model(pgm, name, quiet=quiet)
