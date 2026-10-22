@@ -1,5 +1,5 @@
-Sampling, Learning and MVR Queries
-==================================
+Sampling and Learning
+=====================
 
 Sampling
 --------
@@ -40,13 +40,3 @@ The MVR learning algorithms (torch):
 .. autofunction:: conin.learning.mvr.baum_welch.baum_welch_mvr_chmm
 
 .. autofunction:: conin.learning.mvr.generalized_em.generalized_em_mvr_chmm
-
-MVR queries
------------
-
-Satisfaction probability and first satisfaction time of MVR constraints
-(torch):
-
-.. autofunction:: conin.queries.mvr.sat_prob.sat_prob_torch_mvr_chmm
-
-.. autofunction:: conin.queries.mvr.sat_time.sat_time_torch_mvr_chmm

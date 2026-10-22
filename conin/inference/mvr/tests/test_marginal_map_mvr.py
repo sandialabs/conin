@@ -22,7 +22,7 @@ from conin.inference.mvr.viterbi import (  # noqa: E402
     viterbi_torch_mvr_chmm,
 )
 
-from conin.queries.mvr.tests.test_sat_time_mvr import (
+from conin.inference.mvr.tests.test_sat_time_mvr import (
     make_reach_mvr,
     mvr_window,
 )  # noqa: E402

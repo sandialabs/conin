@@ -24,9 +24,8 @@ Highlights
 - New conin.scoring.log_probability_query: marginal and conditional
   log-probabilities, also under constraints.
 - New RecursiveConstraint for recursive A*; map_query(method="a_star") uses it.
-- Algorithms are organised by backend under conin.inference, conin.learning,
-  conin.sampling and conin.queries; the torch MVR code no longer loads with
-  import conin.
+- Algorithms are organised by backend under conin.inference, conin.learning
+  and conin.sampling; the torch MVR code no longer loads with import conin.
 - pgmax, pomegranate and pyagrum support is removed.
 
 Migration table (old -> new)
@@ -67,14 +66,13 @@ Migration table (old -> new)
                                        RecursiveConstraint or data=...
   supervised_learning, mcem, add_unknowns, convert_to_simulations
                                     -> conin.learning
-  inference.viterbi_mvr, inference.marginal_map_mvr
+  inference.viterbi_mvr, inference.marginal_map_mvr,
+  other_queries.sat_prob_mvr, other_queries.sat_time_mvr
                                     -> conin.inference.mvr
   learning.baum_welch_mvr, learning.generalized_em_mvr
                                     -> conin.learning.mvr
   sampling.ffbs_mvr, sampling.stopped_sampling_mvr
                                     -> conin.sampling.mvr
-  other_queries.sat_prob_mvr, other_queries.sat_time_mvr
-                                    -> conin.queries.mvr
   conin.inference.{mn,bn,dbn,hmm} Pyomo functions,
   hidden_markov_model lp_inference/ip_inference
                                     -> conin.inference.pyomo

@@ -35,8 +35,7 @@ python -m pip install -e .[regex]     # mvr_regex
 
 Conin 2.0 reorganised the package (models in `conin.graphical_models`,
 constrained models in `conin.constrained_models`, algorithms by backend under
-`conin.inference`, `conin.learning`, `conin.sampling`, `conin.queries` and
-`conin.scoring`). Old import paths were removed without aliases; see
+`conin.inference`, `conin.learning`, `conin.sampling` and `conin.scoring`). Old import paths were removed without aliases; see
 [CHANGELOG.md](CHANGELOG.md) for the migration table.
 
 Optional backends and solver requirements are described in the backend
