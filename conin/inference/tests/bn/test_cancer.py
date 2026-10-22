@@ -51,7 +51,7 @@ def test_cancer1_pgmpy_ALL():
         == example.solutions[0].states
     )
 
-    from conin.common.pgmpy import convert_pgmpy_to_conin
+    from conin.pgmpy import convert_pgmpy_to_conin
 
     pgm = convert_pgmpy_to_conin(example.pgm)
     results = inference_pyomo_map_query_BN(pgm=pgm, solver=mip_solver)
@@ -74,7 +74,7 @@ def test_cancer2_pgmpy_ALL():
         == example.solutions[0].states
     )
 
-    from conin.common.pgmpy import convert_pgmpy_to_conin
+    from conin.pgmpy import convert_pgmpy_to_conin
 
     pgm = convert_pgmpy_to_conin(example.pgm)
     results = inference_pyomo_map_query_BN(pgm=pgm, solver=mip_solver)

@@ -314,7 +314,7 @@ def dbn_states(dbn, stop):
 
 
 def dbn_constraint_data(stop):
-    """``data`` for DBN constraints, as in the ``"factor"`` representation."""
+    """``data`` for DBN constraints, as in the ``"pgmpy"`` representation."""
     return munch.Munch(T=list(range(stop + 1)))
 
 
@@ -355,7 +355,7 @@ def hmm_sequences(hmm, hidden, observed=None):
 
 
 def hmm_constraint_data(T):
-    """``data`` for HMM constraints, as in the ``"factor"`` representation."""
+    """``data`` for HMM constraints, as in the ``"pgmpy"`` representation."""
     return munch.Munch(hmm=munch.Munch(T=list(range(T))))
 
 

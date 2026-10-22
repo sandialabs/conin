@@ -3,7 +3,7 @@
 from conin.graphical_models import DiscreteBayesianNetwork
 from conin.representations.base import register_representation
 
-from conin.representations.factor.factor_repn import skeleton_mn_of_bn
+from .factor_repn import skeleton_mn_of_bn
 
 from .common import PyomoFactorRepresentation
 from .mn import build_pyomo_mn_representation

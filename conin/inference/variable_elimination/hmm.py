@@ -20,7 +20,7 @@ def _map_query_variable_elimination_hmm(
     timing=False,
     write_uai_file=None,
 ):
-    """Solve a MAP query on the ``"factor"`` representation of an HMM."""
+    """Solve a MAP query on the ``"pgmpy"`` representation of an HMM."""
 
     def _execute():
         results = _solve_repn(
@@ -95,7 +95,7 @@ def inference_variable_elimination_map_query_HMM(
     start, stop = time_range(as_sequence(evidence), start, stop)
     cmodel = ConstrainedHiddenMarkovModel.ensure(pgm)
     return _map_query_variable_elimination_hmm(
-        cmodel.representation("factor", start=start, stop=stop),
+        cmodel.representation("pgmpy", start=start, stop=stop),
         variables=variables,
         evidence=evidence,
         show_progress=show_progress,

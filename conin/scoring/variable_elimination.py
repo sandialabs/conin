@@ -1,7 +1,7 @@
-"""Marginal and conditional log-probabilities on the ``"factor"`` representation.
+"""Marginal and conditional log-probabilities on the ``"pgmpy"`` representation.
 
-The ``"factor"`` representation holds the model with its constraints compiled
-in (:class:`~conin.representations.factor.FactorRepresentation`): a factor per
+The ``"pgmpy"`` representation holds the model with its constraints compiled
+in (:class:`~conin.representations.pgmpy.PgmpyRepresentation`): a factor per
 constraint that is ``0`` on infeasible assignments (Markov networks), or a
 binary node per constraint that :attr:`constraint_evidence` fixes to ``1``
 (Bayesian networks, and the unrolled DBNs and HMMs).  Let ``W(a)`` be the sum
@@ -32,7 +32,7 @@ with try_import() as pgmpy_available:
 
 
 def _log_probability_variable_elimination(repn, *, assignment, evidence):
-    """``log P(assignment | evidence, C)`` on the ``"factor"`` representation ``repn``.
+    """``log P(assignment | evidence, C)`` on the ``"pgmpy"`` representation ``repn``.
 
     ``assignment`` and ``evidence`` are dicts keyed by the nodes of
     ``repn.pgm`` (checked by the caller).

@@ -81,7 +81,7 @@ def _recorder(kind, seen):
 
 
 # ---------------------------------------------------------------------
-# Regression: the "pyomo", "toulbar2" and "factor" representations (and
+# Regression: the "pyomo", "toulbar2" and "pgmpy" representations (and
 # is_feasible and the oracle representation) never passed the constrained
 # model's data to constraint functions; only network flow did
 # ---------------------------------------------------------------------
@@ -170,7 +170,7 @@ def test_factor_representation_passes_the_application_data():
     cmodel = ConstrainedHiddenMarkovModel(
         hex_.create_hmm1(), constraint, data=munch.Munch(k=1)
     )
-    cmodel.representation("factor", start=0, stop=2)
+    cmodel.representation("pgmpy", start=0, stop=2)
     assert seen and all(d.k == 1 and d.hmm.T == [0, 1, 2] for d in seen)
     assert cmodel.data == munch.Munch(k=1)
 

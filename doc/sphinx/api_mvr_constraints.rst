@@ -4,7 +4,7 @@ MVR Constraints
 ``conin.constraints.mvr`` holds the mediation variable representations
 (MVRs): automata over the hidden states of an HMM that express constraints on
 hidden-state sequences, for the torch MVR algorithms (see
-:doc:`api_sampling_learning_queries` and ``map_query(...,
+:doc:`api_inference`, :doc:`api_sampling_learning` and ``map_query(...,
 method="mvr_viterbi")``). Declaring MVRs needs only NumPy; ``mvr_regex``
 needs ``greenery``. Built MVRs (``HomMVR``, ``InhomMVR``) and
 ``MVRConstraint`` factories (called with the HMM when the ``"mvr"``

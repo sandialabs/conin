@@ -35,9 +35,9 @@ Code Organisation
 -----------------
 
 The package layout, the import layering rules (``graphical_models``,
-``common``, ``util`` and ``exceptions`` import nothing from the packages
-above them; ``import conin`` must not import torch), the representation
-registry and the design decisions behind them are described in
+``util`` and ``exceptions`` import nothing from the packages above them, and
+``pgmpy`` imports only those; ``import conin`` must not import torch), the
+representation registry and the design decisions behind them are described in
 ``doc/sphinx/architecture.rst`` (the "Architecture and Design Notes" page of
 the documentation). Read it before adding a backend, a constraint family or a
 model type.

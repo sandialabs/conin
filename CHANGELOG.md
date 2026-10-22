@@ -24,9 +24,8 @@ Highlights
 - New conin.scoring.log_probability_query: marginal and conditional
   log-probabilities, also under constraints.
 - New RecursiveConstraint for recursive A*; map_query(method="a_star") uses it.
-- Algorithms are organised by backend under conin.inference, conin.learning,
-  conin.sampling and conin.queries; the torch MVR code no longer loads with
-  import conin.
+- Algorithms are organised by backend under conin.inference, conin.learning
+  and conin.sampling; the torch MVR code no longer loads with import conin.
 - pgmax, pomegranate and pyagrum support is removed.
 
 Migration table (old -> new)
@@ -67,14 +66,13 @@ Migration table (old -> new)
                                        RecursiveConstraint or data=...
   supervised_learning, mcem, add_unknowns, convert_to_simulations
                                     -> conin.learning
-  inference.viterbi_mvr, inference.marginal_map_mvr
+  inference.viterbi_mvr, inference.marginal_map_mvr,
+  other_queries.sat_prob_mvr, other_queries.sat_time_mvr
                                     -> conin.inference.mvr
   learning.baum_welch_mvr, learning.generalized_em_mvr
                                     -> conin.learning.mvr
   sampling.ffbs_mvr, sampling.stopped_sampling_mvr
                                     -> conin.sampling.mvr
-  other_queries.sat_prob_mvr, other_queries.sat_time_mvr
-                                    -> conin.queries.mvr
   conin.inference.{mn,bn,dbn,hmm} Pyomo functions,
   hidden_markov_model lp_inference/ip_inference
                                     -> conin.inference.pyomo
@@ -85,7 +83,7 @@ Migration table (old -> new)
                                        .create_model(...)
   create_toulbar2_map_query_model_* -> cmodel.representation("toulbar2", ...)
                                        .create_model(...)
-  conin.inference.mn.factor_repn    -> conin.representations.factor.factor_repn
+  conin.markov_network.factor_repn  -> conin.representations.pyomo.factor_repn
   PyomoVarWrapper, add_c5_constraints, C5LazyCutGenerator, ...
                                     -> conin.representations.pyomo(.common)
   Toulbar2VarWrapper, add_toulbar2_constraints, ...
@@ -93,8 +91,8 @@ Migration table (old -> new)
   conin.common.load_model/save_model, conin.common.conin.* loaders/savers
                                     -> conin.io (load_model, save_model,
                                        uai, cfn, pgmpy_files)
-  conin.common.conin.*_to_pgmpy, is_polytree
-                                    -> conin.common
+  conin.common.pgmpy (convert_pgmpy_to_conin, MapCPD, is_polytree)
+                                    -> conin.pgmpy
   log_probability, log_potential    -> conin.scoring
 
 Models
@@ -176,7 +174,7 @@ Representations (new)
 
 - conin.representations: Representation, register_representation,
   build_representation, supported_representations; kinds "pyomo",
-  "pyomo_network_flow", "toulbar2", "factor", "matvec", "oracle",
+  "pyomo_network_flow", "toulbar2", "pgmpy", "matvec", "oracle",
   "recursive", "mvr". Every representation() call builds a new object;
   structure parameters (start, stop, ...) are build arguments and per-query
   inputs go to create_model().
@@ -262,12 +260,19 @@ I/O and conversion
 - File I/O moves from conin.common to conin.io; load_model/save_model accept
   model_type="conin" or "pgmpy". The convert_pgm script is
   conin.io.convert_pgm:main (same name and options).
+- pgmpy conversion (convert_pgmpy_to_conin, MapCPD, is_polytree for pgmpy
+  models) moves from conin.common.pgmpy to conin.pgmpy, which also has the
+  new convert_conin_to_pgmpy_bn and convert_conin_to_pgmpy_mn. The new
+  conin.graphical_models.is_polytree checks CONIN Bayesian networks.
 - pgmax, pomegranate and pyagrum support (converters, loaders, model_type
   values and the pgmax/pomegranate/pyagrum/pgm-all extras) is removed;
   load_model with those model_type values raises RuntimeError("Unexpected
   model type").
 - conin.common.pgmpy.log_potential and conin.common.pgmpy.custom_VE (dead,
   untested code) are removed.
+- conin/mediation_variables (an unused NumPy prototype of the mediation
+  variable algorithms, with its notebooks) is removed; the MVR algorithms are
+  in conin.inference.mvr, conin.learning.mvr and conin.sampling.mvr.
 - New extras: toulbar2 (pytoulbar2) and torch.
 
 Bug fixes

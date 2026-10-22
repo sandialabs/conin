@@ -36,7 +36,7 @@ class ConstrainedHiddenMarkovModel(ConstrainedGraphicalModel):
       internal hidden-state indices, used by A* and rejection sampling;
     * ``"recursive"`` (no constraints or ``"recursive"``): the combined
       recursive constraint, used by recursive A*;
-    * ``"factor"`` (no constraints, ``"factor_oracle"`` or ``"algebraic"``;
+    * ``"pgmpy"`` (no constraints, ``"factor_oracle"`` or ``"algebraic"``;
       structure params ``start``, ``stop``): variable elimination;
     * ``"toulbar2"`` (no constraints, ``"toulbar2"`` or ``"algebraic"``;
       structure params ``start``, ``stop``): the cost function network;
@@ -47,8 +47,8 @@ class ConstrainedHiddenMarkovModel(ConstrainedGraphicalModel):
       ``"algebraic"``): the network-flow integer program;
     * ``"mvr"`` (no constraints or ``"mvr"``): the built MVRs, aligned to
       the HMM (``representation("mvr").mvrs``), used by the torch MVR
-      algorithms (:mod:`conin.inference.mvr`, :mod:`conin.learning.mvr`,
-      :mod:`conin.sampling.mvr`, :mod:`conin.queries.mvr`).
+      algorithms (:mod:`conin.inference.mvr`, :mod:`conin.learning.mvr`
+      and :mod:`conin.sampling.mvr`).
     """
 
     __slots__ = ()

@@ -5,7 +5,7 @@ A query goes through the same steps as ``map_query``:
 1. normalise the model (pgmpy models are converted; a bare model is wrapped
    with no constraints);
 2. pick the representation kind from ``method`` (only
-   ``"variable_elimination"`` -> ``"factor"`` for now);
+   ``"variable_elimination"`` -> ``"pgmpy"`` for now);
 3. build that representation with its structure parameters (DBNs and HMMs
    are unrolled over ``start..stop``);
 4. compute the query with the overload of :func:`_solve_log_probability` for
@@ -26,11 +26,11 @@ from conin.constrained_models import (
 )
 from conin.constrained_models.normalise import as_constrained_model
 from conin.exceptions import InvalidInputError
-from conin.representations.factor import (
-    FactorBNRepresentation,
-    FactorDBNRepresentation,
-    FactorHMMRepresentation,
-    FactorMNRepresentation,
+from conin.representations.pgmpy import (
+    PgmpyBNRepresentation,
+    PgmpyDBNRepresentation,
+    PgmpyHMMRepresentation,
+    PgmpyMNRepresentation,
 )
 
 from .variable_elimination import _log_probability_variable_elimination
@@ -41,7 +41,7 @@ METHODS = ("variable_elimination",)
 
 def _representation_kind(method):
     """Return the representation kind that ``method`` computes the query on."""
-    return {"variable_elimination": "factor"}[method]
+    return {"variable_elimination": "pgmpy"}[method]
 
 
 def _structure_params(cmodel, *, variables, start, stop):
@@ -109,7 +109,7 @@ def log_probability_query(
     ======================== ==================== ================
     ``method``               representation kind  models
     ======================== ==================== ================
-    ``variable_elimination`` ``"factor"``         MN, BN, DBN, HMM
+    ``variable_elimination`` ``"pgmpy"``          MN, BN, DBN, HMM
     ======================== ==================== ================
 
     Parameters
@@ -239,20 +239,20 @@ def _variable_elimination(repn, q):
 
 
 @ovld
-def _solve_log_probability(repn: FactorMNRepresentation, q):
+def _solve_log_probability(repn: PgmpyMNRepresentation, q):
     return _variable_elimination(repn, q)
 
 
 @ovld
-def _solve_log_probability(repn: FactorBNRepresentation, q):
+def _solve_log_probability(repn: PgmpyBNRepresentation, q):
     return _variable_elimination(repn, q)
 
 
 @ovld
-def _solve_log_probability(repn: FactorDBNRepresentation, q):
+def _solve_log_probability(repn: PgmpyDBNRepresentation, q):
     return _variable_elimination(repn, q)
 
 
 @ovld
-def _solve_log_probability(repn: FactorHMMRepresentation, q):
+def _solve_log_probability(repn: PgmpyHMMRepresentation, q):
     return _variable_elimination(repn, q)

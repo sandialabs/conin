@@ -15,7 +15,7 @@ def _map_query_variable_elimination_bn(
     write_uai_file=None,
     solution_with_evidence=False,
 ):
-    """Solve a MAP query on a ``"factor"`` representation with variable elimination."""
+    """Solve a MAP query on a ``"pgmpy"`` representation with variable elimination."""
     return _solve_static(
         repn,
         variables=variables,
@@ -68,7 +68,7 @@ def inference_variable_elimination_map_query_BN(
     """
     cmodel = ConstrainedDiscreteBayesianNetwork.ensure(pgm)
     return _map_query_variable_elimination_bn(
-        cmodel.representation("factor"),
+        cmodel.representation("pgmpy"),
         variables=variables,
         evidence=evidence,
         show_progress=show_progress,

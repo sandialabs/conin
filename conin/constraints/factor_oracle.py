@@ -11,7 +11,7 @@ class FactorOracleConstraint(Constraint):
     A factor oracle constraint is materialised into a factor (Markov
     networks) or a CPD (Bayesian networks) by enumerating every assignment
     over its ``nodes`` (see
-    :func:`conin.representations.factor.materialise_factor_oracle`).  This is
+    :func:`conin.representations.pgmpy.materialise_factor_oracle`).  This is
     how oracle constraints are used with variable elimination.
 
     Parameters

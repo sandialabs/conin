@@ -139,9 +139,10 @@ Features requiring ``pgmpy`` include:
   ``conin.io.save_model``
 - ``conin.io.load_model(..., model_type="pgmpy")``
 - ``conin.io.save_model(..., model_type="pgmpy")``
-- ``conin.common.convert_pgmpy_to_conin``
-- ``conin.common.convert_conin_to_pgmpy_bn``
-- ``conin.common.convert_conin_to_pgmpy_mn``
+- ``conin.pgmpy.convert_pgmpy_to_conin``
+- ``conin.pgmpy.convert_conin_to_pgmpy_bn``
+- ``conin.pgmpy.convert_conin_to_pgmpy_mn``
+- ``conin.pgmpy.MapCPD`` and ``conin.pgmpy.is_polytree``
 
 Variable elimination runs in pgmpy on the (unrolled) model, so its memory use
 grows quickly with the size of the largest intermediate factor. For example,
@@ -152,8 +153,8 @@ unrolled to ``stop=4`` has run out of memory in our tests; use
 torch (MVR algorithms)
 ----------------------
 
-The MVR algorithms in ``conin.inference.mvr``, ``conin.learning.mvr``,
-``conin.sampling.mvr`` and ``conin.queries.mvr``, and
+The MVR algorithms in ``conin.inference.mvr``, ``conin.learning.mvr`` and
+``conin.sampling.mvr``, and
 ``map_query(..., method="mvr_viterbi")``, require ``torch`` (the ``torch``
 extra). torch is imported the first time one of these algorithms is used:
 ``import conin`` and importing these packages do not import it. Declaring MVR

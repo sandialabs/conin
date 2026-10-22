@@ -127,7 +127,7 @@ no constraints only; used by Viterbi, A*, sampling and the torch MVR kernels),
 ``"oracle"`` (feasibility checks
 for A* and rejection sampling; no constraints or oracle constraints),
 ``"recursive"`` (for recursive A*; no constraints or recursive constraints),
-``"factor"`` (variable elimination; no constraints, factor-oracle or algebraic
+``"pgmpy"`` (variable elimination; no constraints, factor-oracle or algebraic
 constraints), ``"pyomo"`` (the integer program of the
 unrolled model; no constraints, Pyomo or algebraic constraints),
 ``"pyomo_network_flow"`` (the network-flow integer program; no constraints,
@@ -135,8 +135,8 @@ Pyomo or algebraic constraints), ``"toulbar2"`` (the cost function network of
 the unrolled model; no constraints, Toulbar2 or algebraic constraints) and
 ``"mvr"`` (no constraints or MVR constraints; the built MVRs, aligned to the
 HMM, are ``chmm.representation("mvr").mvrs``). The torch MVR algorithms in
-``conin.inference.mvr``, ``conin.learning.mvr``, ``conin.sampling.mvr`` and
-``conin.queries.mvr`` take a ``ConstrainedHiddenMarkovModel`` with MVR
+``conin.inference.mvr``, ``conin.learning.mvr`` and ``conin.sampling.mvr``
+take a ``ConstrainedHiddenMarkovModel`` with MVR
 constraints; see the notebooks in ``doc/notebooks/MVR``.
 ``map_query(chmm, method="mvr_viterbi", evidence=observed)`` runs the torch
 MVR Viterbi (``viterbi_torch_mvr_chmm``) through the common entry point.

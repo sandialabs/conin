@@ -49,7 +49,7 @@ def test_simple0_DDBN_conin_mip():
 @skipif_pgmpy_not_available
 @skipif_no_mip_solver
 def test_simple0_DDBN1_pgmpy_mip():
-    from conin.common.pgmpy import convert_pgmpy_to_conin
+    from conin.pgmpy import convert_pgmpy_to_conin
 
     example = examples.simple0_DDBN1_pgmpy()
     pgm = convert_pgmpy_to_conin(example.pgm)
@@ -60,7 +60,7 @@ def test_simple0_DDBN1_pgmpy_mip():
 @skipif_pgmpy_not_available
 @skipif_no_mip_solver
 def test_simple0_DDBN2_pgmpy_mip():
-    from conin.common.pgmpy import convert_pgmpy_to_conin
+    from conin.pgmpy import convert_pgmpy_to_conin
 
     example = examples.simple0_DDBN2_pgmpy()
     pgm = convert_pgmpy_to_conin(example.pgm)
@@ -83,7 +83,7 @@ def test_simple1_DDBN_conin_mip():
 @skipif_pgmpy_not_available
 @skipif_no_mip_solver
 def test_simple1_DDBN_pgmpy_mip():
-    from conin.common.pgmpy import convert_pgmpy_to_conin
+    from conin.pgmpy import convert_pgmpy_to_conin
 
     example = examples.simple1_DDBN_pgmpy()
     pgm = convert_pgmpy_to_conin(example.pgm)
@@ -109,7 +109,7 @@ def test2_simple1_DDBN_conin_mip():
 @skipif_pgmpy_not_available
 @skipif_no_mip_solver
 def test2_simple1_DDBN_pgmpy_mip():
-    from conin.common.pgmpy import convert_pgmpy_to_conin
+    from conin.pgmpy import convert_pgmpy_to_conin
 
     example = examples.simple1_DDBN_pgmpy()
     q = {
@@ -161,7 +161,7 @@ def test_simple0_DDBN_conin_toulbar2():
 @skipif_pgmpy_not_available
 @skipif_toulbar2_not_available
 def test_simple0_DDBN1_pgmpy_toulbar2():
-    from conin.common.pgmpy import convert_pgmpy_to_conin
+    from conin.pgmpy import convert_pgmpy_to_conin
 
     example = examples.simple0_DDBN1_pgmpy()
     pgm = convert_pgmpy_to_conin(example.pgm)
@@ -172,7 +172,7 @@ def test_simple0_DDBN1_pgmpy_toulbar2():
 @skipif_pgmpy_not_available
 @skipif_toulbar2_not_available
 def test_simple0_DDBN2_pgmpy_toulbar2():
-    from conin.common.pgmpy import convert_pgmpy_to_conin
+    from conin.pgmpy import convert_pgmpy_to_conin
 
     example = examples.simple0_DDBN2_pgmpy()
     pgm = convert_pgmpy_to_conin(example.pgm)
@@ -195,7 +195,7 @@ def test_simple1_conin_toulbar2():
 @skipif_pgmpy_not_available
 @skipif_toulbar2_not_available
 def test_simple1_pgmpy_toulbar2():
-    from conin.common.pgmpy import convert_pgmpy_to_conin
+    from conin.pgmpy import convert_pgmpy_to_conin
 
     example = examples.simple1_DDBN_pgmpy()
     pgm = convert_pgmpy_to_conin(example.pgm)
@@ -219,7 +219,7 @@ def test2_simple1_DDBN_conin_toulbar2():
 @skipif_pgmpy_not_available
 @skipif_toulbar2_not_available
 def test2_simple1_DDBN_pgmpy_toulbar2():
-    from conin.common.pgmpy import convert_pgmpy_to_conin
+    from conin.pgmpy import convert_pgmpy_to_conin
 
     example = examples.simple1_DDBN_pgmpy()
     q = {

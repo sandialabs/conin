@@ -84,7 +84,7 @@ def test_holmes0_pgmpy():
         == example.solutions[0].states
     )
 
-    from conin.common.pgmpy import convert_pgmpy_to_conin
+    from conin.pgmpy import convert_pgmpy_to_conin
 
     pgm = convert_pgmpy_to_conin(example.pgm)
     results = inference_pyomo_map_query_BN(

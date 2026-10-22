@@ -58,7 +58,7 @@ if autodoc_mock_imports:
     import conin
 
     for _info in pkgutil.walk_packages(conin.__path__, "conin."):
-        if ".tests" in _info.name or _info.name.startswith("conin.mediation_variables"):
+        if ".tests" in _info.name:
             continue
         try:
             importlib.import_module(_info.name)

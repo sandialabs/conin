@@ -45,7 +45,7 @@ def test_weather1_pyomo_A_pgmpy():
     Test with pgmpy TabularCPD representation
     """
     example = examples.weather1_pgmpy()
-    from conin.common.pgmpy import convert_pgmpy_to_conin
+    from conin.pgmpy import convert_pgmpy_to_conin
 
     pgm = convert_pgmpy_to_conin(example.pgm)
     results = inference_pyomo_map_query_DDBN(
@@ -61,7 +61,7 @@ def test_weather2_pyomo_A_pgmpy():
     Test with pgmpy MapCPD representation
     """
     example = examples.weather2_pgmpy()
-    from conin.common.pgmpy import convert_pgmpy_to_conin
+    from conin.pgmpy import convert_pgmpy_to_conin
 
     pgm = convert_pgmpy_to_conin(example.pgm)
     results = inference_pyomo_map_query_DDBN(
@@ -291,7 +291,7 @@ def test_weather1_toulbar2_A_pgmpy():
     Test with pgmpy TabularCPD representation
     """
     example = examples.weather1_pgmpy()
-    from conin.common.pgmpy import convert_pgmpy_to_conin
+    from conin.pgmpy import convert_pgmpy_to_conin
 
     pgm = convert_pgmpy_to_conin(example.pgm)
     results = inference_toulbar2_map_query_DDBN(
@@ -308,7 +308,7 @@ def test_weather2_toulbar2_A_pgmpy():
     Test with pgmpy MapCPD representation
     """
     example = examples.weather2_pgmpy()
-    from conin.common.pgmpy import convert_pgmpy_to_conin
+    from conin.pgmpy import convert_pgmpy_to_conin
 
     pgm = convert_pgmpy_to_conin(example.pgm)
     results = inference_toulbar2_map_query_DDBN(

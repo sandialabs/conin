@@ -15,7 +15,7 @@ import os
 from conin.io import load_model, save_model
 from conin.graphical_models import DiscreteBayesianNetwork
 from conin.graphical_models import DiscreteMarkovNetwork
-from conin.common.pgmpy import convert_conin_to_pgmpy_bn
+from conin.pgmpy import convert_conin_to_pgmpy_bn
 
 
 def main():

@@ -33,7 +33,7 @@ a family is accepted for a model type if some builder is registered for it.
      - MN, BN, DBN, HMM
      - ``toulbar2``, ``algebraic``
      - ``toulbar2``
-   * - ``"factor"``
+   * - ``"pgmpy"``
      - MN, BN, DBN, HMM
      - ``factor_oracle``, ``algebraic``
      - ``variable_elimination``, ``log_probability_query``
@@ -134,28 +134,28 @@ The ``Toulbar2VarWrapper`` and the constraint helpers of
 ``conin.representations.toulbar2.common`` are documented in
 :doc:`api_constraints`.
 
-Factor (variable elimination)
------------------------------
+pgmpy (variable elimination)
+----------------------------
 
-.. autoclass:: conin.representations.factor.FactorRepresentation
+.. autoclass:: conin.representations.pgmpy.PgmpyRepresentation
    :members:
    :show-inheritance:
 
-.. autoclass:: conin.representations.factor.FactorMNRepresentation
+.. autoclass:: conin.representations.pgmpy.PgmpyMNRepresentation
    :show-inheritance:
 
-.. autoclass:: conin.representations.factor.FactorBNRepresentation
+.. autoclass:: conin.representations.pgmpy.PgmpyBNRepresentation
    :show-inheritance:
 
-.. autoclass:: conin.representations.factor.FactorDBNRepresentation
+.. autoclass:: conin.representations.pgmpy.PgmpyDBNRepresentation
    :show-inheritance:
 
-.. autoclass:: conin.representations.factor.FactorHMMRepresentation
+.. autoclass:: conin.representations.pgmpy.PgmpyHMMRepresentation
    :show-inheritance:
 
-.. autofunction:: conin.representations.factor.apply_factor_constraints
+.. autofunction:: conin.representations.pgmpy.apply_pgmpy_constraints
 
-.. autofunction:: conin.representations.factor.materialise_factor_oracle
+.. autofunction:: conin.representations.pgmpy.materialise_factor_oracle
 
 HMM representations
 -------------------
