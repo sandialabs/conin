@@ -151,6 +151,16 @@ def test_infeasible_model_is_reported():
     assert results.termination_condition == "error: no feasible solutions"
 
 
+@pytest.mark.parametrize("num_solutions", [1, 3])
+def test_no_solution_is_an_error_for_any_num_solutions(num_solutions):
+    # It was "ok" for num_solutions > 1 (recursive A* said "error" when its
+    # first step was already infeasible, and "ok" otherwise).
+    cmodel = tc.create_chmm1_oracle()
+    results = a_star(observed=["o0"] * 5, hmm=cmodel, num_solutions=num_solutions)
+    assert results.solutions == []
+    assert results.termination_condition == "error: no feasible solutions"
+
+
 def test_fewer_solutions_than_asked_for_are_returned():
     hmm = tc.create_hmm1()
     never_h1 = OracleConstraint(func=lambda states: "h1" not in states.values())

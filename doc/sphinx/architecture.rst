@@ -87,7 +87,11 @@ Representations and dispatch
   backend's base representation class for MN, BN and DBN; their HMM
   representations are solved as the unrolled DBN by ``solve_unrolled_hmm``
   (``conin.inference.hmm_results``). Network flow, Viterbi, A*, recursive A*
-  and the MVR Viterbi have their own overloads.
+  and the MVR Viterbi have their own overloads. A* and recursive A* are thin
+  wrappers around one search (``conin.inference.hmm_a_star``), which sees the
+  constraints through a search state (``initial``, ``update``,
+  ``feasible_partial``, ``feasible``); for oracle constraints the state is the
+  prefix itself, so no prefixes are merged.
 - Every MAP result has the shape of ``conin.inference.results``: the same
   top-level keys for every method, and solutions with ``states``,
   ``log_potential`` and ``solver_objective``. ``log_potential`` is computed
