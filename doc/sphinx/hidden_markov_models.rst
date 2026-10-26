@@ -315,11 +315,10 @@ representation otherwise. Both calls return the usual result (see
 :doc:`inference`); through ``map_query`` the ``states`` are keyed by time for
 dict evidence.
 
-Because prefixes with the same ``(last hidden state, length, constraint
-state)`` are merged, ``recursive_a_star`` with ``num_solutions > 1`` returns
-at most one sequence per merged class, so its solutions are not always the
-``k`` most likely sequences. Use ``a_star`` with an oracle constraint when you
-need the ``k`` best.
+Prefixes with the same ``(last hidden state, length, constraint state)``
+have the same completions, so ``recursive_a_star`` treats them as one search
+node and expands it at most ``num_solutions`` times. Its solutions are still
+the ``num_solutions`` most likely feasible sequences, as for ``a_star``.
 
 Notes
 -----

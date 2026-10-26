@@ -1,6 +1,7 @@
 """Recursive A*: RecursiveConstraint input, regression tests and brute-force parity."""
 
 import itertools
+import random
 
 import pytest
 
@@ -8,6 +9,7 @@ import conin.examples.hidden_markov_model as tc
 from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.constraints import RecursiveConstraint
 from conin.exceptions import InvalidInputError
+from conin.graphical_models import random_hmm
 from conin.inference.oracle import a_star
 from conin.inference.recursive import recursive_a_star
 
@@ -37,17 +39,12 @@ def _brute_force(cmodel, observed, num_solutions):
     return scored[:num_solutions]
 
 
-def _check_solutions(cmodel, observed, results):
-    """The first solution is the optimum; all are feasible and in order.
-
-    Recursive A* merges prefixes with the same (last state, length, constraint
-    state), so for ``num_solutions > 1`` it returns at most one sequence per
-    merged class, not the k best sequences (a known limitation).
-    """
-    best = _brute_force(cmodel, observed, 1)
-    assert results.solutions[0].log_potential == pytest.approx(best[0][0])
-    lls = [s.log_potential for s in results.solutions]
-    assert lls == sorted(lls, reverse=True)
+def _check_solutions(cmodel, observed, results, num_solutions):
+    """The solutions are the num_solutions most likely feasible sequences."""
+    expected = _brute_force(cmodel, observed, num_solutions)
+    assert [s.log_potential for s in results.solutions] == pytest.approx(
+        [p for p, _ in expected]
+    )
     for sol in results.solutions:
         assert cmodel.is_feasible(sol.states)
         assert sol.log_potential == pytest.approx(
@@ -95,7 +92,7 @@ def test_infeasible_leaves_are_skipped():
     assert results.termination_condition == "ok"
     assert len(results.solutions) == 3
     assert all(s.states.count("h0") == 2 for s in results.solutions)
-    _check_solutions(cmodel, observed, results)
+    _check_solutions(cmodel, observed, results, 3)
 
 
 @pytest.mark.parametrize("lb, ub", [(3, 5), (0, 2), (6, 8), (0, 8)])
@@ -106,9 +103,62 @@ def test_recursive_a_star_matches_brute_force(lb, ub, num_solutions):
     results = recursive_a_star(
         hmm=cmodel, observed=observed, num_solutions=num_solutions
     )
-    _check_solutions(cmodel, observed, results)
+    _check_solutions(cmodel, observed, results, num_solutions)
     for sol in results.solutions:
         assert lb <= sol.states.count("h0") <= ub
+
+
+def _accept_all():
+    return RecursiveConstraint(
+        initial=lambda h: None, update=lambda s, h: None, feasible=lambda s: True
+    )
+
+
+def test_merged_prefixes_still_give_the_k_best():
+    # Regression: prefixes with the same (last state, length, constraint
+    # state) were merged into one search node that kept only the best prefix,
+    # so with num_solutions > 1 a sequence through a merged node was lost:
+    # here the 4th solution was h1 h0 h0 h0 h0 (-6.474) instead of
+    # h1 h1 h1 h1 h0 (-6.001).
+    cmodel = ConstrainedHiddenMarkovModel(tc.create_hmm1(), _accept_all())
+    observed = ["o0", "o1", "o0", "o1", "o0"]
+    results = recursive_a_star(hmm=cmodel, observed=observed, num_solutions=4)
+    oracle = a_star(hmm=tc.create_hmm1(), observed=observed, num_solutions=4)
+    assert [s.states for s in results.solutions] == [s.states for s in oracle.solutions]
+    assert results.solutions[3].states == ["h1", "h1", "h1", "h1", "h0"]
+    _check_solutions(cmodel, observed, results, 4)
+
+
+@pytest.mark.parametrize("num_solutions", [1, 2, 5, 20])
+@pytest.mark.parametrize("seed", range(4))
+def test_random_hmms_match_brute_force(seed, num_solutions):
+    # Three hidden states, so many prefixes share a (last state, length,
+    # count) node.
+    hmm = random_hmm(
+        hidden_states=["a", "b", "c"], observed_states=["x", "y"], seed=seed
+    )
+    rng = random.Random(seed)
+    observed = [rng.choice(["x", "y"]) for _ in range(6)]
+    at_most_two_a = RecursiveConstraint(
+        initial=lambda h: int(h == "a"),
+        update=lambda n, h: n + int(h == "a"),
+        feasible=lambda n: n <= 2,
+        feasible_partial=lambda n, t, T: n <= 2,
+    )
+    cmodel = ConstrainedHiddenMarkovModel(hmm, at_most_two_a)
+    results = recursive_a_star(
+        hmm=cmodel, observed=observed, num_solutions=num_solutions
+    )
+    assert len(results.solutions) == num_solutions
+    _check_solutions(cmodel, observed, results, num_solutions)
+
+
+def test_more_solutions_than_sequences():
+    cmodel = ConstrainedHiddenMarkovModel(tc.create_hmm1(), _accept_all())
+    results = recursive_a_star(hmm=cmodel, observed=["o0"] * 3, num_solutions=10)
+    assert len(results.solutions) == 8
+    assert results.termination_condition == "ok"
+    _check_solutions(cmodel, observed=["o0"] * 3, results=results, num_solutions=10)
 
 
 def test_recursive_and_oracle_a_star_agree():
@@ -130,7 +180,7 @@ def test_multiple_recursive_constraints_combine():
     )
     observed = ["o0"] * 6
     results = recursive_a_star(hmm=cmodel, observed=observed, num_solutions=2)
-    _check_solutions(cmodel, observed, results)
+    _check_solutions(cmodel, observed, results, 2)
     for sol in results.solutions:
         assert 2 <= sol.states.count("h0") <= 3 and sol.states[-1] != "h0"
 

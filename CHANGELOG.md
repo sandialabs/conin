@@ -362,6 +362,16 @@ Bug fixes
 - The pgmpy_issue_1177_pgmpy example works with pgmpy 1.1 (DiscreteMLE()).
 - The network-flow integer program with solver="or_topas" returns solutions
   with states (they had variable_value instead, so dict evidence failed).
+- recursive_a_star with num_solutions > 1 returns the num_solutions most
+  likely feasible sequences. It merged the prefixes with equal (last state,
+  length, constraint state) into one search node that kept only the best
+  prefix, so it could skip sequences. A merged node now keeps its
+  num_solutions best prefixes. A* and recursive A* share one search
+  (conin.inference.hmm_a_star); recursive A* also runs on the matvec arrays
+  instead of dicts. When the search finds no solution, both report
+  termination_condition="error: no feasible solutions" for every
+  num_solutions (it was "ok" for num_solutions > 1, except when recursive
+  A*'s first step was already infeasible).
 - A* and recursive A* report "max_iterations: N" or "max_time: ..." in
   termination_condition when a limit stops the search (it was overwritten
   with "error: no feasible solutions").
@@ -410,9 +420,6 @@ Known issues
 
 - Variable elimination runs in pgmpy and can run out of memory on larger
   unrolled models (e.g. the unconstrained weather DBN with stop=4).
-- recursive_a_star with num_solutions > 1 can skip sequences (prefixes with
-  equal constraint state are merged); called directly, it returns solutions
-  with hidden only and no solution.
 - HiddenMarkovModel.log_probability raises ValueError for a zero-probability
   sequence (conin.scoring.log_probability returns -inf).
 - DBNs and HMMs can only be unrolled from start=0.
