@@ -280,6 +280,53 @@ def test_inhom_mvr_upd_values_must_lie_in_the_next_slice():
         InhomMVR(**kwargs)
 
 
+@pytest.mark.parametrize(
+    "mutate,match",
+    [
+        (
+            lambda kw: kw.update(hidden_states=[], ini={}, upd={}),
+            "hidden_states must be nonempty",
+        ),
+        (
+            lambda kw: kw.update(mediation_states=[], upd={}, evl={}),
+            "mediation_states must be nonempty",
+        ),
+    ],
+)
+def test_hom_mvr_rejects_empty_state_spaces(mutate, match):
+    # These used to pass validation and fail in NumPy ("argmax of an empty
+    # sequence") or build an MVR over no hidden states.
+    kwargs = hom_kwargs()
+    mutate(kwargs)
+
+    with pytest.raises(InvalidInputError, match=match):
+        HomMVR(**kwargs)
+
+
+@pytest.mark.parametrize(
+    "mutate,match",
+    [
+        (
+            lambda kw: kw.update(hidden_states=[], ini={}, upd=[{}, {}]),
+            "hidden_states must be nonempty",
+        ),
+        (
+            lambda kw: (
+                kw["mediation_states"].__setitem__(1, []),
+                kw["evl"].__setitem__(1, {}),
+            ),
+            "mediation_states at time 1 must be nonempty",
+        ),
+    ],
+)
+def test_inhom_mvr_rejects_empty_state_spaces(mutate, match):
+    kwargs = inhom_kwargs(time_horizon=2)
+    mutate(kwargs)
+
+    with pytest.raises(InvalidInputError, match=match):
+        InhomMVR(**kwargs)
+
+
 def test_inhom_mvr_with_horizon_zero_is_valid():
     kwargs = inhom_kwargs(time_horizon=0)
     mvr = InhomMVR(**kwargs)
@@ -439,6 +486,58 @@ def test_matvec_repn_check_dimensions(case, match):
         MVR_MatVecRepn(**kwargs)
 
 
+def test_matvec_repn_accepts_plain_nested_lists():
+    ini, upd, evl = valid_hom_arrays()
+    repn = MVR_MatVecRepn(
+        ini_array=ini.tolist(), upd_array=upd.tolist(), evl_array=evl.tolist()
+    )
+    assert repn.num_mediation_states == 2
+    assert np.array_equal(repn.upd_array, upd)
+
+    i_ini, i_upd, i_evl = valid_inhom_arrays()
+    repn = MVR_MatVecRepn(
+        ini_array=i_ini.tolist(),
+        upd_array=[u.tolist() for u in i_upd],
+        evl_array=[e.tolist() for e in i_evl],
+    )
+    assert repn.time_horizon == 2
+    assert repn.num_mediation_states == [2, 2, 2]
+
+
+@pytest.mark.parametrize(
+    "field,value,match",
+    [
+        ("ini_array", [[1.0, 0.0], [0.0]], "ini_array must be a rectangular array"),
+        ("ini_array", [["a", 0.0], [0.0, 1.0]], "ini_array must be a rectangular"),
+        (
+            "upd_array",
+            [[[1.0, 1.0], [0.0, 0.0]], [[1.0, 1.0], [0.0]]],
+            "upd_array must be a rectangular array",
+        ),
+        ("evl_array", [0.0, [1.0]], "evl_array must be a rectangular array"),
+    ],
+)
+def test_matvec_repn_reports_ragged_nested_lists(field, value, match):
+    # Ragged lists used to raise a NumPy ValueError or become object arrays
+    # that failed with a misleading "must be a 3D array".
+    ini, upd, evl = valid_hom_arrays()
+    kwargs = dict(ini_array=ini, upd_array=upd, evl_array=evl)
+    kwargs[field] = value
+
+    with pytest.raises(InvalidInputError, match=match):
+        MVR_MatVecRepn(**kwargs)
+
+
+def test_matvec_repn_names_the_ragged_per_time_array():
+    i_ini, i_upd, i_evl = valid_inhom_arrays()
+    i_evl[1] = [0.0, [1.0]]
+
+    with pytest.raises(
+        InvalidInputError, match=r"evl_array\[1\] must be a rectangular"
+    ):
+        MVR_MatVecRepn(ini_array=i_ini, upd_array=i_upd, evl_array=i_evl)
+
+
 def test_matvec_repn_check_errors_false_skips_validation():
     # Fractional, non-normalised arrays with mismatched shapes are stored as is.
     ini = np.array([[0.5, 0.5]])
@@ -568,7 +667,7 @@ def test_mvr_constraint_rejects_non_mvr_results():
 # ---------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("arity", [0, -1, 1.0, "1"])
+@pytest.mark.parametrize("arity", [0, -1, 1.0, "1", True])
 def test_operator_rejects_invalid_arity(arity):
     with pytest.raises(InvalidInputError, match="arity must be a positive integer"):
         mvr_operator_fn(arity=arity)(lambda mvrs: mvrs[0])
@@ -806,7 +905,7 @@ def test_homogeneous_only_operators_reject_inhom_mvrs(call, match):
 
 
 @pytest.mark.parametrize("op", [mvr_kfold_product, mvr_kfold_product_prefix])
-@pytest.mark.parametrize("k", [0, -2, 1.5, "2", None])
+@pytest.mark.parametrize("k", [0, -2, 1.5, "2", None, True, False])
 def test_kfold_products_reject_invalid_k(op, k):
     with pytest.raises(
         InvalidInputError, match="k must be an integer greater than or equal to 1"

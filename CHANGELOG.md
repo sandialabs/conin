@@ -328,6 +328,13 @@ Bug fixes
 - mvr_precedence rejects MVRs that are neither HomMVR nor InhomMVR
   (InvalidInputError; was TypeError), and an MVR constraint function without
   arguments raises ValueError when it is defined (it failed when called).
+- HomMVR and InhomMVR reject empty hidden or mediation state lists
+  (InvalidInputError; an empty HomMVR failed in NumPy with "argmax of an
+  empty sequence"). mvr_kfold_product, mvr_kfold_product_prefix and
+  mvr_operator_fn(arity=...) reject True and False as integers.
+- MVR_MatVecRepn accepts plain nested lists for a homogeneous MVR, and
+  raises InvalidInputError naming the array for a ragged or non-numeric one
+  (it raised a NumPy ValueError, or a misleading "must be a 3D array").
 
 Known issues
 
