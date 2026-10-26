@@ -319,18 +319,18 @@ def test_unknown_options_still_raise():
 
 
 @pytest.mark.parametrize(
-    "module,example,kwds",
+    "example,kwds",
     [
-        ("solve", mex.ABC_conin, {}),
-        ("bn", bex.cancer1_BN_conin, {}),
-        ("dbn", dex.weather_conin, dict(stop=2)),
-        ("hmm", hex_.create_hmm1, dict(evidence=["o0", "o1"])),
+        (mex.ABC_conin, {}),
+        (bex.cancer1_BN_conin, {}),
+        (dex.weather_conin, dict(stop=2)),
+        (hex_.create_hmm1, dict(evidence=["o0", "o1"])),
     ],
+    ids=["mn", "bn", "dbn", "hmm"],
 )
-def test_pytoulbar2_not_available(monkeypatch, module, example, kwds):
-    import importlib
+def test_pytoulbar2_not_available(monkeypatch, example, kwds):
+    import conin.inference.toulbar2.solve as mod
 
-    mod = importlib.import_module(f"conin.inference.toulbar2.{module}")
     monkeypatch.setattr(mod, "pytoulbar2_available", False)
     pgm = example()
     pgm = getattr(pgm, "pgm", pgm)

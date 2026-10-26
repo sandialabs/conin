@@ -30,12 +30,14 @@ from conin.representations.pgmpy import (
     PgmpyDBNRepresentation,
     PgmpyHMMRepresentation,
     PgmpyMNRepresentation,
+    PgmpyRepresentation,
 )
 from conin.representations.matvec import MatVecHMMRepresentation
 from conin.representations.mvr import MVRHMMRepresentation
 from conin.representations.oracle import OracleHMMRepresentation
 from conin.representations.pyomo import (
     PyomoBNRepresentation,
+    PyomoFactorRepresentation,
     PyomoDBNRepresentation,
     PyomoHMMRepresentation,
     PyomoMNRepresentation,
@@ -44,6 +46,7 @@ from conin.representations.pyomo import (
 from conin.representations.recursive import RecursiveHMMRepresentation
 from conin.representations.toulbar2 import (
     Toulbar2BNRepresentation,
+    Toulbar2FactorRepresentation,
     Toulbar2DBNRepresentation,
     Toulbar2HMMRepresentation,
     Toulbar2MNRepresentation,
@@ -223,37 +226,37 @@ def test_structure_params_stop_past_the_observations(kind):
 
 
 # ---------------------------------------------------------------------
-# One solver per representation class
+# One solver per backend, and one per HMM algorithm
 # ---------------------------------------------------------------------
 
+# Each representation class and the class of the overload that solves it:
+# the MN/BN/DBN representations of a factor backend share its base class's
+# overload; the HMM representations have their own.
+OVERLOADS = {
+    PyomoMNRepresentation: PyomoFactorRepresentation,
+    PyomoBNRepresentation: PyomoFactorRepresentation,
+    PyomoDBNRepresentation: PyomoFactorRepresentation,
+    PyomoHMMRepresentation: PyomoHMMRepresentation,
+    PyomoNetworkFlowHMMRepresentation: PyomoNetworkFlowHMMRepresentation,
+    Toulbar2MNRepresentation: Toulbar2FactorRepresentation,
+    Toulbar2BNRepresentation: Toulbar2FactorRepresentation,
+    Toulbar2DBNRepresentation: Toulbar2FactorRepresentation,
+    Toulbar2HMMRepresentation: Toulbar2HMMRepresentation,
+    PgmpyMNRepresentation: PgmpyRepresentation,
+    PgmpyBNRepresentation: PgmpyRepresentation,
+    PgmpyDBNRepresentation: PgmpyRepresentation,
+    PgmpyHMMRepresentation: PgmpyHMMRepresentation,
+    MatVecHMMRepresentation: MatVecHMMRepresentation,
+    OracleHMMRepresentation: OracleHMMRepresentation,
+    RecursiveHMMRepresentation: RecursiveHMMRepresentation,
+    MVRHMMRepresentation: MVRHMMRepresentation,
+}
 
-REPRESENTATION_CLASSES = [
-    PyomoMNRepresentation,
-    PyomoBNRepresentation,
-    PyomoDBNRepresentation,
-    PyomoHMMRepresentation,
-    PyomoNetworkFlowHMMRepresentation,
-    Toulbar2MNRepresentation,
-    Toulbar2BNRepresentation,
-    Toulbar2DBNRepresentation,
-    Toulbar2HMMRepresentation,
-    PgmpyMNRepresentation,
-    PgmpyBNRepresentation,
-    PgmpyDBNRepresentation,
-    PgmpyHMMRepresentation,
-    MatVecHMMRepresentation,
-    OracleHMMRepresentation,
-    RecursiveHMMRepresentation,
-    MVRHMMRepresentation,
-]
 
-
-def test_one_overload_per_representation_class():
-    # Each class resolves to an overload annotated with that class, so no
-    # class is served by the overload of a base or sibling class.
-    for cls in REPRESENTATION_CLASSES:
-        method = mq._solve_map_query.resolve(cls, munch.Munch)
-        assert method.__annotations__["repn"] is cls, cls
+@pytest.mark.parametrize("cls", list(OVERLOADS), ids=lambda cls: cls.__name__)
+def test_each_representation_class_has_the_overload_of_its_backend(cls):
+    method = mq._solve_map_query.resolve(cls, munch.Munch)
+    assert method.__annotations__["repn"] is OVERLOADS[cls]
 
 
 def test_no_overload_for_other_objects():
@@ -283,11 +286,10 @@ def test_no_overload_for_other_objects():
         ("hmm", "mvr", {}, MVRHMMRepresentation),
     ],
 )
-def test_each_representation_has_its_own_overload(model, kind, kwds, cls):
+def test_each_representation_kind_builds_its_class(model, kind, kwds, cls):
     repn = _cmodel(model).representation(kind, **kwds)
     assert type(repn) is cls
-    method = mq._solve_map_query.resolve(type(repn), munch.Munch)
-    assert method.__annotations__["repn"] is cls
+    assert cls in OVERLOADS
 
 
 def _query(**kwds):

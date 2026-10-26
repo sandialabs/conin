@@ -2,9 +2,8 @@ import pyomo.environ as pyo
 import pyomo.opt
 
 from conin.util import try_import
-from conin.inference.pyomo import inference_pyomo_map_query_MN
-from conin.inference.toulbar2 import inference_toulbar2_map_query_MN
 from conin.examples import markov_network as examples
+from conin.inference import map_query
 
 with try_import() as pgmpy_available:
     import pgmpy
@@ -54,7 +53,7 @@ def test_ABC_conin_mip():
     example = examples.ABC_conin()
     q = example.solutions[0].states
 
-    results = inference_pyomo_map_query_MN(pgm=example.pgm, solver=mip_solver)
+    results = map_query(example.pgm, method="integer_program", solver=mip_solver)
     assert q == results.solution.states
 
 
@@ -68,7 +67,7 @@ def test_ABC_pgmpy_mip():
     q = example.solutions[0].states
 
     pgm = convert_pgmpy_to_conin(example.pgm)
-    results = inference_pyomo_map_query_MN(pgm=pgm, solver=mip_solver)
+    results = map_query(pgm, method="integer_program", solver=mip_solver)
     assert q == results.solution.states
 
 
@@ -83,15 +82,16 @@ def test2_ABC_conin_mip():
 
     # Results without evidence values
     q = {"A": 2, "C": 1}
-    results = inference_pyomo_map_query_MN(
-        pgm=example.pgm, solver=mip_solver, evidence=evidence
+    results = map_query(
+        example.pgm, method="integer_program", solver=mip_solver, evidence=evidence
     )
     assert q == results.solution.states
 
     # Results with evidence values
     q = {"A": 2, "B": 0, "C": 1}
-    results = inference_pyomo_map_query_MN(
-        pgm=example.pgm,
+    results = map_query(
+        example.pgm,
+        method="integer_program",
         solver=mip_solver,
         evidence=evidence,
         solution_with_evidence=True,
@@ -109,14 +109,14 @@ def test_ABC_constrained_pyomo_conin_mip():
 
     # without evidence
     q = example.solutions[0].states
-    results = inference_pyomo_map_query_MN(pgm=example.pgm, solver=mip_solver)
+    results = map_query(example.pgm, method="integer_program", solver=mip_solver)
     assert q == results.solution.states
 
     # with evidence
     q = {"A": 2, "C": 1}
     evidence = {"B": 0}
-    results = inference_pyomo_map_query_MN(
-        pgm=example.pgm, solver=mip_solver, evidence={"B": 0}
+    results = map_query(
+        example.pgm, method="integer_program", solver=mip_solver, evidence={"B": 0}
     )
     assert results.solution.states == {"A": 2, "C": 1}
 
@@ -134,7 +134,7 @@ def test_ABC_conin_toulbar2():
     Testing ABC using the conin repn with toulbar2 solver
     """
     example = examples.ABC_conin()
-    results = inference_toulbar2_map_query_MN(pgm=example.pgm)
+    results = map_query(example.pgm, method="toulbar2")
     assert results.solution.states == example.solutions[0].states
 
 
@@ -148,7 +148,7 @@ def test_ABC_pgmpy_toulbar2():
     q = example.solutions[0].states
 
     pgm = convert_pgmpy_to_conin(example.pgm)
-    results = inference_toulbar2_map_query_MN(pgm=pgm)
+    results = map_query(pgm, method="toulbar2")
     assert q == results.solution.states
 
 
@@ -164,16 +164,18 @@ def test2_ABC_conin_toulbar2():
 
     # Results without evidence values
     q = {"A": 2, "C": 1}
-    results = inference_toulbar2_map_query_MN(
-        pgm=example.pgm,
+    results = map_query(
+        example.pgm,
+        method="toulbar2",
         evidence=evidence,
     )
     assert q == results.solution.states
 
     # Results with evidence values
     q = {"A": 2, "B": 0, "C": 1}
-    results = inference_toulbar2_map_query_MN(
-        pgm=example.pgm,
+    results = map_query(
+        example.pgm,
+        method="toulbar2",
         evidence=evidence,
         solution_with_evidence=True,
     )
@@ -190,18 +192,18 @@ def test_ABC_constrained_toulbar2_conin():
 
     # without evidence
     q = example.solutions[0].states
-    results = inference_toulbar2_map_query_MN(pgm=example.pgm)
+    results = map_query(example.pgm, method="toulbar2")
     assert q == results.solution.states
 
     # with evidence
     q = {"A": 2, "C": 1}
-    results = inference_toulbar2_map_query_MN(pgm=example.pgm, evidence={"B": 0})
+    results = map_query(example.pgm, method="toulbar2", evidence={"B": 0})
     assert q == results.solution.states
 
     # with evidence and include evidence in output
     q = {"A": 2, "B": 0, "C": 1}
-    results = inference_toulbar2_map_query_MN(
-        pgm=example.pgm, evidence={"B": 0}, solution_with_evidence=True
+    results = map_query(
+        example.pgm, method="toulbar2", evidence={"B": 0}, solution_with_evidence=True
     )
     assert q == results.solution.states
 
@@ -228,8 +230,12 @@ def test_ABC_conin_topas_balas_ask_1_solution():
         pool_manager=None,
         topas_method="balas",
     )
-    results = inference_pyomo_map_query_MN(
-        pgm=example.pgm, tee=False, solver="or_topas", solver_options=solver_options
+    results = map_query(
+        example.pgm,
+        method="integer_program",
+        tee=False,
+        solver="or_topas",
+        solver_options=solver_options,
     )
     assert len(results.solutions) == 1
     assert q == results.solution.states
@@ -249,8 +255,12 @@ def test_ABC_conin_topas_gurobi_ask_1_solution():
         pool_manager=None,
         topas_method="gurobi_solution_pool",
     )
-    results = inference_pyomo_map_query_MN(
-        pgm=example.pgm, tee=False, solver="or_topas", solver_options=solver_options
+    results = map_query(
+        example.pgm,
+        method="integer_program",
+        tee=False,
+        solver="or_topas",
+        solver_options=solver_options,
     )
     assert len(results.solutions) == 1
     assert q == results.solution.states
@@ -271,8 +281,12 @@ def test_ABC2_conin_topas_balas_ask_2_solution():
         pool_manager=None,
         topas_method="balas",
     )
-    results = inference_pyomo_map_query_MN(
-        pgm=example.pgm, tee=False, solver="or_topas", solver_options=solver_options
+    results = map_query(
+        example.pgm,
+        method="integer_program",
+        tee=False,
+        solver="or_topas",
+        solver_options=solver_options,
     )
     assert len(results.solutions) == 2
     assert q == results.solution.states
@@ -292,8 +306,12 @@ def test_ABC2_conin_topas_gurobi_ask_2_solution():
         pool_manager=None,
         topas_method="gurobi_solution_pool",
     )
-    results = inference_pyomo_map_query_MN(
-        pgm=example.pgm, tee=False, solver="or_topas", solver_options=solver_options
+    results = map_query(
+        example.pgm,
+        method="integer_program",
+        tee=False,
+        solver="or_topas",
+        solver_options=solver_options,
     )
     assert len(results.solutions) == 2
     assert results.solution.states == example.solutions[0].states
@@ -313,8 +331,12 @@ def test_ABC2_conin_topas_gurobi_ask_2_with_opt_gap_solution():
         pool_manager=None,
         topas_method="gurobi_solution_pool",
     )
-    results = inference_pyomo_map_query_MN(
-        pgm=example.pgm, tee=False, solver="or_topas", solver_options=solver_options
+    results = map_query(
+        example.pgm,
+        method="integer_program",
+        tee=False,
+        solver="or_topas",
+        solver_options=solver_options,
     )
     assert len(results.solutions) == 1
     assert results.solution.states == example.solutions[0].states
@@ -334,8 +356,12 @@ def test_ABC_constrained_pyomo_conin_topas_balas_ask_1_solution():
         pool_manager=None,
         topas_method="balas",
     )
-    results = inference_pyomo_map_query_MN(
-        pgm=example.pgm, tee=False, solver="or_topas", solver_options=solver_options
+    results = map_query(
+        example.pgm,
+        method="integer_program",
+        tee=False,
+        solver="or_topas",
+        solver_options=solver_options,
     )
     assert len(results.solutions) == 1
     assert results.solution.states == example.solutions[0].states
@@ -353,8 +379,12 @@ def test_ABC2_constrained_pyomo_conin_topas_balas_ask_2_solution():
         pool_manager=None,
         topas_method="balas",
     )
-    results = inference_pyomo_map_query_MN(
-        pgm=example.pgm, tee=False, solver="or_topas", solver_options=solver_options
+    results = map_query(
+        example.pgm,
+        method="integer_program",
+        tee=False,
+        solver="or_topas",
+        solver_options=solver_options,
     )
     assert len(results.solutions) == 2
     assert results.solution.states == example.solutions[0].states
@@ -374,8 +404,12 @@ def test_ABC2_constrained_pyomo_conin_topas_gurobi_ask_1_solution():
         pool_manager=None,
         topas_method="gurobi_solution_pool",
     )
-    results = inference_pyomo_map_query_MN(
-        pgm=example.pgm, tee=False, solver="or_topas", solver_options=solver_options
+    results = map_query(
+        example.pgm,
+        method="integer_program",
+        tee=False,
+        solver="or_topas",
+        solver_options=solver_options,
     )
     assert len(results.solutions) == 1
     assert results.solution.states == example.solutions[0].states
@@ -394,8 +428,12 @@ def test_ABC2_constrained_pyomo_conin_topas_gurobi_ask_2_solution():
         pool_manager=None,
         topas_method="gurobi_solution_pool",
     )
-    results = inference_pyomo_map_query_MN(
-        pgm=example.pgm, tee=False, solver="or_topas", solver_options=solver_options
+    results = map_query(
+        example.pgm,
+        method="integer_program",
+        tee=False,
+        solver="or_topas",
+        solver_options=solver_options,
     )
     assert len(results.solutions) == 2
     assert results.solution.states == example.solutions[0].states

@@ -79,10 +79,15 @@ Representations and dispatch
   ``conin.representations.unrolled``, so the backends cannot drift apart.
 - ``map_query`` (and ``log_probability_query``) normalise the model (pgmpy
   models are converted, bare models are wrapped as ``Constrained*(model)``),
-  map the method to a representation kind, build the representation with its
+  map the method to a representation kind (one table for both queries,
+  ``conin.inference.methods``), build the representation with its
   structure parameters, and dispatch with ``ovld`` on the representation
-  class: one overload per class, each calling a private core that the public
-  per-backend function also calls.
+  class. The factor backends have one solver each (``_solve_pyomo``,
+  ``_solve_toulbar2``, ``_solve_variable_elimination``), registered on the
+  backend's base representation class for MN, BN and DBN; their HMM
+  representations are solved as the unrolled DBN by ``solve_unrolled_hmm``
+  (``conin.inference.hmm_results``). Network flow, Viterbi, A*, recursive A*
+  and the MVR Viterbi have their own overloads.
 - Structure parameters (``start``/``stop`` for DBNs and HMMs,
   ``x_binary``/``y_binary`` for network flow) are build arguments. Per-query
   inputs (evidence, ``variables``, solver options, ``verbose``,

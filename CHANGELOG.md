@@ -73,12 +73,18 @@ Migration table (old -> new)
                                     -> conin.learning.mvr
   sampling.ffbs_mvr, sampling.stopped_sampling_mvr
                                     -> conin.sampling.mvr
-  conin.inference.{mn,bn,dbn,hmm} Pyomo functions,
   hidden_markov_model lp_inference/ip_inference
                                     -> conin.inference.pyomo
-  conin.inference.{mn,bn,dbn,hmm} toulbar2 functions
-                                    -> conin.inference.toulbar2
-  VariableElimination (VE dispatch) -> conin.inference.variable_elimination
+  inference_pyomo_map_query_{MN,BN,DDBN,HMM}(pgm=m, ...)
+                                    -> map_query(m, method="integer_program",
+                                       ...)
+  inference_toulbar2_map_query_{MN,BN,DDBN,HMM}(pgm=m, ...)
+                                    -> map_query(m, method="toulbar2", ...)
+  inference_variable_elimination_map_query_{MN,BN,DDBN,HMM}(pgm=m, ...)
+                                    -> map_query(m,
+                                       method="variable_elimination", ...)
+  VariableElimination (VE dispatch) -> map_query(m,
+                                       method="variable_elimination")
   create_pyomo_map_query_model_*    -> cmodel.representation("pyomo", ...)
                                        .create_model(...)
   create_toulbar2_map_query_model_* -> cmodel.representation("toulbar2", ...)
@@ -242,6 +248,19 @@ Inference
   RuntimeError("Partial MAP queries are only supported by
   method='variable_elimination'; ..."), and prune_network/create_MN=True raise
   RuntimeError("<option>=True is not supported for CONIN models").
+- integer_program, toulbar2 and variable_elimination have one solver per
+  backend for MN, BN and DBN, and solve an HMM as its unrolled DBN, so the
+  options mean the same for every model type: prune_network/create_MN are
+  checked on Markov networks too (they raised TypeError), timing=True is
+  honoured by the integer program on DBNs and HMMs (it was ignored), and
+  solution_with_evidence=True works for an HMM integer program with list
+  evidence (it raised AttributeError).
+- The per-backend inference_pyomo_map_query_*, inference_toulbar2_map_query_*
+  and inference_variable_elimination_map_query_* functions (MN, BN, DDBN,
+  HMM) are removed; call map_query(pgm, method=...) instead (see the
+  migration table). The model-solving functions solve_pyomo_map_query_model,
+  solve_toulbar2_map_query_model, solve_variable_elimination_map_query_model,
+  lp_inference and ip_inference stay.
 
 Scoring
 

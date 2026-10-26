@@ -1,4 +1,4 @@
-"""Solve a toulbar2 MAP query model, and MAP inference for (constrained) Markov networks.
+"""Solve toulbar2 MAP query models.
 
 The models are built by the ``"toulbar2"`` representations
 (:mod:`conin.representations.toulbar2`).
@@ -7,8 +7,7 @@ The models are built by the ``"toulbar2"`` representations
 import munch
 from pyomo.common.timing import TicTocTimer
 
-from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
-from conin.inference.query_checks import full_query_variables
+from conin.inference.query_checks import full_query_variables, reject_pruning_options
 from conin.util import try_import
 
 with try_import() as pytoulbar2_available:
@@ -26,34 +25,31 @@ def _not_available():
     )
 
 
-def _create_model(repn, *, evidence, variables, timing, write_uai_file, options):
-    """Pop the per-query ``verbose`` option and build a fresh CFN from ``repn``."""
+def _solve_toulbar2(repn, q):
+    """Solve a MAP query on a ``"toulbar2"`` representation of an MN, BN or DBN.
+
+    ``q`` is the query of :func:`~conin.inference.map_query` (``variables``,
+    ``evidence``, ``timing`` and ``options``).  The options are ``verbose``
+    (the toulbar2 verbosity, default ``-1``), ``write_uai_file`` (write the
+    UAI file that toulbar2 reads to this path), ``prune_network`` and
+    ``create_MN`` (``True`` raises ``RuntimeError``), and the options of
+    :func:`solve_toulbar2_map_query_model`.  An HMM is solved as its unrolled
+    DBN (:func:`~conin.inference.hmm_results.solve_unrolled_hmm`).
+    """
+    if not pytoulbar2_available:
+        return _not_available()
+    options = dict(q.options)
     verbose = options.pop("verbose", -1)
-    return repn.create_model(
-        evidence=evidence,
-        variables=variables,
+    write_uai_file = options.pop("write_uai_file", None)
+    reject_pruning_options(options)
+    model = repn.create_model(
+        evidence=q.evidence,
+        variables=full_query_variables(q.variables, repn.nodes),
         verbose=verbose,
         write_uai_file=write_uai_file,
-        timing=timing,
+        timing=q.timing,
     )
-
-
-def _map_query_toulbar2_mn(
-    repn, *, variables, evidence, timing, write_uai_file, options
-):
-    """Solve a MAP query on the ``"toulbar2"`` representation of a Markov network."""
-    if not pytoulbar2_available:  # pragma:nocover
-        return _not_available()
-    variables = full_query_variables(variables, repn.nodes)
-    model = _create_model(
-        repn,
-        evidence=evidence,
-        variables=variables,
-        timing=timing,
-        write_uai_file=write_uai_file,
-        options=options,
-    )
-    return solve_toulbar2_map_query_model(model, timing=timing, **options)
+    return solve_toulbar2_map_query_model(model, timing=q.timing, **options)
 
 
 def solve_toulbar2_map_query_model(
@@ -109,44 +105,4 @@ def solve_toulbar2_map_query_model(
         solutions=[soln],
         termination_condition="ok",
         solvetime=solvetime,
-    )
-
-
-def inference_toulbar2_map_query_MN(
-    *,
-    pgm,
-    variables=None,
-    evidence=None,
-    timing=False,
-    write_uai_file=None,
-    **options,
-):
-    """MAP query on a Markov network with toulbar2.
-
-    Parameters
-    ----------
-    pgm : DiscreteMarkovNetwork or ConstrainedDiscreteMarkovNetwork
-    variables : list, optional
-        Not supported (raises ``RuntimeError``, as the integer-program query).
-    evidence : dict, optional
-        ``{node: state}``.
-    timing : bool, optional
-        Print timing information.
-    write_uai_file : str, optional
-        Write the UAI file that toulbar2 reads to this path.
-    **options
-        ``verbose`` (the toulbar2 verbosity, default ``-1``) and the options of
-        :func:`solve_toulbar2_map_query_model`.
-    """
-    if not pytoulbar2_available:  # pragma:nocover
-        return _not_available()
-
-    cmodel = ConstrainedDiscreteMarkovNetwork.ensure(pgm)
-    return _map_query_toulbar2_mn(
-        cmodel.representation("toulbar2"),
-        variables=variables,
-        evidence=evidence,
-        timing=timing,
-        write_uai_file=write_uai_file,
-        options=options,
     )

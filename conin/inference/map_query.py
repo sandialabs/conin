@@ -32,56 +32,34 @@ from conin.graphical_models.hmm_observations import (
     require_sequence_type,
     time_range,
 )
-from conin.representations.pgmpy import (
-    PgmpyBNRepresentation,
-    PgmpyDBNRepresentation,
-    PgmpyHMMRepresentation,
-    PgmpyMNRepresentation,
-)
 from conin.representations.matvec import MatVecHMMRepresentation
 from conin.representations.mvr import MVRHMMRepresentation
 from conin.representations.oracle import OracleHMMRepresentation
+from conin.representations.pgmpy import PgmpyHMMRepresentation, PgmpyRepresentation
 from conin.representations.pyomo import (
-    PyomoBNRepresentation,
-    PyomoDBNRepresentation,
+    PyomoFactorRepresentation,
     PyomoHMMRepresentation,
-    PyomoMNRepresentation,
     PyomoNetworkFlowHMMRepresentation,
 )
 from conin.representations.recursive import RecursiveHMMRepresentation
-from conin.representations.unrolled import dbn_time_range
 from conin.representations.toulbar2 import (
-    Toulbar2BNRepresentation,
-    Toulbar2DBNRepresentation,
+    Toulbar2FactorRepresentation,
     Toulbar2HMMRepresentation,
-    Toulbar2MNRepresentation,
 )
+from conin.representations.unrolled import dbn_time_range
 
-from .hmm_results import key_solutions_by_time
+from .hmm_results import key_solutions_by_time, solve_unrolled_hmm
+from .methods import MAP_METHODS, check_method, representation_kind
 from .oracle.a_star_hmm import _a_star
-from .pyomo.bn import _map_query_pyomo_bn
-from .pyomo.dbn import _map_query_pyomo_dbn
-from .pyomo.hmm import _map_query_network_flow, _map_query_pyomo_hmm
-from .pyomo.mn import _map_query_pyomo_mn
+from .pyomo.hmm_network_flow import _solve_network_flow
+from .pyomo.solve import _solve_pyomo
+from .query_checks import map_query_args
 from .recursive.a_star_hmm import _recursive_a_star
-from .toulbar2.bn import _map_query_toulbar2_bn
-from .toulbar2.dbn import _map_query_toulbar2_dbn
-from .toulbar2.hmm import _map_query_toulbar2_hmm
-from .toulbar2.solve import _map_query_toulbar2_mn
+from .toulbar2.solve import _solve_toulbar2
 from .unconstrained.viterbi import _viterbi
-from .variable_elimination.bn import _map_query_variable_elimination_bn
-from .variable_elimination.dbn import _map_query_variable_elimination_dbn
-from .variable_elimination.hmm import _map_query_variable_elimination_hmm
-from .variable_elimination.mn import _map_query_variable_elimination_mn
+from .variable_elimination.solve import _solve_variable_elimination
 
-METHODS = (
-    "integer_program",
-    "toulbar2",
-    "a_star",
-    "viterbi",
-    "variable_elimination",
-    "mvr_viterbi",
-)
+METHODS = MAP_METHODS
 """The ``method`` values of :func:`map_query`."""
 
 # ---------------------------------------------------------------------
@@ -92,31 +70,18 @@ METHODS = (
 def _representation_kind(method, cmodel, options):
     """Return the representation kind that ``method`` solves on ``cmodel``.
 
-    ``"integer_program"`` pops ``ip_formulation`` from ``options``:
-    ``None``/``"markov_network"`` -> ``"pyomo"``, ``"network_flow"`` ->
-    ``"pyomo_network_flow"``.  ``"a_star"`` uses ``"recursive"`` for
-    recursive constraints and ``"oracle"`` otherwise.
+    See :mod:`conin.inference.methods`: ``"integer_program"`` pops
+    ``ip_formulation`` from ``options`` (``None``/``"markov_network"`` ->
+    ``"pyomo"``, ``"network_flow"`` -> ``"pyomo_network_flow"``), and
+    ``"a_star"`` uses ``"recursive"`` for recursive constraints and
+    ``"oracle"`` otherwise.
 
     Raises
     ------
     ValueError
         For an unknown ``ip_formulation``.
     """
-    if method == "integer_program":
-        ip_formulation = options.pop("ip_formulation", None)
-        if ip_formulation is None or ip_formulation == "markov_network":
-            return "pyomo"
-        if ip_formulation == "network_flow":
-            return "pyomo_network_flow"
-        raise ValueError(f"Unexpected ip_formulation value: '{ip_formulation}'")
-    if method == "a_star":
-        return "recursive" if cmodel.constraint_family == "recursive" else "oracle"
-    return {
-        "toulbar2": "toulbar2",
-        "variable_elimination": "pgmpy",
-        "viterbi": "matvec",
-        "mvr_viterbi": "mvr",
-    }[method]
+    return representation_kind(method, cmodel, options)
 
 
 def _structure_params(kind, cmodel, *, observed, start, stop):
@@ -271,11 +236,7 @@ def map_query(
     >>> pgm = conin.examples.hidden_markov_model.create_hmm1()
     >>> results = map_query(pgm, method="integer_program", evidence=["o0", "o1"], solver="glpk")  # doctest: +SKIP
     """
-    if method not in METHODS:
-        raise ValueError(
-            f"Unsupported inference type: {method}. "
-            f"Expected one of: {', '.join(METHODS)}"
-        )
+    check_method(method, METHODS, "inference type")
     cmodel = as_constrained_model(pgm)
     observed = None
     if isinstance(cmodel, ConstrainedHiddenMarkovModel):
@@ -285,7 +246,7 @@ def map_query(
         kind,
         **_structure_params(kind, cmodel, observed=observed, start=start, stop=stop),
     )
-    query = munch.Munch(
+    query = map_query_args(
         variables=variables,
         evidence=evidence,
         observed=observed,
@@ -299,140 +260,49 @@ def map_query(
 
 
 # ---------------------------------------------------------------------
-# Step 4: one overload per representation class
+# Step 4: one overload per backend, and one per HMM algorithm
 # ---------------------------------------------------------------------
+#
+# The factor backends (Pyomo, toulbar2, pgmpy) have one solver each, for the
+# MN, BN and DBN representations (overloads on the backend's base class).
+# Their HMM representations are solved as the unrolled DBN by
+# solve_unrolled_hmm.  Network flow, Viterbi, A* and the MVR Viterbi are
+# HMM algorithms with their own overloads.
 
 
 @ovld
-def _solve_map_query(repn: PyomoMNRepresentation, q):
-    return _map_query_pyomo_mn(
-        repn,
-        variables=q.variables,
-        evidence=q.evidence,
-        timing=q.timing,
-        options=q.options,
-    )
-
-
-@ovld
-def _solve_map_query(repn: PyomoBNRepresentation, q):
-    return _map_query_pyomo_bn(
-        repn,
-        variables=q.variables,
-        evidence=q.evidence,
-        timing=q.timing,
-        options=q.options,
-    )
-
-
-@ovld
-def _solve_map_query(repn: PyomoDBNRepresentation, q):
-    return _map_query_pyomo_dbn(
-        repn, variables=q.variables, evidence=q.evidence, options=q.options
-    )
+def _solve_map_query(repn: PyomoFactorRepresentation, q):
+    return _solve_pyomo(repn, q)
 
 
 @ovld
 def _solve_map_query(repn: PyomoHMMRepresentation, q):
-    return _map_query_pyomo_hmm(
-        repn, variables=q.variables, evidence=q.evidence, options=q.options
-    )
+    return solve_unrolled_hmm(_solve_pyomo, repn, q)
 
 
 @ovld
 def _solve_map_query(repn: PyomoNetworkFlowHMMRepresentation, q):
-    return _map_query_network_flow(repn, evidence=q.evidence, options=q.options)
+    return _solve_network_flow(repn, q)
 
 
 @ovld
-def _solve_map_query(repn: Toulbar2MNRepresentation, q):
-    return _map_query_toulbar2_mn(
-        repn,
-        variables=q.variables,
-        evidence=q.evidence,
-        timing=q.timing,
-        write_uai_file=q.options.pop("write_uai_file", None),
-        options=q.options,
-    )
-
-
-@ovld
-def _solve_map_query(repn: Toulbar2BNRepresentation, q):
-    return _map_query_toulbar2_bn(
-        repn,
-        variables=q.variables,
-        evidence=q.evidence,
-        timing=q.timing,
-        write_uai_file=q.options.pop("write_uai_file", None),
-        options=q.options,
-    )
-
-
-@ovld
-def _solve_map_query(repn: Toulbar2DBNRepresentation, q):
-    write_uai_file = q.options.pop("write_uai_file", None)
-    return _map_query_toulbar2_dbn(
-        repn,
-        variables=q.variables,
-        evidence=q.evidence,
-        write_uai_file=write_uai_file,
-        options=dict(q.options, timing=q.timing),
-    )
+def _solve_map_query(repn: Toulbar2FactorRepresentation, q):
+    return _solve_toulbar2(repn, q)
 
 
 @ovld
 def _solve_map_query(repn: Toulbar2HMMRepresentation, q):
-    write_uai_file = q.options.pop("write_uai_file", None)
-    return _map_query_toulbar2_hmm(
-        repn,
-        variables=q.variables,
-        evidence=q.evidence,
-        write_uai_file=write_uai_file,
-        options=dict(q.options, timing=q.timing),
-    )
-
-
-def _variable_elimination_args(q):
-    # Variable elimination ignores the other options.
-    return dict(
-        variables=q.variables,
-        evidence=q.evidence,
-        show_progress=q.show_progress,
-        timing=q.timing,
-        write_uai_file=q.options.get("write_uai_file"),
-    )
+    return solve_unrolled_hmm(_solve_toulbar2, repn, q)
 
 
 @ovld
-def _solve_map_query(repn: PgmpyMNRepresentation, q):
-    return _map_query_variable_elimination_mn(
-        repn,
-        solution_with_evidence=q.options.get("solution_with_evidence", False),
-        **_variable_elimination_args(q),
-    )
-
-
-@ovld
-def _solve_map_query(repn: PgmpyBNRepresentation, q):
-    return _map_query_variable_elimination_bn(
-        repn,
-        solution_with_evidence=q.options.get("solution_with_evidence", False),
-        **_variable_elimination_args(q),
-    )
-
-
-@ovld
-def _solve_map_query(repn: PgmpyDBNRepresentation, q):
-    return _map_query_variable_elimination_dbn(
-        repn,
-        solution_with_evidence=q.options.get("solution_with_evidence", False),
-        **_variable_elimination_args(q),
-    )
+def _solve_map_query(repn: PgmpyRepresentation, q):
+    return _solve_variable_elimination(repn, q)
 
 
 @ovld
 def _solve_map_query(repn: PgmpyHMMRepresentation, q):
-    return _map_query_variable_elimination_hmm(repn, **_variable_elimination_args(q))
+    return solve_unrolled_hmm(_solve_variable_elimination, repn, q)
 
 
 def _hmm_search(search, repn, q, **options):

@@ -4,12 +4,16 @@ The model is built by the ``"pyomo_network_flow"`` representation
 (:mod:`conin.representations.pyomo.hmm_network_flow`).
 """
 
+import logging
 import math
+
 import munch
 
 from conin.config import default_mip_solver
 from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.exceptions import InsufficientSolutionsError, InvalidInputError
+from conin.graphical_models.hmm_observations import as_sequence
+from conin.inference.hmm_results import key_solutions_by_time
 from conin.util import try_import
 
 import pyomo.environ as pyo
@@ -20,6 +24,32 @@ from pyomo.contrib.alternative_solutions.aos_utils import (
 
 with try_import() as or_topas_available:
     import or_topas.aos as aos
+
+logger = logging.getLogger("conin")
+
+
+def _solve_network_flow(repn, q):
+    """Solve a MAP query on the ``"pyomo_network_flow"`` representation of an HMM.
+
+    ``q`` is the query of :func:`~conin.inference.map_query`.  Without
+    constraints the model is solved with :func:`lp_inference`, with
+    constraints with :func:`ip_inference`; ``q.options`` are their options
+    (``use_cut_generation`` is ignored with a warning).
+    """
+    options = dict(q.options)
+    if options.pop("use_cut_generation", None):
+        logger.warning(
+            "Cut generation is not supported for the HMM 'network_flow' integer programming formulation"
+        )
+    observed = as_sequence(
+        q.evidence,
+        "evidence (the observations) of the 'network_flow' integer programming formulation",
+    )
+    infer = _ip_inference if repn.constraints else _lp_inference
+    results = infer(repn, observed=observed, **options)
+    if isinstance(q.evidence, dict):
+        key_solutions_by_time(results)
+    return results
 
 
 def lp_inference(

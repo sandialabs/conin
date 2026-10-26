@@ -1,14 +1,13 @@
 import pyomo.opt
 
 from conin.util import try_import
-from conin.inference.pyomo import inference_pyomo_map_query_BN
-from conin.inference.toulbar2 import inference_toulbar2_map_query_BN
 from conin.examples import bayesian_network as examples
 
 with try_import() as pgmpy_available:
     from pgmpy.inference import VariableElimination
 
 from conin.pgmpy import convert_pgmpy_to_conin
+from conin.inference import map_query
 
 with try_import() as pytoulbar2_available:
     import pytoulbar2
@@ -46,7 +45,7 @@ def test1_simple1_BN_conin_mip():
     example = examples.simple1_BN_conin()
     q = example.solutions[0].states
 
-    results = inference_pyomo_map_query_BN(pgm=example.pgm, solver=mip_solver)
+    results = map_query(example.pgm, method="integer_program", solver=mip_solver)
     assert q == results.solution.states
 
 
@@ -60,8 +59,8 @@ def test2_simple1_BN_conin_mip():
     example = examples.simple1_BN_conin()
     q = {"B": 0}
 
-    results = inference_pyomo_map_query_BN(
-        pgm=example.pgm, solver=mip_solver, evidence={"A": 1}
+    results = map_query(
+        example.pgm, method="integer_program", solver=mip_solver, evidence={"A": 1}
     )
     assert q == results.solution.states
 
@@ -82,7 +81,7 @@ def test1_simple1_BN_pgmpy_mip():
     assert q == infer.map_query(variables=["A", "B"])
 
     pgm = convert_pgmpy_to_conin(example.pgm)
-    results = inference_pyomo_map_query_BN(pgm=pgm, solver=mip_solver)
+    results = map_query(pgm, method="integer_program", solver=mip_solver)
     assert q == results.solution.states
 
 
@@ -102,8 +101,8 @@ def test2_simple1_BN_pgmpy_mip():
     assert q == infer.map_query(variables=["B"], evidence={"A": 1})
 
     pgm = convert_pgmpy_to_conin(example.pgm)
-    results = inference_pyomo_map_query_BN(
-        pgm=pgm, solver=mip_solver, evidence={"A": 1}
+    results = map_query(
+        pgm, method="integer_program", solver=mip_solver, evidence={"A": 1}
     )
     assert q == results.solution.states
 
@@ -124,7 +123,7 @@ def test1_simple2_BN_pgmpy_mip():
     assert q == infer.map_query(variables=["A", "B"])
 
     pgm = convert_pgmpy_to_conin(example.pgm)
-    results = inference_pyomo_map_query_BN(pgm=pgm, solver=mip_solver)
+    results = map_query(pgm, method="integer_program", solver=mip_solver)
     assert q == results.solution.states
 
 
@@ -145,7 +144,7 @@ def test1_simple1_BN_conin_toulbar2():
     example = examples.simple1_BN_conin()
     q = example.solutions[0].states
 
-    results = inference_toulbar2_map_query_BN(pgm=example.pgm)
+    results = map_query(example.pgm, method="toulbar2")
     assert q == results.solution.states
 
 
@@ -159,7 +158,7 @@ def test2_simple1_BN_conin_toulbar2():
     example = examples.simple1_BN_conin()
     q = {"B": 0}
 
-    results = inference_toulbar2_map_query_BN(pgm=example.pgm, evidence={"A": 1})
+    results = map_query(example.pgm, method="toulbar2", evidence={"A": 1})
     assert q == results.solution.states
 
 
@@ -179,7 +178,7 @@ def test1_simple1_BN_pgmpy_toulbar2():
     assert q == infer.map_query(variables=["A", "B"])
 
     pgm = convert_pgmpy_to_conin(example.pgm)
-    results = inference_toulbar2_map_query_BN(pgm=pgm)
+    results = map_query(pgm, method="toulbar2")
     assert q == results.solution.states
 
 
@@ -199,7 +198,7 @@ def test2_simple1_BN_pgmpy_toulbar2():
     assert q == infer.map_query(variables=["B"], evidence={"A": 1})
 
     pgm = convert_pgmpy_to_conin(example.pgm)
-    results = inference_toulbar2_map_query_BN(pgm=pgm, evidence={"A": 1})
+    results = map_query(pgm, method="toulbar2", evidence={"A": 1})
     assert q == results.solution.states
 
 
@@ -219,5 +218,5 @@ def test1_simple2_BN_pgmpy_toulbar2():
     assert q == infer.map_query(variables=["A", "B"])
 
     pgm = convert_pgmpy_to_conin(example.pgm)
-    results = inference_toulbar2_map_query_BN(pgm=pgm)
+    results = map_query(pgm, method="toulbar2")
     assert q == results.solution.states

@@ -23,7 +23,6 @@ from conin.graphical_models import (
     DynamicDiscreteBayesianNetwork,
     HiddenMarkovModel,
 )
-from conin.inference.pyomo import inference_pyomo_map_query_HMM
 from conin.representations import supported_representations
 from conin.representations.pyomo import (
     PyomoBNRepresentation,
@@ -34,6 +33,7 @@ from conin.representations.pyomo import (
     PyomoVarWrapper,
 )
 from conin.util import State
+from conin.inference import map_query
 
 skipif_no_mip_solver = pytest.mark.skipif(
     not default_mip_solver, reason="No mip solver installed"
@@ -229,16 +229,20 @@ def test_constraint_data_hmm():
 
 @pytest.mark.parametrize("evidence", [None, "o0o1", {0: "o0", 2: "o1"}])
 def test_network_flow_rejects_unsupported_evidence(evidence):
-    with pytest.raises(InvalidInputError, match="network_flow"):
-        inference_pyomo_map_query_HMM(
-            pgm=hex_.create_hmm1(), evidence=evidence, ip_formulation="network_flow"
+    with pytest.raises(InvalidInputError, match="evidence .* on an HMM"):
+        map_query(
+            hex_.create_hmm1(),
+            method="integer_program",
+            evidence=evidence,
+            ip_formulation="network_flow",
         )
 
 
 def test_network_flow_rejects_unsupported_model():
     with pytest.raises(InvalidInputError, match="network_flow"):
-        inference_pyomo_map_query_HMM(
-            pgm=mex.ABC_conin().pgm,
+        map_query(
+            mex.ABC_conin().pgm,
+            method="integer_program",
             evidence=["o0", "o1"],
             ip_formulation="network_flow",
         )
@@ -299,8 +303,9 @@ def test_network_flow_V_missing_key_raises():
 @skipif_no_mip_solver
 def test_network_flow_algebraic_constraints():
     pytest.importorskip("smoek")
-    results = inference_pyomo_map_query_HMM(
-        pgm=hex_.create_chmm1_algebraic(),
+    results = map_query(
+        hex_.create_chmm1_algebraic(),
+        method="integer_program",
         evidence=["o0"] * 15,
         ip_formulation="network_flow",
         solver=default_mip_solver,
@@ -315,11 +320,11 @@ def test_network_flow_algebraic_constraints():
 
 @skipif_no_mip_solver
 def test_bn_prune_network_false_is_accepted():
-    from conin.inference.pyomo import inference_pyomo_map_query_BN
 
     example = bex.cancer1_BN_conin()
-    results = inference_pyomo_map_query_BN(
-        pgm=example.pgm,
+    results = map_query(
+        example.pgm,
+        method="integer_program",
         solver=default_mip_solver,
         prune_network=False,
         create_MN=False,
@@ -329,21 +334,25 @@ def test_bn_prune_network_false_is_accepted():
 
 @pytest.mark.parametrize("option", ["prune_network", "create_MN"])
 def test_bn_unsupported_build_options_raise(option):
-    from conin.inference.pyomo import inference_pyomo_map_query_BN
 
     with pytest.raises(RuntimeError):
-        inference_pyomo_map_query_BN(pgm=bex.cancer1_BN_conin().pgm, **{option: True})
+        map_query(
+            bex.cancer1_BN_conin().pgm, method="integer_program", **{option: True}
+        )
 
 
 # ---------------------------------------------------------------------
-# inference_pyomo_map_query_HMM: the ip_formulation branches
+# map_query(method="integer_program") on an HMM: the ip_formulation branches
 # ---------------------------------------------------------------------
 
 
 def test_hmm_unknown_ip_formulation_raises():
     with pytest.raises(ValueError, match="Unexpected ip_formulation value: 'bogus'"):
-        inference_pyomo_map_query_HMM(
-            pgm=hex_.create_hmm1(), evidence=["o0", "o1"], ip_formulation="bogus"
+        map_query(
+            hex_.create_hmm1(),
+            method="integer_program",
+            evidence=["o0", "o1"],
+            ip_formulation="bogus",
         )
 
 
@@ -351,8 +360,9 @@ def test_hmm_unknown_ip_formulation_raises():
 @pytest.mark.parametrize("ip_formulation", [None, "markov_network", "network_flow"])
 @pytest.mark.parametrize("evidence", [["o0", "o1", "o1"], {0: "o0", 1: "o1", 2: "o1"}])
 def test_hmm_ip_formulations_agree(ip_formulation, evidence):
-    results = inference_pyomo_map_query_HMM(
-        pgm=hex_.create_hmm1(),
+    results = map_query(
+        hex_.create_hmm1(),
+        method="integer_program",
         evidence=evidence,
         ip_formulation=ip_formulation,
         solver=default_mip_solver,
@@ -366,8 +376,9 @@ def test_hmm_ip_formulations_agree(ip_formulation, evidence):
 @pytest.mark.skipif(not default_mip_solver, reason="No mip solver installed")
 def test_network_flow_warns_about_cut_generation(caplog):
     with caplog.at_level("WARNING", logger="conin"):
-        inference_pyomo_map_query_HMM(
-            pgm=hex_.create_hmm1(),
+        map_query(
+            hex_.create_hmm1(),
+            method="integer_program",
             evidence=["o0", "o1"],
             ip_formulation="network_flow",
             use_cut_generation=True,

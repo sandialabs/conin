@@ -1,9 +1,39 @@
-"""Query checks shared by the integer-program and toulbar2 MAP queries.
+"""The MAP query object, and the checks shared by the integer-program and toulbar2 solvers.
 
 Neither backend can run a partial MAP query (summing out the other variables
 needs variable elimination), and neither supports pgmpy's network pruning or
 Markov-network generation.
 """
+
+import munch
+
+
+def map_query_args(
+    *,
+    variables=None,
+    evidence=None,
+    observed=None,
+    show_progress=False,
+    timing=False,
+    start=0,
+    stop=None,
+    options=None,
+):
+    """The query that :func:`~conin.inference.map_query` passes to the solvers.
+
+    ``evidence`` is the evidence as given; for an HMM, ``observed`` is the
+    list of observations.  ``options`` are the method options (a new dict).
+    """
+    return munch.Munch(
+        variables=variables,
+        evidence=evidence,
+        observed=observed,
+        show_progress=show_progress,
+        timing=timing,
+        start=start,
+        stop=stop,
+        options=dict(options or {}),
+    )
 
 
 def reject_pruning_options(options):

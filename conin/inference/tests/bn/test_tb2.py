@@ -1,9 +1,8 @@
 import pyomo.opt
 
 from conin.util import try_import
-from conin.inference.pyomo import inference_pyomo_map_query_BN
-from conin.inference.toulbar2 import inference_toulbar2_map_query_BN
 from conin.examples import bayesian_network as examples
+from conin.inference import map_query
 
 with try_import() as pgmpy_available:
     from pgmpy.inference import VariableElimination
@@ -38,7 +37,7 @@ skipif_toulbar2_not_available = pytest.mark.skipif(
 def test_tb2_BN_conin_mip():
     example = examples.tb2_BN_conin()
     q = example.solutions[0].states
-    results = inference_pyomo_map_query_BN(pgm=example.pgm, solver=mip_solver)
+    results = map_query(example.pgm, method="integer_program", solver=mip_solver)
     assert q == results.solution.states
 
 
@@ -50,7 +49,7 @@ def test_tb2_BN_pgmpy_mip():
     example = examples.tb2_BN_pgmpy()
     q = example.solutions[0].states
     pgm = convert_pgmpy_to_conin(example.pgm)
-    results = inference_pyomo_map_query_BN(pgm=pgm, solver=mip_solver)
+    results = map_query(pgm, method="integer_program", solver=mip_solver)
     assert q == results.solution.states
 
 
@@ -62,7 +61,7 @@ def test_tb2_BN_pgmpy_mapcpd_mip():
     example = examples.tb2_BN_pgmpy_mapcpd()
     q = example.solutions[0].states
     pgm = convert_pgmpy_to_conin(example.pgm)
-    results = inference_pyomo_map_query_BN(pgm=pgm, solver=mip_solver)
+    results = map_query(pgm, method="integer_program", solver=mip_solver)
     assert q == results.solution.states
 
 
@@ -77,7 +76,7 @@ def test_tb2_BN_pgmpy_mapcpd_mip():
 def test_tb2_BN_conin_toulbar2():
     example = examples.tb2_BN_conin()
     q = example.solutions[0].states
-    results = inference_toulbar2_map_query_BN(pgm=example.pgm)
+    results = map_query(example.pgm, method="toulbar2")
     assert q == results.solution.states
 
 
@@ -89,7 +88,7 @@ def test_tb2_BN_pgmpy_toulbar2():
     example = examples.tb2_BN_pgmpy()
     q = example.solutions[0].states
     pgm = convert_pgmpy_to_conin(example.pgm)
-    results = inference_toulbar2_map_query_BN(pgm=pgm)
+    results = map_query(pgm, method="toulbar2")
     assert q == results.solution.states
 
 
@@ -101,5 +100,5 @@ def test_tb2_BN_pgmpy_mapcpd_toulbar2():
     example = examples.tb2_BN_pgmpy_mapcpd()
     q = example.solutions[0].states
     pgm = convert_pgmpy_to_conin(example.pgm)
-    results = inference_toulbar2_map_query_BN(pgm=pgm)
+    results = map_query(pgm, method="toulbar2")
     assert q == results.solution.states

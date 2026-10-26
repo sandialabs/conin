@@ -2,10 +2,9 @@ import pytest
 import pyomo.opt
 
 from conin.util import try_import
-from conin.inference.pyomo import inference_pyomo_map_query_BN
-from conin.inference.toulbar2 import inference_toulbar2_map_query_BN
 
 from conin.examples import bayesian_network as examples
+from conin.inference import map_query
 
 with try_import() as pgmpy_available:
     from pgmpy.inference import VariableElimination, BeliefPropagation
@@ -29,7 +28,7 @@ mip_solver = mip_solver[0] if mip_solver else None
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_DBDA_51_pyomo():
     example = examples.DBDA_5_1_conin()
-    results = inference_pyomo_map_query_BN(pgm=example.pgm, solver=mip_solver)
+    results = map_query(example.pgm, method="integer_program", solver=mip_solver)
     assert results.solution.states == example.solutions[0].states
 
 
@@ -45,7 +44,7 @@ def test_DBDA_51_pyomo():
 @pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
 def test_DBDA_51_toulbar2():
     example = examples.DBDA_5_1_conin()
-    results = inference_toulbar2_map_query_BN(pgm=example.pgm)
+    results = map_query(example.pgm, method="toulbar2")
     assert results.solution.states == example.solutions[0].states
 
 

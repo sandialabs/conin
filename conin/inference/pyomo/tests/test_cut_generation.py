@@ -12,13 +12,13 @@ import pyomo.opt
 
 from conin.util import State
 from conin.examples import markov_network as examples
-from conin.inference.pyomo import inference_pyomo_map_query_MN
 from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
 from conin.inference.pyomo import solve_pyomo_map_query_model
 from conin.representations.pyomo.common import (
     create_MN_pyomo_map_query_model_from_factorial_repn,
     has_omitted_c5,
 )
+from conin.inference import map_query
 
 mip_solver = pyomo.opt.check_available_solvers("gurobi", "highs", "glpk")
 mip_solver = mip_solver[0] if mip_solver else None
@@ -83,13 +83,17 @@ def test_omit_c5_model():
 def test_examples_gurobi_cut_generation(name, user_cuts):
     example = getattr(examples, name)()
 
-    full = inference_pyomo_map_query_MN(
-        pgm=example.pgm, solver="gurobi", solver_options=dict(GUROBI_QUIET)
+    full = map_query(
+        example.pgm,
+        method="integer_program",
+        solver="gurobi",
+        solver_options=dict(GUROBI_QUIET),
     )
     assert "cut_stats" not in full
 
-    cuts = inference_pyomo_map_query_MN(
-        pgm=example.pgm,
+    cuts = map_query(
+        example.pgm,
+        method="integer_program",
         solver="gurobi",
         use_cut_generation=True,
         c5_user_cuts=user_cuts,
@@ -105,8 +109,9 @@ def test_examples_gurobi_cut_generation(name, user_cuts):
 @skipif_gurobi_not_available
 def test_ABC_evidence_gurobi_cut_generation():
     example = examples.ABC_conin()
-    results = inference_pyomo_map_query_MN(
-        pgm=example.pgm,
+    results = map_query(
+        example.pgm,
+        method="integer_program",
         solver="gurobi",
         evidence={"B": 0},
         use_cut_generation=True,
@@ -151,6 +156,9 @@ def test_omit_c5_fallback():
         RuntimeError,
         match=r"The c5 constraints were omitted, but cut generation is not supported for solver=",
     ):
-        results = inference_pyomo_map_query_MN(
-            pgm=example.pgm, solver=other_mip_solver, use_cut_generation=True
+        results = map_query(
+            example.pgm,
+            method="integer_program",
+            solver=other_mip_solver,
+            use_cut_generation=True,
         )

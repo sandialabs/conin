@@ -63,71 +63,51 @@ def _with_timing(timing, func):
 
 
 def _solve_repn(
-    repn,
-    *,
-    variables,
-    evidence,
-    show_progress,
-    timing,
-    write_uai_file,
-    determine_variables,
+    repn, *, variables, evidence, show_progress, write_uai_file, timing=False
 ):
     """Create the pgmpy model of ``repn`` and solve it.
 
     ``evidence`` is the query evidence (keyed by the model's nodes); the
-    constraint evidence of ``repn`` is added.  With ``determine_variables``,
-    ``variables=None`` becomes the nodes of ``repn.ve_model`` that are not
-    evidence (the MN/BN paths); otherwise the solver picks them from the pgmpy
-    model (the DBN/HMM paths).
+    constraint evidence of ``repn`` is added.  ``variables=None`` queries
+    every node of the pgmpy model that is not evidence.
     """
-    query_evidence = repn.query_evidence(evidence)
     model = repn.create_model(write_uai_file=write_uai_file)
-
     if timing:
         TicTocTimer().tic("Created PGMPY model")
-
-    if determine_variables and variables is None:
-        if query_evidence:
-            variables = [n for n in repn.ve_model.nodes if n not in query_evidence]
-        else:
-            variables = repn.ve_model.nodes
     return solve_variable_elimination_map_query_model(
         model,
         variables=variables,
-        evidence=query_evidence,
+        evidence=repn.query_evidence(evidence),
         show_progress=show_progress,
     )
 
 
-def _solve_static(
-    repn,
-    *,
-    variables,
-    evidence,
-    show_progress,
-    timing,
-    write_uai_file,
-    solution_with_evidence,
-    determine_variables,
-):
-    """Solve a MN/BN/DBN query on ``repn``; add the evidence to the solution if asked.
+def _solve_variable_elimination(repn, q):
+    """Solve a MAP query on a ``"pgmpy"`` representation of an MN, BN or DBN.
 
-    The evidence is always added when the model has constraints.
+    ``q`` is the query of :func:`~conin.inference.map_query` (``variables``,
+    ``evidence``, ``show_progress``, ``timing`` and ``options``).  The options
+    are ``write_uai_file`` (save the factor model, with the constraint
+    factors, to this file) and ``solution_with_evidence`` (add the evidence to
+    ``solution.states``; always done when the model has constraints); the
+    other options are ignored.  An HMM is solved as its unrolled DBN
+    (:func:`~conin.inference.hmm_results.solve_unrolled_hmm`).
     """
-    solution_with_evidence = solution_with_evidence or len(repn.constraints) > 0
+    solution_with_evidence = (
+        q.options.get("solution_with_evidence", False) or len(repn.constraints) > 0
+    )
 
     def _execute():
         results = _solve_repn(
             repn,
-            variables=variables,
-            evidence=evidence,
-            show_progress=show_progress,
-            timing=timing,
-            write_uai_file=write_uai_file,
-            determine_variables=determine_variables,
+            variables=q.variables,
+            evidence=q.evidence,
+            show_progress=q.show_progress,
+            write_uai_file=q.options.get("write_uai_file"),
+            timing=q.timing,
         )
-        if solution_with_evidence and evidence:
-            results.solution.states.update(evidence)
+        if solution_with_evidence and q.evidence:
+            results.solution.states.update(q.evidence)
         return results
 
-    return _with_timing(timing, _execute)
+    return _with_timing(q.timing, _execute)

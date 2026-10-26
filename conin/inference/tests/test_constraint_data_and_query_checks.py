@@ -24,12 +24,6 @@ from conin.constraints import (
 )
 from conin.inference import map_query
 from conin.inference.oracle import a_star
-from conin.inference.toulbar2 import (
-    inference_toulbar2_map_query_BN,
-    inference_toulbar2_map_query_DDBN,
-    inference_toulbar2_map_query_HMM,
-    inference_toulbar2_map_query_MN,
-)
 import pyomo.environ as pyo
 
 from conin.sampling.oracle import rejection_sample_hidden
@@ -261,33 +255,18 @@ def test_integer_program_solves_with_the_application_data():
 
 @skipif_toulbar2_not_available
 @pytest.mark.parametrize(
-    "fn,make,kwds,variables",
+    "make,kwds,variables",
     [
-        (inference_toulbar2_map_query_MN, lambda: mex.ABC_conin().pgm, {}, ["A"]),
-        (
-            inference_toulbar2_map_query_BN,
-            lambda: bex.cancer1_BN_conin().pgm,
-            {},
-            ["Cancer"],
-        ),
-        (
-            inference_toulbar2_map_query_DDBN,
-            lambda: dex.simple1_DDBN_conin().pgm,
-            dict(stop=1),
-            [("A", 0)],
-        ),
-        (
-            inference_toulbar2_map_query_HMM,
-            hex_.create_hmm1,
-            dict(evidence=["o0", "o1"]),
-            [("H", 0)],
-        ),
+        (lambda: mex.ABC_conin().pgm, {}, ["A"]),
+        (lambda: bex.cancer1_BN_conin().pgm, {}, ["Cancer"]),
+        (lambda: dex.simple1_DDBN_conin().pgm, dict(stop=1), [("A", 0)]),
+        (hex_.create_hmm1, dict(evidence=["o0", "o1"]), [("H", 0)]),
     ],
     ids=["mn", "bn", "dbn", "hmm"],
 )
-def test_toulbar2_partial_variables_raise_runtime_error(fn, make, kwds, variables):
+def test_toulbar2_partial_variables_raise_runtime_error(make, kwds, variables):
     with pytest.raises(RuntimeError):
-        fn(pgm=make(), variables=variables, **kwds)
+        map_query(make(), method="toulbar2", variables=variables, **kwds)
 
 
 @skipif_toulbar2_not_available
@@ -342,3 +321,69 @@ def test_toulbar2_prune_network_and_create_MN(option, make, kwds):
     # ... and True raises RuntimeError, as for the integer program.
     with pytest.raises(RuntimeError):
         map_query(pgm, method="toulbar2", **{option: True}, **kwds)
+
+
+# ---------------------------------------------------------------------
+# Regression: one solver per backend, so the options mean the same for every
+# model type
+# ---------------------------------------------------------------------
+
+
+def _backend_params():
+    return [
+        pytest.param(
+            "integer_program",
+            dict(solver=default_mip_solver),
+            marks=pytest.mark.skipif(
+                default_mip_solver is None, reason="No MIP solver installed"
+            ),
+        ),
+        pytest.param("toulbar2", {}, marks=skipif_toulbar2_not_available),
+    ]
+
+
+@pytest.mark.parametrize("method,solver", _backend_params())
+@pytest.mark.parametrize("option", ["prune_network", "create_MN"])
+def test_mn_prune_network_and_create_MN(method, solver, option):
+    # On a Markov network these options reached the solver (TypeError).
+    mn = mex.ABC_conin().pgm
+    results = map_query(mn, method=method, **{option: False}, **solver)
+    assert results.solution.states == {"A": 2, "B": 2, "C": 1}
+    with pytest.raises(RuntimeError, match=f"{option}=True is not supported"):
+        map_query(mn, method=method, **{option: True}, **solver)
+
+
+@pytest.mark.skipif(default_mip_solver is None, reason="No MIP solver installed")
+@pytest.mark.parametrize("evidence", [["o0", "o1"], ("o0", "o1")])
+def test_hmm_integer_program_solution_with_evidence(evidence):
+    # With list evidence this raised AttributeError; the hidden states are
+    # returned as for solution_with_evidence=False.
+    hmm = hex_.create_hmm1()
+    expected = map_query(
+        hmm, method="integer_program", evidence=evidence, solver=default_mip_solver
+    )
+    results = map_query(
+        hmm,
+        method="integer_program",
+        evidence=evidence,
+        solution_with_evidence=True,
+        solver=default_mip_solver,
+    )
+    assert results.solution.states == expected.solution.states
+
+
+@pytest.mark.skipif(default_mip_solver is None, reason="No MIP solver installed")
+@pytest.mark.parametrize(
+    "make,kwds",
+    [
+        (lambda: dex.simple1_DDBN_conin().pgm, {}),
+        (hex_.create_hmm1, dict(evidence=["o0", "o1"])),
+    ],
+    ids=["dbn", "hmm"],
+)
+def test_integer_program_timing_on_dbns_and_hmms(capsys, make, kwds):
+    # timing=True was ignored by the DBN and HMM integer programs.
+    map_query(
+        make(), method="integer_program", timing=True, solver=default_mip_solver, **kwds
+    )
+    assert "optimize_map_query_model - START" in capsys.readouterr().out
