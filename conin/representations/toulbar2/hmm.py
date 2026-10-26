@@ -1,16 +1,14 @@
 """The ``"toulbar2"`` representation of a (constrained) HMM."""
 
-import munch
-
-from conin.exceptions import InvalidInputError
 from conin.graphical_models import HiddenMarkovModel, create_dbn_from_hmm
 from conin.representations.base import register_representation
+from conin.representations.unrolled import UnrolledHMMMixin, hmm_time_range
 
 from .common import Toulbar2FactorRepresentation
 from .dbn import build_toulbar2_dbn_representation
 
 
-class Toulbar2HMMRepresentation(Toulbar2FactorRepresentation):
+class Toulbar2HMMRepresentation(UnrolledHMMMixin, Toulbar2FactorRepresentation):
     """toulbar2 CFN of a constrained HMM unrolled (as a DBN) over ``start..stop``.
 
     Structure params: ``start`` and ``stop``.  The hidden
@@ -21,33 +19,12 @@ class Toulbar2HMMRepresentation(Toulbar2FactorRepresentation):
     ``uai_model`` its unrolled BN.
     """
 
-    def __init__(self, *, start, stop, hidden_to_internal, **kwds):
-        super().__init__(**kwds)
-        self.start = start
-        self.stop = stop
-        self.hidden_to_internal = hidden_to_internal
-
-    def constraint_data(self, *, evidence=None, variables=None):
-        return munch.Munch(
-            start=self.start,
-            stop=self.stop,
-            variables=variables,
-            evidence=evidence,
-            hmm=munch.Munch(
-                T=list(range(self.start, self.stop + 1)),
-                hidden_to_internal=dict(self.hidden_to_internal),
-            ),
-        )
-
 
 @register_representation(
     "toulbar2", HiddenMarkovModel, families=(None, "toulbar2", "algebraic")
 )
 def _build(cmodel, *, start=0, stop=None):
-    if stop is None:
-        raise InvalidInputError(
-            "The HMM representation needs a stop time (the last observation)"
-        )
+    start, stop = hmm_time_range(start, stop)
     hmm = cmodel.model
     dbn = create_dbn_from_hmm(hmm=hmm)
     return build_toulbar2_dbn_representation(

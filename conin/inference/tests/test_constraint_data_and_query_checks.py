@@ -230,7 +230,7 @@ def test_is_feasible_dbn_sets_T_on_a_copy_of_the_application_data():
         dbn, constraint, data=munch.Munch(k=1)
     )
     cmodel.is_feasible({("A", 0): 0, ("A", 1): 0, ("B", 0): 0, ("B", 1): 0})
-    assert seen == [munch.Munch(k=1, T=[0, 1])]
+    assert seen == [munch.Munch(k=1, start=0, stop=1, T=[0, 1])]
     assert cmodel.data == munch.Munch(k=1)
 
 

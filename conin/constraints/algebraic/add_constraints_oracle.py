@@ -2,7 +2,7 @@ import pyomo.environ as pyo
 from pyomo.core.expr.visitor import identify_variables
 
 from conin.constraints.oracle import oracle_constraint_fn
-from .decorators import AlgebraicConstraint
+from .decorators import build_smoek_model
 from conin.util import try_import, State
 from conin.util.var_wrapper import PyomoVarWrapper
 
@@ -29,34 +29,16 @@ def create_oracle_constraints_from_algebraic(*, pgm, constraints, data, name=Non
     Returns:
         A list with a single FactorOracleConstraint that evaluates all the algebraic constraints
     """
-    if not smoek_available:
-        raise ImportError(
-            "smoek is required for create_oracle_constraints_from_algebraic. Install with: pip install smoek"
-        )
-
-    # Normalize input to list
     if len(constraints) == 0:
         return []
 
-    # Validate all inputs are AlgebraicConstraints
-    for i, constraint in enumerate(constraints):
-        if not isinstance(constraint, AlgebraicConstraint):
-            raise TypeError(
-                f"Element {i} is not an AlgebraicConstraint, got {type(constraint)}"
-            )
+    smoek_model = build_smoek_model(constraints, data)
 
-    # Determine function signature (1 arg or 2 args)
-    # Check the first constraint to determine if we need data argument
-    first_constraint = constraints[0]
-    num_args = first_constraint.num_args
+    # The generated function takes data if the first constraint does.
+    num_args = constraints[0].num_args
 
     # Collect all nodes referenced in the constraints
     nodes_set = set()
-
-    smoek_model = smoek.model()
-    for func in constraints:
-        func(smoek_model, data)
-    smoek_model._update_smoek_components()
 
     node_map = pyo.ComponentMap()
     pyomo_model = pyo.ConcreteModel()

@@ -49,6 +49,7 @@ from conin.representations.pyomo import (
     PyomoNetworkFlowHMMRepresentation,
 )
 from conin.representations.recursive import RecursiveHMMRepresentation
+from conin.representations.unrolled import dbn_time_range
 from conin.representations.toulbar2 import (
     Toulbar2BNRepresentation,
     Toulbar2DBNRepresentation,
@@ -121,7 +122,8 @@ def _representation_kind(method, cmodel, options):
 def _structure_params(kind, cmodel, *, observed, start, stop):
     """The structure parameters of the ``kind`` representation for this query.
 
-    DBNs are unrolled over ``start..stop`` (``stop=None`` means ``1``).  HMMs
+    DBNs are unrolled over ``start..stop`` (``stop=None`` means ``1``, the
+    default of the DBN representations).  HMMs
     are unrolled over ``start..stop``, where ``observed`` is the list of
     observations and ``stop`` defaults to the last one (a later ``stop``
     raises ``InvalidInputError``).  The other kinds have no structure
@@ -130,7 +132,8 @@ def _structure_params(kind, cmodel, *, observed, start, stop):
     if kind not in ("pyomo", "toulbar2", "pgmpy"):
         return {}
     if isinstance(cmodel, ConstrainedDynamicDiscreteBayesianNetwork):
-        return dict(start=start, stop=1 if stop is None else stop)
+        start, stop = dbn_time_range(start, stop)
+        return dict(start=start, stop=stop)
     if isinstance(cmodel, ConstrainedHiddenMarkovModel):
         start, stop = time_range(observed, start, stop)
         return dict(start=start, stop=stop)

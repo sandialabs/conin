@@ -70,7 +70,13 @@ Representations and dispatch
   builder.
 - Each backend has one function that applies the constraints of a family
   (``apply_pyomo_constraints``, ``apply_toulbar2_constraints``,
-  ``apply_pgmpy_constraints``).
+  ``apply_pgmpy_constraints``). Each passes ``apply_constraints``
+  (``conin.representations.base``) a table from family to applier;
+  ``apply_constraints`` rejects mixed or unsupported families with one
+  message. The algebraic translators all start from ``build_smoek_model``.
+- The DBN and HMM representations of every backend get ``start``, ``stop``,
+  ``time_steps`` and their constraint-``data`` time fields from the mixins in
+  ``conin.representations.unrolled``, so the backends cannot drift apart.
 - ``map_query`` (and ``log_probability_query``) normalise the model (pgmpy
   models are converted, bare models are wrapped as ``Constrained*(model)``),
   map the method to a representation kind, build the representation with its
@@ -84,7 +90,11 @@ Representations and dispatch
   ``create_model()`` does not change the representation, so one
   representation can serve several queries.
 - Constraint functions see the constrained model's ``data``: a shallow copy
-  with the backend's fields (``T``, ``hmm``, ``start``, ``stop``, ...) set.
+  with the backend's fields set (``conin.util.constraint_data``). The time
+  fields are the same everywhere: ``start``, ``stop`` and ``T`` for a DBN;
+  ``start``, ``stop`` and ``hmm = Munch(T, hidden_to_internal)`` for an HMM.
+  Backends add their own fields on top (``variables`` and ``evidence`` for
+  Pyomo and toulbar2, the index sets in ``hmm`` for network flow).
 
 Decisions
 ---------

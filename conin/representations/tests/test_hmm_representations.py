@@ -88,13 +88,16 @@ def test_oracle_two_argument_predicates_get_the_constraint_data():
         seen.append(data)
         return sum(1 for v in states.values() if v == "h0") <= len(data.hmm.T) // 2
 
-    cmodel = ConstrainedHiddenMarkovModel(
-        tc.create_hmm1(), OracleConstraint(func=at_most_half_h0)
-    )
+    hmm = tc.create_hmm1()
+    cmodel = ConstrainedHiddenMarkovModel(hmm, OracleConstraint(func=at_most_half_h0))
     repn = cmodel.representation("oracle")
     assert repn.is_feasible([0, 0, 1, 1])
     assert not repn.is_feasible([0, 0, 0, 1])
-    assert seen[0] == munch.Munch(hmm=munch.Munch(T=[0, 1, 2, 3]))
+    assert seen[0] == munch.Munch(
+        start=0,
+        stop=3,
+        hmm=munch.Munch(T=[0, 1, 2, 3], hidden_to_internal=hmm.hidden_to_internal),
+    )
     # The same answer as ConstrainedHiddenMarkovModel.is_feasible.
     assert cmodel.is_feasible(["h0", "h0", "h1", "h1"])
     assert not cmodel.is_feasible(["h0", "h0", "h0", "h1"])

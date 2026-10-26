@@ -11,7 +11,8 @@ class PgmpyBNRepresentation(PgmpyRepresentation):
 
     Each constraint adds the CPD of a binary node ``(name, -1)`` whose parents
     are its scope; :attr:`constraint_evidence` fixes those nodes to ``1``.
-    Constraint functions see ``data = None``.
+    Constraint functions see a copy of the model's ``data`` (``None`` if it
+    has none).
     """
 
 

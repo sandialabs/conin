@@ -103,7 +103,7 @@ class ConstrainedHiddenMarkovModel(ConstrainedGraphicalModel):
             assignment=dict(enumerate(hidden)),
             factor_assignment=factor_assignment,
             state_space=hmm_state_space(self.model, T),
-            data=merge_constraint_data(self.data, hmm_constraint_data(T)),
+            data=merge_constraint_data(self.data, hmm_constraint_data(self.model, T)),
             hidden=hidden,
         )
 

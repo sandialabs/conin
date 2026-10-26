@@ -20,3 +20,13 @@ class Constraint(ABC):
     ``"toulbar2"``, ``"oracle"``).  Concrete subclasses must override this;
     the base class value is ``None``.
     """
+
+
+def constraint_families(constraints):
+    """The distinct families of ``constraints``, in order of first appearance."""
+    families = []
+    for c in constraints:
+        family = type(c).family
+        if family not in families:
+            families.append(family)
+    return families

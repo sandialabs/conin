@@ -71,8 +71,6 @@ def inference_variable_elimination_map_query_DDBN(
     munch.Munch
         ``solution.states`` and ``solvetime``.
     """
-    if stop is None:
-        stop = 1
     cmodel = ConstrainedDynamicDiscreteBayesianNetwork.ensure(pgm)
     return _map_query_variable_elimination_dbn(
         cmodel.representation("pgmpy", start=start, stop=stop),

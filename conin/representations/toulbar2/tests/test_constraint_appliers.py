@@ -186,7 +186,7 @@ def test_apply_rejects_mixed_constraint_lists():
     def pyomo(M, D):
         return M
 
-    with pytest.raises(TypeError, match="all subsequent constraints"):
+    with pytest.raises(TypeError, match="one family, found .'pyomo', 'toulbar2'."):
         apply_toulbar2_constraints(
             pgm=None, constraints=(tb2, pyomo), model=_RecordingCFN(), data=None
         )
@@ -197,7 +197,11 @@ def test_apply_rejects_other_constraint_types():
     def pyomo(M, D):
         return M
 
-    with pytest.raises(TypeError, match="Only Toulbar2Constraint"):
+    with pytest.raises(
+        TypeError,
+        match="does not apply constraints of family 'pyomo' .PyomoConstraint.; "
+        r"supported families: \['algebraic', 'toulbar2'\]",
+    ):
         apply_toulbar2_constraints(
             pgm=None, constraints=(pyomo,), model=_RecordingCFN(), data=None
         )

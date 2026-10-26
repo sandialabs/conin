@@ -147,7 +147,9 @@ Oracle constraints with node scoping
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ``simple1_DDBN_constrained_oracle_conin`` creates a constraint over a generated
-set of nodes:
+set of nodes. The ``data`` of a DBN unrolled over ``start..stop`` has
+``data.start``, ``data.stop`` and ``data.T = list(range(start, stop + 1))``
+for every backend (and for ``is_feasible``):
 
 .. testcode::
 

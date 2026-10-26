@@ -1,6 +1,6 @@
 """Base class for constrained graphical models."""
 
-from conin.constraints.base import Constraint
+from conin.constraints.base import Constraint, constraint_families
 from conin.exceptions import InvalidInputError
 from conin.representations.base import (
     build_representation,
@@ -90,11 +90,7 @@ class ConstrainedGraphicalModel:
         return constraints
 
     def _derive_family(self, constraints):
-        families = []
-        for c in constraints:
-            f = type(c).family
-            if f not in families:
-                families.append(f)
+        families = constraint_families(constraints)
         if len(families) > 1:
             raise InvalidInputError(
                 f"{type(self).__name__}: all constraints must belong to one "

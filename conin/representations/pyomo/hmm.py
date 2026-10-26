@@ -1,16 +1,14 @@
 """The ``"pyomo"`` representation of a (constrained) HMM (``ip_formulation="markov_network"``)."""
 
-import munch
-
-from conin.exceptions import InvalidInputError
 from conin.graphical_models import HiddenMarkovModel, create_dbn_from_hmm
 from conin.representations.base import register_representation
+from conin.representations.unrolled import UnrolledHMMMixin, hmm_time_range
 
 from .common import PyomoFactorRepresentation
 from .dbn import build_pyomo_dbn_representation
 
 
-class PyomoHMMRepresentation(PyomoFactorRepresentation):
+class PyomoHMMRepresentation(UnrolledHMMMixin, PyomoFactorRepresentation):
     """Factor-repn IP of a constrained HMM unrolled (as a DBN) over ``start..stop``.
 
     Structure params: ``start`` and ``stop``.  The hidden
@@ -20,47 +18,21 @@ class PyomoHMMRepresentation(PyomoFactorRepresentation):
     hmm=Munch(T, hidden_to_internal))``.  ``pgm`` is the HMM's DBN.
     """
 
-    def __init__(self, *, start, stop, hidden_to_internal, **kwds):
-        super().__init__(**kwds)
-        self.start = start
-        self.stop = stop
-        self.hidden_to_internal = hidden_to_internal
-
-    def constraint_data(self, *, evidence=None, variables=None):
-        return munch.Munch(
-            start=self.start,
-            stop=self.stop,
-            variables=variables,
-            evidence=evidence,
-            hmm=munch.Munch(
-                T=list(range(self.start, self.stop + 1)),
-                hidden_to_internal=dict(self.hidden_to_internal),
-            ),
-        )
-
 
 @register_representation(
     "pyomo", HiddenMarkovModel, families=(None, "pyomo", "algebraic")
 )
 def _build(cmodel, *, start=0, stop=None):
-    if stop is None:
-        raise InvalidInputError(
-            "The HMM representation needs a stop time (the last observation)"
-        )
+    start, stop = hmm_time_range(start, stop)
     hmm = cmodel.model
     dbn = create_dbn_from_hmm(hmm=hmm)
-    base = build_pyomo_dbn_representation(dbn, start=start, stop=stop)
-    return PyomoHMMRepresentation(
-        S=base.S,
-        J=base.J,
-        v=base.v,
-        w=base.w,
-        var_index_map=base.var_index_map,
-        pgm=dbn,
-        constraints=cmodel.constraints,
-        nodes=base.nodes,
+    return build_pyomo_dbn_representation(
+        dbn,
+        cmodel.constraints,
         start=start,
         stop=stop,
+        cls=PyomoHMMRepresentation,
+        pgm=dbn,
         hidden_to_internal=hmm.hidden_to_internal,
         data=cmodel.data,
     )

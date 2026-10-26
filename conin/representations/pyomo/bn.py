@@ -18,11 +18,13 @@ class PyomoBNRepresentation(PyomoFactorRepresentation):
 
 
 def build_pyomo_bn_representation(
-    bn, constraints=(), *, cls=PyomoBNRepresentation, data=None
+    bn, constraints=(), *, cls=PyomoBNRepresentation, **kwds
 ):
     """Build a factor-repn IP representation of a :class:`DiscreteBayesianNetwork`.
 
     It reuses the ``"pyomo"`` representation of the skeleton Markov network.
+    ``kwds`` are passed to ``cls`` (``data``, and the structure fields of the
+    DBN/HMM subclasses); ``pgm`` defaults to ``bn``.
     """
     base = build_pyomo_mn_representation(skeleton_mn_of_bn(bn))
     return cls(
@@ -31,10 +33,10 @@ def build_pyomo_bn_representation(
         v=base.v,
         w=base.w,
         var_index_map=base.var_index_map,
-        pgm=bn,
+        pgm=kwds.pop("pgm", bn),
         constraints=constraints,
         nodes=bn.nodes,
-        data=data,
+        **kwds,
     )
 
 
