@@ -5,7 +5,8 @@ A query goes through the same steps as ``map_query``:
 1. normalise the model (pgmpy models are converted; a bare model is wrapped
    with no constraints);
 2. pick the representation kind from ``method`` (only
-   ``"variable_elimination"`` -> ``"pgmpy"`` for now);
+   ``"variable_elimination"`` -> ``"pgmpy"`` for now; the table is shared
+   with ``map_query``, :mod:`conin.inference.methods`);
 3. build that representation with its structure parameters (DBNs and HMMs
    are unrolled over ``start..stop``);
 4. compute the query with the overload of :func:`_solve_log_probability` for
@@ -26,6 +27,11 @@ from conin.constrained_models import (
 )
 from conin.constrained_models.normalise import as_constrained_model
 from conin.exceptions import InvalidInputError
+from conin.inference.methods import (
+    LOG_PROBABILITY_METHODS,
+    check_method,
+    representation_kind,
+)
 from conin.representations.pgmpy import (
     PgmpyBNRepresentation,
     PgmpyDBNRepresentation,
@@ -35,13 +41,17 @@ from conin.representations.pgmpy import (
 
 from .variable_elimination import _log_probability_variable_elimination
 
-METHODS = ("variable_elimination",)
+METHODS = LOG_PROBABILITY_METHODS
 """The ``method`` values of :func:`log_probability_query`."""
 
 
 def _representation_kind(method):
-    """Return the representation kind that ``method`` computes the query on."""
-    return {"variable_elimination": "pgmpy"}[method]
+    """Return the representation kind that ``method`` computes the query on.
+
+    The same as for :func:`~conin.inference.map_query`
+    (:mod:`conin.inference.methods`).
+    """
+    return representation_kind(method, None, {})
 
 
 def _structure_params(cmodel, *, variables, start, stop):
@@ -181,11 +191,7 @@ def log_probability_query(
     >>> round(log_probability_query(bn, {"A": 1}, evidence={"B": 1}), 6)  # doctest: +SKIP
     -4.290459
     """
-    if method not in METHODS:
-        raise ValueError(
-            f"Unsupported log-probability method: {method}. "
-            f"Expected one of: {', '.join(METHODS)}"
-        )
+    check_method(method, METHODS, "log-probability method")
     cmodel = as_constrained_model(pgm)
     assignment = _as_dict(assignment, "assignment")
     evidence = {} if evidence is None else _as_dict(evidence, "evidence")

@@ -49,6 +49,7 @@ from conin.representations.toulbar2 import (
 from conin.representations.unrolled import dbn_time_range
 
 from .hmm_results import key_solutions_by_time, solve_unrolled_hmm
+from .methods import MAP_METHODS, check_method, representation_kind
 from .oracle.a_star_hmm import _a_star
 from .pyomo.hmm_network_flow import _solve_network_flow
 from .pyomo.solve import _solve_pyomo
@@ -58,14 +59,7 @@ from .toulbar2.solve import _solve_toulbar2
 from .unconstrained.viterbi import _viterbi
 from .variable_elimination.solve import _solve_variable_elimination
 
-METHODS = (
-    "integer_program",
-    "toulbar2",
-    "a_star",
-    "viterbi",
-    "variable_elimination",
-    "mvr_viterbi",
-)
+METHODS = MAP_METHODS
 """The ``method`` values of :func:`map_query`."""
 
 # ---------------------------------------------------------------------
@@ -76,31 +70,18 @@ METHODS = (
 def _representation_kind(method, cmodel, options):
     """Return the representation kind that ``method`` solves on ``cmodel``.
 
-    ``"integer_program"`` pops ``ip_formulation`` from ``options``:
-    ``None``/``"markov_network"`` -> ``"pyomo"``, ``"network_flow"`` ->
-    ``"pyomo_network_flow"``.  ``"a_star"`` uses ``"recursive"`` for
-    recursive constraints and ``"oracle"`` otherwise.
+    See :mod:`conin.inference.methods`: ``"integer_program"`` pops
+    ``ip_formulation`` from ``options`` (``None``/``"markov_network"`` ->
+    ``"pyomo"``, ``"network_flow"`` -> ``"pyomo_network_flow"``), and
+    ``"a_star"`` uses ``"recursive"`` for recursive constraints and
+    ``"oracle"`` otherwise.
 
     Raises
     ------
     ValueError
         For an unknown ``ip_formulation``.
     """
-    if method == "integer_program":
-        ip_formulation = options.pop("ip_formulation", None)
-        if ip_formulation is None or ip_formulation == "markov_network":
-            return "pyomo"
-        if ip_formulation == "network_flow":
-            return "pyomo_network_flow"
-        raise ValueError(f"Unexpected ip_formulation value: '{ip_formulation}'")
-    if method == "a_star":
-        return "recursive" if cmodel.constraint_family == "recursive" else "oracle"
-    return {
-        "toulbar2": "toulbar2",
-        "variable_elimination": "pgmpy",
-        "viterbi": "matvec",
-        "mvr_viterbi": "mvr",
-    }[method]
+    return representation_kind(method, cmodel, options)
 
 
 def _structure_params(kind, cmodel, *, observed, start, stop):
@@ -255,11 +236,7 @@ def map_query(
     >>> pgm = conin.examples.hidden_markov_model.create_hmm1()
     >>> results = map_query(pgm, method="integer_program", evidence=["o0", "o1"], solver="glpk")  # doctest: +SKIP
     """
-    if method not in METHODS:
-        raise ValueError(
-            f"Unsupported inference type: {method}. "
-            f"Expected one of: {', '.join(METHODS)}"
-        )
+    check_method(method, METHODS, "inference type")
     cmodel = as_constrained_model(pgm)
     observed = None
     if isinstance(cmodel, ConstrainedHiddenMarkovModel):
