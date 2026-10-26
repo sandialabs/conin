@@ -78,6 +78,14 @@ Registry
 
 .. autofunction:: conin.representations.build_representation
 
+.. autofunction:: conin.representations.base.apply_constraints
+
+Unrolled DBNs and HMMs
+----------------------
+
+.. automodule:: conin.representations.unrolled
+   :members:
+
 .. autofunction:: conin.representations.supported_representations
 
 .. autofunction:: conin.representations.get_representation_builder

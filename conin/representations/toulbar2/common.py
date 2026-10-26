@@ -22,10 +22,9 @@ from pyomo.repn import generate_standard_repn
 from pyomo.common.collections import ComponentMap
 from pyomo.common.timing import TicTocTimer
 
-from conin.constraints import Toulbar2Constraint
-from conin.constraints.algebraic.decorators import AlgebraicConstraint
+from conin.constraints.algebraic.decorators import build_smoek_model
 from conin.io.uai import _uai_text
-from conin.representations.base import Representation
+from conin.representations.base import Representation, apply_constraints
 from conin.util import try_import, State
 from conin.util.constraint_data import merge_constraint_data
 from conin.util.var_wrapper import PyomoVarWrapper
@@ -86,6 +85,12 @@ class Toulbar2VarWrapper(object):
             yield k, v
 
 
+def _apply_toulbar2_family(constraints, model, data):
+    for func in constraints:
+        model = func(model, data)
+    return model
+
+
 def apply_toulbar2_constraints(*, pgm, constraints, model, data):
     """Apply constraints of a toulbar2-backend family to a toulbar2 ``model``.
 
@@ -99,7 +104,7 @@ def apply_toulbar2_constraints(*, pgm, constraints, model, data):
         unrolled BN of a DBN, or the DBN of an HMM).  The algebraic translator
         reads its ``states_of``.
     constraints : sequence of Toulbar2Constraint or AlgebraicConstraint
-        Constraints of one family.
+        Constraints of one family (``"toulbar2"`` or ``"algebraic"``).
     model : pytoulbar2.CFN
         The model; constraint functions see ``model.V(...)``.
     data : munch.Munch
@@ -109,30 +114,23 @@ def apply_toulbar2_constraints(*, pgm, constraints, model, data):
     -------
     pytoulbar2.CFN
         The model with constraints added.
+
+    Raises
+    ------
+    TypeError
+        For constraints of several families or of another family.
     """
-    if len(constraints) == 0:
-        return model
-
-    if isinstance(constraints[0], Toulbar2Constraint):
-        for func in constraints:
-            if not isinstance(func, Toulbar2Constraint):
-                raise TypeError(
-                    f"Unexpected constraint type ({type(func)}) when performing "
-                    "inference with Toulbar2. If the first constraint is a "
-                    "Toulbar2 constraint, then all subsequent constraints must "
-                    "be the same."
-                )
-            model = func(model, data)
-        return model
-
-    if isinstance(constraints[0], AlgebraicConstraint):
-        return add_algebraic_constraints_to_toulbar2_model(
-            pgm=pgm, constraints=constraints, model=model, data=data
-        )
-
-    raise TypeError(
-        f"Unexpected constraint type ({type(constraints[0])}) when performing inference with Toulbar2. Only Toulbar2Constraint is supported."
+    result = apply_constraints(
+        constraints,
+        {
+            "toulbar2": lambda cons: _apply_toulbar2_family(cons, model, data),
+            "algebraic": lambda cons: add_algebraic_constraints_to_toulbar2_model(
+                pgm=pgm, constraints=cons, model=model, data=data
+            ),
+        },
+        backend="toulbar2",
     )
+    return model if result is None else result
 
 
 class Toulbar2FactorRepresentation(Representation):
@@ -178,14 +176,24 @@ class Toulbar2FactorRepresentation(Representation):
         self.nodes = tuple(uai_model.nodes)
         self.data = data
 
+    def structure_fields(self):
+        """The constraint ``data`` fields of the structure params (none here).
+
+        The DBN and HMM subclasses return ``start``, ``stop`` and ``T`` (or
+        ``hmm``); see :mod:`conin.representations.unrolled`.
+        """
+        return munch.Munch()
+
     def constraint_data(self, *, evidence=None, variables=None):
         """The fields this representation adds to the constraint ``data`` for a query.
 
-        Subclasses add their structure fields (``T``, ``start``, ``hmm``, ...).
-        The constraint functions see these fields set on a copy of the
+        ``variables`` and ``evidence`` plus :meth:`structure_fields`.  The
+        constraint functions see these fields set on a copy of the
         constrained model's ``data`` (or just these fields if it has none).
         """
-        return munch.Munch(variables=variables, evidence=evidence)
+        fields = munch.Munch(variables=variables, evidence=evidence)
+        fields.update(self.structure_fields())
+        return fields
 
     def create_model(
         self,
@@ -287,22 +295,20 @@ def _reset_toulbar2_input_format():
 
 
 def add_algebraic_constraints_to_toulbar2_model(*, pgm, constraints, model, data):
-    if not smoek_available:
-        raise TypeError(
-            f"The smoek package must be installed to use algebraic constraints."
-        )
+    """Translate smoek (algebraic) constraints into linear toulbar2 constraints.
 
-    smoek_model = smoek.model()
-    for func in constraints:
-        if not isinstance(func, AlgebraicConstraint):
-            raise TypeError(
-                f"Unexpected constraint type ({type(func)}) when performing "
-                "inference with Toulbar2. If the first constraint is an "
-                "AlgebraicConstraint, then all subsequent constraints must be "
-                "the same."
-            )
-        func(smoek_model, data)
-    smoek_model._update_smoek_components()
+    The constraints are generated on a temporary Pyomo model with one variable
+    per ``(node, state)`` of ``pgm`` and then added to ``model`` with
+    :func:`add_toulbar2_constraints`.
+
+    Raises
+    ------
+    ImportError
+        If smoek is not installed.
+    ValueError
+        For a nonlinear constraint.
+    """
+    smoek_model = build_smoek_model(constraints, data)
 
     pyomo_model = pyo.ConcreteModel()
     N = sum(len(pgm.states_of(k)) for k, _ in model.V.items())
@@ -325,6 +331,7 @@ def add_algebraic_constraints_to_toulbar2_model(*, pgm, constraints, model, data
         data=data,
     )
     add_toulbar2_constraints(model=model, pyomo_model=pyomo_model)
+    return model
 
 
 def add_toulbar2_constraints(model, pyomo_model):

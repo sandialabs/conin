@@ -11,7 +11,7 @@ class PgmpyMNRepresentation(PgmpyRepresentation):
 
     Each constraint adds a factor over its scope (``0`` on infeasible
     assignments); :attr:`constraint_evidence` is empty.  Constraint functions
-    see ``data = None``.
+    see a copy of the model's ``data`` (``None`` if it has none).
     """
 
 

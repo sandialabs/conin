@@ -13,15 +13,13 @@
 import copy
 import dataclasses
 
+import munch
+
 from conin.pgmpy import convert_conin_to_pgmpy_bn, convert_conin_to_pgmpy_mn
-from conin.constraints import FactorOracleConstraint
-from conin.constraints.algebraic import (
-    AlgebraicConstraint,
-    create_oracle_constraints_from_algebraic,
-)
+from conin.constraints.algebraic import create_oracle_constraints_from_algebraic
 from conin.graphical_models import DiscreteBayesianNetwork, DiscreteMarkovNetwork
 from conin.io import save_model
-from conin.representations.base import Representation
+from conin.representations.base import Representation, apply_constraints
 from conin.util.constraint_data import merge_constraint_data
 
 from .materialise import materialise_factor_oracle
@@ -53,18 +51,31 @@ def apply_pgmpy_constraints(*, pgm, constraints, data=None):
     Raises
     ------
     TypeError
-        For a constraint that is not a :class:`FactorOracleConstraint` (after
-        the algebraic translation), or a model that is neither a
-        ``DiscreteMarkovNetwork`` nor a ``DiscreteBayesianNetwork``.
+        For constraints of several families or of another family, or a model
+        that is neither a ``DiscreteMarkovNetwork`` nor a
+        ``DiscreteBayesianNetwork``.
+    ImportError
+        For algebraic constraints without smoek.
     """
-    if len(constraints) == 0:
-        return pgm, {}
+    result = apply_constraints(
+        constraints,
+        {
+            "factor_oracle": lambda cons: _materialise_all(pgm, cons, data),
+            "algebraic": lambda cons: _materialise_all(
+                pgm,
+                create_oracle_constraints_from_algebraic(
+                    pgm=pgm, constraints=cons, data=data
+                ),
+                data,
+            ),
+        },
+        backend="pgmpy",
+    )
+    return (pgm, {}) if result is None else result
 
-    if isinstance(constraints[0], AlgebraicConstraint):
-        constraints = create_oracle_constraints_from_algebraic(
-            pgm=pgm, constraints=constraints, data=data
-        )
 
+def _materialise_all(pgm, constraints, data):
+    """Add each factor-oracle constraint to ``pgm``; return ``(pgm, evidence)``."""
     if isinstance(pgm, DiscreteBayesianNetwork):
         is_bn = True
     elif isinstance(pgm, DiscreteMarkovNetwork):
@@ -74,10 +85,6 @@ def apply_pgmpy_constraints(*, pgm, constraints, data=None):
 
     evidence = {}
     for con in constraints:
-        if not isinstance(con, FactorOracleConstraint):
-            raise TypeError(
-                f"Unexpected constraint type {type(con)} for VariableElimination"
-            )
         if is_bn:
             cpd = materialise_factor_oracle(con, pgm, data)
             cpd = dataclasses.replace(cpd, node=(cpd.node, -1))
@@ -136,15 +143,25 @@ class PgmpyRepresentation(Representation):
             data=merge_constraint_data(data, self.constraint_data()),
         )
 
-    def constraint_data(self):
-        """The fields this representation adds to the constraint ``data`` (``None`` for MN/BN).
+    def structure_fields(self):
+        """The constraint ``data`` fields of the structure params (none here).
 
-        Subclasses return their structure fields (``T``, ``hmm.T``).  The
-        constraint functions see these fields set on a copy of the constrained
-        model's ``data`` (the model's ``data`` itself for MN/BN, ``None`` if it
-        has none).  The query evidence is not passed.
+        The DBN and HMM subclasses return ``start``, ``stop`` and ``T`` (or
+        ``hmm``); see :mod:`conin.representations.unrolled`.
         """
-        return None
+        return munch.Munch()
+
+    def constraint_data(self):
+        """The fields this representation adds to the constraint ``data``.
+
+        :meth:`structure_fields`, or ``None`` if there are none (MN/BN).  The
+        constraint functions see these fields set on a copy of the constrained
+        model's ``data`` (a plain copy for MN/BN; ``None`` if the model has no
+        ``data`` and there are no fields).  The constraints are materialised
+        once, when the representation is built, so the query evidence is not
+        passed.
+        """
+        return self.structure_fields() or None
 
     def query_evidence(self, evidence=None):
         """Return a new dict: ``evidence`` plus :attr:`constraint_evidence`."""

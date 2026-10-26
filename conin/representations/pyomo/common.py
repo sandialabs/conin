@@ -19,9 +19,8 @@ import munch
 import pyomo.environ as pe
 from pyomo.common.timing import TicTocTimer
 
-from conin.constraints import PyomoConstraint
-from conin.constraints.algebraic import AlgebraicConstraint
-from conin.representations.base import Representation
+from conin.constraints.algebraic.decorators import build_smoek_model
+from conin.representations.base import Representation, apply_constraints
 from conin.util import try_import, State
 from conin.util.constraint_data import merge_constraint_data
 from conin.util.var_wrapper import PyomoVarWrapper
@@ -67,22 +66,25 @@ def add_algebraic_constraints_to_pyomo_model(*, pgm, constraints, model, data):
 
     ``model.V`` must be the :class:`PyomoVarWrapper` of the model.  ``pgm`` is
     unused (kept for symmetry with the other backends).
-    """
-    if not smoek_available:
-        raise TypeError(
-            f"The smoek package must be installed to use algebraic constraints."
-        )
 
-    smoek_model = smoek.model()
-    for func in constraints:
-        func(smoek_model, data)
-    smoek_model._update_smoek_components()
+    Raises
+    ------
+    ImportError
+        If smoek is not installed.
+    """
+    smoek_model = build_smoek_model(constraints, data)
     smoek.pymodel.pyomo.generate(
         model=smoek_model,
         pyomo_model=model,
         data=data,
         component_map=dict(V=model.V),
     )
+    return model
+
+
+def _apply_pyomo_family(constraints, model, data):
+    for func in constraints:
+        model = func(model, data)
     return model
 
 
@@ -97,7 +99,7 @@ def apply_pyomo_constraints(*, pgm, constraints, model, data):
     pgm : GraphicalModel
         The (possibly unrolled) model the formulation was built from.
     constraints : sequence of PyomoConstraint or AlgebraicConstraint
-        Constraints of one family.
+        Constraints of one family (``"pyomo"`` or ``"algebraic"``).
     model : pyomo.environ.ConcreteModel
         The model; constraint functions see ``model.V(...)``.
     data : object
@@ -106,30 +108,23 @@ def apply_pyomo_constraints(*, pgm, constraints, model, data):
     Returns
     -------
     pyomo.environ.ConcreteModel
+
+    Raises
+    ------
+    TypeError
+        For constraints of several families or of another family.
     """
-    if len(constraints) == 0:
-        return model
-
-    if isinstance(constraints[0], PyomoConstraint):
-        for func in constraints:
-            if not isinstance(func, PyomoConstraint):
-                raise TypeError(
-                    f"Unexpected constraint type ({type(func)}) when performing "
-                    "inference with an integer program. If the first constraint "
-                    "is a pyomo constraint, then all subsequent constraints must "
-                    "be the same."
-                )
-            model = func(model, data)
-        return model
-
-    if isinstance(constraints[0], AlgebraicConstraint):
-        return add_algebraic_constraints_to_pyomo_model(
-            pgm=pgm, constraints=constraints, model=model, data=data
-        )
-
-    raise TypeError(
-        f"Unexpected constraint type ({type(constraints[0])}) when performing inference with an integer program."
+    result = apply_constraints(
+        constraints,
+        {
+            "pyomo": lambda cons: _apply_pyomo_family(cons, model, data),
+            "algebraic": lambda cons: add_algebraic_constraints_to_pyomo_model(
+                pgm=pgm, constraints=cons, model=model, data=data
+            ),
+        },
+        backend="pyomo",
     )
+    return model if result is None else result
 
 
 def has_omitted_c5(model):
@@ -411,14 +406,24 @@ class PyomoFactorRepresentation(Representation):
         self.nodes = tuple(nodes)
         self.data = data
 
+    def structure_fields(self):
+        """The constraint ``data`` fields of the structure params (none here).
+
+        The DBN and HMM subclasses return ``start``, ``stop`` and ``T`` (or
+        ``hmm``); see :mod:`conin.representations.unrolled`.
+        """
+        return munch.Munch()
+
     def constraint_data(self, *, evidence=None, variables=None):
         """The fields this representation adds to the constraint ``data`` for a query.
 
-        Subclasses add their structure fields (``T``, ``start``, ``hmm``, ...).
-        The constraint functions see these fields set on a copy of the
+        ``variables`` and ``evidence`` plus :meth:`structure_fields`.  The
+        constraint functions see these fields set on a copy of the
         constrained model's ``data`` (or just these fields if it has none).
         """
-        return munch.Munch(variables=variables, evidence=evidence)
+        fields = munch.Munch(variables=variables, evidence=evidence)
+        fields.update(self.structure_fields())
+        return fields
 
     def create_model(
         self, *, evidence=None, variables=None, omit_c5=False, timing=False

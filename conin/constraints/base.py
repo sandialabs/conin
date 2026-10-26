@@ -20,3 +20,8 @@ class Constraint(ABC):
     ``"toulbar2"``, ``"oracle"``).  Concrete subclasses must override this;
     the base class value is ``None``.
     """
+
+
+def constraint_families(constraints):
+    """The set of distinct families of ``constraints``."""
+    return {type(c).family for c in constraints}

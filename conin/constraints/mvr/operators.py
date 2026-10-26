@@ -41,7 +41,8 @@ class MVROperator(OperatorFunctor):
             self.__doc__ = func.__doc__
 
         if arity is not None:
-            if not isinstance(arity, int) or arity <= 0:
+            # bool is an int subclass, so isinstance alone would admit True.
+            if type(arity) is not int or arity <= 0:
                 raise InvalidInputError("arity must be a positive integer")
 
     def __call__(self, mvrs, *op_args, hidden_markov_model=None, **kwargs):
@@ -840,7 +841,7 @@ def mvr_kfold_product(
     if not isinstance(mvr, HomMVR):
         raise InvalidInputError("mvr_kfold_product expects a HomMVR.")
 
-    if not isinstance(k, int) or k < 1:
+    if type(k) is not int or k < 1:
         raise InvalidInputError("k must be an integer greater than or equal to 1.")
 
     if k == 1:
@@ -878,7 +879,7 @@ def mvr_kfold_product_prefix(
     if not isinstance(mvr, HomMVR):
         raise InvalidInputError("mvr_kfold_product_prefix expects a HomMVR.")
 
-    if not isinstance(k, int) or k < 1:
+    if type(k) is not int or k < 1:
         raise InvalidInputError("k must be an integer greater than or equal to 1.")
 
     if k == 1:

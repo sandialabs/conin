@@ -21,12 +21,11 @@ variables and constraints to the backend model, so checking them is a
 feasibility problem of that model; they raise ``NotImplementedError``.
 """
 
-import munch
-
 from conin.constraints.algebraic import create_oracle_constraints_from_algebraic
 from conin.constraints.mvr import BaseMVR, InhomMVR
 from conin.exceptions import InvalidInputError
 from conin.graphical_models.hmm_observations import as_sequence
+from conin.util.constraint_data import dbn_time_fields, hmm_time_fields
 
 UNSUPPORTED_FAMILIES = ("pyomo", "toulbar2")
 
@@ -314,8 +313,8 @@ def dbn_states(dbn, stop):
 
 
 def dbn_constraint_data(stop):
-    """``data`` for DBN constraints, as in the ``"pgmpy"`` representation."""
-    return munch.Munch(T=list(range(stop + 1)))
+    """``data`` for DBN constraints over ``0..stop``, as in the DBN representations."""
+    return dbn_time_fields(0, stop)
 
 
 def hmm_sequences(hmm, hidden, observed=None):
@@ -354,9 +353,9 @@ def hmm_sequences(hmm, hidden, observed=None):
     return hidden, observed
 
 
-def hmm_constraint_data(T):
-    """``data`` for HMM constraints, as in the ``"pgmpy"`` representation."""
-    return munch.Munch(hmm=munch.Munch(T=list(range(T))))
+def hmm_constraint_data(hmm, T):
+    """``data`` for HMM constraints over ``0..T-1``, as in the HMM representations."""
+    return hmm_time_fields(0, T - 1, hmm.hidden_to_internal)
 
 
 def hmm_state_space(hmm, T):

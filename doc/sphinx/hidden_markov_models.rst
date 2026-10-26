@@ -117,8 +117,12 @@ which is available as ``.constraint_family`` (``None`` when there are no
 constraints); mixing families raises ``InvalidInputError``. Application data
 used by constraint functions and MVR factories is passed to the constructor
 with ``data=``. Every backend passes it on: constraint functions that take a
-``data`` argument see a copy of it with the backend's own fields (such as
-``data.hmm.T``) set.
+``data`` argument see a copy of it with the backend's own fields set. For an
+HMM unrolled over ``start..stop``, every backend (and ``is_feasible``) sets
+``data.start``, ``data.stop``, ``data.hmm.T`` (``list(range(start, stop +
+1))``) and ``data.hmm.hidden_to_internal``; the Pyomo and toulbar2 backends
+also set ``data.variables`` and ``data.evidence``, and the network-flow
+formulation puts its index sets in ``data.hmm``.
 
 Backend representations are built by ``representation(kind)``; each call
 builds a new one. HMMs register these kinds: ``"matvec"`` (the HMM

@@ -139,7 +139,7 @@ def test_dbn_structure_params():
     # (start > 0 fails in create_bn_from_dbn for every backend.)
     repn = cmodel.representation("pgmpy", start=0, stop=3)
     assert (repn.start, repn.stop) == (0, 3)
-    assert repn.constraint_data() == munch.Munch(T=[0, 1, 2, 3])
+    assert repn.constraint_data() == munch.Munch(start=0, stop=3, T=[0, 1, 2, 3])
     assert set(repn.nodes) == set(create_bn_from_dbn(dbn=dbn, start=0, stop=3).nodes)
 
 
@@ -150,7 +150,11 @@ def test_hmm_structure_params():
         cmodel.representation("pgmpy")
     repn = cmodel.representation("pgmpy", stop=3)
     assert (repn.start, repn.stop) == (0, 3)
-    assert repn.constraint_data() == munch.Munch(hmm=munch.Munch(T=[0, 1, 2, 3]))
+    assert repn.constraint_data() == munch.Munch(
+        start=0,
+        stop=3,
+        hmm=munch.Munch(T=[0, 1, 2, 3], hidden_to_internal=hmm.hidden_to_internal),
+    )
     unrolled = create_bn_from_dbn(dbn=create_dbn_from_hmm(hmm), start=0, stop=3)
     assert set(repn.nodes) == set(unrolled.nodes)
 
@@ -184,10 +188,18 @@ def test_constraint_data_dbn_and_hmm():
     ConstrainedDynamicDiscreteBayesianNetwork(
         dex.simple1_DDBN_conin().pgm, _recording_constraint(seen, [("A", 0)])
     ).representation("pgmpy", stop=2)
+    hmm = hex_.create_hmm1()
     ConstrainedHiddenMarkovModel(
-        hex_.create_hmm1(), _recording_constraint(seen, [("H", 0)])
+        hmm, _recording_constraint(seen, [("H", 0)])
     ).representation("pgmpy", stop=2)
-    assert seen == [munch.Munch(T=[0, 1, 2]), munch.Munch(hmm=munch.Munch(T=[0, 1, 2]))]
+    assert seen == [
+        munch.Munch(start=0, stop=2, T=[0, 1, 2]),
+        munch.Munch(
+            start=0,
+            stop=2,
+            hmm=munch.Munch(T=[0, 1, 2], hidden_to_internal=hmm.hidden_to_internal),
+        ),
+    ]
 
 
 def test_constraints_are_materialised_at_build_time():

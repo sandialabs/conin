@@ -179,8 +179,9 @@ def test_non_algebraic_constraints_are_rejected():
 
 
 def test_smoek_is_required(monkeypatch):
-    monkeypatch.setattr(module, "smoek_available", False)
-    with pytest.raises(ImportError, match="smoek is required"):
+    decorators = importlib.import_module("conin.constraints.algebraic.decorators")
+    monkeypatch.setattr(decorators, "smoek_available", False)
+    with pytest.raises(ImportError, match="smoek package must be installed"):
         create(pgm=StateSpace(STATES), constraints=[not_both_zero], data=None)
 
 

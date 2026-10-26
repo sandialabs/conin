@@ -69,7 +69,9 @@ class OracleHMMRepresentation(Representation):
         if not self.constraints:
             return True
         states = self._external(seq)
-        data = merge_constraint_data(self.data, hmm_constraint_data(len(seq)))
+        data = merge_constraint_data(
+            self.data, hmm_constraint_data(self.model, len(seq))
+        )
         return all(oracle_accepts(c, states, data) for c in self.constraints)
 
     def partial_is_feasible(self, *, T, seq):

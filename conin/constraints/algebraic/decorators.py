@@ -163,3 +163,33 @@ def algebraic_constraint_fn(*, name=None):
         return AlgebraicConstraint(func=func, name=name)
 
     return decorator
+
+
+def build_smoek_model(constraints, data):
+    """Run the algebraic ``constraints`` on a new smoek model and return it.
+
+    This is the first step of every translation of algebraic constraints
+    (to Pyomo, to toulbar2, or to a factor oracle).
+
+    Raises
+    ------
+    ImportError
+        If smoek is not installed.
+    TypeError
+        If an element of ``constraints`` is not an :class:`AlgebraicConstraint`.
+    """
+    if not smoek_available:
+        raise ImportError(
+            "The smoek package must be installed to use algebraic constraints "
+            "(pip install smoek)."
+        )
+    for i, constraint in enumerate(constraints):
+        if not isinstance(constraint, AlgebraicConstraint):
+            raise TypeError(
+                f"Element {i} is not an AlgebraicConstraint, got {type(constraint)}"
+            )
+    smoek_model = smoek.model()
+    for constraint in constraints:
+        constraint(smoek_model, data)
+    smoek_model._update_smoek_components()
+    return smoek_model

@@ -12,6 +12,7 @@ model type supports.
 import importlib
 from abc import ABC
 
+from conin.constraints.base import constraint_families
 from conin.exceptions import InvalidInputError
 
 
@@ -147,3 +148,50 @@ def build_representation(cmodel, kind, **structure_params):
             f"Supported (kind, family) pairs: {supported or 'none'}."
         )
     return builder(cmodel, **structure_params)
+
+
+def apply_constraints(constraints, appliers, *, backend):
+    """Apply ``constraints`` with the applier of their family.
+
+    This is the dispatch shared by the backend appliers
+    (``apply_pyomo_constraints``, ``apply_toulbar2_constraints``,
+    ``apply_pgmpy_constraints``): each one passes a table from family to the
+    function that applies a list of that family.
+
+    Parameters
+    ----------
+    constraints : sequence of Constraint
+        Constraints of one family (``ConstrainedGraphicalModel`` checks this;
+        here it is checked again for direct callers).
+    appliers : dict
+        ``{family: apply(constraints)}``.
+    backend : str
+        Named in the error messages.
+
+    Returns
+    -------
+    object
+        What the applier returns, or ``None`` for no constraints.
+
+    Raises
+    ------
+    TypeError
+        For constraints of several families, or of a family that ``appliers``
+        does not handle.
+    """
+    if len(constraints) == 0:
+        return None
+    families = constraint_families(constraints)
+    if len(families) > 1:
+        raise TypeError(
+            f"The {backend} backend applies constraints of one family, found "
+            f"{sorted(map(str, families))}"
+        )
+    (family,) = families
+    if family not in appliers:
+        raise TypeError(
+            f"The {backend} backend does not apply constraints of family "
+            f"{family!r} ({type(constraints[0]).__name__}); supported families: "
+            f"{sorted(appliers)}"
+        )
+    return appliers[family](constraints)

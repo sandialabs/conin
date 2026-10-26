@@ -129,6 +129,12 @@ class HomMVR(BaseMVR):
         name: str = None,
     ):
         # Validation
+        if len(hidden_states) == 0:
+            raise InvalidInputError("hidden_states must be nonempty")
+
+        if len(mediation_states) == 0:
+            raise InvalidInputError("mediation_states must be nonempty")
+
         h_space = set(hidden_states)
         m_space = set(mediation_states)
 
@@ -272,6 +278,9 @@ class InhomMVR(BaseMVR):
         h_space = set(hidden_states)
         time_horizon = len(mediation_states) - 1
 
+        if len(hidden_states) == 0:
+            raise InvalidInputError("hidden_states must be nonempty")
+
         # duplicates in hidden space
         if len(hidden_states) != len(set(hidden_states)):
             raise InvalidInputError("hidden_states must not contain duplicates")
@@ -289,6 +298,11 @@ class InhomMVR(BaseMVR):
 
         m_space_prev = None
         for t, m_space in enumerate(mediation_states):
+            if len(m_space) == 0:
+                raise InvalidInputError(
+                    f"mediation_states at time {t} must be nonempty"
+                )
+
             # duplicates in mediation space
             if len(m_space) != len(set(m_space)):
                 raise InvalidInputError(
@@ -457,6 +471,41 @@ class InhomMVR(BaseMVR):
         return ini_array, upd_array, evl_array
 
 
+def _as_float_array(value, name):
+    """Convert ``value`` to a NumPy float array, or raise ``InvalidInputError``.
+
+    Without this, ragged nested lists and non-numeric entries surface as a
+    NumPy ``ValueError`` or as an object array that fails a later check.
+    """
+    try:
+        return np.asarray(value, dtype=float)
+    except (TypeError, ValueError):
+        raise InvalidInputError(
+            f"{name} must be a rectangular array of numbers."
+        ) from None
+
+
+def _is_3d(value):
+    try:
+        return np.asarray(value, dtype=float).ndim == 3
+    except (TypeError, ValueError):
+        return False
+
+
+def _is_per_time_upd(upd_array):
+    """Whether ``upd_array`` is a list of per-transition arrays (inhomogeneous).
+
+    A list counts as per-transition if it is empty, holds a NumPy array, or
+    every item is 3D. Any other list (for example a plain nested list for a
+    homogeneous MVR) is one array.
+    """
+    return isinstance(upd_array, list) and (
+        len(upd_array) == 0
+        or any(isinstance(item, np.ndarray) for item in upd_array)
+        or all(_is_3d(item) for item in upd_array)
+    )
+
+
 def _read_only(array):
     """Return a read-only copy of ``array`` (or of each array in a list)."""
     if isinstance(array, list):
@@ -512,7 +561,7 @@ class MVR_MatVecRepn:
             self.next_idx = self.upd_array.argmax(axis=1)
 
     def load_ini_array(self, ini_array, check_errors=True):
-        ini_array = np.asarray(ini_array)
+        ini_array = _as_float_array(ini_array, "ini_array")
 
         if check_errors:
             if ini_array.ndim != 2:
@@ -532,10 +581,13 @@ class MVR_MatVecRepn:
 
     def load_upd_array(self, upd_array, check_errors=True):
         """Load updates; alignment may bypass validation with ``check_errors=False``."""
-        if isinstance(upd_array, list):
-            upd_array = [np.asarray(arr) for arr in upd_array]
+        if _is_per_time_upd(upd_array):
+            upd_array = [
+                _as_float_array(arr, f"upd_array[{t}]")
+                for t, arr in enumerate(upd_array)
+            ]
         else:
-            upd_array = np.asarray(upd_array)
+            upd_array = _as_float_array(upd_array, "upd_array")
 
         if check_errors:
             upd_arrays = upd_array if isinstance(upd_array, list) else [upd_array]
@@ -566,10 +618,18 @@ class MVR_MatVecRepn:
         self.upd_array = upd_array
 
     def load_evl_array(self, evl_array, check_errors=True):
-        if isinstance(evl_array, list):
-            evl_array = [np.asarray(arr) for arr in evl_array]
+        # A list is per-time if the updates are, or if it holds NumPy arrays;
+        # a plain list of numbers is the homogeneous evaluation vector.
+        if isinstance(evl_array, list) and (
+            isinstance(self.upd_array, list)
+            or any(isinstance(item, np.ndarray) for item in evl_array)
+        ):
+            evl_array = [
+                _as_float_array(arr, f"evl_array[{t}]")
+                for t, arr in enumerate(evl_array)
+            ]
         else:
-            evl_array = np.asarray(evl_array)
+            evl_array = _as_float_array(evl_array, "evl_array")
 
         if check_errors:
             evl_arrays = evl_array if isinstance(evl_array, list) else [evl_array]

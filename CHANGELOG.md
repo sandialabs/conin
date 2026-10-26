@@ -142,7 +142,10 @@ Constrained models
   also accept "oracle", "recursive" and "mvr".
 - The constrained model's data reaches the constraint functions on every
   backend, as a shallow copy with the backend's fields (T, hmm, start, stop,
-  variables, evidence, ...) set.
+  variables, evidence, ...) set. The time fields are the same for every
+  backend and for is_feasible: start, stop and T for a DBN; start, stop and
+  hmm = Munch(T, hidden_to_internal) for an HMM (the pgmpy, oracle and
+  is_feasible data had only T or hmm.T, and network flow no start/stop).
 - is_feasible on every constrained class checks oracle, factor-oracle,
   algebraic, recursive and MVR constraints (pyomo/toulbar2 raise
   NotImplementedError); the HMM version accepts a dict keyed by time.
@@ -187,6 +190,15 @@ Representations (new)
 - On network-flow models, M.V is a PyomoVarWrapper: a missing variable raises
   KeyError and a wrong number of arguments ValueError (they returned None and
   a KeyError).
+- The DBN and HMM representations of the pyomo, toulbar2 and pgmpy backends
+  share their time range (start, stop, time_steps, the constraint data) through
+  the mixins of conin.representations.unrolled; the DBN builders default stop
+  to 1 and the HMM builders require it. The backend appliers share their
+  dispatch (conin.representations.base.apply_constraints): constraints of
+  several families, or of a family the backend does not apply, raise TypeError
+  with the same message for every backend.
+- Algebraic constraints without smoek raise ImportError for every backend (the
+  pyomo and toulbar2 translators raised TypeError).
 
 Inference
 
@@ -328,6 +340,13 @@ Bug fixes
 - mvr_precedence rejects MVRs that are neither HomMVR nor InhomMVR
   (InvalidInputError; was TypeError), and an MVR constraint function without
   arguments raises ValueError when it is defined (it failed when called).
+- HomMVR and InhomMVR reject empty hidden or mediation state lists
+  (InvalidInputError; an empty HomMVR failed in NumPy with "argmax of an
+  empty sequence"). mvr_kfold_product, mvr_kfold_product_prefix and
+  mvr_operator_fn(arity=...) reject True and False as integers.
+- MVR_MatVecRepn accepts plain nested lists for a homogeneous MVR, and
+  raises InvalidInputError naming the array for a ragged or non-numeric one
+  (it raised a NumPy ValueError, or a misleading "must be a 3D array").
 
 Known issues
 

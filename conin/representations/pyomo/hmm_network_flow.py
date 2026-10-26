@@ -10,7 +10,6 @@ only holds the HMM, the constraints, the application data and the variable
 domains.
 """
 
-import copy
 import math
 
 import munch
@@ -21,6 +20,7 @@ from conin.exceptions import InvalidInputError
 from conin.graphical_models import HiddenMarkovModel
 from conin.representations.base import Representation, register_representation
 from conin.util import State
+from conin.util.constraint_data import merge_constraint_data
 
 from .common import PyomoVarWrapper, apply_pyomo_constraints
 
@@ -281,14 +281,17 @@ class PyomoNetworkFlowHMMRepresentation(Representation):
         Returns
         -------
         (pyomo.environ.ConcreteModel, object)
-            The model and the per-query ``data`` passed to the constraints
-            (a shallow copy of the application data with ``.hmm`` set to the
-            index sets).
+            The model and the per-query ``data`` passed to the constraints:
+            a shallow copy of the application data (see
+            :func:`~conin.util.constraint_data.merge_constraint_data`) with
+            ``start=0``, ``stop=Tmax-1`` and ``hmm`` (the index sets,
+            including ``T`` and ``hidden_to_internal``) set.
         """
         hmm = self.hidden_markov_model
         D = _create_index_sets(hmm=hmm, observed=observed, Tmax=Tmax)
-        data = munch.Munch() if self._data is None else copy.copy(self._data)
-        data.hmm = D
+        data = merge_constraint_data(
+            self._data, munch.Munch(start=0, stop=D.Tmax - 1, hmm=D)
+        )
 
         M = _create_network_flow_model(
             D,
