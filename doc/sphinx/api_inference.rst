@@ -13,6 +13,12 @@ constraint family raises ``InvalidInputError``.
 
 .. autofunction:: conin.inference.map_query
 
+Results
+-------
+
+.. automodule:: conin.inference.results
+   :no-members:
+
 Available Methods
 -----------------
 
@@ -36,8 +42,8 @@ Available Methods
 
 ``mvr_viterbi``
    Uses the torch MVR Viterbi algorithm for hidden Markov models with MVR
-   constraints (requires torch). The solution also has ``log_likelihood`` and
-   ``augmented`` (the decoded augmented path).
+   constraints (requires torch). The solution also has ``augmented`` (the
+   decoded augmented path).
 
 Backend functions
 -----------------

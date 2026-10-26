@@ -334,6 +334,5 @@ def test_pytoulbar2_not_available(monkeypatch, example, kwds):
     monkeypatch.setattr(mod, "pytoulbar2_available", False)
     pgm = example()
     pgm = getattr(pgm, "pgm", pgm)
-    results = map_query(pgm, method="toulbar2", **kwds)
-    assert results.termination_condition == "pytoulbar2 not available"
-    assert results.solution is None and results.solutions == []
+    with pytest.raises(ImportError, match="needs pytoulbar2"):
+        map_query(pgm, method="toulbar2", **kwds)

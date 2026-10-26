@@ -294,4 +294,4 @@ def test_network_flow_constraint_reads_the_application_data():
         _num_zeros_hmm(), num_zeros, data=munch.Munch(num_zeros=3)
     )
     results = ip_inference(hmm=chmm, observed=[0] * 8, solver=default_mip_solver)
-    assert results.solution.hidden.count(0) == 3
+    assert results.solution.states.count(0) == 3

@@ -190,10 +190,10 @@ def test_oracle_predicates_see_the_application_data():
     )
     observed = ["o0"] * 6
     results = a_star(observed=observed, hmm=cmodel)
-    assert results.solution.hidden.count("h0") <= 2
+    assert results.solution.states.count("h0") <= 2
     # The unconstrained optimum has more "h0" states.
-    assert a_star(observed=observed, hmm=cmodel.model).solution.hidden.count("h0") > 2
-    assert cmodel.is_feasible(results.solution.hidden)
+    assert a_star(observed=observed, hmm=cmodel.model).solution.states.count("h0") > 2
+    assert cmodel.is_feasible(results.solution.states)
     assert not cmodel.is_feasible(["h0"] * 6)
     cmodel.model.set_seed(1)
     assert rejection_sample_hidden(cmodel, 6).count("h0") <= 2

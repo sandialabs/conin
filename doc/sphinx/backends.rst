@@ -98,8 +98,8 @@ files are loaded as Toulbar2 constraints. Loading does not require
 :doc:`model_conversion_io`.
 
 When ``pytoulbar2`` is unavailable, ``map_query(..., method="toulbar2")``
-returns an empty result object whose termination condition is
-``"pytoulbar2 not available"``.
+raises ``ImportError``, as the other methods do when their backend is
+missing.
 
 Smoek Algebraic Constraints
 ---------------------------

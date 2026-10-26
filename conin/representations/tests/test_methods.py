@@ -4,7 +4,7 @@ import importlib
 
 import pytest
 
-from conin.inference.methods import (
+from conin.representations.methods import (
     LOG_PROBABILITY_METHODS,
     MAP_METHODS,
     REPRESENTATION_KINDS,

@@ -80,7 +80,7 @@ Representations and dispatch
 - ``map_query`` (and ``log_probability_query``) normalise the model (pgmpy
   models are converted, bare models are wrapped as ``Constrained*(model)``),
   map the method to a representation kind (one table for both queries,
-  ``conin.inference.methods``), build the representation with its
+  ``conin.representations.methods``), build the representation with its
   structure parameters, and dispatch with ``ovld`` on the representation
   class. The factor backends have one solver each (``_solve_pyomo``,
   ``_solve_toulbar2``, ``_solve_variable_elimination``), registered on the
@@ -88,6 +88,22 @@ Representations and dispatch
   representations are solved as the unrolled DBN by ``solve_unrolled_hmm``
   (``conin.inference.hmm_results``). Network flow, Viterbi, A*, recursive A*
   and the MVR Viterbi have their own overloads.
+- Every MAP result has the shape of ``conin.inference.results``: the same
+  top-level keys for every method, and solutions with ``states``,
+  ``log_potential`` and ``solver_objective``. ``log_potential`` is computed
+  from the assignment by ``conin.scoring`` (the factor backends' solutions
+  are scored in ``map_query``, the HMM algorithms score their own), never
+  read from a solver objective, so it is the same for every method. This is
+  why the method table is in ``conin.representations`` rather than
+  ``conin.inference``: ``conin.scoring`` imports it, and ``conin.inference``
+  imports ``conin.scoring``.
+- Argument names: the generic queries (``map_query``,
+  ``log_probability_query``) take ``evidence=`` for every model type,
+  including the observations of an HMM. The HMM-specific functions
+  (``viterbi``, ``a_star``, ``recursive_a_star``, ``lp_inference``,
+  ``ip_inference``, the MVR algorithms, ``is_feasible``, ``log_probability``
+  and ``log_potential``) take ``observed``, and the MVR learners, which take
+  several sequences, take ``observations``.
 - Structure parameters (``start``/``stop`` for DBNs and HMMs,
   ``x_binary``/``y_binary`` for network flow) are build arguments. Per-query
   inputs (evidence, ``variables``, solver options, ``verbose``,

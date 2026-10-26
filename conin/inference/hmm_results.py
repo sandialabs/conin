@@ -10,25 +10,25 @@ from conin.graphical_models.hmm_observations import unrolled_evidence
 
 
 def key_solutions_by_time(results):
-    """Make the ``states``/``hidden`` of every solution a dict keyed by time step."""
+    """Make the ``states`` of every solution a dict keyed by time step."""
     for soln in results.solutions:
         soln.states = {i: v for i, v in enumerate(soln.states)}
-        soln.hidden = soln.states
     return results
 
 
 def hidden_states_from_unrolled(results, *, start, stop, keyed_by_time):
-    """Set ``solution.states`` to the hidden states ``("H", t)`` of the unrolled DBN.
+    """Set the ``states`` of every solution to the hidden states ``("H", t)`` of the unrolled DBN.
 
     The states at the times ``start..stop`` become a list, or a dict keyed by
     time step if ``keyed_by_time``.
     """
-    states = results.solution.states
     times = range(start, stop + 1)
-    if keyed_by_time:
-        results.solution.states = {t: states["H", t] for t in times}
-    else:
-        results.solution.states = [states["H", t] for t in times]
+    for soln in results.solutions:
+        states = soln.states
+        if keyed_by_time:
+            soln.states = {t: states["H", t] for t in times}
+        else:
+            soln.states = [states["H", t] for t in times]
     return results
 
 
@@ -39,15 +39,12 @@ def solve_unrolled_hmm(solve, repn, q):
     ``repn.start..repn.stop`` and ``solve(repn, q)`` the solver of its
     backend.  The observations ``q.observed`` become the evidence
     ``{("E", t): o}`` of the unrolled DBN, and the hidden states ``("H", t)``
-    of the solution become ``solution.states`` (a dict keyed by time step if
-    the evidence ``q.evidence`` was a dict).  A result without a solution is
-    returned as it is.
+    of each solution become its ``states`` (a dict keyed by time step if the
+    evidence ``q.evidence`` was a dict).
     """
     start, stop = repn.start, repn.stop
     dbn_query = munch.Munch(q, evidence=unrolled_evidence(q.observed, start, stop))
     results = solve(repn, dbn_query)
-    if results.solution is None:
-        return results
     return hidden_states_from_unrolled(
         results, start=start, stop=stop, keyed_by_time=isinstance(q.evidence, dict)
     )

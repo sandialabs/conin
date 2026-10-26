@@ -17,11 +17,11 @@ File I/O
 
 .. autofunction:: conin.io.save_model
 
-.. autofunction:: conin.io.uai.load_conin_model_from_uai
+.. autofunction:: conin.io.uai.load_uai
 
-.. autofunction:: conin.io.uai.save_model_uai
+.. autofunction:: conin.io.uai.save_uai
 
-.. autofunction:: conin.io.cfn.load_conin_model_from_cfn
+.. autofunction:: conin.io.cfn.load_cfn
 
 The ``convert_pgm`` console script (``conin.io.convert_pgm``) converts model
 files between formats; run ``convert_pgm --help`` for its options.

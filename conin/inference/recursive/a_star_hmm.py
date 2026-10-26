@@ -1,9 +1,9 @@
 import heapq
 import time
 import numpy as np
-import munch
 
 from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.inference.results import map_results, map_solution, score_hmm_solutions
 
 
 class Recursive_Heap_Item:
@@ -174,9 +174,11 @@ def recursive_a_star(
     Returns
     -------
     munch.Munch
-        ``observed``, ``solutions`` (each with ``hidden`` and
-        ``log_likelihood``), ``termination_condition``,
-        ``knowledge_state_times`` and ``objective_values``.
+        ``solution`` (``None`` if no solution was found), ``solutions``,
+        ``termination_condition`` and ``solvetime``; each solution has
+        ``states`` (the hidden states), ``log_potential``
+        (``log P(hidden, observed)``) and ``solver_objective`` (``None``).
+        See :mod:`conin.inference.results`.
     """
     cmodel = ConstrainedHiddenMarkovModel.ensure(hmm)
     return _recursive_a_star(
@@ -200,8 +202,6 @@ def _recursive_a_star(
 ):
     """:func:`recursive_a_star` on a ``"recursive"`` representation."""
     start_time = time.time()
-    knowledge_state_times_output = []
-    obj_vals = []
 
     # Initalize variables
     hmm = constraint.model
@@ -291,8 +291,7 @@ def _recursive_a_star(
 
             if t == time_steps:
                 if constraint.feasible(constraint_data):
-                    output.append(munch.Munch(hidden=list(seq), log_likelihood=-val))
-                    obj_vals.append(-val)
+                    output.append(map_solution(list(seq)))
                     if len(output) == num_solutions:
                         termination_condition = "ok"
                         break
@@ -358,12 +357,9 @@ def _recursive_a_star(
         else:
             termination_condition = "ok"
 
-    ans = munch.Munch(
-        observed=observed,
-        solutions=output,
+    results = map_results(
+        output,
+        solvetime=time.time() - start_time,
         termination_condition=termination_condition,
-        knowledge_state_times=knowledge_state_times_output,
-        objective_values=obj_vals,
     )
-
-    return ans
+    return score_hmm_solutions(results, hmm, observed)

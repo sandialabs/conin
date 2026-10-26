@@ -6,7 +6,7 @@ import tempfile
 import pytest
 
 from conin.util import try_import
-from conin.io import load_model, load_conin_model_from_cfn
+from conin.io import load_model, load_cfn
 from conin.scoring import log_potential
 from conin.constraints import Toulbar2Constraint
 from conin.inference import map_query
@@ -64,7 +64,7 @@ def test_small_cfn():
 
 
 def test_relaxed_syntax():
-    pgm = load_conin_model_from_cfn(string="""
+    pgm = load_cfn(string="""
 # A comment
 { problem { name t2 mustbe <5 }
   variables { x [a b] y 2 }
@@ -80,7 +80,7 @@ def test_relaxed_syntax():
 
 
 def test_quoted_punctuation_in_value_names():
-    pgm = load_conin_model_from_cfn(string="""{"problem":{"name":"p","mustbe":"<10"},
+    pgm = load_cfn(string="""{"problem":{"name":"p","mustbe":"<10"},
         "variables":{"x":["{","]"]},
         "functions":{"f":{"scope":["x"],"defaultcost":0,"costs":["]",1]}}}""")
     assert pgm.states == {"x": ["{", "]"]}
@@ -88,7 +88,7 @@ def test_quoted_punctuation_in_value_names():
 
 
 def test_function_list_and_unused_variable():
-    pgm = load_conin_model_from_cfn(string="""{"problem":{"name":"p","mustbe":"<10"},
+    pgm = load_cfn(string="""{"problem":{"name":"p","mustbe":"<10"},
         "variables":{"x":2, "u":3},
         "functions":[{"scope":["x"],"costs":[1,0]}]}""")
     values = factor_values(pgm)
@@ -97,7 +97,7 @@ def test_function_list_and_unused_variable():
 
 
 def test_maximization():
-    pgm = load_conin_model_from_cfn(string="""{"problem":{"name":"p","mustbe":">-50"},
+    pgm = load_cfn(string="""{"problem":{"name":"p","mustbe":">-50"},
         "variables":{"x":3},
         "functions":{"f":{"scope":["x"],"costs":[1,7,3]}}}""")
     f = factor_values(pgm)["x",]
@@ -109,7 +109,7 @@ def test_maximization():
 def test_negative_costs_and_bound():
     # The bound applies to the total cost: x=0 has cost 60 >= 50 alone, but
     # the minimum total cost is -30 + 1 = -29, so 60 - 1 + (-29) = 30 < 50.
-    pgm = load_conin_model_from_cfn(string="""{"problem":{"name":"p","mustbe":"<50"},
+    pgm = load_cfn(string="""{"problem":{"name":"p","mustbe":"<50"},
         "variables":{"x":2, "y":2},
         "functions":{"f":{"scope":["x"],"costs":[60,1]},
                      "g":{"scope":["y"],"costs":[-30,-30]}}}""")
@@ -119,7 +119,7 @@ def test_negative_costs_and_bound():
 
 
 def test_cost_scale():
-    pgm = load_conin_model_from_cfn(
+    pgm = load_cfn(
         string="""{"problem":{"name":"p","mustbe":"<100"},
         "variables":{"x":2},
         "functions":{"f":{"scope":["x"],"costs":[0,20]}}}""",
@@ -194,7 +194,7 @@ def test_knapsackv_variable_names_and_indices():
     # weightedvalues refer to variables by name or by their index in the
     # problem's variable list (not the function scope).
     for weightedvalues in ['[["x",2,1],["y",1,1]]', "[[1,2,1],[2,1,1]]"]:
-        pgm = load_conin_model_from_cfn(
+        pgm = load_cfn(
             string=KNAPSACK_TEMPLATE
             % (
                 '["x","y"]',
@@ -208,7 +208,7 @@ def test_knapsackv_variable_names_and_indices():
 
 
 def test_knapsack_boolean():
-    pgm = load_conin_model_from_cfn(string="""{"problem":{"name":"p","mustbe":"<1000"},
+    pgm = load_cfn(string="""{"problem":{"name":"p","mustbe":"<1000"},
         "variables":{"x":["no","yes"], "y":2},
         "functions":{"k":{"scope":["x","y"],"type":"knapsack",
                           "params":{"capacity":3,"weights":[1,2]}}}}""")
@@ -225,7 +225,7 @@ def test_knapsack_boolean():
 
 def test_knapsack_non_boolean_error():
     with pytest.raises(NotImplementedError, match="Boolean"):
-        load_conin_model_from_cfn(
+        load_cfn(
             string=KNAPSACK_TEMPLATE
             % ('["x","y"]', "knapsack", '{"capacity":1,"weights":[1,1]}')
         )
@@ -240,9 +240,7 @@ def test_knapsack_non_boolean_error():
 )
 def test_unsupported_global_cost_function_error(ftype, params):
     with pytest.raises(NotImplementedError):
-        load_conin_model_from_cfn(
-            string=KNAPSACK_TEMPLATE % ('["x","y"]', ftype, params)
-        )
+        load_cfn(string=KNAPSACK_TEMPLATE % ('["x","y"]', ftype, params))
 
 
 #
@@ -271,7 +269,7 @@ def test_unsupported_global_cost_function_error(ftype, params):
 )
 def test_parse_errors(text):
     with pytest.raises(ValueError):
-        load_conin_model_from_cfn(string=text)
+        load_cfn(string=text)
 
 
 def test_missing_file():
@@ -352,7 +350,7 @@ def test_abc_constrained_vs_unconstrained():
 def test_knapsackv_matches_toulbar2(scope, ftype, params):
     text = KNAPSACK_TEMPLATE % (scope, ftype, params)
     tb2_solution = _toulbar2_solution(string=text)
-    pgm = load_conin_model_from_cfn(string=text)
+    pgm = load_cfn(string=text)
     assert _conin_solution(pgm) == tb2_solution
 
 
@@ -367,7 +365,7 @@ def test_knapsack_matches_toulbar2():
                           "params":{"capacity":3,"weights":[1,2,1]}}}}"""
     tb2_solution = _toulbar2_solution(string=text)
     assert tb2_solution == [0, 1, 1]
-    pgm = load_conin_model_from_cfn(string=text)
+    pgm = load_cfn(string=text)
     assert _conin_solution(pgm) == tb2_solution
 
 

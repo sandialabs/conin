@@ -306,7 +306,7 @@ def test_ip_inference_uses_the_pyomo_network_flow_representation():
         observed=["o0"] * 15,
         solver=default_mip_solver,
     )
-    assert results.solution.hidden == ["h1"] * 3 + ["h0"] * 12
+    assert results.solution.states == ["h1"] * 3 + ["h0"] * 12
 
 
 # ---------------------------------------------------------------------

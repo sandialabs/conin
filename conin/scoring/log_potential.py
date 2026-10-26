@@ -255,10 +255,28 @@ def _log_dbn(dbn, assignment):
 
 def _log_hmm(hmm, hidden, observed):
     hidden, observed = hmm_sequences(hmm, hidden, observed)
+    return hmm_path_log_potential(hmm, hidden, dict(enumerate(observed)))
+
+
+def hmm_path_log_potential(hmm, hidden, observed):
+    """``log P(hidden, observed)`` of an HMM path whose observations may be sparse.
+
+    ``hidden`` is a list of hidden labels over ``0..T-1`` and ``observed`` a
+    ``{time: label}`` dict of the observed times (labels already checked);
+    an unobserved time contributes its transition only (its emissions sum
+    to one).  This is the score of the MVR Viterbi, which accepts sparse
+    observations.
+    """
     h = [hmm.hidden_to_internal[x] for x in hidden]
-    o = [hmm.observed_to_internal[x] for x in observed]
     start, transition, emission = hmm.start_vec, hmm.transition_mat, hmm.emission_mat
-    total = _log(start[h[0]]) + _log(emission[h[0]][o[0]])
+
+    def emit(t):
+        label = observed.get(t)
+        if label is None and t not in observed:
+            return 0.0
+        return _log(emission[h[t]][hmm.observed_to_internal[label]])
+
+    total = _log(start[h[0]]) + emit(0)
     for t in range(1, len(h)):
-        total += _log(transition[h[t - 1]][h[t]]) + _log(emission[h[t]][o[t]])
+        total += _log(transition[h[t - 1]][h[t]]) + emit(t)
     return total

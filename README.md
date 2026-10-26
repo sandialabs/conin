@@ -66,6 +66,24 @@ python -m sphinx -b html doc/sphinx doc/sphinx/_build/html
 
 The generated HTML is written to `doc/sphinx/_build/html`.
 
+### Notebooks
+
+As an alternative to the documentation, the Jupyter notebooks in
+[`doc/notebooks/`](doc/notebooks/) walk through Conin with runnable examples:
+
+- [`HMM_basics`](doc/notebooks/HMM_basics.ipynb),
+  [`BN_basics`](doc/notebooks/BN_basics.ipynb),
+  [`DBN_basics`](doc/notebooks/DBN_basics.ipynb) and
+  [`MN_basics`](doc/notebooks/MN_basics.ipynb): building each model type
+- [`constraints`](doc/notebooks/constraints.ipynb): declaring constraints
+- [`inference`](doc/notebooks/inference.ipynb): MAP queries with every
+  inference method
+- [`MVR/`](doc/notebooks/MVR/): the MVR (mediation variable) algorithms,
+  starting with [`overview`](doc/notebooks/MVR/overview.ipynb) (these need
+  the `torch` extra; `regex_tutorial` needs the `regex` extra)
+
+Some notebooks use the optional backends (pgmpy, pytoulbar2, a MIP solver).
+
 ## Testing
 
 Conin tests can be executed using pytest:

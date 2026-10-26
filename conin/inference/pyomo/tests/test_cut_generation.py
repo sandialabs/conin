@@ -15,7 +15,7 @@ from conin.examples import markov_network as examples
 from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
 from conin.inference.pyomo import solve_pyomo_map_query_model
 from conin.representations.pyomo.common import (
-    create_MN_pyomo_map_query_model_from_factorial_repn,
+    _create_pyomo_map_query_model,
     has_omitted_c5,
 )
 from conin.inference import map_query
@@ -100,7 +100,9 @@ def test_examples_gurobi_cut_generation(name, user_cuts):
         solver_options=dict(GUROBI_QUIET),
     )
     assert cuts.solution.states == full.solution.states
-    assert cuts.solution.log_factor_sum == pytest.approx(full.solution.log_factor_sum)
+    assert cuts.solution.solver_objective == pytest.approx(
+        full.solution.solver_objective
+    )
     assert cuts.cut_stats.num_lazy_cuts > 0
     if not user_cuts:
         assert cuts.cut_stats.num_user_cuts == 0
@@ -128,20 +130,18 @@ def test_ABC_evidence_gurobi_cut_generation():
 def test_random_gurobi_cut_generation(density, user_cuts):
     for seed in range(10):
         S, J, v, w = random_factor_repn(seed, density=density)
-        model = create_MN_pyomo_map_query_model_from_factorial_repn(S=S, J=J, v=v, w=w)
+        model = _create_pyomo_map_query_model(S=S, J=J, v=v, w=w)
         ref = solve_pyomo_map_query_model(model, solver=other_mip_solver)
 
-        model = create_MN_pyomo_map_query_model_from_factorial_repn(
-            S=S, J=J, v=v, w=w, omit_c5=True
-        )
+        model = _create_pyomo_map_query_model(S=S, J=J, v=v, w=w, omit_c5=True)
         results = solve_pyomo_map_query_model(
             model,
             solver="gurobi",
             c5_user_cuts=user_cuts,
             solver_options=dict(GUROBI_QUIET),
         )
-        assert results.solution.log_factor_sum == pytest.approx(
-            ref.solution.log_factor_sum
+        assert results.solution.solver_objective == pytest.approx(
+            ref.solution.solver_objective
         )
 
 

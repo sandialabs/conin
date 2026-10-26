@@ -6,7 +6,7 @@ A query goes through the same steps as ``map_query``:
    with no constraints);
 2. pick the representation kind from ``method`` (only
    ``"variable_elimination"`` -> ``"pgmpy"`` for now; the table is shared
-   with ``map_query``, :mod:`conin.inference.methods`);
+   with ``map_query``, :mod:`conin.representations.methods`);
 3. build that representation with its structure parameters (DBNs and HMMs
    are unrolled over ``start..stop``);
 4. compute the query with the overload of :func:`_solve_log_probability` for
@@ -27,7 +27,7 @@ from conin.constrained_models import (
 )
 from conin.constrained_models.normalise import as_constrained_model
 from conin.exceptions import InvalidInputError
-from conin.inference.methods import (
+from conin.representations.methods import (
     LOG_PROBABILITY_METHODS,
     check_method,
     representation_kind,
@@ -49,7 +49,7 @@ def _representation_kind(method):
     """Return the representation kind that ``method`` computes the query on.
 
     The same as for :func:`~conin.inference.map_query`
-    (:mod:`conin.inference.methods`).
+    (:mod:`conin.representations.methods`).
     """
     return representation_kind(method, None, {})
 

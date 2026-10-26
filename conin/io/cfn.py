@@ -371,7 +371,7 @@ def _create_knapsack_constraint(fname, ftype, scope, terms, capacity):
     return con
 
 
-def load_conin_model_from_cfn(filename=None, string=None, cost_scale=1.0):
+def load_cfn(filename=None, string=None, cost_scale=1.0):
     """Create a CONIN Markov network from a Toulbar2 CFN file.
 
     Each cost function in extension becomes a :class:`DiscreteFactor` whose
