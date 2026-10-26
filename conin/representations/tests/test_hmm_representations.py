@@ -509,3 +509,27 @@ def test_unsupported_family_raises():
     with pytest.raises(InvalidInputError) as excinfo:
         cmodel.representation("oracle")
     assert "('oracle', 'oracle')" in str(excinfo.value)
+
+
+# ---------------------------------------------------------------------
+# The unrolled HMM representations need a stop time (it was an assert)
+# ---------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("kind", ["pyomo", "toulbar2", "pgmpy"])
+def test_unrolled_hmm_representations_need_a_stop_time(kind):
+    cmodel = ConstrainedHiddenMarkovModel(tc.create_hmm1())
+    with pytest.raises(InvalidInputError, match="needs a stop time"):
+        cmodel.representation(kind)
+
+
+def test_network_flow_with_impossible_observations_raises():
+    # No hidden state can emit "o2" (it was an assert).
+    hmm = HiddenMarkovModel(
+        start_probs={"h0": 1.0},
+        transition_probs={("h0", "h0"): 1.0},
+        emission_probs={("h0", "o0"): 1.0, ("h0", "o1"): 0.0},
+    )
+    repn = ConstrainedHiddenMarkovModel(hmm).representation("pyomo_network_flow")
+    with pytest.raises(InvalidInputError, match="No feasible transitions"):
+        repn.create_model(observed=["o0", "o1"])

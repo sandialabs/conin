@@ -86,9 +86,12 @@ class AlgebraicConstraint(Constraint):
         """
         # Create a smoek model with V() method
         if hasattr(model, "V"):
-            assert isinstance(
-                model.V, ConinV
-            ), f"A model attribute 'V' exists (model_type={type(model)} V_type={type(model.V)}). Smoek constraints reserve the 'V' attribute for access to Conin nodes"
+            if not isinstance(model.V, ConinV):
+                raise TypeError(
+                    f"A model attribute 'V' exists (model_type={type(model)} "
+                    f"V_type={type(model.V)}). Smoek constraints reserve the 'V' "
+                    "attribute for access to Conin nodes"
+                )
         else:
             model.V = ConinV()
 

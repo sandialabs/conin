@@ -212,3 +212,26 @@ def test_load_bn_model_toulbar2_conin():
         0: {0: 0.21, 1: 0.333, 2: 0.457},
         1: {0: 0.811, 1: 0.0, 2: 0.189},
     }
+
+
+@pytest.mark.skipif(
+    not pgmpy_readwrite_available, reason="pgmpy.readwrite is not available"
+)
+def test_pgmpy_load_model_unknown_suffix_names_the_file(tmp_path):
+    # The message was not an f-string, so it printed "{name}".
+    module = importlib.import_module("conin.io.pgmpy_files")
+    name = tmp_path / "model.txt"
+    name.write_text("")
+    with pytest.raises(RuntimeError, match="model.txt"):
+        module.load_model(str(name))
+
+
+def test_uai_markov_network_edges_join_every_pair_of_factor_nodes():
+    # The UAI reader joined only the last node of each factor to the others.
+    import itertools
+
+    pgm = load_model(os.path.join(cwd, "cancer_mn.uai"))
+    edges = {frozenset(e) for e in pgm.edges}
+    for factor in pgm.factors:
+        for a, b in itertools.combinations(factor.nodes, 2):
+            assert frozenset((a, b)) in edges

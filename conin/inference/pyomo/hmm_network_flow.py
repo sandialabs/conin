@@ -9,6 +9,7 @@ import munch
 
 from conin.config import default_mip_solver
 from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.exceptions import InsufficientSolutionsError, InvalidInputError
 from conin.util import try_import
 
 import pyomo.environ as pyo
@@ -74,9 +75,11 @@ def _lp_inference(
     quiet=True,
 ):
     """:func:`lp_inference` on a ``"pyomo_network_flow"`` representation."""
-    assert (
-        num_solutions == 1
-    ), "ERROR: Support for inferring multiple solutions with an LP model has not been setup"
+    if num_solutions != 1:
+        raise InvalidInputError(
+            "lp_inference finds one solution; num_solutions must be 1, got "
+            f"{num_solutions}"
+        )
 
     hmm = repn.hidden_markov_model
     if debug:
@@ -209,7 +212,10 @@ def _ip_inference(
         if debug:
             toc("Optimizing Model with OR_TOPAS - STOP")
 
-        assert len(aos_pm.solutions) > 0, "No solutions found for OR_TOPAS Solver use"
+        if not aos_pm.solutions:
+            raise InsufficientSolutionsError(
+                "No solutions found by the 'or_topas' solver"
+            )
         solutions = []
         for index, aos_solution in enumerate(aos_pm.solutions):
             aos_sol_munch = parse_aos_solution_pyomo_ip_inference(
@@ -309,7 +315,7 @@ def parse_aos_solution_pyomo_ip_inference(aos_solution, M, hmm, T, *, data):
     }
 
     return munch.Munch(
-        variable_value=hidden,
+        states=hidden,
         hidden=hidden,
         log_likelihood=log_likelihood,
         variables=variables,

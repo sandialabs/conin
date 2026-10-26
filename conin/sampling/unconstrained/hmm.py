@@ -24,9 +24,11 @@ def _arrays(hmm):
 
 
 def _hidden_indices(start, transition, time_steps):
-    """Sample ``time_steps`` hidden-state indices."""
+    """Sample ``time_steps`` hidden-state indices (none for ``time_steps == 0``)."""
     if time_steps < 0:
-        raise InvalidInputError("In generate_hidden time_steps > 0.")
+        raise InvalidInputError(f"time_steps must be non-negative, got {time_steps}")
+    if time_steps == 0:
+        return []
     hidden = [Util.sample_from_vec(start)]
     for t in range(time_steps - 1):
         hidden.append(Util.sample_from_vec(transition[hidden[t]]))
@@ -131,8 +133,6 @@ def generate_observed(hmm, time_steps):
         If ``time_steps`` is negative or the model has constraints.
     """
     model, start, transition, emission = _arrays(hmm)
-    if time_steps < 0:
-        raise InvalidInputError("In generate_observed time_steps > 0.")
     hidden = _hidden_indices(start, transition, time_steps)
     o2e = model.observed_to_external
     return [o2e[o] for o in _observed_indices(emission, hidden)]

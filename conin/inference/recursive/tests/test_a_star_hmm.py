@@ -152,3 +152,39 @@ def test_is_feasible_for_recursive_constraints():
 def test_other_families_are_rejected():
     with pytest.raises(InvalidInputError):
         recursive_a_star(hmm=tc.create_chmm1_oracle(), observed=["o0"] * 3)
+
+
+# ---------------------------------------------------------------------
+# max_iterations, max_time and debug
+# ---------------------------------------------------------------------
+
+
+def test_max_iterations_stops_the_search():
+    cmodel = ConstrainedHiddenMarkovModel(tc.create_hmm1(), _num_h0(10, 12))
+    results = recursive_a_star(hmm=cmodel, observed=["o1"] * 20, max_iterations=3)
+    assert results.solutions == []
+    assert results.termination_condition == "max_iterations: 3"
+
+
+def test_max_time_stops_the_search():
+    cmodel = ConstrainedHiddenMarkovModel(tc.create_hmm1(), _num_h0(10, 12))
+    results = recursive_a_star(hmm=cmodel, observed=["o1"] * 20, max_time=0)
+    assert results.solutions == []
+    assert results.termination_condition.startswith("max_time: ")
+
+
+def test_limits_that_are_not_reached_do_not_change_the_result():
+    cmodel = ConstrainedHiddenMarkovModel(tc.create_hmm1(), _num_h0(2, 3))
+    observed = ["o0", "o1", "o1", "o0", "o1"]
+    expected = recursive_a_star(hmm=cmodel, observed=observed)
+    results = recursive_a_star(
+        hmm=cmodel, observed=observed, max_iterations=10**6, max_time=10**6
+    )
+    assert results == expected
+    assert results.termination_condition == "ok"
+
+
+def test_debug_prints_progress(capsys):
+    cmodel = ConstrainedHiddenMarkovModel(tc.create_hmm1(), _num_h0(10, 12))
+    recursive_a_star(hmm=cmodel, observed=["o1"] * 20, max_iterations=150, debug=True)
+    assert "Iteration: 100" in capsys.readouterr().out

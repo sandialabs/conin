@@ -261,3 +261,76 @@ def test_save_conin_bn_as_bif(cancer_bn_uai, tmp_path):
     save_model(cancer_bn_uai, fname)
     loaded = load_model(fname)
     assert sorted(loaded.nodes) == sorted(cancer_bn_uai.nodes)
+
+
+@pytest.mark.skipif(not pgmpy_available, reason="pgmpy is not installed")
+def test_pgmpy_save_model_unknown_suffix_raises(tmp_path):
+    # It used to return without writing anything.
+    pgm = load_model(os.path.join(cwd, "asia.uai"), model_type="pgmpy")
+    with pytest.raises(RuntimeError, match="Unknown format.*model.txt"):
+        save_model(pgm, str(tmp_path / "model.txt"), model_type="pgmpy")
+
+
+# ---------------------------------------------------------------------
+# save_conin_model: the .bif paths and the pgmpy checks
+# ---------------------------------------------------------------------
+
+
+@pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
+def test_save_conin_mn_as_bif_is_converted_by_pgmpy(
+    cancer_mn_uai, tmp_path, monkeypatch
+):
+    # A Markov network goes through convert_conin_to_pgmpy_mn (pgmpy's
+    # BIFWriter then decides what it can write).  cancer_mn.uai has a factor
+    # over three nodes: the UAI reader gave it the wrong edges, so pgmpy
+    # rejected the converted model ("DiscreteFactor inconsistent with the
+    # model").
+    import importlib
+
+    pgmpy_files = importlib.import_module("conin.io.pgmpy_files")
+    calls = []
+    monkeypatch.setattr(
+        pgmpy_files,
+        "save_model",
+        lambda pgm, name, quiet: calls.append((type(pgm).__name__, name)),
+    )
+    save_model(cancer_mn_uai, str(tmp_path / "cancer.bif"))
+    assert calls == [("DiscreteMarkovNetwork", str(tmp_path / "cancer.bif"))]
+
+
+@pytest.mark.skipif(not pgmpy_available, reason="pgmpy is not installed")
+def test_save_conin_hmm_as_bif_raises(tmp_path):
+    import conin.examples.hidden_markov_model as hex_
+
+    with pytest.raises(RuntimeError, match="Unexpected conin model type"):
+        save_model(hex_.create_hmm1(), str(tmp_path / "hmm.bif"))
+
+
+def test_save_conin_bif_without_pgmpy_raises(asia_uai, tmp_path, monkeypatch):
+    import importlib
+
+    save_module = importlib.import_module("conin.io.save_model")
+    monkeypatch.setattr(save_module, "pgmpy_available", False)
+    with pytest.raises(RuntimeError, match="Unknown format.*asia.bif"):
+        save_model(asia_uai, str(tmp_path / "asia.bif"))
+
+
+def test_save_pgmpy_model_without_pgmpy_raises(asia_uai, tmp_path, monkeypatch):
+    import importlib
+
+    save_module = importlib.import_module("conin.io.save_model")
+    monkeypatch.setattr(save_module, "pgmpy_available", False)
+    with pytest.raises(ImportError, match="pgmpy"):
+        save_model(asia_uai, str(tmp_path / "asia.uai"), model_type="pgmpy")
+
+
+@pytest.mark.skipif(not pgmpy_available, reason="pgmpy is not installed")
+@pytest.mark.parametrize("suffix", ["bif", "uai"])
+def test_pgmpy_save_model_without_readwrite_raises(tmp_path, monkeypatch, suffix):
+    import importlib
+
+    module = importlib.import_module("conin.io.pgmpy_files")
+    pgm = load_model(os.path.join(cwd, "asia.uai"), model_type="pgmpy")
+    monkeypatch.setattr(module, "pgmpy_readwrite_available", False)
+    with pytest.raises(RuntimeError, match=f"{suffix.upper()} format"):
+        module.save_model(pgm, str(tmp_path / f"asia.{suffix}"))

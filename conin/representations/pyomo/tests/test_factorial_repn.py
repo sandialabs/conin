@@ -452,3 +452,57 @@ def test_factor_name_clash_raises():
     )
     with pytest.raises(InvalidInputError, match="internal name 'A_B_C'"):
         extract_factor_representation(pgm)
+
+
+# ---------------------------------------------------------------------
+# The helpers that build the IP's factor representation
+# ---------------------------------------------------------------------
+
+
+def test_tuple_var_index_map():
+    from conin.representations.pyomo.factor_repn import tuple_var_index_map
+
+    assert tuple_var_index_map({"A": [0, 1], "B": [0]}) is None
+    assert tuple_var_index_map({("A", 0): [0], ("A", 1): [0], "B": [0]}) == {
+        ("A", 0): "A_0",
+        ("A", 1): "A_1",
+        "B": "B",
+    }
+
+
+def test_skeleton_mn_of_bn_has_one_factor_per_cpd():
+    from conin.examples.bayesian_network import cancer1_BN_conin
+    from conin.representations.pyomo.factor_repn import skeleton_mn_of_bn
+
+    bn = cancer1_BN_conin().pgm
+    mn = skeleton_mn_of_bn(bn)
+    assert mn.states == bn.states
+    assert len(mn.factors) == len(bn.cpds)
+    assert [list(f.nodes) for f in mn.factors] == [
+        list(cpd.parents or []) + [cpd.node] for cpd in bn.cpds
+    ]
+
+
+def test_factor_representation_of_mn_matches_the_extracted_one():
+    from conin.representations.pyomo.factor_repn import factor_representation_of_mn
+
+    pgm = examples.ABC_conin().pgm
+    S, J, v, w, var_index_map = factor_representation_of_mn(pgm)
+    assert var_index_map is None
+    assert (S, J, v, w) == extract_factor_representation(pgm)
+
+
+def test_factor_representation_of_mn_maps_tuple_nodes():
+    from conin.graphical_models import DiscreteFactor, DiscreteMarkovNetwork
+    from conin.representations.pyomo.factor_repn import factor_representation_of_mn
+
+    pgm = DiscreteMarkovNetwork(
+        states={("A", 0): [0, 1], ("A", 1): [0, 1]},
+        factors=[DiscreteFactor(nodes=[("A", 0), ("A", 1)], values=[1, 2, 3, 4])],
+    )
+    S, J, v, w, var_index_map = factor_representation_of_mn(pgm)
+    assert var_index_map == {("A", 0): "A_0", ("A", 1): "A_1"}
+    assert set(S) == {"A_0", "A_1"}
+    assert {r for (_, _, r) in v} == {"A_0", "A_1"}
+    # w is the log of the normalised factor values
+    assert sorted(w.values()) == pytest.approx([log(k / 10) for k in [1, 2, 3, 4]])
