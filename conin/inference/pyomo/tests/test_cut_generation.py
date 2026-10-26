@@ -15,7 +15,7 @@ from conin.examples import markov_network as examples
 from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
 from conin.inference.pyomo import solve_pyomo_map_query_model
 from conin.representations.pyomo.common import (
-    create_MN_pyomo_map_query_model_from_factorial_repn,
+    _create_pyomo_map_query_model,
     has_omitted_c5,
 )
 from conin.inference import map_query
@@ -128,12 +128,10 @@ def test_ABC_evidence_gurobi_cut_generation():
 def test_random_gurobi_cut_generation(density, user_cuts):
     for seed in range(10):
         S, J, v, w = random_factor_repn(seed, density=density)
-        model = create_MN_pyomo_map_query_model_from_factorial_repn(S=S, J=J, v=v, w=w)
+        model = _create_pyomo_map_query_model(S=S, J=J, v=v, w=w)
         ref = solve_pyomo_map_query_model(model, solver=other_mip_solver)
 
-        model = create_MN_pyomo_map_query_model_from_factorial_repn(
-            S=S, J=J, v=v, w=w, omit_c5=True
-        )
+        model = _create_pyomo_map_query_model(S=S, J=J, v=v, w=w, omit_c5=True)
         results = solve_pyomo_map_query_model(
             model,
             solver="gurobi",

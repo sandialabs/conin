@@ -5,7 +5,7 @@
 * :func:`apply_pyomo_constraints`: the single constraint applier for the
   Pyomo-backend families (``"pyomo"`` and ``"algebraic"``), including the
   smoek->Pyomo translation (:func:`add_algebraic_constraints_to_pyomo_model`);
-* :func:`create_MN_pyomo_map_query_model_from_factorial_repn`: the IP built
+* :func:`_create_pyomo_map_query_model`: the IP built
   from a factor representation ``(S, J, v, w)``, plus the c5 helpers
   (:func:`add_c5_constraints`, :func:`has_omitted_c5`,
   :class:`C5LazyCutGenerator`);
@@ -239,7 +239,7 @@ class C5LazyCutGenerator:
                 self.num_user_cuts += 1
 
 
-def create_MN_pyomo_map_query_model_from_factorial_repn(
+def _create_pyomo_map_query_model(
     *,
     S=None,
     J=None,
@@ -371,7 +371,7 @@ class PyomoFactorRepresentation(Representation):
     ----------
     S, J, v, w : dict
         The factor representation (see
-        :func:`create_MN_pyomo_map_query_model_from_factorial_repn`).
+        :func:`_create_pyomo_map_query_model`).
     var_index_map : dict or None
         Node -> internal variable name, or ``None`` (nodes used as-is).
     pgm : GraphicalModel
@@ -445,7 +445,7 @@ class PyomoFactorRepresentation(Representation):
         -------
         pyomo.environ.ConcreteModel
         """
-        model = create_MN_pyomo_map_query_model_from_factorial_repn(
+        model = _create_pyomo_map_query_model(
             S=self.S,
             J=self.J,
             v=self.v,

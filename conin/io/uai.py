@@ -55,7 +55,7 @@ class _Tokens:
             ) from None
 
 
-def load_conin_model_from_uai(filename=None, string=None, verbose=False):
+def load_uai(filename=None, string=None, verbose=False):
     """Load a CONIN model from a UAI file or string.
 
     Parameters
@@ -195,7 +195,7 @@ def load_conin_model_from_uai(filename=None, string=None, verbose=False):
     return pgm
 
 
-def save_model_uai(pgm, name, quiet=True):
+def save_uai(pgm, name, quiet=True):
     """Serialize a CONIN model in UAI format.
 
     Parameters
@@ -220,7 +220,7 @@ def save_model_uai(pgm, name, quiet=True):
 
 
 def _uai_text(pgm):
-    """Return the UAI text that :func:`save_model_uai` writes for ``pgm``.
+    """Return the UAI text that :func:`save_uai` writes for ``pgm``.
 
     Variables are numbered in ``pgm.nodes`` order and states in
     ``pgm.states[node]`` order.

@@ -7,7 +7,7 @@ from conin.util import try_import
 from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
 from conin.inference.pyomo import solve_pyomo_map_query_model
 from conin.representations.pyomo.common import (
-    create_MN_pyomo_map_query_model_from_factorial_repn,
+    _create_pyomo_map_query_model,
 )
 from conin.representations.pyomo.factor_repn import (
     extract_factor_representation,
@@ -62,7 +62,7 @@ def test_example6():
         ("A_B", 3): -log(6),
     }
 
-    model = create_MN_pyomo_map_query_model_from_factorial_repn(S=S, J=J, v=v, w=w)
+    model = _create_pyomo_map_query_model(S=S, J=J, v=v, w=w)
     results = solve_pyomo_map_query_model(model, solver=mip_solver)
     assert results.solution.states == {"A": 0, "B": 1}
 
@@ -225,7 +225,7 @@ def test_ABC():
         ("A_C", 8): -log(9),
     }
 
-    model = create_MN_pyomo_map_query_model_from_factorial_repn(S=S, J=J, v=v, w=w)
+    model = _create_pyomo_map_query_model(S=S, J=J, v=v, w=w)
     results = solve_pyomo_map_query_model(model, solver=mip_solver)
     assert results.solution.states == {"A": 2, "B": 2, "C": 1}
 
@@ -377,7 +377,7 @@ def test_ABC_constrained():
         ("A_C", 8): -log(9),
     }
 
-    model = create_MN_pyomo_map_query_model_from_factorial_repn(S=S, J=J, v=v, w=w)
+    model = _create_pyomo_map_query_model(S=S, J=J, v=v, w=w)
 
     # Constrain the inference to ensure that all variables have different
     # values

@@ -1,7 +1,7 @@
 from conin.util import try_import
 from conin.graphical_models import DiscreteBayesianNetwork
 from conin.graphical_models import DiscreteMarkovNetwork
-from .uai import save_model_uai
+from .uai import save_uai
 
 with try_import() as pgmpy_available:
     import pgmpy  # noqa: F401
@@ -23,7 +23,7 @@ def save_model(pgm, name, model_type="conin", quiet=True):
         ``model_type="conin"``, or a pgmpy model for ``model_type="pgmpy"``.
     name : str
         Output file name. CONIN models are saved as ``.uai`` files (see
-        :func:`conin.io.save_model_uai`) or, with pgmpy installed, as ``.bif``
+        :func:`conin.io.save_uai`) or, with pgmpy installed, as ``.bif``
         files (converted to pgmpy and written by pgmpy).
     model_type : str, optional
         ``"conin"`` (default) or ``"pgmpy"``.
@@ -53,7 +53,7 @@ def save_model(pgm, name, model_type="conin", quiet=True):
 
 def save_conin_model(pgm, name, quiet=True):
     if name.endswith(".uai"):
-        return save_model_uai(pgm, name, quiet)
+        return save_uai(pgm, name, quiet)
 
     if name.endswith(".bif") and pgmpy_available:
         if isinstance(pgm, DiscreteBayesianNetwork):

@@ -2,8 +2,8 @@ import os
 import gzip
 
 from conin.util import try_import
-from .uai import load_conin_model_from_uai
-from .cfn import load_conin_model_from_cfn
+from .uai import load_uai
+from .cfn import load_cfn
 
 with try_import() as pgmpy_available:
     import pgmpy  # noqa: F401
@@ -26,7 +26,7 @@ def load_model(name, model_type="conin", quiet=True, **options):
     **options
         Format-specific options for CONIN models.  CFN files accept
         ``cost_scale``; see
-        :func:`conin.io.cfn.load_conin_model_from_cfn`.
+        :func:`conin.io.cfn.load_cfn`.
     """
 
     if model_type == "conin":
@@ -61,7 +61,7 @@ def load_conin_model(name, quiet=True, **options):
     **options
         Additional options passed to the format-specific loader.  CFN files
         accept ``cost_scale``; see
-        :func:`conin.io.cfn.load_conin_model_from_cfn`.
+        :func:`conin.io.cfn.load_cfn`.
     """
 
     if not os.path.exists(name):
@@ -81,16 +81,14 @@ def load_conin_model(name, quiet=True, **options):
                 raise RuntimeError(f"Error loading model data from {name}")
 
             if name.endswith(".uai.gz"):
-                return load_conin_model_from_uai(string=content.decode("utf-8"))
+                return load_uai(string=content.decode("utf-8"))
             if name.endswith(".cfn.gz"):
-                return load_conin_model_from_cfn(
-                    string=content.decode("utf-8"), **options
-                )
+                return load_cfn(string=content.decode("utf-8"), **options)
 
     elif name.endswith(".uai"):
-        return load_conin_model_from_uai(filename=name)
+        return load_uai(filename=name)
 
     elif name.endswith(".cfn"):
-        return load_conin_model_from_cfn(filename=name, **options)
+        return load_cfn(filename=name, **options)
 
     raise RuntimeError(f"Cannot load conin model from unexpected file: {name}")
