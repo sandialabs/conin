@@ -78,6 +78,38 @@ raises ``InvalidInputError``. The integer-program, toulbar2 and
 variable-elimination methods infer over the times ``start..stop``, with
 ``stop`` defaulting to the last observation.
 
+Results
+^^^^^^^
+
+Every method returns the same keys: ``solution`` (the best solution, ``None``
+if A* finds none), ``solutions`` (best first), ``termination_condition``
+(``"ok"``, or why the search stopped) and ``solvetime``. Each solution has
+
+- ``states``: the MAP assignment, ``{node: state}``, or the hidden states of
+  an HMM;
+- ``log_potential``: the score of the assignment together with the evidence,
+  :func:`conin.scoring.log_potential` on the model without its constraints
+  (for an HMM, ``log P(hidden, observed)``; for a Markov network the sum of
+  the log factors). It is not renormalised by the probability of the
+  constraints, and it is the same for every method, so it can be compared
+  across methods; ``None`` for a partial MAP query;
+- ``solver_objective``: the objective value of the integer program or the
+  toulbar2 cost function network, in the backend's own scale; ``None`` for
+  the other methods.
+
+.. testcode::
+
+   from conin.scoring import log_potential
+
+   best = viterbi_results.solution
+   assert best.log_potential == log_potential(hmm, best.states, observed=observed)
+   assert best.log_potential == a_star_results.solution.log_potential
+   print(round(best.log_potential, 4), best.solver_objective)
+
+.. testoutput::
+
+   -3.9684 None
+
 Optimization and Toulbar2 inference on HMMs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

@@ -513,18 +513,28 @@ def test_map_query_mvr_viterbi_matches_viterbi_torch_mvr_chmm(hmm, observed):
     results = map_query(model, method="mvr_viterbi", evidence=observed)
 
     assert sorted(results) == [
-        "observed",
         "solution",
         "solutions",
+        "solvetime",
         "termination_condition",
     ]
+    assert sorted(results.solution) == [
+        "augmented",
+        "log_potential",
+        "solver_objective",
+        "states",
+    ]
     assert results.solution.states == path
-    assert results.solution.hidden == path
-    assert results.solution.log_likelihood == score
+    # log_potential is log P(hidden, observed) in float64; the MVR score is
+    # accumulated from float32 log-weights.
+    assert results.solution.log_potential == pytest.approx(score, abs=1e-4)
+    assert results.solution.log_potential == pytest.approx(
+        hmm.log_probability(observed, path)
+    )
+    assert results.solution.solver_objective is None
     assert results.solution.augmented == augmented
     assert results.solutions == [results.solution]
     assert results.termination_condition == "ok"
-    assert results.observed == observed
     assert "B" not in results.solution.states
 
 
@@ -534,8 +544,8 @@ def test_map_query_mvr_viterbi_bare_hmm_is_viterbi(hmm, observed):
     results = map_query(hmm, method="mvr_viterbi", evidence=observed)
     reference = map_query(hmm, method="viterbi", evidence=observed)
     assert results.solution.states == reference.solution.states
-    assert results.solution.log_likelihood == pytest.approx(
-        reference.solution.log_likelihood, abs=1e-4
+    assert results.solution.log_potential == pytest.approx(
+        reference.solution.log_potential, abs=1e-4
     )
 
 
@@ -553,7 +563,8 @@ def test_map_query_mvr_viterbi_dict_evidence(hmm, observed):
     )
     results = map_query(model, method="mvr_viterbi", evidence=sparse)
     assert results.solution.states == dict(enumerate(path))
-    assert results.solution.log_likelihood == score
+    # An unobserved time contributes its transition only, as in the MVR score.
+    assert results.solution.log_potential == pytest.approx(score, abs=1e-4)
 
     path6, _ = viterbi_torch_mvr_chmm(
         model, sparse, time_horizon=6, return_augmented=False, return_score=True
@@ -579,7 +590,7 @@ def test_map_query_mvr_viterbi_options(hmm, observed):
         model, method="mvr_viterbi", evidence=observed, dtype=torch.float64
     )
     assert results.solution.states == path
-    assert results.solution.log_likelihood == score
+    assert results.solution.log_potential == pytest.approx(score, abs=1e-9)
 
 
 def test_map_query_mvr_viterbi_errors(hmm, observed):

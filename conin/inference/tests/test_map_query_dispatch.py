@@ -303,6 +303,7 @@ def _query(**kwds):
         options={},
     )
     q.update(kwds)
+    q.setdefault("model", None)
     # map_query also passes the HMM observations as a list.
     if isinstance(q.evidence, (list, tuple, dict)) and "observed" not in kwds:
         q.observed = as_sequence(q.evidence)
@@ -331,8 +332,9 @@ def test_pyomo_overloads_solve(model, kwds, expected):
 
 @skipif_toulbar2_not_available
 def test_toulbar2_hmm_overload_solves():
-    repn = _cmodel("hmm").representation("toulbar2", start=0, stop=4)
-    results = mq._solve_map_query(repn, _query(evidence=OBSERVED))
+    cmodel = _cmodel("hmm")
+    repn = cmodel.representation("toulbar2", start=0, stop=4)
+    results = mq._solve_map_query(repn, _query(model=cmodel.model, evidence=OBSERVED))
     assert results.solution.states == ["h0"] * 5
 
 
@@ -342,7 +344,7 @@ def test_matvec_overload_is_viterbi():
         ConstrainedHiddenMarkovModel(hmm).representation("matvec"),
         _query(evidence=OBSERVED),
     )
-    assert results == viterbi(observed=OBSERVED, hmm=hmm)
+    assert results.solutions == viterbi(observed=OBSERVED, hmm=hmm).solutions
 
 
 def test_oracle_overload_is_a_star():
@@ -352,7 +354,8 @@ def test_oracle_overload_is_a_star():
         cmodel.representation("oracle"),
         _query(evidence=observed, options=dict(num_solutions=2)),
     )
-    assert results == a_star(observed=observed, hmm=cmodel, num_solutions=2)
+    reference = a_star(observed=observed, hmm=cmodel, num_solutions=2)
+    assert results.solutions == reference.solutions
 
 
 def test_recursive_overload_is_recursive_a_star():
@@ -362,8 +365,8 @@ def test_recursive_overload_is_recursive_a_star():
         cmodel.representation("recursive"), _query(evidence=observed)
     )
     reference = recursive_a_star(hmm=cmodel, observed=observed)
-    assert [s.hidden for s in results.solutions] == [
-        s.hidden for s in reference.solutions
+    assert [s.states for s in results.solutions] == [
+        s.states for s in reference.solutions
     ]
 
 
@@ -523,9 +526,9 @@ def test_viterbi_on_an_unconstrained_constrained_hmm(evidence):
     # It raised TypeError (there was no overload for constrained HMMs).
     hmm = hex_.create_hmm1()
     cmodel = ConstrainedHiddenMarkovModel(hmm)
-    assert map_query(cmodel, method="viterbi", evidence=evidence) == map_query(
-        hmm, method="viterbi", evidence=evidence
-    )
+    results = map_query(cmodel, method="viterbi", evidence=evidence)
+    reference = map_query(hmm, method="viterbi", evidence=evidence)
+    assert results.solutions == reference.solutions
 
 
 @pytest.mark.parametrize("dict_evidence", [False, True])
@@ -536,11 +539,10 @@ def test_a_star_with_recursive_constraints_runs_recursive_a_star(dict_evidence):
     evidence = dict(enumerate(observed)) if dict_evidence else observed
     results = map_query(cmodel, method="a_star", evidence=evidence, num_solutions=2)
     reference = recursive_a_star(hmm=cmodel, observed=observed, num_solutions=2)
-    hidden = [s.hidden for s in reference.solutions]
+    hidden = [s.states for s in reference.solutions]
     if dict_evidence:
         hidden = [dict(enumerate(h)) for h in hidden]
     assert [s.states for s in results.solutions] == hidden
-    assert [s.hidden for s in results.solutions] == hidden
     assert results.solution is results.solutions[0]
     assert results.termination_condition == reference.termination_condition
     assert results.solution.states == (

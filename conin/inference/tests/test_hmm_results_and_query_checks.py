@@ -12,7 +12,7 @@ def test_key_solutions_by_time():
     solns = [munch.Munch(states=["a", "b"]), munch.Munch(states=["b", "b"])]
     results = key_solutions_by_time(munch.Munch(solution=solns[0], solutions=solns))
     assert results.solution.states == {0: "a", 1: "b"}
-    assert results.solution.hidden is results.solution.states
+    assert "hidden" not in results.solution
     assert results.solutions[1].states == {0: "b", 1: "b"}
 
 
@@ -20,10 +20,14 @@ def test_key_solutions_by_time():
     "keyed_by_time,expected", [(False, ["b", "c"]), (True, {1: "b", 2: "c"})]
 )
 def test_hidden_states_from_unrolled(keyed_by_time, expected):
+    # Every solution is converted (the or_topas solutions used to keep the
+    # unrolled keys: only results.solution was converted).
     states = {("H", 0): "a", ("H", 1): "b", ("H", 2): "c", ("E", 1): "x"}
-    results = munch.Munch(solution=munch.Munch(states=states))
+    solns = [munch.Munch(states=dict(states)), munch.Munch(states=dict(states))]
+    results = munch.Munch(solution=solns[0], solutions=solns)
     hidden_states_from_unrolled(results, start=1, stop=2, keyed_by_time=keyed_by_time)
     assert results.solution.states == expected
+    assert results.solutions[1].states == expected
 
 
 @pytest.mark.parametrize("variables", [None, [], ["A", "B"], ("B", "A")])

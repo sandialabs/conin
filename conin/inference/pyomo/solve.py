@@ -11,6 +11,7 @@ from pyomo.common.timing import TicTocTimer
 from conin.config import default_mip_solver
 from conin.exceptions import InsufficientSolutionsError
 from conin.inference.query_checks import full_query_variables, reject_pruning_options
+from conin.inference.results import map_results, map_solution
 from conin.representations.pyomo.common import C5LazyCutGenerator, has_omitted_c5
 from conin.util import try_import
 
@@ -27,7 +28,9 @@ def _solve_pyomo(repn, q):
     with gurobi), ``prune_network`` and ``create_MN`` (``True`` raises
     ``RuntimeError``), and the options of :func:`solve_pyomo_map_query_model`.
     An HMM is solved as its unrolled DBN
-    (:func:`~conin.inference.hmm_results.solve_unrolled_hmm`).
+    (:func:`~conin.inference.hmm_results.solve_unrolled_hmm`).  The solutions
+    are not scored here (``log_potential`` is ``None``): ``map_query`` scores
+    them.
     """
     options = dict(q.options)
     use_cut_generation = options.pop("use_cut_generation", False)
@@ -110,8 +113,6 @@ def solve_pyomo_map_query_model(
             parse_aos_solution_pyomo_map_query(model, aos_solution, solution_with_fixed)
             for aos_solution in aos_pm.solutions
         ]
-        soln = solutions[0]
-        termination_condition = "ok"
 
     elif solver == "gurobi":
         #
@@ -153,9 +154,7 @@ def solve_pyomo_map_query_model(
             timer.toc("Completed optimization")
 
         pe.assert_optimal_termination(res)
-        soln = parse_model_solution_pyomo_map_query(model, solution_with_fixed)
-        solutions = [soln]
-        termination_condition = "ok"
+        solutions = [parse_model_solution_pyomo_map_query(model, solution_with_fixed)]
         if cut_generator is not None:
             cut_stats = munch.Munch(
                 num_lazy_cuts=cut_generator.num_lazy_cuts,
@@ -185,9 +184,7 @@ def solve_pyomo_map_query_model(
             timer.toc("Completed optimization")
 
         pe.assert_optimal_termination(res)
-        soln = parse_model_solution_pyomo_map_query(model, solution_with_fixed)
-        solutions = [soln]
-        termination_condition = "ok"
+        solutions = [parse_model_solution_pyomo_map_query(model, solution_with_fixed)]
 
     #
     # Post-optimization processing
@@ -200,12 +197,7 @@ def solve_pyomo_map_query_model(
     if timing:  # pragma:nocover
         timer.toc("optimize_map_query_model - STOP")
 
-    results = munch.Munch(
-        solution=soln,
-        solutions=solutions,
-        termination_condition=termination_condition,
-        solvetime=solvetime,
-    )
+    results = map_results(solutions, solvetime=solvetime)
     if cut_stats is not None:
         results.cut_stats = cut_stats
         if timing:  # pragma:nocover
@@ -230,8 +222,7 @@ def parse_model_solution_pyomo_map_query(model, solution_with_fixed):
         fixed_variables
     ), "Some variables do not have values."
 
-    soln = munch.Munch(states=var, log_factor_sum=pe.value(model.o))
-    return soln
+    return map_solution(var, solver_objective=pe.value(model.o))
 
 
 def parse_aos_solution_pyomo_map_query(model, aos_solution, solution_with_fixed):
@@ -257,5 +248,4 @@ def parse_aos_solution_pyomo_map_query(model, aos_solution, solution_with_fixed)
 
     obj_list = aos_solution._objectives
     assert len(obj_list) > 0, "Solution in parse_aos_solution has empty objective list"
-    soln = munch.Munch(states=var, log_factor_sum=obj_list[0].value)
-    return soln
+    return map_solution(var, solver_objective=obj_list[0].value)

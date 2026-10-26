@@ -45,13 +45,13 @@ def _check_solutions(cmodel, observed, results):
     merged class, not the k best sequences (a known limitation).
     """
     best = _brute_force(cmodel, observed, 1)
-    assert results.solutions[0].log_likelihood == pytest.approx(best[0][0])
-    lls = [s.log_likelihood for s in results.solutions]
+    assert results.solutions[0].log_potential == pytest.approx(best[0][0])
+    lls = [s.log_potential for s in results.solutions]
     assert lls == sorted(lls, reverse=True)
     for sol in results.solutions:
-        assert cmodel.is_feasible(sol.hidden)
-        assert sol.log_likelihood == pytest.approx(
-            cmodel.model.log_probability(observed, sol.hidden)
+        assert cmodel.is_feasible(sol.states)
+        assert sol.log_potential == pytest.approx(
+            cmodel.model.log_probability(observed, sol.states)
         )
 
 
@@ -63,7 +63,7 @@ def test_partial_feasibility_uses_the_new_state():
     cmodel = ConstrainedHiddenMarkovModel(tc.create_hmm1(), _num_h0(0, 2, calls))
     observed = ["o0"] * 5
     results = recursive_a_star(hmm=cmodel, observed=observed)
-    assert results.solutions[0].hidden.count("h0") <= 2
+    assert results.solutions[0].states.count("h0") <= 2
     # Every check after the first step sees the extended prefix's length and
     # a state that may exceed the bound (it is then pruned).
     assert max(n for n, t, T in calls) == 3
@@ -75,7 +75,7 @@ def test_tight_bound_prunes_at_once():
     calls = []
     cmodel = ConstrainedHiddenMarkovModel(tc.create_hmm1(), _num_h0(0, 0, calls))
     results = recursive_a_star(hmm=cmodel, observed=["o0"] * 4)
-    assert results.solutions[0].hidden == ["h1"] * 4
+    assert results.solutions[0].states == ["h1"] * 4
     # 2 initial checks + 2 extensions at each of the 3 later steps.
     assert len(calls) == 2 + 3 * 2
 
@@ -94,7 +94,7 @@ def test_infeasible_leaves_are_skipped():
     results = recursive_a_star(hmm=cmodel, observed=observed, num_solutions=3)
     assert results.termination_condition == "ok"
     assert len(results.solutions) == 3
-    assert all(s.hidden.count("h0") == 2 for s in results.solutions)
+    assert all(s.states.count("h0") == 2 for s in results.solutions)
     _check_solutions(cmodel, observed, results)
 
 
@@ -108,15 +108,15 @@ def test_recursive_a_star_matches_brute_force(lb, ub, num_solutions):
     )
     _check_solutions(cmodel, observed, results)
     for sol in results.solutions:
-        assert lb <= sol.hidden.count("h0") <= ub
+        assert lb <= sol.states.count("h0") <= ub
 
 
 def test_recursive_and_oracle_a_star_agree():
     observed = ["o0"] * 15
     rec = recursive_a_star(hmm=tc.create_chmm1_recursive(), observed=observed)
     ora = a_star(observed=observed, hmm=tc.create_chmm1_oracle())
-    assert rec.solutions[0].hidden == ora.solution.hidden
-    assert rec.solutions[0].log_likelihood == pytest.approx(ora.solution.log_likelihood)
+    assert rec.solutions[0].states == ora.solution.states
+    assert rec.solutions[0].log_potential == pytest.approx(ora.solution.log_potential)
 
 
 def test_multiple_recursive_constraints_combine():
@@ -132,14 +132,14 @@ def test_multiple_recursive_constraints_combine():
     results = recursive_a_star(hmm=cmodel, observed=observed, num_solutions=2)
     _check_solutions(cmodel, observed, results)
     for sol in results.solutions:
-        assert 2 <= sol.hidden.count("h0") <= 3 and sol.hidden[-1] != "h0"
+        assert 2 <= sol.states.count("h0") <= 3 and sol.states[-1] != "h0"
 
 
 def test_bare_hmm_is_unconstrained_a_star():
     observed = ["o0", "o1", "o0"]
     rec = recursive_a_star(hmm=tc.create_hmm1(), observed=observed, num_solutions=3)
     ora = a_star(observed=observed, hmm=tc.create_hmm1(), num_solutions=3)
-    assert [s.hidden for s in rec.solutions] == [s.hidden for s in ora.solutions]
+    assert [s.states for s in rec.solutions] == [s.states for s in ora.solutions]
 
 
 def test_is_feasible_for_recursive_constraints():
@@ -180,7 +180,7 @@ def test_limits_that_are_not_reached_do_not_change_the_result():
     results = recursive_a_star(
         hmm=cmodel, observed=observed, max_iterations=10**6, max_time=10**6
     )
-    assert results == expected
+    assert results.solutions == expected.solutions
     assert results.termination_condition == "ok"
 
 

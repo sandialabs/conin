@@ -18,8 +18,8 @@ by the representation registry: unsupported pairs raise its
 ``InvalidInputError``.
 """
 
-import munch
 from ovld import ovld
+from pyomo.common.timing import TicTocTimer
 
 from conin.constrained_models import (
     ConstrainedDynamicDiscreteBayesianNetwork,
@@ -49,7 +49,8 @@ from conin.representations.toulbar2 import (
 from conin.representations.unrolled import dbn_time_range
 
 from .hmm_results import key_solutions_by_time, solve_unrolled_hmm
-from .methods import MAP_METHODS, check_method, representation_kind
+from .results import map_results, map_solution, score_hmm_solutions, score_solutions
+from conin.representations.methods import MAP_METHODS, check_method, representation_kind
 from .oracle.a_star_hmm import _a_star
 from .pyomo.hmm_network_flow import _solve_network_flow
 from .pyomo.solve import _solve_pyomo
@@ -70,7 +71,7 @@ METHODS = MAP_METHODS
 def _representation_kind(method, cmodel, options):
     """Return the representation kind that ``method`` solves on ``cmodel``.
 
-    See :mod:`conin.inference.methods`: ``"integer_program"`` pops
+    See :mod:`conin.representations.methods`: ``"integer_program"`` pops
     ``ip_formulation`` from ``options`` (``None``/``"markov_network"`` ->
     ``"pyomo"``, ``"network_flow"`` -> ``"pyomo_network_flow"``), and
     ``"a_star"`` uses ``"recursive"`` for recursive constraints and
@@ -201,12 +202,18 @@ def map_query(
     Returns
     -------
     munch.Munch
-        Result object produced by the selected inference helper. The
-        returned object contains ``solution`` (with ``states``; ``None`` if
-        A* finds no solution), ``solutions`` and, for the solver-based
-        methods, ``solvetime``. The HMM methods also return ``observed``;
-        ``mvr_viterbi`` solutions also have ``log_likelihood`` and
-        ``augmented`` (the decoded augmented path).
+        The same keys for every method (see :mod:`conin.inference.results`):
+        ``solution`` (the best solution; ``None`` if A* finds none),
+        ``solutions`` (best first), ``termination_condition`` (``"ok"`` or
+        why the search stopped) and ``solvetime``.  Each solution has
+        ``states`` (``{node: state}``; for an HMM, the hidden states as a
+        list, or a dict keyed by time step if the evidence was a dict),
+        ``log_potential`` (:func:`conin.scoring.log_potential` of the
+        assignment and the evidence on the model without its constraints;
+        ``None`` for a partial MAP query) and ``solver_objective`` (the
+        integer program's or toulbar2's objective value, in the backend's
+        scale; ``None`` for the other methods).  ``mvr_viterbi`` solutions
+        also have ``augmented`` (the decoded augmented path).
 
     Raises
     ------
@@ -219,6 +226,10 @@ def map_query(
         family (no such representation is registered), if the evidence of
         an HMM is not a list, tuple or dict keyed by ``0..T-1``, or if
         ``stop`` is past the last observation.
+    ImportError
+        If the method's backend is not installed (pgmpy for
+        ``variable_elimination``, pytoulbar2 for ``toulbar2``, torch for
+        ``mvr_viterbi``).
 
     Examples
     --------
@@ -247,6 +258,7 @@ def map_query(
         **_structure_params(kind, cmodel, observed=observed, start=start, stop=stop),
     )
     query = map_query_args(
+        model=cmodel.model,
         variables=variables,
         evidence=evidence,
         observed=observed,
@@ -267,17 +279,31 @@ def map_query(
 # MN, BN and DBN representations (overloads on the backend's base class).
 # Their HMM representations are solved as the unrolled DBN by
 # solve_unrolled_hmm.  Network flow, Viterbi, A* and the MVR Viterbi are
-# HMM algorithms with their own overloads.
+# HMM algorithms with their own overloads.  Every result has the shape of
+# conin.inference.results: the factor backends' solutions are scored here,
+# the HMM algorithms score their own.
+
+
+def _factor_solve(solve, repn, q):
+    """Solve an MN, BN or DBN query; score the solutions on the (unrolled) model."""
+    results = solve(repn, q)
+    return score_solutions(results, repn.pgm, evidence=q.evidence, nodes=repn.nodes)
+
+
+def _unrolled_hmm_solve(solve, repn, q):
+    """Solve an HMM query as its unrolled DBN; score the solutions on the HMM."""
+    results = solve_unrolled_hmm(solve, repn, q)
+    return score_hmm_solutions(results, q.model, q.observed)
 
 
 @ovld
 def _solve_map_query(repn: PyomoFactorRepresentation, q):
-    return _solve_pyomo(repn, q)
+    return _factor_solve(_solve_pyomo, repn, q)
 
 
 @ovld
 def _solve_map_query(repn: PyomoHMMRepresentation, q):
-    return solve_unrolled_hmm(_solve_pyomo, repn, q)
+    return _unrolled_hmm_solve(_solve_pyomo, repn, q)
 
 
 @ovld
@@ -287,22 +313,22 @@ def _solve_map_query(repn: PyomoNetworkFlowHMMRepresentation, q):
 
 @ovld
 def _solve_map_query(repn: Toulbar2FactorRepresentation, q):
-    return _solve_toulbar2(repn, q)
+    return _factor_solve(_solve_toulbar2, repn, q)
 
 
 @ovld
 def _solve_map_query(repn: Toulbar2HMMRepresentation, q):
-    return solve_unrolled_hmm(_solve_toulbar2, repn, q)
+    return _unrolled_hmm_solve(_solve_toulbar2, repn, q)
 
 
 @ovld
 def _solve_map_query(repn: PgmpyRepresentation, q):
-    return _solve_variable_elimination(repn, q)
+    return _factor_solve(_solve_variable_elimination, repn, q)
 
 
 @ovld
 def _solve_map_query(repn: PgmpyHMMRepresentation, q):
-    return solve_unrolled_hmm(_solve_variable_elimination, repn, q)
+    return _unrolled_hmm_solve(_solve_variable_elimination, repn, q)
 
 
 def _hmm_search(search, repn, q, **options):
@@ -326,17 +352,7 @@ def _solve_map_query(repn: OracleHMMRepresentation, q):
 
 @ovld
 def _solve_map_query(repn: RecursiveHMMRepresentation, q):
-    results = _hmm_search(_recursive_a_star_result, repn, q, **q.options)
-    results.solution = results.solutions[0] if results.solutions else None
-    return results
-
-
-def _recursive_a_star_result(repn, *, observed, **options):
-    """Recursive A* with solutions shaped like A*'s (``states``, ``hidden``, ``log_likelihood``)."""
-    results = _recursive_a_star(repn, observed=observed, **options)
-    for soln in results.solutions:
-        soln.states = soln.hidden
-    return results
+    return _hmm_search(_recursive_a_star, repn, q, **q.options)
 
 
 @ovld
@@ -359,24 +375,20 @@ def _solve_map_query(repn: MVRHMMRepresentation, q):
     # Imported here so that importing conin does not import torch.
     from conin.inference.mvr.viterbi import _viterbi_torch_mvr
 
-    hidden, augmented, log_likelihood = _viterbi_torch_mvr(
+    timer = TicTocTimer()
+    timer.tic(None)
+    hidden, augmented = _viterbi_torch_mvr(
         repn,
         evidence,
         time_horizon=time_horizon,
         return_augmented=True,
-        return_score=True,
         **q.options,
     )
+    solvetime = timer.toc(None)
     states = dict(enumerate(hidden)) if isinstance(evidence, dict) else hidden
-    soln = munch.Munch(
-        states=states,
-        hidden=states,
-        log_likelihood=log_likelihood,
-        augmented=augmented,
+    results = map_results(
+        [map_solution(states, augmented=augmented)], solvetime=solvetime
     )
-    return munch.Munch(
-        observed=evidence,
-        solution=soln,
-        solutions=[soln],
-        termination_condition="ok",
-    )
+    # The observations may be sparse ({time: label}); an unobserved time
+    # contributes its transition only, as in the MVR Viterbi's own score.
+    return score_hmm_solutions(results, repn.model, evidence)

@@ -100,7 +100,9 @@ def test_examples_gurobi_cut_generation(name, user_cuts):
         solver_options=dict(GUROBI_QUIET),
     )
     assert cuts.solution.states == full.solution.states
-    assert cuts.solution.log_factor_sum == pytest.approx(full.solution.log_factor_sum)
+    assert cuts.solution.solver_objective == pytest.approx(
+        full.solution.solver_objective
+    )
     assert cuts.cut_stats.num_lazy_cuts > 0
     if not user_cuts:
         assert cuts.cut_stats.num_user_cuts == 0
@@ -138,8 +140,8 @@ def test_random_gurobi_cut_generation(density, user_cuts):
             c5_user_cuts=user_cuts,
             solver_options=dict(GUROBI_QUIET),
         )
-        assert results.solution.log_factor_sum == pytest.approx(
-            ref.solution.log_factor_sum
+        assert results.solution.solver_objective == pytest.approx(
+            ref.solution.solver_objective
         )
 
 

@@ -1,7 +1,8 @@
 import numpy as np
-import munch
+from pyomo.common.timing import TicTocTimer
 
 from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.inference.results import map_results, map_solution, score_hmm_solutions
 
 
 def viterbi_(*, observed, hmm):
@@ -16,8 +17,12 @@ def viterbi_(*, observed, hmm):
             (``representation("matvec")`` of the HMM).
 
     Returns:
-        list: The most likely sequence of hidden states.
+        munch.Munch: The result (see :mod:`conin.inference.results`); the
+        ``states`` of the solution are internal indices and its
+        ``log_potential`` is the Viterbi score.
     """
+    timer = TicTocTimer()
+    timer.tic(None)
     time_steps = len(observed)
     hidden_states = range(hmm.num_hidden_states)
     # Lists of log-probabilities (-inf for zeros): faster to index than arrays
@@ -62,14 +67,9 @@ def viterbi_(*, observed, hmm):
     for t in range(time_steps - 2, -1, -1):
         hidden[t] = backpointer[hidden[t + 1], t + 1]
 
-    soln = munch.Munch(states=hidden, hidden=hidden, log_likelihood=max_prob)
-    ans = munch.Munch(
-        observed=observed,
-        solution=soln,
-        solutions=[soln],
-        termination_condition="ok",
-    )
-    return ans
+    soln = map_solution(hidden)
+    soln.log_potential = max_prob
+    return map_results([soln], solvetime=timer.toc(None))
 
 
 def viterbi(*, observed, hmm):
@@ -83,7 +83,10 @@ def viterbi(*, observed, hmm):
             (otherwise ``InvalidInputError`` is raised).
 
     Returns:
-        list: The most likely sequence of hidden states.
+        munch.Munch: ``solution``, ``solutions``, ``termination_condition``
+        and ``solvetime``; the solution has ``states`` (the hidden states),
+        ``log_potential`` (``log P(hidden, observed)``) and
+        ``solver_objective`` (``None``).  See :mod:`conin.inference.results`.
     """
     cmodel = ConstrainedHiddenMarkovModel.ensure(hmm)
     # Raises InvalidInputError if there are constraints.
@@ -97,16 +100,13 @@ def _viterbi(repn, *, observed):
     ans_ = viterbi_(observed=observed_, hmm=repn)
 
     # Convert internal indices back to external labels
-    solutions = []
-    for sol in ans_.solutions:
-        hidden = [hmm.hidden_to_external[h] for h in sol.hidden]
-        solutions.append(
-            munch.Munch(states=hidden, hidden=hidden, log_likelihood=sol.log_likelihood)
-        )
-
-    return munch.Munch(
-        observed=observed,
-        solution=solutions[0],
-        solutions=solutions,
+    solutions = [
+        map_solution([hmm.hidden_to_external[h] for h in sol.states])
+        for sol in ans_.solutions
+    ]
+    results = map_results(
+        solutions,
+        solvetime=ans_.solvetime,
         termination_condition=ans_.termination_condition,
     )
+    return score_hmm_solutions(results, hmm, observed)

@@ -121,7 +121,7 @@ def test_one_representation_serves_several_queries():
     first = viterbi_(observed=observed, hmm=repn)
     second = viterbi_(observed=observed[:4], hmm=repn)
     again = viterbi_(observed=observed, hmm=repn)
-    assert first == again and len(second.solution.hidden) == 4
+    assert first.solutions == again.solutions and len(second.solution.states) == 4
     for name in ARRAYS:
         assert np.array_equal(getattr(repn, name), before[name])
 
@@ -130,11 +130,12 @@ def test_viterbi_and_a_star_accept_an_unconstrained_constrained_model():
     hmm = _sparse_hmm()
     observed = ["x", "y", "z", "z", "z"]
     expected = viterbi(observed=observed, hmm=hmm)
-    assert viterbi(observed=observed, hmm=ConstrainedHiddenMarkovModel(hmm)) == expected
-    assert expected.solution.hidden == ["b", "c", "a", "a", "a"]
+    wrapped = viterbi(observed=observed, hmm=ConstrainedHiddenMarkovModel(hmm))
+    assert wrapped.solutions == expected.solutions
+    assert expected.solution.states == ["b", "c", "a", "a", "a"]
     best = a_star(observed=observed, hmm=ConstrainedHiddenMarkovModel(hmm))
-    assert best.solution.hidden == expected.solution.hidden
-    assert best.solution.log_likelihood == expected.solution.log_likelihood
+    assert best.solution.states == expected.solution.states
+    assert best.solution.log_potential == expected.solution.log_potential
 
 
 def test_viterbi_rejects_constraints():

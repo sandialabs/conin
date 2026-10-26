@@ -1,9 +1,9 @@
 import heapq
 import numpy as np
-import munch
 import time
 
 from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.inference.results import map_results, map_solution, score_hmm_solutions
 
 from dataclasses import dataclass, field
 from typing import Any
@@ -46,8 +46,10 @@ def a_star_(
             (``representation("matvec")`` of the HMM; ``oracle.hmm`` if omitted)
 
     Returns:
-        munch.Munch: ``observed``, ``solution`` (``None`` if no solution was
-        found), ``solutions`` and ``termination_condition``.
+        munch.Munch: ``solution`` (``None`` if no solution was found),
+        ``solutions``, ``termination_condition`` and ``solvetime`` (see
+        :mod:`conin.inference.results`); the ``states`` of the solutions are
+        internal indices and their ``log_potential`` is the search score.
     """
     start_time = time.time()
 
@@ -114,10 +116,10 @@ def a_star_(
 
         if t == time_steps:
             if oracle is None or oracle.is_feasible(seq):
+                soln = map_solution(seq)
                 # np.float64, as when the scores were computed with numpy scalars
-                output.append(
-                    munch.Munch(states=seq, hidden=seq, log_likelihood=np.float64(-val))
-                )
+                soln.log_potential = np.float64(-val)
+                output.append(soln)
                 if len(output) == num_solutions:
                     termination_condition = "ok"
                     break
@@ -177,13 +179,11 @@ def a_star_(
         else:
             termination_condition = "ok"
 
-    ans = munch.Munch(
-        observed=observed,
-        solution=output[0] if output else None,
-        solutions=output,
+    return map_results(
+        output,
+        solvetime=time.time() - start_time,
         termination_condition=termination_condition,
     )
-    return ans
 
 
 def a_star(
@@ -208,8 +208,10 @@ def a_star(
     Returns
     -------
     munch.Munch
-        ``observed``, ``solution``, ``solutions`` (each with ``states``,
-        ``hidden`` and ``log_likelihood``) and ``termination_condition``.
+        ``solution``, ``solutions``, ``termination_condition`` and
+        ``solvetime``; each solution has ``states`` (the hidden states),
+        ``log_potential`` (``log P(hidden, observed)``) and
+        ``solver_objective`` (``None``).  See :mod:`conin.inference.results`.
         If no feasible sequence is found (the constraints exclude every
         sequence, or ``max_iterations``/``max_time`` stops the search first),
         ``solution`` is ``None`` and ``solutions`` holds what was found.
@@ -231,16 +233,13 @@ def _a_star(oracle, *, observed, **kwargs):
     ans_ = a_star_(observed=observed_, oracle=oracle, hmm=matvec, **kwargs)
 
     # Convert internal indices back to external labels
-    solutions = []
-    for sol in ans_.solutions:
-        hidden = [hmm.hidden_to_external[h] for h in sol.hidden]
-        solutions.append(
-            munch.Munch(states=hidden, hidden=hidden, log_likelihood=sol.log_likelihood)
-        )
-
-    return munch.Munch(
-        observed=observed,
-        solution=solutions[0] if solutions else None,
-        solutions=solutions,
+    solutions = [
+        map_solution([hmm.hidden_to_external[h] for h in sol.states])
+        for sol in ans_.solutions
+    ]
+    results = map_results(
+        solutions,
+        solvetime=ans_.solvetime,
         termination_condition=ans_.termination_condition,
     )
+    return score_hmm_solutions(results, hmm, observed)

@@ -7,13 +7,12 @@ The model is built by the ``"pyomo_network_flow"`` representation
 import logging
 import math
 
-import munch
-
 from conin.config import default_mip_solver
 from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.exceptions import InsufficientSolutionsError, InvalidInputError
 from conin.graphical_models.hmm_observations import as_sequence
 from conin.inference.hmm_results import key_solutions_by_time
+from conin.inference.results import map_results, map_solution, score_hmm_solutions
 from conin.util import try_import
 
 import pyomo.environ as pyo
@@ -78,9 +77,11 @@ def lp_inference(
     Returns
     -------
     munch.Munch
-        ``observed``, ``solution``, ``solutions`` (each with ``states``,
-        ``hidden`` and ``log_likelihood``), ``termination_condition`` and
-        ``solvetime``.
+        ``solution``, ``solutions``, ``termination_condition`` and
+        ``solvetime``; the solution has ``states`` (the hidden states),
+        ``log_potential`` (``log P(hidden, observed)``) and
+        ``solver_objective`` (the LP objective).  See
+        :mod:`conin.inference.results`.
     """
     repn = ConstrainedHiddenMarkovModel(hmm).representation("pyomo_network_flow")
     return _lp_inference(
@@ -132,7 +133,7 @@ def _lp_inference(
 
     T = len(observed)
 
-    log_likelihood = pyo.value(M.hmm.o)
+    objective = pyo.value(M.hmm.o)
     hidden = ["__UNKNOWN__"] * T
     for t in range(T):
         for a in data.hmm.A:
@@ -142,14 +143,10 @@ def _lp_inference(
             hidden[t] != "__UNKNOWN__"
         ), f"ERROR: Unexpected missing hidden state at time step {t}"
 
-    soln = munch.Munch(states=hidden, hidden=hidden, log_likelihood=log_likelihood)
-    ans = munch.Munch(
-        observed=observed,
-        solution=soln,
-        solutions=[soln],
-        termination_condition="ok",
-        solvetime=solvetime,
+    ans = map_results(
+        [map_solution(hidden, solver_objective=objective)], solvetime=solvetime
     )
+    score_hmm_solutions(ans, hmm, observed)
     if debug:
         ans.hmm = hmm
         ans.M = M
@@ -188,9 +185,11 @@ def ip_inference(
     Returns
     -------
     munch.Munch
-        ``observed``, ``solution``, ``solutions`` (each with ``states``,
-        ``hidden``, ``log_likelihood`` and ``variables``),
-        ``termination_condition`` and ``solvetime``.
+        ``solution``, ``solutions``, ``termination_condition`` and
+        ``solvetime``; each solution has ``states`` (the hidden states),
+        ``log_potential`` (``log P(hidden, observed)``),
+        ``solver_objective`` (the IP objective) and ``variables`` (the
+        nonzero model variables).  See :mod:`conin.inference.results`.
     """
     return _ip_inference(
         hmm.representation("pyomo_network_flow"),
@@ -246,15 +245,12 @@ def _ip_inference(
             raise InsufficientSolutionsError(
                 "No solutions found by the 'or_topas' solver"
             )
-        solutions = []
-        for index, aos_solution in enumerate(aos_pm.solutions):
-            aos_sol_munch = parse_aos_solution_pyomo_ip_inference(
+        solutions = [
+            parse_aos_solution_pyomo_ip_inference(
                 aos_solution=aos_solution, M=M, hmm=hmm, T=T, data=data
             )
-            if index == 0:
-                first_sol = aos_sol_munch
-            solutions.append(aos_sol_munch)
-        soln = first_sol
+            for aos_solution in aos_pm.solutions
+        ]
     else:
         # this is solver != "or_topas"
         if debug:
@@ -270,15 +266,15 @@ def _ip_inference(
         if debug:
             toc("Optimizing Model - STOP")
 
-        # We are maximizing, so the lower bound is the best incumbent found by the solver.
-        # We assume that the active objective is a log-likelihood score.
-        # so this is just the objective
-        log_likelihood = res["Problem"][0]["Lower bound"]
+        # We are maximizing, so the lower bound is the best incumbent found
+        # by the solver.
+        objective = res["Problem"][0]["Lower bound"]
 
-        soln = parse_model_solution_pyomo_ip_inference(
-            M=M, hmm=hmm, T=T, log_likelihood=log_likelihood, data=data
-        )
-        solutions = [soln]
+        solutions = [
+            parse_model_solution_pyomo_ip_inference(
+                M=M, hmm=hmm, T=T, objective=objective, data=data
+            )
+        ]
 
     if debug:
         print(f"E: {len(data.hmm.E)}")
@@ -290,16 +286,11 @@ def _ip_inference(
         print(f"T: {len(data.hmm.T)}")
         print(f"A: {len(data.hmm.A)}")
 
-    return munch.Munch(
-        observed=observed,
-        solution=soln,
-        solutions=solutions,
-        termination_condition="ok",
-        solvetime=solvetime,
-    )
+    results = map_results(solutions, solvetime=solvetime)
+    return score_hmm_solutions(results, hmm, observed)
 
 
-def parse_model_solution_pyomo_ip_inference(M, hmm, T, log_likelihood, *, data):
+def parse_model_solution_pyomo_ip_inference(M, hmm, T, objective, *, data):
     hidden = ["__UNKNOWN__"] * T
     for t in range(T):
         for a in data.hmm.A:
@@ -314,19 +305,14 @@ def parse_model_solution_pyomo_ip_inference(M, hmm, T, log_likelihood, *, data):
         str(v): pyo.value(v) for v in model_variables if math.fabs(pyo.value(v)) > 1e-3
     }
 
-    return munch.Munch(
-        states=hidden,
-        hidden=hidden,
-        log_likelihood=log_likelihood,
-        variables=variables,
-    )
+    return map_solution(hidden, solver_objective=objective, variables=variables)
 
 
 def parse_aos_solution_pyomo_ip_inference(aos_solution, M, hmm, T, *, data):
     obj_list = aos_solution._objectives
     assert len(obj_list) > 0, "Solution in parse_aos_solution has empty objective list"
     # this implicitly forces an assumption that there is only 1 objective
-    log_likelihood = obj_list[0].value
+    objective = obj_list[0].value
     hidden = ["__UNKNOWN__"] * T
     for t in range(T):
         for a in data.hmm.A:
@@ -344,9 +330,4 @@ def parse_aos_solution_pyomo_ip_inference(aos_solution, M, hmm, T, *, data):
         if math.fabs(aos_var.value) > 1e-3
     }
 
-    return munch.Munch(
-        states=hidden,
-        hidden=hidden,
-        log_likelihood=log_likelihood,
-        variables=variables,
-    )
+    return map_solution(hidden, solver_objective=objective, variables=variables)

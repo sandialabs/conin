@@ -4,25 +4,14 @@ The models are built by the ``"toulbar2"`` representations
 (:mod:`conin.representations.toulbar2`).
 """
 
-import munch
 from pyomo.common.timing import TicTocTimer
 
 from conin.inference.query_checks import full_query_variables, reject_pruning_options
+from conin.inference.results import map_results, map_solution
 from conin.util import try_import
 
 with try_import() as pytoulbar2_available:
     import pytoulbar2
-
-_NOT_AVAILABLE = "pytoulbar2 not available"
-
-
-def _not_available():
-    return munch.Munch(
-        solution=None,
-        solutions=[],
-        termination_condition=_NOT_AVAILABLE,
-        solvetime=0.0,
-    )
 
 
 def _solve_toulbar2(repn, q):
@@ -35,9 +24,14 @@ def _solve_toulbar2(repn, q):
     ``create_MN`` (``True`` raises ``RuntimeError``), and the options of
     :func:`solve_toulbar2_map_query_model`.  An HMM is solved as its unrolled
     DBN (:func:`~conin.inference.hmm_results.solve_unrolled_hmm`).
+
+    Raises
+    ------
+    ImportError
+        If pytoulbar2 is not installed.
     """
     if not pytoulbar2_available:
-        return _not_available()
+        raise ImportError("method='toulbar2' needs pytoulbar2, which is not installed")
     options = dict(q.options)
     verbose = options.pop("verbose", -1)
     write_uai_file = options.pop("write_uai_file", None)
@@ -76,9 +70,10 @@ def solve_toulbar2_map_query_model(
     Returns
     -------
     munch.Munch
-        ``solution`` (with ``states``, ``{node: state}``, and the CFN
-        ``primal_bound``), ``solutions`` (``[solution]``),
-        ``termination_condition`` (``"ok"``) and ``solvetime``.
+        ``solution`` (``states``, ``{node: state}``; ``solver_objective``,
+        the CFN's primal bound, an integer cost; ``log_potential`` is
+        ``None``), ``solutions`` (``[solution]``), ``termination_condition``
+        (``"ok"``) and ``solvetime``; see :mod:`conin.inference.results`.
     """
     solution_with_evidence = solution_with_fixed or solution_with_evidence
     if timing:  # pragma:nocover
@@ -95,14 +90,9 @@ def solve_toulbar2_map_query_model(
         for name, i in model.V.items()
         if solution_with_evidence or name not in model.V_evidence
     }
-    soln = munch.Munch(states=var, log_factor_sum=None, primal_bound=primal_bound)
+    soln = map_solution(var, solver_objective=primal_bound)
 
     if timing:  # pragma:nocover
         timer.toc("Completed optimization")
 
-    return munch.Munch(
-        solution=soln,
-        solutions=[soln],
-        termination_condition="ok",
-        solvetime=solvetime,
-    )
+    return map_results([soln], solvetime=solvetime)

@@ -1,8 +1,8 @@
 """Run pgmpy's variable elimination MAP query and package the result."""
 
-import munch
 from pyomo.common.timing import TicTocTimer
 
+from conin.inference.results import map_results, map_solution
 from conin.util import try_import
 
 with try_import() as pgmpy_available:
@@ -28,7 +28,10 @@ def solve_variable_elimination_map_query_model(
     Returns
     -------
     munch.Munch
-        ``solution.states`` (a dict) and ``solvetime``.
+        ``solution`` (``states``, a dict; ``log_potential`` and
+        ``solver_objective`` are ``None``), ``solutions`` (``[solution]``),
+        ``termination_condition`` (``"ok"``) and ``solvetime``; see
+        :mod:`conin.inference.results`.
     """
     infer = pgmpy.inference.VariableElimination(model)
     if variables is None:
@@ -45,7 +48,7 @@ def solve_variable_elimination_map_query_model(
         show_progress=show_progress,
     )
     solvetime = solver_timer.toc(None)
-    return munch.Munch(solution=munch.Munch(states=map_states), solvetime=solvetime)
+    return map_results([map_solution(map_states)], solvetime=solvetime)
 
 
 def _with_timing(timing, func):
@@ -107,7 +110,8 @@ def _solve_variable_elimination(repn, q):
             timing=q.timing,
         )
         if solution_with_evidence and q.evidence:
-            results.solution.states.update(q.evidence)
+            for soln in results.solutions:
+                soln.states.update(q.evidence)
         return results
 
     return _with_timing(q.timing, _execute)

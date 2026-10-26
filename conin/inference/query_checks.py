@@ -10,6 +10,7 @@ import munch
 
 def map_query_args(
     *,
+    model=None,
     variables=None,
     evidence=None,
     observed=None,
@@ -21,10 +22,13 @@ def map_query_args(
 ):
     """The query that :func:`~conin.inference.map_query` passes to the solvers.
 
-    ``evidence`` is the evidence as given; for an HMM, ``observed`` is the
-    list of observations.  ``options`` are the method options (a new dict).
+    ``model`` is the queried model without its constraints (the solutions are
+    scored on it).  ``evidence`` is the evidence as given; for an HMM,
+    ``observed`` is the list of observations.  ``options`` are the method
+    options (a new dict).
     """
     return munch.Munch(
+        model=model,
         variables=variables,
         evidence=evidence,
         observed=observed,

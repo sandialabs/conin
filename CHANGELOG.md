@@ -100,6 +100,22 @@ Migration table (old -> new)
   conin.common.pgmpy (convert_pgmpy_to_conin, MapCPD, is_polytree)
                                     -> conin.pgmpy
   log_probability, log_potential    -> conin.scoring
+  MAP solution keys: hidden         -> states
+                     log_likelihood, log_factor_sum
+                                    -> log_potential (the same score for
+                                       every method)
+                     primal_bound, log_factor_sum (objective)
+                                    -> solver_objective
+  MAP result keys: observed         -> removed (the observations passed in)
+  recursive_a_star knowledge_state_times, objective_values
+                                    -> removed (use solutions[i].log_potential)
+  conin.io.load_conin_model_from_uai, save_model_uai,
+  load_conin_model_from_cfn         -> conin.io.load_uai, save_uai, load_cfn
+  create_MN_pyomo_map_query_model_from_factorial_repn
+                                    -> private (_create_pyomo_map_query_model);
+                                       use cmodel.representation("pyomo")
+                                       .create_model()
+  conin.inference.methods           -> conin.representations.methods
 
 Models
 
@@ -213,8 +229,8 @@ Inference
   AStarInference, ViterbiInference, VariableElimination) and the empty
   conin.inference.{mn,bn,dbn,hmm} packages are removed. CHMM inputs are no
   longer accepted.
-- New method="mvr_viterbi" (torch): the solution also has log_likelihood and
-  augmented; dict evidence is sparse; start must be 0.
+- New method="mvr_viterbi" (torch): the solution also has augmented; dict
+  evidence is sparse; start must be 0.
 - method="a_star" with RecursiveConstraints runs recursive_a_star.
   recursive_a_star takes hmm= (a constrained HMM with RecursiveConstraints or
   a bare HMM); a_star_(..., chmm=) is a_star_(..., oracle=).
@@ -235,10 +251,11 @@ Inference
   prune_network=False/create_MN=False are accepted; network flow refuses
   unsupported evidence with InvalidInputError (it returned None) and uses
   lp_inference for an unconstrained ConstrainedHiddenMarkovModel.
-- toulbar2: works for every model type with verbose=; the DBN/HMM paths
-  return the "pytoulbar2 not available" result without pytoulbar2; a partial
-  variables query raises RuntimeError (it was ignored); write_uai_file writes
-  exactly that file.
+- toulbar2: works for every model type with verbose=; without pytoulbar2 it
+  raises ImportError for every model type, as the other backends do (it
+  returned a result with termination_condition "pytoulbar2 not available"); a
+  partial variables query raises RuntimeError (it was ignored);
+  write_uai_file writes exactly that file.
 - DBN queries with stop=None unroll over 0..1 for every method.
 - variable_elimination: pgmpy inputs are converted to CONIN like on every
   other path; on a constrained Markov network it keeps the user evidence and
@@ -261,6 +278,25 @@ Inference
   migration table). The model-solving functions solve_pyomo_map_query_model,
   solve_toulbar2_map_query_model, solve_variable_elimination_map_query_model,
   lp_inference and ip_inference stay.
+- Every MAP result has the same keys for every method (conin.inference.results):
+  solution, solutions, termination_condition and solvetime (viterbi, a_star,
+  recursive_a_star and mvr_viterbi had no solvetime; variable_elimination had
+  no solutions or termination_condition; the HMM methods returned observed;
+  recursive_a_star had no solution). Every solution has states,
+  log_potential and solver_objective. HMM solutions no longer have hidden (it
+  was the same as states). log_potential is conin.scoring.log_potential of the
+  assignment with the evidence on the model without its constraints (for an
+  HMM, log P(hidden, observed)), so it is the same for every method; it
+  replaces log_likelihood (viterbi, A*, network flow, mvr_viterbi) and
+  log_factor_sum (integer program; it was the IP objective, whose factors are
+  normalised per factor, so it was not log P(x): -10.21 instead of -3.97 for
+  the same HMM path). The backend's objective is solver_objective (the IP
+  objective, or toulbar2's primal bound, an integer cost). A partial MAP query
+  (variable_elimination with variables=) gets log_potential None, as do the
+  solve_*_map_query_model functions, which do not see the model.
+- The or_topas solutions of an HMM integer program (ip_formulation=
+  "markov_network") are all converted to hidden states (only the first was;
+  the others kept the unrolled ("H", t)/("E", t) keys).
 
 Scoring
 
@@ -304,11 +340,14 @@ I/O and conversion
 - conin/mediation_variables (an unused NumPy prototype of the mediation
   variable algorithms, with its notebooks) is removed; the MVR algorithms are
   in conin.inference.mvr, conin.learning.mvr and conin.sampling.mvr.
+- The format loaders and saver are renamed to match: load_uai, save_uai and
+  load_cfn (were load_conin_model_from_uai, save_model_uai and
+  load_conin_model_from_cfn); load_model/save_model are unchanged.
 - New extras: toulbar2 (pytoulbar2) and torch.
 
 Bug fixes
 
-- save_model_uai replaces the file extension with os.path.splitext: a dot in
+- save_uai (then save_model_uai) replaces the file extension with os.path.splitext: a dot in
   a directory name, or a "./" prefix, wrote another file.
 - Saving a CONIN model to a .bif file no longer raises "Unknown format" after
   writing it.

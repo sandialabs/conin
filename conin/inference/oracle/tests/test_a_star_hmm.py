@@ -77,7 +77,7 @@ def test_pruning_rejects_the_extended_prefix_not_its_parent():
     observed = ["o0"] * 6
     results = a_star(observed=observed, hmm=cmodel)
     assert results.termination_condition == "ok"
-    assert results.solution.hidden == ["h1"] * 6
+    assert results.solution.states == ["h1"] * 6
 
     # The extensions are checked (prefixes of length 1..T), not the parents.
     assert {len(s) for s in counter.partial_calls} == set(range(1, 7))
@@ -92,7 +92,7 @@ def test_pruning_reduces_the_search_without_changing_the_optimum():
     # Without the pruning (it used to never fire) this search needs 983
     # iterations; with it, 506.
     assert (
-        a_star(observed=observed, hmm=cmodel, max_iterations=506).solution.hidden
+        a_star(observed=observed, hmm=cmodel, max_iterations=506).solution.states
         == expected
     )
     # One iteration fewer finds no solution.
@@ -114,7 +114,7 @@ def test_no_solution_within_max_iterations_is_reported():
     assert results.solution is None
     assert results.solutions == []
     assert results.termination_condition == "max_iterations: 505"
-    assert results.observed == ["o0"] * 20
+    assert results.solvetime >= 0
 
 
 def test_max_time_stops_the_search():
@@ -131,7 +131,7 @@ def test_limits_that_are_not_reached_do_not_change_the_result():
     results = a_star(
         observed=observed, hmm=cmodel, max_iterations=10**6, max_time=10**6
     )
-    assert results == expected
+    assert results.solutions == expected.solutions
     assert results.termination_condition == "ok"
 
 
@@ -156,7 +156,7 @@ def test_fewer_solutions_than_asked_for_are_returned():
     never_h1 = OracleConstraint(func=lambda states: "h1" not in states.values())
     cmodel = ConstrainedHiddenMarkovModel(hmm, never_h1)
     results = a_star(observed=["o0"] * 3, hmm=cmodel, num_solutions=3)
-    assert [s.hidden for s in results.solutions] == [["h0"] * 3]
+    assert [s.states for s in results.solutions] == [["h0"] * 3]
     assert results.solution == results.solutions[0]
     assert results.termination_condition == "ok"
 
@@ -176,9 +176,9 @@ def test_chmm1_oracle_matches_brute_force(T, num_solutions):
     observed = (["o1", "o0", "o1"] * 5)[:T]
     results = a_star(observed=observed, hmm=cmodel, num_solutions=num_solutions)
     expected = _brute_force(cmodel, observed, num_solutions)
-    assert [s.hidden for s in results.solutions] == [seq for _, seq in expected]
+    assert [s.states for s in results.solutions] == [seq for _, seq in expected]
     for sol, (p, _) in zip(results.solutions, expected):
-        assert sol.log_likelihood == pytest.approx(p)
+        assert sol.log_potential == pytest.approx(p)
 
 
 @pytest.mark.parametrize(
@@ -205,7 +205,7 @@ def test_time_frame_constraints_match_brute_force(constraint):
     observed = ["o0", "o1", "o0", "o0", "o1", "o0"]
     results = a_star(observed=observed, hmm=cmodel, num_solutions=2)
     expected = _brute_force(cmodel, observed, 2)
-    assert [s.hidden for s in results.solutions] == [seq for _, seq in expected]
+    assert [s.states for s in results.solutions] == [seq for _, seq in expected]
 
 
 def test_time_frame_partial_functions_accept_completable_prefixes():
@@ -230,7 +230,7 @@ def test_a_star_bare_and_empty_constrained_models_agree():
         hmm=ConstrainedHiddenMarkovModel(tc.create_hmm1()),
         num_solutions=3,
     )
-    assert [s.hidden for s in bare.solutions] == [s.hidden for s in empty.solutions]
+    assert [s.states for s in bare.solutions] == [s.states for s in empty.solutions]
 
 
 def test_a_star_rejects_families_without_an_oracle_representation():

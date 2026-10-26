@@ -97,7 +97,8 @@ def test_parse_model_solution_reads_the_assignment():
     _set_mn_assignment(model, ABC)
     soln = parse_model_solution_pyomo_map_query(model, False)
     assert soln.states == ABC
-    assert set(soln) == {"states", "log_factor_sum"}
+    assert set(soln) == {"states", "log_potential", "solver_objective"}
+    assert soln.log_potential is None
 
 
 @pytest.mark.parametrize("with_fixed", [False, True])
@@ -122,7 +123,7 @@ def test_parse_aos_solution_matches_parse_model_solution(with_fixed):
     model = _abc_model(evidence={"B": 2})
     _set_mn_assignment(model, ABC)
     expected = parse_model_solution_pyomo_map_query(model, with_fixed)
-    aos_solution = _AosSolution(model, objective=expected.log_factor_sum)
+    aos_solution = _AosSolution(model, objective=expected.solver_objective)
     assert parse_aos_solution_pyomo_map_query(model, aos_solution, with_fixed) == (
         expected
     )
@@ -142,12 +143,11 @@ def test_parse_network_flow_model_solution():
         if var.value is None:
             var.set_value(0)
     soln = parse_model_solution_pyomo_ip_inference(
-        M=M, hmm=hmm, T=3, log_likelihood=-1.5, data=data
+        M=M, hmm=hmm, T=3, objective=-1.5, data=data
     )
     assert soln.states == HIDDEN
-    assert soln.hidden == HIDDEN
-    assert soln.log_likelihood == -1.5
-    assert set(soln) == {"states", "hidden", "log_likelihood", "variables"}
+    assert soln.solver_objective == -1.5
+    assert set(soln) == {"states", "log_potential", "solver_objective", "variables"}
 
 
 def test_parse_network_flow_aos_solution_has_states():
@@ -160,9 +160,8 @@ def test_parse_network_flow_aos_solution_has_states():
         aos_solution=_AosSolution(M, objective=-2.0), M=M, hmm=hmm, T=3, data=data
     )
     assert soln.states == HIDDEN
-    assert soln.hidden == HIDDEN
-    assert soln.log_likelihood == -2.0
-    assert set(soln) == {"states", "hidden", "log_likelihood", "variables"}
+    assert soln.solver_objective == -2.0
+    assert set(soln) == {"states", "log_potential", "solver_objective", "variables"}
 
 
 def test_parse_network_flow_solution_missing_state_raises():
@@ -171,7 +170,7 @@ def test_parse_network_flow_solution_missing_state_raises():
         var.set_value(0)
     with pytest.raises(AssertionError, match="missing hidden state"):
         parse_model_solution_pyomo_ip_inference(
-            M=M, hmm=hmm, T=2, log_likelihood=0.0, data=data
+            M=M, hmm=hmm, T=2, objective=0.0, data=data
         )
 
 
@@ -223,7 +222,13 @@ def test_ip_inference_or_topas_solutions(monkeypatch):
     results = ip_inference(hmm=chmm, observed=["o0", "o1", "o1"], solver="or_topas")
     assert [s.states for s in results.solutions] == PATHS
     assert results.solution is results.solutions[0]
-    assert [s.log_likelihood for s in results.solutions] == [0.0, -1.0]
+    assert [s.solver_objective for s in results.solutions] == [0.0, -1.0]
+    # log_potential is the score of each path, not the stubbed objective.
+    hmm = chmm.model
+    observed = ["o0", "o1", "o1"]
+    assert [s.log_potential for s in results.solutions] == [
+        pytest.approx(hmm.log_probability(observed, p)) for p in PATHS
+    ]
 
 
 def test_map_query_network_flow_or_topas_with_dict_evidence(monkeypatch):
@@ -255,7 +260,8 @@ def test_solve_pyomo_map_query_model_or_topas_solutions(monkeypatch):
     results = solve_pyomo_map_query_model(_abc_model(), solver="or_topas")
     assert [s.states for s in results.solutions] == assignments
     assert results.solution is results.solutions[0]
-    assert [s.log_factor_sum for s in results.solutions] == [0.0, -1.0]
+    assert [s.solver_objective for s in results.solutions] == [0.0, -1.0]
+    assert [s.log_potential for s in results.solutions] == [None, None]
     assert results.termination_condition == "ok"
 
 
