@@ -2,10 +2,9 @@ import pytest
 import pyomo.opt
 
 from conin.util import try_import
-from conin.inference.pyomo import inference_pyomo_map_query_DDBN
-from conin.inference.toulbar2 import inference_toulbar2_map_query_DDBN
 
 from conin.examples import dynamic_bayesian_network as examples
+from conin.inference import map_query
 
 with try_import() as pgmpy_available:
     import pgmpy
@@ -30,8 +29,9 @@ def test_weather_pyomo_A_conin():
     Test with conin representation
     """
     example = examples.weather_conin()
-    results = inference_pyomo_map_query_DDBN(
-        pgm=example.pgm,
+    results = map_query(
+        example.pgm,
+        method="integer_program",
         stop=4,
         solver=mip_solver,
     )  # variables=None, evidence=None
@@ -48,8 +48,8 @@ def test_weather1_pyomo_A_pgmpy():
     from conin.pgmpy import convert_pgmpy_to_conin
 
     pgm = convert_pgmpy_to_conin(example.pgm)
-    results = inference_pyomo_map_query_DDBN(
-        pgm=pgm, stop=4, solver=mip_solver
+    results = map_query(
+        pgm, method="integer_program", stop=4, solver=mip_solver
     )  # variables=None, evidence=None
     assert results.solution.states == example.solutions[0].states
 
@@ -64,8 +64,8 @@ def test_weather2_pyomo_A_pgmpy():
     from conin.pgmpy import convert_pgmpy_to_conin
 
     pgm = convert_pgmpy_to_conin(example.pgm)
-    results = inference_pyomo_map_query_DDBN(
-        pgm=pgm, stop=4, solver=mip_solver
+    results = map_query(
+        pgm, method="integer_program", stop=4, solver=mip_solver
     )  # variables=None, evidence=None
     assert results.solution.states == example.solutions[0].states
 
@@ -108,7 +108,7 @@ def test_weather2_pyomo_A_pgmpy():
 #
 #    with pytest.raises(RuntimeError):
 #        model = create_pyomo_map_query_model_DDBN(pgm=pgm, stop=4, evidence=evidence)
-#        results = inference_pyomo_map_query_DDBN(model, solver=mip_solver)
+#        results = map_query(model, method="integer_program", solver=mip_solver)
 #        assert q_weather_B == results.solution.states
 
 
@@ -137,7 +137,7 @@ def test_weather2_pyomo_A_pgmpy():
 #    pgm = convert_pgmpy_to_conin(pgm)
 #    with pytest.raises(RuntimeError):
 #        model = create_pyomo_map_query_model_DDBN(pgm=pgm, stop=4, evidence=evidence)
-#        results = inference_pyomo_map_query_DDBN(model, solver=mip_solver)
+#        results = map_query(model, method="integer_program", solver=mip_solver)
 #        assert q_weather_B == results.solution.states
 
 
@@ -166,7 +166,7 @@ def test_weather2_pyomo_A_pgmpy():
 #    pgm = convert_pgmpy_to_conin(pgm)
 #    with pytest.raises(RuntimeError):
 #        model = create_pyomo_map_query_model_DDBN(pgm=pgm, stop=4, evidence=evidence)
-#        results = inference_pyomo_map_query_DDBN(model, solver=mip_solver)
+#        results = map_query(model, method="integer_program", solver=mip_solver)
 #        assert q_weather_B == results.solution.states
 
 
@@ -176,8 +176,8 @@ def test_weather_pyomo_A_constrained_conin():
     Test with conin representation
     """
     example = examples.weather_constrained_pyomo_conin()
-    results = inference_pyomo_map_query_DDBN(
-        pgm=example.pgm, stop=4, solver=mip_solver
+    results = map_query(
+        example.pgm, method="integer_program", stop=4, solver=mip_solver
     )  # variables=None, evidence=None
     assert results.solution.states == example.solutions[0].states
 
@@ -189,8 +189,8 @@ def test_weather_pyomo_A_constrained_pgmpy():
     Test with pgmpy representation
     """
     example = examples.weather_constrained_pyomo_pgmpy()
-    results = inference_pyomo_map_query_DDBN(
-        pgm=example.pgm, stop=4, solver=mip_solver
+    results = map_query(
+        example.pgm, method="integer_program", stop=4, solver=mip_solver
     )  # variables=None, evidence=None
     assert results.solution.states == example.solutions[0].states
 
@@ -232,7 +232,7 @@ def test_weather_pyomo_A_constrained_pgmpy():
 #
 #    with pytest.raises(RuntimeError):
 #        model = create_pyomo_map_query_model_DDBN(pgm=cpgm, stop=4, evidence=evidence)
-#        results = inference_pyomo_map_query_DDBN(model, solver=mip_solver)
+#        results = map_query(model, method="integer_program", solver=mip_solver)
 #        assert q_weather_B_constrained == results.solution.states
 
 
@@ -260,7 +260,7 @@ def test_weather_pyomo_A_constrained_pgmpy():
 #
 #    with pytest.raises(RuntimeError):
 #        model = create_pyomo_map_query_model_DDBN(pgm=cpgm, stop=4, evidence=evidence)
-#        results = inference_pyomo_map_query_DDBN(model, solver=mip_solver)
+#        results = map_query(model, method="integer_program", solver=mip_solver)
 #        assert q_weather_B_constrained == results.solution.states
 
 
@@ -277,8 +277,9 @@ def test_weather_toulbar2_A_conin():
     Test with conin representation
     """
     example = examples.weather_conin()
-    results = inference_toulbar2_map_query_DDBN(
-        pgm=example.pgm,
+    results = map_query(
+        example.pgm,
+        method="toulbar2",
         stop=4,
     )  # variables=None, evidence=None
     assert results.solution.states == example.solutions[0].states
@@ -294,8 +295,9 @@ def test_weather1_toulbar2_A_pgmpy():
     from conin.pgmpy import convert_pgmpy_to_conin
 
     pgm = convert_pgmpy_to_conin(example.pgm)
-    results = inference_toulbar2_map_query_DDBN(
-        pgm=pgm,
+    results = map_query(
+        pgm,
+        method="toulbar2",
         stop=4,
     )  # variables=None, evidence=None
     assert results.solution.states == example.solutions[0].states
@@ -311,8 +313,9 @@ def test_weather2_toulbar2_A_pgmpy():
     from conin.pgmpy import convert_pgmpy_to_conin
 
     pgm = convert_pgmpy_to_conin(example.pgm)
-    results = inference_toulbar2_map_query_DDBN(
-        pgm=pgm,
+    results = map_query(
+        pgm,
+        method="toulbar2",
         stop=4,
     )  # variables=None, evidence=None
     assert results.solution.states == example.solutions[0].states
@@ -356,7 +359,7 @@ def test_weather2_toulbar2_A_pgmpy():
 #
 #    with pytest.raises(RuntimeError):
 #        model = create_toulbar2_map_query_model_DDBN(pgm=pgm, stop=4, evidence=evidence)
-#        results = inference_toulbar2_map_query_DDBN(model, solver=mip_solver)
+#        results = map_query(model, method="toulbar2")
 #        assert q_weather_B == results.solution.states
 
 
@@ -385,7 +388,7 @@ def test_weather2_toulbar2_A_pgmpy():
 #    pgm = convert_pgmpy_to_conin(pgm)
 #    with pytest.raises(RuntimeError):
 #        model = create_toulbar2_map_query_model_DDBN(pgm=pgm, stop=4, evidence=evidence)
-#        results = inference_toulbar2_map_query_DDBN(model, solver=mip_solver)
+#        results = map_query(model, method="toulbar2")
 #        assert q_weather_B == results.solution.states
 
 
@@ -414,7 +417,7 @@ def test_weather2_toulbar2_A_pgmpy():
 #    pgm = convert_pgmpy_to_conin(pgm)
 #    with pytest.raises(RuntimeError):
 #        model = create_toulbar2_map_query_model_DDBN(pgm=pgm, stop=4, evidence=evidence)
-#        results = inference_toulbar2_map_query_DDBN(model, solver=mip_solver)
+#        results = map_query(model, method="toulbar2")
 #        assert q_weather_B == results.solution.states
 
 
@@ -424,8 +427,9 @@ def Xtest_weather_toulbar2_A_constrained_conin():
     Test with conin representation
     """
     example = examples.weather_constrained_toulbar2_conin()
-    results = inference_toulbar2_map_query_DDBN(
-        pgm=example.pgm,
+    results = map_query(
+        example.pgm,
+        method="toulbar2",
         stop=4,
     )  # variables=None, evidence=None
     assert results.solution.states == example.solutions[0].states
@@ -438,8 +442,9 @@ def Xtest_weather_toulbar2_A_constrained_pgmpy():
     Test with pgmpy representation
     """
     example = examples.weather_constrained_toulbar2_pgmpy()
-    results = inference_toulbar2_map_query_DDBN(
-        pgm=example.pgm,
+    results = map_query(
+        example.pgm,
+        method="toulbar2",
         stop=4,
     )  # variables=None, evidence=None
     assert results.solution.states == example.solutions[0].states
@@ -482,7 +487,7 @@ def Xtest_weather_toulbar2_A_constrained_pgmpy():
 #
 #    with pytest.raises(RuntimeError):
 #        model = create_toulbar2_map_query_model_DDBN(pgm=cpgm, stop=4, evidence=evidence)
-#        results = inference_toulbar2_map_query_DDBN(model)
+#        results = map_query(model, method="toulbar2")
 #        assert q_weather_B_constrained == results.solution.states
 
 
@@ -510,5 +515,5 @@ def Xtest_weather_toulbar2_A_constrained_pgmpy():
 #
 #    with pytest.raises(RuntimeError):
 #        model = create_toulbar2_map_query_model_DDBN(pgm=cpgm, stop=4, evidence=evidence)
-#        results = inference_toulbar2_map_query_DDBN(model)
+#        results = map_query(model, method="toulbar2")
 #        assert q_weather_B_constrained == results.solution.states

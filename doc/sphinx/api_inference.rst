@@ -42,9 +42,12 @@ Available Methods
 Backend functions
 -----------------
 
-``map_query`` calls one of the functions below. They can also be called
-directly; each takes a bare or constrained model and builds the representation
-it needs.
+The HMM search algorithms below can also be called directly; each takes a
+bare or constrained model and builds the representation it needs. For
+``integer_program``, ``toulbar2`` and ``variable_elimination`` (every model
+type), call ``map_query``; the functions below solve a model built by a
+representation's ``create_model()`` (and ``lp_inference``/``ip_inference`` the
+HMM network-flow integer program).
 
 Unconstrained, oracle and recursive search (HMMs)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -58,14 +61,6 @@ Unconstrained, oracle and recursive search (HMMs)
 Pyomo (integer programming)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. autofunction:: conin.inference.pyomo.inference_pyomo_map_query_MN
-
-.. autofunction:: conin.inference.pyomo.inference_pyomo_map_query_BN
-
-.. autofunction:: conin.inference.pyomo.inference_pyomo_map_query_DDBN
-
-.. autofunction:: conin.inference.pyomo.inference_pyomo_map_query_HMM
-
 .. autofunction:: conin.inference.pyomo.lp_inference
 
 .. autofunction:: conin.inference.pyomo.ip_inference
@@ -75,26 +70,10 @@ Pyomo (integer programming)
 Toulbar2
 ^^^^^^^^
 
-.. autofunction:: conin.inference.toulbar2.inference_toulbar2_map_query_MN
-
-.. autofunction:: conin.inference.toulbar2.inference_toulbar2_map_query_BN
-
-.. autofunction:: conin.inference.toulbar2.inference_toulbar2_map_query_DDBN
-
-.. autofunction:: conin.inference.toulbar2.inference_toulbar2_map_query_HMM
-
 .. autofunction:: conin.inference.toulbar2.solve_toulbar2_map_query_model
 
 Variable elimination (pgmpy)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. autofunction:: conin.inference.variable_elimination.inference_variable_elimination_map_query_MN
-
-.. autofunction:: conin.inference.variable_elimination.inference_variable_elimination_map_query_BN
-
-.. autofunction:: conin.inference.variable_elimination.inference_variable_elimination_map_query_DDBN
-
-.. autofunction:: conin.inference.variable_elimination.inference_variable_elimination_map_query_HMM
 
 .. autofunction:: conin.inference.variable_elimination.solve_variable_elimination_map_query_model
 

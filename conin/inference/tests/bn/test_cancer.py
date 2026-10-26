@@ -2,9 +2,8 @@ import pytest
 import pyomo.opt
 
 from conin.util import try_import
-from conin.inference.pyomo import inference_pyomo_map_query_BN
-from conin.inference.toulbar2 import inference_toulbar2_map_query_BN
 from conin.examples import bayesian_network as examples
+from conin.inference import map_query
 
 with try_import() as pgmpy_available:
     from pgmpy.inference import VariableElimination
@@ -31,7 +30,7 @@ def test_cancer1_conin_ALL():
     No evidence
     """
     example = examples.cancer1_BN_conin()
-    results = inference_pyomo_map_query_BN(pgm=example.pgm, solver=mip_solver)
+    results = map_query(example.pgm, method="integer_program", solver=mip_solver)
     assert results.solution.states == example.solutions[0].states
 
 
@@ -54,7 +53,7 @@ def test_cancer1_pgmpy_ALL():
     from conin.pgmpy import convert_pgmpy_to_conin
 
     pgm = convert_pgmpy_to_conin(example.pgm)
-    results = inference_pyomo_map_query_BN(pgm=pgm, solver=mip_solver)
+    results = map_query(pgm, method="integer_program", solver=mip_solver)
     assert results.solution.states == example.solutions[0].states
 
 
@@ -77,7 +76,7 @@ def test_cancer2_pgmpy_ALL():
     from conin.pgmpy import convert_pgmpy_to_conin
 
     pgm = convert_pgmpy_to_conin(example.pgm)
-    results = inference_pyomo_map_query_BN(pgm=pgm, solver=mip_solver)
+    results = map_query(pgm, method="integer_program", solver=mip_solver)
     assert results.solution.states == example.solutions[0].states
 
 
@@ -96,7 +95,7 @@ def test_cancer1_toulbar2_ALL():
     No evidence
     """
     example = examples.cancer1_BN_conin()
-    results = inference_toulbar2_map_query_BN(pgm=example.pgm)
+    results = map_query(example.pgm, method="toulbar2")
     assert results.solution.states == example.solutions[0].states
 
 
@@ -173,7 +172,7 @@ def test_cancer1_pyomo_conin_ALL_constrained2():
     Constrained inference of Xray and Dyspnoea so they are different
     """
     example = examples.cancer1_BN_constrained_pyomo_conin()
-    results = inference_pyomo_map_query_BN(pgm=example.pgm, solver=mip_solver)
+    results = map_query(example.pgm, method="integer_program", solver=mip_solver)
     assert results.solution.states == example.solutions[0].states
 
 
@@ -235,5 +234,5 @@ def test_cancer2_pyomo_pgmpy_ALL_constrained2():
     Constrained inference of Xray and Dyspnoea so they are different
     """
     example = examples.cancer2_BN_constrained_pyomo_pgmpy()
-    results = inference_pyomo_map_query_BN(pgm=example.pgm, solver=mip_solver)
+    results = map_query(example.pgm, method="integer_program", solver=mip_solver)
     assert results.solution.states == example.solutions[0].states

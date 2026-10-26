@@ -50,7 +50,7 @@ from conin.representations.unrolled import dbn_time_range
 
 from .hmm_results import key_solutions_by_time, solve_unrolled_hmm
 from .oracle.a_star_hmm import _a_star
-from .pyomo.hmm import _map_query_network_flow
+from .pyomo.hmm_network_flow import _solve_network_flow
 from .pyomo.solve import _solve_pyomo
 from .query_checks import map_query_args
 from .recursive.a_star_hmm import _recursive_a_star
@@ -305,7 +305,7 @@ def _solve_map_query(repn: PyomoHMMRepresentation, q):
 
 @ovld
 def _solve_map_query(repn: PyomoNetworkFlowHMMRepresentation, q):
-    return _map_query_network_flow(repn, evidence=q.evidence, options=q.options)
+    return _solve_network_flow(repn, q)
 
 
 @ovld

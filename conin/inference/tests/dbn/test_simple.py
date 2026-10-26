@@ -1,10 +1,9 @@
 import pyomo.opt
 
 from conin.util import try_import
-from conin.inference.pyomo import inference_pyomo_map_query_DDBN
-from conin.inference.toulbar2 import inference_toulbar2_map_query_DDBN
 
 from conin.examples import dynamic_bayesian_network as examples
+from conin.inference import map_query
 
 with try_import() as pgmpy_available:
     import pgmpy
@@ -42,7 +41,7 @@ skipif_toulbar2_not_available = pytest.mark.skipif(
 @skipif_no_mip_solver
 def test_simple0_DDBN_conin_mip():
     example = examples.simple0_DDBN_conin()
-    results = inference_pyomo_map_query_DDBN(pgm=example.pgm, solver=mip_solver)
+    results = map_query(example.pgm, method="integer_program", solver=mip_solver)
     assert results.solution.states == example.solutions[0].states
 
 
@@ -53,7 +52,7 @@ def test_simple0_DDBN1_pgmpy_mip():
 
     example = examples.simple0_DDBN1_pgmpy()
     pgm = convert_pgmpy_to_conin(example.pgm)
-    results = inference_pyomo_map_query_DDBN(pgm=pgm, solver=mip_solver)
+    results = map_query(pgm, method="integer_program", solver=mip_solver)
     assert results.solution.states == example.solutions[0].states
 
 
@@ -64,7 +63,7 @@ def test_simple0_DDBN2_pgmpy_mip():
 
     example = examples.simple0_DDBN2_pgmpy()
     pgm = convert_pgmpy_to_conin(example.pgm)
-    results = inference_pyomo_map_query_DDBN(pgm=pgm, solver=mip_solver)
+    results = map_query(pgm, method="integer_program", solver=mip_solver)
     assert results.solution.states == example.solutions[0].states
 
 
@@ -76,7 +75,7 @@ def test_simple0_DDBN2_pgmpy_mip():
 @skipif_no_mip_solver
 def test_simple1_DDBN_conin_mip():
     example = examples.simple1_DDBN_conin()
-    results = inference_pyomo_map_query_DDBN(pgm=example.pgm, solver=mip_solver)
+    results = map_query(example.pgm, method="integer_program", solver=mip_solver)
     assert results.solution.states == example.solutions[0].states
 
 
@@ -87,7 +86,7 @@ def test_simple1_DDBN_pgmpy_mip():
 
     example = examples.simple1_DDBN_pgmpy()
     pgm = convert_pgmpy_to_conin(example.pgm)
-    results = inference_pyomo_map_query_DDBN(pgm=pgm, solver=mip_solver)
+    results = map_query(pgm, method="integer_program", solver=mip_solver)
     assert results.solution.states == example.solutions[0].states
 
 
@@ -100,8 +99,8 @@ def test2_simple1_DDBN_conin_mip():
         ("B", 1): 1,
     }
 
-    results = inference_pyomo_map_query_DDBN(
-        pgm=example.pgm, solver=mip_solver, evidence={("A", 0): 1}
+    results = map_query(
+        example.pgm, method="integer_program", solver=mip_solver, evidence={("A", 0): 1}
     )
     assert q == results.solution.states
 
@@ -119,8 +118,8 @@ def test2_simple1_DDBN_pgmpy_mip():
     }
 
     pgm = convert_pgmpy_to_conin(example.pgm)
-    results = inference_pyomo_map_query_DDBN(
-        pgm=pgm, solver=mip_solver, evidence={("A", 0): 1}
+    results = map_query(
+        pgm, method="integer_program", solver=mip_solver, evidence={("A", 0): 1}
     )
     assert q == results.solution.states
 
@@ -128,7 +127,7 @@ def test2_simple1_DDBN_pgmpy_mip():
 @skipif_no_mip_solver
 def test_simple1_DDBN_constrained_pyomo_conin():
     example = examples.simple1_DDBN_constrained_pyomo_conin()
-    results = inference_pyomo_map_query_DDBN(pgm=example.pgm, solver=mip_solver)
+    results = map_query(example.pgm, method="integer_program", solver=mip_solver)
     assert results.solution.states == example.solutions[0].states
 
 
@@ -136,7 +135,7 @@ def test_simple1_DDBN_constrained_pyomo_conin():
 @skipif_no_mip_solver
 def test_simple1_DDBN_constrained_pyomo_pgmpy():
     example = examples.simple1_DDBN_constrained_pyomo_pgmpy()
-    results = inference_pyomo_map_query_DDBN(pgm=example.pgm, solver=mip_solver)
+    results = map_query(example.pgm, method="integer_program", solver=mip_solver)
     assert results.solution.states == example.solutions[0].states
 
 
@@ -154,7 +153,7 @@ def test_simple1_DDBN_constrained_pyomo_pgmpy():
 @skipif_toulbar2_not_available
 def test_simple0_DDBN_conin_toulbar2():
     example = examples.simple0_DDBN_conin()
-    results = inference_toulbar2_map_query_DDBN(pgm=example.pgm)
+    results = map_query(example.pgm, method="toulbar2")
     assert results.solution.states == example.solutions[0].states
 
 
@@ -165,7 +164,7 @@ def test_simple0_DDBN1_pgmpy_toulbar2():
 
     example = examples.simple0_DDBN1_pgmpy()
     pgm = convert_pgmpy_to_conin(example.pgm)
-    results = inference_toulbar2_map_query_DDBN(pgm=pgm)
+    results = map_query(pgm, method="toulbar2")
     assert results.solution.states == example.solutions[0].states
 
 
@@ -176,7 +175,7 @@ def test_simple0_DDBN2_pgmpy_toulbar2():
 
     example = examples.simple0_DDBN2_pgmpy()
     pgm = convert_pgmpy_to_conin(example.pgm)
-    results = inference_toulbar2_map_query_DDBN(pgm=pgm)
+    results = map_query(pgm, method="toulbar2")
     assert results.solution.states == example.solutions[0].states
 
 
@@ -188,7 +187,7 @@ def test_simple0_DDBN2_pgmpy_toulbar2():
 @skipif_toulbar2_not_available
 def test_simple1_conin_toulbar2():
     example = examples.simple1_DDBN_conin()
-    results = inference_toulbar2_map_query_DDBN(pgm=example.pgm)
+    results = map_query(example.pgm, method="toulbar2")
     assert results.solution.states == example.solutions[0].states
 
 
@@ -199,7 +198,7 @@ def test_simple1_pgmpy_toulbar2():
 
     example = examples.simple1_DDBN_pgmpy()
     pgm = convert_pgmpy_to_conin(example.pgm)
-    results = inference_toulbar2_map_query_DDBN(pgm=pgm)
+    results = map_query(pgm, method="toulbar2")
     assert results.solution.states == example.solutions[0].states
 
 
@@ -212,7 +211,7 @@ def test2_simple1_DDBN_conin_toulbar2():
         ("B", 1): 1,
     }
 
-    results = inference_toulbar2_map_query_DDBN(pgm=example.pgm, evidence={("A", 0): 1})
+    results = map_query(example.pgm, method="toulbar2", evidence={("A", 0): 1})
     assert q == results.solution.states
 
 
@@ -229,14 +228,14 @@ def test2_simple1_DDBN_pgmpy_toulbar2():
     }
 
     pgm = convert_pgmpy_to_conin(example.pgm)
-    results = inference_toulbar2_map_query_DDBN(pgm=pgm, evidence={("A", 0): 1})
+    results = map_query(pgm, method="toulbar2", evidence={("A", 0): 1})
     assert q == results.solution.states
 
 
 @skipif_toulbar2_not_available
 def test_simple1_DDBN_constrained_toulbar2_conin():
     example = examples.simple1_DDBN_constrained_toulbar2_conin()
-    results = inference_toulbar2_map_query_DDBN(pgm=example.pgm)
+    results = map_query(example.pgm, method="toulbar2")
     assert results.solution.states == example.solutions[0].states
 
 
@@ -244,7 +243,7 @@ def test_simple1_DDBN_constrained_toulbar2_conin():
 @skipif_toulbar2_not_available
 def test_simple1_DDBN_constrained_toulbar2_pgmpy():
     example = examples.simple1_DDBN_constrained_toulbar2_pgmpy()
-    results = inference_toulbar2_map_query_DDBN(pgm=example.pgm)
+    results = map_query(example.pgm, method="toulbar2")
     assert results.solution.states == example.solutions[0].states
 
 
@@ -289,12 +288,12 @@ def _static_and_dynamic_DDBN():
 @skipif_no_mip_solver
 def test_static_and_dynamic_DDBN_conin_mip():
     pgm, expected = _static_and_dynamic_DDBN()
-    results = inference_pyomo_map_query_DDBN(pgm=pgm, solver=mip_solver)
+    results = map_query(pgm, method="integer_program", solver=mip_solver)
     assert results.solution.states == expected
 
 
 @skipif_toulbar2_not_available
 def test_static_and_dynamic_DDBN_conin_toulbar2():
     pgm, expected = _static_and_dynamic_DDBN()
-    results = inference_toulbar2_map_query_DDBN(pgm=pgm)
+    results = map_query(pgm, method="toulbar2")
     assert results.solution.states == expected

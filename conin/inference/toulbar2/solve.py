@@ -1,4 +1,4 @@
-"""Solve a toulbar2 MAP query model, and MAP inference for (constrained) Markov networks.
+"""Solve toulbar2 MAP query models.
 
 The models are built by the ``"toulbar2"`` representations
 (:mod:`conin.representations.toulbar2`).
@@ -7,12 +7,7 @@ The models are built by the ``"toulbar2"`` representations
 import munch
 from pyomo.common.timing import TicTocTimer
 
-from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
-from conin.inference.query_checks import (
-    full_query_variables,
-    map_query_args,
-    reject_pruning_options,
-)
+from conin.inference.query_checks import full_query_variables, reject_pruning_options
 from conin.util import try_import
 
 with try_import() as pytoulbar2_available:
@@ -110,42 +105,4 @@ def solve_toulbar2_map_query_model(
         solutions=[soln],
         termination_condition="ok",
         solvetime=solvetime,
-    )
-
-
-def inference_toulbar2_map_query_MN(
-    *,
-    pgm,
-    variables=None,
-    evidence=None,
-    timing=False,
-    write_uai_file=None,
-    **options,
-):
-    """MAP query on a Markov network with toulbar2.
-
-    Parameters
-    ----------
-    pgm : DiscreteMarkovNetwork or ConstrainedDiscreteMarkovNetwork
-    variables : list, optional
-        Not supported (raises ``RuntimeError``, as the integer-program query).
-    evidence : dict, optional
-        ``{node: state}``.
-    timing : bool, optional
-        Print timing information.
-    write_uai_file : str, optional
-        Write the UAI file that toulbar2 reads to this path.
-    **options
-        ``verbose`` (the toulbar2 verbosity, default ``-1``) and the options of
-        :func:`solve_toulbar2_map_query_model`.
-    """
-    cmodel = ConstrainedDiscreteMarkovNetwork.ensure(pgm)
-    return _solve_toulbar2(
-        cmodel.representation("toulbar2"),
-        map_query_args(
-            variables=variables,
-            evidence=evidence,
-            timing=timing,
-            options=dict(options, write_uai_file=write_uai_file),
-        ),
     )

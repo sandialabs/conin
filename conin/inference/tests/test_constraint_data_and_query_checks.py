@@ -24,12 +24,6 @@ from conin.constraints import (
 )
 from conin.inference import map_query
 from conin.inference.oracle import a_star
-from conin.inference.toulbar2 import (
-    inference_toulbar2_map_query_BN,
-    inference_toulbar2_map_query_DDBN,
-    inference_toulbar2_map_query_HMM,
-    inference_toulbar2_map_query_MN,
-)
 import pyomo.environ as pyo
 
 from conin.sampling.oracle import rejection_sample_hidden
@@ -261,33 +255,18 @@ def test_integer_program_solves_with_the_application_data():
 
 @skipif_toulbar2_not_available
 @pytest.mark.parametrize(
-    "fn,make,kwds,variables",
+    "make,kwds,variables",
     [
-        (inference_toulbar2_map_query_MN, lambda: mex.ABC_conin().pgm, {}, ["A"]),
-        (
-            inference_toulbar2_map_query_BN,
-            lambda: bex.cancer1_BN_conin().pgm,
-            {},
-            ["Cancer"],
-        ),
-        (
-            inference_toulbar2_map_query_DDBN,
-            lambda: dex.simple1_DDBN_conin().pgm,
-            dict(stop=1),
-            [("A", 0)],
-        ),
-        (
-            inference_toulbar2_map_query_HMM,
-            hex_.create_hmm1,
-            dict(evidence=["o0", "o1"]),
-            [("H", 0)],
-        ),
+        (lambda: mex.ABC_conin().pgm, {}, ["A"]),
+        (lambda: bex.cancer1_BN_conin().pgm, {}, ["Cancer"]),
+        (lambda: dex.simple1_DDBN_conin().pgm, dict(stop=1), [("A", 0)]),
+        (hex_.create_hmm1, dict(evidence=["o0", "o1"]), [("H", 0)]),
     ],
     ids=["mn", "bn", "dbn", "hmm"],
 )
-def test_toulbar2_partial_variables_raise_runtime_error(fn, make, kwds, variables):
+def test_toulbar2_partial_variables_raise_runtime_error(make, kwds, variables):
     with pytest.raises(RuntimeError):
-        fn(pgm=make(), variables=variables, **kwds)
+        map_query(make(), method="toulbar2", variables=variables, **kwds)
 
 
 @skipif_toulbar2_not_available
