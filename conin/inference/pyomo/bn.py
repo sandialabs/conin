@@ -1,25 +1,9 @@
 """Pyomo MAP inference for (constrained) Bayesian networks."""
 
 from conin.constrained_models import ConstrainedDiscreteBayesianNetwork
-from conin.inference.query_checks import full_query_variables, reject_pruning_options
+from conin.inference.query_checks import map_query_args
 
-from .solve import solve_pyomo_map_query_model
-
-
-def _map_query_pyomo_bn(repn, *, variables, evidence, timing, options):
-    """Solve a MAP query on the ``"pyomo"`` representation of a Bayesian network."""
-    use_cut_generation = options.pop("use_cut_generation", False)
-    reject_pruning_options(options)
-    variables = full_query_variables(variables, repn.nodes)
-    model = repn.create_model(
-        evidence=evidence,
-        variables=variables,
-        omit_c5=use_cut_generation,
-        timing=timing,
-    )
-    return solve_pyomo_map_query_model(
-        model, timing=timing, evidence=evidence, **options
-    )
+from .solve import _solve_pyomo
 
 
 def inference_pyomo_map_query_BN(
@@ -49,10 +33,9 @@ def inference_pyomo_map_query_BN(
         :func:`~conin.inference.pyomo.solve_pyomo_map_query_model`.
     """
     cmodel = ConstrainedDiscreteBayesianNetwork.ensure(pgm)
-    return _map_query_pyomo_bn(
+    return _solve_pyomo(
         cmodel.representation("pyomo"),
-        variables=variables,
-        evidence=evidence,
-        timing=timing,
-        options=options,
+        map_query_args(
+            variables=variables, evidence=evidence, timing=timing, options=options
+        ),
     )

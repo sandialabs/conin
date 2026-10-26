@@ -11,37 +11,14 @@ import logging
 
 from conin.exceptions import InvalidInputError
 from conin.constrained_models import ConstrainedHiddenMarkovModel
-from conin.graphical_models.hmm_observations import (
-    as_sequence,
-    time_range,
-    unrolled_evidence,
-)
-from conin.inference.hmm_results import (
-    hidden_states_from_unrolled,
-    key_solutions_by_time,
-)
-from conin.inference.query_checks import full_query_variables, reject_pruning_options
+from conin.graphical_models.hmm_observations import as_sequence, time_range
+from conin.inference.hmm_results import key_solutions_by_time, solve_unrolled_hmm
+from conin.inference.query_checks import map_query_args
 
 from .hmm_network_flow import _ip_inference, _lp_inference
-from .solve import solve_pyomo_map_query_model
+from .solve import _solve_pyomo
 
 logger = logging.getLogger("conin")
-
-
-def _map_query_pyomo_hmm(repn, *, variables, evidence, options):
-    """Solve a MAP query on the ``"pyomo"`` representation of an HMM."""
-    use_cut_generation = options.pop("use_cut_generation", None)
-    start, stop = repn.start, repn.stop
-    dbn_evidence = unrolled_evidence(as_sequence(evidence), start, stop)
-    reject_pruning_options(options)
-    variables = full_query_variables(variables, repn.nodes)
-    model = repn.create_model(
-        evidence=dbn_evidence, variables=variables, omit_c5=use_cut_generation
-    )
-    results = solve_pyomo_map_query_model(model, evidence=evidence, **options)
-    return hidden_states_from_unrolled(
-        results, start=start, stop=stop, keyed_by_time=isinstance(evidence, dict)
-    )
 
 
 def _map_query_network_flow(repn, *, evidence, options):
@@ -123,13 +100,18 @@ def inference_pyomo_map_query_HMM(
         )
 
     elif ip_formulation is None or ip_formulation == "markov_network":
-        start, stop = time_range(as_sequence(evidence), start, stop)
+        observed = as_sequence(evidence)
+        start, stop = time_range(observed, start, stop)
         cmodel = ConstrainedHiddenMarkovModel.ensure(pgm)
-        return _map_query_pyomo_hmm(
+        return solve_unrolled_hmm(
+            _solve_pyomo,
             cmodel.representation("pyomo", start=start, stop=stop),
-            variables=variables,
-            evidence=evidence,
-            options=options,
+            map_query_args(
+                variables=variables,
+                evidence=evidence,
+                observed=observed,
+                options=options,
+            ),
         )
 
     else:

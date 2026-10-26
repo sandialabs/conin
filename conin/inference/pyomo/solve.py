@@ -10,11 +10,37 @@ from pyomo.common.timing import TicTocTimer
 
 from conin.config import default_mip_solver
 from conin.exceptions import InsufficientSolutionsError
+from conin.inference.query_checks import full_query_variables, reject_pruning_options
 from conin.representations.pyomo.common import C5LazyCutGenerator, has_omitted_c5
 from conin.util import try_import
 
 with try_import() as or_topas_available:
     import or_topas.aos as aos
+
+
+def _solve_pyomo(repn, q):
+    """Solve a MAP query on a ``"pyomo"`` representation of an MN, BN or DBN.
+
+    ``q`` is the query of :func:`~conin.inference.map_query` (``variables``,
+    ``evidence``, ``timing`` and ``options``).  The options are
+    ``use_cut_generation`` (omit the c5 constraints and generate them as cuts
+    with gurobi), ``prune_network`` and ``create_MN`` (``True`` raises
+    ``RuntimeError``), and the options of :func:`solve_pyomo_map_query_model`.
+    An HMM is solved as its unrolled DBN
+    (:func:`~conin.inference.hmm_results.solve_unrolled_hmm`).
+    """
+    options = dict(q.options)
+    use_cut_generation = options.pop("use_cut_generation", False)
+    reject_pruning_options(options)
+    model = repn.create_model(
+        evidence=q.evidence,
+        variables=full_query_variables(q.variables, repn.nodes),
+        omit_c5=use_cut_generation,
+        timing=q.timing,
+    )
+    return solve_pyomo_map_query_model(
+        model, timing=q.timing, evidence=q.evidence, **options
+    )
 
 
 def solve_pyomo_map_query_model(

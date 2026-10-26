@@ -1,42 +1,11 @@
 """toulbar2 MAP inference for (constrained) HMMs."""
 
 from conin.constrained_models import ConstrainedHiddenMarkovModel
-from conin.graphical_models.hmm_observations import (
-    as_sequence,
-    time_range,
-    unrolled_evidence,
-)
-from conin.inference.hmm_results import hidden_states_from_unrolled
-from conin.inference.query_checks import full_query_variables, reject_pruning_options
+from conin.graphical_models.hmm_observations import as_sequence, time_range
+from conin.inference.hmm_results import solve_unrolled_hmm
+from conin.inference.query_checks import map_query_args
 
-from .solve import (
-    _create_model,
-    _not_available,
-    pytoulbar2_available,
-    solve_toulbar2_map_query_model,
-)
-
-
-def _map_query_toulbar2_hmm(repn, *, variables, evidence, write_uai_file, options):
-    """Solve a MAP query on the ``"toulbar2"`` representation of an HMM."""
-    if not pytoulbar2_available:
-        return _not_available()
-    start, stop = repn.start, repn.stop
-    dbn_evidence = unrolled_evidence(as_sequence(evidence), start, stop)
-    reject_pruning_options(options)
-    variables = full_query_variables(variables, repn.nodes)
-    model = _create_model(
-        repn,
-        evidence=dbn_evidence,
-        variables=variables,
-        timing=options.get("timing", False),
-        write_uai_file=write_uai_file,
-        options=options,
-    )
-    results = solve_toulbar2_map_query_model(model, **options)
-    return hidden_states_from_unrolled(
-        results, start=start, stop=stop, keyed_by_time=isinstance(evidence, dict)
-    )
+from .solve import _solve_toulbar2
 
 
 def inference_toulbar2_map_query_HMM(
@@ -79,16 +48,18 @@ def inference_toulbar2_map_query_HMM(
         For evidence that is not a list, tuple or dict keyed by ``0..T-1``,
         or a ``stop`` past the last observation.
     """
-    if not pytoulbar2_available:
-        return _not_available()
-
-    start, stop = time_range(as_sequence(evidence), start, stop)
-
+    observed = as_sequence(evidence)
+    start, stop = time_range(observed, start, stop)
+    timing = options.pop("timing", False)
     cmodel = ConstrainedHiddenMarkovModel.ensure(pgm)
-    return _map_query_toulbar2_hmm(
+    return solve_unrolled_hmm(
+        _solve_toulbar2,
         cmodel.representation("toulbar2", start=start, stop=stop),
-        variables=variables,
-        evidence=evidence,
-        write_uai_file=write_uai_file,
-        options=options,
+        map_query_args(
+            variables=variables,
+            evidence=evidence,
+            observed=observed,
+            timing=timing,
+            options=dict(options, write_uai_file=write_uai_file),
+        ),
     )

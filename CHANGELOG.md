@@ -242,6 +242,13 @@ Inference
   RuntimeError("Partial MAP queries are only supported by
   method='variable_elimination'; ..."), and prune_network/create_MN=True raise
   RuntimeError("<option>=True is not supported for CONIN models").
+- integer_program, toulbar2 and variable_elimination have one solver per
+  backend for MN, BN and DBN, and solve an HMM as its unrolled DBN, so the
+  options mean the same for every model type: prune_network/create_MN are
+  checked on Markov networks too (they raised TypeError), timing=True is
+  honoured by the integer program on DBNs and HMMs (it was ignored), and
+  solution_with_evidence=True works for an HMM integer program with list
+  evidence (it raised AttributeError).
 
 Scoring
 

@@ -258,13 +258,7 @@ def test_one_repn_serves_several_queries():
     from conin.inference.variable_elimination.solve import _solve_repn
 
     repn = bex.cancer1_BN_constrained_oracle_conin().pgm.representation("pgmpy")
-    kw = dict(
-        variables=None,
-        show_progress=False,
-        timing=False,
-        write_uai_file=None,
-        determine_variables=True,
-    )
+    kw = dict(variables=None, show_progress=False, write_uai_file=None)
     r1 = _solve_repn(repn, evidence={"Smoker": 0}, **kw)
     r2 = _solve_repn(repn, evidence=None, **kw)
     assert "Smoker" not in r1.solution.states

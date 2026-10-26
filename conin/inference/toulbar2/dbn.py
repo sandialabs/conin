@@ -1,31 +1,9 @@
 """toulbar2 MAP inference for (constrained) dynamic Bayesian networks."""
 
 from conin.constrained_models import ConstrainedDynamicDiscreteBayesianNetwork
-from conin.inference.query_checks import full_query_variables, reject_pruning_options
+from conin.inference.query_checks import map_query_args
 
-from .solve import (
-    _create_model,
-    _not_available,
-    pytoulbar2_available,
-    solve_toulbar2_map_query_model,
-)
-
-
-def _map_query_toulbar2_dbn(repn, *, variables, evidence, write_uai_file, options):
-    """Solve a MAP query on the ``"toulbar2"`` representation of a DBN."""
-    if not pytoulbar2_available:
-        return _not_available()
-    reject_pruning_options(options)
-    variables = full_query_variables(variables, repn.nodes)
-    model = _create_model(
-        repn,
-        evidence=evidence,
-        variables=variables,
-        timing=options.get("timing", False),
-        write_uai_file=write_uai_file,
-        options=options,
-    )
-    return solve_toulbar2_map_query_model(model, **options)
+from .solve import _solve_toulbar2
 
 
 def inference_toulbar2_map_query_DDBN(
@@ -57,14 +35,14 @@ def inference_toulbar2_map_query_DDBN(
         the options of
         :func:`~conin.inference.toulbar2.solve_toulbar2_map_query_model`.
     """
-    if not pytoulbar2_available:
-        return _not_available()
-
+    timing = options.pop("timing", False)
     cmodel = ConstrainedDynamicDiscreteBayesianNetwork.ensure(pgm)
-    return _map_query_toulbar2_dbn(
+    return _solve_toulbar2(
         cmodel.representation("toulbar2", start=start, stop=stop),
-        variables=variables,
-        evidence=evidence,
-        write_uai_file=write_uai_file,
-        options=options,
+        map_query_args(
+            variables=variables,
+            evidence=evidence,
+            timing=timing,
+            options=dict(options, write_uai_file=write_uai_file),
+        ),
     )
