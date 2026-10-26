@@ -96,7 +96,7 @@ class ConstrainedGraphicalModel:
                 f"{type(self).__name__}: all constraints must belong to one "
                 f"constraint family, found {sorted(map(str, families))}"
             )
-        family = families[0] if families else None
+        family = next(iter(families)) if families else None
         if family is not None:
             # A family is accepted iff some representation builder is registered
             # for (model_type, family): the registry is the single record of

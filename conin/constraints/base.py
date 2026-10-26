@@ -23,10 +23,5 @@ class Constraint(ABC):
 
 
 def constraint_families(constraints):
-    """The distinct families of ``constraints``, in order of first appearance."""
-    families = []
-    for c in constraints:
-        family = type(c).family
-        if family not in families:
-            families.append(family)
-    return families
+    """The set of distinct families of ``constraints``."""
+    return {type(c).family for c in constraints}

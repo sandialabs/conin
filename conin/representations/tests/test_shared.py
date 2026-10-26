@@ -58,12 +58,12 @@ def _tb2_con(model):
     return model
 
 
-def test_constraint_families_keeps_the_order_of_first_appearance():
-    assert constraint_families([]) == []
-    assert constraint_families([_tb2_con, _pyomo_con, _tb2_con]) == [
+def test_constraint_families_is_the_set_of_distinct_families():
+    assert constraint_families([]) == set()
+    assert constraint_families([_tb2_con, _pyomo_con, _tb2_con]) == {
         "toulbar2",
         "pyomo",
-    ]
+    }
 
 
 def test_apply_constraints_without_constraints_calls_nothing():

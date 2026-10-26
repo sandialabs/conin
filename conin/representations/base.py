@@ -187,7 +187,7 @@ def apply_constraints(constraints, appliers, *, backend):
             f"The {backend} backend applies constraints of one family, found "
             f"{sorted(map(str, families))}"
         )
-    family = families[0]
+    (family,) = families
     if family not in appliers:
         raise TypeError(
             f"The {backend} backend does not apply constraints of family "
