@@ -22,7 +22,7 @@ Package layout
    The registry and the representations built from a constrained model, one
    subpackage per backend (``pyomo``, ``toulbar2``, ``pgmpy``, ``matvec``,
    ``oracle``, ``recursive``, ``mvr``).
-``conin.inference``, ``conin.learning``, ``conin.sampling``, ``conin.scoring``
+``conin.inference``, ``conin.learning``, ``conin.sampling``, ``conin.other_queries``, ``conin.scoring``
    Algorithms, organised by representation (``unconstrained``, ``pyomo``,
    ``toulbar2``, ``variable_elimination``, ``oracle``, ``recursive``,
    ``mvr``). ``map_query`` and ``log_probability_query`` are the generic entry

@@ -47,8 +47,8 @@ class ConstrainedHiddenMarkovModel(ConstrainedGraphicalModel):
       ``"algebraic"``): the network-flow integer program;
     * ``"mvr"`` (no constraints or ``"mvr"``): the built MVRs, aligned to
       the HMM (``representation("mvr").mvrs``), used by the torch MVR
-      algorithms (:mod:`conin.inference.mvr`, :mod:`conin.learning.mvr`
-      and :mod:`conin.sampling.mvr`).
+      algorithms (:mod:`conin.inference.mvr`, :mod:`conin.learning.mvr`,
+      :mod:`conin.sampling.mvr` and :mod:`conin.other_queries.mvr`).
     """
 
     __slots__ = ()

@@ -139,8 +139,8 @@ Pyomo or algebraic constraints), ``"toulbar2"`` (the cost function network of
 the unrolled model; no constraints, Toulbar2 or algebraic constraints) and
 ``"mvr"`` (no constraints or MVR constraints; the built MVRs, aligned to the
 HMM, are ``chmm.representation("mvr").mvrs``). The torch MVR algorithms in
-``conin.inference.mvr``, ``conin.learning.mvr`` and ``conin.sampling.mvr``
-take a ``ConstrainedHiddenMarkovModel`` with MVR
+``conin.inference.mvr``, ``conin.learning.mvr``, ``conin.sampling.mvr`` and
+``conin.other_queries.mvr`` take a ``ConstrainedHiddenMarkovModel`` with MVR
 constraints; see the notebooks in ``doc/notebooks/MVR``.
 ``map_query(chmm, method="mvr_viterbi", evidence=observed)`` runs the torch
 MVR Viterbi (``viterbi_torch_mvr_chmm``) through the common entry point.

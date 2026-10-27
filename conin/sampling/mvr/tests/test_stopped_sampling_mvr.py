@@ -23,7 +23,7 @@ from conin.sampling.mvr.tests.test_ffbs_mvr import (
     NUM_SAMPLES,
     null_tv_mean,
 )  # noqa: E402
-from conin.inference.mvr.tests.test_sat_time_mvr import (  # noqa: E402
+from conin.other_queries.mvr.tests.test_sat_time_mvr import (  # noqa: E402
     brute_force_sat_time,
     make_reach_mvr,
     mvr_first_sat_time,

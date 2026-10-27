@@ -92,8 +92,4 @@ These need torch, which is imported on first use.
 
 .. autofunction:: conin.inference.mvr.marginal_map.marginal_map_torch_mvr_chmm
 
-Satisfaction probability and first satisfaction time of MVR constraints:
-
-.. autofunction:: conin.inference.mvr.sat_prob.sat_prob_torch_mvr_chmm
-
-.. autofunction:: conin.inference.mvr.sat_time.sat_time_torch_mvr_chmm
+The MVR satisfaction queries are in :doc:`api_sampling_learning`.
