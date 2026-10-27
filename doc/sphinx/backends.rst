@@ -153,8 +153,8 @@ unrolled to ``stop=4`` has run out of memory in our tests; use
 torch (MVR algorithms)
 ----------------------
 
-The MVR algorithms in ``conin.inference.mvr``, ``conin.learning.mvr`` and
-``conin.sampling.mvr``, and
+The MVR algorithms in ``conin.inference.mvr``, ``conin.learning.mvr``,
+``conin.sampling.mvr`` and ``conin.other_queries.mvr``, and
 ``map_query(..., method="mvr_viterbi")``, require ``torch`` (the ``torch``
 extra). torch is imported the first time one of these algorithms is used:
 ``import conin`` and importing these packages do not import it. Declaring MVR

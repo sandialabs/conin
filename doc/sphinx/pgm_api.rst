@@ -3,8 +3,8 @@ API Reference
 
 The API reference is split into focused pages for the core model classes,
 constraint-related interfaces used to build constrained graphical models, the
-backend representations, inference methods (including the MVR queries), scoring
-and I/O, and the sampling and learning algorithms.
+backend representations, inference methods, scoring and I/O, and the sampling,
+learning and other query algorithms (including the MVR queries).
 
 .. toctree::
    :maxdepth: 1

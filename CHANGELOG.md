@@ -66,9 +66,10 @@ Migration table (old -> new)
                                        RecursiveConstraint or data=...
   supervised_learning, mcem, add_unknowns, convert_to_simulations
                                     -> conin.learning
-  inference.viterbi_mvr, inference.marginal_map_mvr,
-  other_queries.sat_prob_mvr, other_queries.sat_time_mvr
+  inference.viterbi_mvr, inference.marginal_map_mvr
                                     -> conin.inference.mvr
+  other_queries.sat_prob_mvr, other_queries.sat_time_mvr
+                                    -> conin.other_queries.mvr
   learning.baum_welch_mvr, learning.generalized_em_mvr
                                     -> conin.learning.mvr
   sampling.ffbs_mvr, sampling.stopped_sampling_mvr
@@ -339,7 +340,8 @@ I/O and conversion
   untested code) are removed.
 - conin/mediation_variables (an unused NumPy prototype of the mediation
   variable algorithms, with its notebooks) is removed; the MVR algorithms are
-  in conin.inference.mvr, conin.learning.mvr and conin.sampling.mvr.
+  in conin.inference.mvr, conin.learning.mvr, conin.sampling.mvr and
+  conin.other_queries.mvr.
 - The format loaders and saver are renamed to match: load_uai, save_uai and
   load_cfn (were load_conin_model_from_uai, save_model_uai and
   load_conin_model_from_cfn); load_model/save_model are unchanged.
