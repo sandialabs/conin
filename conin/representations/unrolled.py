@@ -1,8 +1,8 @@
 """Time ranges of the representations of unrolled DBNs and HMMs.
 
-The ``"pyomo"``, ``"toulbar2"`` and ``"pgmpy"`` representations of a DBN or an
-HMM are built on the model unrolled over ``start..stop`` (``start`` and
-``stop`` are structure parameters).  This module holds what they share:
+The ``"pyomo"``, ``"toulbar2"`` and ``"variable_elimination"`` representations
+of a DBN or an HMM are built on the model unrolled over ``start..stop``
+(``start`` and ``stop`` are structure parameters).  This module holds what they share:
 
 * :class:`UnrolledDBNMixin` and :class:`UnrolledHMMMixin`: the ``start``,
   ``stop`` (and ``hidden_to_internal``) attributes, :attr:`time_steps` and the

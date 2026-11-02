@@ -8,11 +8,10 @@ class FactorOracleConstraint(Constraint):
     """
     A predicate with an explicit node scope.
 
-    A factor oracle constraint is materialised into a factor (Markov
-    networks) or a CPD (Bayesian networks) by enumerating every assignment
-    over its ``nodes`` (see
-    :func:`conin.representations.pgmpy.materialise_factor_oracle`).  This is
-    how oracle constraints are used with variable elimination.
+    A factor oracle constraint is materialised into an indicator factor by
+    enumerating every assignment over its ``nodes`` (see
+    :func:`conin.representations.variable_elimination.materialise_factor_oracle`).
+    This is how oracle constraints are used with variable elimination.
 
     Parameters
     ----------

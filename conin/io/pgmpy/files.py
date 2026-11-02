@@ -6,8 +6,7 @@ import gzip
 from conin.util import try_import
 
 with try_import() as pgmpy_available:
-    import pgmpy.utils
-    import pgmpy.models
+    import pgmpy  # noqa: F401
 
 with try_import() as pgmpy_readwrite_available:
     from pgmpy.readwrite.BIF import BIFReader, BIFWriter
@@ -54,9 +53,7 @@ def load_model(name, quiet=True):
 
         raise RuntimeError(f"Unexpected model type: {name}")
 
-    if not quiet:  # pragma:nocover
-        print(f"  Loading model pgmpy examples: {name}")
-    return pgmpy.utils.get_example_model(name)
+    raise RuntimeError(f"Missing file {name}")
 
 
 def save_model(pgm, name, quiet=True):

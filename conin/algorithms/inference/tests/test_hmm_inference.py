@@ -1,15 +1,14 @@
 import pytest
 import pyomo.opt
-import random
 
 from conin.util import try_import
 
 with try_import() as or_topas_available:
-    import or_topas.aos as aos
+    import or_topas.aos as aos  # noqa: F401
 
+from conin.algorithms.inference.oracle import a_star
 from conin.algorithms.inference.recursive import recursive_a_star
 from conin.constrained_models import ConstrainedHiddenMarkovModel
-from conin.algorithms.inference.oracle import a_star
 from conin.constraints.oracle_library import *
 
 from conin.algorithms.inference.pyomo import ip_inference
@@ -76,14 +75,13 @@ class Test_Inference_a_star:
     def test_a_star(self, chmm, recursive_chmm):
         observed = ["o1", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0"]
 
-        # inference1 = Inference(statistical_model=chmm)
-        # inferred1 = inference1(observed).solutions[0].states
+        inferred1 = a_star(hmm=chmm, observed=observed).solutions[0].states
 
         inferred2 = (
             recursive_a_star(hmm=recursive_chmm, observed=observed).solutions[0].states
         )
 
-        # assert inferred1 == inferred2
+        assert inferred1 == inferred2
 
         assert inferred2 == [
             "h0",
@@ -101,14 +99,13 @@ class Test_Inference_a_star:
     def test_a_star_2(self, chmm, recursive_chmm):
         observed = ["o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1"]
 
-        # inference1 = Inference(statistical_model=chmm)
-        # inferred1 = inference1(observed).solutions[0].states
+        inferred1 = a_star(hmm=chmm, observed=observed).solutions[0].states
 
         inferred2 = (
             recursive_a_star(hmm=recursive_chmm, observed=observed).solutions[0].states
         )
 
-        # assert inferred1 == inferred2
+        assert inferred1 == inferred2
 
         assert inferred2 == [
             "h0",
@@ -138,19 +135,18 @@ class Test_Inference_a_star:
             "o0",
         ]
 
-        # inference1 = Inference(statistical_model=chmm, num_solutions=2)
-        # inferred1 = inference1(observed)
+        inferred1 = a_star(hmm=chmm, observed=observed, num_solutions=2)
 
         inferred2 = recursive_a_star(
             hmm=recursive_chmm, observed=observed, num_solutions=2
         )
 
-        # assert inferred1.termination_condition == "ok"
+        assert inferred1.termination_condition == "ok"
         assert inferred2.termination_condition == "ok"
-        # assert [sol.states for sol in inferred1.solutions] == [
-        #    ["h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"],
-        #    ["h1", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"],
-        # ]
+        assert [sol.states for sol in inferred1.solutions] == [
+            ["h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"],
+            ["h1", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"],
+        ]
         assert [sol.states for sol in inferred2.solutions] == [
             ["h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"],
             ["h1", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"],
@@ -159,37 +155,33 @@ class Test_Inference_a_star:
     def test_a_star_no_solution(self, chmm, recursive_chmm):
         observed = ["o0"]
 
-        # inference1 = Inference(statistical_model=chmm)
-        # inferred1 = inference1(observed)
+        inferred1 = a_star(hmm=chmm, observed=observed)
 
         inferred2 = recursive_a_star(hmm=recursive_chmm, observed=observed)
 
-        # assert inferred1.termination_condition == "error: no feasible solutions"
+        assert inferred1.termination_condition == "error: no feasible solutions"
 
         assert inferred2.termination_condition == "error: no feasible solutions"
 
     def test_a_star_not_enough_solutions(self, chmm, recursive_chmm):
         observed = ["o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1"]
 
-        # inference1 = Inference(statistical_model=chmm, num_solutions=2)
-        # inferred1 = inference1(observed)
+        inferred1 = a_star(hmm=chmm, observed=observed, num_solutions=2)
 
         inferred2 = recursive_a_star(
             hmm=recursive_chmm, observed=observed, num_solutions=2
         )
-        # assert inferred1.termination_condition == "ok"
+        assert inferred1.termination_condition == "ok"
         assert inferred2.termination_condition == "ok"
 
 
 class Test_Inference_ip:
 
     @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-    def test_ip(self, chmm1_pyomo):
+    def test_ip(self, chmm, chmm1_pyomo):
         observed = ["o1", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0"]
 
-        # TODO - Compare LP solution?
-        # inference1 = Inference(statistical_model=chmm)
-        # inferred1 = inference1(observed).solutions[0].states
+        inferred1 = a_star(hmm=chmm, observed=observed).solutions[0].states
 
         inferred2 = (
             ip_inference(
@@ -201,6 +193,7 @@ class Test_Inference_ip:
             .states
         )
 
+        assert inferred1 == inferred2
         assert inferred2 == [
             "h0",
             "h0",
@@ -228,9 +221,6 @@ class Test_Inference_ip:
             topas_method="balas",
         )
         solver = "or_topas"
-        # TODO - Compare LP solution?
-        # inference1 = Inference(statistical_model=chmm)
-        # inferred1 = inference1(observed).solutions[0].states
 
         inferred2 = (
             ip_inference(
@@ -271,9 +261,6 @@ class Test_Inference_ip:
             topas_method="balas",
         )
         solver = "or_topas"
-        # TODO - Compare LP solution?
-        # inference1 = Inference(statistical_model=chmm)
-        # inferred1 = inference1(observed).solutions[0].states
         ip_results = ip_inference(
             hmm=chmm1_pyomo_aos,
             observed=observed,
@@ -339,9 +326,6 @@ class Test_Inference_ip:
             topas_method="balas",
         )
         solver = "or_topas"
-        # TODO - Compare LP solution?
-        # inference1 = Inference(statistical_model=chmm)
-        # inferred1 = inference1(observed).solutions[0].states
         ip_results = ip_inference(
             hmm=chmm1_pyomo_aos,
             observed=observed,
@@ -388,9 +372,6 @@ class Test_Inference_ip:
             topas_method="balas",
         )
         solver = "or_topas"
-        # TODO - Compare LP solution?
-        # inference1 = Inference(statistical_model=chmm)
-        # inferred1 = inference1(observed).solutions[0].states
         ip_results = ip_inference(
             hmm=chmm2_pyomo_aos,
             observed=observed,
@@ -490,9 +471,6 @@ class Test_Inference_ip:
             topas_method="balas",
         )
         solver = "or_topas"
-        # TODO - Compare LP solution?
-        # inference1 = Inference(statistical_model=chmm)
-        # inferred1 = inference1(observed).solutions[0].states
         ip_results = ip_inference(
             hmm=chmm2_pyomo_aos,
             observed=observed,
@@ -555,12 +533,10 @@ class Test_Inference_ip:
         ]
 
     @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-    def test_ip2(self, chmm1_pyomo):
+    def test_ip2(self, chmm, chmm1_pyomo):
         observed = ["o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1"]
 
-        # TODO - Compare LP solution?
-        # inference1 = Inference(statistical_model=chmm)
-        # inferred1 = inference1(observed).solutions[0].states
+        inferred1 = a_star(hmm=chmm, observed=observed).solutions[0].states
 
         inferred2 = (
             ip_inference(
@@ -572,7 +548,7 @@ class Test_Inference_ip:
             .states
         )
 
-        # assert inferred1 == inferred2
+        assert inferred1 == inferred2
 
         assert inferred2 == [
             "h0",

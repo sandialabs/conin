@@ -4,7 +4,7 @@ Inference API
 This page documents the public inference entry point. Use
 ``conin.algorithms.inference.map_query`` with a ``method`` argument to select the backend
 algorithm. ``map_query`` turns the model into a constrained model (a bare model
-has no constraints; pgmpy models are converted), builds the representation that
+has no constraints), builds the representation that
 the method needs and dispatches on its type, so the same call shape works
 across supported Markov networks, Bayesian networks, dynamic Bayesian
 networks, hidden Markov models, and constrained variants when the selected
@@ -30,7 +30,7 @@ Available Methods
    Uses the Toulbar2 cost-function-network backend.
 
 ``variable_elimination``
-   Uses pgmpy's variable-elimination backend.
+   Uses CONIN's variable elimination (exact; supports partial MAP queries).
 
 ``a_star``
    Uses A* search for supported hidden Markov model inputs (oracle
@@ -77,10 +77,13 @@ Toulbar2
 
 .. autofunction:: conin.algorithms.inference.toulbar2.solve_toulbar2_map_query_model
 
-Variable elimination (pgmpy)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Variable elimination
+^^^^^^^^^^^^^^^^^^^^
 
 .. autofunction:: conin.algorithms.inference.variable_elimination.solve_variable_elimination_map_query_model
+
+.. automodule:: conin.algorithms.util.variable_elimination
+   :members: max_product, log_weight
 
 MVR (torch)
 ^^^^^^^^^^^

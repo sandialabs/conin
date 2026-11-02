@@ -22,7 +22,6 @@ PACKAGE_DIR = pathlib.Path(conin.__file__).parent
 LAYERS = [
     {"exceptions", "util", "config", "__about__"},
     {"graphical_models", "constraints"},
-    {"pgmpy"},
     {"constrained_models", "representations", "io"},
     {"algorithms.util"},
     {"algorithms.feasibility"},
@@ -32,7 +31,7 @@ LAYERS = [
     {"algorithms.learning"},
     {"examples", "algorithms", "conin"},
 ]
-SHARED_LAYERS = (0, 3)
+SHARED_LAYERS = (0, 2)
 
 # The modules that need torch.  Only they may be imported inside a function,
 # so that ``import conin`` does not import torch.

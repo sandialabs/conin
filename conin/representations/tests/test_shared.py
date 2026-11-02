@@ -38,9 +38,6 @@ from conin.representations.unrolled import (
 )
 from conin.util import try_import
 
-with try_import() as pgmpy_available:
-    import pgmpy  # noqa: F401
-
 with try_import() as pytoulbar2_available:
     import pytoulbar2  # noqa: F401
 
@@ -135,15 +132,18 @@ def test_pyomo_applier_without_constraints_returns_the_model():
     )
 
 
-@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-def test_pgmpy_applier_rejects_mixed_families():
-    from conin.representations.pgmpy import apply_pgmpy_constraints
+def test_variable_elimination_applier_rejects_mixed_families():
+    from conin.representations.variable_elimination import (
+        apply_variable_elimination_constraints,
+    )
 
     import conin.examples.markov_network as mex
 
     factor = FactorOracleConstraint(func=lambda s: True, nodes=["A"])
-    with pytest.raises(TypeError, match="pgmpy backend applies .* one family"):
-        apply_pgmpy_constraints(
+    with pytest.raises(
+        TypeError, match="variable_elimination backend applies .* one family"
+    ):
+        apply_variable_elimination_constraints(
             pgm=mex.ABC_conin().pgm, constraints=[factor, _pyomo_con]
         )
 
@@ -208,8 +208,7 @@ def test_hmm_mixin_copies_hidden_to_internal():
 DBN_KINDS = ["pyomo"]
 if pytoulbar2_available:
     DBN_KINDS.append("toulbar2")
-if pgmpy_available:
-    DBN_KINDS.append("pgmpy")
+DBN_KINDS.append("variable_elimination")
 
 
 def _dbn_fields(dbn_stop):
@@ -233,7 +232,7 @@ def _time_fields(data):
 def _structure_fields_of(repn):
     data = (
         repn.constraint_data()
-        if repn.kind == "pgmpy"
+        if repn.kind == "variable_elimination"
         else repn.constraint_data(evidence=None, variables=None)
     )
     return _time_fields(data)

@@ -8,6 +8,7 @@ assignment and the evidence (the feasible ones, for constrained models).
 import importlib
 import itertools
 import math
+import random
 
 import munch
 import pytest
@@ -30,11 +31,12 @@ from conin.graphical_models import (
     DynamicDiscreteBayesianNetwork,
     HiddenMarkovModel,
 )
-from conin.representations.pgmpy import (
-    PgmpyBNRepresentation,
-    PgmpyDBNRepresentation,
-    PgmpyHMMRepresentation,
-    PgmpyMNRepresentation,
+from conin.representations.variable_elimination import (
+    VariableEliminationBNRepresentation,
+    VariableEliminationDBNRepresentation,
+    VariableEliminationHMMRepresentation,
+    VariableEliminationMNRepresentation,
+    VariableEliminationRepresentation,
 )
 from conin.algorithms.scoring import (
     log_potential,
@@ -43,13 +45,9 @@ from conin.algorithms.scoring import (
 )
 from conin.util import try_import
 
-with try_import() as pgmpy_available:
-    import pgmpy  # noqa: F401
-
 with try_import() as smoek_available:
     import smoek  # noqa: F401
 
-require_pgmpy = pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 require_smoek = pytest.mark.skipif(not smoek_available, reason="smoek not installed")
 
 lpq = importlib.import_module("conin.algorithms.scoring.query")
@@ -235,7 +233,6 @@ CONSTRAINED = (
 # ---------------------------------------------------------------------
 
 
-@require_pgmpy
 @pytest.mark.parametrize("model,assignment,evidence,stop", BRUTE_FORCE)
 def test_matches_brute_force(model, assignment, evidence, stop):
     pgm = model()
@@ -245,7 +242,6 @@ def test_matches_brute_force(model, assignment, evidence, stop):
     )
 
 
-@require_pgmpy
 @pytest.mark.parametrize("model,assignment,evidence,stop", CONSTRAINED)
 def test_constrained_matches_brute_force(model, assignment, evidence, stop):
     """Under constraints: the brute force sums over the feasible assignments only."""
@@ -258,7 +254,6 @@ def test_constrained_matches_brute_force(model, assignment, evidence, stop):
     assert abs(expected - unconstrained) > 1e-6
 
 
-@require_pgmpy
 @require_smoek
 @pytest.mark.parametrize(
     "example,assignment,evidence,stop",
@@ -277,7 +272,6 @@ def test_algebraic_constraints_match_brute_force(example, assignment, evidence, 
     )
 
 
-@require_pgmpy
 @require_smoek
 def test_algebraic_hmm_constraints_match_brute_force():
     @algebraic_constraint_fn()
@@ -292,7 +286,6 @@ def test_algebraic_hmm_constraints_match_brute_force():
     )
 
 
-@require_pgmpy
 @pytest.mark.parametrize(
     "model,assignment,observed",
     [
@@ -312,7 +305,6 @@ def test_total_assignment_equals_log_probability(model, assignment, observed):
     assert log_probability_query(pgm, assignment) == pytest.approx(expected, abs=TOL)
 
 
-@require_pgmpy
 def test_mn_total_assignment_is_normalised():
     """For a Markov network the partition function cancels: log_potential - log Z."""
     mn = _mn_sparse()
@@ -323,7 +315,6 @@ def test_mn_total_assignment_is_normalised():
     )
 
 
-@require_pgmpy
 @pytest.mark.parametrize(
     "model,assignment,evidence",
     [
@@ -342,7 +333,6 @@ def test_conditional_is_joint_minus_marginal(model, assignment, evidence):
     assert conditional == pytest.approx(joint - marginal, abs=TOL)
 
 
-@require_pgmpy
 def test_under_constraints_is_joint_minus_constraint_probability():
     """``log P(x | C) = log P(x, C) - log P(C)``, from queries on the unconstrained model.
 
@@ -363,7 +353,6 @@ def test_under_constraints_is_joint_minus_constraint_probability():
     )
 
 
-@require_pgmpy
 def test_hmm_likelihood_of_the_observations():
     """``log P(observations)``, the forward-algorithm likelihood."""
     hmm = _hmm()
@@ -378,7 +367,19 @@ def test_hmm_likelihood_of_the_observations():
     assert log_probability_query(hmm, assignment) == pytest.approx(expected, abs=TOL)
 
 
-@require_pgmpy
+def test_long_hmm_sequences_do_not_underflow():
+    """A total assignment of 600 steps has a probability far below 1e-308."""
+    hmm = _hmm()
+    rng = random.Random(0)
+    hidden = [rng.choice(hmm.hidden_states) for _ in range(600)]
+    observed = [rng.choice(hmm.observed_states) for _ in range(600)]
+    expected = log_probability(hmm, hidden, observed=observed)
+    assert expected < math.log(1e-308)
+    assignment = {("H", t): h for t, h in enumerate(hidden)}
+    assignment.update({("E", t): o for t, o in enumerate(observed)})
+    assert log_probability_query(hmm, assignment) == pytest.approx(expected, abs=1e-6)
+
+
 def test_bare_and_unconstrained_models_agree():
     a, e = {"Cancer": 1}, {"Xray": 1}
     assert log_probability_query(_bn(), a, evidence=e) == pytest.approx(
@@ -387,16 +388,6 @@ def test_bare_and_unconstrained_models_agree():
     )
 
 
-@require_pgmpy
-def test_pgmpy_models_are_converted():
-    a, e = {"Cancer": 1}, {"Xray": 1}
-    pgmpy_model = bex.cancer1_BN_pgmpy().pgm
-    assert log_probability_query(pgmpy_model, a, evidence=e) == pytest.approx(
-        log_probability_query(_bn(), a, evidence=e), abs=TOL
-    )
-
-
-@require_pgmpy
 def test_zero_probability_assignment_is_minus_inf():
     hmm0 = hex_.create_hmm0()  # h0 then h1 forever; h0 emits o0, h1 emits o1
     assert log_probability_query(hmm0, {("H", 1): "h0"}) == -math.inf
@@ -406,7 +397,6 @@ def test_zero_probability_assignment_is_minus_inf():
     )
 
 
-@require_pgmpy
 def test_stop_default_and_a_later_stop():
     """``stop`` defaults to the largest time; a later one gives the same unconstrained value."""
     hmm = _hmm()
@@ -422,7 +412,6 @@ def test_stop_default_and_a_later_stop():
     )
 
 
-@require_pgmpy
 def test_the_horizon_matters_under_constraints():
     """The HMM constraint (at most one h1) covers the times start..stop."""
     cmodel = _chmm()
@@ -439,14 +428,12 @@ def test_the_horizon_matters_under_constraints():
 # ---------------------------------------------------------------------
 
 
-@require_pgmpy
 def test_zero_probability_evidence_raises():
     hmm0 = hex_.create_hmm0()
     with pytest.raises(InvalidInputError, match="the evidence has probability zero"):
         log_probability_query(hmm0, {("E", 0): "o0"}, evidence={("H", 0): "h1"})
 
 
-@require_pgmpy
 def test_zero_probability_constraints_raise():
     """P(C) = 0: the example's constraints need ten or more h0 over the time steps."""
     cmodel = hex_.create_chmm1_oracle_ve()
@@ -499,7 +486,7 @@ def test_unsupported_families_raise_the_registry_error(example):
     if isinstance(cmodel, ConstrainedDynamicDiscreteBayesianNetwork):
         var = ("A", 0)
     with pytest.raises(
-        InvalidInputError, match="No .pgmpy. representation is available"
+        InvalidInputError, match="No .variable_elimination. representation is available"
     ):
         log_probability_query(cmodel, {var: 0})
 
@@ -520,7 +507,6 @@ def test_unsupported_families_raise_the_registry_error(example):
 )  # fmt: skip
 def test_bad_input_raises(assignment, evidence, match):
     if match is None:
-        pytest.importorskip("pgmpy")
         assert log_probability_query(_hmm(), assignment, evidence=evidence) < 0
         return
     with pytest.raises(InvalidInputError, match=match):
@@ -550,7 +536,9 @@ def test_unknown_options_raise_type_error():
 
 def test_methods():
     assert lpq.METHODS == ("variable_elimination",)
-    assert [lpq._representation_kind(m) for m in lpq.METHODS] == ["pgmpy"]
+    assert [lpq._representation_kind(m) for m in lpq.METHODS] == [
+        "variable_elimination"
+    ]
 
 
 @pytest.mark.parametrize(
@@ -574,15 +562,15 @@ def test_structure_params(model, variables, start, stop, expected):
 @pytest.mark.parametrize(
     "cls",
     [
-        PgmpyMNRepresentation,
-        PgmpyBNRepresentation,
-        PgmpyDBNRepresentation,
-        PgmpyHMMRepresentation,
+        VariableEliminationMNRepresentation,
+        VariableEliminationBNRepresentation,
+        VariableEliminationDBNRepresentation,
+        VariableEliminationHMMRepresentation,
     ],
 )
-def test_one_overload_per_representation_class(cls):
+def test_one_overload_for_every_representation_class(cls):
     resolved = lpq._solve_log_probability.resolve(cls, munch.Munch)
-    assert resolved.__annotations__["repn"] is cls
+    assert resolved.__annotations__["repn"] is VariableEliminationRepresentation
 
 
 @pytest.mark.parametrize(
@@ -601,9 +589,9 @@ def test_each_model_type_builds_its_factor_representation(model, var, monkeypatc
     state = {"A": 0, "Xray": 0, ("A", 0): 0, ("H", 0): "h0"}[var]
     assert log_probability_query(pgm, {var: state}) == 0.0
     expected = {
-        "A": PgmpyMNRepresentation,
-        "Xray": PgmpyBNRepresentation,
-        ("A", 0): PgmpyDBNRepresentation,
-        ("H", 0): PgmpyHMMRepresentation,
+        "A": VariableEliminationMNRepresentation,
+        "Xray": VariableEliminationBNRepresentation,
+        ("A", 0): VariableEliminationDBNRepresentation,
+        ("H", 0): VariableEliminationHMMRepresentation,
     }[var]
     assert seen == [expected]

@@ -520,7 +520,7 @@ def test_unsupported_family_raises():
 # ---------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("kind", ["pyomo", "toulbar2", "pgmpy"])
+@pytest.mark.parametrize("kind", ["pyomo", "toulbar2", "variable_elimination"])
 def test_unrolled_hmm_representations_need_a_stop_time(kind):
     cmodel = ConstrainedHiddenMarkovModel(tc.create_hmm1())
     with pytest.raises(InvalidInputError, match="needs a stop time"):

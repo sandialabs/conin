@@ -6,13 +6,12 @@ import pytest
 from conin.util import try_import
 
 with try_import() as smoek_available:
-    import smoek
+    import smoek  # noqa: F401
 
 if not smoek_available:
     pytestmark = pytest.mark.skip(reason="Smoek not installed")
 
 import sys
-import os
 
 # Add project to path
 sys.path.insert(0, "/projects/conin")
@@ -20,8 +19,6 @@ sys.path.insert(0, "/projects/conin")
 
 def test_imports():
     """Test that all modules can be imported."""
-    from conin import algebraic_constraint_fn
-    from conin import algebraic_constraint_fn as smoek_algebraic_constraint_fn
 
 
 def test_coninvarnode():
@@ -41,7 +38,7 @@ def test_coninvarnode():
     assert var2.time == 5
 
     # Test operator overloading (inherited from smoek.ExprLeaf)
-    expr = var1 + var2
+    var1 + var2
 
 
 def test_expression_building():
@@ -53,12 +50,12 @@ def test_expression_building():
     b = ConinVarNode("B", 1)
 
     # Test arithmetic
-    sum_expr = a + b
+    a + b
 
-    prod_expr = 2 * a
+    2 * a
 
     # Test comparison
-    constraint = a + b <= 10
+    a + b <= 10
 
 
 def test_decorator_creation():

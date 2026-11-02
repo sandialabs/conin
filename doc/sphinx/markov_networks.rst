@@ -89,8 +89,8 @@ list of constraints. The examples in
 add an all-different constraint.
 
 The Pyomo and Toulbar2 examples require their respective solver backends. Oracle
-constraints with ``nodes`` (``FactorOracleConstraint``) are represented as additional factors and can also be
-consumed by variable-elimination workflows when ``pgmpy`` is installed.
+constraints with ``nodes`` (``FactorOracleConstraint``) are represented as
+additional indicator factors by the variable-elimination backend.
 
 Pyomo constraints
 ^^^^^^^^^^^^^^^^^

@@ -156,7 +156,7 @@ def test_omit_c5_fallback():
         RuntimeError,
         match=r"The c5 constraints were omitted, but cut generation is not supported for solver=",
     ):
-        results = map_query(
+        map_query(
             example.pgm,
             method="integer_program",
             solver=other_mip_solver,

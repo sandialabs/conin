@@ -110,7 +110,8 @@ constraints to the cancer network.
 
 The Pyomo and Toulbar2 snippets below require their respective solver backends.
 Oracle constraints with ``nodes`` (``FactorOracleConstraint``) are converted into
-auxiliary CPDs and can also be used by the variable-elimination backend when ``pgmpy`` is installed.
+indicator factors (``0`` on infeasible assignments) by the variable-elimination
+backend.
 
 Pyomo constraints
 ^^^^^^^^^^^^^^^^^

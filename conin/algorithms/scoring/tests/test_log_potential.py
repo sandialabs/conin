@@ -33,13 +33,9 @@ import conin.examples.dynamic_bayesian_network as dbn_examples
 import conin.examples.hidden_markov_model as hmm_examples
 import conin.examples.markov_network as mn_examples
 
-with try_import() as pgmpy_available:
-    import pgmpy  # noqa: F401
-
 with try_import() as smoek_available:
     import smoek  # noqa: F401
 
-require_pgmpy = pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 require_smoek = pytest.mark.skipif(not smoek_available, reason="smoek not installed")
 
 
@@ -465,39 +461,3 @@ def test_constrained_hmm_algebraic():
         log_probability(cmodel.model, ["h0"] * 11 + ["h1"] * 2, observed=observed)
     )
     assert log_potential(cmodel, ["h0"] * 13, observed=observed) == -math.inf
-
-
-# ---------------------------------------------------------------------
-# pgmpy models
-# ---------------------------------------------------------------------
-
-
-@require_pgmpy
-def test_pgmpy_mn():
-    pgm = mn_examples.ABC_pgmpy().pgm
-    assert log_potential(pgm, {"A": 2, "B": 2, "C": 1}) == pytest.approx(
-        2.4849066497880004
-    )
-    with pytest.raises(InvalidInputError, match="partition function"):
-        log_probability(pgm, {"A": 2, "B": 2, "C": 1})
-
-
-@require_pgmpy
-def test_pgmpy_bn():
-    pgm = bn_examples.cancer1_BN_pgmpy().pgm
-    a = {"Cancer": 1, "Dyspnoea": 0, "Pollution": 0, "Smoker": 1, "Xray": 1}
-    assert log_probability(pgm, a) == pytest.approx(
-        math.log(pgm.get_state_probability(a))
-    )
-    assert log_potential(pgm, a) == pytest.approx(log_probability(pgm, a))
-
-
-@require_pgmpy
-def test_pgmpy_dbn_matches_the_conin_dbn():
-    """simple1_DDBN_pgmpy holds the CPD of B for slices 0 and 1; converted, they
-    used to become two copies of the template CPD of (B, t), so the unrolled
-    network had two CPDs for each (B, t) and log_probability refused it."""
-    pgm = dbn_examples.simple1_DDBN_pgmpy().pgm
-    conin_pgm = dbn_examples.simple1_DDBN_conin().pgm
-    a = {("A", 0): 0, ("A", 1): 0, ("B", 0): 1, ("B", 1): 1}
-    assert log_probability(pgm, a) == pytest.approx(log_probability(conin_pgm, a))

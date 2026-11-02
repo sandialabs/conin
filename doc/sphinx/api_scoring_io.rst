@@ -36,21 +36,17 @@ files between formats; run ``convert_pgm --help`` for its options.
 pgmpy interoperability
 ----------------------
 
-``conin.pgmpy`` converts models between pgmpy and CONIN in user code (the
-file I/O functions above use it for pgmpy models). It needs pgmpy at call
-time, not at import time.
+``conin.io.pgmpy`` reads and writes BIF files (and pgmpy's UAI reader and
+writer) for the file I/O functions above, and converts models between pgmpy
+and CONIN. CONIN's algorithms take CONIN models only: convert a pgmpy model
+with ``convert_pgmpy_to_conin`` first. It needs pgmpy at call time, not at
+import time.
 
-.. autofunction:: conin.pgmpy.convert_pgmpy_to_conin
+.. autofunction:: conin.io.pgmpy.convert_pgmpy_to_conin
 
-.. autofunction:: conin.pgmpy.convert_conin_to_pgmpy_bn
+.. autofunction:: conin.io.pgmpy.convert_conin_to_pgmpy_bn
 
-.. autofunction:: conin.pgmpy.convert_conin_to_pgmpy_mn
-
-.. autofunction:: conin.pgmpy.MapCPD
-
-.. autofunction:: conin.pgmpy.is_polytree
-
-For CONIN Bayesian networks, use :func:`conin.graphical_models.is_polytree`.
+.. autofunction:: conin.io.pgmpy.convert_conin_to_pgmpy_mn
 
 Exceptions
 ----------

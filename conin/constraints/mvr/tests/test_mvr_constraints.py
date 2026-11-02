@@ -6,7 +6,7 @@ from types import SimpleNamespace
 from conin.util import try_import
 
 with try_import() as greenery_available:
-    import greenery
+    import greenery  # noqa: F401
 
 import pytest
 

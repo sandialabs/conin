@@ -34,9 +34,6 @@ from conin.algorithms.inference.unconstrained import viterbi
 from conin.algorithms.scoring import log_potential
 from conin.util import try_import
 
-with try_import() as pgmpy_available:
-    import pgmpy  # noqa: F401
-
 with try_import() as pytoulbar2_available:
     import pytoulbar2  # noqa: F401
 
@@ -48,13 +45,12 @@ needs_mip = pytest.mark.skipif(default_mip_solver is None, reason="no MIP solver
 needs_toulbar2 = pytest.mark.skipif(
     not pytoulbar2_available, reason="pytoulbar2 not installed"
 )
-needs_pgmpy = pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 
 # (method, options, marks) of the solver methods
 SOLVERS = [
     pytest.param("integer_program", dict(solver=default_mip_solver), marks=needs_mip),
     pytest.param("toulbar2", {}, marks=needs_toulbar2),
-    pytest.param("variable_elimination", {}, marks=needs_pgmpy),
+    pytest.param("variable_elimination", {}),
 ]
 
 
@@ -88,9 +84,7 @@ HMM_METHODS = [
         id="network_flow",
     ),
     pytest.param("toulbar2", {}, "float", marks=needs_toulbar2, id="toulbar2"),
-    pytest.param(
-        "variable_elimination", {}, None, marks=needs_pgmpy, id="variable_elimination"
-    ),
+    pytest.param("variable_elimination", {}, None, id="variable_elimination"),
 ]
 
 
@@ -272,9 +266,7 @@ HMM_NO_SOLUTION_METHODS = [
     pytest.param("viterbi", {}, id="viterbi"),
     pytest.param("a_star", {}, id="a_star"),
     pytest.param("toulbar2", {}, marks=needs_toulbar2, id="toulbar2"),
-    pytest.param(
-        "variable_elimination", {}, marks=needs_pgmpy, id="variable_elimination"
-    ),
+    pytest.param("variable_elimination", {}, id="variable_elimination"),
     pytest.param("mvr_viterbi", {}, marks=needs_torch, id="mvr_viterbi"),
 ]
 
@@ -404,7 +396,7 @@ def _static_no_solution_cases():
     for method, options, marks in [
         ("integer_program", dict(solver=default_mip_solver), needs_mip),
         ("toulbar2", {}, needs_toulbar2),
-        ("variable_elimination", {}, needs_pgmpy),
+        ("variable_elimination", {}, ()),
     ]:
         yield pytest.param(
             infeasible, method, options, None, marks=marks, id=f"infeasible-{method}"
@@ -437,7 +429,6 @@ def test_static_model_without_a_solution_has_no_solution(
     _check_no_solution(map_query(model, method=method, evidence=evidence, **options))
 
 
-@needs_pgmpy
 def test_partial_variable_elimination_without_a_solution_has_no_solution():
     from conin.constraints import algebraic_constraint_fn
 
@@ -608,7 +599,6 @@ def test_constrained_static_score_is_not_renormalised(method, options):
     )
 
 
-@needs_pgmpy
 def test_partial_map_query_has_no_log_potential():
     pgm = bex.cancer1_BN_conin().pgm
     results = map_query(pgm, method="variable_elimination", variables=["Cancer"])

@@ -3,7 +3,6 @@ from math import log
 import pyomo.environ as pyo
 import pyomo.opt
 
-from conin.util import try_import
 from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
 from conin.algorithms.inference.pyomo import solve_pyomo_map_query_model
 from conin.representations.pyomo.common import (
@@ -15,10 +14,6 @@ from conin.representations.pyomo.factor_repn import (
 )
 
 from conin.examples import markov_network as examples
-
-with try_import() as pgmpy_available:
-    import pgmpy
-    from conin.pgmpy import convert_pgmpy_to_conin
 
 mip_solver = pyomo.opt.check_available_solvers("gurobi", "highs", "glpk")
 mip_solver = mip_solver[0] if mip_solver else None
@@ -69,20 +64,6 @@ def test_example6():
     if True:
         pgm = examples.example6_conin().pgm
         pgm.check_model()
-        S_, J_, v_, w_ = extract_factor_representation(pgm)
-        assert S == S_
-        assert J == J_
-        assert v == v_
-        assert w == w_
-        model = (
-            ConstrainedDiscreteMarkovNetwork(pgm).representation("pyomo").create_model()
-        )
-        results = solve_pyomo_map_query_model(model, solver=mip_solver)
-        assert results.solution.states == {"A": 0, "B": 1}
-
-    if pgmpy_available:
-        pgm = examples.example6_pgmpy().pgm
-        pgm = convert_pgmpy_to_conin(pgm)
         S_, J_, v_, w_ = extract_factor_representation(pgm)
         assert S == S_
         assert J == J_
@@ -237,15 +218,6 @@ def test_ABC():
         assert v == v_
         assert w == w_
 
-    if pgmpy_available:
-        pgm = examples.ABC_pgmpy().pgm
-        pgm = convert_pgmpy_to_conin(pgm)
-        S_, J_, v_, w_ = extract_factor_representation(pgm)
-        assert S == S_
-        assert J == J_
-        assert v == v_
-        assert w == w_
-
 
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_ABC_constrained():
@@ -393,15 +365,6 @@ def test_ABC_constrained():
     if True:
         # Double-check that we can extract the right factor representation
         cpgm = examples.ABC_constrained_pyomo_conin().pgm
-        S_, J_, v_, w_ = extract_factor_representation(cpgm.model)
-        assert S == S_
-        assert J == J_
-        assert v == v_
-        assert w == w_
-
-    if pgmpy_available:
-        # Double-check that we can extract the right factor representation
-        cpgm = examples.ABC_constrained_pyomo_pgmpy().pgm
         S_, J_, v_, w_ = extract_factor_representation(cpgm.model)
         assert S == S_
         assert J == J_

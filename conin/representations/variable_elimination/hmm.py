@@ -1,14 +1,16 @@
-"""The ``"pgmpy"`` representation of a (constrained) HMM."""
+"""The ``"variable_elimination"`` representation of a (constrained) HMM."""
 
 from conin.graphical_models import HiddenMarkovModel, create_dbn_from_hmm
 from conin.representations.base import register_representation
 from conin.representations.unrolled import UnrolledHMMMixin, hmm_time_range
 
-from .common import PgmpyRepresentation
-from .dbn import build_pgmpy_dbn_representation
+from .common import VariableEliminationRepresentation
+from .dbn import build_variable_elimination_dbn_representation
 
 
-class PgmpyHMMRepresentation(UnrolledHMMMixin, PgmpyRepresentation):
+class VariableEliminationHMMRepresentation(
+    UnrolledHMMMixin, VariableEliminationRepresentation
+):
     """Factor model of a constrained HMM unrolled (as a DBN) over ``start..stop``.
 
     Structure params: ``start`` and ``stop``.  The hidden nodes are
@@ -20,17 +22,19 @@ class PgmpyHMMRepresentation(UnrolledHMMMixin, PgmpyRepresentation):
 
 
 @register_representation(
-    "pgmpy", HiddenMarkovModel, families=(None, "factor_oracle", "algebraic")
+    "variable_elimination",
+    HiddenMarkovModel,
+    families=(None, "factor_oracle", "algebraic"),
 )
 def _build(cmodel, *, start=0, stop=None):
     start, stop = hmm_time_range(start, stop)
     hmm = cmodel.model
-    return build_pgmpy_dbn_representation(
+    return build_variable_elimination_dbn_representation(
         create_dbn_from_hmm(hmm=hmm),
         cmodel.constraints,
         start=start,
         stop=stop,
-        cls=PgmpyHMMRepresentation,
+        cls=VariableEliminationHMMRepresentation,
         hidden_to_internal=hmm.hidden_to_internal,
         data=cmodel.data,
     )

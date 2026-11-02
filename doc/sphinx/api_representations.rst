@@ -33,7 +33,7 @@ a family is accepted for a model type if some builder is registered for it.
      - MN, BN, DBN, HMM
      - ``toulbar2``, ``algebraic``
      - ``toulbar2``
-   * - ``"pgmpy"``
+   * - ``"variable_elimination"``
      - MN, BN, DBN, HMM
      - ``factor_oracle``, ``algebraic``
      - ``variable_elimination``, ``log_probability_query``
@@ -142,28 +142,28 @@ The ``Toulbar2VarWrapper`` and the constraint helpers of
 ``conin.representations.toulbar2.common`` are documented in
 :doc:`api_constraints`.
 
-pgmpy (variable elimination)
-----------------------------
+Variable elimination
+--------------------
 
-.. autoclass:: conin.representations.pgmpy.PgmpyRepresentation
+.. autoclass:: conin.representations.variable_elimination.VariableEliminationRepresentation
    :members:
    :show-inheritance:
 
-.. autoclass:: conin.representations.pgmpy.PgmpyMNRepresentation
+.. autoclass:: conin.representations.variable_elimination.VariableEliminationMNRepresentation
    :show-inheritance:
 
-.. autoclass:: conin.representations.pgmpy.PgmpyBNRepresentation
+.. autoclass:: conin.representations.variable_elimination.VariableEliminationBNRepresentation
    :show-inheritance:
 
-.. autoclass:: conin.representations.pgmpy.PgmpyDBNRepresentation
+.. autoclass:: conin.representations.variable_elimination.VariableEliminationDBNRepresentation
    :show-inheritance:
 
-.. autoclass:: conin.representations.pgmpy.PgmpyHMMRepresentation
+.. autoclass:: conin.representations.variable_elimination.VariableEliminationHMMRepresentation
    :show-inheritance:
 
-.. autofunction:: conin.representations.pgmpy.apply_pgmpy_constraints
+.. autofunction:: conin.representations.variable_elimination.apply_variable_elimination_constraints
 
-.. autofunction:: conin.representations.pgmpy.materialise_factor_oracle
+.. autofunction:: conin.representations.variable_elimination.materialise_factor_oracle
 
 HMM representations
 -------------------

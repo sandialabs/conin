@@ -29,8 +29,9 @@ class ConstrainedHiddenMarkovModel(ConstrainedGraphicalModel):
       internal hidden-state indices, used by A* and rejection sampling;
     * ``"recursive"`` (no constraints or ``"recursive"``): the combined
       recursive constraint, used by recursive A*;
-    * ``"pgmpy"`` (no constraints, ``"factor_oracle"`` or ``"algebraic"``;
-      structure params ``start``, ``stop``): variable elimination;
+    * ``"variable_elimination"`` (no constraints, ``"factor_oracle"`` or
+      ``"algebraic"``; structure params ``start``, ``stop``): the factors of
+      the unrolled model, used by variable elimination;
     * ``"toulbar2"`` (no constraints, ``"toulbar2"`` or ``"algebraic"``;
       structure params ``start``, ``stop``): the cost function network;
     * ``"pyomo"`` (no constraints, ``"pyomo"`` or ``"algebraic"``;

@@ -1,5 +1,3 @@
-import pytest
-
 from conin.util import Util
 
 
