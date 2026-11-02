@@ -14,7 +14,7 @@ from conin.exceptions import (
     InsufficientSolutionsError,
     InvalidInputError,
 )
-from conin.graphical_models.hmm_observations import as_sequence
+from conin.graphical_models.assignments import as_sequence
 from conin.algorithms.inference.hmm_results import key_solutions_by_time
 from conin.algorithms.inference.pyomo.solve import solve_model
 from conin.algorithms.inference.results import (

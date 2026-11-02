@@ -1,12 +1,7 @@
 import pytest
 
 from conin.exceptions import InvalidInputError
-from conin.graphical_models.hmm_observations import (
-    as_sequence,
-    require_sequence_type,
-    time_range,
-    unrolled_evidence,
-)
+from conin.graphical_models.assignments import as_sequence, require_sequence_type
 
 
 @pytest.mark.parametrize(
@@ -55,16 +50,3 @@ def test_require_sequence_type_accepts_sparse_dicts(seq):
 def test_require_sequence_type_errors(seq):
     with pytest.raises(InvalidInputError, match="list, a tuple or a dict"):
         require_sequence_type(seq)
-
-
-def test_time_range():
-    observed = ["a", "b", "c"]
-    assert time_range(observed, 0, None) == (0, 2)
-    assert time_range(observed, 0, 1) == (0, 1)
-    assert time_range(observed, 1, 2) == (1, 2)
-    with pytest.raises(InvalidInputError, match="stop=3 is past the last"):
-        time_range(observed, 0, 3)
-
-
-def test_unrolled_evidence():
-    assert unrolled_evidence(["a", "b", "c"], 1, 2) == {("E", 1): "b", ("E", 2): "c"}

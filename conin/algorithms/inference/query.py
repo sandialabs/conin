@@ -27,11 +27,7 @@ from conin.constrained_models import (
 )
 from conin.constrained_models.normalise import as_constrained_model
 from conin.exceptions import InfeasibleQueryError, InvalidInputError
-from conin.graphical_models.hmm_observations import (
-    as_sequence,
-    require_sequence_type,
-    time_range,
-)
+from conin.graphical_models.assignments import as_sequence, require_sequence_type
 from conin.representations.matvec import MatVecHMMRepresentation
 from conin.representations.mvr import MVRHMMRepresentation
 from conin.representations.oracle import OracleHMMRepresentation
@@ -110,9 +106,29 @@ def _structure_params(kind, cmodel, *, observed, start, stop):
         start, stop = dbn_time_range(start, stop)
         return dict(start=start, stop=stop)
     if isinstance(cmodel, ConstrainedHiddenMarkovModel):
-        start, stop = time_range(observed, start, stop)
+        start, stop = _observed_time_range(observed, start, stop)
         return dict(start=start, stop=stop)
     return {}
+
+
+def _observed_time_range(observed, start, stop):
+    """The times ``(start, stop)`` of a query on the observations ``observed`` (a list).
+
+    ``stop`` defaults to the last observation, ``len(observed) - 1``.
+
+    Raises
+    ------
+    InvalidInputError
+        If ``stop`` is past the last observation.
+    """
+    last = len(observed) - 1
+    if stop is None:
+        return start, last
+    if stop > last:
+        raise InvalidInputError(
+            f"stop={stop} is past the last observation (time {last})"
+        )
+    return start, stop
 
 
 def _hmm_observations(method, evidence):
