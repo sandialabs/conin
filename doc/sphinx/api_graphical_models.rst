@@ -51,11 +51,13 @@ Dynamic Bayesian networks
    :undoc-members:
    :show-inheritance:
 
-Expressions and conversions
----------------------------
+Time indices and conversions
+----------------------------
 
-.. autoclass:: conin.graphical_models.ExpressionVariable
+.. autoclass:: conin.graphical_models.TimeIndex
    :show-inheritance:
+
+.. autoclass:: conin.graphical_models.TimeExpression
 
 .. autofunction:: conin.graphical_models.random_hmm
 

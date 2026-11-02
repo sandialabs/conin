@@ -6,7 +6,7 @@ from conin.exceptions import InvalidInputError
 from conin.graphical_models import (
     DiscreteCPD,
     DynamicDiscreteBayesianNetwork,
-    ExpressionVariable,
+    TimeIndex,
 )
 
 
@@ -22,7 +22,7 @@ def _z_cpds(t):
 
 
 def test_constructor_uses_the_given_time_variable():
-    t = ExpressionVariable()
+    t = TimeIndex()
     dbn = DynamicDiscreteBayesianNetwork(
         dynamic_states={"Z": [0, 1]}, cpds=_z_cpds(t), t=t
     )
@@ -43,7 +43,7 @@ def test_cpds_must_be_non_empty():
 
 
 def test_some_states_required():
-    t = ExpressionVariable()
+    t = TimeIndex()
     with pytest.raises(InvalidInputError, match="states"):
         DynamicDiscreteBayesianNetwork(cpds=_z_cpds(t), t=t)
     with pytest.raises(InvalidInputError, match="states"):
@@ -62,7 +62,7 @@ def test_static_states_alone_are_enough():
 
 
 def test_with_cpd_does_not_mutate():
-    t = ExpressionVariable()
+    t = TimeIndex()
     cpds = _z_cpds(t)
     dbn = DynamicDiscreteBayesianNetwork(
         dynamic_states={"Z": [0, 1]}, cpds=cpds[:1], t=t
@@ -80,7 +80,7 @@ def test_with_cpd_does_not_mutate():
 
 def _mixed_dbn():
     """A DBN with a static node S and a dynamic node Z."""
-    t = ExpressionVariable()
+    t = TimeIndex()
     return DynamicDiscreteBayesianNetwork(
         states={"S": ["lo", "mid", "hi"]},
         dynamic_states={"Z": [0, 1]},

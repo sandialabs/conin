@@ -16,7 +16,7 @@ from conin.graphical_models import (
     DiscreteFactor,
     DiscreteMarkovNetwork,
     DynamicDiscreteBayesianNetwork,
-    ExpressionVariable,
+    TimeIndex,
 )
 
 
@@ -43,7 +43,7 @@ def _bn():
 
 
 def _dbn():
-    t = ExpressionVariable()
+    t = TimeIndex()
     return DynamicDiscreteBayesianNetwork(
         dynamic_states={"X": [0, 1]},
         t=t,
@@ -187,7 +187,7 @@ def test_mn_edges_are_fixed_at_construction():
 def test_dbn_time_index_cannot_be_replaced():
     dbn = _dbn()
     with pytest.raises(AttributeError):
-        dbn.t = ExpressionVariable()
+        dbn.t = TimeIndex()
 
 
 @pytest.mark.parametrize("kind", list(FACTORIES))

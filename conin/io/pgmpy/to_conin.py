@@ -6,7 +6,7 @@ from conin.util import try_import
 from conin.graphical_models import DiscreteMarkovNetwork, DiscreteFactor
 from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
 from conin.graphical_models import DynamicDiscreteBayesianNetwork
-from conin.graphical_models import ExpressionVariable
+from conin.graphical_models import TimeIndex
 
 with try_import() as pgmpy_available:
     import pgmpy.models
@@ -94,7 +94,7 @@ def convert_pgmpy_to_DynamicDiscreteBayesianNetwork(pgmpy_pgm):
         else:
             tmp[k] = v
 
-    t = ExpressionVariable()
+    t = TimeIndex()
 
     cpds = []
     templates = {}

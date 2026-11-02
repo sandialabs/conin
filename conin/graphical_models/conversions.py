@@ -9,7 +9,7 @@ from conin.graphical_models.bayesian_network import (
 from conin.graphical_models.dynamic_bayesian_network import (
     DynamicDiscreteBayesianNetwork,
 )
-from conin.graphical_models.expr import ExpressionVariable
+from conin.graphical_models.time_index import TimeIndex
 
 
 def create_mn_from_bn(bn):
@@ -173,11 +173,11 @@ def create_dbn_from_hmm(hmm, debug=False):
     #   H - hidden states
     #   E - emission states
     #
-    # The CPDs below refer to the time index `t`. The same ExpressionVariable
+    # The CPDs below refer to the time index `t`. The same TimeIndex
     # instance is passed to the DBN constructor: `create_bn_from_dbn` later
     # calls `dbn.t.set_value(...)` and expects it to be the exact object
     # embedded in the CPDs' `node`/`parents` tuples.
-    t = ExpressionVariable()
+    t = TimeIndex()
 
     start_probs = hmm.get_start_probs()
     transition_probs = hmm.get_transition_probs()

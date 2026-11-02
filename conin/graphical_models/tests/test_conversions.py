@@ -6,13 +6,13 @@ from conin.exceptions import InvalidInputError
 from conin.graphical_models import (
     DiscreteCPD,
     DynamicDiscreteBayesianNetwork,
-    ExpressionVariable,
+    TimeIndex,
     create_bn_from_dbn,
 )
 
 
 def _z_dbn():
-    t = ExpressionVariable()
+    t = TimeIndex()
     cpds = [
         DiscreteCPD(node=("Z", 0), values=[0.5, 0.5]),
         DiscreteCPD(

@@ -11,7 +11,7 @@ from conin.constrained_models import ConstrainedDynamicDiscreteBayesianNetwork
 from conin.graphical_models import (
     DiscreteCPD,
     DynamicDiscreteBayesianNetwork,
-    ExpressionVariable,
+    TimeIndex,
 )
 from conin.util import MPESolution
 
@@ -21,7 +21,7 @@ from conin.util import MPESolution
 
 
 def simple0_DDBN_conin(debug=False):
-    t = ExpressionVariable()
+    t = TimeIndex()
     z_start_cpd = DiscreteCPD(node=("Z", 0), values=[0.5, 0.5])
     z_trans_cpd = DiscreteCPD(
         node=("Z", t),
@@ -46,7 +46,7 @@ def simple0_DDBN_conin(debug=False):
 
 
 def simple1_DDBN_conin(debug=False):
-    t = ExpressionVariable()
+    t = TimeIndex()
 
     cpd_start_A = DiscreteCPD(node=("A", 0), values=[0.9, 0.1])
     cpd_start_B = DiscreteCPD(
@@ -234,7 +234,7 @@ def weather_conin(debug=False):
     O_states = ["Dry", "Wet"]
     H_states = ["Low", "Medium", "High"]
 
-    t = ExpressionVariable()
+    t = TimeIndex()
 
     # Add intra-slice edges for both time slices
     # dbn.add_edges_from(
