@@ -25,12 +25,12 @@ from conin.algorithms.inference import map_query
 from conin.algorithms.inference.oracle import a_star
 from conin.algorithms.inference.recursive import recursive_a_star
 from conin.algorithms.inference.unconstrained import viterbi
-from conin.representations.pgmpy import (
-    PgmpyBNRepresentation,
-    PgmpyDBNRepresentation,
-    PgmpyHMMRepresentation,
-    PgmpyMNRepresentation,
-    PgmpyRepresentation,
+from conin.representations.variable_elimination import (
+    VariableEliminationBNRepresentation,
+    VariableEliminationDBNRepresentation,
+    VariableEliminationHMMRepresentation,
+    VariableEliminationMNRepresentation,
+    VariableEliminationRepresentation,
 )
 from conin.representations.matvec import MatVecHMMRepresentation
 from conin.representations.mvr import MVRHMMRepresentation
@@ -53,9 +53,6 @@ from conin.representations.toulbar2 import (
 )
 from conin.util import try_import
 
-with try_import() as pgmpy_available:
-    import pgmpy
-
 with try_import() as pytoulbar2_available:
     import pytoulbar2
 
@@ -66,9 +63,6 @@ skipif_no_mip_solver = pytest.mark.skipif(
 )
 skipif_toulbar2_not_available = pytest.mark.skipif(
     not pytoulbar2_available, reason="pytoulbar2 not installed"
-)
-skipif_pgmpy_not_available = pytest.mark.skipif(
-    not pgmpy_available, reason="pgmpy not installed"
 )
 
 OBSERVED = ["o0", "o0", "o1", "o0", "o0"]
@@ -114,23 +108,6 @@ def test_constrained_models_are_used_as_they_are():
     assert as_constrained_model(cmodel) is cmodel
 
 
-@skipif_pgmpy_not_available
-@pytest.mark.parametrize(
-    "example,cls",
-    [
-        (mex.ABC_pgmpy, ConstrainedDiscreteMarkovNetwork),
-        (bex.cancer1_BN_pgmpy, ConstrainedDiscreteBayesianNetwork),
-        (dex.simple1_DDBN_pgmpy, ConstrainedDynamicDiscreteBayesianNetwork),
-    ],
-    ids=["mn", "bn", "dbn"],
-)
-def test_pgmpy_models_are_converted(example, cls):
-    pgm = example().pgm
-    cmodel = as_constrained_model(getattr(pgm, "pgm", pgm))
-    assert type(cmodel) is cls
-    assert cmodel.constraints == ()
-
-
 @pytest.mark.parametrize("model", ["not_a_model", 3, object()])
 @pytest.mark.parametrize("method", list(mq.METHODS))
 def test_unsupported_model_type_raises_type_error(model, method):
@@ -156,7 +133,7 @@ def test_unknown_method_raises_value_error():
         ("integer_program", {"ip_formulation": "markov_network"}, "pyomo"),
         ("integer_program", {"ip_formulation": "network_flow"}, "pyomo_network_flow"),
         ("toulbar2", {}, "toulbar2"),
-        ("variable_elimination", {}, "pgmpy"),
+        ("variable_elimination", {}, "variable_elimination"),
         ("a_star", {}, "oracle"),
         ("viterbi", {}, "matvec"),
         ("mvr_viterbi", {}, "mvr"),
@@ -199,11 +176,16 @@ def test_unknown_ip_formulation_raises_value_error():
         ("bn", "toulbar2", {}, {}),
         ("dbn", "pyomo", {}, dict(start=0, stop=1)),
         ("dbn", "toulbar2", dict(stop=3), dict(start=0, stop=3)),
-        ("dbn", "pgmpy", dict(start=1, stop=3), dict(start=1, stop=3)),
+        ("dbn", "variable_elimination", dict(start=1, stop=3), dict(start=1, stop=3)),
         ("hmm", "pyomo", dict(evidence=OBSERVED), dict(start=0, stop=4)),
         ("hmm", "toulbar2", dict(evidence=OBSERVED, stop=2), dict(start=0, stop=2)),
-        ("hmm", "pgmpy", dict(evidence=OBSERVED, stop=2), dict(start=0, stop=2)),
-        ("hmm", "pgmpy", dict(evidence=OBSERVED), dict(start=0, stop=4)),
+        (
+            "hmm",
+            "variable_elimination",
+            dict(evidence=OBSERVED, stop=2),
+            dict(start=0, stop=2),
+        ),
+        ("hmm", "variable_elimination", dict(evidence=OBSERVED), dict(start=0, stop=4)),
         ("hmm", "pyomo_network_flow", dict(evidence=OBSERVED), {}),
         ("hmm", "oracle", dict(evidence=OBSERVED, stop=2), {}),
         ("hmm", "matvec", dict(evidence=OBSERVED), {}),
@@ -216,7 +198,7 @@ def test_structure_params(model, kind, kwds, params):
     assert mq._structure_params(kind, _cmodel(model), **kwds) == params
 
 
-@pytest.mark.parametrize("kind", ["pyomo", "toulbar2", "pgmpy"])
+@pytest.mark.parametrize("kind", ["pyomo", "toulbar2", "variable_elimination"])
 def test_structure_params_stop_past_the_observations(kind):
     with pytest.raises(InvalidInputError, match="past the last observation"):
         mq._structure_params(
@@ -241,10 +223,10 @@ OVERLOADS = {
     Toulbar2BNRepresentation: Toulbar2FactorRepresentation,
     Toulbar2DBNRepresentation: Toulbar2FactorRepresentation,
     Toulbar2HMMRepresentation: Toulbar2HMMRepresentation,
-    PgmpyMNRepresentation: PgmpyRepresentation,
-    PgmpyBNRepresentation: PgmpyRepresentation,
-    PgmpyDBNRepresentation: PgmpyRepresentation,
-    PgmpyHMMRepresentation: PgmpyHMMRepresentation,
+    VariableEliminationMNRepresentation: VariableEliminationRepresentation,
+    VariableEliminationBNRepresentation: VariableEliminationRepresentation,
+    VariableEliminationDBNRepresentation: VariableEliminationRepresentation,
+    VariableEliminationHMMRepresentation: VariableEliminationHMMRepresentation,
     MatVecHMMRepresentation: MatVecHMMRepresentation,
     OracleHMMRepresentation: OracleHMMRepresentation,
     RecursiveHMMRepresentation: RecursiveHMMRepresentation,
@@ -275,10 +257,15 @@ def test_no_overload_for_other_objects():
         ("bn", "toulbar2", {}, Toulbar2BNRepresentation),
         ("dbn", "toulbar2", {}, Toulbar2DBNRepresentation),
         ("hmm", "toulbar2", dict(stop=4), Toulbar2HMMRepresentation),
-        ("mn", "pgmpy", {}, PgmpyMNRepresentation),
-        ("bn", "pgmpy", {}, PgmpyBNRepresentation),
-        ("dbn", "pgmpy", {}, PgmpyDBNRepresentation),
-        ("hmm", "pgmpy", dict(stop=4), PgmpyHMMRepresentation),
+        ("mn", "variable_elimination", {}, VariableEliminationMNRepresentation),
+        ("bn", "variable_elimination", {}, VariableEliminationBNRepresentation),
+        ("dbn", "variable_elimination", {}, VariableEliminationDBNRepresentation),
+        (
+            "hmm",
+            "variable_elimination",
+            dict(stop=4),
+            VariableEliminationHMMRepresentation,
+        ),
         ("hmm", "matvec", {}, MatVecHMMRepresentation),
         ("hmm", "oracle", {}, OracleHMMRepresentation),
         ("hmm", "recursive", {}, RecursiveHMMRepresentation),
@@ -467,7 +454,7 @@ def _hmm_method_params():
             marks=skipif_no_mip_solver,
         ),
         pytest.param("toulbar2", {}, marks=skipif_toulbar2_not_available),
-        pytest.param("variable_elimination", {}, marks=skipif_pgmpy_not_available),
+        pytest.param("variable_elimination", {}),
     ]
 
 
@@ -604,7 +591,7 @@ def test_network_flow_with_constraints_uses_the_ip_path():
             marks=skipif_no_mip_solver,
         ),
         pytest.param("toulbar2", {}, marks=skipif_toulbar2_not_available),
-        pytest.param("variable_elimination", {}, marks=skipif_pgmpy_not_available),
+        pytest.param("variable_elimination", {}),
     ],
 )
 def test_dbn_stop_defaults_to_one(method, solver):
@@ -643,7 +630,7 @@ def test_dbn_with_one_time_step(method, solver):
     assert results.solution.states == {("A", 0): 0, ("B", 0): 1}
 
 
-@pytest.mark.parametrize("kind", ["pyomo", "toulbar2", "pgmpy"])
+@pytest.mark.parametrize("kind", ["pyomo", "toulbar2", "variable_elimination"])
 @pytest.mark.parametrize("model", ["dbn", "hmm"])
 def test_unrolling_from_a_later_start_is_refused(kind, model):
     # create_bn_from_dbn(start > 0) failed with an AttributeError for every

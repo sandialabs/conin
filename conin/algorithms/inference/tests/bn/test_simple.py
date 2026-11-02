@@ -3,10 +3,7 @@ import pyomo.opt
 from conin.util import try_import
 from conin.examples import bayesian_network as examples
 
-with try_import() as pgmpy_available:
-    from pgmpy.inference import VariableElimination
 
-from conin.pgmpy import convert_pgmpy_to_conin
 from conin.algorithms.inference import map_query
 
 with try_import() as pytoulbar2_available:
@@ -19,9 +16,6 @@ import pytest
 
 skipif_no_mip_solvers = pytest.mark.skipif(
     not mip_solver, reason="No mip solver installed"
-)
-skipif_pgmpy_not_available = pytest.mark.skipif(
-    not pgmpy_available, reason="pgmpy not installed"
 )
 skipif_toulbar2_not_available = pytest.mark.skipif(
     not pytoulbar2_available, reason="pytoulbar2 not installed"
@@ -65,68 +59,6 @@ def test2_simple1_BN_conin_mip():
     assert q == results.solution.states
 
 
-@skipif_pgmpy_not_available
-@skipif_no_mip_solvers
-def test1_simple1_BN_pgmpy_mip():
-    """
-    A -> B
-
-    Solve with VariableElimination
-    Convert to conin and solve with mip
-    """
-    example = examples.simple1_BN_pgmpy()
-    q = example.solutions[0].states
-
-    infer = VariableElimination(example.pgm)
-    assert q == infer.map_query(variables=["A", "B"])
-
-    pgm = convert_pgmpy_to_conin(example.pgm)
-    results = map_query(pgm, method="integer_program", solver=mip_solver)
-    assert q == results.solution.states
-
-
-@skipif_pgmpy_not_available
-@skipif_no_mip_solvers
-def test2_simple1_BN_pgmpy_mip():
-    """
-    A -> B, with evidence for A
-
-    Solve with VariableElimination
-    Convert to conin and solve with mip
-    """
-    example = examples.simple1_BN_pgmpy()
-    q = {"B": 0}
-
-    infer = VariableElimination(example.pgm)
-    assert q == infer.map_query(variables=["B"], evidence={"A": 1})
-
-    pgm = convert_pgmpy_to_conin(example.pgm)
-    results = map_query(
-        pgm, method="integer_program", solver=mip_solver, evidence={"A": 1}
-    )
-    assert q == results.solution.states
-
-
-@skipif_pgmpy_not_available
-@skipif_no_mip_solvers
-def test1_simple2_BN_pgmpy_mip():
-    """
-    A -> B
-
-    Solve with VariableElimination
-    Convert to conin and solve with mip
-    """
-    example = examples.simple2_BN_pgmpy()
-    q = example.solutions[0].states
-
-    infer = VariableElimination(example.pgm)
-    assert q == infer.map_query(variables=["A", "B"])
-
-    pgm = convert_pgmpy_to_conin(example.pgm)
-    results = map_query(pgm, method="integer_program", solver=mip_solver)
-    assert q == results.solution.states
-
-
 # ===============================================================================
 #
 # Toulbar2 tests
@@ -159,64 +91,4 @@ def test2_simple1_BN_conin_toulbar2():
     q = {"B": 0}
 
     results = map_query(example.pgm, method="toulbar2", evidence={"A": 1})
-    assert q == results.solution.states
-
-
-@skipif_pgmpy_not_available
-@skipif_toulbar2_not_available
-def test1_simple1_BN_pgmpy_toulbar2():
-    """
-    A -> B
-
-    Solve with VariableElimination
-    Convert to conin and solve with toulbar2
-    """
-    example = examples.simple1_BN_pgmpy()
-    q = example.solutions[0].states
-
-    infer = VariableElimination(example.pgm)
-    assert q == infer.map_query(variables=["A", "B"])
-
-    pgm = convert_pgmpy_to_conin(example.pgm)
-    results = map_query(pgm, method="toulbar2")
-    assert q == results.solution.states
-
-
-@skipif_pgmpy_not_available
-@skipif_toulbar2_not_available
-def test2_simple1_BN_pgmpy_toulbar2():
-    """
-    A -> B, with evidence for A
-
-    Solve with VariableElimination
-    Convert to conin and solve with toulbar2
-    """
-    example = examples.simple1_BN_pgmpy()
-    q = {"B": 0}
-
-    infer = VariableElimination(example.pgm)
-    assert q == infer.map_query(variables=["B"], evidence={"A": 1})
-
-    pgm = convert_pgmpy_to_conin(example.pgm)
-    results = map_query(pgm, method="toulbar2", evidence={"A": 1})
-    assert q == results.solution.states
-
-
-@skipif_pgmpy_not_available
-@skipif_toulbar2_not_available
-def test1_simple2_BN_pgmpy_toulbar2():
-    """
-    A -> B
-
-    Solve with VariableElimination
-    Convert to conin and solve with toulbar2
-    """
-    example = examples.simple2_BN_pgmpy()
-    q = example.solutions[0].states
-
-    infer = VariableElimination(example.pgm)
-    assert q == infer.map_query(variables=["A", "B"])
-
-    pgm = convert_pgmpy_to_conin(example.pgm)
-    results = map_query(pgm, method="toulbar2")
     assert q == results.solution.states

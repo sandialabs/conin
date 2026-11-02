@@ -274,7 +274,7 @@ def test_save_conin_mn_as_bif_is_converted_by_pgmpy(
     # model").
     import importlib
 
-    pgmpy_files = importlib.import_module("conin.io.pgmpy_files")
+    pgmpy_files = importlib.import_module("conin.io.pgmpy.files")
     calls = []
     monkeypatch.setattr(
         pgmpy_files,
@@ -316,7 +316,7 @@ def test_save_pgmpy_model_without_pgmpy_raises(asia_uai, tmp_path, monkeypatch):
 def test_pgmpy_save_model_without_readwrite_raises(tmp_path, monkeypatch, suffix):
     import importlib
 
-    module = importlib.import_module("conin.io.pgmpy_files")
+    module = importlib.import_module("conin.io.pgmpy.files")
     pgm = load_model(os.path.join(cwd, "asia.uai"), model_type="pgmpy")
     monkeypatch.setattr(module, "pgmpy_readwrite_available", False)
     with pytest.raises(RuntimeError, match=f"{suffix.upper()} format"):

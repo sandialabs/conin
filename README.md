@@ -27,7 +27,7 @@ Optional extras are available for documentation, tests, and the optional backend
 ```
 python -m pip install -e .[docs]
 python -m pip install -e .[test]
-python -m pip install -e .[pgmpy]     # variable elimination, pgmpy conversion
+python -m pip install -e .[pgmpy]     # BIF files, pgmpy model conversion
 python -m pip install -e .[toulbar2]  # Toulbar2 inference
 python -m pip install -e .[torch]     # the MVR algorithms
 python -m pip install -e .[regex]     # mvr_regex

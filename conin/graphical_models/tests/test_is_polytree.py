@@ -4,14 +4,10 @@ import os.path
 from conin.util import try_import
 from conin.graphical_models import is_polytree
 from conin.io import load_model
-import conin.pgmpy
 
-with try_import() as pgmpy_available:
-    import pgmpy
-
+# BIF files are read with pgmpy
 with try_import() as pgmpy_readwrite_available:
-    import pgmpy.readwrite
-    from conin.pgmpy import convert_pgmpy_to_conin
+    import pgmpy.readwrite  # noqa: F401
 
 
 cwd = os.path.join(
@@ -29,18 +25,9 @@ def test_is_polytree_conin_asia():
 
 
 @pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
-def test_is_polytree_pgmpy_asia():
-    pgm = load_model(os.path.join(cwd, "asia.uai"), model_type="pgmpy")
-    assert conin.pgmpy.is_polytree(pgm) == False
-
-    conin_pgm = convert_pgmpy_to_conin(pgm)
-    assert is_polytree(conin_pgm) == False
-
-    pgm = load_model(os.path.join(cwd, "asia.bif"), model_type="pgmpy")
-    assert conin.pgmpy.is_polytree(pgm) == False
-
-    conin_pgm = convert_pgmpy_to_conin(pgm)
-    assert is_polytree(conin_pgm) == False
+def test_is_polytree_bif_asia():
+    pgm = load_model(os.path.join(cwd, "asia.bif"))
+    assert is_polytree(pgm) == False
 
 
 #
@@ -64,18 +51,9 @@ def test_is_polytree_conin_cancer():
 
 
 @pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
-def test_is_polytree_pgmpy_cancer():
-    pgm = load_model(os.path.join(cwd, "cancer_bn.uai"), model_type="pgmpy")
-    assert conin.pgmpy.is_polytree(pgm) == True
-
-    conin_pgm = convert_pgmpy_to_conin(pgm)
-    assert is_polytree(conin_pgm) == True
-
-    pgm = load_model(os.path.join(cwd, "cancer_bn.bif"), model_type="pgmpy")
-    assert conin.pgmpy.is_polytree(pgm) == True
-
-    conin_pgm = convert_pgmpy_to_conin(pgm)
-    assert is_polytree(conin_pgm) == True
+def test_is_polytree_bif_cancer():
+    pgm = load_model(os.path.join(cwd, "cancer_bn.bif"))
+    assert is_polytree(pgm) == True
 
 
 #

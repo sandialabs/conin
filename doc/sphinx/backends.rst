@@ -43,7 +43,7 @@ Optional extras are declared in ``pyproject.toml``:
 
 .. code-block:: shell
 
-   python -m pip install -e .[pgmpy]     # variable elimination, pgmpy conversion, BIF files
+   python -m pip install -e .[pgmpy]     # pgmpy conversion, BIF files
    python -m pip install -e .[toulbar2]  # pytoulbar2
    python -m pip install -e .[torch]     # the MVR algorithms
    python -m pip install -e .[regex]     # greenery, for mvr_regex
@@ -133,22 +133,19 @@ pgmpy
 
 Features requiring ``pgmpy`` include:
 
-- ``map_query(..., method="variable_elimination")``
-- ``conin.algorithms.scoring.log_probability_query``
 - Loading and saving BIF files through ``conin.io.load_model`` and
   ``conin.io.save_model``
 - ``conin.io.load_model(..., model_type="pgmpy")``
 - ``conin.io.save_model(..., model_type="pgmpy")``
-- ``conin.pgmpy.convert_pgmpy_to_conin``
-- ``conin.pgmpy.convert_conin_to_pgmpy_bn``
-- ``conin.pgmpy.convert_conin_to_pgmpy_mn``
-- ``conin.pgmpy.MapCPD`` and ``conin.pgmpy.is_polytree``
+- ``conin.io.pgmpy.convert_pgmpy_to_conin``
+- ``conin.io.pgmpy.convert_conin_to_pgmpy_bn``
+- ``conin.io.pgmpy.convert_conin_to_pgmpy_mn``
 
-Variable elimination runs in pgmpy on the (unrolled) model, so its memory use
-grows quickly with the size of the largest intermediate factor. For example,
-MAP inference on the unconstrained ``weather_conin`` dynamic Bayesian network
-unrolled to ``stop=4`` has run out of memory in our tests; use
-``integer_program`` or ``toulbar2`` for such models.
+CONIN's algorithms take CONIN models only; a pgmpy model is converted with
+``convert_pgmpy_to_conin`` first. Variable elimination
+(``map_query(..., method="variable_elimination")`` and
+``log_probability_query``) is part of the base package; it does not need
+pgmpy.
 
 torch (MVR algorithms)
 ----------------------
@@ -188,7 +185,7 @@ Quick Selection Guide
    * - Run supervised HMM learning
      - Base package
    * - Run variable elimination inference or ``log_probability_query``
-     - ``pgmpy``
+     - Base package
    * - Use algebraic constraints
      - Base package plus the selected inference backend
    * - Convert to/from pgmpy models

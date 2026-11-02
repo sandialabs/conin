@@ -7,9 +7,6 @@ from conin.util import try_import
 from conin.examples import bayesian_network as examples
 from conin.algorithms.inference import map_query
 
-with try_import() as pgmpy_available:
-    from pgmpy.inference import VariableElimination
-
 with try_import() as pytoulbar2_available:
     import pytoulbar2
 
@@ -67,132 +64,26 @@ def test_holmes0_toulbar2_conin():
 
 # ===============================================================================
 #
-# pgmpy tests for holmes example
+# Partial MAP queries with variable elimination
 #
 # ===============================================================================
 
 
-@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_holmes0_pgmpy():
-    example = examples.holmes_pgmpy()
-    variables = None
-    evidence = None
-
-    infer = VariableElimination(example.pgm)
-    assert (
-        infer.map_query(variables=variables, evidence=evidence)
-        == example.solutions[0].states
-    )
-
-    from conin.pgmpy import convert_pgmpy_to_conin
-
-    pgm = convert_pgmpy_to_conin(example.pgm)
+@pytest.mark.parametrize(
+    "variables,evidence,expected",
+    [
+        (["B"], {"W": "w", "G": "g"}, {"B": "-b"}),
+        (["B"], {"A": "-a"}, {"B": "-b"}),
+        (["W", "G"], {"A": "a"}, {"W": "w", "G": "-g"}),
+        (["W", "G"], {"B": "b"}, {"W": "w", "G": "-g"}),
+        (["B"], {"R": "r", "W": "-w"}, {"B": "-b"}),
+    ],
+)
+def test_holmes_variable_elimination(variables, evidence, expected):
     results = map_query(
-        pgm,
-        method="integer_program",
+        examples.holmes_conin().pgm,
+        method="variable_elimination",
         variables=variables,
         evidence=evidence,
-        solver=mip_solver,
     )
-    assert results.solution.states == example.solutions[0].states
-
-
-@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_holmes1():
-    example = examples.holmes_pgmpy()
-    q = {"B": "-b"}
-    variables = ["B"]
-    evidence = {"W": "w", "G": "g"}
-
-    infer = VariableElimination(example.pgm)
-    assert q == infer.map_query(variables=variables, evidence=evidence)
-
-    # pgm = convert_pgmpy_to_conin(pgm)
-    # with pytest.raises(RuntimeError):
-    #    model = create_pyomo_map_query_model_BN(
-    #        pgm=pgm, variables=variables, evidence=evidence
-    #    )
-    #    results = solve_pyomo_map_query_model(model, solver=mip_solver)
-    #    assert q == results.solution.states
-
-
-@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_holmes2():
-    example = examples.holmes_pgmpy()
-    q = {"B": "-b"}
-    variables = ["B"]
-    evidence = {"A": "-a"}
-
-    infer = VariableElimination(example.pgm)
-    assert q == infer.map_query(variables=variables, evidence=evidence)
-
-    # pgm = convert_pgmpy_to_conin(pgm)
-    # with pytest.raises(RuntimeError):
-    #    model = create_pyomo_map_query_model_BN(
-    #        pgm=pgm, variables=variables, evidence=evidence
-    #    )
-    #    results = solve_pyomo_map_query_model(model, solver=mip_solver)
-    #    assert q == results.solution.states
-
-
-@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_holmes3():
-    example = examples.holmes_pgmpy()
-    q = {"W": "w", "G": "-g"}
-    variables = ["W", "G"]
-    evidence = {"A": "a"}
-
-    infer = VariableElimination(example.pgm)
-    assert q == infer.map_query(variables=variables, evidence=evidence)
-
-    # pgm = convert_pgmpy_to_conin(pgm)
-    # with pytest.raises(RuntimeError):
-    #    model = create_pyomo_map_query_model_BN(
-    #        pgm=pgm, variables=variables, evidence=evidence
-    #    )
-    #    results = solve_pyomo_map_query_model(model, solver=mip_solver)
-    #    assert q == results.solution.states
-
-
-@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_holmes4():
-    example = examples.holmes_pgmpy()
-    q = {"W": "w", "G": "-g"}
-    variables = ["W", "G"]
-    evidence = {"B": "b"}
-
-    infer = VariableElimination(example.pgm)
-    assert q == infer.map_query(variables=variables, evidence=evidence)
-
-    # pgm = convert_pgmpy_to_conin(pgm)
-    # with pytest.raises(RuntimeError):
-    #    model = create_pyomo_map_query_model_BN(
-    #        pgm=pgm, variables=variables, evidence=evidence
-    #    )
-    #    results = solve_pyomo_map_query_model(model, solver=mip_solver)
-    #    assert q == results.solution.states
-
-
-@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-@pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
-def test_holmes5():
-    example = examples.holmes_pgmpy()
-    q = {"B": "-b"}
-    variables = ["B"]
-    evidence = {"R": "r", "W": "-w"}
-
-    infer = VariableElimination(example.pgm)
-    assert q == infer.map_query(variables=variables, evidence=evidence)
-
-    # pgm = convert_pgmpy_to_conin(pgm)
-    # with pytest.raises(RuntimeError):
-    #    model = create_pyomo_map_query_model_BN(
-    #        pgm=pgm, variables=variables, evidence=evidence
-    #    )
-    #    results = solve_pyomo_map_query_model(model, solver=mip_solver)
-    #    assert q == results.solution.states
+    assert results.solution.states == expected

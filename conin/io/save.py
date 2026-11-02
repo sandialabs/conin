@@ -1,15 +1,9 @@
-from conin.util import try_import
 from conin.graphical_models import DiscreteBayesianNetwork
 from conin.graphical_models import DiscreteMarkovNetwork
 from .uai import save_uai
-
-with try_import() as pgmpy_available:
-    import pgmpy  # noqa: F401
-    from conin.pgmpy import (
-        convert_conin_to_pgmpy_bn,
-        convert_conin_to_pgmpy_mn,
-    )
-    from . import pgmpy_files
+from .pgmpy import convert_conin_to_pgmpy_bn, convert_conin_to_pgmpy_mn
+from .pgmpy import files as pgmpy_files
+from .pgmpy.files import pgmpy_available
 
 
 def save_model(pgm, name, model_type="conin", quiet=True):

@@ -1,13 +1,15 @@
-"""The ``"pgmpy"`` representation of a (constrained) dynamic Bayesian network."""
+"""The ``"variable_elimination"`` representation of a (constrained) dynamic Bayesian network."""
 
 from conin.graphical_models import DynamicDiscreteBayesianNetwork, create_bn_from_dbn
 from conin.representations.base import register_representation
 from conin.representations.unrolled import UnrolledDBNMixin, dbn_time_range
 
-from .common import PgmpyRepresentation
+from .common import VariableEliminationRepresentation
 
 
-class PgmpyDBNRepresentation(UnrolledDBNMixin, PgmpyRepresentation):
+class VariableEliminationDBNRepresentation(
+    UnrolledDBNMixin, VariableEliminationRepresentation
+):
     """Factor model of a constrained DBN unrolled over ``start..stop``.
 
     Structure params: ``start`` and ``stop``.  ``pgm`` is the unrolled BN;
@@ -16,10 +18,16 @@ class PgmpyDBNRepresentation(UnrolledDBNMixin, PgmpyRepresentation):
     """
 
 
-def build_pgmpy_dbn_representation(
-    dbn, constraints=(), *, start, stop, cls=PgmpyDBNRepresentation, **kwds
+def build_variable_elimination_dbn_representation(
+    dbn,
+    constraints=(),
+    *,
+    start,
+    stop,
+    cls=VariableEliminationDBNRepresentation,
+    **kwds
 ):
-    """Unroll ``dbn`` over ``start..stop`` and build its ``"pgmpy"`` representation.
+    """Unroll ``dbn`` over ``start..stop`` and build its ``"variable_elimination"`` representation.
 
     ``kwds`` are passed to ``cls`` (``data``, and ``hidden_to_internal`` for
     the HMM subclass).
@@ -29,12 +37,12 @@ def build_pgmpy_dbn_representation(
 
 
 @register_representation(
-    "pgmpy",
+    "variable_elimination",
     DynamicDiscreteBayesianNetwork,
     families=(None, "factor_oracle", "algebraic"),
 )
 def _build(cmodel, *, start=0, stop=None):
     start, stop = dbn_time_range(start, stop)
-    return build_pgmpy_dbn_representation(
+    return build_variable_elimination_dbn_representation(
         cmodel.model, cmodel.constraints, start=start, stop=stop, data=cmodel.data
     )

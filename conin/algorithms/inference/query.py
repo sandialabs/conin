@@ -2,9 +2,9 @@
 
 A query goes through four steps:
 
-1. normalise the model: a pgmpy model is converted to a CONIN model, and a
-   bare graphical model is wrapped as ``Constrained*(model)`` (no
-   constraints), so every query runs on a constrained model;
+1. normalise the model: a bare graphical model is wrapped as
+   ``Constrained*(model)`` (no constraints), so every query runs on a
+   constrained model;
 2. pick the representation kind from ``method`` (and, for
    ``"integer_program"``, ``ip_formulation``; for ``"a_star"``, the
    constraint family);
@@ -35,7 +35,6 @@ from conin.graphical_models.hmm_observations import (
 from conin.representations.matvec import MatVecHMMRepresentation
 from conin.representations.mvr import MVRHMMRepresentation
 from conin.representations.oracle import OracleHMMRepresentation
-from conin.representations.pgmpy import PgmpyHMMRepresentation, PgmpyRepresentation
 from conin.representations.pyomo import (
     PyomoFactorRepresentation,
     PyomoHMMRepresentation,
@@ -47,6 +46,10 @@ from conin.representations.toulbar2 import (
     Toulbar2HMMRepresentation,
 )
 from conin.representations.unrolled import dbn_time_range
+from conin.representations.variable_elimination import (
+    VariableEliminationHMMRepresentation,
+    VariableEliminationRepresentation,
+)
 
 from .hmm_results import key_solutions_by_time, solve_unrolled_hmm
 from .results import (
@@ -101,7 +104,7 @@ def _structure_params(kind, cmodel, *, observed, start, stop):
     raises ``InvalidInputError``).  The other kinds have no structure
     parameters here.
     """
-    if kind not in ("pyomo", "toulbar2", "pgmpy"):
+    if kind not in ("pyomo", "toulbar2", "variable_elimination"):
         return {}
     if isinstance(cmodel, ConstrainedDynamicDiscreteBayesianNetwork):
         start, stop = dbn_time_range(start, stop)
@@ -145,10 +148,9 @@ def map_query(
 ):
     """Compute a MAP assignment
 
-    The model is normalised to a constrained model (pgmpy models are
-    converted; a bare model is used with no constraints), ``method`` selects a
-    representation of it (see the table below), and the query is solved on
-    that representation.
+    The model is normalised to a constrained model (a bare model is used with
+    no constraints), ``method`` selects a representation of it (see the table
+    below), and the query is solved on that representation.
 
     ======================== =========================================== =======================
     ``method``               representation kind                         models
@@ -156,7 +158,7 @@ def map_query(
     ``integer_program``      ``"pyomo"``, or ``"pyomo_network_flow"``    MN, BN, DBN, HMM
                              with ``ip_formulation="network_flow"``      (network flow: HMM)
     ``toulbar2``             ``"toulbar2"``                              MN, BN, DBN, HMM
-    ``variable_elimination`` ``"pgmpy"``                                 MN, BN, DBN, HMM
+    ``variable_elimination`` ``"variable_elimination"``                  MN, BN, DBN, HMM
     ``a_star``               ``"oracle"``, or ``"recursive"`` for        HMM
                              recursive constraints
     ``viterbi``              ``"matvec"`` (no constraints)               HMM
@@ -166,8 +168,8 @@ def map_query(
     Parameters
     ----------
     pgm : Graphical model to solve.
-        A CONIN model or constrained model.  Compatible pgmpy models are
-        converted to CONIN model objects if pgmpy is installed.
+        A CONIN model or constrained model.  Convert a pgmpy model with
+        :func:`conin.io.pgmpy.convert_pgmpy_to_conin` first.
     method : string
         The string name of the inference method.
     variables : list, optional
@@ -237,9 +239,8 @@ def map_query(
         an HMM is not a list, tuple or dict keyed by ``0..T-1``, or if
         ``stop`` is past the last observation.
     ImportError
-        If the method's backend is not installed (pgmpy for
-        ``variable_elimination``, pytoulbar2 for ``toulbar2``, torch for
-        ``mvr_viterbi``).
+        If the method's backend is not installed (pytoulbar2 for
+        ``toulbar2``, torch for ``mvr_viterbi``).
 
     Examples
     --------
@@ -285,7 +286,7 @@ def map_query(
 # Step 4: one overload per backend, and one per HMM algorithm
 # ---------------------------------------------------------------------
 #
-# The factor backends (Pyomo, toulbar2, pgmpy) have one solver each, for the
+# The factor backends (Pyomo, toulbar2, variable elimination) have one solver each, for the
 # MN, BN and DBN representations (overloads on the backend's base class).
 # Their HMM representations are solved as the unrolled DBN by
 # solve_unrolled_hmm.  Network flow, Viterbi, A* and the MVR Viterbi are
@@ -332,12 +333,12 @@ def _solve_map_query(repn: Toulbar2HMMRepresentation, q):
 
 
 @ovld
-def _solve_map_query(repn: PgmpyRepresentation, q):
+def _solve_map_query(repn: VariableEliminationRepresentation, q):
     return _factor_solve(_solve_variable_elimination, repn, q)
 
 
 @ovld
-def _solve_map_query(repn: PgmpyHMMRepresentation, q):
+def _solve_map_query(repn: VariableEliminationHMMRepresentation, q):
     return _unrolled_hmm_solve(_solve_variable_elimination, repn, q)
 
 

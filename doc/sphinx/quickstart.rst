@@ -76,10 +76,9 @@ For MAP inference on Bayesian networks, use the high-level ``map_query`` entry
 point with the desired backend method. Backend-specific requirements are listed
 in :doc:`backends`.
 
-For example, with ``pgmpy`` installed:
+For example, with variable elimination (part of the base package):
 
 .. testcode:: quickstart
-   :skipif: not pgmpy_available
 
    from conin.algorithms.inference import map_query
 
@@ -87,7 +86,6 @@ For example, with ``pgmpy`` installed:
    print(sorted(result.solution.states.items()))
 
 .. testoutput:: quickstart
-   :skipif: not pgmpy_available
 
    [('A', 0), ('B', 1)]
 

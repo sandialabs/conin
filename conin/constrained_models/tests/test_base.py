@@ -292,9 +292,9 @@ def test_supported_representations_hmm():
 
     pairs = supported_representations(HiddenMarkovModel)
     for pair in [
-        ("pgmpy", None),
-        ("pgmpy", "algebraic"),
-        ("pgmpy", "factor_oracle"),
+        ("variable_elimination", None),
+        ("variable_elimination", "algebraic"),
+        ("variable_elimination", "factor_oracle"),
         ("oracle", None),
         ("oracle", "oracle"),
         ("recursive", None),

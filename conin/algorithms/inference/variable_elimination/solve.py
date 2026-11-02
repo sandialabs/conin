@@ -1,6 +1,7 @@
-"""Run pgmpy's variable elimination MAP query and package the result."""
+"""Run a variable elimination MAP query and package the result."""
 
-import numpy as np
+import math
+
 from pyomo.common.timing import TicTocTimer
 
 from conin.algorithms.inference.results import (
@@ -8,28 +9,23 @@ from conin.algorithms.inference.results import (
     map_solution,
     no_solution_results,
 )
-from conin.util import try_import
-
-with try_import() as pgmpy_available:
-    import pgmpy.inference
-    import pgmpy.models
+from conin.algorithms.util.variable_elimination import max_product
+from conin.io import save_model
 
 
-def solve_variable_elimination_map_query_model(
-    model, *, variables=None, evidence=None, show_progress=False
-):
-    """MAP query on a pgmpy model with ``pgmpy.inference.VariableElimination``.
+def solve_variable_elimination_map_query_model(model, *, variables=None, evidence=None):
+    """MAP query on a Markov network with variable elimination.
 
     Parameters
     ----------
-    model : pgmpy.models.DiscreteMarkovNetwork or pgmpy.models.DiscreteBayesianNetwork
-        E.g. from ``cmodel.representation("pgmpy").create_model()``.
+    model : DiscreteMarkovNetwork
+        E.g. ``cmodel.representation("variable_elimination").ve_model``.
     variables : list, optional
-        The query variables (default: every node not in ``evidence``).
+        The query variables (default: every node not in ``evidence``).  The
+        other nodes that are not evidence are summed out (a partial MAP
+        query).
     evidence : dict, optional
         ``{node: state}``.
-    show_progress : bool, optional
-        Passed to pgmpy.
 
     Returns
     -------
@@ -37,68 +33,25 @@ def solve_variable_elimination_map_query_model(
         ``solution`` (``states``, a dict; ``log_potential`` and
         ``solver_objective`` are ``None``), ``solutions`` (``[solution]``),
         ``termination_condition`` (``"ok"``) and ``solvetime``; see
-        :mod:`conin.algorithms.inference.results`.  If the evidence (with the constraint
-        factors) has probability zero, there is no solution
+        :mod:`conin.algorithms.inference.results`.  If the evidence (with the
+        constraint factors) has probability zero, there is no solution
         (:func:`~conin.algorithms.inference.results.no_solution_results`).
-    """
-    infer = pgmpy.inference.VariableElimination(model)
-    if variables is None:
-        if evidence:
-            variables = [node for node in model.nodes if node not in evidence]
-        else:
-            variables = [node for node in model.nodes]
 
+    Raises
+    ------
+    InvalidInputError
+        For an unknown variable or state, or a variable that is also
+        evidence.
+    """
     solver_timer = TicTocTimer()
     solver_timer.tic(None)
-    # A distribution that is zero everywhere has no maximum: pgmpy returns an
-    # arbitrary assignment then (after a 0/0 for a Bayesian network, hence the
-    # errstate), so the result is checked below.
-    with np.errstate(invalid="ignore"):
-        map_states = infer.map_query(
-            variables=variables,
-            evidence=evidence,
-            show_progress=show_progress,
-        )
-        feasible = _has_positive_probability(
-            model, infer, map_states, variables=variables, evidence=evidence
-        )
-    solvetime = solver_timer.toc(None)
-    if not feasible:
-        return no_solution_results(solvetime)
-    return map_results([map_solution(map_states)], solvetime=solvetime)
-
-
-def _has_positive_probability(model, infer, map_states, *, variables, evidence):
-    """Whether the MAP assignment ``map_states`` has a positive probability.
-
-    If it does not, every assignment has probability zero with ``evidence``
-    (the evidence or the constraint factors exclude them all): the MAP
-    assignment is a maximum.  A total assignment is checked factor by
-    factor; a partial MAP query (``variables`` not every non-evidence node)
-    needs the maximum of the joint distribution, a second elimination.
-    """
-    assignment = {**(evidence or {}), **map_states}
-    if all(node in assignment for node in model.nodes):
-        factors = (
-            model.get_cpds()
-            if isinstance(model, pgmpy.models.DiscreteBayesianNetwork)
-            else model.get_factors()
-        )
-        return all(_value(factor, assignment) > 0 for factor in factors)
-    # Over every non-evidence node: pgmpy's max_marginal with no variables
-    # is not the maximum of the joint distribution.
-    best = infer.max_marginal(
-        variables=[node for node in model.nodes if node not in (evidence or {})],
-        evidence=evidence,
-        show_progress=False,
+    value, states = max_product(
+        model.factors, model.states, variables=variables, evidence=evidence
     )
-    return bool(best > 0)  # False for 0 and for NaN (0/0)
-
-
-def _value(factor, assignment):
-    """The value of a pgmpy factor (or CPD) at ``assignment``."""
-    index = tuple(factor.name_to_no[var][assignment[var]] for var in factor.variables)
-    return factor.values[index]
+    solvetime = solver_timer.toc(None)
+    if value == -math.inf:
+        return no_solution_results(solvetime)
+    return map_results([map_solution(states)], solvetime=solvetime)
 
 
 def _with_timing(timing, func):
@@ -115,33 +68,13 @@ def _with_timing(timing, func):
     return result
 
 
-def _solve_repn(
-    repn, *, variables, evidence, show_progress, write_uai_file, timing=False
-):
-    """Create the pgmpy model of ``repn`` and solve it.
-
-    ``evidence`` is the query evidence (keyed by the model's nodes); the
-    constraint evidence of ``repn`` is added.  ``variables=None`` queries
-    every node of the pgmpy model that is not evidence.
-    """
-    model = repn.create_model(write_uai_file=write_uai_file)
-    if timing:
-        TicTocTimer().tic("Created PGMPY model")
-    return solve_variable_elimination_map_query_model(
-        model,
-        variables=variables,
-        evidence=repn.query_evidence(evidence),
-        show_progress=show_progress,
-    )
-
-
 def _solve_variable_elimination(repn, q):
-    """Solve a MAP query on a ``"pgmpy"`` representation of an MN, BN or DBN.
+    """Solve a MAP query on a ``"variable_elimination"`` representation of an MN, BN or DBN.
 
     ``q`` is the query of :func:`~conin.algorithms.inference.map_query` (``variables``,
-    ``evidence``, ``show_progress``, ``timing`` and ``options``).  The options
-    are ``write_uai_file`` (save the factor model, with the constraint
-    factors, to this file) and ``solution_with_evidence`` (add the evidence to
+    ``evidence``, ``timing`` and ``options``).  The options are
+    ``write_uai_file`` (save the factor model, with the constraint factors,
+    to this file) and ``solution_with_evidence`` (add the evidence to
     ``solution.states``; always done when the model has constraints); the
     other options are ignored.  An HMM is solved as its unrolled DBN
     (:func:`~conin.algorithms.inference.hmm_results.solve_unrolled_hmm`).
@@ -151,13 +84,11 @@ def _solve_variable_elimination(repn, q):
     )
 
     def _execute():
-        results = _solve_repn(
-            repn,
-            variables=q.variables,
-            evidence=q.evidence,
-            show_progress=q.show_progress,
-            write_uai_file=q.options.get("write_uai_file"),
-            timing=q.timing,
+        write_uai_file = q.options.get("write_uai_file")
+        if write_uai_file:
+            save_model(repn.ve_model, write_uai_file)
+        results = solve_variable_elimination_map_query_model(
+            repn.ve_model, variables=q.variables, evidence=q.evidence
         )
         if solution_with_evidence and q.evidence:
             for soln in results.solutions:

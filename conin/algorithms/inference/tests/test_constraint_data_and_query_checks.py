@@ -33,14 +33,8 @@ from conin.util import try_import
 with try_import() as pytoulbar2_available:
     import pytoulbar2
 
-with try_import() as pgmpy_available:
-    import pgmpy
-
 skipif_toulbar2_not_available = pytest.mark.skipif(
     not pytoulbar2_available, reason="pytoulbar2 not installed"
-)
-skipif_pgmpy_not_available = pytest.mark.skipif(
-    not pgmpy_available, reason="pgmpy not installed"
 )
 
 _CLASSES = {
@@ -76,7 +70,7 @@ def _recorder(kind, seen):
 
 
 # ---------------------------------------------------------------------
-# Regression: the "pyomo", "toulbar2" and "pgmpy" representations (and
+# Regression: the "pyomo", "toulbar2" and "variable_elimination" representations (and
 # is_feasible and the oracle representation) never passed the constrained
 # model's data to constraint functions; only network flow did
 # ---------------------------------------------------------------------
@@ -165,12 +159,11 @@ def test_factor_representation_passes_the_application_data():
     cmodel = ConstrainedHiddenMarkovModel(
         hex_.create_hmm1(), constraint, data=munch.Munch(k=1)
     )
-    cmodel.representation("pgmpy", start=0, stop=2)
+    cmodel.representation("variable_elimination", start=0, stop=2)
     assert seen and all(d.k == 1 and d.hmm.T == [0, 1, 2] for d in seen)
     assert cmodel.data == munch.Munch(k=1)
 
 
-@skipif_pgmpy_not_available
 def test_variable_elimination_uses_the_application_data():
     constraint = FactorOracleConstraint(
         func=lambda states, data: sum(v == "h0" for v in states.values()) <= data.k,

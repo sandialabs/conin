@@ -3,8 +3,7 @@
 Some example builders were never called by a test or a doc page.  The model
 examples return ``Munch(pgm=..., solutions=[MPESolution, ...])``; their first
 solution is checked with the method that matches the constraint family (the
-weather DBNs are documented for ``stop=4``; their variable-elimination examples
-are only built, since VE on them needs a lot of memory).
+weather DBNs are documented for ``stop=4``).
 """
 
 import importlib
@@ -17,9 +16,6 @@ from conin.constrained_models import ConstrainedGraphicalModel
 from conin.graphical_models import GraphicalModel
 from conin.algorithms.inference import map_query
 from conin.util import try_import
-
-with try_import() as pgmpy_available:
-    import pgmpy  # noqa: F401
 
 with try_import() as pytoulbar2_available:
     import pytoulbar2  # noqa: F401
@@ -43,8 +39,6 @@ def _builders(module_name):
 def _needs(name):
     """The optional packages an example needs, from its name."""
     needs = []
-    if "pgmpy" in name:
-        needs.append(("pgmpy", pgmpy_available))
     if "algebraic" in name:
         needs.append(("smoek", smoek_available))
     return needs
@@ -70,11 +64,6 @@ def test_model_example_builds(builder):
     _skip_unless_available(builder.__name__)
     example = builder()
     pgm = getattr(example, "pgm", example)
-    if type(pgm).__module__.startswith("pgmpy"):
-        # The *_pgmpy examples of unconstrained models are pgmpy models
-        # (pgmpy_issue_1177_pgmpy returns one directly).
-        pgm.check_model()
-        return
     assert isinstance(pgm, (GraphicalModel, ConstrainedGraphicalModel))
     if hasattr(example, "solutions"):
         assert example.solutions
@@ -86,13 +75,11 @@ def _solvable():
     for module in MODULES:
         for param in _builders(module):
             name = param.id
-            if name in ("example6_conin", "example6_pgmpy", "pgmpy_issue_1177_pgmpy"):
+            if name == "example6_conin":
                 continue  # no documented solution
             kwargs = {}
             if "weather" in name:
                 kwargs = dict(stop=4)
-                if "oracle" in name:
-                    continue  # variable elimination on weather needs a lot of memory
             elif module == "dynamic_bayesian_network":
                 kwargs = dict(stop=1)
             cases.append(pytest.param(param.values[0], kwargs, id=name))
@@ -109,8 +96,6 @@ def test_model_example_solution(builder, kwargs):
         pytest.skip("No mip solver installed")
     if method == "toulbar2" and not pytoulbar2_available:
         pytest.skip("pytoulbar2 not installed")
-    if method == "variable_elimination" and not pgmpy_available:
-        pytest.skip("pgmpy not installed")
     results = map_query(example.pgm, method=method, **kwargs)
     assert results.solution.states == example.solutions[0].states
 

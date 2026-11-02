@@ -26,7 +26,7 @@ def _a_star_kind(cmodel, options):
 REPRESENTATION_KINDS = {
     "integer_program": _integer_program_kind,
     "toulbar2": "toulbar2",
-    "variable_elimination": "pgmpy",
+    "variable_elimination": "variable_elimination",
     "a_star": _a_star_kind,
     "viterbi": "matvec",
     "mvr_viterbi": "mvr",

@@ -54,7 +54,7 @@ def test_load_model_error4():
 
 
 def test_pgmpy_load_model_requires_pgmpy(monkeypatch):
-    module = importlib.import_module("conin.io.pgmpy_files")
+    module = importlib.import_module("conin.io.pgmpy.files")
     monkeypatch.setattr(module, "pgmpy_available", False)
 
     with pytest.raises(ImportError, match="pgmpy"):
@@ -62,7 +62,7 @@ def test_pgmpy_load_model_requires_pgmpy(monkeypatch):
 
 
 def test_pgmpy_load_model_file_requires_readwrite(monkeypatch):
-    module = importlib.import_module("conin.io.pgmpy_files")
+    module = importlib.import_module("conin.io.pgmpy.files")
     monkeypatch.setattr(module, "pgmpy_available", True)
     monkeypatch.setattr(module, "pgmpy_readwrite_available", False)
 
@@ -219,7 +219,7 @@ def test_load_bn_model_toulbar2_conin():
 )
 def test_pgmpy_load_model_unknown_suffix_names_the_file(tmp_path):
     # The message was not an f-string, so it printed "{name}".
-    module = importlib.import_module("conin.io.pgmpy_files")
+    module = importlib.import_module("conin.io.pgmpy.files")
     name = tmp_path / "model.txt"
     name.write_text("")
     with pytest.raises(RuntimeError, match="model.txt"):

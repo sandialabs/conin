@@ -5,10 +5,6 @@ from conin.util import try_import
 from conin.examples import markov_network as examples
 from conin.algorithms.inference import map_query
 
-with try_import() as pgmpy_available:
-    import pgmpy
-    from conin.pgmpy import convert_pgmpy_to_conin
-
 with try_import() as pytoulbar2_available:
     import pytoulbar2
 
@@ -23,9 +19,6 @@ import pytest
 
 skipif_no_mip_solvers = pytest.mark.skipif(
     not mip_solver, reason="No mip solver installed"
-)
-skipif_pgmpy_not_available = pytest.mark.skipif(
-    not pgmpy_available, reason="pgmpy not installed"
 )
 skipif_ortopas_not_available = pytest.mark.skipif(
     not or_topas_available, reason="or_topas not installed"
@@ -54,20 +47,6 @@ def test_ABC_conin_mip():
     q = example.solutions[0].states
 
     results = map_query(example.pgm, method="integer_program", solver=mip_solver)
-    assert q == results.solution.states
-
-
-@skipif_pgmpy_not_available
-@skipif_no_mip_solvers
-def test_ABC_pgmpy_mip():
-    """
-    Testing ABC using the pgmpy repn with Pyomo MIP solvers
-    """
-    example = examples.ABC_pgmpy()
-    q = example.solutions[0].states
-
-    pgm = convert_pgmpy_to_conin(example.pgm)
-    results = map_query(pgm, method="integer_program", solver=mip_solver)
     assert q == results.solution.states
 
 
@@ -136,20 +115,6 @@ def test_ABC_conin_toulbar2():
     example = examples.ABC_conin()
     results = map_query(example.pgm, method="toulbar2")
     assert results.solution.states == example.solutions[0].states
-
-
-@skipif_pgmpy_not_available
-@skipif_toulbar2_not_available
-def test_ABC_pgmpy_toulbar2():
-    """
-    Testing ABC using the pgmpy repn with toulbar2 solver
-    """
-    example = examples.ABC_pgmpy()
-    q = example.solutions[0].states
-
-    pgm = convert_pgmpy_to_conin(example.pgm)
-    results = map_query(pgm, method="toulbar2")
-    assert q == results.solution.states
 
 
 @skipif_toulbar2_not_available

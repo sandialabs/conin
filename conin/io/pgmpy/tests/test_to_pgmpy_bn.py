@@ -5,7 +5,7 @@ import numpy as np
 
 from conin.util import try_import
 from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
-from conin.pgmpy import convert_conin_to_pgmpy_bn
+from conin.io.pgmpy import convert_conin_to_pgmpy_bn
 
 with try_import() as pgmpy_available:
     import pgmpy
@@ -18,7 +18,7 @@ require_pgmpy = pytest.mark.skipif(not pgmpy_available, reason="pgmpy not instal
 
 def test_import_convert_function():
     """Test that the conversion function can be imported."""
-    from conin.pgmpy import convert_conin_to_pgmpy_bn
+    from conin.io.pgmpy import convert_conin_to_pgmpy_bn
 
     assert callable(convert_conin_to_pgmpy_bn)
 
@@ -26,7 +26,7 @@ def test_import_convert_function():
 @require_pgmpy
 def test_convert_invalid_input():
     """Test error handling for invalid input types."""
-    from conin.pgmpy import convert_conin_to_pgmpy_bn
+    from conin.io.pgmpy import convert_conin_to_pgmpy_bn
 
     with pytest.raises(ValueError, match="Expected conin DiscreteBayesianNetwork"):
         convert_conin_to_pgmpy_bn("not a model")
@@ -185,10 +185,11 @@ def test_cancer_model_conversion():
 def test_model_equivalence():
     """The conin -> pgmpy conversion keeps the probability of every assignment.
 
-    ``log_probability`` converts the pgmpy model back to conin, so this checks
-    the round trip.  pgmpy's own probability is checked too.
+    The pgmpy model is converted back to conin, so this checks the round
+    trip.  pgmpy's own probability is checked too.
     """
     from conin.algorithms.scoring import log_probability
+    from conin.io.pgmpy import convert_pgmpy_to_conin
 
     # Create test model
     conin_pgm = DiscreteBayesianNetwork(
@@ -213,7 +214,7 @@ def test_model_equivalence():
     for assignment in test_cases:
         # Calculate log potentials
         conin_log_pot = log_probability(conin_pgm, assignment)
-        pgmpy_log_pot = log_probability(pgmpy_pgm, assignment)
+        pgmpy_log_pot = log_probability(convert_pgmpy_to_conin(pgmpy_pgm), assignment)
 
         # They should be approximately equal
         np.testing.assert_almost_equal(

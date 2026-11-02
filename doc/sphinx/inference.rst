@@ -15,7 +15,7 @@ The ``ABC_conin`` example from ``conin.examples.markov_network`` is a compact
 Markov network with three variables and pairwise interactions.
 
 .. testcode::
-   :skipif: not pgmpy_available or not toulbar2_available or not mip_solver_available
+   :skipif: not toulbar2_available or not mip_solver_available
 
    from conin.config import default_mip_solver
    from conin.algorithms.inference import map_query
@@ -33,13 +33,13 @@ Markov network with three variables and pairwise interactions.
    assert ve_results.solution.states == cfn_results.solution.states
 
 .. testoutput::
-   :skipif: not pgmpy_available or not toulbar2_available or not mip_solver_available
+   :skipif: not toulbar2_available or not mip_solver_available
 
    [('A', 2), ('B', 2), ('C', 1)]
 
 The ``method`` argument selects the backend: ``toulbar2`` dispatches to the
 Toulbar2 backend, ``integer_program`` creates a Pyomo optimization model, and
-``variable_elimination`` uses pgmpy's variable elimination solver.
+``variable_elimination`` uses CONIN's variable elimination.
 
 Hidden Markov model inference
 -----------------------------
@@ -170,10 +170,9 @@ Variable elimination on HMMs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The ``variable_elimination`` method first converts the HMM into a dynamic
-Bayesian network and then unrolls it into a static Bayesian network for pgmpy.
+Bayesian network and then unrolls it into a static Bayesian network.
 
 .. testcode::
-   :skipif: not pgmpy_available
 
    from conin.config import default_mip_solver
    from conin.algorithms.inference import map_query
@@ -186,7 +185,6 @@ Bayesian network and then unrolls it into a static Bayesian network for pgmpy.
    print(results.solution.states)
 
 .. testoutput::
-   :skipif: not pgmpy_available
 
    ['h0', 'h0', 'h0', 'h0', 'h0']
 

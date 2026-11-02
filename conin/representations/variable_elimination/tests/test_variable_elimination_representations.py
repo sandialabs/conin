@@ -1,4 +1,4 @@
-"""Tests for the "pgmpy" representations and variable elimination."""
+"""Tests for the "variable_elimination" representations and variable elimination."""
 
 import munch
 import pytest
@@ -28,20 +28,15 @@ from conin.graphical_models import (
     create_dbn_from_hmm,
 )
 from conin.algorithms.inference import map_query
-from conin.representations import supported_representations
-from conin.representations.pgmpy import (
-    PgmpyBNRepresentation,
-    PgmpyDBNRepresentation,
-    PgmpyHMMRepresentation,
-    PgmpyMNRepresentation,
+from conin.algorithms.inference.variable_elimination import (
+    solve_variable_elimination_map_query_model,
 )
-from conin.util import try_import
-
-with try_import() as pgmpy_available:
-    import pgmpy.models
-
-skipif_pgmpy_not_available = pytest.mark.skipif(
-    not pgmpy_available, reason="pgmpy not installed"
+from conin.representations import supported_representations
+from conin.representations.variable_elimination import (
+    VariableEliminationBNRepresentation,
+    VariableEliminationDBNRepresentation,
+    VariableEliminationHMMRepresentation,
+    VariableEliminationMNRepresentation,
 )
 
 
@@ -70,9 +65,9 @@ def _abc_all_different():
 def test_factor_registered_families(model_type):
     pairs = supported_representations(model_type)
     for family in (None, "factor_oracle", "algebraic"):
-        assert ("pgmpy", family) in pairs
+        assert ("variable_elimination", family) in pairs
     for family in ("pyomo", "toulbar2", "oracle", "mvr"):
-        assert ("pgmpy", family) not in pairs
+        assert ("variable_elimination", family) not in pairs
 
 
 def test_factor_rejects_pyomo_constraints():
@@ -81,14 +76,18 @@ def test_factor_rejects_pyomo_constraints():
         pass
 
     cmodel = ConstrainedDiscreteMarkovNetwork(mex.ABC_conin().pgm, noop)
-    with pytest.raises(InvalidInputError, match="No 'pgmpy' representation"):
-        cmodel.representation("pgmpy")
+    with pytest.raises(
+        InvalidInputError, match="No 'variable_elimination' representation"
+    ):
+        cmodel.representation("variable_elimination")
 
 
 def test_variable_elimination_rejects_pyomo_constraints():
     """Regression: this used to raise a TypeError."""
     example = bex.cancer1_BN_constrained_pyomo_conin()
-    with pytest.raises(InvalidInputError, match="No 'pgmpy' representation"):
+    with pytest.raises(
+        InvalidInputError, match="No 'variable_elimination' representation"
+    ):
         map_query(example.pgm, method="variable_elimination")
 
 
@@ -98,32 +97,36 @@ def test_variable_elimination_rejects_pyomo_constraints():
         (
             ConstrainedDiscreteMarkovNetwork(mex.ABC_conin().pgm),
             {},
-            PgmpyMNRepresentation,
+            VariableEliminationMNRepresentation,
         ),
         (
             ConstrainedDiscreteBayesianNetwork(bex.cancer1_BN_conin().pgm),
             {},
-            PgmpyBNRepresentation,
+            VariableEliminationBNRepresentation,
         ),
         (
             ConstrainedDynamicDiscreteBayesianNetwork(dex.weather_conin().pgm),
             dict(stop=4),
-            PgmpyDBNRepresentation,
+            VariableEliminationDBNRepresentation,
         ),
         (
             ConstrainedHiddenMarkovModel(hex_.create_hmm1()),
             dict(stop=4),
-            PgmpyHMMRepresentation,
+            VariableEliminationHMMRepresentation,
         ),
     ],
 )
 def test_factor_representation_classes(cmodel, params, cls):
-    repn = cmodel.representation("pgmpy", **params)
+    repn = cmodel.representation("variable_elimination", **params)
     assert type(repn) is cls
-    assert repn.kind == "pgmpy"
-    # Unconstrained: the VE model is the (unrolled) model itself.
-    assert repn.ve_model is repn.pgm
-    assert repn.constraint_evidence == {}
+    assert repn.kind == "variable_elimination"
+    # Unconstrained: the VE model has the factors (or CPDs) of the model.
+    assert isinstance(repn.ve_model, DiscreteMarkovNetwork)
+    assert set(repn.ve_model.nodes) == set(repn.nodes)
+    expected = repn.pgm.factors if hasattr(repn.pgm, "factors") else repn.pgm.cpds
+    assert len(repn.ve_model.factors) == len(expected)
+    if isinstance(repn.pgm, DiscreteMarkovNetwork):
+        assert repn.ve_model is repn.pgm
 
 
 # ---------------------------------------------------------------------
@@ -134,10 +137,10 @@ def test_factor_representation_classes(cmodel, params, cls):
 def test_dbn_structure_params():
     dbn = dex.weather_conin().pgm
     cmodel = ConstrainedDynamicDiscreteBayesianNetwork(dbn)
-    default = cmodel.representation("pgmpy")
+    default = cmodel.representation("variable_elimination")
     assert (default.start, default.stop) == (0, 1)
     # (start > 0 fails in create_bn_from_dbn for every backend.)
-    repn = cmodel.representation("pgmpy", start=0, stop=3)
+    repn = cmodel.representation("variable_elimination", start=0, stop=3)
     assert (repn.start, repn.stop) == (0, 3)
     assert repn.constraint_data() == munch.Munch(start=0, stop=3, T=[0, 1, 2, 3])
     assert set(repn.nodes) == set(create_bn_from_dbn(dbn=dbn, start=0, stop=3).nodes)
@@ -147,8 +150,8 @@ def test_hmm_structure_params():
     hmm = hex_.create_hmm1()
     cmodel = ConstrainedHiddenMarkovModel(hmm)
     with pytest.raises(InvalidInputError, match="needs a stop time"):
-        cmodel.representation("pgmpy")
-    repn = cmodel.representation("pgmpy", stop=3)
+        cmodel.representation("variable_elimination")
+    repn = cmodel.representation("variable_elimination", stop=3)
     assert (repn.start, repn.stop) == (0, 3)
     assert repn.constraint_data() == munch.Munch(
         start=0,
@@ -176,10 +179,10 @@ def test_constraint_data_mn_bn_is_none():
     seen = []
     ConstrainedDiscreteMarkovNetwork(
         mex.ABC_conin().pgm, _recording_constraint(seen, ["A"])
-    ).representation("pgmpy")
+    ).representation("variable_elimination")
     ConstrainedDiscreteBayesianNetwork(
         bex.cancer1_BN_conin().pgm, _recording_constraint(seen, ["Smoker"])
-    ).representation("pgmpy")
+    ).representation("variable_elimination")
     assert seen == [None, None]
 
 
@@ -187,11 +190,11 @@ def test_constraint_data_dbn_and_hmm():
     seen = []
     ConstrainedDynamicDiscreteBayesianNetwork(
         dex.simple1_DDBN_conin().pgm, _recording_constraint(seen, [("A", 0)])
-    ).representation("pgmpy", stop=2)
+    ).representation("variable_elimination", stop=2)
     hmm = hex_.create_hmm1()
     ConstrainedHiddenMarkovModel(
         hmm, _recording_constraint(seen, [("H", 0)])
-    ).representation("pgmpy", stop=2)
+    ).representation("variable_elimination", stop=2)
     assert seen == [
         munch.Munch(start=0, stop=2, T=[0, 1, 2]),
         munch.Munch(
@@ -207,74 +210,45 @@ def test_constraints_are_materialised_at_build_time():
     cmodel = ConstrainedDiscreteBayesianNetwork(
         bex.cancer1_BN_conin().pgm, _recording_constraint(seen, ["Smoker"])
     )
-    repn = cmodel.representation("pgmpy")
+    repn = cmodel.representation("variable_elimination")
     assert len(seen) == 1
-    assert repn.constraint_evidence == {("rec", -1): 1}
-    assert ("rec", -1) in repn.ve_model.nodes
-    assert ("rec", -1) not in repn.nodes
-    repn.query_evidence({"Smoker": 0})
+    # One indicator factor over the scope, no new node
+    assert repn.ve_model.factors[-1].nodes == ["Smoker"]
+    assert set(repn.ve_model.nodes) == set(repn.nodes)
+    solve_variable_elimination_map_query_model(repn.ve_model, evidence={"Smoker": 0})
     assert len(seen) == 1  # queries don't re-materialise
 
 
 # ---------------------------------------------------------------------
-# Evidence and queries don't mutate the representation
+# Queries don't mutate the representation
 # ---------------------------------------------------------------------
 
 
-def test_query_evidence_does_not_mutate_the_repn_or_the_input():
-    cmodel = bex.cancer1_BN_constrained_oracle_conin().pgm
-    repn = cmodel.representation("pgmpy")
-    before = dict(repn.constraint_evidence)
-    user = {"Smoker": 0}
-    q1 = repn.query_evidence(user)
-    assert q1 == {"Smoker": 0, **before}
-    q1["Cancer"] = 1
-    assert user == {"Smoker": 0}
-    assert repn.constraint_evidence == before
-    assert repn.query_evidence() == before
-    assert repn.query_evidence() is not repn.constraint_evidence
-
-
-@skipif_pgmpy_not_available
-def test_two_create_model_calls_give_independent_models():
-    repn = bex.cancer1_BN_constrained_oracle_conin().pgm.representation("pgmpy")
-    m1 = repn.create_model()
-    m2 = repn.create_model()
-    assert m1 is not m2
-    assert isinstance(m1, pgmpy.models.DiscreteBayesianNetwork)
-    m1.remove_node("Xray")
-    assert "Xray" in m2.nodes()
-    assert "Xray" in repn.create_model().nodes()
-
-
-@skipif_pgmpy_not_available
-def test_create_model_mn_is_a_pgmpy_markov_network():
-    repn = mex.ABC_constrained_oracle_conin().pgm.representation("pgmpy")
-    assert isinstance(repn.create_model(), pgmpy.models.DiscreteMarkovNetwork)
-
-
-@skipif_pgmpy_not_available
 def test_one_repn_serves_several_queries():
-    from conin.algorithms.inference.variable_elimination.solve import _solve_repn
-
-    repn = bex.cancer1_BN_constrained_oracle_conin().pgm.representation("pgmpy")
-    kw = dict(variables=None, show_progress=False, write_uai_file=None)
-    r1 = _solve_repn(repn, evidence={"Smoker": 0}, **kw)
-    r2 = _solve_repn(repn, evidence=None, **kw)
+    repn = bex.cancer1_BN_constrained_oracle_conin().pgm.representation(
+        "variable_elimination"
+    )
+    n_factors = len(repn.ve_model.factors)
+    r1 = solve_variable_elimination_map_query_model(
+        repn.ve_model, evidence={"Smoker": 0}
+    )
+    r2 = solve_variable_elimination_map_query_model(repn.ve_model)
     assert "Smoker" not in r1.solution.states
     assert r2.solution.states["Smoker"] == 1
-    assert repn.constraint_evidence == {("constraints", -1): 1}
+    assert len(repn.ve_model.factors) == n_factors
 
 
-@skipif_pgmpy_not_available
 def test_write_uai_file_writes_the_constrained_model(tmp_path):
     from conin.io import load_model
 
-    repn = bex.cancer1_BN_constrained_oracle_conin().pgm.representation("pgmpy")
+    cmodel = bex.cancer1_BN_constrained_oracle_conin().pgm
+    repn = cmodel.representation("variable_elimination")
     filename = str(tmp_path / "model.uai")
-    repn.create_model(write_uai_file=filename)
+    map_query(cmodel, method="variable_elimination", write_uai_file=filename)
     loaded = load_model(filename)
+    assert isinstance(loaded, DiscreteMarkovNetwork)
     assert len(loaded.nodes) == len(repn.ve_model.nodes)
+    assert len(loaded.factors) == len(repn.ve_model.factors)
 
 
 # ---------------------------------------------------------------------
@@ -301,7 +275,6 @@ def _brute_force(pgm, constraint, evidence=None):
     return best
 
 
-@skipif_pgmpy_not_available
 def test_constrained_mn_keeps_user_evidence():
     """Regression: the ConstrainedMN overload replaced the user evidence with {}."""
     pgm = mex.ABC_conin().pgm
@@ -315,7 +288,6 @@ def test_constrained_mn_keeps_user_evidence():
     assert states == _brute_force(pgm, con, {"B": 0})
 
 
-@skipif_pgmpy_not_available
 def test_constrained_mn_does_not_force_a_scope_node_to_one():
     """Regression: the MN factor oracle fixed the last scope node to 1 as evidence."""
 
@@ -330,10 +302,8 @@ def test_constrained_mn_does_not_force_a_scope_node_to_one():
     results = map_query(cmodel, method="variable_elimination")
     assert results.solution.states == _brute_force(pgm, c_is_zero)
     assert results.solution.states["C"] == 0
-    assert cmodel.representation("pgmpy").constraint_evidence == {}
 
 
-@skipif_pgmpy_not_available
 def test_constrained_mn_partial_query_has_only_the_query_variables():
     """The result has only the query variables (no forced scope node)."""
     cmodel = mex.ABC_constrained_oracle_conin().pgm
@@ -341,7 +311,6 @@ def test_constrained_mn_partial_query_has_only_the_query_variables():
     assert set(results.solution.states) == {"A", "B"}
 
 
-@skipif_pgmpy_not_available
 @pytest.mark.parametrize("example", [mex.ABC_conin, mex.ABC2_conin])
 def test_constrained_mn_matches_brute_force(example):
     pgm = example().pgm

@@ -59,34 +59,15 @@ def make_temp_copy(source_file):
     # Get the filename and determine extension
     basename = os.path.basename(source_file)
 
-    # Create temp file with same basename in temp directory
-    temp_dir = tempfile.gettempdir()
+    # A new directory per copy, so that parallel tests (pytest -n) never share
+    # a file; convert_pgm writes its outputs next to the input.
+    temp_dir = tempfile.mkdtemp(prefix="conin_convert_pgm_")
     temp_path = os.path.join(temp_dir, "test_" + basename)
-
-    # Ensure the temp file doesn't already exist.  The counter goes before the
-    # whole suffix (asia_compressed_1.bif.gz, not asia_compressed.bif_1.gz),
-    # since convert_pgm reads the format from it.
-    counter = 0
-    stem, dot, suffix = ("test_" + basename).partition(".")
-    while os.path.exists(temp_path):
-        counter += 1
-        temp_path = os.path.join(temp_dir, f"{stem}_{counter}{dot}{suffix}")
-
-    # Copy source to temp
     shutil.copy(source_file, temp_path)
 
     def cleanup():
-        """Remove temp file and any generated outputs"""
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
-        # Also remove potential output files
-        base = os.path.splitext(temp_path)[0]
-        if base.endswith(".uai") or base.endswith(".bif"):
-            base = os.path.splitext(base)[0]
-        for ext in [".uai", ".bif"]:
-            output_file = base + ext
-            if os.path.exists(output_file):
-                os.remove(output_file)
+        """Remove the temp directory, with the generated outputs"""
+        shutil.rmtree(temp_dir, ignore_errors=True)
 
     return temp_path, cleanup
 

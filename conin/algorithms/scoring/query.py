@@ -2,11 +2,10 @@
 
 A query goes through the same steps as ``map_query``:
 
-1. normalise the model (pgmpy models are converted; a bare model is wrapped
-   with no constraints);
+1. normalise the model (a bare model is wrapped with no constraints);
 2. pick the representation kind from ``method`` (only
-   ``"variable_elimination"`` -> ``"pgmpy"`` for now; the table is shared
-   with ``map_query``, :mod:`conin.representations.methods`);
+   ``"variable_elimination"``, whose kind has the same name, for now; the
+   table is shared with ``map_query``, :mod:`conin.representations.methods`);
 3. build that representation with its structure parameters (DBNs and HMMs
    are unrolled over ``start..stop``);
 4. compute the query with the overload of :func:`_solve_log_probability` for
@@ -32,11 +31,8 @@ from conin.representations.methods import (
     check_method,
     representation_kind,
 )
-from conin.representations.pgmpy import (
-    PgmpyBNRepresentation,
-    PgmpyDBNRepresentation,
-    PgmpyHMMRepresentation,
-    PgmpyMNRepresentation,
+from conin.representations.variable_elimination import (
+    VariableEliminationRepresentation,
 )
 
 from .variable_elimination import _log_probability_variable_elimination
@@ -116,19 +112,17 @@ def log_probability_query(
     constraint holds.  Markov networks are normalised (the partition function
     cancels).
 
-    ======================== ==================== ================
-    ``method``               representation kind  models
-    ======================== ==================== ================
-    ``variable_elimination`` ``"pgmpy"``          MN, BN, DBN, HMM
-    ======================== ==================== ================
+    ======================== ========================== ================
+    ``method``               representation kind        models
+    ======================== ========================== ================
+    ``variable_elimination`` ``"variable_elimination"`` MN, BN, DBN, HMM
+    ======================== ========================== ================
 
     Parameters
     ----------
     pgm : GraphicalModel or ConstrainedGraphicalModel
         A CONIN model or constrained model (constraint families ``None``,
-        ``"factor_oracle"`` and ``"algebraic"``), or a pgmpy
-        ``DiscreteMarkovNetwork``, ``DiscreteBayesianNetwork`` or
-        ``DynamicBayesianNetwork`` (converted to CONIN; needs pgmpy).
+        ``"factor_oracle"`` and ``"algebraic"``).
     assignment : dict
         ``{variable: state}`` for the variables whose probability is
         computed (at least one).  The variables of a DBN are ``(name, t)``;
@@ -139,8 +133,7 @@ def log_probability_query(
         ``{variable: state}`` to condition on, keyed as ``assignment``; no
         variable may be in both.
     method : str, optional
-        The inference method (default ``"variable_elimination"``, which needs
-        pgmpy).
+        The inference method (default ``"variable_elimination"``).
     start, stop : int, optional
         DBNs and HMMs are unrolled over ``start..stop`` (ignored by static
         models).  ``stop`` defaults to the largest time in ``assignment`` and
@@ -153,9 +146,7 @@ def log_probability_query(
     Returns
     -------
     float
-        The log-probability; ``-inf`` if it is zero.  ``variable_elimination``
-        sums in linear space, so a probability below about ``1e-308`` (e.g.
-        a long HMM sequence) underflows to ``-inf``.
+        The log-probability; ``-inf`` if it is zero.
 
     Raises
     ------
@@ -173,8 +164,6 @@ def log_probability_query(
 
     Examples
     --------
-    Variable elimination needs pgmpy:
-
     >>> from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
     >>> from conin.algorithms.scoring import log_probability_query
     >>> bn = DiscreteBayesianNetwork(
@@ -185,10 +174,10 @@ def log_probability_query(
     ...     ],
     ... )
     >>> # log(0.9 * 0.8 + 0.1 * 0.1)
-    >>> round(log_probability_query(bn, {"B": 1}), 6)  # doctest: +SKIP
+    >>> round(log_probability_query(bn, {"B": 1}), 6)
     -0.314711
     >>> # log(0.1 * 0.1 / 0.73)
-    >>> round(log_probability_query(bn, {"A": 1}, evidence={"B": 1}), 6)  # doctest: +SKIP
+    >>> round(log_probability_query(bn, {"A": 1}, evidence={"B": 1}), 6)
     -4.290459
     """
     check_method(method, METHODS, "log-probability method")
@@ -245,20 +234,5 @@ def _variable_elimination(repn, q):
 
 
 @ovld
-def _solve_log_probability(repn: PgmpyMNRepresentation, q):
-    return _variable_elimination(repn, q)
-
-
-@ovld
-def _solve_log_probability(repn: PgmpyBNRepresentation, q):
-    return _variable_elimination(repn, q)
-
-
-@ovld
-def _solve_log_probability(repn: PgmpyDBNRepresentation, q):
-    return _variable_elimination(repn, q)
-
-
-@ovld
-def _solve_log_probability(repn: PgmpyHMMRepresentation, q):
+def _solve_log_probability(repn: VariableEliminationRepresentation, q):
     return _variable_elimination(repn, q)

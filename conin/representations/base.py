@@ -47,10 +47,10 @@ _BUILTIN_MODULES = (
     "conin.representations.toulbar2.bn",
     "conin.representations.toulbar2.dbn",
     "conin.representations.toulbar2.hmm",
-    "conin.representations.pgmpy.mn",
-    "conin.representations.pgmpy.bn",
-    "conin.representations.pgmpy.dbn",
-    "conin.representations.pgmpy.hmm",
+    "conin.representations.variable_elimination.mn",
+    "conin.representations.variable_elimination.bn",
+    "conin.representations.variable_elimination.dbn",
+    "conin.representations.variable_elimination.hmm",
     "conin.representations.mvr.hmm",
 )
 _builtins_loaded = False
@@ -155,8 +155,8 @@ def apply_constraints(constraints, appliers, *, backend):
 
     This is the dispatch shared by the backend appliers
     (``apply_pyomo_constraints``, ``apply_toulbar2_constraints``,
-    ``apply_pgmpy_constraints``): each one passes a table from family to the
-    function that applies a list of that family.
+    ``apply_variable_elimination_constraints``): each one passes a table from
+    family to the function that applies a list of that family.
 
     Parameters
     ----------
