@@ -49,19 +49,30 @@ Package layout
 Layering
 --------
 
-- ``graphical_models``, ``util`` and ``exceptions`` are the bottom layer: they
-  import nothing from the packages above them.
-- ``pgmpy`` sits just above them (it imports only ``graphical_models``,
-  ``util`` and ``exceptions``) and is imported by ``io``,
+- ``util``, ``exceptions`` and ``config`` are the bottom layer: they import
+  nothing from the packages above them.
+- ``graphical_models`` and ``constraints`` sit above them and do not import
+  each other (``constraints`` does not import the models).
+- ``pgmpy`` sits above the models and is imported by ``io``,
   ``constrained_models`` (to convert pgmpy models), ``representations``,
   ``algorithms.scoring`` and ``examples``.
-- ``constraints`` does not import the models.
-- ``constrained_models`` and ``representations`` sit above them; the
-  ``algorithms`` packages sit above the representations.
-- There are no import cycles between modules. Function-level imports are
-  used only for optional dependencies (pgmpy, torch).
+- ``constrained_models``, ``representations`` and ``io`` form the model
+  layer. They import each other (``constrained_models`` imports the
+  representation registry, the toulbar2 representations import ``io``, and
+  ``io`` builds constrained models), which is why the registry imports its
+  builders on first use.
+- The ``algorithms`` packages sit above the model layer, in the order
+  ``util``, ``feasibility``, ``scoring``, ``inference``, ``sampling``,
+  ``learning``: each imports only the ones before it. ``examples`` and the
+  top-level ``conin`` package are at the top.
+- There are no module-level import cycles between modules. A conin module is
+  imported inside a function only if it needs torch (the MVR algorithms and
+  ``algorithms.util.mvr_kernels``); other function-level imports are of
+  optional dependencies (pgmpy, torch).
 - ``import conin`` must not import torch. The MVR packages export their
   algorithms through a lazy module ``__getattr__``.
+- ``conin/tests/test_layering.py`` checks these rules; its ``LAYERS`` table
+  is the authoritative layer order, and a new package must be added to it.
 - Optional dependencies are imported with ``conin.util.try_import``, which
   catches only ``ImportError``; code that probes a dependency which can fail
   with ``OSError`` (a broken torch install) catches both.
@@ -166,8 +177,9 @@ Immutability
 MVR static context
    The torch kernels (``conin.algorithms.util.mvr_kernels``) build their
    per-query context (tensors, shapes, active sets) from ``repn.mvrs``,
-   because it depends on the horizon, the dtype, the device and the semiring. The ``"mvr"`` representation deep-copies prebuilt
-   MVRs at build time, so the user's objects are never changed.
+   because it depends on the horizon, the dtype, the device and the semiring.
+   The ``"mvr"`` representation deep-copies prebuilt MVRs at build time, so
+   the user's objects are never changed.
 DBN unrolling
    DBNs and HMMs are unrolled from ``start=0``; unrolling from a later time
    would need the marginal distribution at that time.
