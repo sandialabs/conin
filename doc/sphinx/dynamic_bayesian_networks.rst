@@ -5,7 +5,7 @@ This page describes how to create a ``DynamicDiscreteBayesianNetwork`` instance 
 ``DiscreteCPD`` objects.
 ``DynamicDiscreteBayesianNetwork`` represents a two-slice dynamic Bayesian
 network whose conditional probability distributions can reference the symbolic
-time variable ``t``. Create an ``ExpressionVariable`` for ``t``, use it to
+time variable ``t``. Create a ``TimeIndex`` for ``t``, use it to
 define the CPDs, and pass the same object to the constructor, which also
 requires a non-empty list of CPDs and at least one of ``states`` or
 ``dynamic_states``.
@@ -20,11 +20,11 @@ with an initial distribution and one transition CPD.
 
    from conin.graphical_models import (
        DynamicDiscreteBayesianNetwork,
-       ExpressionVariable,
+       TimeIndex,
    )
    from conin.graphical_models import DiscreteCPD
 
-   t = ExpressionVariable()
+   t = TimeIndex()
 
    z_start = DiscreteCPD(node=("Z", 0), values=[0.5, 0.5])
    z_transition = DiscreteCPD(
@@ -48,11 +48,11 @@ The ``simple1_DDBN_conin`` example introduces two dynamic nodes:
 
    from conin.graphical_models import (
        DynamicDiscreteBayesianNetwork,
-       ExpressionVariable,
+       TimeIndex,
    )
    from conin.graphical_models import DiscreteCPD
 
-   t = ExpressionVariable()
+   t = TimeIndex()
 
    cpd_start_a = DiscreteCPD(node=("A", 0), values=[0.9, 0.1])
    cpd_start_b = DiscreteCPD(
@@ -179,7 +179,7 @@ Notes
 - ``cpds`` is required and must be non-empty, and at least one of ``states``
   and ``dynamic_states`` must be non-empty.
 - ``dynamic_states`` lists the state space for time-indexed variables.
-- ``t`` is a symbolic ``ExpressionVariable`` used when declaring repeated CPDs.
+- ``t`` is a symbolic ``TimeIndex`` used when declaring repeated CPDs.
   Pass the same object that the CPDs use to the constructor; it is available
   afterwards as ``dbn.t``.
 - See :doc:`model_conversion_io` for unrolling dynamic Bayesian networks into

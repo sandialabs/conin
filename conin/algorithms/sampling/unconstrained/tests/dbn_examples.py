@@ -1,14 +1,14 @@
 from conin.graphical_models import (
     DiscreteCPD,
     DynamicDiscreteBayesianNetwork,
-    ExpressionVariable,
+    TimeIndex,
 )
 
 
 def create_ddbn0():
     states = {"X": ["T", "F"]}
     dynamic_states = {"A": ["a", "b", "c"], "B": [0, 1, 2, 3], "C": ["t", "f"]}
-    t = ExpressionVariable()
+    t = TimeIndex()
 
     cpd_start_A = DiscreteCPD(node=("A", 0), values=[0.7, 0.1, 0.2])
     cpd_trans_A = DiscreteCPD(

@@ -261,10 +261,10 @@ def _static_and_dynamic_DDBN():
     from conin.graphical_models import (
         DiscreteCPD,
         DynamicDiscreteBayesianNetwork,
-        ExpressionVariable,
+        TimeIndex,
     )
 
-    t = ExpressionVariable()
+    t = TimeIndex()
     s_cpd = DiscreteCPD(node="S", values=[0.4, 0.6])
     z_start_cpd = DiscreteCPD(
         node=("Z", 0), parents=["S"], values={0: [0.9, 0.1], 1: [0.2, 0.8]}

@@ -41,6 +41,8 @@ Migration table (old -> new)
                                        bayesian_network,
                                        dynamic_bayesian_network,
                                        hidden_markov_model}
+  ExpressionVariable (DBN time index)
+                                    -> conin.graphical_models.TimeIndex
   ConstraintFunctor                 -> conin.constraints.Constraint
   conin.constraints.oracle (library: all_diff, citation, ...)
                                     -> conin.constraints.oracle_library
@@ -139,7 +141,7 @@ Models
   DynamicDiscreteBayesianNetwork require a non-empty cpds argument and
   DiscreteMarkovNetwork a non-empty factors argument; a DBN also needs states
   or dynamic_states. Time-indexed DBN CPDs are written against an
-  ExpressionVariable (conin.graphical_models) passed to the constructor as t.
+  TimeIndex (conin.graphical_models) passed to the constructor as t.
   read_from_file is a classmethod returning a new instance; make_non_zero
   returns a new instance.
 - The data of the MN, BN and DBN classes and of DiscreteFactor/DiscreteCPD

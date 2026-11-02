@@ -1,6 +1,6 @@
 from conin.exceptions import InvalidInputError
 from conin.graphical_models.base import GraphicalModel
-from conin.graphical_models.expr import ExpressionVariable
+from conin.graphical_models.time_index import TimeIndex
 from conin.util.frozen import freeze
 
 
@@ -27,12 +27,12 @@ class DynamicDiscreteBayesianNetwork(GraphicalModel):
             Mapping from dynamic node identifiers to their allowed states across
             time steps. At least one of ``states`` and ``dynamic_states`` must
             be non-empty.
-        t : ExpressionVariable, optional
+        t : TimeIndex, optional
             Symbolic time-index placeholder used in time-shifted CPD templates
             (``t``, ``t - 1``). CPDs that refer to the time index must be built
-            with the same ``ExpressionVariable`` instance that is passed here;
+            with the same ``TimeIndex`` instance that is passed here;
             it is exposed afterwards as ``dbn.t``. Defaults to a fresh
-            ``ExpressionVariable()``, which is only appropriate when no CPD
+            ``TimeIndex()``, which is only appropriate when no CPD
             refers to the time index.
 
         Raises
@@ -79,11 +79,11 @@ class DynamicDiscreteBayesianNetwork(GraphicalModel):
         self._dynamic_nodes = freeze(self._dynamic_nodes)
         self._dynamic_states = freeze(self._dynamic_states)
 
-        self._t = t if t is not None else ExpressionVariable()
+        self._t = t if t is not None else TimeIndex()
 
     @property
     def t(self):
-        """ExpressionVariable: The time index of the CPD templates.
+        """TimeIndex: The time index of the CPD templates.
 
         Unrolling (:func:`~conin.graphical_models.create_bn_from_dbn`) and
         sampling set its value while they evaluate the templates; the

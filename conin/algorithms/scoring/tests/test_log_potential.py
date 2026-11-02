@@ -23,7 +23,7 @@ from conin.graphical_models import (
     DiscreteFactor,
     DiscreteMarkovNetwork,
     DynamicDiscreteBayesianNetwork,
-    ExpressionVariable,
+    TimeIndex,
     HiddenMarkovModel,
 )
 from conin.util import try_import
@@ -54,7 +54,7 @@ def _bn():
 
 
 def _dbn():
-    t = ExpressionVariable()
+    t = TimeIndex()
     return DynamicDiscreteBayesianNetwork(
         dynamic_states={"A": [0, 1], "B": [0, 1]},
         cpds=[

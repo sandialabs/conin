@@ -1,7 +1,7 @@
 import copy
 
 from conin.util import Util
-from conin.graphical_models.expr import ExpressionNode
+from conin.graphical_models import TimeExpression
 
 
 class DBNSampler:
@@ -51,7 +51,7 @@ class DBNSampler:
                 cpd = [
                     _cpd
                     for _cpd in potential_cpds
-                    if isinstance(_cpd.node[1], ExpressionNode)
+                    if isinstance(_cpd.node[1], TimeExpression)
                 ][0]
             else:
                 # just one match
