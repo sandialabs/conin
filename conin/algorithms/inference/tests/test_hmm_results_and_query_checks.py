@@ -4,11 +4,14 @@ import pytest
 from conin.algorithms.inference.hmm_results import (
     hidden_states_from_unrolled,
     key_solutions_by_time,
+    unrolled_evidence,
 )
+from conin.algorithms.inference.query import _observed_time_range
 from conin.algorithms.inference.query_checks import (
     full_query_variables,
     reject_pruning_options,
 )
+from conin.exceptions import InvalidInputError
 
 
 def test_key_solutions_by_time():
@@ -53,3 +56,16 @@ def test_reject_pruning_options(option):
     assert options == {"solver": "x"}
     with pytest.raises(RuntimeError, match=f"{option}=True is not supported"):
         reject_pruning_options({option: True})
+
+
+def test_observed_time_range():
+    observed = ["a", "b", "c"]
+    assert _observed_time_range(observed, 0, None) == (0, 2)
+    assert _observed_time_range(observed, 0, 1) == (0, 1)
+    assert _observed_time_range(observed, 1, 2) == (1, 2)
+    with pytest.raises(InvalidInputError, match="stop=3 is past the last"):
+        _observed_time_range(observed, 0, 3)
+
+
+def test_unrolled_evidence():
+    assert unrolled_evidence(["a", "b", "c"], 1, 2) == {("E", 1): "b", ("E", 2): "c"}

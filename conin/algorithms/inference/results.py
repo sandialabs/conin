@@ -46,7 +46,7 @@ decoded augmented path).
 
 import munch
 
-from conin.graphical_models.hmm_observations import as_sequence
+from conin.graphical_models.assignments import as_sequence
 from conin.algorithms.scoring.assignment import hmm_path_log_potential, log_potential
 
 NO_FEASIBLE_SOLUTIONS = "error: no feasible solutions"

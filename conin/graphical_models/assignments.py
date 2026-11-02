@@ -1,11 +1,16 @@
-"""Total assignments of the graphical models: their checks and unrolled states.
+"""Total assignments and HMM sequences of the graphical models: their checks.
 
-These helpers are internal: scoring and the feasibility checks use them so
-that every function reads an assignment the same way.
+A sequence over the times ``0..T-1`` (HMM observations or hidden states) is a
+non-empty list or tuple, or a dict keyed by exactly the times ``0..T-1``.
+Anything else raises ``InvalidInputError``.  (The torch MVR algorithms also
+accept a sparse ``{time: label}`` dict of observations; they check it
+themselves.)
+
+These helpers are internal: inference, scoring and the feasibility checks use
+them so that every function reads an assignment or a sequence the same way.
 """
 
 from conin.exceptions import InvalidInputError
-from conin.graphical_models.hmm_observations import as_sequence
 
 
 def check_total_assignment(states, assignment, *, what="assignment"):
@@ -127,3 +132,46 @@ def hmm_sequences(hmm, hidden, observed=None):
                 f"{hmm.observed_states}"
             )
     return hidden, observed
+
+
+def require_sequence_type(seq, what="observed sequence"):
+    """Raise ``InvalidInputError`` unless ``seq`` is a list, a tuple or a dict.
+
+    Only the type is checked (for the sparse ``{time: label}`` observations of
+    the MVR algorithms); use :func:`as_sequence` for a dense sequence.
+    """
+    if isinstance(seq, (list, tuple, dict)):
+        return
+    raise InvalidInputError(_type_message(seq, what))
+
+
+def as_sequence(seq, what="observed sequence"):
+    """Return ``seq`` (a list, tuple or dict keyed by ``0..T-1``) as a list.
+
+    Raises
+    ------
+    InvalidInputError
+        For another type, a dict not keyed by exactly ``0..T-1``, or an empty
+        sequence.
+    """
+    if isinstance(seq, dict):
+        if not all(type(t) is int for t in seq) or set(seq) != set(range(len(seq))):
+            raise InvalidInputError(
+                f"The {what} must be keyed by the times 0..T-1 when given as a "
+                f"dict; got the keys {list(seq)}"
+            )
+        seq = [seq[t] for t in range(len(seq))]
+    elif isinstance(seq, (list, tuple)):
+        seq = list(seq)
+    else:
+        raise InvalidInputError(_type_message(seq, what))
+    if not seq:
+        raise InvalidInputError(f"The {what} must not be empty")
+    return seq
+
+
+def _type_message(seq, what):
+    return (
+        f"The {what} must be a list, a tuple or a dict keyed by the times "
+        f"0..T-1, got {type(seq).__name__}"
+    )

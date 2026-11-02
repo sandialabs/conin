@@ -6,8 +6,6 @@ step when the observations were given as a dict.
 
 import munch
 
-from conin.graphical_models.hmm_observations import unrolled_evidence
-
 
 def key_solutions_by_time(results):
     """Make the ``states`` of every solution a dict keyed by time step."""
@@ -30,6 +28,15 @@ def hidden_states_from_unrolled(results, *, start, stop, keyed_by_time):
         else:
             soln.states = [states["H", t] for t in times]
     return results
+
+
+def unrolled_evidence(observed, start, stop):
+    """The observations (a list) at the times ``start..stop`` as ``{("E", t): label}``.
+
+    These are the evidence of the HMM unrolled as a DBN, whose observed nodes
+    are ``("E", t)``.
+    """
+    return {("E", t): observed[t] for t in range(start, stop + 1)}
 
 
 def solve_unrolled_hmm(solve, repn, q):

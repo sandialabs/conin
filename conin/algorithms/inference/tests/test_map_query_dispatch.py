@@ -19,7 +19,7 @@ from conin.constrained_models import (
 )
 from conin.constrained_models.normalise import as_constrained_model
 from conin.exceptions import InvalidInputError
-from conin.graphical_models.hmm_observations import as_sequence
+from conin.graphical_models.assignments import as_sequence
 from conin.algorithms.inference import map_query
 from conin.algorithms.inference.oracle import a_star
 from conin.algorithms.inference.recursive import recursive_a_star
