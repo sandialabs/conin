@@ -9,7 +9,7 @@ with try_import() as or_topas_available:
 from conin.algorithms.inference.oracle import a_star
 from conin.algorithms.inference.recursive import recursive_a_star
 from conin.constrained_models import ConstrainedHiddenMarkovModel
-from conin.constraints.oracle_library import *
+from conin.constraints.oracle.library import *
 
 from conin.algorithms.inference.pyomo import ip_inference
 

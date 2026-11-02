@@ -305,9 +305,9 @@ def test_hmm_integer_program_with_impossible_observations_has_no_solution(
 
 def _hmm_never_x_at_time_1():
     from conin.constrained_models import ConstrainedHiddenMarkovModel
-    from conin.constraints import algebraic_constraint_fn
+    from conin.constraints import smoek_constraint_fn
 
-    @algebraic_constraint_fn()
+    @smoek_constraint_fn()
     def never_x_at_time_1(model, data):
         return [model.V("H", 1, "x") == 0]
 
@@ -376,15 +376,15 @@ def _abc_constrained(constraint):
 
 
 def _static_no_solution_cases():
-    from conin.constraints import algebraic_constraint_fn, toulbar2_constraint_fn
+    from conin.constraints import smoek_constraint_fn, toulbar2_constraint_fn
 
-    @algebraic_constraint_fn()
+    @smoek_constraint_fn()
     def a_and_b_equal_and_different(model):
         return [model.V("A", s) == model.V("B", s) for s in [0, 1, 2]] + [
             model.V("A", s) + model.V("B", s) <= 1 for s in [0, 1, 2]
         ]
 
-    @algebraic_constraint_fn()
+    @smoek_constraint_fn()
     def a_and_b_are_0(model):
         return [model.V("A", 0) + model.V("B", 0) == 2]
 
@@ -430,9 +430,9 @@ def test_static_model_without_a_solution_has_no_solution(
 
 
 def test_partial_variable_elimination_without_a_solution_has_no_solution():
-    from conin.constraints import algebraic_constraint_fn
+    from conin.constraints import smoek_constraint_fn
 
-    @algebraic_constraint_fn()
+    @smoek_constraint_fn()
     def a_and_b_are_0(model):
         return [model.V("A", 0) + model.V("B", 0) == 2]
 

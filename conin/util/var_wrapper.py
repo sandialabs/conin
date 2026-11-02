@@ -1,7 +1,7 @@
 """The ``model.V(...)`` variable accessor shared by the constraint backends.
 
 It lives in :mod:`conin.util` (not in :mod:`conin.representations.pyomo`) so
-that :mod:`conin.constraints.algebraic` can use it without importing the
+that :mod:`conin.constraints.smoek` can use it without importing the
 representations layer, which itself imports :mod:`conin.constraints`.  The
 public name is :class:`conin.representations.pyomo.PyomoVarWrapper`.
 """

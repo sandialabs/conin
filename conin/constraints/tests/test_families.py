@@ -8,7 +8,7 @@ from conin.constraints import (
     OracleConstraint,
     FactorOracleConstraint,
     MVRConstraint,
-    AlgebraicConstraint,
+    SmoekConstraint,
     oracle_constraint_fn,
 )
 
@@ -21,7 +21,7 @@ from conin.constraints import (
         (OracleConstraint, "oracle"),
         (FactorOracleConstraint, "factor_oracle"),
         (MVRConstraint, "mvr"),
-        (AlgebraicConstraint, "algebraic"),
+        (SmoekConstraint, "smoek"),
     ],
 )
 def test_family(cls, family):
@@ -40,8 +40,8 @@ def test_instance_family():
     assert PyomoConstraint(f).family == "pyomo"
     assert Toulbar2Constraint(f).family == "toulbar2"
     assert MVRConstraint(f).family == "mvr"
-    # Constructing an AlgebraicConstraint does not need smoek
-    assert AlgebraicConstraint(f).family == "algebraic"
+    # Constructing an SmoekConstraint does not need smoek
+    assert SmoekConstraint(f).family == "smoek"
 
 
 def test_oracle_constraint_fn_without_nodes():

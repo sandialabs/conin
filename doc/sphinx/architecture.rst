@@ -13,7 +13,7 @@ Package layout
    ``HiddenMarkovModel``) and the conversions between them.
 ``conin.constraints``
    Constraint containers. Each class declares a ``family`` (``"pyomo"``,
-   ``"toulbar2"``, ``"algebraic"``, ``"oracle"``, ``"factor_oracle"``,
+   ``"toulbar2"``, ``"smoek"``, ``"oracle"``, ``"factor_oracle"``,
    ``"recursive"``, ``"mvr"``) and holds no backend logic.
 ``conin.constrained_models``
    ``Constrained*(model, constraints=(), *, data=None)``: an immutable pair of
@@ -86,7 +86,7 @@ Representations and dispatch
   ``apply_variable_elimination_constraints``). Each passes ``apply_constraints``
   (``conin.representations.base``) a table from family to applier;
   ``apply_constraints`` rejects mixed or unsupported families with one
-  message. The algebraic translators all start from ``build_smoek_model``.
+  message. The smoek translators all start from ``build_smoek_model``.
 - The DBN and HMM representations of every backend get ``start``, ``stop``,
   ``time_steps`` and their constraint-``data`` time fields from the mixins in
   ``conin.representations.unrolled``, so the backends cannot drift apart.

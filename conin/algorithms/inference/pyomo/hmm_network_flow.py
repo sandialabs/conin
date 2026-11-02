@@ -191,7 +191,7 @@ def ip_inference(
     Parameters
     ----------
     hmm : ConstrainedHiddenMarkovModel
-        Its constraints must be of family ``"pyomo"`` or ``"algebraic"`` (or
+        Its constraints must be of family ``"pyomo"`` or ``"smoek"`` (or
         none).
     observed : list
         Observed labels.

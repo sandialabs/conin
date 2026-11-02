@@ -39,7 +39,7 @@ def _builders(module_name):
 def _needs(name):
     """The optional packages an example needs, from its name."""
     needs = []
-    if "algebraic" in name:
+    if "smoek" in name:
         needs.append(("smoek", smoek_available))
     return needs
 
@@ -53,7 +53,7 @@ def _skip_unless_available(name):
 METHOD = {
     None: "integer_program",
     "pyomo": "integer_program",
-    "algebraic": "integer_program",
+    "smoek": "integer_program",
     "toulbar2": "toulbar2",
     "factor_oracle": "variable_elimination",
 }

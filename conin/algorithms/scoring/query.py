@@ -122,7 +122,7 @@ def log_probability_query(
     ----------
     pgm : GraphicalModel or ConstrainedGraphicalModel
         A CONIN model or constrained model (constraint families ``None``,
-        ``"factor_oracle"`` and ``"algebraic"``).
+        ``"factor_oracle"`` and ``"smoek"``).
     assignment : dict
         ``{variable: state}`` for the variables whose probability is
         computed (at least one).  The variables of a DBN are ``(name, t)``;

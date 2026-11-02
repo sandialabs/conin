@@ -35,7 +35,7 @@ def build_toulbar2_dbn_representation(
 @register_representation(
     "toulbar2",
     DynamicDiscreteBayesianNetwork,
-    families=(None, "toulbar2", "algebraic"),
+    families=(None, "toulbar2", "smoek"),
 )
 def _build(cmodel, *, start=0, stop=None):
     start, stop = dbn_time_range(start, stop)

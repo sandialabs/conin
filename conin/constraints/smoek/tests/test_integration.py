@@ -21,7 +21,7 @@ from conin.examples.bayesian_network import cancer1_BN_conin
 from conin.constrained_models import ConstrainedDiscreteBayesianNetwork
 from conin.algorithms.inference import map_query
 from conin.exceptions import InvalidInputError
-from conin import pyomo_constraint_fn, algebraic_constraint_fn
+from conin import pyomo_constraint_fn, smoek_constraint_fn
 from conin.util import try_import
 
 with try_import() as pytoulbar2_available:
@@ -32,19 +32,19 @@ skipif_toulbar2_not_available = pytest.mark.skipif(
 )
 
 
-class TestBasicAlgebraicConstraints:
-    """Test basic algebraic constraint functionality."""
+class TestBasicSmoekConstraints:
+    """Test basic smoek constraint functionality."""
 
     def test_simple_pyomo_constraint(self):
-        """Test that a simple algebraic constraint works with Pyomo."""
+        """Test that a simple smoek constraint works with Pyomo."""
         pgm = cancer1_BN_conin().pgm
 
-        @algebraic_constraint_fn()
-        def algebraic_constraint(model, data):
+        @smoek_constraint_fn()
+        def smoek_constraint(model, data):
             # Simple constraint: V("Dyspnoea", 1) + V("Xray", 1) <= 1
             return model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1
 
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=algebraic_constraint)
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=smoek_constraint)
 
         # Should be able to create inference model
         evidence = {"Pollution": 0, "Smoker": 1}
@@ -55,20 +55,18 @@ class TestBasicAlgebraicConstraints:
         assert "Cancer" in result.solution.states
 
     def test_multiple_pyomo_constraints(self):
-        """Test algebraic constraint returning multiple constraints."""
+        """Test smoek constraint returning multiple constraints."""
         pgm = cancer1_BN_conin().pgm
 
-        @algebraic_constraint_fn()
-        def algebraic_constraints(model, data):
+        @smoek_constraint_fn()
+        def smoek_constraints(model, data):
             # Return list of constraints
             return [
                 model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1,
                 model.V("Dyspnoea", 0) + model.V("Xray", 0) <= 1,
             ]
 
-        cpgm = ConstrainedDiscreteBayesianNetwork(
-            pgm, constraints=algebraic_constraints
-        )
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=smoek_constraints)
 
         evidence = {"Pollution": 0, "Smoker": 1}
         result = map_query(cpgm, method="integer_program", evidence=evidence)
@@ -88,8 +86,8 @@ class TestBasicAlgebraicConstraints:
             model.c.add(model.V("Dyspnoea", 0) + model.V("Xray", 0) <= 1)
 
         # Algebraic syntax
-        @algebraic_constraint_fn()
-        def algebraic_constraint(model, data):
+        @smoek_constraint_fn()
+        def smoek_constraint(model, data):
             return [
                 model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1,
                 model.V("Dyspnoea", 0) + model.V("Xray", 0) <= 1,
@@ -105,18 +103,18 @@ class TestBasicAlgebraicConstraints:
             cpgm_traditional, method="integer_program", evidence=evidence
         )
 
-        cpgm_algebraic = ConstrainedDiscreteBayesianNetwork(
-            pgm, constraints=algebraic_constraint
+        cpgm_smoek = ConstrainedDiscreteBayesianNetwork(
+            pgm, constraints=smoek_constraint
         )
-        result_algebraic = map_query(
-            cpgm_algebraic, method="integer_program", evidence=evidence
+        result_smoek = map_query(
+            cpgm_smoek, method="integer_program", evidence=evidence
         )
 
         # Results should be identical
-        assert result_traditional.solution.states == result_algebraic.solution.states
+        assert result_traditional.solution.states == result_smoek.solution.states
 
     def test_mixing_constraint_styles(self):
-        """Test that algebraic and traditional constraints cannot be mixed.
+        """Test that smoek and traditional constraints cannot be mixed.
 
         A constrained model accepts constraints from one family only, so the
         constructor rejects the mix with an InvalidInputError.
@@ -128,25 +126,25 @@ class TestBasicAlgebraicConstraints:
             model.c1 = pyo.ConstraintList()
             model.c1.add(model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1)
 
-        @algebraic_constraint_fn()
-        def algebraic_constraint(model, data):
+        @smoek_constraint_fn()
+        def smoek_constraint(model, data):
             return model.V("Dyspnoea", 0) + model.V("Xray", 0) <= 1
 
         # Mix both styles
         with pytest.raises(InvalidInputError, match="one constraint family"):
             ConstrainedDiscreteBayesianNetwork(
-                pgm, constraints=[traditional_constraint, algebraic_constraint]
+                pgm, constraints=[traditional_constraint, smoek_constraint]
             )
 
 
 class TestArithmeticOperations:
-    """Test various arithmetic operations in algebraic constraints."""
+    """Test various arithmetic operations in smoek constraints."""
 
     def test_addition(self):
         """Test addition operation."""
         pgm = cancer1_BN_conin().pgm
 
-        @algebraic_constraint_fn()
+        @smoek_constraint_fn()
         def constraint(model, data):
             return model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1
 
@@ -159,7 +157,7 @@ class TestArithmeticOperations:
         """Test subtraction operation."""
         pgm = cancer1_BN_conin().pgm
 
-        @algebraic_constraint_fn()
+        @smoek_constraint_fn()
         def constraint(model, data):
             return model.V("Dyspnoea", 1) - model.V("Xray", 1) >= -1
 
@@ -172,7 +170,7 @@ class TestArithmeticOperations:
         """Test multiplication by constant."""
         pgm = cancer1_BN_conin().pgm
 
-        @algebraic_constraint_fn()
+        @smoek_constraint_fn()
         def constraint(model, data):
             return 2 * model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 2
 
@@ -185,7 +183,7 @@ class TestArithmeticOperations:
         """Test complex arithmetic expression."""
         pgm = cancer1_BN_conin().pgm
 
-        @algebraic_constraint_fn()
+        @smoek_constraint_fn()
         def constraint(model, data):
             return (
                 2 * model.V("Dyspnoea", 1)
@@ -207,7 +205,7 @@ class TestComparisonOperators:
         """Test <= operator."""
         pgm = cancer1_BN_conin().pgm
 
-        @algebraic_constraint_fn()
+        @smoek_constraint_fn()
         def constraint(model, data):
             return model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1
 
@@ -220,7 +218,7 @@ class TestComparisonOperators:
         """Test >= operator."""
         pgm = cancer1_BN_conin().pgm
 
-        @algebraic_constraint_fn()
+        @smoek_constraint_fn()
         def constraint(model, data):
             return model.V("Dyspnoea", 1) + model.V("Xray", 1) >= 0
 
@@ -233,7 +231,7 @@ class TestComparisonOperators:
         """Test == operator."""
         pgm = cancer1_BN_conin().pgm
 
-        @algebraic_constraint_fn()
+        @smoek_constraint_fn()
         def constraint(model, data):
             return model.V("Dyspnoea", 1) == 0
 
@@ -250,7 +248,7 @@ class TestDataUsage:
         """Test constraint that uses data parameter."""
         pgm = cancer1_BN_conin().pgm
 
-        @algebraic_constraint_fn()
+        @smoek_constraint_fn()
         def constraint(model, data):
             # Use data if available
             limit = 1  # Default
@@ -264,20 +262,20 @@ class TestDataUsage:
         assert result is not None
 
 
-class TestToulbar2BasicAlgebraicConstraints:
-    """Test basic algebraic constraint functionality with Toulbar2."""
+class TestToulbar2BasicSmoekConstraints:
+    """Test basic smoek constraint functionality with Toulbar2."""
 
     @skipif_toulbar2_not_available
-    def test_simple_algebraic_constraint_toulbar2(self):
-        """Test that a simple algebraic constraint works with Toulbar2."""
+    def test_simple_smoek_constraint_toulbar2(self):
+        """Test that a simple smoek constraint works with Toulbar2."""
         pgm = cancer1_BN_conin().pgm
 
-        @algebraic_constraint_fn()
-        def algebraic_constraint(model, data):
+        @smoek_constraint_fn()
+        def smoek_constraint(model, data):
             # Simple constraint: V("Dyspnoea", 1) + V("Xray", 1) <= 1
             return model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1
 
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=algebraic_constraint)
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=smoek_constraint)
 
         # Should be able to create inference model
         evidence = {"Pollution": 0, "Smoker": 1}
@@ -289,14 +287,14 @@ class TestToulbar2BasicAlgebraicConstraints:
 
     @skipif_toulbar2_not_available
     def test_comparison_pyomo_toulbar2(self):
-        """Test that integer_program and toulbar2 produce same results for algebraic constraints."""
+        """Test that integer_program and toulbar2 produce same results for smoek constraints."""
         pgm = cancer1_BN_conin().pgm
 
-        @algebraic_constraint_fn()
-        def algebraic_constraint(model, data):
+        @smoek_constraint_fn()
+        def smoek_constraint(model, data):
             return model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1
 
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=algebraic_constraint)
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=smoek_constraint)
         evidence = {"Pollution": 0, "Smoker": 1}
 
         # Solve with both methods
@@ -315,7 +313,7 @@ class TestToulbar2ArithmeticOperations:
         """Test addition operation with Toulbar2."""
         pgm = cancer1_BN_conin().pgm
 
-        @algebraic_constraint_fn()
+        @smoek_constraint_fn()
         def constraint(model, data):
             return model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1
 
@@ -334,7 +332,7 @@ class TestToulbar2ArithmeticOperations:
         """Test multiplication by constant with Toulbar2."""
         pgm = cancer1_BN_conin().pgm
 
-        @algebraic_constraint_fn()
+        @smoek_constraint_fn()
         def constraint(model, data):
             return 2 * model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 2
 
@@ -353,7 +351,7 @@ class TestToulbar2ArithmeticOperations:
         """Test complex arithmetic expression with Toulbar2."""
         pgm = cancer1_BN_conin().pgm
 
-        @algebraic_constraint_fn()
+        @smoek_constraint_fn()
         def constraint(model, data):
             return (
                 2 * model.V("Dyspnoea", 1)
@@ -381,7 +379,7 @@ class TestToulbar2ComparisonOperators:
         """Test <= operator with Toulbar2."""
         pgm = cancer1_BN_conin().pgm
 
-        @algebraic_constraint_fn()
+        @smoek_constraint_fn()
         def constraint(model, data):
             return model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1
 
@@ -400,7 +398,7 @@ class TestToulbar2ComparisonOperators:
         """Test >= operator with Toulbar2."""
         pgm = cancer1_BN_conin().pgm
 
-        @algebraic_constraint_fn()
+        @smoek_constraint_fn()
         def constraint(model, data):
             return model.V("Dyspnoea", 1) + model.V("Xray", 1) >= 0
 
@@ -419,7 +417,7 @@ class TestToulbar2ComparisonOperators:
         """Test == operator with Toulbar2."""
         pgm = cancer1_BN_conin().pgm
 
-        @algebraic_constraint_fn()
+        @smoek_constraint_fn()
         def constraint(model, data):
             return model.V("Dyspnoea", 1) == 0
 
@@ -435,21 +433,21 @@ class TestToulbar2ComparisonOperators:
 
 
 class TestToulbar2MultipleConstraints:
-    """Test multiple algebraic constraints with both solvers."""
+    """Test multiple smoek constraints with both solvers."""
 
     @skipif_toulbar2_not_available
     def test_multiple_constraints_toulbar2(self):
-        """Test multiple algebraic constraints work with Toulbar2."""
+        """Test multiple smoek constraints work with Toulbar2."""
         pgm = cancer1_BN_conin().pgm
 
-        @algebraic_constraint_fn()
-        def algebraic_constraint(model, data):
+        @smoek_constraint_fn()
+        def smoek_constraint(model, data):
             return [
                 model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1,
                 model.V("Dyspnoea", 0) + model.V("Xray", 0) <= 1,
             ]
 
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=algebraic_constraint)
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=smoek_constraint)
         evidence = {"Pollution": 0, "Smoker": 1}
 
         result_pyomo = map_query(cpgm, method="integer_program", evidence=evidence)
@@ -461,17 +459,17 @@ class TestToulbar2MultipleConstraints:
 
     @skipif_toulbar2_not_available
     def test_complex_multiple_constraints_toulbar2(self):
-        """Test complex multiple algebraic constraints with Toulbar2."""
+        """Test complex multiple smoek constraints with Toulbar2."""
         pgm = cancer1_BN_conin().pgm
 
-        @algebraic_constraint_fn()
-        def algebraic_constraint(model, data):
+        @smoek_constraint_fn()
+        def smoek_constraint(model, data):
             return [
                 2 * model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 2,
                 model.V("Dyspnoea", 0) + model.V("Xray", 0) >= 0,
             ]
 
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=algebraic_constraint)
+        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=smoek_constraint)
         evidence = {"Pollution": 0, "Smoker": 1}
 
         result_pyomo = map_query(cpgm, method="integer_program", evidence=evidence)

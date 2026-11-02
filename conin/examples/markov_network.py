@@ -5,7 +5,7 @@ from conin.constraints import (
     pyomo_constraint_fn,
     toulbar2_constraint_fn,
     oracle_constraint_fn,
-    algebraic_constraint_fn,
+    smoek_constraint_fn,
 )
 from conin.util import MPESolution
 from conin.graphical_models import DiscreteFactor, DiscreteMarkovNetwork
@@ -171,7 +171,7 @@ def ABC_constrained_toulbar2_conin():
     return Munch(pgm=cpgm, solutions=[MPESolution(states={"A": 0, "B": 2, "C": 1})])
 
 
-def ABC_constrained_algebraic_conin():
+def ABC_constrained_smoek_conin():
     """
     Three variables with pair-wise interactions.
 
@@ -182,7 +182,7 @@ def ABC_constrained_algebraic_conin():
     """
     pgm = ABC_conin()
 
-    @algebraic_constraint_fn()
+    @smoek_constraint_fn()
     def constraint_fn(model):
         return [
             model.V("A", s) + model.V("B", s) + model.V("C", s) <= 1 for s in [0, 1, 2]
@@ -192,7 +192,7 @@ def ABC_constrained_algebraic_conin():
     return Munch(pgm=cpgm, solutions=[MPESolution(states={"A": 0, "B": 2, "C": 1})])
 
 
-def ABC2_constrained_algebraic_conin():
+def ABC2_constrained_smoek_conin():
     """
     Constrained AOS example for three variables with pair-wise interactions.
     Based off ABC2_conin.
@@ -207,7 +207,7 @@ def ABC2_constrained_algebraic_conin():
 
     pgm = ABC2_conin()
 
-    @algebraic_constraint_fn()
+    @smoek_constraint_fn()
     def constraint_fn(model):
         return [
             model.V("A", s) + model.V("B", s) + model.V("C", s) <= 1 for s in [0, 1, 2]

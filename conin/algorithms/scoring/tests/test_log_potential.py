@@ -444,16 +444,16 @@ def test_constrained_pyomo_toulbar2_not_supported(decorator):
 
 
 @require_smoek
-def test_constrained_bn_algebraic():
-    cmodel = bn_examples.cancer1_BN_constrained_algebraic_conin().pgm
+def test_constrained_bn_smoek():
+    cmodel = bn_examples.cancer1_BN_constrained_smoek_conin().pgm
     a = {"Cancer": 1, "Dyspnoea": 0, "Pollution": 0, "Smoker": 1, "Xray": 1}
     assert log_potential(cmodel, a) == pytest.approx(log_probability(cmodel.model, a))
     assert log_potential(cmodel, {**a, "Xray": 0}) == -math.inf
 
 
 @require_smoek
-def test_constrained_hmm_algebraic():
-    cmodel = hmm_examples.create_chmm1_algebraic()
+def test_constrained_hmm_smoek():
+    cmodel = hmm_examples.create_chmm1_smoek()
     observed = ["o0"] * 13
     assert log_potential(
         cmodel, ["h0"] * 11 + ["h1"] * 2, observed=observed

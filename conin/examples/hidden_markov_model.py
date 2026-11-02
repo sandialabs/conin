@@ -8,7 +8,7 @@ from conin.constraints import (
     pyomo_constraint_fn,
     toulbar2_constraint_fn,
     oracle_constraint_fn,
-    algebraic_constraint_fn,
+    smoek_constraint_fn,
 )
 from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.graphical_models import HiddenMarkovModel
@@ -223,14 +223,14 @@ def create_chmm1_pyomo():
     return chmm
 
 
-def create_chmm1_algebraic():
+def create_chmm1_smoek():
     hmm = create_hmm1()
 
-    @algebraic_constraint_fn()
+    @smoek_constraint_fn()
     def num_zeros_greater_than_nine(M, D):
         return sum(M.V("H", t, "h0") for t in D.hmm.T) >= 10
 
-    @algebraic_constraint_fn()
+    @smoek_constraint_fn()
     def num_zeros_less_than_thirteen(M, D):
         return sum(M.V("H", t, "h0") for t in D.hmm.T) <= 12
 
@@ -262,7 +262,7 @@ def create_chmm1_pyomo_aos():
     return chmm
 
 
-def create_chmm1_algebraic_aos():
+def create_chmm1_smoek_aos():
     """
     Constrained HMM example for testing AOS capabilities.
     Designed so the known solutions should be well-ordered.
@@ -274,7 +274,7 @@ def create_chmm1_algebraic_aos():
     """
     hmm = create_hmm1_aos()
 
-    @algebraic_constraint_fn()
+    @smoek_constraint_fn()
     def num_zeros_less_than_thirteen(M, D):
         return sum(M.V("H", t, "h0") for t in D.hmm.T) <= 12
 
@@ -309,7 +309,7 @@ def create_chmm2_pyomo_aos():
     return chmm
 
 
-def create_chmm2_algebraic_aos():
+def create_chmm2_smoek_aos():
     """
     Constrained HMM example for testing AOS capabilities.
     Designed so the known solutions should be well-ordered.
@@ -324,7 +324,7 @@ def create_chmm2_algebraic_aos():
     """
     hmm = create_hmm2_aos()
 
-    @algebraic_constraint_fn()
+    @smoek_constraint_fn()
     def num_ones_less_than_thirteen(M, D):
         return sum(M.V("H", t, "h1") for t in D.hmm.T) <= 12
 

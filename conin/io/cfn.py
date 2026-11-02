@@ -340,9 +340,9 @@ def _create_knapsack_constraint(fname, ftype, scope, terms, capacity):
     """Create a Toulbar2Constraint that re-posts a knapsack constraint.
 
     TODO: Knapsack constraints are linear constraints over value indicators,
-    so they could also be converted to algebraic constraints, e.g.
+    so they could also be converted to smoek constraints, e.g.
 
-        @algebraic_constraint_fn()
+        @smoek_constraint_fn()
         def constraint(model):
             return sum(w * model.V(var, state) for var, state, w in terms) >= capacity
 

@@ -1,8 +1,9 @@
 import inspect
 
-from ..exceptions import InvalidInputError
-from .base import Constraint
-from .factor_oracle import FactorOracleConstraint
+from conin.constraints.base import Constraint
+from conin.exceptions import InvalidInputError
+
+from .factor import FactorOracleConstraint
 
 
 class OracleConstraint(Constraint):

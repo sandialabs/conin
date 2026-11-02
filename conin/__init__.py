@@ -8,7 +8,7 @@ from .constraints import (
     pyomo_constraint_fn,
     oracle_constraint_fn,
     toulbar2_constraint_fn,
-    algebraic_constraint_fn,
+    smoek_constraint_fn,
 )
 from .exceptions import InvalidInputError, InsufficientSolutionsError
 from . import __about__

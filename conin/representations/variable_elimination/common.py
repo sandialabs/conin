@@ -2,8 +2,8 @@
 
 - :func:`apply_variable_elimination_constraints`: the single constraint
   applier for the families of the variable elimination backend
-  (``"factor_oracle"`` and ``"algebraic"``, the latter via
-  :func:`~conin.constraints.algebraic.create_oracle_constraints_from_algebraic`).
+  (``"factor_oracle"`` and ``"smoek"``, the latter via
+  :func:`~conin.constraints.smoek.create_oracle_constraints_from_smoek`).
   It materialises each constraint into an indicator factor with
   :func:`~conin.representations.variable_elimination.materialise_factor_oracle`;
 - :class:`VariableEliminationRepresentation`: the base class of the
@@ -12,7 +12,7 @@
 
 import munch
 
-from conin.constraints.algebraic import create_oracle_constraints_from_algebraic
+from conin.constraints.smoek import create_oracle_constraints_from_smoek
 from conin.graphical_models import DiscreteBayesianNetwork, DiscreteMarkovNetwork
 from conin.representations.base import Representation, apply_constraints
 from conin.util.constraint_data import merge_constraint_data
@@ -27,8 +27,8 @@ def apply_variable_elimination_constraints(*, pgm, constraints, data=None):
     ----------
     pgm : DiscreteMarkovNetwork or DiscreteBayesianNetwork
         The (possibly unrolled) model the constraints refer to.
-    constraints : sequence of FactorOracleConstraint or AlgebraicConstraint
-        Constraints of one family.  Algebraic constraints are first combined
+    constraints : sequence of FactorOracleConstraint or SmoekConstraint
+        Constraints of one family.  Smoek constraints are first combined
         into one :class:`FactorOracleConstraint`.
     data : object, optional
         Passed to the constraint functions (and to callable node scopes).
@@ -45,15 +45,15 @@ def apply_variable_elimination_constraints(*, pgm, constraints, data=None):
     TypeError
         For constraints of several families or of another family.
     ImportError
-        For algebraic constraints without smoek.
+        For smoek constraints without smoek.
     """
     result = apply_constraints(
         constraints,
         {
             "factor_oracle": lambda cons: _materialise_all(pgm, cons, data),
-            "algebraic": lambda cons: _materialise_all(
+            "smoek": lambda cons: _materialise_all(
                 pgm,
-                create_oracle_constraints_from_algebraic(
+                create_oracle_constraints_from_smoek(
                     pgm=pgm, constraints=cons, data=data
                 ),
                 data,
@@ -108,7 +108,7 @@ class VariableEliminationRepresentation(Representation):
         The model the constraint applier sees: the MN, the BN, or the
         unrolled BN of a DBN/HMM.
     constraints : tuple
-        The user constraints (family ``"factor_oracle"`` or ``"algebraic"``).
+        The user constraints (family ``"factor_oracle"`` or ``"smoek"``).
     ve_model : DiscreteMarkovNetwork
         What variable elimination runs on and what ``write_uai_file`` writes;
         :attr:`pgm` itself for a Markov network without constraints.

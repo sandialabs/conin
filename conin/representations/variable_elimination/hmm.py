@@ -24,7 +24,7 @@ class VariableEliminationHMMRepresentation(
 @register_representation(
     "variable_elimination",
     HiddenMarkovModel,
-    families=(None, "factor_oracle", "algebraic"),
+    families=(None, "factor_oracle", "smoek"),
 )
 def _build(cmodel, *, start=0, stop=None):
     start, stop = hmm_time_range(start, stop)

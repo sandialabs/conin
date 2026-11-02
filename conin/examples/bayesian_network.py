@@ -6,7 +6,7 @@ from conin.constraints import (
     pyomo_constraint_fn,
     toulbar2_constraint_fn,
     oracle_constraint_fn,
-    algebraic_constraint_fn,
+    smoek_constraint_fn,
 )
 from conin.util import try_import, MPESolution
 from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
@@ -121,10 +121,10 @@ def cancer1_BN_constrained_pyomo_conin(debug=False):
     )
 
 
-def cancer1_BN_constrained_algebraic_conin(debug=False):
+def cancer1_BN_constrained_smoek_conin(debug=False):
     pgm = cancer1_BN_conin(debug=debug).pgm
 
-    @algebraic_constraint_fn()
+    @smoek_constraint_fn()
     def constraints(model):
         return [
             model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1,
@@ -476,11 +476,11 @@ def wide_BN_constrained1_conin_pyomo(debug=False):
     return Munch(pgm=cpgm, solutions=[MPESolution(states=solution_states)])
 
 
-def wide_BN_constrained1_conin_algebraic(debug=False):
+def wide_BN_constrained1_conin_smoek(debug=False):
     N = 10
     pgm = wide_BN_conin(debug=debug).pgm
 
-    @algebraic_constraint_fn()
+    @smoek_constraint_fn()
     def constraints(model):
         return model.V(("A", 8), 1) + model.V(("A", 9), 1) <= 1
 
@@ -556,11 +556,11 @@ def wide_BN_constrained2_conin_pyomo(debug=False):
     return Munch(pgm=cpgm, solutions=[MPESolution(states=solution_states)])
 
 
-def wide_BN_constrained2_conin_algebraic(debug=False):
+def wide_BN_constrained2_conin_smoek(debug=False):
     N = 10
     pgm = wide_BN_conin(debug=debug).pgm
 
-    @algebraic_constraint_fn()
+    @smoek_constraint_fn()
     def constraints(M):
         I = smk.sequence(start=1, stop=N - 1)
         i = smk.index()

@@ -19,9 +19,7 @@ class PyomoHMMRepresentation(UnrolledHMMMixin, PyomoFactorRepresentation):
     """
 
 
-@register_representation(
-    "pyomo", HiddenMarkovModel, families=(None, "pyomo", "algebraic")
-)
+@register_representation("pyomo", HiddenMarkovModel, families=(None, "pyomo", "smoek"))
 def _build(cmodel, *, start=0, stop=None):
     start, stop = hmm_time_range(start, stop)
     hmm = cmodel.model

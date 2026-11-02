@@ -132,25 +132,25 @@ def test_mixed_families_rejected_and_named():
     [
         (
             ConstrainedDiscreteMarkovNetwork,
-            ["algebraic", "factor_oracle", "pyomo", "toulbar2"],
+            ["factor_oracle", "pyomo", "smoek", "toulbar2"],
         ),
         (
             ConstrainedDiscreteBayesianNetwork,
-            ["algebraic", "factor_oracle", "pyomo", "toulbar2"],
+            ["factor_oracle", "pyomo", "smoek", "toulbar2"],
         ),
         (
             ConstrainedDynamicDiscreteBayesianNetwork,
-            ["algebraic", "factor_oracle", "pyomo", "toulbar2"],
+            ["factor_oracle", "pyomo", "smoek", "toulbar2"],
         ),
         (
             ConstrainedHiddenMarkovModel,
             [
-                "algebraic",
                 "factor_oracle",
                 "mvr",
                 "oracle",
                 "pyomo",
                 "recursive",
+                "smoek",
                 "toulbar2",
             ],
         ),
@@ -293,20 +293,20 @@ def test_supported_representations_hmm():
     pairs = supported_representations(HiddenMarkovModel)
     for pair in [
         ("variable_elimination", None),
-        ("variable_elimination", "algebraic"),
+        ("variable_elimination", "smoek"),
         ("variable_elimination", "factor_oracle"),
         ("oracle", None),
         ("oracle", "oracle"),
         ("recursive", None),
         ("recursive", "recursive"),
         ("pyomo", None),
-        ("pyomo", "algebraic"),
+        ("pyomo", "smoek"),
         ("pyomo", "pyomo"),
         ("pyomo_network_flow", None),
-        ("pyomo_network_flow", "algebraic"),
+        ("pyomo_network_flow", "smoek"),
         ("pyomo_network_flow", "pyomo"),
         ("toulbar2", None),
-        ("toulbar2", "algebraic"),
+        ("toulbar2", "smoek"),
         ("toulbar2", "toulbar2"),
         ("mvr", None),
         ("mvr", "mvr"),
@@ -315,9 +315,9 @@ def test_supported_representations_hmm():
         assert pair in pairs
     # "matvec" holds the HMM parameters only: no constraint family.
     assert [p for p in pairs if p[0] == "matvec"] == [("matvec", None)]
-    # "oracle" is not registered for "algebraic" (its compilation needs the
+    # "oracle" is not registered for "smoek" (its compilation needs the
     # horizon, which the oracle representation does not have).
-    assert ("oracle", "algebraic") not in pairs
+    assert ("oracle", "smoek") not in pairs
 
 
 def test_duplicate_registration_rejected(counting_kind):

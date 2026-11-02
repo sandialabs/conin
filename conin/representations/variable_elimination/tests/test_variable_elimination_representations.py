@@ -64,7 +64,7 @@ def _abc_all_different():
 )
 def test_factor_registered_families(model_type):
     pairs = supported_representations(model_type)
-    for family in (None, "factor_oracle", "algebraic"):
+    for family in (None, "factor_oracle", "smoek"):
         assert ("variable_elimination", family) in pairs
     for family in ("pyomo", "toulbar2", "oracle", "mvr"):
         assert ("variable_elimination", family) not in pairs

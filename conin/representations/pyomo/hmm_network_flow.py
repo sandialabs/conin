@@ -232,7 +232,7 @@ class PyomoNetworkFlowHMMRepresentation(Representation):
     Parameters
     ----------
     hidden_markov_model : HiddenMarkovModel
-    constraints : sequence of PyomoConstraint or AlgebraicConstraint
+    constraints : sequence of PyomoConstraint or SmoekConstraint
     data : object, optional
         Application data.  Each query gets a shallow copy with ``.hmm`` set to
         the index sets (``data.hmm.T``, ``data.hmm.A``,
@@ -307,7 +307,7 @@ class PyomoNetworkFlowHMMRepresentation(Representation):
 
 
 @register_representation(
-    "pyomo_network_flow", HiddenMarkovModel, families=(None, "pyomo", "algebraic")
+    "pyomo_network_flow", HiddenMarkovModel, families=(None, "pyomo", "smoek")
 )
 def build_pyomo_network_flow_hmm_representation(
     cmodel, *, x_binary=True, y_binary=False

@@ -24,7 +24,7 @@ def build_toulbar2_bn_representation(
 
 
 @register_representation(
-    "toulbar2", DiscreteBayesianNetwork, families=(None, "toulbar2", "algebraic")
+    "toulbar2", DiscreteBayesianNetwork, families=(None, "toulbar2", "smoek")
 )
 def _build(cmodel):
     return build_toulbar2_bn_representation(

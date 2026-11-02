@@ -132,11 +132,11 @@ no constraints only; used by Viterbi, A*, sampling and the torch MVR kernels),
 for A* and rejection sampling; no constraints or oracle constraints),
 ``"recursive"`` (for recursive A*; no constraints or recursive constraints),
 ``"variable_elimination"`` (the factors of the unrolled model; no constraints,
-factor-oracle or algebraic constraints), ``"pyomo"`` (the integer program of the
-unrolled model; no constraints, Pyomo or algebraic constraints),
+factor-oracle or smoek constraints), ``"pyomo"`` (the integer program of the
+unrolled model; no constraints, Pyomo or smoek constraints),
 ``"pyomo_network_flow"`` (the network-flow integer program; no constraints,
-Pyomo or algebraic constraints), ``"toulbar2"`` (the cost function network of
-the unrolled model; no constraints, Toulbar2 or algebraic constraints) and
+Pyomo or smoek constraints), ``"toulbar2"`` (the cost function network of
+the unrolled model; no constraints, Toulbar2 or smoek constraints) and
 ``"mvr"`` (no constraints or MVR constraints; the built MVRs, aligned to the
 HMM, are ``chmm.representation("mvr").mvrs``). The torch MVR algorithms in
 ``conin.algorithms.inference.mvr``, ``conin.algorithms.learning.mvr`` and ``conin.algorithms.sampling.mvr``

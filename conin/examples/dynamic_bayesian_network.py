@@ -5,7 +5,7 @@ from conin.constraints import (
     pyomo_constraint_fn,
     toulbar2_constraint_fn,
     oracle_constraint_fn,
-    algebraic_constraint_fn,
+    smoek_constraint_fn,
 )
 from conin.constrained_models import ConstrainedDynamicDiscreteBayesianNetwork
 from conin.graphical_models import (
@@ -108,10 +108,10 @@ def simple1_DDBN_constrained_pyomo_conin(debug=False):
     )
 
 
-def simple1_DDBN_constrained_algebraic_conin(debug=False):
+def simple1_DDBN_constrained_smoek_conin(debug=False):
     pgm = simple1_DDBN_conin(debug=debug).pgm
 
-    @algebraic_constraint_fn()
+    @smoek_constraint_fn()
     def constraints(model):
         return [
             model.V("A", 0, 0) == model.V("A", 1, 0),
@@ -377,10 +377,10 @@ def weather_constrained_pyomo_conin(debug=False):
     )
 
 
-def weather_constrained_algebraic_conin(debug=False):
+def weather_constrained_smoek_conin(debug=False):
     pgm = weather_conin(debug).pgm
 
-    @algebraic_constraint_fn()
+    @smoek_constraint_fn()
     def constraints(model, data):
         """2 rainy days"""
         return sum(model.V("W", t, "Rainy") for t in data.T) == 2

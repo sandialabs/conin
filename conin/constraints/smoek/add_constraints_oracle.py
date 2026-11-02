@@ -13,7 +13,7 @@ with try_import() as smoek_available:
 class StateSpace:
     """The ``nodes`` and ``states_of`` of a (possibly unrolled) model.
 
-    This is the part of a graphical model the algebraic-constraint compiler
+    This is the part of a graphical model the smoek-constraint compiler
     reads.
     """
 
@@ -28,24 +28,24 @@ class StateSpace:
         return self._states[node]
 
 
-def create_oracle_constraints_from_algebraic(*, pgm, constraints, data, name=None):
+def create_oracle_constraints_from_smoek(*, pgm, constraints, data, name=None):
     """
-    Convert a list of AlgebraicConstraints into a list with a single FactorOracleConstraint.
+    Convert a list of SmoekConstraints into a list with a single FactorOracleConstraint.
 
     This function:
-    1. Takes a list of AlgebraicConstraints
+    1. Takes a list of SmoekConstraints
     2. Generates a string representation of each constraint
     3. Composes these string representations into a function that returns True
        if all constraints are satisfied
 
     Parameters:
         pgm: The PGM model providing node/state information.
-        constraints: A list of AlgebraicConstraints.
+        constraints: A list of SmoekConstraints.
         data: Inference-time data passed to each constraint.
         name: Optional name for the resulting FactorOracleConstraint.
 
     Returns:
-        A list with a single FactorOracleConstraint that evaluates all the algebraic constraints
+        A list with a single FactorOracleConstraint that evaluates all the smoek constraints
     """
     if len(constraints) == 0:
         return []

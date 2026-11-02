@@ -5,8 +5,8 @@
   ``pytoulbar2.CFN`` per query);
 - :class:`Toulbar2VarWrapper`: ``model.V(...)`` on a CFN;
 - :func:`apply_toulbar2_constraints`: the single constraint applier for the
-  toulbar2-backend families (``"toulbar2"`` and ``"algebraic"``);
-- :func:`add_algebraic_constraints_to_toulbar2_model` and
+  toulbar2-backend families (``"toulbar2"`` and ``"smoek"``);
+- :func:`add_smoek_constraints_to_toulbar2_model` and
   :func:`add_toulbar2_constraints`: the smoek -> toulbar2 linear translator.
 """
 
@@ -22,7 +22,7 @@ from pyomo.repn import generate_standard_repn
 from pyomo.common.collections import ComponentMap
 from pyomo.common.timing import TicTocTimer
 
-from conin.constraints.algebraic.decorators import build_smoek_model
+from conin.constraints.smoek.decorators import build_smoek_model
 from conin.io.uai import _uai_text
 from conin.representations.base import Representation, apply_constraints
 from conin.util import try_import, State
@@ -43,7 +43,7 @@ __all__ = [
     "Toulbar2VarWrapper",
     "apply_toulbar2_constraints",
     "Toulbar2FactorRepresentation",
-    "add_algebraic_constraints_to_toulbar2_model",
+    "add_smoek_constraints_to_toulbar2_model",
     "add_toulbar2_constraints",
 ]
 
@@ -105,10 +105,10 @@ def apply_toulbar2_constraints(*, pgm, constraints, model, data):
     ----------
     pgm : GraphicalModel
         The model the constraints are written against (the MN, the BN, the
-        unrolled BN of a DBN, or the DBN of an HMM).  The algebraic translator
+        unrolled BN of a DBN, or the DBN of an HMM).  The smoek translator
         reads its ``states_of``.
-    constraints : sequence of Toulbar2Constraint or AlgebraicConstraint
-        Constraints of one family (``"toulbar2"`` or ``"algebraic"``).
+    constraints : sequence of Toulbar2Constraint or SmoekConstraint
+        Constraints of one family (``"toulbar2"`` or ``"smoek"``).
     model : pytoulbar2.CFN
         The model; constraint functions see ``model.V(...)``.
     data : munch.Munch
@@ -128,7 +128,7 @@ def apply_toulbar2_constraints(*, pgm, constraints, model, data):
         constraints,
         {
             "toulbar2": lambda cons: _apply_toulbar2_family(cons, model, data),
-            "algebraic": lambda cons: add_algebraic_constraints_to_toulbar2_model(
+            "smoek": lambda cons: add_smoek_constraints_to_toulbar2_model(
                 pgm=pgm, constraints=cons, model=model, data=data
             ),
         },
@@ -157,7 +157,7 @@ class Toulbar2FactorRepresentation(Representation):
         The model passed to the constraint applier (the MN, the BN, the
         unrolled BN of a DBN, or the DBN of an HMM).
     constraints : tuple
-        The user constraints (family ``"toulbar2"`` or ``"algebraic"``).
+        The user constraints (family ``"toulbar2"`` or ``"smoek"``).
     nodes : tuple
         The nodes of ``uai_model``.
     data : object or None
@@ -298,8 +298,8 @@ def _reset_toulbar2_input_format():
             setattr(option, name, False)
 
 
-def add_algebraic_constraints_to_toulbar2_model(*, pgm, constraints, model, data):
-    """Translate smoek (algebraic) constraints into linear toulbar2 constraints.
+def add_smoek_constraints_to_toulbar2_model(*, pgm, constraints, model, data):
+    """Translate smoek constraints into linear toulbar2 constraints.
 
     The constraints are generated on a temporary Pyomo model with one variable
     per ``(node, state)`` of ``pgm`` and then added to ``model`` with

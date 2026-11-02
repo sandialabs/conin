@@ -23,7 +23,7 @@ def test_imports():
 
 def test_coninvarnode():
     """Test ConinVarNode basic functionality."""
-    from conin.constraints.algebraic.bridge import ConinVarNode
+    from conin.constraints.smoek.bridge import ConinVarNode
 
     # Test 2-arg form
     var1 = ConinVarNode("A", 0)
@@ -43,7 +43,7 @@ def test_coninvarnode():
 
 def test_expression_building():
     """Test building simple algebraic expressions."""
-    from conin.constraints.algebraic.bridge import ConinVarNode
+    from conin.constraints.smoek.bridge import ConinVarNode
 
     # Build expression: V("A", 0) + V("B", 1) <= 10
     a = ConinVarNode("A", 0)
@@ -60,12 +60,12 @@ def test_expression_building():
 
 def test_decorator_creation():
     """Test that decorators can be created."""
-    from conin import algebraic_constraint_fn
+    from conin import smoek_constraint_fn
 
-    @algebraic_constraint_fn()
+    @smoek_constraint_fn()
     def test_constraint(model, data):
         return model.V("A", 0) + model.V("B", 1) <= 1
 
-    from conin.constraints.algebraic.decorators import AlgebraicConstraint
+    from conin.constraints.smoek.decorators import SmoekConstraint
 
-    assert isinstance(test_constraint, AlgebraicConstraint)
+    assert isinstance(test_constraint, SmoekConstraint)

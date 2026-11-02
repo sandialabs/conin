@@ -14,7 +14,7 @@ class Toulbar2MNRepresentation(Toulbar2FactorRepresentation):
 
 
 @register_representation(
-    "toulbar2", DiscreteMarkovNetwork, families=(None, "toulbar2", "algebraic")
+    "toulbar2", DiscreteMarkovNetwork, families=(None, "toulbar2", "smoek")
 )
 def _build(cmodel):
     mn = cmodel.model
