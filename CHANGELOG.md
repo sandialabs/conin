@@ -133,6 +133,18 @@ Models
   ExpressionVariable (conin.graphical_models) passed to the constructor as t.
   read_from_file is a classmethod returning a new instance; make_non_zero
   returns a new instance.
+- The data of the MN, BN and DBN classes and of DiscreteFactor/DiscreteCPD
+  is read-only: nodes, edges, states_of(node), the state lists in states and
+  dynamic_states, factor and CPD values (also the nested CPD tables), factor
+  nodes and CPD parents are FrozenList/FrozenDict (conin.util.frozen), list
+  and dict subclasses whose mutating methods raise TypeError. They compare
+  equal to and print like lists and dicts; copy them with list()/dict() to
+  change them. The constructors copy their arguments, so changing the lists
+  and dicts passed in no longer changes the model. states, dynamic_states,
+  factors and cpds still return new dicts and lists. Before, e.g.
+  mn.nodes.append(x) or mn.factors[0].values[key] = v silently changed the
+  model. dbn.t cannot be reassigned. The inferred edges of a Markov network
+  (and the edges of a Bayesian network) are computed at construction.
 - HiddenMarkovModel checks its probabilities at construction (nonnegative,
   rows summing to 1) and raises InvalidInputError; before, they were checked
   only when the numeric representation was first built.
@@ -256,6 +268,24 @@ Inference
   returned a result with termination_condition "pytoulbar2 not available"); a
   partial variables query raises RuntimeError (it was ignored);
   write_uai_file writes exactly that file.
+- A query without a solution (the evidence or the constraints exclude every
+  assignment) has the same result for every method: solution=None,
+  solutions=[] and termination_condition "error: no feasible solutions"
+  (conin.inference.results.NO_FEASIBLE_SOLUTIONS, no_solution_results), as
+  A* already returned. Before, viterbi and variable_elimination returned an
+  arbitrary assignment with log_potential -inf (or a finite one, for
+  constraints) and termination_condition "ok"; toulbar2 raised TypeError
+  ("cannot unpack non-iterable NoneType object"), or RuntimeError if it found
+  the contradiction while a constraint was added; integer_program raised
+  RuntimeError (with solver="highs"/"appsi_highs" a Pyomo error while
+  loading the missing solution); the network-flow integer program
+  (also lp_inference/ip_inference) and mvr_viterbi raised
+  InvalidInputError. Only a proof of infeasibility gives this result: other
+  solver failures (e.g. a time limit) still raise RuntimeError, and
+  integer_program with solver="or_topas" still raises for an infeasible
+  model. viterbi_torch_mvr_chmm and the network-flow representation's
+  create_model still raise, now InfeasibleQueryError
+  (conin.exceptions), a subclass of InvalidInputError.
 - DBN queries with stop=None unroll over 0..1 for every method.
 - variable_elimination: pgmpy inputs are converted to CONIN like on every
   other path; on a constrained Markov network it keeps the user evidence and
@@ -360,6 +390,13 @@ Bug fixes
   variable_elimination) no longer raises AssertionError; create_bn_from_dbn
   with start > 0 raises InvalidInputError instead of AttributeError.
 - The pgmpy_issue_1177_pgmpy example works with pgmpy 1.1 (DiscreteMLE()).
+- variable_elimination works with a factor-oracle or algebraic constraint
+  over one node (e.g. model.V("A", 0) == 1, or a constraint on one hidden
+  state of an HMM). Its materialised factor or CPD was keyed by 1-tuples
+  instead of states, so the conversion to pgmpy raised KeyError.
+- DiscreteMarkovNetwork.with_factor keeps the new factor's edges: once the
+  inferred edges had been read, they were passed on as if they had been given,
+  so the new model's edges missed those of the added factor.
 - The network-flow integer program with solver="or_topas" returns solutions
   with states (they had variable_value instead, so dict evidence failed).
 - recursive_a_star with num_solutions > 1 returns the num_solutions most

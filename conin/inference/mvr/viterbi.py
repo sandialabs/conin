@@ -6,7 +6,7 @@ import numpy as np
 import torch
 
 from conin.constrained_models import ConstrainedHiddenMarkovModel
-from conin.exceptions import InvalidInputError
+from conin.exceptions import InfeasibleQueryError
 
 from conin.representations.mvr.kernels import (
     ACCUM_DTYPE,
@@ -42,8 +42,10 @@ def viterbi_torch_mvr_chmm(
     defaulting to ``[0, T - 1]``: initialized at ``a_i``, evaluated at ``b_i``,
     and absent otherwise.
 
-    Raises ``InvalidInputError`` if no feasible path exists, naming the time at
-    which the lattice died.
+    Raises ``InfeasibleQueryError`` (an ``InvalidInputError``) if no feasible
+    path exists, naming the time at which the lattice died;
+    ``map_query(method="mvr_viterbi")`` returns its no-solution result
+    instead.
 
     Parameters
     ----------
@@ -162,7 +164,7 @@ def _viterbi_torch_mvr(
     scale = V_prev.max()
 
     if not torch.isfinite(scale):
-        raise InvalidInputError("No feasible augmented path at time 0.")
+        raise InfeasibleQueryError("No feasible augmented path at time 0.")
 
     log_score = log_score + scale
     V_prev = V_prev - scale
@@ -189,7 +191,7 @@ def _viterbi_torch_mvr(
         scale = V_curr.max()
 
         if not torch.isfinite(scale):
-            raise InvalidInputError(f"No feasible augmented path at time {t}.")
+            raise InfeasibleQueryError(f"No feasible augmented path at time {t}.")
 
         log_score = log_score + scale
         V_prev = V_curr - scale

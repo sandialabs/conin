@@ -211,6 +211,298 @@ def test_no_solution_has_the_same_keys():
 
 
 # ---------------------------------------------------------------------
+# A query without a solution has the same result for every method
+# ---------------------------------------------------------------------
+#
+# The evidence or the constraints exclude every assignment.  Before, Viterbi
+# and variable elimination returned an arbitrary assignment with
+# termination_condition "ok", toulbar2 raised TypeError (or RuntimeError),
+# the integer program RuntimeError, network flow and the MVR Viterbi
+# InvalidInputError; only A* returned the no-solution result.
+
+
+def _impossible_hmm():
+    # "x" only emits "a" and "y" only "b", and the chain never leaves "x"
+    from conin.graphical_models import HiddenMarkovModel
+
+    return HiddenMarkovModel(
+        start_probs={"x": 1.0, "y": 0.0},
+        transition_probs={
+            ("x", "x"): 1.0,
+            ("x", "y"): 0.0,
+            ("y", "x"): 0.0,
+            ("y", "y"): 1.0,
+        },
+        emission_probs={
+            ("x", "a"): 1.0,
+            ("x", "b"): 0.0,
+            ("y", "a"): 0.0,
+            ("y", "b"): 1.0,
+        },
+    )
+
+
+def _available(solver):
+    import pyomo.environ as pe
+
+    try:
+        return bool(pe.SolverFactory(solver).available(exception_flag=False))
+    except Exception:
+        return False
+
+
+with try_import() as torch_available:
+    import torch  # noqa: F401
+
+needs_torch = pytest.mark.skipif(not torch_available, reason="torch not installed")
+
+# Each Pyomo solver interface reports infeasibility differently ("highs" and
+# "appsi_highs" raised while loading the missing solution).
+IP_SOLVERS = [
+    pytest.param(
+        solver,
+        marks=pytest.mark.skipif(not _available(solver), reason=f"no {solver}"),
+        id=solver,
+    )
+    for solver in ("glpk", "highs", "appsi_highs")
+]
+
+# (method, options) of every method for an HMM
+HMM_NO_SOLUTION_METHODS = [
+    pytest.param("viterbi", {}, id="viterbi"),
+    pytest.param("a_star", {}, id="a_star"),
+    pytest.param("toulbar2", {}, marks=needs_toulbar2, id="toulbar2"),
+    pytest.param(
+        "variable_elimination", {}, marks=needs_pgmpy, id="variable_elimination"
+    ),
+    pytest.param("mvr_viterbi", {}, marks=needs_torch, id="mvr_viterbi"),
+]
+
+
+def _check_no_solution(results):
+    assert set(results) == RESULT_KEYS
+    assert results.solution is None and results.solutions == []
+    assert results.termination_condition == "error: no feasible solutions"
+    assert isinstance(results.solvetime, float) and results.solvetime >= 0
+
+
+@pytest.mark.parametrize(
+    "evidence", [["a", "b"], {0: "a", 1: "b"}], ids=["list", "dict"]
+)
+@pytest.mark.parametrize("method,options", HMM_NO_SOLUTION_METHODS)
+def test_hmm_with_impossible_observations_has_no_solution(method, options, evidence):
+    _check_no_solution(
+        map_query(_impossible_hmm(), method=method, evidence=evidence, **options)
+    )
+
+
+@pytest.mark.parametrize("ip_formulation", ["markov_network", "network_flow"])
+@pytest.mark.parametrize("solver", IP_SOLVERS)
+def test_hmm_integer_program_with_impossible_observations_has_no_solution(
+    solver, ip_formulation
+):
+    results = map_query(
+        _impossible_hmm(),
+        method="integer_program",
+        ip_formulation=ip_formulation,
+        evidence=["a", "b"],
+        solver=solver,
+    )
+    _check_no_solution(results)
+
+
+def _hmm_never_x_at_time_1():
+    from conin.constrained_models import ConstrainedHiddenMarkovModel
+    from conin.constraints import algebraic_constraint_fn
+
+    @algebraic_constraint_fn()
+    def never_x_at_time_1(model, data):
+        return [model.V("H", 1, "x") == 0]
+
+    return ConstrainedHiddenMarkovModel(_impossible_hmm(), never_x_at_time_1)
+
+
+@pytest.mark.parametrize("ip_formulation", ["markov_network", "network_flow"])
+@pytest.mark.parametrize("solver", IP_SOLVERS)
+def test_hmm_integer_program_with_infeasible_constraints_has_no_solution(
+    solver, ip_formulation
+):
+    # The observations "a", "a" need "x" at time 1, which the constraint forbids
+    cmodel = _hmm_never_x_at_time_1()
+    results = map_query(
+        cmodel,
+        method="integer_program",
+        ip_formulation=ip_formulation,
+        evidence=["a", "a"],
+        solver=solver,
+    )
+    _check_no_solution(results)
+    # Without the constraint the same query has a solution
+    results = map_query(
+        cmodel.model,
+        method="integer_program",
+        ip_formulation=ip_formulation,
+        evidence=["a", "a"],
+        solver=solver,
+    )
+    _check_shape(results)
+    assert results.solution.states == ["x", "x"]
+
+
+@needs_toulbar2
+def test_hmm_toulbar2_with_infeasible_constraints_has_no_solution():
+    _check_no_solution(
+        map_query(_hmm_never_x_at_time_1(), method="toulbar2", evidence=["a", "a"])
+    )
+
+
+@pytest.mark.parametrize(
+    "method,options",
+    HMM_NO_SOLUTION_METHODS
+    + [
+        pytest.param(
+            "integer_program",
+            dict(solver=default_mip_solver, ip_formulation=formulation),
+            marks=needs_mip,
+            id=formulation,
+        )
+        for formulation in ("markov_network", "network_flow")
+    ],
+)
+def test_hmm_with_possible_observations_is_unchanged(method, options):
+    results = map_query(
+        _impossible_hmm(), method=method, evidence=["a", "a"], **options
+    )
+    assert results.solution.states == ["x", "x"]
+    assert results.termination_condition == "ok"
+
+
+def _abc_constrained(constraint):
+    from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
+
+    return ConstrainedDiscreteMarkovNetwork(mex.ABC_conin().pgm, constraint)
+
+
+def _static_no_solution_cases():
+    from conin.constraints import algebraic_constraint_fn, toulbar2_constraint_fn
+
+    @algebraic_constraint_fn()
+    def a_and_b_equal_and_different(model):
+        return [model.V("A", s) == model.V("B", s) for s in [0, 1, 2]] + [
+            model.V("A", s) + model.V("B", s) <= 1 for s in [0, 1, 2]
+        ]
+
+    @algebraic_constraint_fn()
+    def a_and_b_are_0(model):
+        return [model.V("A", 0) + model.V("B", 0) == 2]
+
+    @toulbar2_constraint_fn()
+    def a_is_not_1(model):
+        model.AddFunction([model.V["A"]], [0, model.Top, 0])
+
+    infeasible = _abc_constrained(a_and_b_equal_and_different)
+    for method, options, marks in [
+        ("integer_program", dict(solver=default_mip_solver), needs_mip),
+        ("toulbar2", {}, needs_toulbar2),
+        ("variable_elimination", {}, needs_pgmpy),
+    ]:
+        yield pytest.param(
+            infeasible, method, options, None, marks=marks, id=f"infeasible-{method}"
+        )
+        yield pytest.param(
+            _abc_constrained(a_and_b_are_0),
+            method,
+            options,
+            {"A": 1},
+            marks=marks,
+            id=f"constraint_vs_evidence-{method}",
+        )
+    # toulbar2 finds these contradictions while it adds the constraint
+    yield pytest.param(
+        _abc_constrained(a_is_not_1),
+        "toulbar2",
+        {},
+        {"A": 1},
+        marks=needs_toulbar2,
+        id="toulbar2_constraint_vs_evidence-toulbar2",
+    )
+
+
+@pytest.mark.parametrize(
+    "model,method,options,evidence", list(_static_no_solution_cases())
+)
+def test_static_model_without_a_solution_has_no_solution(
+    model, method, options, evidence
+):
+    _check_no_solution(map_query(model, method=method, evidence=evidence, **options))
+
+
+@needs_pgmpy
+def test_partial_variable_elimination_without_a_solution_has_no_solution():
+    from conin.constraints import algebraic_constraint_fn
+
+    @algebraic_constraint_fn()
+    def a_and_b_are_0(model):
+        return [model.V("A", 0) + model.V("B", 0) == 2]
+
+    model = _abc_constrained(a_and_b_are_0)
+    _check_no_solution(
+        map_query(
+            model, method="variable_elimination", variables=["C"], evidence={"A": 1}
+        )
+    )
+    results = map_query(model, method="variable_elimination", variables=["C"])
+    assert set(results.solution.states) == {"C"}
+
+
+def test_hmm_functions_without_a_solution_have_no_solution():
+    hmm = _impossible_hmm()
+    _check_no_solution(viterbi(observed=["a", "b"], hmm=hmm))
+    _check_no_solution(a_star(observed=["a", "b"], hmm=hmm))
+    _check_no_solution(recursive_a_star(hmm=hmm, observed=["a", "b"]))
+
+
+@needs_mip
+def test_network_flow_functions_without_a_solution_have_no_solution():
+    _check_no_solution(
+        lp_inference(hmm=_impossible_hmm(), observed=["a", "b"], solver="glpk")
+    )
+    _check_no_solution(
+        ip_inference(hmm=_hmm_never_x_at_time_1(), observed=["a", "a"], solver="glpk")
+    )
+
+
+def test_no_solution_errors_are_invalid_input_errors():
+    # Code that called the representations or the MVR Viterbi directly and
+    # caught InvalidInputError still does.
+    from conin.exceptions import InfeasibleQueryError, InvalidInputError
+
+    assert issubclass(InfeasibleQueryError, InvalidInputError)
+
+
+def test_is_infeasible_raises_for_other_solver_failures():
+    # Only a proof of infeasibility means "no solution"; a solver that stops
+    # for another reason is an error, as before.
+    from pyomo.opt import SolverResults, SolverStatus, TerminationCondition
+
+    from conin.inference.pyomo.solve import is_infeasible
+
+    def results(status, condition):
+        res = SolverResults()
+        res.solver.status = status
+        res.solver.termination_condition = condition
+        return res
+
+    assert is_infeasible(results(SolverStatus.warning, TerminationCondition.infeasible))
+    assert is_infeasible(
+        results(SolverStatus.warning, TerminationCondition.infeasibleOrUnbounded)
+    )
+    assert not is_infeasible(results(SolverStatus.ok, TerminationCondition.optimal))
+    with pytest.raises(RuntimeError, match="maxTimeLimit"):
+        is_infeasible(results(SolverStatus.aborted, TerminationCondition.maxTimeLimit))
+
+
+# ---------------------------------------------------------------------
 # The HMM functions called directly have the same shape
 # ---------------------------------------------------------------------
 

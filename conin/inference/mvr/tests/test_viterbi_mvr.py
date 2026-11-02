@@ -603,14 +603,16 @@ def test_map_query_mvr_viterbi_errors(hmm, observed):
         map_query(model, method="mvr_viterbi", evidence=observed, start=1)
     with pytest.raises(InvalidInputError, match="stop time or at least one"):
         map_query(model, method="mvr_viterbi", evidence={})
-    # An infeasible lattice raises, as viterbi_torch_mvr_chmm does.
+    # An infeasible lattice has no solution, as for the other methods (it
+    # raised InvalidInputError, as viterbi_torch_mvr_chmm still does).
     forbid_all = [
         make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state=h)
         for h in hmm.hidden_states
     ]
-    with pytest.raises(InvalidInputError, match="No feasible augmented path"):
-        map_query(
-            ConstrainedHiddenMarkovModel(hmm, forbid_all),
-            method="mvr_viterbi",
-            evidence=observed,
-        )
+    results = map_query(
+        ConstrainedHiddenMarkovModel(hmm, forbid_all),
+        method="mvr_viterbi",
+        evidence=observed,
+    )
+    assert results.solution is None and results.solutions == []
+    assert results.termination_condition == "error: no feasible solutions"

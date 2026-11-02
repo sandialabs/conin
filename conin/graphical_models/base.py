@@ -10,3 +10,8 @@ class GraphicalModel(ABC):
     """
 
     __slots__ = ()
+
+
+def node_sort_key(node):
+    """Sort key of a node: a name ``x`` sorts as ``(x,)``, so names and ``(name, t)`` tuples mix."""
+    return node if isinstance(node, tuple) else (node,)

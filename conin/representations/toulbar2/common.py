@@ -35,6 +35,10 @@ with try_import() as smoek_available:
 with try_import() as pytoulbar2_available:
     import pytoulbar2
 
+# toulbar2's exception for a problem without a solution (nothing is caught
+# without pytoulbar2)
+Contradiction = pytoulbar2.pytb2.Contradiction if pytoulbar2_available else ()
+
 __all__ = [
     "Toulbar2VarWrapper",
     "apply_toulbar2_constraints",
@@ -579,6 +583,10 @@ def _add_toulbar2_linear_constraint(
 
     try:
         model.AddGeneralizedLinearConstraint(variables_, operator, int_rhs)
+    except Contradiction:
+        # The constraint cannot be satisfied (with the evidence): the CFN has
+        # no solution, which the solver reports as such.
+        raise
     except AttributeError:
         raise NotImplementedError(
             f"Toulbar2 model does not have AddGeneralizedLinearConstraint method. "

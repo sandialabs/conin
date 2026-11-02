@@ -50,4 +50,6 @@ Exceptions
 
 .. autoexception:: conin.exceptions.InvalidInputError
 
+.. autoexception:: conin.exceptions.InfeasibleQueryError
+
 .. autoexception:: conin.exceptions.InsufficientSolutionsError

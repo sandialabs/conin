@@ -94,7 +94,16 @@ def test_bn_cpd_callable_nodes_with_data():
     cpd = materialise_factor_oracle(con, _bn(), "B")
     assert cpd.node == "zero"
     assert cpd.parents == ["B"]
-    assert cpd.values == {(0,): {1: 1, 0: 0}, (1,): {1: 0, 0: 1}}
+    # One parent: keyed by its states, as every CPD with one parent (they were
+    # keyed by 1-tuples, which the conversion to pgmpy failed on)
+    assert cpd.values == {0: {1: 1, 0: 0}, 1: {1: 0, 0: 1}}
+
+
+def test_mn_factor_over_one_node():
+    con = FactorOracleConstraint(func=lambda s: s["A"] == 1, nodes=["A"], name="a1")
+    factor = materialise_factor_oracle(con, _mn())
+    assert factor.nodes == ["A"]
+    assert factor.values == {0: 0, 1: 10**6}
 
 
 def test_plain_oracle_raises():

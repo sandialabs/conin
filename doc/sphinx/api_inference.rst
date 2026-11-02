@@ -34,8 +34,7 @@ Available Methods
 
 ``a_star``
    Uses A* search for supported hidden Markov model inputs (oracle
-   constraints, or recursive A* for recursive constraints). When no feasible
-   sequence is found, ``solution`` is ``None``.
+   constraints, or recursive A* for recursive constraints).
 
 ``viterbi``
    Uses the Viterbi algorithm for unconstrained hidden Markov models.

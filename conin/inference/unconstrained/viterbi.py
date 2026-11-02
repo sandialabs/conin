@@ -2,7 +2,12 @@ import numpy as np
 from pyomo.common.timing import TicTocTimer
 
 from conin.constrained_models import ConstrainedHiddenMarkovModel
-from conin.inference.results import map_results, map_solution, score_hmm_solutions
+from conin.inference.results import (
+    map_results,
+    map_solution,
+    no_solution_results,
+    score_hmm_solutions,
+)
 
 
 def viterbi_(*, observed, hmm):
@@ -19,7 +24,9 @@ def viterbi_(*, observed, hmm):
     Returns:
         munch.Munch: The result (see :mod:`conin.inference.results`); the
         ``states`` of the solution are internal indices and its
-        ``log_potential`` is the Viterbi score.
+        ``log_potential`` is the Viterbi score.  If every hidden sequence has
+        probability zero with the observations, there is no solution
+        (:func:`~conin.inference.results.no_solution_results`).
     """
     timer = TicTocTimer()
     timer.tic(None)
@@ -61,6 +68,10 @@ def viterbi_(*, observed, hmm):
             max_prob = viterbi_recursion[h, time_steps - 1]
             last_state = h
 
+    if max_prob == -np.inf:
+        # Every path has probability zero; the backpointers are meaningless.
+        return no_solution_results(timer.toc(None))
+
     # Path backtracking
     hidden = [0] * time_steps
     hidden[time_steps - 1] = last_state
@@ -87,6 +98,9 @@ def viterbi(*, observed, hmm):
         and ``solvetime``; the solution has ``states`` (the hidden states),
         ``log_potential`` (``log P(hidden, observed)``) and
         ``solver_objective`` (``None``).  See :mod:`conin.inference.results`.
+        If the observations have probability zero, ``solution`` is ``None``,
+        ``solutions`` is empty and ``termination_condition`` is
+        ``"error: no feasible solutions"``.
     """
     cmodel = ConstrainedHiddenMarkovModel.ensure(hmm)
     # Raises InvalidInputError if there are constraints.

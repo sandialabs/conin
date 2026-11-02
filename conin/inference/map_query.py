@@ -26,7 +26,7 @@ from conin.constrained_models import (
     ConstrainedHiddenMarkovModel,
 )
 from conin.constrained_models.normalise import as_constrained_model
-from conin.exceptions import InvalidInputError
+from conin.exceptions import InfeasibleQueryError, InvalidInputError
 from conin.graphical_models.hmm_observations import (
     as_sequence,
     require_sequence_type,
@@ -49,7 +49,13 @@ from conin.representations.toulbar2 import (
 from conin.representations.unrolled import dbn_time_range
 
 from .hmm_results import key_solutions_by_time, solve_unrolled_hmm
-from .results import map_results, map_solution, score_hmm_solutions, score_solutions
+from .results import (
+    map_results,
+    map_solution,
+    no_solution_results,
+    score_hmm_solutions,
+    score_solutions,
+)
 from conin.representations.methods import MAP_METHODS, check_method, representation_kind
 from .oracle.a_star_hmm import _a_star
 from .pyomo.hmm_network_flow import _solve_network_flow
@@ -203,9 +209,13 @@ def map_query(
     -------
     munch.Munch
         The same keys for every method (see :mod:`conin.inference.results`):
-        ``solution`` (the best solution; ``None`` if A* finds none),
-        ``solutions`` (best first), ``termination_condition`` (``"ok"`` or
-        why the search stopped) and ``solvetime``.  Each solution has
+        ``solution`` (the best solution), ``solutions`` (best first),
+        ``termination_condition`` (``"ok"`` or why the search stopped) and
+        ``solvetime``.  If the evidence or the constraints exclude every
+        assignment, ``solution`` is ``None``, ``solutions`` is empty and
+        ``termination_condition`` is ``"error: no feasible solutions"``, for
+        every method (``integer_program`` with ``solver="or_topas"``
+        raises instead).  Each solution has
         ``states`` (``{node: state}``; for an HMM, the hidden states as a
         list, or a dict keyed by time step if the evidence was a dict),
         ``log_potential`` (:func:`conin.scoring.log_potential` of the
@@ -377,13 +387,16 @@ def _solve_map_query(repn: MVRHMMRepresentation, q):
 
     timer = TicTocTimer()
     timer.tic(None)
-    hidden, augmented = _viterbi_torch_mvr(
-        repn,
-        evidence,
-        time_horizon=time_horizon,
-        return_augmented=True,
-        **q.options,
-    )
+    try:
+        hidden, augmented = _viterbi_torch_mvr(
+            repn,
+            evidence,
+            time_horizon=time_horizon,
+            return_augmented=True,
+            **q.options,
+        )
+    except InfeasibleQueryError:
+        return no_solution_results(timer.toc(None))
     solvetime = timer.toc(None)
     states = dict(enumerate(hidden)) if isinstance(evidence, dict) else hidden
     results = map_results(

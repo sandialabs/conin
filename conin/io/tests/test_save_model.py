@@ -107,15 +107,11 @@ def test_save_model_error3(asia_uai):
         pgm = save_model(asia_uai, os.path.join(cwd, "asia.uai"), model_type="unknown")
 
 
-def test_save_model_documented_io_namespace(asia_uai):
-    fname = os.path.join(cwd, "asia_io_namespace_test.uai")
+def test_save_model_documented_io_namespace(asia_uai, tmp_path):
+    fname = str(tmp_path / "asia_io_namespace_test.uai")
     conin.io.save_model(asia_uai, fname, model_type="conin")
-    try:
-        loaded = conin.io.load_model(fname, model_type="conin")
-        assert loaded.nodes
-    finally:
-        if os.path.exists(fname):
-            os.remove(fname)
+    loaded = conin.io.load_model(fname, model_type="conin")
+    assert loaded.nodes
 
 
 @pytest.mark.skipif(
@@ -131,17 +127,15 @@ def test_save_model_error4(asia_uai):
 #
 
 
-def test_save_model_asia_uai1_uai(asia_uai):
-    fname = os.path.join(cwd, "asia_test.uai")
+def test_save_model_asia_uai1_uai(asia_uai, tmp_path):
+    fname = str(tmp_path / "asia_test.uai")
     pgm = save_model(asia_uai, fname)
-    os.remove(fname)
 
 
 @pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
-def test_save_model_asia_uai1_bif(asia_bif):
-    fname = os.path.join(cwd, "asia_test.uai")
+def test_save_model_asia_uai1_bif(asia_bif, tmp_path):
+    fname = str(tmp_path / "asia_test.uai")
     pgm = save_model(asia_bif, fname)
-    os.remove(fname)
 
 
 #
@@ -149,10 +143,9 @@ def test_save_model_asia_uai1_bif(asia_bif):
 #
 
 
-def test_save_model_barley_uai1_uai(barley_uai):
-    fname = os.path.join(cwd, "barley_test.uai")
+def test_save_model_barley_uai1_uai(barley_uai, tmp_path):
+    fname = str(tmp_path / "barley_test.uai")
     pgm = save_model(barley_uai, fname)
-    os.remove(fname)
 
 
 #
@@ -160,13 +153,12 @@ def test_save_model_barley_uai1_uai(barley_uai):
 #
 
 
-def test_save_model_cancer_bn_uai(cancer_bn_uai):
-    fname = os.path.join(cwd, "cancer_bn_test.uai")
+def test_save_model_cancer_bn_uai(cancer_bn_uai, tmp_path):
+    fname = str(tmp_path / "cancer_bn_test.uai")
     pgm = save_model(cancer_bn_uai, fname)
 
     orig = os.path.join(cwd, "cancer_bn.uai")
     assert filecmp.cmp(orig, fname) == True
-    os.remove(fname)
 
 
 #
@@ -174,13 +166,12 @@ def test_save_model_cancer_bn_uai(cancer_bn_uai):
 #
 
 
-def test_save_model_cancer_mn_uai(cancer_mn_uai):
-    fname = os.path.join(cwd, "cancer_mn_test.uai")
+def test_save_model_cancer_mn_uai(cancer_mn_uai, tmp_path):
+    fname = str(tmp_path / "cancer_mn_test.uai")
     pgm = save_model(cancer_mn_uai, fname)
 
     orig = os.path.join(cwd, "cancer_mn.uai")
     assert filecmp.cmp(orig, fname) == True
-    os.remove(fname)
 
 
 #
@@ -188,10 +179,9 @@ def test_save_model_cancer_mn_uai(cancer_mn_uai):
 #
 
 
-def test_save_model_deer1_conin(deer_uai):
-    fname = os.path.join(cwd, "deer_test.uai")
+def test_save_model_deer1_conin(deer_uai, tmp_path):
+    fname = str(tmp_path / "deer_test.uai")
     pgm = save_model(deer_uai, fname)
-    os.remove(fname)
 
 
 #
@@ -199,13 +189,12 @@ def test_save_model_deer1_conin(deer_uai):
 #
 
 
-def test_save_model_toulbar2_conin(toulbar2_bn_uai):
-    fname = os.path.join(cwd, "toulbar2_bn_test.uai")
+def test_save_model_toulbar2_conin(toulbar2_bn_uai, tmp_path):
+    fname = str(tmp_path / "toulbar2_bn_test.uai")
     pgm = save_model(toulbar2_bn_uai, fname)
 
     orig = os.path.join(cwd, "toulbar2_bn.uai")
     assert filecmp.cmp(orig, fname) == True
-    os.remove(fname)
 
 
 #
@@ -213,16 +202,14 @@ def test_save_model_toulbar2_conin(toulbar2_bn_uai):
 #
 
 
-def test_save_model_tiny_bn(tiny_bn_orig, tiny_bn_permuted):
-    fname_orig = os.path.join(cwd, "tiny_bn_orig.uai")
+def test_save_model_tiny_bn(tiny_bn_orig, tiny_bn_permuted, tmp_path):
+    fname_orig = str(tmp_path / "tiny_bn_orig.uai")
     pgm_orig = save_model(tiny_bn_orig, fname_orig)
 
-    fname_permuted = os.path.join(cwd, "tiny_bn_permuted.uai")
+    fname_permuted = str(tmp_path / "tiny_bn_permuted.uai")
     pgm_permuted = save_model(tiny_bn_permuted, fname_permuted)
 
     assert filecmp.cmp(fname_orig, fname_permuted)
-    os.remove(fname_orig)
-    os.remove(fname_permuted)
 
 
 #

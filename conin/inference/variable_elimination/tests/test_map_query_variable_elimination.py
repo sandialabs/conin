@@ -111,3 +111,76 @@ def test_hmm_timing(capsys):
     _ve(hex_.create_hmm1(), evidence=OBSERVED, timing=True)
     out = capsys.readouterr().out
     assert "map_query - START" in out and "map_query - STOP" in out
+
+
+# ---------------------------------------------------------------------
+# Constraints over one node
+# ---------------------------------------------------------------------
+#
+# The materialised factor (MN) or CPD (BN, DBN, HMM) of a constraint over one
+# node was keyed by 1-tuples, so converting it to pgmpy raised KeyError for
+# every such constraint, feasible or not.
+
+
+def _one_node_constraints():
+    from conin.constraints import algebraic_constraint_fn, oracle_constraint_fn
+
+    @algebraic_constraint_fn()
+    def a_is_0(model):
+        return [model.V("A", 0) == 1]
+
+    @oracle_constraint_fn(nodes=["A"])
+    def a_is_not_2(assignment):
+        return assignment["A"] != 2
+
+    return [a_is_0, a_is_not_2]
+
+
+@pytest.mark.parametrize("index", [0, 1], ids=["algebraic", "factor_oracle"])
+def test_mn_constraint_over_one_node(index):
+    from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
+
+    constraint = _one_node_constraints()[index]
+    cmodel = ConstrainedDiscreteMarkovNetwork(mex.ABC_conin().pgm, constraint)
+    states = map_query(cmodel, method="variable_elimination").solution.states
+    assert cmodel.is_feasible({k: states[k] for k in ("A", "B", "C")})
+    # The unconstrained MAP state of A is 2
+    assert mex.ABC_conin().solutions[0].states["A"] == 2 and states["A"] != 2
+
+
+def _hmm_never_x_at_time_1():
+    from conin.constrained_models import ConstrainedHiddenMarkovModel
+    from conin.constraints import algebraic_constraint_fn
+    from conin.graphical_models import HiddenMarkovModel
+
+    hmm = HiddenMarkovModel(
+        start_probs={"x": 0.6, "y": 0.4},
+        transition_probs={
+            ("x", "x"): 0.7,
+            ("x", "y"): 0.3,
+            ("y", "x"): 0.4,
+            ("y", "y"): 0.6,
+        },
+        emission_probs={
+            ("x", "a"): 0.8,
+            ("x", "b"): 0.2,
+            ("y", "a"): 0.3,
+            ("y", "b"): 0.7,
+        },
+    )
+
+    @algebraic_constraint_fn()
+    def never_x_at_time_1(model, data):
+        return [model.V("H", 1, "x") == 0]
+
+    return ConstrainedHiddenMarkovModel(hmm, never_x_at_time_1)
+
+
+def test_hmm_constraint_over_one_node():
+    cmodel = _hmm_never_x_at_time_1()
+    results = map_query(cmodel, method="variable_elimination", evidence=["a", "a", "a"])
+    assert results.solution.states[1] == "y"
+    # The same MAP assignment as the unconstrained Viterbi path with y at time 1
+    unconstrained = map_query(cmodel.model, method="viterbi", evidence=["a"] * 3)
+    assert unconstrained.solution.states == ["x", "x", "x"]
+    assert results.solution.states == ["x", "y", "x"]

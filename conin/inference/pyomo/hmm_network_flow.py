@@ -9,10 +9,20 @@ import math
 
 from conin.config import default_mip_solver
 from conin.constrained_models import ConstrainedHiddenMarkovModel
-from conin.exceptions import InsufficientSolutionsError, InvalidInputError
+from conin.exceptions import (
+    InfeasibleQueryError,
+    InsufficientSolutionsError,
+    InvalidInputError,
+)
 from conin.graphical_models.hmm_observations import as_sequence
 from conin.inference.hmm_results import key_solutions_by_time
-from conin.inference.results import map_results, map_solution, score_hmm_solutions
+from conin.inference.pyomo.solve import solve_model
+from conin.inference.results import (
+    map_results,
+    map_solution,
+    no_solution_results,
+    score_hmm_solutions,
+)
 from conin.util import try_import
 
 import pyomo.environ as pyo
@@ -81,7 +91,8 @@ def lp_inference(
         ``solvetime``; the solution has ``states`` (the hidden states),
         ``log_potential`` (``log P(hidden, observed)``) and
         ``solver_objective`` (the LP objective).  See
-        :mod:`conin.inference.results`.
+        :mod:`conin.inference.results`.  If the observations have
+        probability zero, there is no solution (``solution`` is ``None``).
     """
     repn = ConstrainedHiddenMarkovModel(hmm).representation("pyomo_network_flow")
     return _lp_inference(
@@ -115,19 +126,25 @@ def _lp_inference(
     hmm = repn.hidden_markov_model
     if debug:
         tic("Generating Model - START")
-    M, data = repn.create_model(observed=observed)
+    timer = TicTocTimer()
+    timer.tic(None)
+    try:
+        M, data = repn.create_model(observed=observed)
+    except InfeasibleQueryError:
+        # The observations have probability zero: there is no hidden path.
+        return no_solution_results(timer.toc(None))
     if debug:
         toc("Generating Model - STOP")
     if debug:
         tic("Optimizing Model - START")
     opt = pyo.SolverFactory(solver)
 
-    timer = TicTocTimer()
     timer.tic(None)
-    res = opt.solve(M, tee=not quiet)
+    res, infeasible = solve_model(opt, M, tee=not quiet)
     solvetime = timer.toc(None)
 
-    pyo.assert_optimal_termination(res)
+    if infeasible:
+        return no_solution_results(solvetime)
     if debug:
         toc("Optimizing Model - STOP")
 
@@ -190,6 +207,9 @@ def ip_inference(
         ``log_potential`` (``log P(hidden, observed)``),
         ``solver_objective`` (the IP objective) and ``variables`` (the
         nonzero model variables).  See :mod:`conin.inference.results`.
+        If the observations or the constraints exclude every hidden
+        sequence, there is no solution (``solution`` is ``None``), except
+        with ``solver="or_topas"``, which raises.
     """
     return _ip_inference(
         hmm.representation("pyomo_network_flow"),
@@ -214,7 +234,13 @@ def _ip_inference(
     hmm = repn.hidden_markov_model
     if debug:
         tic("Generating Model - START")
-    M, data = repn.create_model(observed=observed)
+    build_timer = TicTocTimer()
+    build_timer.tic(None)
+    try:
+        M, data = repn.create_model(observed=observed)
+    except InfeasibleQueryError:
+        # The observations have probability zero: there is no hidden path.
+        return no_solution_results(build_timer.toc(None))
     T = len(observed)
     if debug:
         toc("Generating Model - STOP")
@@ -259,10 +285,11 @@ def _ip_inference(
 
         timer = TicTocTimer()
         timer.tic(None)
-        res = opt.solve(M, tee=not quiet)
+        res, infeasible = solve_model(opt, M, tee=not quiet)
         solvetime = timer.toc(None)
 
-        pyo.assert_optimal_termination(res)
+        if infeasible:
+            return no_solution_results(solvetime)
         if debug:
             toc("Optimizing Model - STOP")
 

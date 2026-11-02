@@ -15,6 +15,16 @@ from conin.graphical_models import (
 )
 
 
+def _key(states):
+    """The key of an assignment in factor or CPD values: the state itself for one node.
+
+    Values over one node are keyed by its states (``{0: w0, 1: w1}``), as in
+    :class:`~conin.graphical_models.DiscreteFactor`, and over several nodes by
+    tuples of states.
+    """
+    return states[0] if len(states) == 1 else states
+
+
 def materialise_factor_oracle(constraint, pgm, data=None):
     """Materialise a factor oracle constraint into a factor or CPD.
 
@@ -72,7 +82,7 @@ def materialise_factor_oracle(constraint, pgm, data=None):
                 feasible = constraint.func(assignment)
             else:
                 feasible = constraint.func(assignment, data)
-            values[states] = M if feasible else 0
+            values[_key(states)] = M if feasible else 0
         return DiscreteFactor(nodes=nodes, values=values)
 
     elif type(pgm) == DiscreteBayesianNetwork:
@@ -85,7 +95,7 @@ def materialise_factor_oracle(constraint, pgm, data=None):
             else:
                 feasible = constraint.func(assignment, data)
             feasible = int(feasible)
-            values[states] = {1: feasible, 0: 1 - feasible}
+            values[_key(states)] = {1: feasible, 0: 1 - feasible}
         return DiscreteCPD(node=node, parents=nodes, values=values)
 
     else:

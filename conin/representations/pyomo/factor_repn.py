@@ -82,11 +82,11 @@ def extract_factor_representation_(pgm_states, pgm_factors, var_index_map=None):
         size = len(factor.values)
         J[i] = list(range(size))
 
-        if type(factor.values) is dict:
+        if isinstance(factor.values, dict):
             indices = list(sorted(factor.values.keys()))
 
         # Compute values of assignments, normalizing if all values are zero
-        if type(factor.values) is dict:
+        if isinstance(factor.values, dict):
             values = [factor.values[index] for index in indices]
         else:
             values = factor.values
@@ -96,7 +96,7 @@ def extract_factor_representation_(pgm_states, pgm_factors, var_index_map=None):
             total = 1.0
 
         # v
-        if type(factor.values) is dict:
+        if isinstance(factor.values, dict):
             if len(vars) == 1:
                 for j, assignment in enumerate(indices):
                     value = factor.values[assignment]

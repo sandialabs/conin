@@ -40,9 +40,16 @@ skipif_pgmpy_not_available = pytest.mark.skipif(
 )
 
 # Test file paths
-cwd = os.path.dirname(__file__)
-testfile_uai = os.path.join(cwd, "test.uai")
-testfile_lp = os.path.join(cwd, "test.lp")
+# The files that the tests write, relative to the working directory, which
+# is a new tmp_path for each test (they used to be written next to this file,
+# so tests running in parallel deleted each other's files).
+testfile_uai = "test.uai"
+testfile_lp = "test.lp"
+
+
+@pytest.fixture(autouse=True)
+def _in_tmp_path(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
 
 
 #
