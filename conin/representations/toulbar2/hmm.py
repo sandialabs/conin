@@ -21,7 +21,7 @@ class Toulbar2HMMRepresentation(UnrolledHMMMixin, Toulbar2FactorRepresentation):
 
 
 @register_representation(
-    "toulbar2", HiddenMarkovModel, families=(None, "toulbar2", "algebraic")
+    "toulbar2", HiddenMarkovModel, families=(None, "toulbar2", "smoek")
 )
 def _build(cmodel, *, start=0, stop=None):
     start, stop = hmm_time_range(start, stop)

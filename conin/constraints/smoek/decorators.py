@@ -1,5 +1,5 @@
 """
-Decorators for algebraic constraint definition using smoek expressions.
+Decorators for smoek constraint definition using smoek expressions.
 
 This module provides decorators that allow users to define constraints using
 natural algebraic syntax (e.g., model.V("A", 0) + model.V("B", 1) <= 10)
@@ -8,7 +8,7 @@ which are then translated to Pyomo or Toulbar2 constraint declarations.
 
 import inspect
 from conin.constraints.base import Constraint
-from conin.constraints.algebraic.bridge import ConinVarNode
+from conin.constraints.smoek.bridge import ConinVarNode
 from conin.util import try_import
 
 with try_import() as smoek_available:
@@ -49,14 +49,14 @@ class ConinV:
             raise ValueError(f"V() requires 2 or 3 arguments, got {len(args)}")
 
 
-class AlgebraicConstraint(Constraint):
+class SmoekConstraint(Constraint):
     """
-    Constraint class for algebraic constraints.
+    Constraint class for smoek constraints.
 
     Wraps a user function that adds constraints to a Smoek model.
     """
 
-    family = "algebraic"
+    family = "smoek"
 
     def __init__(self, func, name=None):
         """
@@ -69,7 +69,7 @@ class AlgebraicConstraint(Constraint):
         self.func = func
         self.num_args = len(inspect.signature(self.func).parameters)
         if self.num_args > 2:
-            raise ValueError("Algebraic constraint defined with more than 2 arguments")
+            raise ValueError("Smoek constraint defined with more than 2 arguments")
 
         self.name = name if name else func.__name__
 
@@ -124,9 +124,9 @@ class AlgebraicConstraint(Constraint):
         model._conin_con_count = count
 
 
-def algebraic_constraint_fn(*, name=None):
+def smoek_constraint_fn(*, name=None):
     """
-    Decorator for defining algebraic constraints.
+    Decorator for defining smoek constraints.
 
     Allows users to define constraints using natural algebraic syntax with
     smoek expressions. The constraint function should return a smoek expression
@@ -137,17 +137,17 @@ def algebraic_constraint_fn(*, name=None):
         name: Optional name for the constraint (defaults to function name)
 
     Returns:
-        Decorator function that wraps user function in AlgebraicConstraint
+        Decorator function that wraps user function in SmoekConstraint
 
     Example::
 
-        from conin import algebraic_constraint_fn
+        from conin import smoek_constraint_fn
 
-        @algebraic_constraint_fn()
+        @smoek_constraint_fn()
         def my_constraint(model, data):
             return model.V("A", 0) + model.V("B", 0) <= 1
 
-        @algebraic_constraint_fn()
+        @smoek_constraint_fn()
         def multi_constraint(model, data):
             return [
                 model.V("A", s) + model.V("B", s) <= 1
@@ -160,15 +160,15 @@ def algebraic_constraint_fn(*, name=None):
     """
 
     def decorator(func):
-        return AlgebraicConstraint(func=func, name=name)
+        return SmoekConstraint(func=func, name=name)
 
     return decorator
 
 
 def build_smoek_model(constraints, data):
-    """Run the algebraic ``constraints`` on a new smoek model and return it.
+    """Run the smoek ``constraints`` on a new smoek model and return it.
 
-    This is the first step of every translation of algebraic constraints
+    This is the first step of every translation of smoek constraints
     (to Pyomo, to toulbar2, or to a factor oracle).
 
     Raises
@@ -176,17 +176,17 @@ def build_smoek_model(constraints, data):
     ImportError
         If smoek is not installed.
     TypeError
-        If an element of ``constraints`` is not an :class:`AlgebraicConstraint`.
+        If an element of ``constraints`` is not an :class:`SmoekConstraint`.
     """
     if not smoek_available:
         raise ImportError(
-            "The smoek package must be installed to use algebraic constraints "
+            "The smoek package must be installed to use smoek constraints "
             "(pip install smoek)."
         )
     for i, constraint in enumerate(constraints):
-        if not isinstance(constraint, AlgebraicConstraint):
+        if not isinstance(constraint, SmoekConstraint):
             raise TypeError(
-                f"Element {i} is not an AlgebraicConstraint, got {type(constraint)}"
+                f"Element {i} is not an SmoekConstraint, got {type(constraint)}"
             )
     smoek_model = smoek.model()
     for constraint in constraints:

@@ -32,7 +32,7 @@ def build_pyomo_mn_representation(mn, constraints=(), *, data=None):
 
 
 @register_representation(
-    "pyomo", DiscreteMarkovNetwork, families=(None, "pyomo", "algebraic")
+    "pyomo", DiscreteMarkovNetwork, families=(None, "pyomo", "smoek")
 )
 def _build(cmodel):
     return build_pyomo_mn_representation(

@@ -161,8 +161,8 @@ Selected hidden Markov model examples live in
      - Constrained HMM using a recursive constraint (for ``recursive_a_star``).
    * - ``create_chmm1_pyomo``
      - Constrained HMM using Pyomo constraints.
-   * - ``create_chmm1_algebraic``
-     - Constrained HMM using algebraic constraints (Pyomo, Toulbar2 and variable elimination).
+   * - ``create_chmm1_smoek``
+     - Constrained HMM using smoek constraints (Pyomo, Toulbar2 and variable elimination).
    * - ``create_chmm1_toulbar2``
      - Constrained HMM using Toulbar2 constraints.
    * - ``create_chmm1_pyomo_aos``

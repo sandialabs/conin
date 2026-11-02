@@ -8,7 +8,7 @@ import conin.examples.hidden_markov_model as tc
 from conin.algorithms.feasibility import is_feasible
 from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.constraints import OracleConstraint
-from conin.constraints.oracle_library import (
+from conin.constraints.oracle.library import (
     occurs_at_least_once_in_time_frame_constraint,
     occurs_only_in_time_frame_constraint,
 )

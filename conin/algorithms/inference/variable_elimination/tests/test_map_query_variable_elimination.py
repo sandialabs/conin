@@ -118,9 +118,9 @@ def test_hmm_timing(capsys):
 
 
 def _one_node_constraints():
-    from conin.constraints import algebraic_constraint_fn, oracle_constraint_fn
+    from conin.constraints import smoek_constraint_fn, oracle_constraint_fn
 
-    @algebraic_constraint_fn()
+    @smoek_constraint_fn()
     def a_is_0(model):
         return [model.V("A", 0) == 1]
 
@@ -131,7 +131,7 @@ def _one_node_constraints():
     return [a_is_0, a_is_not_2]
 
 
-@pytest.mark.parametrize("index", [0, 1], ids=["algebraic", "factor_oracle"])
+@pytest.mark.parametrize("index", [0, 1], ids=["smoek", "factor_oracle"])
 def test_mn_constraint_over_one_node(index):
     from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
 
@@ -145,7 +145,7 @@ def test_mn_constraint_over_one_node(index):
 
 def _hmm_never_x_at_time_1():
     from conin.constrained_models import ConstrainedHiddenMarkovModel
-    from conin.constraints import algebraic_constraint_fn
+    from conin.constraints import smoek_constraint_fn
     from conin.graphical_models import HiddenMarkovModel
 
     hmm = HiddenMarkovModel(
@@ -164,7 +164,7 @@ def _hmm_never_x_at_time_1():
         },
     )
 
-    @algebraic_constraint_fn()
+    @smoek_constraint_fn()
     def never_x_at_time_1(model, data):
         return [model.V("H", 1, "x") == 0]
 

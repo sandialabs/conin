@@ -1,9 +1,9 @@
-"""Tests for create_oracle_constraints_from_algebraic.
+"""Tests for create_oracle_constraints_from_smoek.
 
-It compiles algebraic (smoek) constraints into one FactorOracleConstraint by
+It compiles smoek constraints into one FactorOracleConstraint by
 generating Python code; it is used by the feasibility checks and by variable
 elimination.  The oracle must accept exactly the assignments that satisfy every
-algebraic constraint.
+smoek constraint.
 """
 
 import importlib
@@ -12,10 +12,10 @@ import itertools
 import munch
 import pytest
 
-from conin.constraints.algebraic.add_constraints_oracle import StateSpace
+from conin.constraints.smoek.add_constraints_oracle import StateSpace
 from conin.constraints import (
     FactorOracleConstraint,
-    algebraic_constraint_fn,
+    smoek_constraint_fn,
     pyomo_constraint_fn,
 )
 from conin.util import try_import
@@ -25,8 +25,8 @@ with try_import() as smoek_available:
 
 pytestmark = pytest.mark.skipif(not smoek_available, reason="smoek not installed")
 
-module = importlib.import_module("conin.constraints.algebraic.add_constraints_oracle")
-create = module.create_oracle_constraints_from_algebraic
+module = importlib.import_module("conin.constraints.smoek.add_constraints_oracle")
+create = module.create_oracle_constraints_from_smoek
 
 STATES = {"A": [0, 1, 2], "B": [0, 1, 2], "C": [0, 1, 2]}
 
@@ -54,17 +54,17 @@ def _all(nodes, states=STATES):
     return set(itertools.product(*(states[n] for n in nodes)))
 
 
-@algebraic_constraint_fn()
+@smoek_constraint_fn()
 def not_both_zero(model):
     return model.V("A", 0) + model.V("B", 0) <= 1
 
 
-@algebraic_constraint_fn()
+@smoek_constraint_fn()
 def c_is_two(model):
     return model.V("C", 2) == 1
 
 
-@algebraic_constraint_fn()
+@smoek_constraint_fn()
 def a_or_b_is_one(model):
     return model.V("A", 1) + model.V("B", 1) >= 1
 
@@ -94,7 +94,7 @@ def test_several_constraints_must_all_hold():
 
 
 def test_a_constraint_returning_a_list():
-    @algebraic_constraint_fn()
+    @smoek_constraint_fn()
     def all_different_at_zero(model):
         return [model.V(n, 0) + model.V(m, 0) <= 1 for n, m in ["AB", "BC", "AC"]]
 
@@ -117,7 +117,7 @@ def test_no_constraints():
 def test_string_states():
     states = {"X": ["lo", "hi"], "Y": ["lo", "hi"]}
 
-    @algebraic_constraint_fn()
+    @smoek_constraint_fn()
     def not_both_hi(model):
         return model.V("X", "hi") + model.V("Y", "hi") <= 1
 
@@ -128,7 +128,7 @@ def test_string_states():
 def test_integer_nodes():
     states = {0: [0, 1], 1: [0, 1]}
 
-    @algebraic_constraint_fn()
+    @smoek_constraint_fn()
     def exactly_one_set(model):
         return model.V(0, 1) + model.V(1, 1) == 1
 
@@ -141,7 +141,7 @@ def test_time_indexed_nodes(name):
     # Tuple nodes (name, t), as in an unrolled DBN or HMM: V(name, t, state).
     states = {(name, t): ["a", "b"] for t in range(3)}
 
-    @algebraic_constraint_fn()
+    @smoek_constraint_fn()
     def at_most_one_b(model):
         return sum(model.V(name, t, "b") for t in range(3)) <= 1
 
@@ -152,7 +152,7 @@ def test_time_indexed_nodes(name):
 
 
 def test_constraints_that_read_data():
-    @algebraic_constraint_fn()
+    @smoek_constraint_fn()
     def at_most_k_zeros(model, data):
         return model.V("A", 0) + model.V("B", 0) + model.V("C", 0) <= data.k
 
@@ -169,17 +169,17 @@ def test_the_oracle_rejects_an_assignment_without_its_nodes():
         oracle({"A": 0}, None)
 
 
-def test_non_algebraic_constraints_are_rejected():
+def test_non_smoek_constraints_are_rejected():
     @pyomo_constraint_fn()
     def pyomo(model):
         return model
 
-    with pytest.raises(TypeError, match="Element 1 is not an AlgebraicConstraint"):
+    with pytest.raises(TypeError, match="Element 1 is not an SmoekConstraint"):
         create(pgm=StateSpace(STATES), constraints=[not_both_zero, pyomo], data=None)
 
 
 def test_smoek_is_required(monkeypatch):
-    decorators = importlib.import_module("conin.constraints.algebraic.decorators")
+    decorators = importlib.import_module("conin.constraints.smoek.decorators")
     monkeypatch.setattr(decorators, "smoek_available", False)
     with pytest.raises(ImportError, match="smoek package must be installed"):
         create(pgm=StateSpace(STATES), constraints=[not_both_zero], data=None)

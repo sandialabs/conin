@@ -54,14 +54,14 @@ skipif_no_mip_solver = pytest.mark.skipif(
 )
 def test_pyomo_registered_families(model_type):
     pairs = supported_representations(model_type)
-    for family in (None, "pyomo", "algebraic"):
+    for family in (None, "pyomo", "smoek"):
         assert ("pyomo", family) in pairs
     assert ("pyomo", "toulbar2") not in pairs
 
 
 def test_pyomo_network_flow_registered_families():
     pairs = supported_representations(HiddenMarkovModel)
-    for family in (None, "pyomo", "algebraic"):
+    for family in (None, "pyomo", "smoek"):
         assert ("pyomo_network_flow", family) in pairs
     assert ("pyomo_network_flow", "toulbar2") not in pairs
 
@@ -264,7 +264,7 @@ def test_network_flow_V_lookups():
 
 
 def test_var_wrapper_is_one_class():
-    # PyomoVarWrapper lives in conin.util.var_wrapper (so conin.constraints.algebraic
+    # PyomoVarWrapper lives in conin.util.var_wrapper (so conin.constraints.smoek
     # can use it without an import cycle) and is re-exported here.
     import conin.representations.pyomo.common as pyomo_common
     from conin.util.var_wrapper import PyomoVarWrapper as util_wrapper
@@ -295,15 +295,15 @@ def test_network_flow_V_missing_key_raises():
 
 
 # ---------------------------------------------------------------------
-# Network flow with algebraic constraints (newly registered)
+# Network flow with smoek constraints (newly registered)
 # ---------------------------------------------------------------------
 
 
 @skipif_no_mip_solver
-def test_network_flow_algebraic_constraints():
+def test_network_flow_smoek_constraints():
     pytest.importorskip("smoek")
     results = map_query(
-        hex_.create_chmm1_algebraic(),
+        hex_.create_chmm1_smoek(),
         method="integer_program",
         evidence=["o0"] * 15,
         ip_formulation="network_flow",

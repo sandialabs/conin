@@ -23,7 +23,7 @@ from conin.constrained_models import (
     ConstrainedDynamicDiscreteBayesianNetwork,
     ConstrainedHiddenMarkovModel,
 )
-from conin.constraints import FactorOracleConstraint, algebraic_constraint_fn
+from conin.constraints import FactorOracleConstraint, smoek_constraint_fn
 from conin.exceptions import InvalidInputError
 from conin.graphical_models import (
     DiscreteFactor,
@@ -258,13 +258,13 @@ def test_constrained_matches_brute_force(model, assignment, evidence, stop):
 @pytest.mark.parametrize(
     "example,assignment,evidence,stop",
     [
-        (bex.cancer1_BN_constrained_algebraic_conin, {"Xray": 1}, None, None),
-        (bex.cancer1_BN_constrained_algebraic_conin, {"Cancer": 1}, {"Xray": 0}, None),
-        (dex.simple1_DDBN_constrained_algebraic_conin, {("A", 1): 1}, None, 1),
+        (bex.cancer1_BN_constrained_smoek_conin, {"Xray": 1}, None, None),
+        (bex.cancer1_BN_constrained_smoek_conin, {"Cancer": 1}, {"Xray": 0}, None),
+        (dex.simple1_DDBN_constrained_smoek_conin, {("A", 1): 1}, None, 1),
     ],
     ids=["bn", "bn-evidence", "dbn"],
 )
-def test_algebraic_constraints_match_brute_force(example, assignment, evidence, stop):
+def test_smoek_constraints_match_brute_force(example, assignment, evidence, stop):
     cmodel = example().pgm
     value = log_probability_query(cmodel, assignment, evidence=evidence, stop=stop)
     assert value == pytest.approx(
@@ -273,8 +273,8 @@ def test_algebraic_constraints_match_brute_force(example, assignment, evidence, 
 
 
 @require_smoek
-def test_algebraic_hmm_constraints_match_brute_force():
-    @algebraic_constraint_fn()
+def test_smoek_hmm_constraints_match_brute_force():
+    @smoek_constraint_fn()
     def at_least_two_h0(M, D):
         return sum(M.V("H", t, "h0") for t in D.hmm.T) >= 2
 

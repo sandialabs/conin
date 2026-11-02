@@ -48,10 +48,10 @@ Constraint decorators
 
 .. autofunction:: conin.constraints.toulbar2_constraint_fn
 
-Algebraic Constraints With Smoek
---------------------------------
+Smoek Constraints
+-----------------
 
-``algebraic_constraint_fn`` is the high-level constraint interface for writing
+``smoek_constraint_fn`` is the high-level constraint interface for writing
 linear constraints once and using them with either the Pyomo or Toulbar2
 inference backend. It uses ``smoek`` expression objects under the hood so that
 ``model.V(...)`` references can participate in ordinary Python algebraic
@@ -61,9 +61,9 @@ Use the two-argument ``model.V(node, state)`` form for static graphical models:
 
 .. testcode::
 
-   from conin import algebraic_constraint_fn
+   from conin import smoek_constraint_fn
 
-   @algebraic_constraint_fn()
+   @smoek_constraint_fn()
    def at_most_one_active(model, data):
        return model.V("A", 1) + model.V("B", 1) <= 1
 
@@ -72,9 +72,9 @@ and hidden Markov models:
 
 .. testcode::
 
-   from conin import algebraic_constraint_fn
+   from conin import smoek_constraint_fn
 
-   @algebraic_constraint_fn()
+   @smoek_constraint_fn()
    def between_ten_and_twelve_h0(model, data):
        num_h0 = sum(model.V("H", t, "h0") for t in data.hmm.T)
        return [
@@ -90,12 +90,12 @@ a range:
 
 .. testcode::
 
-   from conin import algebraic_constraint_fn
+   from conin import smoek_constraint_fn
    import smoek as smk
 
    N = 10
 
-   @algebraic_constraint_fn()
+   @smoek_constraint_fn()
    def no_adjacent_active(model, data):
        I = smk.sequence(start=1, stop=N - 1)
        i = smk.index()
@@ -109,28 +109,28 @@ a range:
 The inference backend translates those expressions into the backend-specific form at
 solve time:
 
-- ``map_query(..., method="integer_program")`` translates algebraic constraints
+- ``map_query(..., method="integer_program")`` translates smoek constraints
   to Pyomo constraints.
-- ``map_query(..., method="toulbar2")`` translates supported linear algebraic
+- ``map_query(..., method="toulbar2")`` translates supported linear smoek
   constraints to Toulbar2 constraints.
 
-Algebraic constraints require ``smoek`` to be installed. They are intended for
+Smoek constraints require ``smoek`` to be installed. They are intended for
 linear constraints over CONIN indicator variables; nonlinear or unsupported
 expressions may fail during backend translation.
 
-.. autoclass:: conin.constraints.AlgebraicConstraint
+.. autoclass:: conin.constraints.SmoekConstraint
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. autofunction:: conin.constraints.algebraic_constraint_fn
+.. autofunction:: conin.constraints.smoek_constraint_fn
 
 Specialized Modules
 -------------------
 
-Reusable oracle constraints live in ``conin.constraints.oracle_library``. The
+Reusable oracle constraints live in ``conin.constraints.oracle.library``. The
 Toulbar2 helper module also includes utilities for translating supported linear
-algebraic constraints to Toulbar2 expressions.
+smoek constraints to Toulbar2 expressions.
 
 .. automodule:: conin.representations.toulbar2.common
    :members:

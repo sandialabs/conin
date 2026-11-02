@@ -1,7 +1,7 @@
 Oracle Constraint Helpers
 =========================
 
-``conin.constraints.oracle_library`` provides reusable ``OracleConstraint`` objects and
+``conin.constraints.oracle.library`` provides reusable ``OracleConstraint`` objects and
 factory functions for common sequence constraints. These helpers are most useful
 with hidden Markov models, where an oracle constraint evaluates a candidate
 hidden-state sequence directly.
@@ -18,7 +18,7 @@ Ready-made Constraints
 
 .. testcode::
 
-   from conin.constraints.oracle_library import all_diff_constraint, citation_constraint
+   from conin.constraints.oracle.library import all_diff_constraint, citation_constraint
 
    assert all_diff_constraint({0: "a", 1: "b", 2: "c"})
    assert not all_diff_constraint({0: "a", 1: "b", 2: "a"})
@@ -34,7 +34,7 @@ of times in a sequence.
 
 .. testcode::
 
-   from conin.constraints.oracle_library import (
+   from conin.constraints.oracle.library import (
        appears_at_least_once_constraint,
        does_not_occur_constraint,
        has_exact_number_of_occurences_constraint,
@@ -62,7 +62,7 @@ a time window.
 
 .. testcode::
 
-   from conin.constraints.oracle_library import (
+   from conin.constraints.oracle.library import (
        always_appears_after_constraint,
        always_appears_before_constraint,
        appears_at_least_once_after_constraint,
@@ -99,7 +99,7 @@ Oracle constraints can be combined with Boolean helper functions.
 
 .. testcode::
 
-   from conin.constraints.oracle_library import (
+   from conin.constraints.oracle.library import (
        and_constraints,
        appears_at_least_once_constraint,
        does_not_occur_constraint,
@@ -123,6 +123,6 @@ can safely evaluate partial sequences during search.
 Reference
 ---------
 
-.. automodule:: conin.constraints.oracle_library
+.. automodule:: conin.constraints.oracle.library
    :members:
    :undoc-members:

@@ -6,7 +6,7 @@ the constraint applier of the ``"variable_elimination"`` representations.
 
 import itertools
 
-from conin.constraints.factor_oracle import FactorOracleConstraint
+from conin.constraints.oracle import FactorOracleConstraint
 from conin.graphical_models import DiscreteFactor
 
 

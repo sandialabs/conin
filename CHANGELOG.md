@@ -44,9 +44,15 @@ Migration table (old -> new)
   ExpressionVariable (DBN time index)
                                     -> conin.graphical_models.TimeIndex
   ConstraintFunctor                 -> conin.constraints.Constraint
+  algebraic_constraint_fn, AlgebraicConstraint, family "algebraic",
+  conin.constraints.algebraic, *_algebraic* examples
+                                    -> smoek_constraint_fn, SmoekConstraint,
+                                       family "smoek", conin.constraints.smoek,
+                                       *_smoek* examples
   conin.constraints.oracle (library: all_diff, citation, ...)
-                                    -> conin.constraints.oracle_library
+                                    -> conin.constraints.oracle.library
   OracleConstraint(nodes=...)       -> conin.constraints.FactorOracleConstraint
+  conin.constraints.factor_oracle   -> conin.constraints.oracle
   hidden_markov_model.mvr, mvr_constraints, mvr_operators, conin.operators,
   mvr_formula                       -> conin.constraints.mvr (base, primitives,
                                        operators, formula)
@@ -182,7 +188,7 @@ Constrained models
 - initialize_chmm(), chmm.chmm, constraint_type and supported_families are
   removed. constraint_family is the constraints' family ("oracle_with_nodes"
   is now "factor_oracle"). The accepted families come from the representation
-  registry: MN, BN and DBN accept "pyomo", "toulbar2", "algebraic" and
+  registry: MN, BN and DBN accept "pyomo", "toulbar2", "smoek" and
   "factor_oracle" (they now refuse "oracle", "mvr" and "recursive"); HMMs
   also accept "oracle", "recursive" and "mvr".
 - The constrained model's data reaches the constraint functions on every
@@ -196,7 +202,7 @@ Constrained models
   constrained model (and observed= for an HMM), and
   partial_is_feasible(cmodel, T=, seq=) for constrained HMMs only (other
   models raise TypeError). is_feasible checks oracle, factor-oracle,
-  algebraic, recursive and MVR constraints (pyomo/toulbar2 raise
+  smoek, recursive and MVR constraints (pyomo/toulbar2 raise
   NotImplementedError); for an HMM it accepts a dict keyed by time.
 - ConstrainedDynamicDiscreteBayesianNetwork.nodes is a property.
 - ConstrainedHiddenMarkovModel.generate_hidden/generate_observed/
@@ -213,7 +219,7 @@ Constraints
   materialisation mode is removed.
 - New RecursiveConstraint(initial=, update=, feasible=, feasible_partial=)
   for recursive A*.
-- The oracle library moves to conin.constraints.oracle_library and is no
+- The oracle library moves to conin.constraints.oracle.library and is no
   longer star-exported from conin.constraints. The partial functions of
   occurs_only_in_time_frame_constraint and
   occurs_at_least_once_in_time_frame_constraint no longer reject completable
@@ -246,8 +252,8 @@ Representations (new)
   dispatch (conin.representations.base.apply_constraints): constraints of
   several families, or of a family the backend does not apply, raise TypeError
   with the same message for every backend.
-- Algebraic constraints without smoek raise ImportError for every backend (the
-  pyomo and toulbar2 translators raised TypeError).
+- Smoek constraints without the smoek package raise ImportError for every
+  backend (the pyomo and toulbar2 translators raised TypeError).
 
 Inference
 
@@ -411,7 +417,7 @@ Bug fixes
   variable_elimination) no longer raises AssertionError; create_bn_from_dbn
   with start > 0 raises InvalidInputError instead of AttributeError.
 - The pgmpy_issue_1177_pgmpy example works with pgmpy 1.1 (DiscreteMLE()).
-- variable_elimination works with a factor-oracle or algebraic constraint
+- variable_elimination works with a factor-oracle or smoek constraint
   over one node (e.g. model.V("A", 0) == 1, or a constraint on one hidden
   state of an HMM). Its materialised factor or CPD was keyed by 1-tuples
   instead of states, so the conversion to pgmpy raised KeyError.

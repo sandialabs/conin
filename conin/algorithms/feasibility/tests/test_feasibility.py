@@ -154,16 +154,16 @@ def test_bad_assignment():
 
 
 @require_smoek
-def test_bn_algebraic():
-    cmodel = bn_examples.cancer1_BN_constrained_algebraic_conin().pgm
+def test_bn_smoek():
+    cmodel = bn_examples.cancer1_BN_constrained_smoek_conin().pgm
     a = {"Cancer": 1, "Dyspnoea": 0, "Pollution": 0, "Smoker": 1, "Xray": 1}
     assert is_feasible(cmodel, a)
     assert not is_feasible(cmodel, {**a, "Xray": 0})
 
 
 @require_smoek
-def test_dbn_algebraic():
-    cmodel = dbn_examples.simple1_DDBN_constrained_algebraic_conin().pgm
+def test_dbn_smoek():
+    cmodel = dbn_examples.simple1_DDBN_constrained_smoek_conin().pgm
     a = {("A", 0): 0, ("A", 1): 0, ("B", 0): 1, ("B", 1): 1}
     assert is_feasible(cmodel, a)
     assert not is_feasible(cmodel, {**a, ("A", 1): 1})
@@ -269,8 +269,8 @@ def test_hmm_bad_sequence():
 
 
 @require_smoek
-def test_hmm_algebraic():
-    cmodel = hmm_examples.create_chmm1_algebraic()
+def test_hmm_smoek():
+    cmodel = hmm_examples.create_chmm1_smoek()
     assert not is_feasible(cmodel, ["h0"] * 9)
     assert is_feasible(cmodel, ["h0"] * 10)
     assert not is_feasible(cmodel, ["h0"] * 13)

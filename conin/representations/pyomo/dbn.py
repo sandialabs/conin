@@ -32,7 +32,7 @@ def build_pyomo_dbn_representation(
 
 
 @register_representation(
-    "pyomo", DynamicDiscreteBayesianNetwork, families=(None, "pyomo", "algebraic")
+    "pyomo", DynamicDiscreteBayesianNetwork, families=(None, "pyomo", "smoek")
 )
 def _build(cmodel, *, start=0, stop=None):
     start, stop = dbn_time_range(start, stop)

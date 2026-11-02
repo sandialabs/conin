@@ -1,7 +1,7 @@
 import inspect
 
-from ..exceptions import InvalidInputError
-from .base import Constraint
+from conin.constraints.base import Constraint
+from conin.exceptions import InvalidInputError
 
 
 class FactorOracleConstraint(Constraint):

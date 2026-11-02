@@ -11,7 +11,7 @@ from pyomo.common.collections import ComponentMap
 
 import conin.examples.markov_network as mex
 from conin.constraints import (
-    algebraic_constraint_fn,
+    smoek_constraint_fn,
     pyomo_constraint_fn,
     toulbar2_constraint_fn,
 )
@@ -200,7 +200,7 @@ def test_apply_rejects_other_constraint_types():
     with pytest.raises(
         TypeError,
         match="does not apply constraints of family 'pyomo' .PyomoConstraint.; "
-        r"supported families: \['algebraic', 'toulbar2'\]",
+        r"supported families: \['smoek', 'toulbar2'\]",
     ):
         apply_toulbar2_constraints(
             pgm=None, constraints=(pyomo,), model=_RecordingCFN(), data=None
@@ -208,11 +208,11 @@ def test_apply_rejects_other_constraint_types():
 
 
 @pytest.mark.skipif(not smoek_available, reason="smoek not installed")
-def test_apply_algebraic_constraints_gives_linear_constraints():
+def test_apply_smoek_constraints_gives_linear_constraints():
     # A and B are not both 0 (ABC_conin: states 0..2).
     pgm = mex.ABC_conin().pgm
 
-    @algebraic_constraint_fn()
+    @smoek_constraint_fn()
     def at_most_one_zero(model):
         return model.V("A", 0) + model.V("B", 0) <= 1
 

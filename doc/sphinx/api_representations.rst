@@ -23,19 +23,19 @@ a family is accepted for a model type if some builder is registered for it.
      - Used by
    * - ``"pyomo"``
      - MN, BN, DBN, HMM
-     - ``pyomo``, ``algebraic``
+     - ``pyomo``, ``smoek``
      - ``integer_program``
    * - ``"pyomo_network_flow"``
      - HMM
-     - ``pyomo``, ``algebraic``
+     - ``pyomo``, ``smoek``
      - ``integer_program`` with ``ip_formulation="network_flow"``
    * - ``"toulbar2"``
      - MN, BN, DBN, HMM
-     - ``toulbar2``, ``algebraic``
+     - ``toulbar2``, ``smoek``
      - ``toulbar2``
    * - ``"variable_elimination"``
      - MN, BN, DBN, HMM
-     - ``factor_oracle``, ``algebraic``
+     - ``factor_oracle``, ``smoek``
      - ``variable_elimination``, ``log_probability_query``
    * - ``"matvec"``
      - HMM

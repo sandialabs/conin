@@ -7,7 +7,8 @@ build new oracle constraints from existing ones.
 """
 
 import inspect
-from .oracle import OracleConstraint, oracle_constraint_fn
+
+from .constraint import OracleConstraint, oracle_constraint_fn
 
 
 def constraint_name():

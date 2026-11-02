@@ -102,11 +102,11 @@ def test_apply_constraints_rejects_an_unhandled_family():
     with pytest.raises(
         TypeError,
         match=r"The demo backend does not apply constraints of family 'toulbar2' "
-        r"\(Toulbar2Constraint\); supported families: \['algebraic', 'pyomo'\]",
+        r"\(Toulbar2Constraint\); supported families: \['pyomo', 'smoek'\]",
     ):
         apply_constraints(
             (_tb2_con,),
-            {"pyomo": lambda c: c, "algebraic": lambda c: c},
+            {"pyomo": lambda c: c, "smoek": lambda c: c},
             backend="demo",
         )
 

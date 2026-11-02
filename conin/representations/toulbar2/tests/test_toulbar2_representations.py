@@ -59,7 +59,7 @@ skipif_toulbar2_not_available = pytest.mark.skipif(
 )
 def test_toulbar2_registered_families(model_type):
     pairs = supported_representations(model_type)
-    for family in (None, "toulbar2", "algebraic"):
+    for family in (None, "toulbar2", "smoek"):
         assert ("toulbar2", family) in pairs
     assert ("toulbar2", "pyomo") not in pairs
 

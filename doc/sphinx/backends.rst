@@ -15,7 +15,7 @@ The base package dependencies are declared in ``pyproject.toml``:
 - ``pandas``
 - ``pyomo``
 - ``ovld``
-- ``smoek`` (algebraic constraints)
+- ``smoek`` (the ``"smoek"`` constraint family)
 
 With only the base dependencies, users can create native CONIN models, work with
 HMM utilities, declare every kind of constraint, and run HMM Viterbi/A*
@@ -28,7 +28,7 @@ inference.
      - Available with base dependencies
    * - Markov network, Bayesian network, dynamic Bayesian network, and HMM model construction
      - Yes
-   * - Oracle, factor-oracle, recursive, Pyomo, Toulbar2, algebraic and MVR constraint declaration
+   * - Oracle, factor-oracle, recursive, Pyomo, Toulbar2, smoek and MVR constraint declaration
      - Yes
    * - HMM generation with ``random_hmm`` and sampling with ``conin.algorithms.sampling``
      - Yes (the MVR samplers need torch)
@@ -101,16 +101,16 @@ When ``pytoulbar2`` is unavailable, ``map_query(..., method="toulbar2")``
 raises ``ImportError``, as the other methods do when their backend is
 missing.
 
-Smoek Algebraic Constraints
----------------------------
+Smoek Constraints
+-----------------
 
-The ``algebraic_constraint_fn`` decorator uses ``smoek`` (a base dependency)
+The ``smoek_constraint_fn`` decorator uses ``smoek`` (a base dependency)
 to let users write linear constraints with normal algebraic syntax. For
 example, an HMM constraint can return expressions such as
 ``sum(model.V("H", t, "h0") for t in data.hmm.T) <= 12`` instead of mutating a
 Pyomo model or Toulbar2 model directly.
 
-Algebraic constraints can be used with:
+Smoek constraints can be used with:
 
 - ``map_query(..., method="integer_program")``, which translates them to Pyomo.
 - ``map_query(..., method="toulbar2")``, which translates supported linear
@@ -186,7 +186,7 @@ Quick Selection Guide
      - Base package
    * - Run variable elimination inference or ``log_probability_query``
      - Base package
-   * - Use algebraic constraints
+   * - Use smoek constraints
      - Base package plus the selected inference backend
    * - Convert to/from pgmpy models
      - ``pgmpy``

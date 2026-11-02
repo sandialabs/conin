@@ -7,7 +7,7 @@ from conin.graphical_models import HiddenMarkovModel
 
 from conin.config import default_mip_solver
 import conin.examples.hidden_markov_model as tc
-import conin.constraints.oracle_library as oc
+import conin.constraints.oracle.library as oc
 from conin.representations.matvec import MatVecHMMRepresentation
 from conin.algorithms.sampling.oracle import rejection_sample_hidden
 from conin.algorithms.sampling.unconstrained import (

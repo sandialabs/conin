@@ -141,7 +141,7 @@ variable has a value, so nothing is summed out.
   where it returns the sum of the log factors (``log P(x) + log Z``), and
   constrained models, where it returns ``-inf`` if a constraint is violated.
   Constraints of the ``"oracle"`` and ``"recursive"`` (HMMs), ``"factor_oracle"``,
-  ``"algebraic"`` and ``"mvr"`` (HMMs) families are checked with
+  ``"smoek"`` and ``"mvr"`` (HMMs) families are checked with
   ``conin.algorithms.feasibility.is_feasible``;
   ``"pyomo"`` and ``"toulbar2"`` constraints raise ``NotImplementedError``.
 
@@ -166,7 +166,7 @@ evidence (with the constraints) has probability zero.
   the time steps the constraints see.
 - ``method="variable_elimination"`` (the only method) runs on the
   ``"variable_elimination"`` representation: unconstrained models and the
-  ``"factor_oracle"`` and ``"algebraic"`` constraint families. Other families
+  ``"factor_oracle"`` and ``"smoek"`` constraint families. Other families
   raise ``InvalidInputError``.
 
 .. testcode::

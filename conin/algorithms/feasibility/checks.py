@@ -9,9 +9,9 @@ direct evaluation are supported:
   other models accept no oracle constraints);
 * ``"factor_oracle"``: the predicate is called with the assignment restricted
   to the constraint's node scope;
-* ``"algebraic"``: the constraints are compiled into one predicate (as for
+* ``"smoek"``: the constraints are compiled into one predicate (as for
   variable elimination, with
-  :func:`~conin.constraints.algebraic.create_oracle_constraints_from_algebraic`;
+  :func:`~conin.constraints.smoek.create_oracle_constraints_from_smoek`;
   needs smoek) and evaluated like a factor oracle;
 * ``"mvr"``: each MVR is run along the hidden sequence (HMMs only);
 * ``"recursive"``: each recursive constraint is run along the hidden sequence
@@ -40,8 +40,8 @@ from conin.constraints import (
     RecursiveConstraint,
     Toulbar2Constraint,
 )
-from conin.constraints.algebraic import create_oracle_constraints_from_algebraic
-from conin.constraints.algebraic.add_constraints_oracle import StateSpace
+from conin.constraints.smoek import create_oracle_constraints_from_smoek
+from conin.constraints.smoek.add_constraints_oracle import StateSpace
 from conin.constraints.mvr import BaseMVR, InhomMVR
 from conin.constraints.oracle import oracle_accepts
 from conin.exceptions import InvalidInputError
@@ -74,7 +74,7 @@ def is_feasible(cmodel, assignment, observed=None):
         ``0..T-1``).
     observed : list or dict, optional
         HMMs only: the observed labels, needed only by ``"factor_oracle"`` and
-        ``"algebraic"`` constraints that refer to the ``("E", t)`` nodes.
+        ``"smoek"`` constraints that refer to the ``("E", t)`` nodes.
 
     Returns
     -------
@@ -87,7 +87,7 @@ def is_feasible(cmodel, assignment, observed=None):
         * ``"factor_oracle"`` predicates see the assignment restricted to
           their node scope (the nodes ``("H", t)`` and ``("E", t)`` of the
           unrolled model for an HMM, as for variable elimination);
-        * ``"algebraic"`` constraints are compiled into a predicate (this
+        * ``"smoek"`` constraints are compiled into a predicate (this
           needs smoek) and see what factor oracles see;
         * ``"mvr"`` constraints are run along the sequence (see
           :func:`mvr_accepts`); ``MVRConstraint`` factories are called with
@@ -277,10 +277,10 @@ def _check_constraints(
         What ``"oracle"`` predicates see (node names to states; time indices
         to hidden states for an HMM).
     factor_assignment : dict
-        What ``"factor_oracle"`` and ``"algebraic"`` constraints see (the
+        What ``"factor_oracle"`` and ``"smoek"`` constraints see (the
         nodes of the possibly unrolled model to states).
     state_space : StateSpace
-        The nodes and states the algebraic constraints are compiled against.
+        The nodes and states the smoek constraints are compiled against.
     data : object
         Passed to constraint functions that take a second argument (and to
         callable node scopes).
@@ -289,10 +289,10 @@ def _check_constraints(
         ``"recursive"`` constraints).
     """
     constraints = cmodel.constraints
-    if cmodel.constraint_family == "algebraic":
-        # The algebraic constraints are compiled together, into one factor
+    if cmodel.constraint_family == "smoek":
+        # The smoek constraints are compiled together, into one factor
         # oracle over the whole state space.
-        constraints = create_oracle_constraints_from_algebraic(
+        constraints = create_oracle_constraints_from_smoek(
             pgm=state_space, constraints=list(constraints), data=data
         )
     ctx = munch.Munch(
@@ -351,7 +351,7 @@ def _accepts(constraint: PyomoConstraint | Toulbar2Constraint, ctx):
         f"Feasibility checks are not supported for {family!r} constraints: "
         "their functions can add variables and constraints to the "
         f"{family} model, so checking them is an optimization feasibility "
-        "problem. Use oracle, factor_oracle, algebraic or mvr constraints."
+        "problem. Use oracle, factor_oracle, smoek or mvr constraints."
     )
 
 

@@ -3,8 +3,8 @@
 * :class:`PyomoVarWrapper`: the ``model.V(...)`` accessor that user constraint
   functions see (defined in :mod:`conin.util.var_wrapper`, re-exported here);
 * :func:`apply_pyomo_constraints`: the single constraint applier for the
-  Pyomo-backend families (``"pyomo"`` and ``"algebraic"``), including the
-  smoek->Pyomo translation (:func:`add_algebraic_constraints_to_pyomo_model`);
+  Pyomo-backend families (``"pyomo"`` and ``"smoek"``), including the
+  smoek->Pyomo translation (:func:`add_smoek_constraints_to_pyomo_model`);
 * :func:`_create_pyomo_map_query_model`: the IP built
   from a factor representation ``(S, J, v, w)``, plus the c5 helpers
   (:func:`add_c5_constraints`, :func:`has_omitted_c5`,
@@ -19,7 +19,7 @@ import munch
 import pyomo.environ as pe
 from pyomo.common.timing import TicTocTimer
 
-from conin.constraints.algebraic.decorators import build_smoek_model
+from conin.constraints.smoek.decorators import build_smoek_model
 from conin.representations.base import Representation, apply_constraints
 from conin.util import try_import, State
 from conin.util.constraint_data import merge_constraint_data
@@ -61,8 +61,8 @@ of constraints is O(N + M + Mcl + Mc) = O(N + Mcl).
 """
 
 
-def add_algebraic_constraints_to_pyomo_model(*, pgm, constraints, model, data):
-    """Translate smoek (algebraic) constraints into Pyomo components on ``model``.
+def add_smoek_constraints_to_pyomo_model(*, pgm, constraints, model, data):
+    """Translate smoek constraints into Pyomo components on ``model``.
 
     ``model.V`` must be the :class:`PyomoVarWrapper` of the model.  ``pgm`` is
     unused (kept for symmetry with the other backends).
@@ -98,8 +98,8 @@ def apply_pyomo_constraints(*, pgm, constraints, model, data):
     ----------
     pgm : GraphicalModel
         The (possibly unrolled) model the formulation was built from.
-    constraints : sequence of PyomoConstraint or AlgebraicConstraint
-        Constraints of one family (``"pyomo"`` or ``"algebraic"``).
+    constraints : sequence of PyomoConstraint or SmoekConstraint
+        Constraints of one family (``"pyomo"`` or ``"smoek"``).
     model : pyomo.environ.ConcreteModel
         The model; constraint functions see ``model.V(...)``.
     data : object
@@ -118,7 +118,7 @@ def apply_pyomo_constraints(*, pgm, constraints, model, data):
         constraints,
         {
             "pyomo": lambda cons: _apply_pyomo_family(cons, model, data),
-            "algebraic": lambda cons: add_algebraic_constraints_to_pyomo_model(
+            "smoek": lambda cons: add_smoek_constraints_to_pyomo_model(
                 pgm=pgm, constraints=cons, model=model, data=data
             ),
         },
@@ -377,7 +377,7 @@ class PyomoFactorRepresentation(Representation):
     pgm : GraphicalModel
         The model passed to the constraint applier (the MN, BN or unrolled BN/DBN).
     constraints : tuple
-        The user constraints (family ``"pyomo"`` or ``"algebraic"``).
+        The user constraints (family ``"pyomo"`` or ``"smoek"``).
     nodes : tuple
         The nodes of the (unrolled) model the IP ranges over.
     data : object or None

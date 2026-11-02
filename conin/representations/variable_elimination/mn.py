@@ -18,7 +18,7 @@ class VariableEliminationMNRepresentation(VariableEliminationRepresentation):
 @register_representation(
     "variable_elimination",
     DiscreteMarkovNetwork,
-    families=(None, "factor_oracle", "algebraic"),
+    families=(None, "factor_oracle", "smoek"),
 )
 def _build(cmodel):
     return VariableEliminationMNRepresentation(

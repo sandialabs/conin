@@ -41,7 +41,7 @@ def build_pyomo_bn_representation(
 
 
 @register_representation(
-    "pyomo", DiscreteBayesianNetwork, families=(None, "pyomo", "algebraic")
+    "pyomo", DiscreteBayesianNetwork, families=(None, "pyomo", "smoek")
 )
 def _build(cmodel):
     return build_pyomo_bn_representation(

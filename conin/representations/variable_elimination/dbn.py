@@ -39,7 +39,7 @@ def build_variable_elimination_dbn_representation(
 @register_representation(
     "variable_elimination",
     DynamicDiscreteBayesianNetwork,
-    families=(None, "factor_oracle", "algebraic"),
+    families=(None, "factor_oracle", "smoek"),
 )
 def _build(cmodel, *, start=0, stop=None):
     start, stop = dbn_time_range(start, stop)

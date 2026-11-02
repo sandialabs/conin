@@ -12,7 +12,7 @@ class ConstrainedHiddenMarkovModel(ConstrainedGraphicalModel):
         Hidden Markov model to wrap.
     constraints : Constraint or iterable of Constraint, optional
         Constraints of one family: ``"oracle"``, ``"factor_oracle"``,
-        ``"pyomo"``, ``"algebraic"``, ``"toulbar2"``, ``"mvr"`` or
+        ``"pyomo"``, ``"smoek"``, ``"toulbar2"``, ``"mvr"`` or
         ``"recursive"``.
     data : object, optional
         Application data passed to the representation builders (MVR
@@ -30,15 +30,15 @@ class ConstrainedHiddenMarkovModel(ConstrainedGraphicalModel):
     * ``"recursive"`` (no constraints or ``"recursive"``): the combined
       recursive constraint, used by recursive A*;
     * ``"variable_elimination"`` (no constraints, ``"factor_oracle"`` or
-      ``"algebraic"``; structure params ``start``, ``stop``): the factors of
+      ``"smoek"``; structure params ``start``, ``stop``): the factors of
       the unrolled model, used by variable elimination;
-    * ``"toulbar2"`` (no constraints, ``"toulbar2"`` or ``"algebraic"``;
+    * ``"toulbar2"`` (no constraints, ``"toulbar2"`` or ``"smoek"``;
       structure params ``start``, ``stop``): the cost function network;
-    * ``"pyomo"`` (no constraints, ``"pyomo"`` or ``"algebraic"``;
+    * ``"pyomo"`` (no constraints, ``"pyomo"`` or ``"smoek"``;
       structure params ``start``, ``stop``): the integer program of the
       unrolled model (``ip_formulation="markov_network"``);
     * ``"pyomo_network_flow"`` (no constraints, ``"pyomo"`` or
-      ``"algebraic"``): the network-flow integer program;
+      ``"smoek"``): the network-flow integer program;
     * ``"mvr"`` (no constraints or ``"mvr"``): the built MVRs, aligned to
       the HMM (``representation("mvr").mvrs``), used by the torch MVR
       algorithms (:mod:`conin.algorithms.inference.mvr`, :mod:`conin.algorithms.learning.mvr`

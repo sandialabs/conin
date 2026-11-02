@@ -19,7 +19,7 @@ class VariableEliminationBNRepresentation(VariableEliminationRepresentation):
 @register_representation(
     "variable_elimination",
     DiscreteBayesianNetwork,
-    families=(None, "factor_oracle", "algebraic"),
+    families=(None, "factor_oracle", "smoek"),
 )
 def _build(cmodel):
     return VariableEliminationBNRepresentation(
