@@ -1,7 +1,6 @@
 from conin.graphical_models import DiscreteMarkovNetwork
 
 from .base import ConstrainedGraphicalModel
-from .feasibility import StateSpace, check_constraints, check_total_assignment
 
 
 class ConstrainedDiscreteMarkovNetwork(ConstrainedGraphicalModel):
@@ -33,38 +32,3 @@ class ConstrainedDiscreteMarkovNetwork(ConstrainedGraphicalModel):
     def states_of(self, node):
         """Return the allowed states for ``node`` in the underlying model."""
         return self.model.states_of(node)
-
-    def is_feasible(self, assignment):
-        """Return whether a total assignment satisfies the constraints.
-
-        Parameters
-        ----------
-        assignment : dict
-            A state for every node of the model.
-
-        Returns
-        -------
-        bool
-            ``True`` if every constraint is satisfied (always, without
-            constraints).  ``"oracle"`` and ``"factor_oracle"`` predicates see
-            the assignment (restricted to their node scope for factor oracles)
-            and the model's ``data``; ``"algebraic"`` constraints are compiled into a
-            predicate (this needs smoek).
-
-        Raises
-        ------
-        InvalidInputError
-            If ``assignment`` is not a total assignment of the model.
-        NotImplementedError
-            For ``"pyomo"`` and ``"toulbar2"`` constraints, whose functions can
-            add variables to the backend model.
-        """
-        states = self.model.states
-        check_total_assignment(states, assignment)
-        return check_constraints(
-            self,
-            assignment=assignment,
-            factor_assignment=assignment,
-            state_space=StateSpace(states),
-            data=self.data,
-        )

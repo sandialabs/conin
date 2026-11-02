@@ -32,8 +32,8 @@ _REGISTRY = {}
 
 # Modules that register the built-in builders.  They are imported on first use
 # of the registry, not at ``import conin`` time: they import modules (e.g.
-# conin.constrained_models.feasibility) that themselves import the constrained
-# models.
+# conin.io, through the toulbar2 representations) that themselves import the
+# constrained models.
 _BUILTIN_MODULES = (
     "conin.representations.matvec.hmm",
     "conin.representations.oracle.hmm",

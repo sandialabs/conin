@@ -42,12 +42,12 @@ order. The constructor checks that the probabilities are nonnegative and that
 the start probabilities and each row of transition and emission probabilities
 sum to 1 (``InvalidInputError`` otherwise).
 
-Sequences are sampled with ``conin.sampling.unconstrained`` (NumPy's global
+Sequences are sampled with ``conin.algorithms.sampling.unconstrained`` (NumPy's global
 random state, which ``hmm.set_seed`` seeds):
 
 .. testcode::
 
-   from conin.sampling.unconstrained import (
+   from conin.algorithms.sampling.unconstrained import (
        generate_hidden,
        generate_observed,
        generate_observed_from_hidden,
@@ -58,7 +58,7 @@ random state, which ``hmm.set_seed`` seeds):
    assert len(generate_observed(hmm, 5)) == 5
 
 For a constrained HMM with oracle constraints, use
-``conin.sampling.oracle.rejection_sample_hidden(chmm, time_steps)``.
+``conin.algorithms.sampling.oracle.rejection_sample_hidden(chmm, time_steps)``.
 
 Random HMMs
 -----------
@@ -139,7 +139,7 @@ Pyomo or algebraic constraints), ``"toulbar2"`` (the cost function network of
 the unrolled model; no constraints, Toulbar2 or algebraic constraints) and
 ``"mvr"`` (no constraints or MVR constraints; the built MVRs, aligned to the
 HMM, are ``chmm.representation("mvr").mvrs``). The torch MVR algorithms in
-``conin.inference.mvr``, ``conin.learning.mvr`` and ``conin.sampling.mvr``
+``conin.algorithms.inference.mvr``, ``conin.algorithms.learning.mvr`` and ``conin.algorithms.sampling.mvr``
 take a ``ConstrainedHiddenMarkovModel`` with MVR
 constraints; see the notebooks in ``doc/notebooks/MVR``.
 ``map_query(chmm, method="mvr_viterbi", evidence=observed)`` runs the torch
@@ -291,7 +291,7 @@ oracle constraint. ``create_chmm1_recursive`` expresses the condition of
    from conin.constrained_models import ConstrainedHiddenMarkovModel
    from conin.constraints import RecursiveConstraint
    from conin.examples.hidden_markov_model import create_hmm1
-   from conin.inference.recursive import recursive_a_star
+   from conin.algorithms.inference.recursive import recursive_a_star
 
    lb, ub = 10, 12
    num_zeros = RecursiveConstraint(

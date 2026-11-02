@@ -89,6 +89,17 @@ class OracleConstraint(Constraint):
         return self.func(*args, **kwargs)
 
 
+def oracle_accepts(constraint, assignment, data):
+    """Evaluate an ``OracleConstraint`` on a total assignment.
+
+    The predicate is called as ``func(assignment, data)`` if it takes two
+    arguments, else as ``func(assignment)``.
+    """
+    if constraint.num_args == 2:
+        return bool(constraint(assignment, data))
+    return bool(constraint(assignment))
+
+
 def oracle_constraint_fn(*, nodes=None, name=None, same_partial_as_func=None):
     """
     Decorator factory that creates an oracle constraint.

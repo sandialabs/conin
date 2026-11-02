@@ -10,6 +10,24 @@ with try_import() as smoek_available:
     import smoek
 
 
+class StateSpace:
+    """The ``nodes`` and ``states_of`` of a (possibly unrolled) model.
+
+    This is the part of a graphical model the algebraic-constraint compiler
+    reads.
+    """
+
+    def __init__(self, states):
+        self._states = dict(states)
+
+    @property
+    def nodes(self):
+        return list(self._states)
+
+    def states_of(self, node):
+        return self._states[node]
+
+
 def create_oracle_constraints_from_algebraic(*, pgm, constraints, data, name=None):
     """
     Convert a list of AlgebraicConstraints into a list with a single FactorOracleConstraint.

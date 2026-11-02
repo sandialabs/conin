@@ -5,6 +5,7 @@ import pickle
 
 import pytest
 
+from conin.algorithms.feasibility import is_feasible
 from conin import pyomo_constraint_fn, toulbar2_constraint_fn
 from conin.constrained_models import (
     ConstrainedGraphicalModel,
@@ -22,7 +23,7 @@ from conin.representations import (
     unregister_representation,
     supported_representations,
 )
-from conin.sampling.oracle import rejection_sample_hidden
+from conin.algorithms.sampling.oracle import rejection_sample_hidden
 import conin.examples.hidden_markov_model as tc
 
 
@@ -349,7 +350,7 @@ def test_deepcopy_constrained_hmm_keeps_behaviour():
     chmm = tc.create_chmm1_oracle()
     c2 = copy.deepcopy(chmm)
     seq = ["h0"] * 11
-    assert c2.is_feasible(seq) and chmm.is_feasible(seq)
+    assert is_feasible(c2, seq) and is_feasible(chmm, seq)
     assert c2.model is not chmm.model
 
 
@@ -368,7 +369,7 @@ def test_hmm_rejection_sampling_requires_oracle_family():
     assert rejection_sample_hidden(ConstrainedHiddenMarkovModel(hmm, oc), 3)
     with pytest.raises(InvalidInputError):
         rejection_sample_hidden(ConstrainedHiddenMarkovModel(hmm, pyomo_c), 3)
-    # The sampling methods moved to conin.sampling.
+    # The sampling methods moved to conin.algorithms.sampling.
     for name in (
         "generate_hidden",
         "generate_observed",

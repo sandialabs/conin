@@ -12,8 +12,8 @@ from conin.representations.methods import (
     representation_kind,
 )
 
-mq = importlib.import_module("conin.inference.map_query")
-lpq = importlib.import_module("conin.scoring.log_probability_query")
+mq = importlib.import_module("conin.algorithms.inference.query")
+lpq = importlib.import_module("conin.algorithms.scoring.query")
 
 
 def test_every_method_has_a_representation_kind():

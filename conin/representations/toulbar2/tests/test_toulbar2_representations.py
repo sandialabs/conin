@@ -24,8 +24,8 @@ from conin.graphical_models import (
     HiddenMarkovModel,
     create_bn_from_dbn,
 )
-from conin.inference import map_query
-from conin.inference.toulbar2 import solve_toulbar2_map_query_model
+from conin.algorithms.inference import map_query
+from conin.algorithms.inference.toulbar2 import solve_toulbar2_map_query_model
 from conin.io import save_model
 from conin.representations import supported_representations
 from conin.representations.toulbar2 import (
@@ -329,7 +329,7 @@ def test_unknown_options_still_raise():
     ids=["mn", "bn", "dbn", "hmm"],
 )
 def test_pytoulbar2_not_available(monkeypatch, example, kwds):
-    import conin.inference.toulbar2.solve as mod
+    import conin.algorithms.inference.toulbar2.solve as mod
 
     monkeypatch.setattr(mod, "pytoulbar2_available", False)
     pgm = example()

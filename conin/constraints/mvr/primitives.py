@@ -553,7 +553,7 @@ def mvr_jumpcounts(
             evl=evl,
         )
 
-    # Deliberately duplicated from mvr_count rather than shared. See CLAUDE.md.
+    # Deliberately duplicated from mvr_count rather than shared.
     exact_match = re.fullmatch(r"\d+", condition)
 
     if exact_match is not None:

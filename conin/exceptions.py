@@ -8,7 +8,7 @@ class InfeasibleQueryError(InvalidInputError):
     Raised while a backend builds or searches a model that can then have no
     solution (e.g. observations of probability zero).  ``map_query`` returns
     its no-solution result instead (``solution=None``; see
-    :mod:`conin.inference.results`).  It is an ``InvalidInputError``, so
+    :mod:`conin.algorithms.inference.results`).  It is an ``InvalidInputError``, so
     callers that caught that error before still do.
     """
 

@@ -33,7 +33,7 @@ from conin.representations.pyomo import (
     PyomoVarWrapper,
 )
 from conin.util import State
-from conin.inference import map_query
+from conin.algorithms.inference import map_query
 
 skipif_no_mip_solver = pytest.mark.skipif(
     not default_mip_solver, reason="No mip solver installed"

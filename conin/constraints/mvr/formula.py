@@ -328,7 +328,7 @@ class _Parser:
         return node
 
     def parse_setdiff(self) -> Any:
-        # Below concatenation, with the other set operators. See CLAUDE.md.
+        # Below concatenation, with the other set operators.
         node = self.parse_window()
 
         while self.at_words("but", "not"):
@@ -767,7 +767,7 @@ def _lower(node, hidden_markov_model, formula):
         return builder(operand, node.k)
 
     if isinstance(node, _Window):
-        # Applied last and never in place. See CLAUDE.md.
+        # Applied last and never in place.
         return mvr_timerange(operand, list(node.time_range), inplace=False)
 
     if isinstance(node, _Binary):

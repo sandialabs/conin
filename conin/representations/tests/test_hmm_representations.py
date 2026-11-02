@@ -9,6 +9,7 @@ import pyomo.environ as pyo
 import pytest
 
 import conin.examples.hidden_markov_model as tc
+from conin.algorithms.feasibility import is_feasible
 from conin.config import default_mip_solver
 from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.constraints import (
@@ -26,9 +27,9 @@ from conin.representations.matvec import MatVecHMMRepresentation
 from conin.representations.mvr import MVRHMMRepresentation
 from conin.representations.oracle import OracleHMMRepresentation
 from conin.representations.recursive import RecursiveHMMRepresentation
-from conin.sampling.oracle import rejection_sample_hidden
-from conin.sampling.unconstrained import generate_hidden
-from conin.inference.pyomo import ip_inference
+from conin.algorithms.sampling.oracle import rejection_sample_hidden
+from conin.algorithms.sampling.unconstrained import generate_hidden
+from conin.algorithms.inference.pyomo import ip_inference
 
 # ---------------------------------------------------------------------
 # "oracle"
@@ -78,7 +79,7 @@ def test_oracle_agrees_with_is_feasible_on_external_labels():
     repn = cmodel.representation("oracle")
     h2e = cmodel.model.hidden_to_external
     for seq in ([0] * 9, [0] * 11, [0] * 10 + [1] * 5, [1] * 12):
-        assert repn.is_feasible(seq) == cmodel.is_feasible([h2e[h] for h in seq])
+        assert repn.is_feasible(seq) == is_feasible(cmodel, [h2e[h] for h in seq])
 
 
 def test_oracle_two_argument_predicates_get_the_constraint_data():
@@ -98,9 +99,9 @@ def test_oracle_two_argument_predicates_get_the_constraint_data():
         stop=3,
         hmm=munch.Munch(T=[0, 1, 2, 3], hidden_to_internal=hmm.hidden_to_internal),
     )
-    # The same answer as ConstrainedHiddenMarkovModel.is_feasible.
-    assert cmodel.is_feasible(["h0", "h0", "h1", "h1"])
-    assert not cmodel.is_feasible(["h0", "h0", "h0", "h1"])
+    # The same answer as is_feasible.
+    assert is_feasible(cmodel, ["h0", "h0", "h1", "h1"])
+    assert not is_feasible(cmodel, ["h0", "h0", "h0", "h1"])
 
 
 def test_oracle_without_constraints_accepts_everything():

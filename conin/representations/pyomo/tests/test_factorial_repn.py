@@ -5,7 +5,7 @@ import pyomo.opt
 
 from conin.util import try_import
 from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
-from conin.inference.pyomo import solve_pyomo_map_query_model
+from conin.algorithms.inference.pyomo import solve_pyomo_map_query_model
 from conin.representations.pyomo.common import (
     _create_pyomo_map_query_model,
 )
