@@ -11,7 +11,6 @@ import conin.examples.markov_network as mex
 from conin.algorithms.feasibility import is_feasible
 from conin.exceptions import InvalidInputError
 from conin.algorithms.inference import map_query
-from conin.util import try_import
 
 
 def _ve(pgm, **kwds):

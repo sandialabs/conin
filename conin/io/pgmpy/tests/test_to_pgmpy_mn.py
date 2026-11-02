@@ -1,6 +1,4 @@
 import pytest
-import os
-import sys
 import numpy as np
 
 from conin.util import try_import
@@ -10,9 +8,8 @@ import conin.examples.markov_network
 import conin.examples.bayesian_network
 
 with try_import() as pgmpy_available:
-    import pgmpy
+    import pgmpy  # noqa: F401
     from pgmpy.models import DiscreteMarkovNetwork as pgmpy_DiscreteMarkovNetwork
-    from pgmpy.factors.discrete import DiscreteFactor as pgmpy_DiscreteFactor
 
 # Mark tests that require pgmpy
 require_pgmpy = pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")

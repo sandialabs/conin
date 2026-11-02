@@ -29,7 +29,6 @@ from conin.representations.pyomo import (
     PyomoDBNRepresentation,
     PyomoHMMRepresentation,
     PyomoMNRepresentation,
-    PyomoNetworkFlowHMMRepresentation,
     PyomoVarWrapper,
 )
 from conin.util import State

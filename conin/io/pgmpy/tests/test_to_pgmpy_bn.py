@@ -1,6 +1,4 @@
 import pytest
-import os
-import sys
 import numpy as np
 
 from conin.util import try_import
@@ -8,9 +6,8 @@ from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
 from conin.io.pgmpy import convert_conin_to_pgmpy_bn
 
 with try_import() as pgmpy_available:
-    import pgmpy
+    import pgmpy  # noqa: F401
     from pgmpy.models import DiscreteBayesianNetwork as pgmpy_DiscreteBayesianNetwork
-    from pgmpy.factors.discrete import TabularCPD as pgmpy_TabularCPD
 
 # Mark tests that require pgmpy
 require_pgmpy = pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")

@@ -10,7 +10,7 @@ from conin.constraints.mvr import HomMVR, InhomMVR
 
 # importorskip only catches ImportError; a broken torch install raises OSError.
 try:
-    import torch
+    import torch  # noqa: F401
 except (ImportError, OSError) as exc:
     pytest.skip(f"torch not available: {exc}", allow_module_level=True)
 

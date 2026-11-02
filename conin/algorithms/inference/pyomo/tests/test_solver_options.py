@@ -13,10 +13,7 @@ import pytest
 
 import conin.examples.hidden_markov_model as hex_
 import conin.examples.markov_network as mex
-from conin.constrained_models import (
-    ConstrainedDiscreteMarkovNetwork,
-    ConstrainedHiddenMarkovModel,
-)
+from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
 from conin.algorithms.inference.pyomo import ip_inference, solve_pyomo_map_query_model
 
 solve_module = importlib.import_module("conin.algorithms.inference.pyomo.solve")

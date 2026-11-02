@@ -1,10 +1,8 @@
 import pytest
 import os
 import sys
-import filecmp
 import tempfile
 import shutil
-from unittest.mock import patch
 from io import StringIO
 
 from conin.util import try_import
@@ -15,7 +13,7 @@ with try_import() as pgmpy_available:
     import pgmpy
 
 with try_import() as pgmpy_readwrite_available:
-    import pgmpy.readwrite
+    import pgmpy.readwrite  # noqa: F401
 
 cwd = os.path.dirname(__file__)
 

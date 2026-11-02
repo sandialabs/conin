@@ -7,7 +7,7 @@ from conin.examples import bayesian_network as examples
 from conin.algorithms.inference import map_query
 
 with try_import() as pytoulbar2_available:
-    import pytoulbar2
+    import pytoulbar2  # noqa: F401
 
 mip_solver = pyomo.opt.check_available_solvers("gurobi", "highs", "glpk")
 mip_solver = mip_solver[0] if mip_solver else None

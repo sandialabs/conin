@@ -1,5 +1,3 @@
-import pytest
-
 from conin.representations.pyomo.hmm_network_flow import _create_index_sets
 
 import conin.examples.hidden_markov_model as tc

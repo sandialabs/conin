@@ -11,7 +11,7 @@ with try_import() as pgmpy_available:
     import pgmpy
 
 with try_import() as pgmpy_readwrite_available:
-    import pgmpy.readwrite
+    import pgmpy.readwrite  # noqa: F401
 
 cwd = os.path.dirname(__file__)
 
@@ -94,17 +94,17 @@ if pgmpy_readwrite_available:
 
 def Xtest_save_model_error1():
     with pytest.raises(RuntimeError):
-        pgm = save_model(os.path.join(cwd, "unknown.uai"))
+        save_model(os.path.join(cwd, "unknown.uai"))
 
 
 def test_save_model_error2(asia_uai):
     with pytest.raises(RuntimeError):
-        pgm = save_model(asia_uai, os.path.join(cwd, "test_save_model.py"))
+        save_model(asia_uai, os.path.join(cwd, "test_save_model.py"))
 
 
 def test_save_model_error3(asia_uai):
     with pytest.raises(RuntimeError):
-        pgm = save_model(asia_uai, os.path.join(cwd, "asia.uai"), model_type="unknown")
+        save_model(asia_uai, os.path.join(cwd, "asia.uai"), model_type="unknown")
 
 
 def test_save_model_documented_io_namespace(asia_uai, tmp_path):
@@ -119,7 +119,7 @@ def test_save_model_documented_io_namespace(asia_uai, tmp_path):
 )
 def test_save_model_error4(asia_uai):
     with pytest.raises(ImportError):
-        pgm = save_model(asia_uai, os.path.join(cwd, "asia.uai"), model_type="pgmpy")
+        save_model(asia_uai, os.path.join(cwd, "asia.uai"), model_type="pgmpy")
 
 
 #
@@ -129,13 +129,13 @@ def test_save_model_error4(asia_uai):
 
 def test_save_model_asia_uai1_uai(asia_uai, tmp_path):
     fname = str(tmp_path / "asia_test.uai")
-    pgm = save_model(asia_uai, fname)
+    save_model(asia_uai, fname)
 
 
 @pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
 def test_save_model_asia_uai1_bif(asia_bif, tmp_path):
     fname = str(tmp_path / "asia_test.uai")
-    pgm = save_model(asia_bif, fname)
+    save_model(asia_bif, fname)
 
 
 #
@@ -145,7 +145,7 @@ def test_save_model_asia_uai1_bif(asia_bif, tmp_path):
 
 def test_save_model_barley_uai1_uai(barley_uai, tmp_path):
     fname = str(tmp_path / "barley_test.uai")
-    pgm = save_model(barley_uai, fname)
+    save_model(barley_uai, fname)
 
 
 #
@@ -155,7 +155,7 @@ def test_save_model_barley_uai1_uai(barley_uai, tmp_path):
 
 def test_save_model_cancer_bn_uai(cancer_bn_uai, tmp_path):
     fname = str(tmp_path / "cancer_bn_test.uai")
-    pgm = save_model(cancer_bn_uai, fname)
+    save_model(cancer_bn_uai, fname)
 
     orig = os.path.join(cwd, "cancer_bn.uai")
     assert filecmp.cmp(orig, fname) == True
@@ -168,7 +168,7 @@ def test_save_model_cancer_bn_uai(cancer_bn_uai, tmp_path):
 
 def test_save_model_cancer_mn_uai(cancer_mn_uai, tmp_path):
     fname = str(tmp_path / "cancer_mn_test.uai")
-    pgm = save_model(cancer_mn_uai, fname)
+    save_model(cancer_mn_uai, fname)
 
     orig = os.path.join(cwd, "cancer_mn.uai")
     assert filecmp.cmp(orig, fname) == True
@@ -181,7 +181,7 @@ def test_save_model_cancer_mn_uai(cancer_mn_uai, tmp_path):
 
 def test_save_model_deer1_conin(deer_uai, tmp_path):
     fname = str(tmp_path / "deer_test.uai")
-    pgm = save_model(deer_uai, fname)
+    save_model(deer_uai, fname)
 
 
 #
@@ -191,7 +191,7 @@ def test_save_model_deer1_conin(deer_uai, tmp_path):
 
 def test_save_model_toulbar2_conin(toulbar2_bn_uai, tmp_path):
     fname = str(tmp_path / "toulbar2_bn_test.uai")
-    pgm = save_model(toulbar2_bn_uai, fname)
+    save_model(toulbar2_bn_uai, fname)
 
     orig = os.path.join(cwd, "toulbar2_bn.uai")
     assert filecmp.cmp(orig, fname) == True
@@ -204,10 +204,10 @@ def test_save_model_toulbar2_conin(toulbar2_bn_uai, tmp_path):
 
 def test_save_model_tiny_bn(tiny_bn_orig, tiny_bn_permuted, tmp_path):
     fname_orig = str(tmp_path / "tiny_bn_orig.uai")
-    pgm_orig = save_model(tiny_bn_orig, fname_orig)
+    save_model(tiny_bn_orig, fname_orig)
 
     fname_permuted = str(tmp_path / "tiny_bn_permuted.uai")
-    pgm_permuted = save_model(tiny_bn_permuted, fname_permuted)
+    save_model(tiny_bn_permuted, fname_permuted)
 
     assert filecmp.cmp(fname_orig, fname_permuted)
 

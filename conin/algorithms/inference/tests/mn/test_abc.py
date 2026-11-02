@@ -1,4 +1,3 @@
-import pyomo.environ as pyo
 import pyomo.opt
 
 from conin.util import try_import
@@ -6,10 +5,10 @@ from conin.examples import markov_network as examples
 from conin.algorithms.inference import map_query
 
 with try_import() as pytoulbar2_available:
-    import pytoulbar2
+    import pytoulbar2  # noqa: F401
 
 with try_import() as or_topas_available:
-    import or_topas
+    import or_topas  # noqa: F401
 
 mip_solver = pyomo.opt.check_available_solvers("gurobi", "highs", "glpk")
 mip_solver = mip_solver[0] if mip_solver else None
@@ -95,9 +94,9 @@ def test_ABC_constrained_pyomo_conin_mip():
     q = {"A": 2, "C": 1}
     evidence = {"B": 0}
     results = map_query(
-        example.pgm, method="integer_program", solver=mip_solver, evidence={"B": 0}
+        example.pgm, method="integer_program", solver=mip_solver, evidence=evidence
     )
-    assert results.solution.states == {"A": 2, "C": 1}
+    assert results.solution.states == q
 
 
 # ===============================================================================

@@ -1,7 +1,5 @@
 import pytest
-import pyomo.opt
 
-from conin.util import try_import
 from conin.algorithms.inference.query import map_query
 import conin.examples.hidden_markov_model
 
@@ -18,7 +16,6 @@ def test_map_query_Viterbi_hmm1_list_evidence():
         method="viterbi",
         variables=None,
         evidence=observed,
-        show_progress=False,
         timing=False,
         start=0,
         stop=None,
@@ -34,7 +31,6 @@ def test_map_query_Viterbi_hmm1_dict_evidence():
         method="viterbi",
         variables=None,
         evidence=observed,
-        show_progress=False,
         timing=False,
         start=0,
         stop=None,
@@ -56,7 +52,6 @@ def test_map_query_Viterbi_hmm1_test1_list():
         method="viterbi",
         variables=None,
         evidence=observed,
-        show_progress=False,
         timing=False,
         start=0,
         stop=None,
@@ -72,7 +67,6 @@ def test_map_query_Viterbi_hmm1_test1_dict():
         method="viterbi",
         variables=None,
         evidence=observed,
-        show_progress=False,
         timing=False,
         start=0,
         stop=None,
@@ -97,7 +91,6 @@ def test_map_query_Viterbi_unsupported_model():
             method="viterbi",
             variables=None,
             evidence=[],
-            show_progress=False,
             timing=False,
             start=0,
             stop=None,

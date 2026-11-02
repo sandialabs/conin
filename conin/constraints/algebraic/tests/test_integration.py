@@ -9,14 +9,13 @@ import pytest
 from conin.util import try_import
 
 with try_import() as smoek_available:
-    import smoek
+    import smoek  # noqa: F401
 
 if not smoek_available:
     pytestmark = pytest.mark.skip(reason="Smoek not installed")
 
 
 import pyomo.environ as pyo
-from munch import Munch
 
 from conin.examples.bayesian_network import cancer1_BN_conin
 from conin.constrained_models import ConstrainedDiscreteBayesianNetwork
@@ -26,7 +25,7 @@ from conin import pyomo_constraint_fn, algebraic_constraint_fn
 from conin.util import try_import
 
 with try_import() as pytoulbar2_available:
-    import pytoulbar2
+    import pytoulbar2  # noqa: F401
 
 skipif_toulbar2_not_available = pytest.mark.skipif(
     not pytoulbar2_available, reason="pytoulbar2 not installed"

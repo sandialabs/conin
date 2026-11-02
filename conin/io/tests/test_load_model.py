@@ -16,7 +16,7 @@ with try_import() as pgmpy_available:
 # installations.
 #
 with try_import() as pgmpy_readwrite_available:
-    import pgmpy.readwrite
+    import pgmpy.readwrite  # noqa: F401
 
 cwd = os.path.dirname(__file__)
 
@@ -27,17 +27,17 @@ cwd = os.path.dirname(__file__)
 
 def test_load_model_error1():
     with pytest.raises(RuntimeError):
-        pgm = load_model(os.path.join(cwd, "unknown.uai"))
+        load_model(os.path.join(cwd, "unknown.uai"))
 
 
 def test_load_model_error2():
     with pytest.raises(RuntimeError):
-        pgm = load_model(os.path.join(cwd, "test_load_model.py"))
+        load_model(os.path.join(cwd, "test_load_model.py"))
 
 
 def test_load_model_error3():
     with pytest.raises(RuntimeError):
-        pgm = load_model(os.path.join(cwd, "asia.uai"), model_type="unknown")
+        load_model(os.path.join(cwd, "asia.uai"), model_type="unknown")
 
 
 def test_load_model_documented_io_namespace():
@@ -50,7 +50,7 @@ def test_load_model_documented_io_namespace():
 )
 def test_load_model_error4():
     with pytest.raises(ImportError):
-        pgm = load_model(os.path.join(cwd, "asia.uai"), model_type="pgmpy")
+        load_model(os.path.join(cwd, "asia.uai"), model_type="pgmpy")
 
 
 def test_pgmpy_load_model_requires_pgmpy(monkeypatch):
@@ -59,6 +59,14 @@ def test_pgmpy_load_model_requires_pgmpy(monkeypatch):
 
     with pytest.raises(ImportError, match="pgmpy"):
         module.load_model(os.path.join(cwd, "asia.uai"))
+
+
+@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+@pytest.mark.parametrize("model_type", ["conin", "pgmpy"])
+def test_load_model_missing_bif_file(tmp_path, model_type):
+    # A missing file used to be looked up as a pgmpy example model by name.
+    with pytest.raises(RuntimeError, match="Missing file"):
+        load_model(str(tmp_path / "missing.bif"), model_type=model_type)
 
 
 def test_pgmpy_load_model_file_requires_readwrite(monkeypatch):
@@ -76,21 +84,21 @@ def test_pgmpy_load_model_file_requires_readwrite(monkeypatch):
 
 
 def test_load_model_asia_uai1_conin():
-    pgm = load_model(os.path.join(cwd, "asia.uai"))
+    load_model(os.path.join(cwd, "asia.uai"))
 
 
 @pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
 def test_load_model_asia_uai1_pgmpy():
-    pgm = load_model(os.path.join(cwd, "asia.uai"), model_type="pgmpy")
+    load_model(os.path.join(cwd, "asia.uai"), model_type="pgmpy")
 
 
 def test_load_model_asia_uai2_conin():
-    pgm = load_model(os.path.join(cwd, "asia_compressed.uai.gz"))
+    load_model(os.path.join(cwd, "asia_compressed.uai.gz"))
 
 
 @pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
 def test_load_model_asia_uai2_pgmpy():
-    pgm = load_model(os.path.join(cwd, "asia_compressed.uai.gz"), model_type="pgmpy")
+    load_model(os.path.join(cwd, "asia_compressed.uai.gz"), model_type="pgmpy")
 
 
 #
@@ -100,22 +108,22 @@ def test_load_model_asia_uai2_pgmpy():
 
 @pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
 def test_load_model_asia_bif1_conin():
-    pgm = load_model(os.path.join(cwd, "asia.bif"))
+    load_model(os.path.join(cwd, "asia.bif"))
 
 
 @pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
 def test_load_model_asia_bif1_pgmpy():
-    pgm = load_model(os.path.join(cwd, "asia.bif"), model_type="pgmpy")
+    load_model(os.path.join(cwd, "asia.bif"), model_type="pgmpy")
 
 
 @pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
 def test_load_model_asia_bif2_conin():
-    pgm = load_model(os.path.join(cwd, "asia_compressed.bif.gz"))
+    load_model(os.path.join(cwd, "asia_compressed.bif.gz"))
 
 
 @pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
 def test_load_model_asia_bif2_pgmpy():
-    pgm = load_model(os.path.join(cwd, "asia_compressed.bif.gz"), model_type="pgmpy")
+    load_model(os.path.join(cwd, "asia_compressed.bif.gz"), model_type="pgmpy")
 
 
 #
@@ -124,11 +132,11 @@ def test_load_model_asia_bif2_pgmpy():
 
 
 def test_load_model_barley1_conin():
-    pgm = load_model(os.path.join(cwd, "barley.uai"))
+    load_model(os.path.join(cwd, "barley.uai"))
 
 
 def test_load_model_barley2_conin():
-    pgm = load_model(os.path.join(cwd, "barley_compressed.uai.gz"))
+    load_model(os.path.join(cwd, "barley_compressed.uai.gz"))
 
 
 #
@@ -137,11 +145,11 @@ def test_load_model_barley2_conin():
 
 
 def test_load_model_deer1_conin():
-    pgm = load_model(os.path.join(cwd, "deer.uai"))
+    load_model(os.path.join(cwd, "deer.uai"))
 
 
 def test_load_model_deer2_conin():
-    pgm = load_model(os.path.join(cwd, "deer_compressed.uai.gz"))
+    load_model(os.path.join(cwd, "deer_compressed.uai.gz"))
 
 
 #

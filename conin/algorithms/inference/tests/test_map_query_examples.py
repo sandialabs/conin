@@ -8,10 +8,10 @@ import conin.examples.hidden_markov_model
 import conin.examples.dynamic_bayesian_network
 
 with try_import() as pytoulbar2_available:
-    import pytoulbar2
+    import pytoulbar2  # noqa: F401
 
 with try_import() as smoek_available:
-    import smoek
+    import smoek  # noqa: F401
 
 import pytest
 

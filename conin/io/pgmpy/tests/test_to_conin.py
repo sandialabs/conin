@@ -9,7 +9,7 @@ with try_import() as pgmpy_available:
     import pgmpy
 
 with try_import() as pgmpy_readwrite_available:
-    import pgmpy.readwrite
+    import pgmpy.readwrite  # noqa: F401
     from conin.io.pgmpy import convert_pgmpy_to_conin
 
 

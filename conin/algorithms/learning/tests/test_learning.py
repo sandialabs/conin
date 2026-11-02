@@ -32,7 +32,7 @@ def test_add_unknowns():
 def test_add_unknowns_all_seen():
     # When every value appears more than num times, nothing is replaced.
     data = [["a", "b"], ["a", "b"]]
-    result = learning.add_unknowns([["a", "b"], ["a", "b"]])
+    result = learning.add_unknowns(data)
     assert result == [["a", "b"], ["a", "b"]]
 
 

@@ -31,7 +31,7 @@ from conin.algorithms.sampling.oracle import rejection_sample_hidden
 from conin.util import try_import
 
 with try_import() as pytoulbar2_available:
-    import pytoulbar2
+    import pytoulbar2  # noqa: F401
 
 skipif_toulbar2_not_available = pytest.mark.skipif(
     not pytoulbar2_available, reason="pytoulbar2 not installed"

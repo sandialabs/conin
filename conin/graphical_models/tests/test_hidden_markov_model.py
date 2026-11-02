@@ -52,7 +52,7 @@ class Test_HMM1:
         with pytest.raises(InvalidInputError):
             _start_probs = hmm.get_start_probs().copy()
             _start_probs["h0"] = -0.6
-            _hmm = HiddenMarkovModel(
+            HiddenMarkovModel(
                 start_probs=_start_probs,
                 transition_probs=hmm.get_transition_probs(),
                 emission_probs=hmm.get_emission_probs(),
@@ -63,7 +63,7 @@ class Test_HMM1:
         with pytest.raises(InvalidInputError):
             _start_probs = hmm.get_start_probs().copy()
             _start_probs["h2"] = 0.1
-            _hmm = HiddenMarkovModel(
+            HiddenMarkovModel(
                 start_probs=_start_probs,
                 transition_probs=hmm.get_transition_probs(),
                 emission_probs=hmm.get_emission_probs(),
@@ -74,7 +74,7 @@ class Test_HMM1:
         with pytest.raises(InvalidInputError):
             _start_probs = hmm.get_start_probs().copy()
             _start_probs["h0"] = 0.6
-            _hmm = HiddenMarkovModel(
+            HiddenMarkovModel(
                 start_probs=_start_probs,
                 transition_probs=hmm.get_transition_probs(),
                 emission_probs=hmm.get_emission_probs(),
@@ -89,7 +89,7 @@ class Test_HMM1:
         with pytest.raises(InvalidInputError):
             _transition_probs = hmm.get_transition_probs().copy()
             _transition_probs[("h0", "h0")] = -0.1
-            _hmm = HiddenMarkovModel(
+            HiddenMarkovModel(
                 start_probs=hmm.get_start_probs(),
                 transition_probs=_transition_probs,
                 emission_probs=hmm.get_emission_probs(),
@@ -100,7 +100,7 @@ class Test_HMM1:
         with pytest.raises(InvalidInputError):
             _transition_probs = hmm.get_transition_probs().copy()
             _transition_probs[("h0", "h0")] = 0.8
-            _hmm = HiddenMarkovModel(
+            HiddenMarkovModel(
                 start_probs=hmm.get_start_probs(),
                 transition_probs=_transition_probs,
                 emission_probs=hmm.get_emission_probs(),
@@ -111,7 +111,7 @@ class Test_HMM1:
         with pytest.raises(InvalidInputError):
             _transition_probs = hmm.get_transition_probs().copy()
             del _transition_probs[("h0", "h0")]
-            _hmm = HiddenMarkovModel(
+            HiddenMarkovModel(
                 start_probs=hmm.get_start_probs(),
                 transition_probs=_transition_probs,
                 emission_probs=hmm.get_emission_probs(),
@@ -122,7 +122,7 @@ class Test_HMM1:
         with pytest.raises(InvalidInputError):
             _transition_probs = hmm.get_transition_probs().copy()
             _transition_probs[("h", "h0")] = 0.3
-            _hmm = HiddenMarkovModel(
+            HiddenMarkovModel(
                 start_probs=hmm.get_start_probs(),
                 transition_probs=_transition_probs,
                 emission_probs=hmm.get_emission_probs(),
@@ -137,7 +137,7 @@ class Test_HMM1:
         with pytest.raises(InvalidInputError):
             _emission_probs = hmm.get_emission_probs().copy()
             _emission_probs[("h0", "h0")] = -0.1
-            _hmm = HiddenMarkovModel(
+            HiddenMarkovModel(
                 start_probs=hmm.get_start_probs(),
                 transition_probs=hmm.get_transition_probs(),
                 emission_probs=_emission_probs,
@@ -148,7 +148,7 @@ class Test_HMM1:
         with pytest.raises(InvalidInputError):
             _emission_probs = hmm.get_emission_probs().copy()
             _emission_probs[("h0", "o0")] = 0.6
-            _hmm = HiddenMarkovModel(
+            HiddenMarkovModel(
                 start_probs=hmm.get_start_probs(),
                 transition_probs=hmm.get_transition_probs(),
                 emission_probs=_emission_probs,
@@ -159,7 +159,7 @@ class Test_HMM1:
         with pytest.raises(InvalidInputError):
             _emission_probs = hmm.get_emission_probs().copy()
             del _emission_probs[("h0", "o0")]
-            _hmm = HiddenMarkovModel(
+            HiddenMarkovModel(
                 start_probs=hmm.get_start_probs(),
                 transition_probs=hmm.get_transition_probs(),
                 emission_probs=_emission_probs,
@@ -170,7 +170,7 @@ class Test_HMM1:
         with pytest.raises(InvalidInputError):
             _emission_probs = hmm.get_emission_probs().copy()
             _emission_probs[("h", "o0")] = 1
-            _hmm = HiddenMarkovModel(
+            HiddenMarkovModel(
                 start_probs=hmm.get_start_probs(),
                 transition_probs=hmm.get_transition_probs(),
                 emission_probs=_emission_probs,
@@ -343,7 +343,7 @@ class Test_HMM_Util:
         hmm = conin.graphical_models.random_hmm(
             hidden_states=hidden_states,
             observed_states=observed_states,
-            seed=1,
+            seed=seed,
         )
         assert set(hmm.get_hidden_states()) == set(hidden_states)
         assert set(hmm.get_observable_states()) == set(observed_states)

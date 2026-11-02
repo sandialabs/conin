@@ -18,7 +18,6 @@ from conin.constrained_models import (
     ConstrainedHiddenMarkovModel,
 )
 from conin.constrained_models.normalise import as_constrained_model
-from conin.constraints import OracleConstraint
 from conin.exceptions import InvalidInputError
 from conin.graphical_models.hmm_observations import as_sequence
 from conin.algorithms.inference import map_query
@@ -54,7 +53,7 @@ from conin.representations.toulbar2 import (
 from conin.util import try_import
 
 with try_import() as pytoulbar2_available:
-    import pytoulbar2
+    import pytoulbar2  # noqa: F401
 
 mq = importlib.import_module("conin.algorithms.inference.query")
 
@@ -282,7 +281,6 @@ def _query(**kwds):
     q = munch.Munch(
         variables=None,
         evidence=None,
-        show_progress=False,
         timing=False,
         start=0,
         stop=None,

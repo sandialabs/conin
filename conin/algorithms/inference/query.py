@@ -140,7 +140,6 @@ def map_query(
     method,
     variables=None,
     evidence=None,
-    show_progress=False,
     timing=False,
     start=0,
     stop=None,
@@ -185,8 +184,6 @@ def map_query(
         the times ``0..T-1`` (the hidden states are then returned keyed by
         time index); ``mvr_viterbi`` also accepts a sparse ``{time: label}``
         dictionary.
-    show_progress : bool, optional
-        Whether to request solver progress reporting when supported.
     timing : bool, optional
         If ``True``, print timing information.
         Not used by every method.
@@ -273,7 +270,6 @@ def map_query(
         variables=variables,
         evidence=evidence,
         observed=observed,
-        show_progress=show_progress,
         timing=timing,
         start=start,
         stop=stop,
