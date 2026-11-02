@@ -1,5 +1,6 @@
 import pytest
 
+from conin.algorithms.feasibility import is_feasible
 from conin import *
 from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.graphical_models import HiddenMarkovModel
@@ -8,8 +9,8 @@ from conin.config import default_mip_solver
 import conin.examples.hidden_markov_model as tc
 import conin.constraints.oracle_library as oc
 from conin.representations.matvec import MatVecHMMRepresentation
-from conin.sampling.oracle import rejection_sample_hidden
-from conin.sampling.unconstrained import (
+from conin.algorithms.sampling.oracle import rejection_sample_hidden
+from conin.algorithms.sampling.unconstrained import (
     generate_hidden,
     generate_observed_from_hidden,
 )
@@ -105,85 +106,6 @@ class Test_Oracle_ConstrainedHiddenMarkovModel:
         with pytest.raises(InvalidInputError):
             _generate_observed(cpgm, -1)
 
-    def test_is_feasible(self):
-        cpgm = tc.create_chmm1_oracle()
-        fail_seq1 = ["h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"]
-        pass_seq = [
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-        ]
-        fail_seq2 = [
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-        ]
-
-        assert not cpgm.is_feasible(fail_seq1)
-        assert cpgm.is_feasible(pass_seq)
-        assert not cpgm.is_feasible(fail_seq2)
-
-    def test_partial_is_feasible(self):
-        chmm = tc.create_chmm1_oracle()
-        fail_seq1 = ["h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"]
-        pass_seq = [
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-        ]
-        fail_seq2 = [
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-        ]
-
-        assert not chmm.partial_is_feasible(T=len(fail_seq1), seq=fail_seq1)
-        assert chmm.partial_is_feasible(T=100, seq=fail_seq1)
-        assert chmm.partial_is_feasible(T=len(pass_seq), seq=pass_seq)
-        assert chmm.partial_is_feasible(T=100, seq=pass_seq)
-        assert not chmm.partial_is_feasible(T=len(fail_seq2), seq=fail_seq2)
-        assert not chmm.partial_is_feasible(T=100, seq=fail_seq2)
-
     def test_generate_hidden_length(self):
         chmm = tc.create_chmm1_oracle()
         assert len(rejection_sample_hidden(chmm, self.T)) == self.T
@@ -197,7 +119,7 @@ class Test_Oracle_ConstrainedHiddenMarkovModel:
 
     def test_generate_hidden_constraint(self):
         chmm = tc.create_chmm1_oracle()
-        assert chmm.is_feasible(rejection_sample_hidden(chmm, self.T))
+        assert is_feasible(chmm, rejection_sample_hidden(chmm, self.T))
 
     def test_generate_hidden_negative_time_steps(self):
         chmm = tc.create_chmm1_oracle()
@@ -262,15 +184,15 @@ def test_integer_states_oracle_sampling_and_feasibility():
     chmm = ConstrainedHiddenMarkovModel(
         hmm, oc.has_exact_number_of_occurences_constraint(val=0, count=10)
     )
-    assert not chmm.is_feasible([0] * 9)
-    assert chmm.is_feasible([0] * 10)
-    assert not chmm.is_feasible([0] * 11)
+    assert not is_feasible(chmm, [0] * 9)
+    assert is_feasible(chmm, [0] * 10)
+    assert not is_feasible(chmm, [0] * 11)
 
     hmm.set_seed(1)
     for _ in range(5):
         hidden = rejection_sample_hidden(chmm, 20)
         assert len(hidden) == 20 and hidden.count(0) == 10
-        assert chmm.is_feasible(hidden)
+        assert is_feasible(chmm, hidden)
         assert len(generate_observed_from_hidden(chmm.model, hidden)) == 20
 
 
@@ -281,7 +203,7 @@ def test_network_flow_constraint_reads_the_application_data():
     import munch
     import pyomo.environ as pyo
 
-    from conin.inference.pyomo import ip_inference
+    from conin.algorithms.inference.pyomo import ip_inference
 
     @pyomo_constraint_fn()
     def num_zeros(M, data):

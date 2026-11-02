@@ -2,7 +2,7 @@ Inference API
 =============
 
 This page documents the public inference entry point. Use
-``conin.inference.map_query`` with a ``method`` argument to select the backend
+``conin.algorithms.inference.map_query`` with a ``method`` argument to select the backend
 algorithm. ``map_query`` turns the model into a constrained model (a bare model
 has no constraints; pgmpy models are converted), builds the representation that
 the method needs and dispatches on its type, so the same call shape works
@@ -11,12 +11,12 @@ networks, hidden Markov models, and constrained variants when the selected
 backend supports them. A method that does not support the model type or its
 constraint family raises ``InvalidInputError``.
 
-.. autofunction:: conin.inference.map_query
+.. autofunction:: conin.algorithms.inference.map_query
 
 Results
 -------
 
-.. automodule:: conin.inference.results
+.. automodule:: conin.algorithms.inference.results
    :no-members:
 
 Available Methods
@@ -57,42 +57,42 @@ HMM network-flow integer program).
 Unconstrained, oracle and recursive search (HMMs)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. autofunction:: conin.inference.unconstrained.viterbi
+.. autofunction:: conin.algorithms.inference.unconstrained.viterbi
 
-.. autofunction:: conin.inference.oracle.a_star
+.. autofunction:: conin.algorithms.inference.oracle.a_star
 
-.. autofunction:: conin.inference.recursive.recursive_a_star
+.. autofunction:: conin.algorithms.inference.recursive.recursive_a_star
 
 Pyomo (integer programming)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. autofunction:: conin.inference.pyomo.lp_inference
+.. autofunction:: conin.algorithms.inference.pyomo.lp_inference
 
-.. autofunction:: conin.inference.pyomo.ip_inference
+.. autofunction:: conin.algorithms.inference.pyomo.ip_inference
 
-.. autofunction:: conin.inference.pyomo.solve_pyomo_map_query_model
+.. autofunction:: conin.algorithms.inference.pyomo.solve_pyomo_map_query_model
 
 Toulbar2
 ^^^^^^^^
 
-.. autofunction:: conin.inference.toulbar2.solve_toulbar2_map_query_model
+.. autofunction:: conin.algorithms.inference.toulbar2.solve_toulbar2_map_query_model
 
 Variable elimination (pgmpy)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. autofunction:: conin.inference.variable_elimination.solve_variable_elimination_map_query_model
+.. autofunction:: conin.algorithms.inference.variable_elimination.solve_variable_elimination_map_query_model
 
 MVR (torch)
 ^^^^^^^^^^^
 
 These need torch, which is imported on first use.
 
-.. autofunction:: conin.inference.mvr.viterbi.viterbi_torch_mvr_chmm
+.. autofunction:: conin.algorithms.inference.mvr.viterbi.viterbi_torch_mvr_chmm
 
-.. autofunction:: conin.inference.mvr.marginal_map.marginal_map_torch_mvr_chmm
+.. autofunction:: conin.algorithms.inference.mvr.marginal_map.marginal_map_torch_mvr_chmm
 
 Satisfaction probability and first satisfaction time of MVR constraints:
 
-.. autofunction:: conin.inference.mvr.sat_prob.sat_prob_torch_mvr_chmm
+.. autofunction:: conin.algorithms.inference.mvr.sat_prob.sat_prob_torch_mvr_chmm
 
-.. autofunction:: conin.inference.mvr.sat_time.sat_time_torch_mvr_chmm
+.. autofunction:: conin.algorithms.inference.mvr.sat_time.sat_time_torch_mvr_chmm

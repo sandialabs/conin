@@ -7,9 +7,9 @@ import pytest
 
 from conin.util import try_import
 from conin.io import load_model, load_cfn
-from conin.scoring import log_potential
+from conin.algorithms.scoring import log_potential
 from conin.constraints import Toulbar2Constraint
-from conin.inference import map_query
+from conin.algorithms.inference import map_query
 from conin.graphical_models import DiscreteMarkovNetwork
 from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
 

@@ -1,7 +1,7 @@
 Hidden Markov Model Learning
 ============================
 
-``conin.learning`` contains helpers for estimating HMM
+``conin.algorithms.learning`` contains helpers for estimating HMM
 parameters from simulated or labeled sequences. The supervised-learning path is
 the most direct and best-tested interface. Monte Carlo EM support exists, but it
 is more experimental.
@@ -15,7 +15,7 @@ Learning helpers use a list of simulation records. Each record has aligned
 
 .. testcode::
 
-   from conin import learning
+   from conin.algorithms import learning
 
    hidden = [["h0", "h0", "h1"], ["h1", "h1", "h1", "h0"]]
    observed = [["o0", "o0", "o0"], ["o1", "o1", "o1", "o1"]]
@@ -37,7 +37,7 @@ from simulations where both hidden and observed states are known.
 
 .. testcode::
 
-   from conin import learning
+   from conin.algorithms import learning
 
    hidden_states = ["h0", "h1"]
    observable_states = ["o0", "o1"]
@@ -84,7 +84,7 @@ constructor raises ``InvalidInputError``.
 
 .. testcode::
 
-   from conin import learning
+   from conin.algorithms import learning
 
    simulations = learning.convert_to_simulations(
        hidden_list=[["h0", "h1"]],
@@ -113,7 +113,7 @@ with a token. This is useful for collapsing rare labels before fitting a model.
 
 .. testcode::
 
-   from conin import learning
+   from conin.algorithms import learning
 
    hidden = [[0, 0, 1], [2], [0, 1, 3], [4]]
    collapsed = learning.add_unknowns(hidden, num=1)
@@ -134,7 +134,7 @@ Monte Carlo EM
 ``mcem`` is an experimental Monte Carlo EM helper. ``app`` is a
 ``ConstrainedHiddenMarkovModel`` with oracle constraints (or a bare HMM). Each
 iteration samples feasible hidden sequences for a fixed observed sequence by
-rejection sampling (``conin.sampling.oracle.rejection_sample_hidden``), scores each sample under the current
+rejection sampling (``conin.algorithms.sampling.oracle.rejection_sample_hidden``), scores each sample under the current
 HMM, and refits the HMM from the samples with ``supervised_learning``. The next
 iteration samples from the refitted HMM (``app.with_model(new_hmm)``, with the
 same constraints and data).
@@ -148,10 +148,10 @@ Because this path is less stable and more application-specific, prefer
 Reference
 ---------
 
-.. autofunction:: conin.learning.convert_to_simulations
+.. autofunction:: conin.algorithms.learning.convert_to_simulations
 
-.. autofunction:: conin.learning.supervised_learning
+.. autofunction:: conin.algorithms.learning.supervised_learning
 
-.. autofunction:: conin.learning.add_unknowns
+.. autofunction:: conin.algorithms.learning.add_unknowns
 
-.. autofunction:: conin.learning.mcem
+.. autofunction:: conin.algorithms.learning.mcem

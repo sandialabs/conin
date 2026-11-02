@@ -15,7 +15,7 @@ import pytest
 from conin.config import default_mip_solver
 from conin.constrained_models import ConstrainedGraphicalModel
 from conin.graphical_models import GraphicalModel
-from conin.inference import map_query
+from conin.algorithms.inference import map_query
 from conin.util import try_import
 
 with try_import() as pgmpy_available:

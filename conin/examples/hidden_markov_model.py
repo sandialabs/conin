@@ -356,7 +356,7 @@ def create_chmm1_recursive(lb=10, ub=12):
 
     The same condition as :func:`create_chmm1_oracle` (with the defaults),
     written as a :class:`~conin.constraints.RecursiveConstraint` for
-    :func:`conin.inference.recursive.recursive_a_star`.  The state is the
+    :func:`conin.algorithms.inference.recursive.recursive_a_star`.  The state is the
     number of ``"h0"`` states so far.
     """
     hmm = create_hmm1()

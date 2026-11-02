@@ -20,7 +20,7 @@ from munch import Munch
 
 from conin.examples.bayesian_network import cancer1_BN_conin
 from conin.constrained_models import ConstrainedDiscreteBayesianNetwork
-from conin.inference import map_query
+from conin.algorithms.inference import map_query
 from conin.exceptions import InvalidInputError
 from conin import pyomo_constraint_fn, algebraic_constraint_fn
 from conin.util import try_import

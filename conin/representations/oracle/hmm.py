@@ -1,16 +1,16 @@
 """The ``"oracle"`` representation of a constrained HMM.
 
 It replaces ``Oracle_CHMM``: the feasibility checks used by A*
-(:func:`conin.inference.oracle.a_star`) and by rejection sampling
-(:func:`conin.sampling.oracle.rejection_sample_hidden`), on sequences of
+(:func:`conin.algorithms.inference.oracle.a_star`) and by rejection sampling
+(:func:`conin.algorithms.sampling.oracle.rejection_sample_hidden`), on sequences of
 internal hidden-state indices.
 """
 
-from conin.constrained_models.feasibility import hmm_constraint_data, oracle_accepts
+from conin.constraints.oracle import oracle_accepts
 from conin.graphical_models import HiddenMarkovModel
 from conin.representations.base import Representation, register_representation
 from conin.representations.matvec import MatVecHMMRepresentation
-from conin.util.constraint_data import merge_constraint_data
+from conin.util.constraint_data import hmm_time_fields, merge_constraint_data
 
 
 class OracleHMMRepresentation(Representation):
@@ -38,7 +38,7 @@ class OracleHMMRepresentation(Representation):
     several searches or samples.  A predicate ``func(states, data)`` gets
     a copy of the application data with ``hmm = Munch(T=list(range(T)))`` set
     (``Munch(hmm=Munch(T=...))`` if there is none) for a sequence of length
-    ``T``, as in ``ConstrainedHiddenMarkovModel.is_feasible``.
+    ``T``, as in :func:`conin.algorithms.feasibility.is_feasible`.
     """
 
     kind = "oracle"
@@ -70,7 +70,7 @@ class OracleHMMRepresentation(Representation):
             return True
         states = self._external(seq)
         data = merge_constraint_data(
-            self.data, hmm_constraint_data(self.model, len(seq))
+            self.data, hmm_time_fields(0, len(seq) - 1, self.model.hidden_to_internal)
         )
         return all(oracle_accepts(c, states, data) for c in self.constraints)
 

@@ -13,7 +13,7 @@ class RecursiveConstraint(Constraint):
 
     The state summarises a prefix ``h_0, ..., h_{t-1}`` of the sequence: it is
     ``initial(h_0)`` for the first hidden state and ``update(state, h_t)`` for
-    each later one.  Recursive A* (:func:`conin.inference.recursive.recursive_a_star`)
+    each later one.  Recursive A* (:func:`conin.algorithms.inference.recursive.recursive_a_star`)
     keeps one search node per ``(last hidden state, prefix length, state)``,
     so prefixes with equal states are merged.
 

@@ -15,6 +15,7 @@ import pytest
 
 import conin.examples.dynamic_bayesian_network as dex
 import conin.examples.hidden_markov_model as hex_
+from conin.algorithms.feasibility import is_feasible
 from conin.constrained_models import (
     ConstrainedDynamicDiscreteBayesianNetwork,
     ConstrainedHiddenMarkovModel,
@@ -270,7 +271,7 @@ def test_hmm_is_feasible_and_oracle_see_the_same_time_fields():
 
     hmm = hex_.create_hmm1()
     cmodel = ConstrainedHiddenMarkovModel(hmm, OracleConstraint(func=record))
-    cmodel.is_feasible(["h0", "h1", "h0"])
+    is_feasible(cmodel, ["h0", "h1", "h0"])
     cmodel.representation("oracle").is_feasible([0, 1, 0])
     assert seen == [_hmm_fields(hmm, 2)] * 2
 
@@ -287,7 +288,7 @@ def test_dbn_is_feasible_sees_the_dbn_time_fields():
         dbn, FactorOracleConstraint(func=lambda s: True, nodes=scope)
     )
     assignment = {(n, t): 0 for n in ("A", "B") for t in range(3)}
-    assert cmodel.is_feasible(assignment)
+    assert is_feasible(cmodel, assignment)
     assert seen == [_dbn_fields(2)]
 
 

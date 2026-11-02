@@ -14,6 +14,8 @@ from conin.graphical_models import (
     ExpressionVariable,
 )
 from conin.util import try_import, MPESolution
+import conin.pgmpy
+from conin.pgmpy import MapCPD
 
 with try_import() as pgmpy_available:
     from pgmpy.models import DynamicBayesianNetwork as pgmpy_DynamicBayesianNetwork
@@ -68,7 +70,6 @@ def simple0_DDBN1_pgmpy(debug=False):
 
 
 def simple0_DDBN2_pgmpy(debug=False):
-    from conin.pgmpy import MapCPD
 
     G = pgmpy_DynamicBayesianNetwork()
     G.add_edges_from([(("Z", 0), ("Z", 1))])
@@ -234,8 +235,6 @@ def simple1_DDBN_constrained_algebraic_pgmpy(debug=False):
             model.V("B", 0, 0) == model.V("B", 1, 0),
         ]
 
-    import conin.pgmpy
-
     pgm = conin.pgmpy.convert_pgmpy_to_conin(pgm)
     return Munch(
         pgm=ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=constraints),
@@ -315,8 +314,6 @@ def simple1_DDBN_constrained_pyomo_pgmpy(debug=False):
         model.c.add(model.V("A", 0, 0) == model.V("A", 1, 0))
         model.c.add(model.V("B", 0, 0) == model.V("B", 1, 0))
 
-    import conin.pgmpy
-
     pgm = conin.pgmpy.convert_pgmpy_to_conin(pgm)
     return Munch(
         pgm=ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=constraints),
@@ -344,8 +341,6 @@ def simple1_DDBN_constrained_toulbar2_pgmpy(debug=False):
         M.AddGeneralizedLinearConstraint(
             [M.V("B", 0, 0), M.V("B", 1, 0, coef=-1)], "==", 0
         )
-
-    import conin.pgmpy
 
     pgm = conin.pgmpy.convert_pgmpy_to_conin(pgm)
     return Munch(
@@ -689,7 +684,6 @@ def weather2_pgmpy(debug=False):
 
     Using explicit state names, and MapCPD declarations.
     """
-    from conin.pgmpy import MapCPD
 
     # Initialize a simple DDBN model modeling the Weather (W), Rain (O),
     # Temperature (T), and Humidity (H).
@@ -870,8 +864,6 @@ def weather_constrained_pyomo_pgmpy(debug=False):
             expr=sum(model.V("W", t, "Rainy") for t in data.T) == 2
         )
 
-    import conin.pgmpy
-
     pgm = conin.pgmpy.convert_pgmpy_to_conin(pgm)
     return Munch(
         pgm=ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=constraints),
@@ -900,8 +892,6 @@ def weather_constrained_algebraic_pgmpy(debug=False):
     def constraints(model, data):
         """2 rainy days"""
         return sum(model.V("W", t, "Rainy") for t in data.T) == 2
-
-    import conin.pgmpy
 
     pgm = conin.pgmpy.convert_pgmpy_to_conin(pgm)
     return Munch(
@@ -946,8 +936,6 @@ def weather_constrained_oracle_pgmpy(debug=False):
             return True
         return False
 
-    import conin.pgmpy
-
     pgm = conin.pgmpy.convert_pgmpy_to_conin(pgm)
     return Munch(
         pgm=ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=constraints),
@@ -980,8 +968,6 @@ def weather_constrained_toulbar2_pgmpy(debug=False):
         M.AddGeneralizedLinearConstraint(
             [M.V("W", t, "Rainy") for t in data.T], "==", 2
         )
-
-    import conin.pgmpy
 
     pgm = conin.pgmpy.convert_pgmpy_to_conin(pgm)
     return Munch(

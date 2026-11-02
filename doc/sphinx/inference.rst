@@ -18,7 +18,7 @@ Markov network with three variables and pairwise interactions.
    :skipif: not pgmpy_available or not toulbar2_available or not mip_solver_available
 
    from conin.config import default_mip_solver
-   from conin.inference import map_query
+   from conin.algorithms.inference import map_query
    from conin.examples.markov_network import ABC_conin
 
    example = ABC_conin()
@@ -53,7 +53,7 @@ Viterbi and A* inference
 .. testcode::
 
    from conin.config import default_mip_solver
-   from conin.inference import map_query
+   from conin.algorithms.inference import map_query
    from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
@@ -88,7 +88,7 @@ search stopped) and ``solvetime``. Each solution has
 - ``states``: the MAP assignment, ``{node: state}``, or the hidden states of
   an HMM;
 - ``log_potential``: the score of the assignment together with the evidence,
-  :func:`conin.scoring.log_potential` on the model without its constraints
+  :func:`conin.algorithms.scoring.log_potential` on the model without its constraints
   (for an HMM, ``log P(hidden, observed)``; for a Markov network the sum of
   the log factors). It is not renormalised by the probability of the
   constraints, and it is the same for every method, so it can be compared
@@ -99,7 +99,7 @@ search stopped) and ``solvetime``. Each solution has
 
 .. testcode::
 
-   from conin.scoring import log_potential
+   from conin.algorithms.scoring import log_potential
 
    best = viterbi_results.solution
    assert best.log_potential == log_potential(hmm, best.states, observed=observed)
@@ -143,7 +143,7 @@ input model type and selected ``method`` determine the backend dispatch.
    :skipif: not toulbar2_available or not mip_solver_available
 
    from conin.config import default_mip_solver
-   from conin.inference import map_query
+   from conin.algorithms.inference import map_query
    from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
@@ -176,7 +176,7 @@ Bayesian network and then unrolls it into a static Bayesian network for pgmpy.
    :skipif: not pgmpy_available
 
    from conin.config import default_mip_solver
-   from conin.inference import map_query
+   from conin.algorithms.inference import map_query
    from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
@@ -207,7 +207,7 @@ work with ``method="a_star"``. HMMs with MVR constraints work with
    :skipif: not toulbar2_available or not mip_solver_available
 
    from conin.config import default_mip_solver
-   from conin.inference import map_query
+   from conin.algorithms.inference import map_query
    from conin.examples.hidden_markov_model import (
        create_chmm1_pyomo,
        create_chmm1_toulbar2,

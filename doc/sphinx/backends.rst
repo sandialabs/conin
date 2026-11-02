@@ -30,13 +30,13 @@ inference.
      - Yes
    * - Oracle, factor-oracle, recursive, Pyomo, Toulbar2, algebraic and MVR constraint declaration
      - Yes
-   * - HMM generation with ``random_hmm`` and sampling with ``conin.sampling``
+   * - HMM generation with ``random_hmm`` and sampling with ``conin.algorithms.sampling``
      - Yes (the MVR samplers need torch)
    * - HMM supervised learning and Monte Carlo EM
      - Yes
    * - HMM ``map_query`` with ``method="viterbi"`` or ``method="a_star"``
      - Yes
-   * - ``log_probability`` and ``log_potential`` (``conin.scoring``)
+   * - ``log_probability`` and ``log_potential`` (``conin.algorithms.scoring``)
      - Yes
 
 Optional extras are declared in ``pyproject.toml``:
@@ -69,7 +69,7 @@ You can also pass a solver explicitly to ``map_query``:
    :skipif: not mip_solver_available
 
    from conin.config import default_mip_solver
-   from conin.inference import map_query
+   from conin.algorithms.inference import map_query
    from conin.examples.markov_network import ABC_conin
 
    pgm = ABC_conin().pgm
@@ -134,7 +134,7 @@ pgmpy
 Features requiring ``pgmpy`` include:
 
 - ``map_query(..., method="variable_elimination")``
-- ``conin.scoring.log_probability_query``
+- ``conin.algorithms.scoring.log_probability_query``
 - Loading and saving BIF files through ``conin.io.load_model`` and
   ``conin.io.save_model``
 - ``conin.io.load_model(..., model_type="pgmpy")``
@@ -153,8 +153,8 @@ unrolled to ``stop=4`` has run out of memory in our tests; use
 torch (MVR algorithms)
 ----------------------
 
-The MVR algorithms in ``conin.inference.mvr``, ``conin.learning.mvr`` and
-``conin.sampling.mvr``, and
+The MVR algorithms in ``conin.algorithms.inference.mvr``, ``conin.algorithms.learning.mvr`` and
+``conin.algorithms.sampling.mvr``, and
 ``map_query(..., method="mvr_viterbi")``, require ``torch`` (the ``torch``
 extra). torch is imported the first time one of these algorithms is used:
 ``import conin`` and importing these packages do not import it. Declaring MVR

@@ -8,6 +8,7 @@ from conin.constraints import (
     algebraic_constraint_fn,
 )
 from conin.util import try_import, MPESolution
+import conin.pgmpy
 from conin.graphical_models import DiscreteFactor, DiscreteMarkovNetwork
 from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
 
@@ -162,8 +163,6 @@ def ABC_constrained_pyomo_pgmpy():
         def diff(M, s):
             return M.V("A", s) + M.V("B", s) + M.V("C", s) <= 1
 
-    import conin.pgmpy
-
     pgm = conin.pgmpy.convert_pgmpy_to_conin(pgm.pgm)
     cpgm = ConstrainedDiscreteMarkovNetwork(pgm, constraints=constraint_fn)
     return Munch(pgm=cpgm, solutions=[MPESolution(states={"A": 0, "B": 2, "C": 1})])
@@ -239,8 +238,6 @@ def ABC_constrained_toulbar2_pgmpy():
                 [M.V("A", i), M.V("B", i), M.V("C", i)], "<=", 1
             )
 
-    import conin.pgmpy
-
     pgm = conin.pgmpy.convert_pgmpy_to_conin(pgm.pgm)
     cpgm = ConstrainedDiscreteMarkovNetwork(pgm, constraints=constraint_fn)
     return Munch(pgm=cpgm, solutions=[MPESolution(states={"A": 0, "B": 2, "C": 1})])
@@ -305,8 +302,6 @@ def ABC_constrained_algebraic_pgmpy():
         return [
             model.V("A", s) + model.V("B", s) + model.V("C", s) <= 1 for s in [0, 1, 2]
         ]
-
-    import conin.pgmpy
 
     pgm = conin.pgmpy.convert_pgmpy_to_conin(pgm.pgm)
     cpgm = ConstrainedDiscreteMarkovNetwork(pgm, constraints=constraint_fn)

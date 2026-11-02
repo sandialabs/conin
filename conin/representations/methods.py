@@ -1,7 +1,7 @@
 """The query methods and the representation kind each one runs on.
 
-One table for :func:`~conin.inference.map_query` and
-:func:`~conin.scoring.log_probability_query`: a method that both queries
+One table for :func:`~conin.algorithms.inference.map_query` and
+:func:`~conin.algorithms.scoring.log_probability_query`: a method that both queries
 support (``"variable_elimination"``) runs on the same representation for
 both.  Which (model type, constraint family) pairs a method supports is
 decided by the representation registry, not here.
@@ -41,10 +41,10 @@ MAP_METHODS = (
     "variable_elimination",
     "mvr_viterbi",
 )
-"""The ``method`` values of :func:`~conin.inference.map_query`."""
+"""The ``method`` values of :func:`~conin.algorithms.inference.map_query`."""
 
 LOG_PROBABILITY_METHODS = ("variable_elimination",)
-"""The ``method`` values of :func:`~conin.scoring.log_probability_query`."""
+"""The ``method`` values of :func:`~conin.algorithms.scoring.log_probability_query`."""
 
 
 def check_method(method, methods, what):

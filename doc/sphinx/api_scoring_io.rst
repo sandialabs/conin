@@ -1,14 +1,21 @@
-Scoring, I/O and Conversion
-===========================
+Scoring, Feasibility, I/O and Conversion
+========================================
 
 Scoring
 -------
 
-.. autofunction:: conin.scoring.log_probability
+.. autofunction:: conin.algorithms.scoring.log_probability
 
-.. autofunction:: conin.scoring.log_potential
+.. autofunction:: conin.algorithms.scoring.log_potential
 
-.. autofunction:: conin.scoring.log_probability_query
+.. autofunction:: conin.algorithms.scoring.log_probability_query
+
+Feasibility
+-----------
+
+.. autofunction:: conin.algorithms.feasibility.is_feasible
+
+.. autofunction:: conin.algorithms.feasibility.partial_is_feasible
 
 File I/O
 --------

@@ -9,9 +9,9 @@ from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.constraints import OracleConstraint
 from conin.exceptions import InvalidInputError
 from conin.graphical_models import HiddenMarkovModel
-from conin.inference.oracle import a_star
-from conin.inference.unconstrained import viterbi
-from conin.inference.unconstrained.viterbi import viterbi_
+from conin.algorithms.inference.oracle import a_star
+from conin.algorithms.inference.unconstrained import viterbi
+from conin.algorithms.inference.unconstrained.viterbi_hmm import viterbi_
 from conin.representations import supported_representations
 from conin.representations.matvec import MatVecHMMRepresentation
 

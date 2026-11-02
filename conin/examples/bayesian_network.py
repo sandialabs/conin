@@ -11,6 +11,8 @@ from conin.constraints import (
     algebraic_constraint_fn,
 )
 from conin.util import try_import, MPESolution
+import conin.pgmpy
+from conin.pgmpy import MapCPD
 from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
 from conin.constrained_models import ConstrainedDiscreteBayesianNetwork
 
@@ -177,7 +179,6 @@ def cancer2_BN_pgmpy(debug=False):
     """
     Cancer example using pgmpy with MapCPD
     """
-    from conin.pgmpy import MapCPD
 
     # Step 1: Define the network structure.
     cancer_model = pgmpy_DiscreteBayesianNetwork(
@@ -283,8 +284,6 @@ def cancer1_BN_constrained_pyomo_pgmpy(debug=False):
         model.c.add(model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1)
         model.c.add(model.V("Dyspnoea", 0) + model.V("Xray", 0) <= 1)
 
-    import conin.pgmpy
-
     pgm = conin.pgmpy.convert_pgmpy_to_conin(pgm)
     cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraints)
     return Munch(
@@ -340,8 +339,6 @@ def cancer1_BN_constrained_algebraic_pgmpy(debug=False):
             model.V("Dyspnoea", 0) + model.V("Xray", 0) <= 1,
         ]
 
-    import conin.pgmpy
-
     pgm = conin.pgmpy.convert_pgmpy_to_conin(pgm)
     cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraints)
     return Munch(
@@ -369,8 +366,6 @@ def cancer2_BN_constrained_algebraic_pgmpy(debug=False):
             model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1,
             model.V("Dyspnoea", 0) + model.V("Xray", 0) <= 1,
         ]
-
-    import conin.pgmpy
 
     pgm = conin.pgmpy.convert_pgmpy_to_conin(pgm)
     cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraints)
@@ -421,8 +416,6 @@ def cancer1_BN_constrained_oracle_pgmpy(debug=False):
     def constraints(states):
         return states["Dyspnoea"] != states["Xray"]
 
-    import conin.pgmpy
-
     pgm = conin.pgmpy.convert_pgmpy_to_conin(pgm)
     cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraints)
     return Munch(
@@ -449,8 +442,6 @@ def cancer2_BN_constrained_pyomo_pgmpy(debug=False):
         model.c = pyo.ConstraintList()
         model.c.add(model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1)
         model.c.add(model.V("Dyspnoea", 0) + model.V("Xray", 0) <= 1)
-
-    import conin.pgmpy
 
     pgm = conin.pgmpy.convert_pgmpy_to_conin(pgm)
     cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraints)
@@ -536,7 +527,6 @@ def simple1_BN_pgmpy(debug=False):
 
 
 def simple2_BN_pgmpy(debug=False):
-    from conin.pgmpy import MapCPD
 
     G = pgmpy_DiscreteBayesianNetwork()
     G.add_nodes_from(["A", "B"])
@@ -794,7 +784,6 @@ def holmes_pgmpy(debug=False):
     A. Gao. "Lecture 12: Variable Elimination Algorithm", 2021.
     https://cs.uwaterloo.ca/~a23gao/cs486686_f18/slides/lec12_inferences_bayes_nets_nosol.pdf
     """
-    from conin.pgmpy import MapCPD
 
     G = pgmpy_DiscreteBayesianNetwork()
     G.add_nodes_from(["E", "B", "R", "A", "W", "G"])
@@ -985,7 +974,6 @@ def tb2_BN_pgmpy(debug=False):
 
 
 def tb2_BN_pgmpy_mapcpd(debug=False):
-    from conin.pgmpy import MapCPD
 
     G = pgmpy_DiscreteBayesianNetwork()
     G.add_nodes_from(["A", "B", "C"])

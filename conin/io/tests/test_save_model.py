@@ -296,7 +296,7 @@ def test_save_conin_hmm_as_bif_raises(tmp_path):
 def test_save_conin_bif_without_pgmpy_raises(asia_uai, tmp_path, monkeypatch):
     import importlib
 
-    save_module = importlib.import_module("conin.io.save_model")
+    save_module = importlib.import_module("conin.io.save")
     monkeypatch.setattr(save_module, "pgmpy_available", False)
     with pytest.raises(RuntimeError, match="Unknown format.*asia.bif"):
         save_model(asia_uai, str(tmp_path / "asia.bif"))
@@ -305,7 +305,7 @@ def test_save_conin_bif_without_pgmpy_raises(asia_uai, tmp_path, monkeypatch):
 def test_save_pgmpy_model_without_pgmpy_raises(asia_uai, tmp_path, monkeypatch):
     import importlib
 
-    save_module = importlib.import_module("conin.io.save_model")
+    save_module = importlib.import_module("conin.io.save")
     monkeypatch.setattr(save_module, "pgmpy_available", False)
     with pytest.raises(ImportError, match="pgmpy"):
         save_model(asia_uai, str(tmp_path / "asia.uai"), model_type="pgmpy")

@@ -14,7 +14,7 @@ from .exceptions import InvalidInputError, InsufficientSolutionsError
 from . import __about__
 from . import graphical_models
 from . import constrained_models
-from .inference import map_query
+from .algorithms.inference import map_query
 
 # import os.path
 from . import config

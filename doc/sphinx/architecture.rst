@@ -22,11 +22,18 @@ Package layout
    The registry and the representations built from a constrained model, one
    subpackage per backend (``pyomo``, ``toulbar2``, ``pgmpy``, ``matvec``,
    ``oracle``, ``recursive``, ``mvr``).
-``conin.inference``, ``conin.learning``, ``conin.sampling``, ``conin.scoring``
-   Algorithms, organised by representation (``unconstrained``, ``pyomo``,
-   ``toulbar2``, ``variable_elimination``, ``oracle``, ``recursive``,
-   ``mvr``). ``map_query`` and ``log_probability_query`` are the generic entry
-   points.
+``conin.algorithms``
+   The algorithms. ``conin.algorithms.inference``,
+   ``conin.algorithms.learning`` and ``conin.algorithms.sampling`` are each
+   organised by representation (``unconstrained``, ``pyomo``, ``toulbar2``,
+   ``variable_elimination``, ``oracle``, ``recursive``, ``mvr``);
+   ``conin.algorithms.scoring`` scores assignments (``log_potential``,
+   ``log_probability``), and ``conin.algorithms.feasibility`` checks them
+   against the constraints (``is_feasible``, dispatched on the constrained
+   model and then on each constraint's class, and ``partial_is_feasible``
+   for constrained HMMs). ``conin.algorithms.util`` holds the code they
+   share (the torch MVR kernels). ``map_query`` and ``log_probability_query``
+   are the generic entry points.
 ``conin.pgmpy``
    pgmpy interoperability: converting models between pgmpy and CONIN
    (``convert_pgmpy_to_conin``, ``convert_conin_to_pgmpy_bn``/``_mn``),
@@ -42,19 +49,30 @@ Package layout
 Layering
 --------
 
-- ``graphical_models``, ``util`` and ``exceptions`` are the bottom layer: they
-  import nothing from the packages above them.
-- ``pgmpy`` sits just above them (it imports only ``graphical_models``,
-  ``util`` and ``exceptions``) and is imported by ``io``,
+- ``util``, ``exceptions`` and ``config`` are the bottom layer: they import
+  nothing from the packages above them.
+- ``graphical_models`` and ``constraints`` sit above them and do not import
+  each other (``constraints`` does not import the models).
+- ``pgmpy`` sits above the models and is imported by ``io``,
   ``constrained_models`` (to convert pgmpy models), ``representations``,
-  ``scoring`` and ``examples``.
-- ``constraints`` does not import the models.
-- ``constrained_models`` and ``representations`` sit above them; the
-  algorithm packages sit above the representations.
-- There are no import cycles between modules. Function-level imports are
-  used only for optional dependencies (pgmpy, torch).
+  ``algorithms.scoring`` and ``examples``.
+- ``constrained_models``, ``representations`` and ``io`` form the model
+  layer. They import each other (``constrained_models`` imports the
+  representation registry, the toulbar2 representations import ``io``, and
+  ``io`` builds constrained models), which is why the registry imports its
+  builders on first use.
+- The ``algorithms`` packages sit above the model layer, in the order
+  ``util``, ``feasibility``, ``scoring``, ``inference``, ``sampling``,
+  ``learning``: each imports only the ones before it. ``examples`` and the
+  top-level ``conin`` package are at the top.
+- There are no module-level import cycles between modules. A conin module is
+  imported inside a function only if it needs torch (the MVR algorithms and
+  ``algorithms.util.mvr_kernels``); other function-level imports are of
+  optional dependencies (pgmpy, torch).
 - ``import conin`` must not import torch. The MVR packages export their
   algorithms through a lazy module ``__getattr__``.
+- ``conin/tests/test_layering.py`` checks these rules; its ``LAYERS`` table
+  is the authoritative layer order, and a new package must be added to it.
 - Optional dependencies are imported with ``conin.util.try_import``, which
   catches only ``ImportError``; code that probes a dependency which can fail
   with ``OSError`` (a broken torch install) catches both.
@@ -86,21 +104,23 @@ Representations and dispatch
   ``_solve_toulbar2``, ``_solve_variable_elimination``), registered on the
   backend's base representation class for MN, BN and DBN; their HMM
   representations are solved as the unrolled DBN by ``solve_unrolled_hmm``
-  (``conin.inference.hmm_results``). Network flow, Viterbi, A*, recursive A*
-  and the MVR Viterbi have their own overloads. A* and recursive A* are thin
-  wrappers around one search (``conin.inference.hmm_a_star``), which sees the
-  constraints through a search state (``initial``, ``update``,
-  ``feasible_partial``, ``feasible``); for oracle constraints the state is the
-  prefix itself, so no prefixes are merged.
-- Every MAP result has the shape of ``conin.inference.results``: the same
-  top-level keys for every method, and solutions with ``states``,
+  (``conin.algorithms.inference.hmm_results``). Network flow, Viterbi, A*,
+  recursive A* and the MVR Viterbi have their own overloads. A* and
+  recursive A* are thin wrappers around one search
+  (``conin.algorithms.inference.hmm_a_star``), which sees the constraints
+  through a search state (``initial``, ``update``, ``feasible_partial``,
+  ``feasible``); for oracle constraints the state is the prefix itself, so no
+  prefixes are merged.
+- Every MAP result has the shape of ``conin.algorithms.inference.results``:
+  the same top-level keys for every method, and solutions with ``states``,
   ``log_potential`` and ``solver_objective``. ``log_potential`` is computed
-  from the assignment by ``conin.scoring`` (the factor backends' solutions
-  are scored in ``map_query``, the HMM algorithms score their own), never
-  read from a solver objective, so it is the same for every method. This is
-  why the method table is in ``conin.representations`` rather than
-  ``conin.inference``: ``conin.scoring`` imports it, and ``conin.inference``
-  imports ``conin.scoring``.
+  from the assignment by ``conin.algorithms.scoring`` (the factor backends'
+  solutions are scored in ``map_query``, the HMM algorithms score their
+  own), never read from a solver objective, so it is the same for every
+  method. This is why the method table is in ``conin.representations``
+  rather than ``conin.algorithms.inference``: ``conin.algorithms.scoring``
+  imports it, and ``conin.algorithms.inference`` imports
+  ``conin.algorithms.scoring``.
 - Argument names: the generic queries (``map_query``,
   ``log_probability_query``) take ``evidence=`` for every model type,
   including the observations of an HMM. The HMM-specific functions
@@ -155,10 +175,11 @@ Immutability
    is the time index that unrolling and sampling set while they evaluate the
    CPD templates.
 MVR static context
-   The torch kernels build their per-query context (tensors, shapes, active
-   sets) from ``repn.mvrs``, because it depends on the horizon, the dtype, the
-   device and the semiring. The ``"mvr"`` representation deep-copies prebuilt
-   MVRs at build time, so the user's objects are never changed.
+   The torch kernels (``conin.algorithms.util.mvr_kernels``) build their
+   per-query context (tensors, shapes, active sets) from ``repn.mvrs``,
+   because it depends on the horizon, the dtype, the device and the semiring.
+   The ``"mvr"`` representation deep-copies prebuilt MVRs at build time, so
+   the user's objects are never changed.
 DBN unrolling
    DBNs and HMMs are unrolled from ``start=0``; unrolling from a later time
    would need the marginal distribution at that time.

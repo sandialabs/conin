@@ -27,7 +27,7 @@ from conin.graphical_models import (
     create_bn_from_dbn,
     create_dbn_from_hmm,
 )
-from conin.inference import map_query
+from conin.algorithms.inference import map_query
 from conin.representations import supported_representations
 from conin.representations.pgmpy import (
     PgmpyBNRepresentation,
@@ -255,7 +255,7 @@ def test_create_model_mn_is_a_pgmpy_markov_network():
 
 @skipif_pgmpy_not_available
 def test_one_repn_serves_several_queries():
-    from conin.inference.variable_elimination.solve import _solve_repn
+    from conin.algorithms.inference.variable_elimination.solve import _solve_repn
 
     repn = bex.cancer1_BN_constrained_oracle_conin().pgm.representation("pgmpy")
     kw = dict(variables=None, show_progress=False, write_uai_file=None)
@@ -286,7 +286,7 @@ def _brute_force(pgm, constraint, evidence=None):
     """The constrained MAP assignment of a small MN, by enumeration."""
     import itertools
 
-    from conin.scoring import log_potential
+    from conin.algorithms.scoring import log_potential
 
     evidence = evidence or {}
     nodes = list(pgm.nodes)

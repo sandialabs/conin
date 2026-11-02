@@ -12,7 +12,7 @@ import itertools
 import munch
 import pytest
 
-from conin.constrained_models.feasibility import StateSpace
+from conin.constraints.algebraic.add_constraints_oracle import StateSpace
 from conin.constraints import (
     FactorOracleConstraint,
     algebraic_constraint_fn,

@@ -21,11 +21,14 @@ Highlights
   each model type accepts.
 - map_query normalises every model (bare, constrained or pgmpy) and dispatches
   on the representation, for every method; new method="mvr_viterbi".
-- New conin.scoring.log_probability_query: marginal and conditional
+- New conin.algorithms.scoring.log_probability_query: marginal and conditional
   log-probabilities, also under constraints.
 - New RecursiveConstraint for recursive A*; map_query(method="a_star") uses it.
-- Algorithms are organised by backend under conin.inference, conin.learning
-  and conin.sampling; the torch MVR code no longer loads with import conin.
+- Algorithms are organised by backend under conin.algorithms.inference,
+  conin.algorithms.learning and conin.algorithms.sampling, with scoring in
+  conin.algorithms.scoring and the feasibility checks in
+  conin.algorithms.feasibility; the torch MVR code no longer loads with
+  import conin.
 - pgmax, pomegranate and pyagrum support is removed.
 
 Migration table (old -> new)
@@ -53,28 +56,34 @@ Migration table (old -> new)
   HMM_MatVecRepn, hmm.repn, hmm.initialize(), initialize=True
                                     -> ConstrainedHiddenMarkovModel(hmm)
                                        .representation("matvec")
-  hmm.generate_hidden(T) etc.       -> conin.sampling.unconstrained
+  hmm.generate_hidden(T) etc.       -> conin.algorithms.sampling.unconstrained
                                        .generate_hidden(hmm, T) etc.
-  chmm.generate_hidden(T)           -> conin.sampling.oracle
+  chmm.generate_hidden(T)           -> conin.algorithms.sampling.oracle
                                        .rejection_sample_hidden(chmm, T)
-  conin.sampling.dbn.DBNSampler     -> conin.sampling.unconstrained.DBNSampler
-  viterbi                           -> conin.inference.unconstrained.viterbi
-  a_star                            -> conin.inference.oracle.a_star
-  recursive_a_star(hmm_app=...)     -> conin.inference.recursive
+  chmm.is_feasible(seq), chmm.partial_is_feasible(T=T, seq=seq)
+                                    -> conin.algorithms.feasibility
+                                       .is_feasible(chmm, seq),
+                                       .partial_is_feasible(chmm, T=T, seq=seq)
+  conin.sampling.dbn.DBNSampler     -> conin.algorithms.sampling.unconstrained
+                                       .DBNSampler
+  viterbi                           -> conin.algorithms.inference.unconstrained
+                                       .viterbi
+  a_star                            -> conin.algorithms.inference.oracle.a_star
+  recursive_a_star(hmm_app=...)     -> conin.algorithms.inference.recursive
                                        .recursive_a_star(hmm=...)
   HMMApplication                    -> ConstrainedHiddenMarkovModel with
                                        RecursiveConstraint or data=...
   supervised_learning, mcem, add_unknowns, convert_to_simulations
-                                    -> conin.learning
+                                    -> conin.algorithms.learning
   inference.viterbi_mvr, inference.marginal_map_mvr,
   other_queries.sat_prob_mvr, other_queries.sat_time_mvr
-                                    -> conin.inference.mvr
+                                    -> conin.algorithms.inference.mvr
   learning.baum_welch_mvr, learning.generalized_em_mvr
-                                    -> conin.learning.mvr
+                                    -> conin.algorithms.learning.mvr
   sampling.ffbs_mvr, sampling.stopped_sampling_mvr
-                                    -> conin.sampling.mvr
+                                    -> conin.algorithms.sampling.mvr
   hidden_markov_model lp_inference/ip_inference
-                                    -> conin.inference.pyomo
+                                    -> conin.algorithms.inference.pyomo
   inference_pyomo_map_query_{MN,BN,DDBN,HMM}(pgm=m, ...)
                                     -> map_query(m, method="integer_program",
                                        ...)
@@ -99,7 +108,7 @@ Migration table (old -> new)
                                        uai, cfn, pgmpy_files)
   conin.common.pgmpy (convert_pgmpy_to_conin, MapCPD, is_polytree)
                                     -> conin.pgmpy
-  log_probability, log_potential    -> conin.scoring
+  log_probability, log_potential    -> conin.algorithms.scoring
   MAP solution keys: hidden         -> states
                      log_likelihood, log_factor_sum
                                     -> log_potential (the same score for
@@ -180,9 +189,13 @@ Constrained models
   backend and for is_feasible: start, stop and T for a DBN; start, stop and
   hmm = Munch(T, hidden_to_internal) for an HMM (the pgmpy, oracle and
   is_feasible data had only T or hmm.T, and network flow no start/stop).
-- is_feasible on every constrained class checks oracle, factor-oracle,
+- The feasibility checks are functions, not methods:
+  conin.algorithms.feasibility.is_feasible(cmodel, assignment) for every
+  constrained model (and observed= for an HMM), and
+  partial_is_feasible(cmodel, T=, seq=) for constrained HMMs only (other
+  models raise TypeError). is_feasible checks oracle, factor-oracle,
   algebraic, recursive and MVR constraints (pyomo/toulbar2 raise
-  NotImplementedError); the HMM version accepts a dict keyed by time.
+  NotImplementedError); for an HMM it accepts a dict keyed by time.
 - ConstrainedDynamicDiscreteBayesianNetwork.nodes is a property.
 - ConstrainedHiddenMarkovModel.generate_hidden/generate_observed/
   generate_observed_from_hidden are removed (see Sampling).
@@ -271,12 +284,13 @@ Inference
 - A query without a solution (the evidence or the constraints exclude every
   assignment) has the same result for every method: solution=None,
   solutions=[] and termination_condition "error: no feasible solutions"
-  (conin.inference.results.NO_FEASIBLE_SOLUTIONS, no_solution_results), as
-  A* already returned. Before, viterbi and variable_elimination returned an
-  arbitrary assignment with log_potential -inf (or a finite one, for
-  constraints) and termination_condition "ok"; toulbar2 raised TypeError
-  ("cannot unpack non-iterable NoneType object"), or RuntimeError if it found
-  the contradiction while a constraint was added; integer_program raised
+  (conin.algorithms.inference.results.NO_FEASIBLE_SOLUTIONS,
+  no_solution_results), as A* already returned. Before, viterbi and
+  variable_elimination returned an arbitrary assignment with log_potential
+  -inf (or a finite one, for constraints) and termination_condition "ok";
+  toulbar2 raised TypeError ("cannot unpack non-iterable NoneType object"),
+  or RuntimeError if it found the contradiction while a constraint was
+  added; integer_program raised
   RuntimeError (with solver="highs"/"appsi_highs" a Pyomo error while
   loading the missing solution); the network-flow integer program
   (also lp_inference/ip_inference) and mvr_viterbi raised
@@ -308,17 +322,19 @@ Inference
   migration table). The model-solving functions solve_pyomo_map_query_model,
   solve_toulbar2_map_query_model, solve_variable_elimination_map_query_model,
   lp_inference and ip_inference stay.
-- Every MAP result has the same keys for every method (conin.inference.results):
-  solution, solutions, termination_condition and solvetime (viterbi, a_star,
-  recursive_a_star and mvr_viterbi had no solvetime; variable_elimination had
-  no solutions or termination_condition; the HMM methods returned observed;
+- Every MAP result has the same keys for every method
+  (conin.algorithms.inference.results): solution, solutions,
+  termination_condition and solvetime (viterbi, a_star, recursive_a_star and
+  mvr_viterbi had no solvetime; variable_elimination had no solutions or
+  termination_condition; the HMM methods returned observed;
   recursive_a_star had no solution). Every solution has states,
   log_potential and solver_objective. HMM solutions no longer have hidden (it
-  was the same as states). log_potential is conin.scoring.log_potential of the
-  assignment with the evidence on the model without its constraints (for an
-  HMM, log P(hidden, observed)), so it is the same for every method; it
-  replaces log_likelihood (viterbi, A*, network flow, mvr_viterbi) and
-  log_factor_sum (integer program; it was the IP objective, whose factors are
+  was the same as states). log_potential is
+  conin.algorithms.scoring.log_potential of the assignment with the evidence
+  on the model without its constraints (for an HMM, log P(hidden,
+  observed)), so it is the same for every method; it replaces log_likelihood
+  (viterbi, A*, network flow, mvr_viterbi) and log_factor_sum (integer
+  program; it was the IP objective, whose factors are
   normalised per factor, so it was not log P(x): -10.21 instead of -3.97 for
   the same HMM path). The backend's objective is solver_objective (the IP
   objective, or toulbar2's primal bound, an integer cost). A partial MAP query
@@ -330,21 +346,23 @@ Inference
 
 Scoring
 
-- log_probability and log_potential move to conin.scoring. log_potential
-  accepts DBNs, HMMs, pgmpy models and constrained models (-inf when
-  infeasible); evidence= is removed (it returned the joint); an assignment
-  that is not total raises InvalidInputError; missing factor entries use the
-  factor's default_value. New log_probability (BN, DBN, HMM).
+- log_probability and log_potential move to conin.algorithms.scoring.
+  log_potential accepts DBNs, HMMs, pgmpy models and constrained models
+  (-inf when infeasible); evidence= is removed (it returned the joint); an
+  assignment that is not total raises InvalidInputError; missing factor
+  entries use the factor's default_value. New log_probability (BN, DBN, HMM).
 - New log_probability_query(pgm, assignment, *, evidence=None,
   method="variable_elimination", start=0, stop=None): log P(x | e), under the
   constraints for a constrained model (needs pgmpy).
 
 Sampling and learning
 
-- HMM sampling functions: conin.sampling.unconstrained.generate_hidden(hmm,
-  T), generate_hidden_until_state, generate_observed_from_hidden,
+- HMM sampling functions:
+  conin.algorithms.sampling.unconstrained.generate_hidden(hmm, T),
+  generate_hidden_until_state, generate_observed_from_hidden,
   generate_observed (same draws from NumPy's global state; hmm.set_seed
-  stays). Constrained HMMs: conin.sampling.oracle.rejection_sample_hidden.
+  stays). Constrained HMMs:
+  conin.algorithms.sampling.oracle.rejection_sample_hidden.
 - mcem(app=...) takes a constrained (or bare) HMM, samples from the
   re-estimated HMM each iteration and trains on the samples it scores (its
   results change), and no longer writes the HMM back to app.
@@ -369,7 +387,8 @@ I/O and conversion
   untested code) are removed.
 - conin/mediation_variables (an unused NumPy prototype of the mediation
   variable algorithms, with its notebooks) is removed; the MVR algorithms are
-  in conin.inference.mvr, conin.learning.mvr and conin.sampling.mvr.
+  in conin.algorithms.inference.mvr, conin.algorithms.learning.mvr and
+  conin.algorithms.sampling.mvr.
 - The format loaders and saver are renamed to match: load_uai, save_uai and
   load_cfn (were load_conin_model_from_uai, save_model_uai and
   load_conin_model_from_cfn); load_model/save_model are unchanged.
@@ -404,8 +423,8 @@ Bug fixes
   length, constraint state) into one search node that kept only the best
   prefix, so it could skip sequences. A merged node now keeps its
   num_solutions best prefixes. A* and recursive A* share one search
-  (conin.inference.hmm_a_star); recursive A* also runs on the matvec arrays
-  instead of dicts. When the search finds no solution, both report
+  (conin.algorithms.inference.hmm_a_star); recursive A* also runs on the
+  matvec arrays instead of dicts. When the search finds no solution, both report
   termination_condition="error: no feasible solutions" for every
   num_solutions (it was "ok" for num_solutions > 1, except when recursive
   A*'s first step was already infeasible).
@@ -458,7 +477,7 @@ Known issues
 - Variable elimination runs in pgmpy and can run out of memory on larger
   unrolled models (e.g. the unconstrained weather DBN with stop=4).
 - HiddenMarkovModel.log_probability raises ValueError for a zero-probability
-  sequence (conin.scoring.log_probability returns -inf).
+  sequence (conin.algorithms.scoring.log_probability returns -inf).
 - DBNs and HMMs can only be unrolled from start=0.
 
 -------------------------------------------------------------------------------
