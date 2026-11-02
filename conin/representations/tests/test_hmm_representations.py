@@ -168,7 +168,7 @@ def test_rejection_sampling_bare_hmm_is_unconstrained_sampling():
 def test_rejection_sampling_gives_up_after_max_failures():
     never = OracleConstraint(func=lambda states: False)
     cmodel = ConstrainedHiddenMarkovModel(tc.create_hmm1(), never)
-    with pytest.raises(RuntimeError, match="after 3 trials"):
+    with pytest.raises(RuntimeError, match="4 samples were rejected"):
         rejection_sample_hidden(cmodel, 5, max_failures=3)
 
 

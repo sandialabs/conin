@@ -1,4 +1,5 @@
 from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.graphical_models.assignments import as_sequence
 from conin.algorithms.inference.hmm_a_star import hmm_a_star
 from conin.algorithms.inference.results import (
     map_results,
@@ -71,7 +72,8 @@ def a_star(
     Parameters
     ----------
     observed : list
-        Observed labels.
+        Observed labels: a non-empty list or tuple (or a dict keyed by
+        ``0..T-1``); anything else raises ``InvalidInputError``.
     hmm : HiddenMarkovModel or ConstrainedHiddenMarkovModel
         The model. Constraints must have an ``"oracle"`` representation (no
         constraints or ``"oracle"`` constraints); others raise
@@ -93,7 +95,11 @@ def a_star(
     cmodel = ConstrainedHiddenMarkovModel.ensure(hmm)
     # Raises InvalidInputError for constraint families without an "oracle"
     # representation (anything other than no constraints/"oracle").
-    return _a_star(cmodel.representation("oracle"), observed=observed, **kwargs)
+    return _a_star(
+        cmodel.representation("oracle"),
+        observed=as_sequence(observed, "observed sequence"),
+        **kwargs,
+    )
 
 
 def _a_star(oracle, *, observed, **kwargs):

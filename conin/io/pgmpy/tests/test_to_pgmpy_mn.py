@@ -145,3 +145,23 @@ def test_integration_with_bayesian_examples():
         assert len(pgmpy_pgm.get_factors()) == len(conin_mn.factors)
 
         pgmpy_pgm.check_model()
+
+
+@require_pgmpy
+def test_convert_sparse_factors_use_default_value():
+    # The missing assignments of a factor's dict raised KeyError.
+    from conin.graphical_models import DiscreteFactor, DiscreteMarkovNetwork
+
+    pgm = DiscreteMarkovNetwork(
+        states={"A": [0, 1, 2], "B": [0, 1, 2]},
+        factors=[
+            DiscreteFactor(nodes=["A"], values={0: 1}, default_value=3),
+            DiscreteFactor(nodes=["A", "B"], values={(1, 0): 5}, default_value=1),
+        ],
+    )
+    pgmpy_pgm = convert_conin_to_pgmpy_mn(pgm)
+    unary, pairwise = pgmpy_pgm.factors
+    check_values(unary, [1, 3, 3])
+    check_values(
+        pairwise, [5 if (a, b) == (1, 0) else 1 for a in range(3) for b in range(3)]
+    )

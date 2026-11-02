@@ -336,7 +336,10 @@ def _backend_params():
     ]
 
 
-@pytest.mark.parametrize("method,solver", _backend_params())
+@pytest.mark.parametrize(
+    "method,solver",
+    _backend_params() + [pytest.param("variable_elimination", {})],
+)
 @pytest.mark.parametrize("option", ["prune_network", "create_MN"])
 def test_mn_prune_network_and_create_MN(method, solver, option):
     # On a Markov network these options reached the solver (TypeError).

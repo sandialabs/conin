@@ -33,9 +33,6 @@ from conin.algorithms.inference.pyomo.hmm_network_flow import (
 )
 
 solve_module = importlib.import_module("conin.algorithms.inference.pyomo.solve")
-network_flow_module = importlib.import_module(
-    "conin.algorithms.inference.pyomo.hmm_network_flow"
-)
 
 # ---------------------------------------------------------------------
 # Helpers
@@ -192,9 +189,10 @@ def _stub_aos(solutions_for):
     )
 
 
-def _use_aos(monkeypatch, module, solutions_for):
-    monkeypatch.setattr(module, "or_topas_available", True)
-    monkeypatch.setattr(module, "aos", _stub_aos(solutions_for), raising=False)
+def _use_aos(monkeypatch, solutions_for):
+    # Both or_topas paths call solve_with_or_topas, in the solve module.
+    monkeypatch.setattr(solve_module, "or_topas_available", True)
+    monkeypatch.setattr(solve_module, "aos", _stub_aos(solutions_for), raising=False)
 
 
 def _network_flow_solutions(paths):
@@ -219,7 +217,7 @@ PATHS = [["h0", "h0", "h1"], ["h1", "h1", "h1"]]
 
 
 def test_ip_inference_or_topas_solutions(monkeypatch):
-    _use_aos(monkeypatch, network_flow_module, _network_flow_solutions(PATHS))
+    _use_aos(monkeypatch, _network_flow_solutions(PATHS))
     chmm = hex_.create_chmm1_pyomo()
     results = ip_inference(hmm=chmm, observed=["o0", "o1", "o1"], solver="or_topas")
     assert [s.states for s in results.solutions] == PATHS
@@ -236,7 +234,7 @@ def test_ip_inference_or_topas_solutions(monkeypatch):
 def test_map_query_network_flow_or_topas_with_dict_evidence(monkeypatch):
     # key_solutions_by_time reads soln.states, which the or_topas solutions
     # did not have.
-    _use_aos(monkeypatch, network_flow_module, _network_flow_solutions(PATHS))
+    _use_aos(monkeypatch, _network_flow_solutions(PATHS))
     results = map_query(
         hex_.create_chmm1_pyomo(),
         method="integer_program",
@@ -258,7 +256,7 @@ def test_solve_pyomo_map_query_model_or_topas_solutions(monkeypatch):
             result.append(_AosSolution(model, objective=-float(i)))
         return result
 
-    _use_aos(monkeypatch, solve_module, solutions_for)
+    _use_aos(monkeypatch, solutions_for)
     results = solve_pyomo_map_query_model(_abc_model(), solver="or_topas")
     assert [s.states for s in results.solutions] == assignments
     assert results.solution is results.solutions[0]
@@ -268,29 +266,23 @@ def test_solve_pyomo_map_query_model_or_topas_solutions(monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "module,solve",
+    "solve",
     [
-        (
-            solve_module,
-            lambda: solve_pyomo_map_query_model(_abc_model(), solver="or_topas"),
-        ),
-        (
-            network_flow_module,
-            lambda: ip_inference(
-                hmm=hex_.create_chmm1_pyomo(), observed=["o0"], solver="or_topas"
-            ),
+        lambda: solve_pyomo_map_query_model(_abc_model(), solver="or_topas"),
+        lambda: ip_inference(
+            hmm=hex_.create_chmm1_pyomo(), observed=["o0"], solver="or_topas"
         ),
     ],
     ids=["solve_pyomo_map_query_model", "ip_inference"],
 )
-def test_or_topas_without_solutions_raises(monkeypatch, module, solve):
-    _use_aos(monkeypatch, module, lambda model: [])
+def test_or_topas_without_solutions_raises(monkeypatch, solve):
+    _use_aos(monkeypatch, lambda model: [])
     with pytest.raises(InsufficientSolutionsError, match="No solutions"):
         solve()
 
 
 def test_unknown_topas_method_raises(monkeypatch):
-    _use_aos(monkeypatch, network_flow_module, lambda model: [])
+    _use_aos(monkeypatch, lambda model: [])
     with pytest.raises(RuntimeError, match="not supported"):
         ip_inference(
             hmm=hex_.create_chmm1_pyomo(),

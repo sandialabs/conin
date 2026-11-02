@@ -70,6 +70,48 @@ def solve_model(opt, model, *, tee=False):
     return res, False
 
 
+def solve_with_or_topas(model, solver_options, *, tee=False):
+    """Enumerate solutions of the Pyomo ``model`` with or_topas.
+
+    ``solver_options`` are the or_topas options, plus ``topas_method``:
+    ``"balas"`` (the default, ``or_topas.aos.enumerate_binary_solutions``) or
+    ``"gurobi_solution_pool"`` (``or_topas.aos.gurobi_generate_solutions``).
+    The caller's dict is not changed.
+
+    Returns
+    -------
+    tuple
+        ``(solutions, solvetime)``: the or_topas solutions (not empty) and
+        the time spent in or_topas.
+
+    Raises
+    ------
+    RuntimeError
+        If or_topas is not installed, or for an unknown ``topas_method``.
+    InsufficientSolutionsError
+        If or_topas finds no solution (e.g. the model is infeasible).
+    """
+    if not or_topas_available:
+        raise RuntimeError("solver='or_topas' needs or_topas, which is not installed")
+    # Copy, so that popping topas_method leaves the caller's dict unchanged.
+    solver_options = dict(solver_options or {})
+    topas_method = solver_options.pop("topas_method", "balas")
+    if topas_method == "balas":
+        generate = aos.enumerate_binary_solutions
+    elif topas_method == "gurobi_solution_pool":
+        generate = aos.gurobi_generate_solutions
+    else:
+        raise RuntimeError(f"Asked for {topas_method=}, which is not supported")
+
+    solver_timer = TicTocTimer()
+    solver_timer.tic(None)
+    aos_pm = generate(model, tee=tee, **solver_options)
+    solvetime = solver_timer.toc(None)
+    if not aos_pm.solutions:
+        raise InsufficientSolutionsError("No solutions found by the 'or_topas' solver")
+    return aos_pm.solutions, solvetime
+
+
 def _solve_pyomo(repn, q):
     """Solve a MAP query on a ``"pyomo"`` representation of an MN, BN or DBN.
 
@@ -139,36 +181,17 @@ def solve_pyomo_map_query_model(
         #
         # AOS solver in or_topas
         #
-        if not or_topas_available:  # pragma:nocover
-            raise RuntimeError("or_topas not installed")
-
-        # Copy, so that popping topas_method leaves the caller's dict unchanged.
-        solver_options = dict(solver_options or {})
-        topas_method = solver_options.pop("topas_method", "balas")
-
         if timing:  # pragma:nocover
             timer.toc("Initialize solver")
 
-        solver_timer = TicTocTimer()
-        solver_timer.tic(None)
-        if topas_method == "balas":
-            aos_pm = aos.enumerate_binary_solutions(model, **solver_options)
-        elif topas_method == "gurobi_solution_pool":
-            aos_pm = aos.gurobi_generate_solutions(model, tee=tee, **solver_options)
-        else:  # pragma:nocover
-            raise RuntimeError(f"Asked for {topas_method=}, which is not supported")
-        solvetime = solver_timer.toc(None)
+        aos_solutions, solvetime = solve_with_or_topas(model, solver_options, tee=tee)
 
         if timing:  # pragma:nocover
             timer.toc("Completed optimization")
 
-        if not aos_pm.solutions:
-            raise InsufficientSolutionsError(
-                "No solutions found by the 'or_topas' solver"
-            )
         solutions = [
             parse_aos_solution_pyomo_map_query(model, aos_solution, solution_with_fixed)
-            for aos_solution in aos_pm.solutions
+            for aos_solution in aos_solutions
         ]
 
     elif solver == "gurobi":

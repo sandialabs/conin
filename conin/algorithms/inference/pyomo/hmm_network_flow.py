@@ -9,21 +9,16 @@ import math
 
 from conin.config import default_mip_solver
 from conin.constrained_models import ConstrainedHiddenMarkovModel
-from conin.exceptions import (
-    InfeasibleQueryError,
-    InsufficientSolutionsError,
-    InvalidInputError,
-)
+from conin.exceptions import InfeasibleQueryError, InvalidInputError
 from conin.graphical_models.assignments import as_sequence
 from conin.algorithms.inference.hmm_results import key_solutions_by_time
-from conin.algorithms.inference.pyomo.solve import solve_model
+from conin.algorithms.inference.pyomo.solve import solve_model, solve_with_or_topas
 from conin.algorithms.inference.results import (
     map_results,
     map_solution,
     no_solution_results,
     score_hmm_solutions,
 )
-from conin.util import try_import
 
 import pyomo.environ as pyo
 from pyomo.common.timing import tic, toc, TicTocTimer
@@ -31,10 +26,15 @@ from pyomo.contrib.alternative_solutions.aos_utils import (
     get_model_variables,
 )
 
-with try_import() as or_topas_available:
-    import or_topas.aos as aos
-
 logger = logging.getLogger("conin")
+
+
+def _solver_factory(solver, solver_options):
+    """The Pyomo solver ``solver``, with the options ``solver_options`` (a dict or ``None``)."""
+    opt = pyo.SolverFactory(solver)
+    if solver_options:
+        opt.options = dict(solver_options)
+    return opt
 
 
 def _solve_network_flow(repn, q):
@@ -77,12 +77,13 @@ def lp_inference(
     ----------
     hmm : HiddenMarkovModel
     observed : list
-        Observed labels.
+        Observed labels: a non-empty list or tuple (or a dict keyed by
+        ``0..T-1``); anything else raises ``InvalidInputError``.
     num_solutions : int, optional
         Must be ``1``.
     solver, solver_options, debug, quiet
-        The Pyomo solver name, (unused) options, debug output and solver
-        output.
+        The Pyomo solver name, its options (set as ``opt.options``), debug
+        output and solver output.
 
     Returns
     -------
@@ -97,7 +98,7 @@ def lp_inference(
     repn = ConstrainedHiddenMarkovModel(hmm).representation("pyomo_network_flow")
     return _lp_inference(
         repn,
-        observed=observed,
+        observed=as_sequence(observed, "observed sequence"),
         num_solutions=num_solutions,
         solver=solver,
         solver_options=solver_options,
@@ -137,7 +138,7 @@ def _lp_inference(
         toc("Generating Model - STOP")
     if debug:
         tic("Optimizing Model - START")
-    opt = pyo.SolverFactory(solver)
+    opt = _solver_factory(solver, solver_options)
 
     timer.tic(None)
     res, infeasible = solve_model(opt, M, tee=not quiet)
@@ -194,7 +195,8 @@ def ip_inference(
         Its constraints must be of family ``"pyomo"`` or ``"smoek"`` (or
         none).
     observed : list
-        Observed labels.
+        Observed labels: a non-empty list or tuple (or a dict keyed by
+        ``0..T-1``); anything else raises ``InvalidInputError``.
     solver, solver_options, debug, quiet
         The Pyomo solver name (``"or_topas"`` enumerates several solutions),
         its options, debug output and solver output.
@@ -213,7 +215,7 @@ def ip_inference(
     """
     return _ip_inference(
         hmm.representation("pyomo_network_flow"),
-        observed=observed,
+        observed=as_sequence(observed, "observed sequence"),
         solver=solver,
         solver_options=solver_options,
         debug=debug,
@@ -245,43 +247,25 @@ def _ip_inference(
     if debug:
         toc("Generating Model - STOP")
     if solver == "or_topas":
-        if not or_topas_available:
-            raise RuntimeError("or_topas Solver Unavailable")
-        # Copy, so that popping topas_method leaves the caller's dict unchanged.
-        solver_options = dict(solver_options or {})
-        topas_method = solver_options.pop("topas_method", "balas")
-
         if debug:
             tic("Optimizing Model with OR_TOPAS - START")
 
-        timer = TicTocTimer()
-        timer.tic(None)
-        if topas_method == "balas":
-            aos_pm = aos.enumerate_binary_solutions(M, **solver_options)
-        elif topas_method == "gurobi_solution_pool":
-            aos_pm = aos.gurobi_generate_solutions(M, **solver_options)
-        else:
-            raise RuntimeError(f"Asked for {topas_method=}, which is not supported")
-        solvetime = timer.toc(None)
+        aos_solutions, solvetime = solve_with_or_topas(M, solver_options, tee=not quiet)
 
         if debug:
             toc("Optimizing Model with OR_TOPAS - STOP")
 
-        if not aos_pm.solutions:
-            raise InsufficientSolutionsError(
-                "No solutions found by the 'or_topas' solver"
-            )
         solutions = [
             parse_aos_solution_pyomo_ip_inference(
                 aos_solution=aos_solution, M=M, hmm=hmm, T=T, data=data
             )
-            for aos_solution in aos_pm.solutions
+            for aos_solution in aos_solutions
         ]
     else:
         # this is solver != "or_topas"
         if debug:
             tic("Optimizing Model - START")
-        opt = pyo.SolverFactory(solver)
+        opt = _solver_factory(solver, solver_options)
 
         timer = TicTocTimer()
         timer.tic(None)

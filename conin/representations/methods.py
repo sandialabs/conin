@@ -55,6 +55,19 @@ def check_method(method, methods, what):
         )
 
 
+def reject_unexpected_options(options, what):
+    """Raise ``TypeError`` if ``options`` (the options a method did not use) is not empty.
+
+    Every method rejects the options it does not know, so that a misspelt
+    option is not silently ignored.  ``what`` names the call in the message,
+    e.g. ``"map_query(method='viterbi')"``.
+    """
+    if options:
+        raise TypeError(
+            f"Unexpected options for {what}: {', '.join(map(str, options))}"
+        )
+
+
 def representation_kind(method, cmodel, options):
     """Return the representation kind that ``method`` runs on for ``cmodel``.
 

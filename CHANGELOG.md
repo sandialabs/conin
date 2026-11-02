@@ -19,8 +19,12 @@ Highlights
 - Backend representations (conin.representations) are built on demand with
   cmodel.representation(kind); a registry decides which constraint families
   each model type accepts.
-- map_query normalises every model (bare, constrained or pgmpy) and dispatches
-  on the representation, for every method; new method="mvr_viterbi".
+- map_query normalises every model (bare or constrained) and dispatches on
+  the representation, for every method; new method="mvr_viterbi".
+- Variable elimination is CONIN's own (numpy, in log space), so
+  map_query(method="variable_elimination") and log_probability_query no
+  longer need pgmpy. pgmpy is used only by conin.io.pgmpy (BIF files and
+  model conversion); the algorithms take CONIN models only.
 - New conin.algorithms.scoring.log_probability_query: marginal and conditional
   log-probabilities, also under constraints.
 - New RecursiveConstraint for recursive A*; map_query(method="a_star") uses it.
@@ -113,9 +117,11 @@ Migration table (old -> new)
                                     -> conin.representations.toulbar2(.common)
   conin.common.load_model/save_model, conin.common.conin.* loaders/savers
                                     -> conin.io (load_model, save_model,
-                                       uai, cfn, pgmpy_files)
-  conin.common.pgmpy (convert_pgmpy_to_conin, MapCPD, is_polytree)
-                                    -> conin.pgmpy
+                                       uai, cfn, pgmpy.files)
+  conin.common.pgmpy.convert_pgmpy_to_conin
+                                    -> conin.io.pgmpy.convert_pgmpy_to_conin
+  conin.common.pgmpy.MapCPD, is_polytree (pgmpy models), *_pgmpy examples
+                                    -> removed
   log_probability, log_potential    -> conin.algorithms.scoring
   MAP solution keys: hidden         -> states
                      log_likelihood, log_factor_sum
@@ -232,7 +238,7 @@ Representations (new)
 
 - conin.representations: Representation, register_representation,
   build_representation, supported_representations; kinds "pyomo",
-  "pyomo_network_flow", "toulbar2", "pgmpy", "matvec", "oracle",
+  "pyomo_network_flow", "toulbar2", "variable_elimination", "matvec", "oracle",
   "recursive", "mvr". Every representation() call builds a new object;
   structure parameters (start, stop, ...) are build arguments and per-query
   inputs go to create_model().
@@ -245,8 +251,8 @@ Representations (new)
 - On network-flow models, M.V is a PyomoVarWrapper: a missing variable raises
   KeyError and a wrong number of arguments ValueError (they returned None and
   a KeyError).
-- The DBN and HMM representations of the pyomo, toulbar2 and pgmpy backends
-  share their time range (start, stop, time_steps, the constraint data) through
+- The DBN and HMM representations of the pyomo, toulbar2 and
+  variable_elimination backends share their time range (start, stop, time_steps, the constraint data) through
   the mixins of conin.representations.unrolled; the DBN builders default stop
   to 1 and the HMM builders require it. The backend appliers share their
   dispatch (conin.representations.base.apply_constraints): constraints of
@@ -309,9 +315,8 @@ Inference
   create_model still raise, now InfeasibleQueryError
   (conin.exceptions), a subclass of InvalidInputError.
 - DBN queries with stop=None unroll over 0..1 for every method.
-- variable_elimination: pgmpy inputs are converted to CONIN like on every
-  other path; on a constrained Markov network it keeps the user evidence and
-  no longer forces a scope node to 1; an unsupported constraint family raises
+- variable_elimination: on a constrained Markov network it keeps the user
+  evidence and no longer forces a scope node to 1; an unsupported constraint family raises
   InvalidInputError (was TypeError).
 - The query-check messages changed: a partial variables query raises
   RuntimeError("Partial MAP queries are only supported by
@@ -324,6 +329,17 @@ Inference
   honoured by the integer program on DBNs and HMMs (it was ignored), and
   solution_with_evidence=True works for an HMM integer program with list
   evidence (it raised AttributeError).
+- Every method raises TypeError for an option it does not take, so a
+  misspelt option is not silently ignored: variable_elimination and viterbi
+  ignored unknown options (e.g. solver=). variable_elimination also accepts
+  solution_with_fixed (a synonym of solution_with_evidence, as for
+  integer_program and toulbar2; it was ignored) and checks
+  prune_network/create_MN like the other two.
+- lp_inference and ip_inference (the network-flow integer program) pass
+  solver_options to the solver (they were ignored for every solver but
+  or_topas), and with solver="or_topas" pass tee (quiet=False) to both
+  topas methods. The integer program on the other models passes tee to the
+  "balas" topas method too.
 - The per-backend inference_pyomo_map_query_*, inference_toulbar2_map_query_*
   and inference_variable_elimination_map_query_* functions (MN, BN, DDBN,
   HMM) are removed; call map_query(pgm, method=...) instead (see the
@@ -355,13 +371,16 @@ Inference
 Scoring
 
 - log_probability and log_potential move to conin.algorithms.scoring.
-  log_potential accepts DBNs, HMMs, pgmpy models and constrained models
-  (-inf when infeasible); evidence= is removed (it returned the joint); an
-  assignment that is not total raises InvalidInputError; missing factor
-  entries use the factor's default_value. New log_probability (BN, DBN, HMM).
+  log_potential accepts DBNs, HMMs and constrained models (-inf when
+  infeasible); log_potential and log_probability raise TypeError for pgmpy
+  models (convert them with conin.io.pgmpy.convert_pgmpy_to_conin);
+  evidence= is removed (it returned the joint); an assignment that is not
+  total raises InvalidInputError; missing factor entries use the factor's
+  default_value. New log_probability (BN, DBN, HMM).
 - New log_probability_query(pgm, assignment, *, evidence=None,
   method="variable_elimination", start=0, stop=None): log P(x | e), under the
-  constraints for a constrained model (needs pgmpy).
+  constraints for a constrained model. It raises TypeError for pgmpy
+  models, as map_query does.
 
 Sampling and learning
 
@@ -383,10 +402,13 @@ I/O and conversion
 - File I/O moves from conin.common to conin.io; load_model/save_model accept
   model_type="conin" or "pgmpy". The convert_pgm script is
   conin.io.convert_pgm:main (same name and options).
-- pgmpy conversion (convert_pgmpy_to_conin, MapCPD, is_polytree for pgmpy
-  models) moves from conin.common.pgmpy to conin.pgmpy, which also has the
-  new convert_conin_to_pgmpy_bn and convert_conin_to_pgmpy_mn. The new
+- pgmpy conversion moves from conin.common.pgmpy to conin.io.pgmpy
+  (convert_pgmpy_to_conin, and the new convert_conin_to_pgmpy_bn and
+  convert_conin_to_pgmpy_mn), with the pgmpy file readers and writers. MapCPD
+  and is_polytree for pgmpy models are removed; the new
   conin.graphical_models.is_polytree checks CONIN Bayesian networks.
+- conin.io.pgmpy.files.load_model no longer loads a pgmpy example model by
+  name when the file is missing; it raises RuntimeError("Missing file ...").
 - pgmax, pomegranate and pyagrum support (converters, loaders, model_type
   values and the pgmax/pomegranate/pyagrum/pgm-all extras) is removed;
   load_model with those model_type values raises RuntimeError("Unexpected
@@ -416,11 +438,9 @@ Bug fixes
 - map_query on a one-observation HMM (integer_program, toulbar2,
   variable_elimination) no longer raises AssertionError; create_bn_from_dbn
   with start > 0 raises InvalidInputError instead of AttributeError.
-- The pgmpy_issue_1177_pgmpy example works with pgmpy 1.1 (DiscreteMLE()).
 - variable_elimination works with a factor-oracle or smoek constraint
   over one node (e.g. model.V("A", 0) == 1, or a constraint on one hidden
-  state of an HMM). Its materialised factor or CPD was keyed by 1-tuples
-  instead of states, so the conversion to pgmpy raised KeyError.
+  state of an HMM); it raised KeyError.
 - DiscreteMarkovNetwork.with_factor keeps the new factor's edges: once the
   inferred edges had been read, they were passed on as if they had been given,
   so the new model's edges missed those of the added factor.
@@ -446,7 +466,8 @@ Bug fixes
   - DiscreteMarkovNetwork.check_model and DiscreteBayesianNetwork.check_model
     raise InvalidInputError (was AssertionError, or RuntimeError for an edge
     to an unknown node);
-  - the "pyomo", "toulbar2" and "pgmpy" HMM representations without stop,
+  - the "pyomo", "toulbar2" and "variable_elimination" HMM representations
+    without stop,
     observations that no hidden state can emit in the network-flow model,
     lp_inference with num_solutions != 1, and supervised_learning/mcem without
     hidden or observable states raise InvalidInputError;
@@ -479,11 +500,21 @@ Bug fixes
 - MVR_MatVecRepn accepts plain nested lists for a homogeneous MVR, and
   raises InvalidInputError naming the array for a ragged or non-numeric one
   (it raised a NumPy ValueError, or a misleading "must be a 3D array").
+- Factors whose dict values omit assignments (they get the factor's
+  default_value) work with save_uai, toulbar2, the integer program and
+  convert_conin_to_pgmpy_mn: save_uai, toulbar2 and the converter raised
+  KeyError, and the integer program left the omitted assignments out of the
+  model (as if their weight were 0), so it could return a wrong assignment or
+  no solution.
+- viterbi, a_star, recursive_a_star, lp_inference and ip_inference raise
+  InvalidInputError for empty observations, as map_query does (the first
+  three raised IndexError).
+- rejection_sample_hidden no longer draws one more sample after the last
+  rejected one (it was never checked, but it advanced NumPy's random
+  state); the error says how many samples were rejected (max_failures + 1).
 
 Known issues
 
-- Variable elimination runs in pgmpy and can run out of memory on larger
-  unrolled models (e.g. the unconstrained weather DBN with stop=4).
 - HiddenMarkovModel.log_probability raises ValueError for a zero-probability
   sequence (conin.algorithms.scoring.log_probability returns -inf).
 - DBNs and HMMs can only be unrolled from start=0.

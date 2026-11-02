@@ -54,12 +54,13 @@ def convert_conin_to_pgmpy_mn(conin_pgm, check_model=True):
         # pprint.pprint( list(conin_factor.assignments(conin_pgm.states) ))
         if len(conin_factor.nodes) == 1:
             values = [
-                conin_factor.values[v] for v in conin_pgm.states[conin_factor.nodes[0]]
+                conin_factor.values.get(v, conin_factor.default_value)
+                for v in conin_pgm.states[conin_factor.nodes[0]]
             ]
         else:
             slist = [conin_pgm.states[node] for node in conin_factor.nodes]
             values = [
-                conin_factor.values[assignment]
+                conin_factor.values.get(assignment, conin_factor.default_value)
                 for assignment in itertools.product(*slist)
             ]
 

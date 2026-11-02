@@ -1,5 +1,7 @@
 """Tests for conin.algorithms.sampling.oracle.rejection_sample_hidden."""
 
+import importlib
+
 import numpy as np
 import pytest
 
@@ -14,6 +16,10 @@ from conin.examples.markov_network import ABC_conin
 from conin.exceptions import InvalidInputError
 from conin.algorithms.sampling.oracle import rejection_sample_hidden
 from conin.algorithms.sampling.unconstrained import generate_hidden
+
+rejection_module = importlib.import_module(
+    "conin.algorithms.sampling.oracle.rejection_hmm"
+)
 
 
 def _at_least_one(state):
@@ -65,8 +71,35 @@ def test_zero_time_steps_gives_an_empty_sequence():
 def test_infeasible_constraints_raise_after_max_failures():
     impossible = OracleConstraint(func=lambda states: False, name="never")
     chmm = ConstrainedHiddenMarkovModel(hex_.create_hmm1(), impossible)
-    with pytest.raises(RuntimeError, match="after 5 trials"):
+    with pytest.raises(RuntimeError, match="6 samples were rejected"):
         rejection_sample_hidden(chmm, 3, max_failures=5)
+
+
+@pytest.mark.parametrize("max_failures", [0, 1, 5])
+def test_every_drawn_sample_is_checked(monkeypatch, max_failures):
+    # One more sample used to be drawn after the last rejection and never
+    # checked (it still advanced the random state).
+    drawn = []
+    draw = rejection_module._hidden_indices
+
+    def recording_draw(*args):
+        drawn.append(draw(*args))
+        return drawn[-1]
+
+    monkeypatch.setattr(rejection_module, "_hidden_indices", recording_draw)
+    checked = []
+
+    def never(states):
+        checked.append(list(states))
+        return False
+
+    chmm = ConstrainedHiddenMarkovModel(
+        hex_.create_hmm1(), OracleConstraint(func=never, name="never")
+    )
+    with pytest.raises(RuntimeError):
+        rejection_sample_hidden(chmm, 3, max_failures=max_failures)
+    assert len(checked) == max_failures + 1
+    assert len(drawn) == max_failures + 1
 
 
 @pytest.mark.parametrize("hmm", [ABC_conin().pgm, "hmm", None])
