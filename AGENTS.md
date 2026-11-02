@@ -7,7 +7,7 @@
   code, tests, examples, and documentation together.
 - Do not revert unrelated user or collaborator changes.
 - Public examples should live in `conin/examples/` (`markov_network.py`, `bayesian_network.py`, `dynamic_bayesian_network.py`, `hidden_markov_model.py`), not under test modules.
-- The package layout, the import layering rules and the design decisions (no representation cache, VE through pgmpy, the representation registry) are in `doc/sphinx/architecture.rst`. Follow its layering rules (`conin/tests/test_layering.py` checks them; add a new package to its `LAYERS` table); new backends or constraint families are added by registering representation builders.
+- The package layout, the import layering rules and the design decisions (no representation cache, CONIN's own variable elimination, the representation registry) are in `doc/sphinx/architecture.rst`. Follow its layering rules (`conin/tests/test_layering.py` checks them; add a new package to its `LAYERS` table); new backends or constraint families are added by registering representation builders.
 - There are no compatibility aliases for moved names. If a public name moves, update every importer (code, tests, docs, notebooks, `doc/notebooks/MVR/*.md`) together.
 - `import conin` must not import torch; the MVR packages load their algorithms lazily.
 

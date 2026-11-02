@@ -1,38 +1,30 @@
-"""Marginal and conditional log-probabilities on the ``"pgmpy"`` representation.
+"""Marginal and conditional log-probabilities on the ``"variable_elimination"`` representation.
 
-The ``"pgmpy"`` representation holds the model with its constraints compiled
-in (:class:`~conin.representations.pgmpy.PgmpyRepresentation`): a factor per
-constraint that is ``0`` on infeasible assignments (Markov networks), or a
-binary node per constraint that :attr:`constraint_evidence` fixes to ``1``
-(Bayesian networks, and the unrolled DBNs and HMMs).  Let ``W(a)`` be the sum
-of the product of the factors over every total assignment that agrees with
-``a``, with the constraint evidence added.  Then ``W(a) = k * Z * P(a, C)``,
-where ``Z`` is the partition function (``1`` for Bayesian networks), ``C`` is
-the event that every constraint holds, and ``k`` is a constant of the compiled
-constraint factors.  So
+The ``"variable_elimination"`` representation holds the model with its
+constraints compiled in
+(:class:`~conin.representations.variable_elimination.VariableEliminationRepresentation`):
+the factors of the model (its CPDs for a Bayesian network) and one factor per
+constraint that is ``0`` on infeasible assignments.  Let ``W(a)`` be the sum
+of the product of these factors over every total assignment that agrees with
+``a``.  Then ``W(a) = Z * P(a, C)``, where ``Z`` is the partition function
+(``1`` for Bayesian networks) and ``C`` is the event that every constraint
+holds.  So
 
     log P(x | e, C) = log W(x, e) - log W(e)
 
-and ``k`` and ``Z`` cancel.  ``W`` is computed with pgmpy's variable
-elimination on the Markov network of the pgmpy model (pgmpy normalises the
-queries of Bayesian networks, and drops factors that the evidence fixes
-completely).  The sums are taken in linear space, so a probability below the
-smallest float (about ``1e-308``, e.g. a very long HMM sequence) underflows
-to zero.
+and ``Z`` cancels.  ``log W`` is computed with
+:func:`~conin.algorithms.util.variable_elimination.log_weight`, in log space,
+so long sequences do not underflow.
 """
 
 import math
 
+from conin.algorithms.util.variable_elimination import log_weight
 from conin.exceptions import InvalidInputError
-from conin.util import try_import
-
-with try_import() as pgmpy_available:
-    import pgmpy.inference
-    import pgmpy.models
 
 
 def _log_probability_variable_elimination(repn, *, assignment, evidence):
-    """``log P(assignment | evidence, C)`` on the ``"pgmpy"`` representation ``repn``.
+    """``log P(assignment | evidence, C)`` on the ``"variable_elimination"`` representation ``repn``.
 
     ``assignment`` and ``evidence`` are dicts keyed by the nodes of
     ``repn.pgm`` (checked by the caller).
@@ -42,31 +34,16 @@ def _log_probability_variable_elimination(repn, *, assignment, evidence):
     InvalidInputError
         If ``P(evidence, C) = 0``: the conditional is not defined.
     """
-    model = repn.create_model()
-    if isinstance(model, pgmpy.models.DiscreteBayesianNetwork):
-        model = model.to_markov_model()
-    infer = pgmpy.inference.VariableElimination(model)
-    constraint_evidence = repn.constraint_evidence
-
-    denominator = _weight(infer, model, {**evidence, **constraint_evidence})
-    if denominator == 0:
+    model = repn.ve_model
+    denominator = log_weight(model.factors, model.states, evidence=evidence)
+    if denominator == -math.inf:
         raise InvalidInputError(_zero_message(evidence, repn.constraints))
-    numerator = _weight(infer, model, {**evidence, **assignment, **constraint_evidence})
-    if numerator == 0:
+    numerator = log_weight(
+        model.factors, model.states, evidence={**evidence, **assignment}
+    )
+    if numerator == -math.inf:
         return -math.inf
-    return math.log(numerator) - math.log(denominator)
-
-
-def _weight(infer, model, fixed):
-    """The sum of the product of the factors over the assignments that agree with ``fixed``."""
-    if not fixed:
-        node = next(iter(model.nodes))
-        result = infer.query([node], show_progress=False)
-        return float(result.values.sum())
-    node = next(iter(fixed))
-    rest = {n: s for n, s in fixed.items() if n != node}
-    result = infer.query([node], evidence=rest, show_progress=False)
-    return float(result.values[result.get_state_no(node, fixed[node])])
+    return numerator - denominator
 
 
 def _zero_message(evidence, constraints):

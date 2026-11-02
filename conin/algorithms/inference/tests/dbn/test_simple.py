@@ -5,11 +5,8 @@ from conin.util import try_import
 from conin.examples import dynamic_bayesian_network as examples
 from conin.algorithms.inference import map_query
 
-with try_import() as pgmpy_available:
-    import pgmpy
-
 with try_import() as pytoulbar2_available:
-    import pytoulbar2
+    import pytoulbar2  # noqa: F401
 
 mip_solver = pyomo.opt.check_available_solvers("gurobi", "highs", "glpk")
 mip_solver = mip_solver[0] if mip_solver else None
@@ -18,9 +15,6 @@ import pytest
 
 skipif_no_mip_solver = pytest.mark.skipif(
     not mip_solver, reason="No mip solver installed"
-)
-skipif_pgmpy_not_available = pytest.mark.skipif(
-    not pgmpy_available, reason="pgmpy not installed"
 )
 skipif_toulbar2_not_available = pytest.mark.skipif(
     not pytoulbar2_available, reason="pytoulbar2 not installed"
@@ -45,28 +39,6 @@ def test_simple0_DDBN_conin_mip():
     assert results.solution.states == example.solutions[0].states
 
 
-@skipif_pgmpy_not_available
-@skipif_no_mip_solver
-def test_simple0_DDBN1_pgmpy_mip():
-    from conin.pgmpy import convert_pgmpy_to_conin
-
-    example = examples.simple0_DDBN1_pgmpy()
-    pgm = convert_pgmpy_to_conin(example.pgm)
-    results = map_query(pgm, method="integer_program", solver=mip_solver)
-    assert results.solution.states == example.solutions[0].states
-
-
-@skipif_pgmpy_not_available
-@skipif_no_mip_solver
-def test_simple0_DDBN2_pgmpy_mip():
-    from conin.pgmpy import convert_pgmpy_to_conin
-
-    example = examples.simple0_DDBN2_pgmpy()
-    pgm = convert_pgmpy_to_conin(example.pgm)
-    results = map_query(pgm, method="integer_program", solver=mip_solver)
-    assert results.solution.states == example.solutions[0].states
-
-
 #
 # simple1
 #
@@ -76,17 +48,6 @@ def test_simple0_DDBN2_pgmpy_mip():
 def test_simple1_DDBN_conin_mip():
     example = examples.simple1_DDBN_conin()
     results = map_query(example.pgm, method="integer_program", solver=mip_solver)
-    assert results.solution.states == example.solutions[0].states
-
-
-@skipif_pgmpy_not_available
-@skipif_no_mip_solver
-def test_simple1_DDBN_pgmpy_mip():
-    from conin.pgmpy import convert_pgmpy_to_conin
-
-    example = examples.simple1_DDBN_pgmpy()
-    pgm = convert_pgmpy_to_conin(example.pgm)
-    results = map_query(pgm, method="integer_program", solver=mip_solver)
     assert results.solution.states == example.solutions[0].states
 
 
@@ -105,36 +66,9 @@ def test2_simple1_DDBN_conin_mip():
     assert q == results.solution.states
 
 
-@skipif_pgmpy_not_available
-@skipif_no_mip_solver
-def test2_simple1_DDBN_pgmpy_mip():
-    from conin.pgmpy import convert_pgmpy_to_conin
-
-    example = examples.simple1_DDBN_pgmpy()
-    q = {
-        ("A", 1): 0,
-        ("B", 0): 0,
-        ("B", 1): 1,
-    }
-
-    pgm = convert_pgmpy_to_conin(example.pgm)
-    results = map_query(
-        pgm, method="integer_program", solver=mip_solver, evidence={("A", 0): 1}
-    )
-    assert q == results.solution.states
-
-
 @skipif_no_mip_solver
 def test_simple1_DDBN_constrained_pyomo_conin():
     example = examples.simple1_DDBN_constrained_pyomo_conin()
-    results = map_query(example.pgm, method="integer_program", solver=mip_solver)
-    assert results.solution.states == example.solutions[0].states
-
-
-@skipif_pgmpy_not_available
-@skipif_no_mip_solver
-def test_simple1_DDBN_constrained_pyomo_pgmpy():
-    example = examples.simple1_DDBN_constrained_pyomo_pgmpy()
     results = map_query(example.pgm, method="integer_program", solver=mip_solver)
     assert results.solution.states == example.solutions[0].states
 
@@ -157,28 +91,6 @@ def test_simple0_DDBN_conin_toulbar2():
     assert results.solution.states == example.solutions[0].states
 
 
-@skipif_pgmpy_not_available
-@skipif_toulbar2_not_available
-def test_simple0_DDBN1_pgmpy_toulbar2():
-    from conin.pgmpy import convert_pgmpy_to_conin
-
-    example = examples.simple0_DDBN1_pgmpy()
-    pgm = convert_pgmpy_to_conin(example.pgm)
-    results = map_query(pgm, method="toulbar2")
-    assert results.solution.states == example.solutions[0].states
-
-
-@skipif_pgmpy_not_available
-@skipif_toulbar2_not_available
-def test_simple0_DDBN2_pgmpy_toulbar2():
-    from conin.pgmpy import convert_pgmpy_to_conin
-
-    example = examples.simple0_DDBN2_pgmpy()
-    pgm = convert_pgmpy_to_conin(example.pgm)
-    results = map_query(pgm, method="toulbar2")
-    assert results.solution.states == example.solutions[0].states
-
-
 #
 # simple1
 #
@@ -188,17 +100,6 @@ def test_simple0_DDBN2_pgmpy_toulbar2():
 def test_simple1_conin_toulbar2():
     example = examples.simple1_DDBN_conin()
     results = map_query(example.pgm, method="toulbar2")
-    assert results.solution.states == example.solutions[0].states
-
-
-@skipif_pgmpy_not_available
-@skipif_toulbar2_not_available
-def test_simple1_pgmpy_toulbar2():
-    from conin.pgmpy import convert_pgmpy_to_conin
-
-    example = examples.simple1_DDBN_pgmpy()
-    pgm = convert_pgmpy_to_conin(example.pgm)
-    results = map_query(pgm, method="toulbar2")
     assert results.solution.states == example.solutions[0].states
 
 
@@ -215,34 +116,9 @@ def test2_simple1_DDBN_conin_toulbar2():
     assert q == results.solution.states
 
 
-@skipif_pgmpy_not_available
-@skipif_toulbar2_not_available
-def test2_simple1_DDBN_pgmpy_toulbar2():
-    from conin.pgmpy import convert_pgmpy_to_conin
-
-    example = examples.simple1_DDBN_pgmpy()
-    q = {
-        ("A", 1): 0,
-        ("B", 0): 0,
-        ("B", 1): 1,
-    }
-
-    pgm = convert_pgmpy_to_conin(example.pgm)
-    results = map_query(pgm, method="toulbar2", evidence={("A", 0): 1})
-    assert q == results.solution.states
-
-
 @skipif_toulbar2_not_available
 def test_simple1_DDBN_constrained_toulbar2_conin():
     example = examples.simple1_DDBN_constrained_toulbar2_conin()
-    results = map_query(example.pgm, method="toulbar2")
-    assert results.solution.states == example.solutions[0].states
-
-
-@skipif_pgmpy_not_available
-@skipif_toulbar2_not_available
-def test_simple1_DDBN_constrained_toulbar2_pgmpy():
-    example = examples.simple1_DDBN_constrained_toulbar2_pgmpy()
     results = map_query(example.pgm, method="toulbar2")
     assert results.solution.states == example.solutions[0].states
 

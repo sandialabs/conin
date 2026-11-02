@@ -1,14 +1,11 @@
 import os
 import gzip
 
-from conin.util import try_import
 from .uai import load_uai
 from .cfn import load_cfn
-
-with try_import() as pgmpy_available:
-    import pgmpy  # noqa: F401
-    from conin.pgmpy import convert_pgmpy_to_conin
-    from . import pgmpy_files
+from .pgmpy import convert_pgmpy_to_conin
+from .pgmpy import files as pgmpy_files
+from .pgmpy.files import pgmpy_available
 
 
 def load_model(name, model_type="conin", quiet=True, **options):

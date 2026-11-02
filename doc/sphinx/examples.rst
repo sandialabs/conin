@@ -15,8 +15,7 @@ every available factory.
 Backend Requirements
 --------------------
 
-Examples whose names end in ``_conin`` construct native CONIN models. Examples
-whose names end in ``_pgmpy`` require ``pgmpy``. See :doc:`backends` for optional
+The examples construct native CONIN models. See :doc:`backends` for optional
 package and solver requirements.
 
 Markov Network Examples
@@ -45,14 +44,6 @@ Selected Markov network examples live in ``conin.examples.markov_network``.
      - Adds an all-different oracle constraint to ``ABC_conin``.
    * - ``ABC2_constrained_oracle_conin``
      - Adds an all-different oracle constraint to ``ABC2_conin``.
-   * - ``example6_pgmpy``
-     - ``pgmpy`` implementation of the two-node Markov network.
-   * - ``ABC_pgmpy``
-     - ``pgmpy`` implementation of the three-variable ``ABC`` network.
-   * - ``ABC_constrained_pyomo_pgmpy``
-     - Converts a ``pgmpy`` ``ABC`` model to CONIN and adds a Pyomo constraint.
-   * - ``ABC_constrained_toulbar2_pgmpy``
-     - Converts a ``pgmpy`` ``ABC`` model to CONIN and adds a Toulbar2 constraint.
 
 Example usage:
 
@@ -90,8 +81,6 @@ Selected Bayesian network examples live in ``conin.examples.bayesian_network``.
      - Adds an oracle constraint to the cancer network.
    * - ``cancer1_BN_constrained_toulbar2_conin``
      - Adds Toulbar2 constraints to the cancer network.
-   * - ``*_pgmpy`` examples
-     - ``pgmpy`` versions of selected Bayesian network examples.
 
 Example usage:
 
@@ -132,8 +121,6 @@ Selected dynamic Bayesian network examples live in
      - Adds an oracle constraint to the weather model.
    * - ``weather_constrained_toulbar2_conin``
      - Adds a Toulbar2-style constraint to the weather model.
-   * - ``*_pgmpy`` examples
-     - ``pgmpy`` versions of selected dynamic Bayesian network examples.
 
 Example usage:
 

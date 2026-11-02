@@ -9,17 +9,16 @@ with try_import() as pgmpy_available:
     import pgmpy
 
 with try_import() as pgmpy_readwrite_available:
-    import pgmpy.readwrite
-    from conin.pgmpy import convert_pgmpy_to_conin
+    import pgmpy.readwrite  # noqa: F401
+    from conin.io.pgmpy import convert_pgmpy_to_conin
 
 
-cwd = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "io", "tests"
-)
+# The model files of conin/io/tests
+cwd = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "tests")
 
 
 def test_convert_pgmpy_to_conin_requires_pgmpy(monkeypatch):
-    module = importlib.import_module("conin.pgmpy.to_conin")
+    module = importlib.import_module("conin.io.pgmpy.to_conin")
     monkeypatch.setattr(module, "pgmpy_available", False)
 
     with pytest.raises(ImportError, match="pgmpy"):
@@ -108,10 +107,9 @@ def test_convert_dbn_keeps_one_cpd_per_template():
     # pgmpy holds the intra-slice CPD of B for slices 0 and 1
     # (initialize_initial_state copies it); both used to become a template CPD of
     # (B, t), so the unrolled network had two CPDs for each (B, t).
-    from conin.examples.dynamic_bayesian_network import (
-        simple1_DDBN_conin,
-        simple1_DDBN_pgmpy,
-    )
+    from conin.examples.dynamic_bayesian_network import simple1_DDBN_conin
+
+    from .pgmpy_models import simple1_DDBN_pgmpy
 
     counts = _unrolled_cpd_counts(simple1_DDBN_pgmpy().pgm, stop=3)
     assert set(counts.values()) == {1}
@@ -145,7 +143,7 @@ def test_convert_dbn_refuses_conflicting_slice_cpds():
 def test_convert_pgmpy_issue_1177_example():
     # The example fitted with estimator=MaximumLikelihoodEstimator (a class),
     # which newer pgmpy versions refuse ("Pass an initialized estimator").
-    from conin.examples.bayesian_network import pgmpy_issue_1177_pgmpy
+    from .pgmpy_models import pgmpy_issue_1177_pgmpy
 
     model = pgmpy_issue_1177_pgmpy()
     assert model.check_model()

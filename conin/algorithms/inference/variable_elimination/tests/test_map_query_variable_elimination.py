@@ -11,12 +11,6 @@ import conin.examples.markov_network as mex
 from conin.algorithms.feasibility import is_feasible
 from conin.exceptions import InvalidInputError
 from conin.algorithms.inference import map_query
-from conin.util import try_import
-
-with try_import() as pgmpy_available:
-    import pgmpy  # noqa: F401
-
-pytestmark = pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
 
 
 def _ve(pgm, **kwds):
@@ -118,9 +112,9 @@ def test_hmm_timing(capsys):
 # Constraints over one node
 # ---------------------------------------------------------------------
 #
-# The materialised factor (MN) or CPD (BN, DBN, HMM) of a constraint over one
-# node was keyed by 1-tuples, so converting it to pgmpy raised KeyError for
-# every such constraint, feasible or not.
+# The materialised factor of a constraint over one node is keyed by the
+# node's states, not by 1-tuples (with pgmpy, 1-tuples raised KeyError for
+# every such constraint, feasible or not).
 
 
 def _one_node_constraints():

@@ -131,8 +131,8 @@ no constraints only; used by Viterbi, A*, sampling and the torch MVR kernels),
 ``"oracle"`` (feasibility checks
 for A* and rejection sampling; no constraints or oracle constraints),
 ``"recursive"`` (for recursive A*; no constraints or recursive constraints),
-``"pgmpy"`` (variable elimination; no constraints, factor-oracle or algebraic
-constraints), ``"pyomo"`` (the integer program of the
+``"variable_elimination"`` (the factors of the unrolled model; no constraints,
+factor-oracle or algebraic constraints), ``"pyomo"`` (the integer program of the
 unrolled model; no constraints, Pyomo or algebraic constraints),
 ``"pyomo_network_flow"`` (the network-flow integer program; no constraints,
 Pyomo or algebraic constraints), ``"toulbar2"`` (the cost function network of
@@ -275,7 +275,7 @@ Oracle constraints with node scoping
    )
 
 ``oracle_constraint_fn(nodes=...)`` creates a ``FactorOracleConstraint``, which
-``map_query(..., method="variable_elimination")`` expands into auxiliary factors.
+``map_query(..., method="variable_elimination")`` expands into indicator factors.
 
 Recursive constraints
 ^^^^^^^^^^^^^^^^^^^^^

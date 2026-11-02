@@ -1,8 +1,6 @@
 import pytest
-import pyomo.opt
 
 import conin.examples.hidden_markov_model
-from conin.util import try_import
 from conin.algorithms.inference.query import map_query
 
 #
@@ -18,7 +16,6 @@ def test_map_query_AStar_hmm1_list_evidence():
         method="a_star",
         variables=None,
         evidence=observed,
-        show_progress=False,
         timing=False,
         start=0,
         stop=None,
@@ -34,7 +31,6 @@ def test_map_query_AStar_hmm1_dict_evidence():
         method="a_star",
         variables=None,
         evidence=observed,
-        show_progress=False,
         timing=False,
         start=0,
         stop=None,
@@ -56,7 +52,6 @@ def test_map_query_AStar_chmm1_list_evidence():
         method="a_star",
         variables=None,
         evidence=observed,
-        show_progress=False,
         timing=False,
         start=0,
         stop=None,
@@ -91,7 +86,6 @@ def test_map_query_AStar_unsupported_model():
             method="a_star",
             variables=None,
             evidence=[],
-            show_progress=False,
             timing=False,
             start=0,
             stop=None,

@@ -9,7 +9,7 @@ from conin.graphical_models import (
     DiscreteCPD,
     DiscreteBayesianNetwork,
 )
-from conin.representations.pgmpy import materialise_factor_oracle
+from conin.representations.variable_elimination import materialise_factor_oracle
 
 
 def _mn():
@@ -43,12 +43,7 @@ def test_mn_factor():
     factor = materialise_factor_oracle(con, _mn())
     assert isinstance(factor, DiscreteFactor)
     assert factor.nodes == ["A", "C"]
-    assert factor.values == {
-        (0, 0): 0,
-        (0, 1): 10**6,
-        (1, 0): 10**6,
-        (1, 1): 0,
-    }
+    assert factor.values == {(0, 0): 0, (0, 1): 1, (1, 0): 1, (1, 1): 0}
 
 
 def test_mn_factor_callable_nodes_with_data():
@@ -62,57 +57,43 @@ def test_mn_factor_callable_nodes_with_data():
     factor = materialise_factor_oracle(con, _mn(), data)
     assert factor.nodes == ["A", "B", "C"]
     expected = {
-        states: (10**6 if sum(states) == 2 else 0)
+        states: (1 if sum(states) == 2 else 0)
         for states in itertools.product([0, 1], repeat=3)
     }
     assert factor.values == expected
 
 
-def test_bn_cpd():
+def test_bn_factor():
+    """A Bayesian network gets the same indicator factor (no constraint node)."""
     con = FactorOracleConstraint(
         func=lambda s: s["A"] == 1 or s["B"] == 1, nodes=["A", "B"], name="either"
     )
-    cpd = materialise_factor_oracle(con, _bn())
-    assert isinstance(cpd, DiscreteCPD)
-    assert cpd.node == "either"
-    assert cpd.parents == ["A", "B"]
-    assert cpd.values == {
-        (0, 0): {1: 0, 0: 1},
-        (0, 1): {1: 1, 0: 0},
-        (1, 0): {1: 1, 0: 0},
-        (1, 1): {1: 1, 0: 0},
-    }
+    factor = materialise_factor_oracle(con, _bn())
+    assert isinstance(factor, DiscreteFactor)
+    assert factor.nodes == ["A", "B"]
+    assert factor.values == {(0, 0): 0, (0, 1): 1, (1, 0): 1, (1, 1): 1}
 
 
-def test_bn_cpd_callable_nodes_with_data():
+def test_factor_over_one_node_is_keyed_by_states():
+    con = FactorOracleConstraint(func=lambda s: s["A"] == 1, nodes=["A"], name="a1")
+    factor = materialise_factor_oracle(con, _mn())
+    assert factor.nodes == ["A"]
+    assert factor.values == {0: 0, 1: 1}
+
+
+def test_callable_nodes_with_data_over_one_node():
     def nodes(data):
         yield data
 
     con = FactorOracleConstraint(
         func=lambda s, data: s[data] == 0, nodes=nodes, name="zero"
     )
-    cpd = materialise_factor_oracle(con, _bn(), "B")
-    assert cpd.node == "zero"
-    assert cpd.parents == ["B"]
-    # One parent: keyed by its states, as every CPD with one parent (they were
-    # keyed by 1-tuples, which the conversion to pgmpy failed on)
-    assert cpd.values == {0: {1: 1, 0: 0}, 1: {1: 0, 0: 1}}
-
-
-def test_mn_factor_over_one_node():
-    con = FactorOracleConstraint(func=lambda s: s["A"] == 1, nodes=["A"], name="a1")
-    factor = materialise_factor_oracle(con, _mn())
-    assert factor.nodes == ["A"]
-    assert factor.values == {0: 0, 1: 10**6}
+    factor = materialise_factor_oracle(con, _bn(), "B")
+    assert factor.nodes == ["B"]
+    assert factor.values == {0: 1, 1: 0}
 
 
 def test_plain_oracle_raises():
     con = OracleConstraint(func=lambda s: True)
     with pytest.raises(TypeError):
         materialise_factor_oracle(con, _mn())
-
-
-def test_unexpected_pgm_raises():
-    con = FactorOracleConstraint(func=lambda s: True, nodes=["A"])
-    with pytest.raises(ValueError):
-        materialise_factor_oracle(con, object())

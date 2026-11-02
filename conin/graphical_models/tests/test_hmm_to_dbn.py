@@ -1,5 +1,3 @@
-import pytest
-
 from conin.graphical_models import create_dbn_from_hmm
 from conin.graphical_models import create_bn_from_dbn
 import conin.examples.hidden_markov_model as tc

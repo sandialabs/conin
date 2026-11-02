@@ -145,7 +145,8 @@ variable has a value, so nothing is summed out.
   ``conin.algorithms.feasibility.is_feasible``;
   ``"pyomo"`` and ``"toulbar2"`` constraints raise ``NotImplementedError``.
 
-pgmpy models are converted to CONIN models first.
+pgmpy models are not accepted: convert them with
+``conin.io.pgmpy.convert_pgmpy_to_conin`` first.
 
 ``log_probability_query(model, assignment, *, evidence=None,
 method="variable_elimination", start=0, stop=None)`` computes a marginal or
@@ -163,13 +164,12 @@ evidence (with the constraints) has probability zero.
 - Dynamic models are unrolled over ``start..stop``; ``stop`` defaults to the
   largest time in the query (at least ``start + 1``). With constraints, it sets
   the time steps the constraints see.
-- ``method="variable_elimination"`` (the only method, which needs pgmpy) runs on
-  the ``"pgmpy"`` representation: unconstrained models and the
+- ``method="variable_elimination"`` (the only method) runs on the
+  ``"variable_elimination"`` representation: unconstrained models and the
   ``"factor_oracle"`` and ``"algebraic"`` constraint families. Other families
   raise ``InvalidInputError``.
 
 .. testcode::
-   :skipif: not pgmpy_available
 
    from conin.examples.bayesian_network import (
        cancer1_BN_conin,
@@ -205,7 +205,7 @@ evidence (with the constraints) has probability zero.
 
 ``conin.graphical_models.is_polytree`` accepts CONIN ``DiscreteBayesianNetwork``
 instances and checks whether the underlying undirected graph is singly
-connected; ``conin.pgmpy.is_polytree`` does the same for pgmpy models.
+connected.
 
 Optional Backend Conversions
 ----------------------------
@@ -216,11 +216,11 @@ requirements.
 
 ``pgmpy`` support includes:
 
-- ``conin.pgmpy.convert_pgmpy_to_conin``
-- ``conin.pgmpy.convert_conin_to_pgmpy_bn``
-- ``conin.pgmpy.convert_conin_to_pgmpy_mn``
-- ``conin.pgmpy.MapCPD`` (build a pgmpy ``TabularCPD`` from a dictionary)
-- ``conin.pgmpy.is_polytree`` (for pgmpy models)
+- ``conin.io.pgmpy.convert_pgmpy_to_conin``
+- ``conin.io.pgmpy.convert_conin_to_pgmpy_bn``
+- ``conin.io.pgmpy.convert_conin_to_pgmpy_mn``
+- reading and writing BIF files with ``conin.io.load_model`` and
+  ``conin.io.save_model``
 - ``conin.io.load_model(..., model_type="pgmpy")``
 - ``conin.io.save_model(..., model_type="pgmpy")``
 

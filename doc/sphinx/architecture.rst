@@ -20,8 +20,8 @@ Package layout
    a model and a tuple of constraints of one family, plus application data.
 ``conin.representations``
    The registry and the representations built from a constrained model, one
-   subpackage per backend (``pyomo``, ``toulbar2``, ``pgmpy``, ``matvec``,
-   ``oracle``, ``recursive``, ``mvr``).
+   subpackage per backend (``pyomo``, ``toulbar2``, ``variable_elimination``,
+   ``matvec``, ``oracle``, ``recursive``, ``mvr``).
 ``conin.algorithms``
    The algorithms. ``conin.algorithms.inference``,
    ``conin.algorithms.learning`` and ``conin.algorithms.sampling`` are each
@@ -32,15 +32,13 @@ Package layout
    against the constraints (``is_feasible``, dispatched on the constrained
    model and then on each constraint's class, and ``partial_is_feasible``
    for constrained HMMs). ``conin.algorithms.util`` holds the code they
-   share (the torch MVR kernels). ``map_query`` and ``log_probability_query``
+   share (the torch MVR kernels and variable elimination). ``map_query`` and ``log_probability_query``
    are the generic entry points.
-``conin.pgmpy``
-   pgmpy interoperability: converting models between pgmpy and CONIN
-   (``convert_pgmpy_to_conin``, ``convert_conin_to_pgmpy_bn``/``_mn``),
-   ``MapCPD`` and ``is_polytree`` for pgmpy models. Needs pgmpy only when
-   called.
 ``conin.io``
-   File I/O (UAI, CFN, BIF, pgmpy models).
+   File I/O (UAI, CFN, BIF). ``conin.io.pgmpy`` is the only place that uses
+   pgmpy: BIF files and converting models between pgmpy and CONIN
+   (``convert_pgmpy_to_conin``, ``convert_conin_to_pgmpy_bn``/``_mn``).
+   Needs pgmpy only when called.
 ``conin.examples``
    The example factories used by the docs and the tests.
 ``conin.util``, ``conin.exceptions``
@@ -53,9 +51,6 @@ Layering
   nothing from the packages above them.
 - ``graphical_models`` and ``constraints`` sit above them and do not import
   each other (``constraints`` does not import the models).
-- ``pgmpy`` sits above the models and is imported by ``io``,
-  ``constrained_models`` (to convert pgmpy models), ``representations``,
-  ``algorithms.scoring`` and ``examples``.
 - ``constrained_models``, ``representations`` and ``io`` form the model
   layer. They import each other (``constrained_models`` imports the
   representation registry, the toulbar2 representations import ``io``, and
@@ -68,7 +63,7 @@ Layering
 - There are no module-level import cycles between modules. A conin module is
   imported inside a function only if it needs torch (the MVR algorithms and
   ``algorithms.util.mvr_kernels``); other function-level imports are of
-  optional dependencies (pgmpy, torch).
+  optional dependencies (torch).
 - ``import conin`` must not import torch. The MVR packages export their
   algorithms through a lazy module ``__getattr__``.
 - ``conin/tests/test_layering.py`` checks these rules; its ``LAYERS`` table
@@ -88,15 +83,15 @@ Representations and dispatch
   builder.
 - Each backend has one function that applies the constraints of a family
   (``apply_pyomo_constraints``, ``apply_toulbar2_constraints``,
-  ``apply_pgmpy_constraints``). Each passes ``apply_constraints``
+  ``apply_variable_elimination_constraints``). Each passes ``apply_constraints``
   (``conin.representations.base``) a table from family to applier;
   ``apply_constraints`` rejects mixed or unsupported families with one
   message. The algebraic translators all start from ``build_smoek_model``.
 - The DBN and HMM representations of every backend get ``start``, ``stop``,
   ``time_steps`` and their constraint-``data`` time fields from the mixins in
   ``conin.representations.unrolled``, so the backends cannot drift apart.
-- ``map_query`` (and ``log_probability_query``) normalise the model (pgmpy
-  models are converted, bare models are wrapped as ``Constrained*(model)``),
+- ``map_query`` (and ``log_probability_query``) normalise the model (bare
+  models are wrapped as ``Constrained*(model)``; pgmpy models are rejected),
   map the method to a representation kind (one table for both queries,
   ``conin.representations.methods``), build the representation with its
   structure parameters, and dispatch with ``ovld`` on the representation
@@ -151,11 +146,16 @@ No representation cache
    iteration), while it made it necessary to reason about mutation after the
    build and about which arguments are cache keys. If one is needed, it can be
    added inside ``representation()`` without an API change.
-Variable elimination uses pgmpy
-   The ``"pgmpy"`` representation materialises the constraints once and
-   converts the result to a pgmpy model per query; VE does not run on conin's
-   own factor tables. This kept the results identical to the earlier
-   implementation. pgmpy's memory use limits VE on larger unrolled models.
+Variable elimination is CONIN's own
+   The ``"variable_elimination"`` representation materialises each constraint
+   once, as an indicator factor, into a Markov network of the model's factors
+   (a Bayesian network's CPDs). ``conin.algorithms.util.variable_elimination``
+   eliminates on numpy tables of log values, in a greedy (smallest new table)
+   order, for MAP, partial MAP and ``log_probability_query``. It replaced
+   pgmpy's variable elimination, which needed a pgmpy model per query, a
+   constraint node with evidence for each constraint of a Bayesian network,
+   a second elimination to detect infeasibility, and summed in linear space
+   (long sequences underflowed).
 Composition, not inheritance
    A constrained model holds its model (``cmodel.model``) rather than
    subclassing it, so code written for bare models cannot silently accept a

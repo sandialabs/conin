@@ -12,13 +12,10 @@ out, so no inference is needed.
 Marginal and conditional log-probabilities (with variables summed out, or given
 evidence, or under the constraints) need inference: see
 :func:`conin.algorithms.scoring.log_probability_query`.
-
-pgmpy models are converted with :func:`conin.pgmpy.convert_pgmpy_to_conin`.
 """
 
 import math
 
-from conin.pgmpy import convert_pgmpy_to_conin
 from conin.exceptions import InvalidInputError
 from conin.graphical_models import (
     DiscreteBayesianNetwork,
@@ -30,6 +27,7 @@ from conin.graphical_models import (
 )
 from conin.algorithms.feasibility import is_feasible
 from conin.constrained_models import ConstrainedGraphicalModel
+from conin.constrained_models.normalise import pgmpy_hint
 from conin.graphical_models.assignments import (
     check_total_assignment,
     dbn_horizon,
@@ -43,8 +41,7 @@ def log_probability(model, assignment, *, observed=None):
     Parameters
     ----------
     model : DiscreteBayesianNetwork, DynamicDiscreteBayesianNetwork or HiddenMarkovModel
-        A conin model, or a pgmpy ``DiscreteBayesianNetwork`` or
-        ``DynamicBayesianNetwork`` (converted to conin).
+        A conin model.
     assignment : dict or list
         A state for every variable:
 
@@ -88,7 +85,7 @@ def log_probability(model, assignment, *, observed=None):
     >>> round(log_probability(bn, {"A": 0, "B": 1}), 6)  # log(0.9 * 0.8)
     -0.328504
     """
-    model = _as_conin(model)
+    model = _check_model_type(model)
     if isinstance(model, ConstrainedGraphicalModel):
         raise InvalidInputError(
             "log_probability is not defined for constrained models: the "
@@ -121,9 +118,8 @@ def log_potential(model, assignment, *, observed=None):
     Parameters
     ----------
     model : GraphicalModel or ConstrainedGraphicalModel
-        A conin Markov network, Bayesian network, DBN or HMM, a constrained
-        one, or a pgmpy ``DiscreteMarkovNetwork``, ``DiscreteBayesianNetwork``
-        or ``DynamicBayesianNetwork`` (converted to conin).
+        A conin Markov network, Bayesian network, DBN or HMM, or a
+        constrained one.
     assignment : dict or list
         A state for every variable, as for :func:`log_probability`; for a
         Markov network, ``{node: state}`` for every node.
@@ -165,7 +161,7 @@ def log_potential(model, assignment, *, observed=None):
     >>> round(log_potential(mn, {"A": 0, "B": 1}), 6)  # log(3): A varies fastest
     1.098612
     """
-    model = _as_conin(model)
+    model = _check_model_type(model)
     if isinstance(model, ConstrainedGraphicalModel):
         # Check the assignment before the constraints see it.
         value = log_potential(model.model, assignment, observed=observed)
@@ -176,12 +172,10 @@ def log_potential(model, assignment, *, observed=None):
     return log_probability(model, assignment, observed=observed)
 
 
-def _as_conin(model):
+def _check_model_type(model):
     if isinstance(model, (GraphicalModel, ConstrainedGraphicalModel)):
         return model
-    if type(model).__module__.startswith("pgmpy."):
-        return convert_pgmpy_to_conin(model)
-    raise TypeError(f"Unexpected model type: {type(model)}")
+    raise TypeError(f"Unexpected model type: {type(model)}.{pgmpy_hint(model)}")
 
 
 def _no_observed(model, observed):
