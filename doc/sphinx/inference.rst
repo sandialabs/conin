@@ -81,9 +81,9 @@ variable-elimination methods infer over the times ``start..stop``, with
 Results
 ^^^^^^^
 
-Every method returns the same keys: ``solution`` (the best solution, ``None``
-if A* finds none), ``solutions`` (best first), ``termination_condition``
-(``"ok"``, or why the search stopped) and ``solvetime``. Each solution has
+Every method returns the same keys: ``solution`` (the best solution),
+``solutions`` (best first), ``termination_condition`` (``"ok"``, or why the
+search stopped) and ``solvetime``. Each solution has
 
 - ``states``: the MAP assignment, ``{node: state}``, or the hidden states of
   an HMM;
@@ -109,6 +109,29 @@ if A* finds none), ``solutions`` (best first), ``termination_condition``
 .. testoutput::
 
    -3.9684 None
+
+If the evidence or the constraints exclude every assignment, there is no
+solution: every method then returns ``solution=None``, ``solutions=[]`` and
+``termination_condition="error: no feasible solutions"``. (The integer program
+with ``solver="or_topas"`` raises instead.) Here the hidden state ``"y"``
+cannot be left and only ``"y"`` emits ``"b"``, so ``"b"`` cannot come before
+``"a"``:
+
+.. testcode::
+
+   from conin.graphical_models import HiddenMarkovModel
+
+   absorbing = HiddenMarkovModel(
+       start_probs={"x": 0.5, "y": 0.5},
+       transition_probs={("x", "x"): 0.5, ("x", "y"): 0.5, ("y", "y"): 1.0},
+       emission_probs={("x", "a"): 1.0, ("y", "b"): 1.0},
+   )
+   results = map_query(absorbing, method="viterbi", evidence=["b", "a"])
+   print(results.solution, results.termination_condition)
+
+.. testoutput::
+
+   None error: no feasible solutions
 
 Optimization and Toulbar2 inference on HMMs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

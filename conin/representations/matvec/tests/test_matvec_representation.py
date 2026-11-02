@@ -117,7 +117,8 @@ def test_one_representation_serves_several_queries():
     hmm = tc.create_hmm2()
     repn = ConstrainedHiddenMarkovModel(hmm).representation("matvec")
     before = {name: getattr(repn, name).copy() for name in ARRAYS}
-    observed = [hmm.observed_to_internal[o] for o in hmm.observed_states] * 3
+    # h2 only emits o2 and never leaves, so o2 can only come last.
+    observed = [hmm.observed_to_internal[o] for o in ["o0", "o1"] * 3 + ["o2"]]
     first = viterbi_(observed=observed, hmm=repn)
     second = viterbi_(observed=observed[:4], hmm=repn)
     again = viterbi_(observed=observed, hmm=repn)

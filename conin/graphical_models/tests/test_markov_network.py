@@ -250,9 +250,9 @@ class TestDiscreteMarkovNetwork:
     def test_check_model_edge_node_not_in_model(self):
         mn = DiscreteMarkovNetwork(
             states={"A": [0, 1]},
+            edges=[("A", "Z")],  # Z is not in states
             factors=[DiscreteFactor(nodes=["A"], values={0: 1.0, 1: 2.0})],
         )
-        mn._edges = [("A", "Z")]  # Z is not in states
         with pytest.raises(InvalidInputError):
             mn.check_model()
 

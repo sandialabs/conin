@@ -3,7 +3,8 @@ from math import prod
 from dataclasses import dataclass
 
 from conin.exceptions import InvalidInputError
-from conin.graphical_models.base import GraphicalModel
+from conin.graphical_models.base import GraphicalModel, node_sort_key
+from conin.util.frozen import freeze
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,6 +32,13 @@ class DiscreteFactor:
         Optional fallback value used when a specific assignment is missing.
         This value is only used when factor weights are specified with a
         dictionary. Defaults to 0.
+
+    Notes
+    -----
+    ``nodes`` and ``values`` are read-only copies of the arguments (a
+    :class:`~conin.util.frozen.FrozenList` or
+    :class:`~conin.util.frozen.FrozenDict`), so a factor cannot be changed
+    after construction, also not through a model that holds it.
     """
 
     nodes: list
@@ -38,12 +46,9 @@ class DiscreteFactor:
     default_value: str | int = 0
 
     def __post_init__(self):
-        object.__setattr__(
-            self,
-            "values",
-            dict(self.values) if isinstance(self.values, dict) else list(self.values),
-        )
-        object.__setattr__(self, "nodes", list(self.nodes))
+        values = self.values if isinstance(self.values, dict) else list(self.values)
+        object.__setattr__(self, "values", freeze(values))
+        object.__setattr__(self, "nodes", freeze(list(self.nodes)))
 
     def assignments(self, states):
         """Iterate over assignments for this factor's scope.
@@ -87,7 +92,7 @@ class DiscreteFactor:
             A factor whose ``values`` attribute is a dictionary keyed by state
             assignments instead of a flat list.
         """
-        if type(self.values) is dict:
+        if isinstance(self.values, dict):
             return self
         else:
             slist = [pgm.states_of(node) for node in self.nodes]
@@ -142,13 +147,15 @@ class DiscreteMarkovNetwork(GraphicalModel):
             self._states = {i: list(range(v)) for i, v in enumerate(states)}
         elif isinstance(states, dict):
             tmp = list(states.keys())
-            tmp.sort(key=lambda x: (x,) if not isinstance(x, tuple) else x)
+            tmp.sort(key=node_sort_key)
             self._nodes = tmp
             self._states = dict(states)
         else:
             raise TypeError(f"Unexpected type for states: {type(states)}")
 
-        self._edges = list(edges) if edges is not None else None
+        # The edges as given; None means "inferred from the factor scopes"
+        # (see the edges property).
+        self._given_edges = freeze(list(edges)) if edges is not None else None
 
         tmp = set(self._nodes)
         for factor in factors:
@@ -156,7 +163,19 @@ class DiscreteMarkovNetwork(GraphicalModel):
                 if node not in tmp:
                     tmp.add(node)
                     self._nodes.append(node)
-        self._factors = [factor.normalize(self) for factor in factors]
+        self._factors = freeze([factor.normalize(self) for factor in factors])
+        self._nodes = freeze(self._nodes)
+        self._states = freeze(self._states)
+        if self._given_edges:
+            self._edges = self._given_edges
+        else:
+            edges = set()
+            for factor in self._factors:
+                for edge in itertools.combinations(
+                    sorted(factor.nodes, key=node_sort_key), 2
+                ):
+                    edges.add(edge)
+            self._edges = freeze(list(edges))
 
     def check_model(self):
         """Validate structural consistency of nodes, edges, and factors.
@@ -179,9 +198,9 @@ class DiscreteMarkovNetwork(GraphicalModel):
         """
         model_nodes = set(self._states.keys())
 
-        if self._edges:
+        if self._given_edges:
             enodes = set()
-            for v, w in self._edges:
+            for v, w in self._given_edges:
                 enodes.add(v)
                 enodes.add(w)
 
@@ -202,7 +221,7 @@ class DiscreteMarkovNetwork(GraphicalModel):
                         f"Unexpected node {node!r} in factor {factor_num}"
                     )
                 fnodes.add(node)
-            if type(f.values) is dict:
+            if isinstance(f.values, dict):
                 node_states = [self._states[node] for node in f.nodes]
                 for k, v in f.values.items():
                     if v < 0:
@@ -251,7 +270,7 @@ class DiscreteMarkovNetwork(GraphicalModel):
         Returns
         -------
         list
-            Node identifiers registered with the model.
+            Node identifiers registered with the model (read-only).
         """
         return self._nodes
 
@@ -262,7 +281,8 @@ class DiscreteMarkovNetwork(GraphicalModel):
         Returns
         -------
         dict
-            Dictionary mapping each node to the ordered list of valid states.
+            Dictionary mapping each node to the ordered list of valid states
+            (a new dict; the state lists are read-only).
         """
         return dict(self._states)
 
@@ -277,7 +297,7 @@ class DiscreteMarkovNetwork(GraphicalModel):
         Returns
         -------
         list
-            Ordered list of valid states for ``node``.
+            Ordered list of valid states for ``node`` (read-only).
         """
         return self._states[node]
 
@@ -310,15 +330,10 @@ class DiscreteMarkovNetwork(GraphicalModel):
         Returns
         -------
         list
-            Edge list describing pairwise connections between nodes.
+            Edge list describing pairwise connections between nodes
+            (read-only).
         """
-        if not self._edges:
-            edges = set()
-            for factor in self._factors:
-                for edge in itertools.combinations(sorted(factor.nodes), 2):
-                    edges.add(edge)
-            self._edges = list(edges)
-        return list(self._edges)
+        return self._edges
 
     #
     # Factors
@@ -331,7 +346,8 @@ class DiscreteMarkovNetwork(GraphicalModel):
         Returns
         -------
         list of DiscreteFactor
-            Factor objects representing clique potentials.
+            Factor objects representing clique potentials (a new list; the
+            factors themselves are immutable).
         """
         return list(self._factors)
 
@@ -360,7 +376,9 @@ class DiscreteMarkovNetwork(GraphicalModel):
         2
         """
         return DiscreteMarkovNetwork(
-            states=self.states, edges=self._edges, factors=self.factors + [factor]
+            states=self.states,
+            edges=self._given_edges,
+            factors=self.factors + [factor],
         )
 
     def num_factor_parameters(self):

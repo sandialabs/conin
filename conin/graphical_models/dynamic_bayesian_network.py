@@ -1,6 +1,7 @@
 from conin.exceptions import InvalidInputError
 from conin.graphical_models.base import GraphicalModel
 from conin.graphical_models.expr import ExpressionVariable
+from conin.util.frozen import freeze
 
 
 class DynamicDiscreteBayesianNetwork(GraphicalModel):
@@ -52,8 +53,8 @@ class DynamicDiscreteBayesianNetwork(GraphicalModel):
                 "At least one of states and dynamic_states must be non-empty"
             )
 
-        self._edges = []
-        self._dynamic_edges = []
+        self._edges = freeze([])
+        self._dynamic_edges = freeze([])
 
         if type(states) is list:
             self._nodes = list(range(len(states)))
@@ -72,9 +73,23 @@ class DynamicDiscreteBayesianNetwork(GraphicalModel):
                 f"Unexpected type for dynamic states: {type(dynamic_states)}"
             )
 
-        self._cpds = [cpd.normalize(self) for cpd in cpds]
+        self._cpds = freeze([cpd.normalize(self) for cpd in cpds])
+        self._nodes = freeze(self._nodes)
+        self._states = freeze(self._states)
+        self._dynamic_nodes = freeze(self._dynamic_nodes)
+        self._dynamic_states = freeze(self._dynamic_states)
 
-        self.t = t if t is not None else ExpressionVariable()
+        self._t = t if t is not None else ExpressionVariable()
+
+    @property
+    def t(self):
+        """ExpressionVariable: The time index of the CPD templates.
+
+        Unrolling (:func:`~conin.graphical_models.create_bn_from_dbn`) and
+        sampling set its value while they evaluate the templates; the
+        attribute itself cannot be replaced.
+        """
+        return self._t
 
     def check_model(self):
         """Return ``True`` for the current dynamic model placeholder check.
@@ -101,7 +116,7 @@ class DynamicDiscreteBayesianNetwork(GraphicalModel):
         Returns
         -------
         list
-            Static node identifiers.
+            Static node identifiers (read-only).
         """
         return self._nodes
 
@@ -112,7 +127,7 @@ class DynamicDiscreteBayesianNetwork(GraphicalModel):
         Returns
         -------
         list
-            Dynamic node identifiers.
+            Dynamic node identifiers (read-only).
         """
         return self._dynamic_nodes
 
@@ -127,7 +142,7 @@ class DynamicDiscreteBayesianNetwork(GraphicalModel):
         Returns
         -------
         list
-            Static edge definitions.
+            Static edge definitions (read-only).
         """
         return self._edges
 
@@ -138,7 +153,7 @@ class DynamicDiscreteBayesianNetwork(GraphicalModel):
         Returns
         -------
         list
-            Dynamic edge definitions.
+            Dynamic edge definitions (read-only).
         """
         return self._dynamic_edges
 
@@ -153,7 +168,8 @@ class DynamicDiscreteBayesianNetwork(GraphicalModel):
         Returns
         -------
         dict
-            Mapping from static node identifiers to ordered state lists.
+            Mapping from static node identifiers to ordered state lists
+            (a new dict; the state lists are read-only).
 
         Examples
         --------
@@ -184,7 +200,8 @@ class DynamicDiscreteBayesianNetwork(GraphicalModel):
         Returns
         -------
         dict
-            Mapping from dynamic node identifiers to ordered state lists.
+            Mapping from dynamic node identifiers to ordered state lists
+            (a new dict; the state lists are read-only).
 
         Examples
         --------
@@ -214,7 +231,7 @@ class DynamicDiscreteBayesianNetwork(GraphicalModel):
         Returns
         -------
         list
-            Ordered list of states for ``node``.
+            Ordered list of states for ``node`` (read-only).
 
         Raises
         ------
@@ -266,7 +283,8 @@ class DynamicDiscreteBayesianNetwork(GraphicalModel):
         Returns
         -------
         list
-            Conditional probability distributions stored on the model.
+            Conditional probability distributions stored on the model (a new
+            list; the CPDs themselves are immutable).
 
         Examples
         --------

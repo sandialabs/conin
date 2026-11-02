@@ -11,12 +11,56 @@ from pyomo.common.timing import TicTocTimer
 from conin.config import default_mip_solver
 from conin.exceptions import InsufficientSolutionsError
 from conin.inference.query_checks import full_query_variables, reject_pruning_options
-from conin.inference.results import map_results, map_solution
+from conin.inference.results import map_results, map_solution, no_solution_results
 from conin.representations.pyomo.common import C5LazyCutGenerator, has_omitted_c5
 from conin.util import try_import
 
 with try_import() as or_topas_available:
     import or_topas.aos as aos
+
+
+_INFEASIBLE = (
+    pe.TerminationCondition.infeasible,
+    pe.TerminationCondition.infeasibleOrUnbounded,
+)
+
+
+def is_infeasible(res):
+    """Return whether the solver proved the model infeasible; raise unless optimal.
+
+    The MAP integer programs are bounded (binary variables), so
+    ``infeasibleOrUnbounded`` means infeasible.
+
+    Raises
+    ------
+    RuntimeError
+        If the solver neither proved infeasibility nor found an optimal
+        solution (``pyomo.environ.assert_optimal_termination``).
+    """
+    if res.solver.termination_condition in _INFEASIBLE:
+        return True
+    pe.assert_optimal_termination(res)
+    return False
+
+
+def solve_model(opt, model, *, tee=False):
+    """Solve ``model`` with the (non-persistent) solver ``opt``.
+
+    Returns ``(results, infeasible)``.  The solution is loaded into ``model``
+    only if it is optimal: the newer Pyomo interfaces (``"highs"``,
+    ``"appsi_highs"``) raise when asked to load the solution of an
+    infeasible model, so it is not loaded during the solve.
+
+    Raises
+    ------
+    RuntimeError
+        As :func:`is_infeasible`.
+    """
+    res = opt.solve(model, tee=tee, load_solutions=False)
+    if is_infeasible(res):
+        return res, True
+    model.solutions.load_from(res)
+    return res, False
 
 
 def _solve_pyomo(repn, q):
@@ -67,6 +111,12 @@ def solve_pyomo_map_query_model(
     then the c5 constraints are generated as lazy constraints in a Gurobi
     callback (and optionally as user cuts if ``c5_user_cuts=True``).  For
     other solvers, the c5 constraints are added to the model before solving.
+
+    If the solver proves the model infeasible (the evidence or the
+    constraints exclude every assignment), the result has no solution
+    (:func:`~conin.inference.results.no_solution_results`); other solver
+    failures raise ``RuntimeError``.  ``solver="or_topas"`` raises for an
+    infeasible model too.
     """
     if timing:  # pragma:nocover
         timer = TicTocTimer()
@@ -153,7 +203,8 @@ def solve_pyomo_map_query_model(
         if timing:  # pragma:nocover
             timer.toc("Completed optimization")
 
-        pe.assert_optimal_termination(res)
+        if is_infeasible(res):
+            return no_solution_results(solvetime)
         solutions = [parse_model_solution_pyomo_map_query(model, solution_with_fixed)]
         if cut_generator is not None:
             cut_stats = munch.Munch(
@@ -177,13 +228,14 @@ def solve_pyomo_map_query_model(
 
         solver_timer = TicTocTimer()
         solver_timer.tic(None)
-        res = opt.solve(model, tee=tee)
+        res, infeasible = solve_model(opt, model, tee=tee)
         solvetime = solver_timer.toc(None)
 
         if timing:  # pragma:nocover
             timer.toc("Completed optimization")
 
-        pe.assert_optimal_termination(res)
+        if infeasible:
+            return no_solution_results(solvetime)
         solutions = [parse_model_solution_pyomo_map_query(model, solution_with_fixed)]
 
     #

@@ -7,11 +7,13 @@ The models are built by the ``"toulbar2"`` representations
 from pyomo.common.timing import TicTocTimer
 
 from conin.inference.query_checks import full_query_variables, reject_pruning_options
-from conin.inference.results import map_results, map_solution
+from conin.inference.results import map_results, map_solution, no_solution_results
 from conin.util import try_import
 
+from conin.representations.toulbar2.common import Contradiction
+
 with try_import() as pytoulbar2_available:
-    import pytoulbar2
+    import pytoulbar2  # noqa: F401
 
 
 def _solve_toulbar2(repn, q):
@@ -36,13 +38,20 @@ def _solve_toulbar2(repn, q):
     verbose = options.pop("verbose", -1)
     write_uai_file = options.pop("write_uai_file", None)
     reject_pruning_options(options)
-    model = repn.create_model(
-        evidence=q.evidence,
-        variables=full_query_variables(q.variables, repn.nodes),
-        verbose=verbose,
-        write_uai_file=write_uai_file,
-        timing=q.timing,
-    )
+    solver_timer = TicTocTimer()
+    solver_timer.tic(None)
+    try:
+        model = repn.create_model(
+            evidence=q.evidence,
+            variables=full_query_variables(q.variables, repn.nodes),
+            verbose=verbose,
+            write_uai_file=write_uai_file,
+            timing=q.timing,
+        )
+    except Contradiction:
+        # toulbar2 found while the model was built (a constraint that the
+        # evidence or the other constraints contradict) that it has no solution.
+        return no_solution_results(solver_timer.toc(None))
     return solve_toulbar2_map_query_model(model, timing=q.timing, **options)
 
 
@@ -74,6 +83,10 @@ def solve_toulbar2_map_query_model(
         the CFN's primal bound, an integer cost; ``log_potential`` is
         ``None``), ``solutions`` (``[solution]``), ``termination_condition``
         (``"ok"``) and ``solvetime``; see :mod:`conin.inference.results`.
+        If the CFN has no solution (the constraints or the evidence exclude
+        every assignment), ``solution`` is ``None``, ``solutions`` is empty
+        and ``termination_condition`` is ``"error: no feasible solutions"``,
+        as for A*.
     """
     solution_with_evidence = solution_with_fixed or solution_with_evidence
     if timing:  # pragma:nocover
@@ -84,6 +97,12 @@ def solve_toulbar2_map_query_model(
     solver_timer.tic(None)
     res = model.Solve()
     solvetime = solver_timer.toc(None)
+    if res is None:
+        # pytoulbar2 returns None when no solution exists; conin sets no time
+        # limit, so this is never a search that stopped early.
+        if timing:  # pragma:nocover
+            timer.toc("Completed optimization")
+        return no_solution_results(solvetime)
     solution, primal_bound, num_solutions = res
     var = {
         name: model.states[i][solution[i]]

@@ -16,7 +16,7 @@ import munch
 import numpy as np
 import pyomo.environ as pyo
 
-from conin.exceptions import InvalidInputError
+from conin.exceptions import InfeasibleQueryError
 from conin.graphical_models import HiddenMarkovModel
 from conin.representations.base import Representation, register_representation
 from conin.util import State
@@ -98,7 +98,7 @@ def _create_index_sets(*, hmm, observed, Tmax=None):
         states[t] = latest
 
         if not latest:
-            raise InvalidInputError(
+            raise InfeasibleQueryError(
                 f"No feasible transitions to hidden states at time {t}: the "
                 "observations have probability zero"
             )

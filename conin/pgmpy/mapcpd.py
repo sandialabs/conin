@@ -151,7 +151,7 @@ def MapCPD(
        2
     """
     if evidence is None:
-        if type(values) is list:
+        if isinstance(values, list):
             if state_names is not None:
                 raise ValueError("Cannot specify state names when 'values' is a list")
             variable_card = len(values)
@@ -165,13 +165,13 @@ def MapCPD(
             evidence_card = []
             vlist = [[values[s]] for s in state_names[variable]]
     else:
-        if type(values) is not dict:
+        if not isinstance(values, dict):
             raise ValueError("The 'evidence' is specified, but 'values' is not a dict")
         first = next(iter(values.values()))
         variable_card = len(first)
 
         if state_names is None:
-            if type(first) is list:
+            if isinstance(first, list):
                 state_names_ = {variable: list(range(len(first)))}
             else:
                 state_names_ = {variable: list(sorted(first.keys()))}

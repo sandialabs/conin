@@ -27,7 +27,7 @@ import time
 
 import numpy as np
 
-from conin.inference.results import map_results, map_solution
+from conin.inference.results import NO_FEASIBLE_SOLUTIONS, map_results, map_solution
 
 
 class _HeapItem:
@@ -246,7 +246,7 @@ def hmm_a_star(
     if termination_condition == "unknown":
         # The search space is exhausted.  (If max_iterations or max_time
         # stopped the search, termination_condition says so.)
-        termination_condition = "ok" if output else "error: no feasible solutions"
+        termination_condition = "ok" if output else NO_FEASIBLE_SOLUTIONS
 
     return map_results(
         output,

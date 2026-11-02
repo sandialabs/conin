@@ -4,7 +4,8 @@ from dataclasses import dataclass
 
 from conin.exceptions import InvalidInputError
 from conin.util import batched
-from conin.graphical_models.base import GraphicalModel
+from conin.util.frozen import freeze
+from conin.graphical_models.base import GraphicalModel, node_sort_key
 from conin.graphical_models.markov_network import DiscreteFactor
 
 
@@ -32,6 +33,14 @@ class DiscreteCPD:
     default_value : float, optional
         Default probability returned when a configuration is not specified
         explicitly.
+
+    Notes
+    -----
+    ``values`` and ``parents`` are read-only copies of the arguments (a
+    :class:`~conin.util.frozen.FrozenList` or
+    :class:`~conin.util.frozen.FrozenDict`, also for the nested tables), so a
+    CPD cannot be changed after construction, also not through a model that
+    holds it.
 
     Examples
     --------
@@ -95,13 +104,10 @@ class DiscreteCPD:
     default_value: float = 0  # NOTE: Note used yet
 
     def __post_init__(self):
-        object.__setattr__(
-            self,
-            "values",
-            dict(self.values) if isinstance(self.values, dict) else list(self.values),
-        )
+        values = self.values if isinstance(self.values, dict) else list(self.values)
+        object.__setattr__(self, "values", freeze(values))
         if self.parents is not None:
-            object.__setattr__(self, "parents", list(self.parents))
+            object.__setattr__(self, "parents", freeze(list(self.parents)))
 
     def __str__(self):
         return "\n".join(
@@ -132,9 +138,9 @@ class DiscreteCPD:
         DiscreteCPD
             CPD with dictionary-valued entries.
         """
-        if type(self.values) is dict:
+        if isinstance(self.values, dict):
             tmp = next(iter(self.values.values()))
-            if type(tmp) is list:
+            if isinstance(tmp, list):
                 #
                 # Convert a CPD specified with list values into a CPD with dictionary values.
                 #
@@ -189,11 +195,11 @@ class DiscreteCPD:
         DiscreteFactor
             Factor representation of the CPD.
         """
-        if type(self.values) is list:
+        if isinstance(self.values, list):
             values = self.values
         else:
             tmp = next(iter(self.values.values()))
-            if type(tmp) is dict:
+            if isinstance(tmp, dict):
                 values = {
                     (key if type(key) is tuple else (key,)) + (node_value,): value
                     for key, values in self.values.items()
@@ -203,7 +209,7 @@ class DiscreteCPD:
                 values = self.values
 
         return DiscreteFactor(
-            nodes=([self.node] if self.parents is None else self.parents + [self.node]),
+            nodes=([self.node] if self.parents is None else [*self.parents, self.node]),
             values=values,
             default_value=self.default_value,
         )
@@ -240,13 +246,11 @@ class DiscreteBayesianNetwork(GraphicalModel):
             self._states = {i: list(range(v)) for i, v in enumerate(states)}
         elif isinstance(states, dict):
             tmp = list(states.keys())
-            tmp.sort(key=lambda x: (x,) if not isinstance(x, tuple) else x)
+            tmp.sort(key=node_sort_key)
             self._nodes = tmp
             self._states = dict(states)
         else:
             raise TypeError(f"Unexpected type for states: {type(states)}")
-        self._edges = None
-
         normalized_cpds = []
         for cpd in cpds:
             if cpd.node not in self._states:
@@ -255,7 +259,20 @@ class DiscreteBayesianNetwork(GraphicalModel):
                 if cpd.node not in self._nodes:
                     self._nodes.append(cpd.node)
             normalized_cpds.append(cpd.normalize(self))
-        self._cpds = normalized_cpds
+        self._cpds = freeze(normalized_cpds)
+        self._nodes = freeze(self._nodes)
+        self._states = freeze(self._states)
+        # Sorted as the nodes are, so that names and (name, t) tuples mix.
+        self._edges = freeze(
+            sorted(
+                {
+                    (e, cpd.node)
+                    for cpd in self._cpds
+                    for e in (cpd.parents if cpd.parents else [])
+                },
+                key=lambda edge: tuple(node_sort_key(node) for node in edge),
+            )
+        )
 
     def check_model(self):
         """Validate that the network structure and CPDs are well formed.
@@ -285,14 +302,14 @@ class DiscreteBayesianNetwork(GraphicalModel):
                         )
                     cnodes.add(node)
 
-            if type(f.values) is dict:
+            if isinstance(f.values, dict):
                 for k, v in f.values.items():
                     vkey = False
-                    if type(v) is list:
+                    if isinstance(v, list):
                         for val in v:
                             if not (0 <= val <= 1):
                                 raise InvalidInputError(f"Unexpected cpd value {val}")
-                    elif type(v) is dict:
+                    elif isinstance(v, dict):
                         for key, val in v.items():
                             if key not in vnodes:
                                 raise InvalidInputError(f"Unexpected cpd state {key}")
@@ -363,7 +380,7 @@ class DiscreteBayesianNetwork(GraphicalModel):
         Returns
         -------
         list
-            Ordered collection of node identifiers.
+            Ordered collection of node identifiers (read-only).
         """
         return self._nodes
 
@@ -375,22 +392,13 @@ class DiscreteBayesianNetwork(GraphicalModel):
     def edges(self):
         """Return the edges implied by the CPDs.
 
-        The edges are computed lazily by examining the parent relationships in
-        the CPDs and cached for subsequent calls.
+        The edges are the parent relationships of the CPDs.
 
         Returns
         -------
         list of tuple
-            Sorted list of ``(parent, child)`` pairs.
+            Sorted list of ``(parent, child)`` pairs (read-only).
         """
-        if not self._edges:
-            self._edges = sorted(
-                {
-                    (e, cpd.node)
-                    for cpd in self._cpds
-                    for e in (cpd.parents if cpd.parents else [])
-                }
-            )
         return self._edges
 
     #
@@ -404,7 +412,8 @@ class DiscreteBayesianNetwork(GraphicalModel):
         Returns
         -------
         dict
-            Dictionary mapping each node to an ordered list of states.
+            Dictionary mapping each node to an ordered list of states
+            (a new dict; the state lists are read-only).
         """
         return dict(self._states)
 
@@ -419,7 +428,7 @@ class DiscreteBayesianNetwork(GraphicalModel):
         Returns
         -------
         list
-            Ordered list of states for ``node``.
+            Ordered list of states for ``node`` (read-only).
         """
         return self._states[node]
 
@@ -449,7 +458,8 @@ class DiscreteBayesianNetwork(GraphicalModel):
         Returns
         -------
         list of DiscreteCPD
-            List of CPDs defining the network.
+            List of CPDs defining the network (a new list; the CPDs
+            themselves are immutable).
         """
         return list(self._cpds)
 

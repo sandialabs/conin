@@ -10,7 +10,11 @@ functions it dispatches to) returns a ``Munch`` with
     The solutions found, best first.
 ``termination_condition``
     ``"ok"``, or why the search stopped (for example
-    ``"max_iterations: 10"`` or ``"error: no feasible solutions"``).
+    ``"max_iterations: 10"``).  :data:`NO_FEASIBLE_SOLUTIONS` if the query has
+    no solution: the evidence or the constraints exclude every assignment.
+    Every method returns :func:`no_solution_results` then (``solution`` is
+    ``None`` and ``solutions`` empty), except the integer program with
+    ``solver="or_topas"``, which raises.
 ``solvetime``
     The time spent in the solver or the search, in seconds.
 
@@ -45,6 +49,9 @@ import munch
 from conin.graphical_models.hmm_observations import as_sequence
 from conin.scoring.log_potential import hmm_path_log_potential, log_potential
 
+NO_FEASIBLE_SOLUTIONS = "error: no feasible solutions"
+"""The ``termination_condition`` of a query without a solution."""
+
 
 def map_solution(states, *, solver_objective=None, **extra):
     """One solution of a MAP query (``log_potential`` is set by the scoring)."""
@@ -62,6 +69,13 @@ def map_results(solutions, *, solvetime, termination_condition="ok", **extra):
         termination_condition=termination_condition,
         solvetime=solvetime,
         **extra,
+    )
+
+
+def no_solution_results(solvetime):
+    """The result of a query without a solution (:data:`NO_FEASIBLE_SOLUTIONS`)."""
+    return map_results(
+        [], solvetime=solvetime, termination_condition=NO_FEASIBLE_SOLUTIONS
     )
 
 
