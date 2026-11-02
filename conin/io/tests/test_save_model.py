@@ -321,3 +321,28 @@ def test_pgmpy_save_model_without_readwrite_raises(tmp_path, monkeypatch, suffix
     monkeypatch.setattr(module, "pgmpy_readwrite_available", False)
     with pytest.raises(RuntimeError, match=f"{suffix.upper()} format"):
         module.save_model(pgm, str(tmp_path / f"asia.{suffix}"))
+
+
+#
+# sparse factors
+#
+
+
+def test_save_model_sparse_factors_round_trip(tmp_path):
+    # save_uai raised KeyError for the assignments a factor's dict omits.
+    from conin.graphical_models import DiscreteFactor, DiscreteMarkovNetwork
+
+    pgm = DiscreteMarkovNetwork(
+        states={"A": [0, 1, 2], "B": [0, 1, 2]},
+        factors=[
+            DiscreteFactor(nodes=["A"], values={0: 1}, default_value=3),
+            DiscreteFactor(nodes=["A", "B"], values={(1, 0): 5}, default_value=1),
+        ],
+    )
+    fname = str(tmp_path / "sparse.uai")
+    save_model(pgm, fname)
+    loaded = load_model(fname)
+    assert [dict(f.values) for f in loaded.factors] == [
+        {0: 1.0, 1: 3.0, 2: 3.0},
+        {(a, b): 5.0 if (a, b) == (1, 0) else 1.0 for a in range(3) for b in range(3)},
+    ]

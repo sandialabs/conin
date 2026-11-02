@@ -55,7 +55,12 @@ from .results import (
     score_hmm_solutions,
     score_solutions,
 )
-from conin.representations.methods import MAP_METHODS, check_method, representation_kind
+from conin.representations.methods import (
+    MAP_METHODS,
+    check_method,
+    reject_unexpected_options,
+    representation_kind,
+)
 from .oracle.a_star_hmm import _a_star
 from .pyomo.hmm_network_flow import _solve_network_flow
 from .pyomo.solve import _solve_pyomo
@@ -218,7 +223,8 @@ def map_query(
         inference helper, such as solver options or output-file settings.
         ``integer_program`` takes ``ip_formulation`` (``None``,
         ``"markov_network"`` or ``"network_flow"``); ``mvr_viterbi`` takes
-        ``dtype`` and ``device``.
+        ``dtype`` and ``device``.  Every method raises ``TypeError`` for an
+        option it does not take (``viterbi`` takes none).
 
     Returns
     -------
@@ -245,7 +251,8 @@ def map_query(
     ValueError
         For an unknown ``method`` or ``ip_formulation``.
     TypeError
-        If ``pgm`` is not a supported model type.
+        If ``pgm`` is not a supported model type, or for an option that the
+        method does not take.
     InvalidInputError
         If ``method`` does not support the model type or its constraint
         family (no such representation is registered), if the evidence of
@@ -364,7 +371,7 @@ def _hmm_search(search, repn, q, **options):
 
 @ovld
 def _solve_map_query(repn: MatVecHMMRepresentation, q):
-    # Viterbi has no options; the other options are ignored.
+    reject_unexpected_options(q.options, "map_query(method='viterbi')")
     return _hmm_search(_viterbi, repn, q)
 
 

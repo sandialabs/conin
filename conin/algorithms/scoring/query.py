@@ -29,6 +29,7 @@ from conin.exceptions import InvalidInputError
 from conin.representations.methods import (
     LOG_PROBABILITY_METHODS,
     check_method,
+    reject_unexpected_options,
     representation_kind,
 )
 from conin.representations.variable_elimination import (
@@ -221,11 +222,9 @@ def _check_variables(states, values, what):
 
 
 def _variable_elimination(repn, q):
-    if q.options:
-        raise TypeError(
-            "Unexpected options for log_probability_query("
-            f"method='variable_elimination'): {', '.join(map(str, q.options))}"
-        )
+    reject_unexpected_options(
+        q.options, "log_probability_query(method='variable_elimination')"
+    )
     _check_variables(repn.pgm.states, q.assignment, "assignment")
     _check_variables(repn.pgm.states, q.evidence, "evidence")
     return _log_probability_variable_elimination(

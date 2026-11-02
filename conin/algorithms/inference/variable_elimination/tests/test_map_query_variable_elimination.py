@@ -49,9 +49,10 @@ def test_bn_solution():
     assert _states(_ve(example.pgm)) == example.solutions[0].states
 
 
-def test_unknown_options_are_ignored():
-    example = mex.ABC_conin()
-    assert _states(_ve(example.pgm, solver="glpk")) == example.solutions[0].states
+def test_unknown_options_raise():
+    # They used to be ignored, so a misspelt option had no effect.
+    with pytest.raises(TypeError, match="Unexpected options .*: solver"):
+        _ve(mex.ABC_conin().pgm, solver="glpk")
 
 
 def test_mn_writes_the_factor_model(tmp_path):

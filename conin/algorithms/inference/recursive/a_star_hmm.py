@@ -1,4 +1,5 @@
 from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.graphical_models.assignments import as_sequence
 from conin.algorithms.inference.hmm_a_star import hmm_a_star
 from conin.algorithms.inference.results import (
     map_results,
@@ -30,7 +31,8 @@ def recursive_a_star(
         The model.  Its constraints must be :class:`~conin.constraints.RecursiveConstraint`
         objects (or none); other families raise ``InvalidInputError``.
     observed : list
-        Observed labels.
+        Observed labels: a non-empty list or tuple (or a dict keyed by
+        ``0..T-1``); anything else raises ``InvalidInputError``.
     num_solutions : int, optional
         Number of solutions to find.
     debug : bool, optional
@@ -52,7 +54,7 @@ def recursive_a_star(
     cmodel = ConstrainedHiddenMarkovModel.ensure(hmm)
     return _recursive_a_star(
         cmodel.representation("recursive"),
-        observed=observed,
+        observed=as_sequence(observed, "observed sequence"),
         num_solutions=num_solutions,
         debug=debug,
         max_iterations=max_iterations,

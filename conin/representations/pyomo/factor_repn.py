@@ -8,7 +8,26 @@ Also the helpers that build it for the IP formulations: the BN -> MN skeleton
 from math import log
 from conin.exceptions import InvalidInputError
 from conin.util import State
-from conin.graphical_models import DiscreteMarkovNetwork
+from conin.graphical_models import DiscreteFactor, DiscreteMarkovNetwork
+
+
+def _with_default_values(factor, pgm_states):
+    """Return ``factor`` with every assignment that its dict omits set to ``default_value``.
+
+    Rows with weight zero are left out of the factor representation, so a
+    sparse dict with ``default_value == 0`` (or a list) is returned as it is.
+    """
+    if not isinstance(factor.values, dict) or factor.default_value == 0:
+        return factor
+    values = {}
+    for assignment in factor.assignments(pgm_states):
+        key = (
+            assignment[0][1]
+            if len(assignment) == 1
+            else tuple(s for _, s in assignment)
+        )
+        values[key] = factor.values.get(key, factor.default_value)
+    return DiscreteFactor(nodes=factor.nodes, values=values)
 
 
 def _check_unique_variable_names(pgm_states, var_index_map):
@@ -61,6 +80,7 @@ def extract_factor_representation_(pgm_states, pgm_factors, var_index_map=None):
     w = {}
     factor_nodes = {}
     for factor in pgm_factors:
+        factor = _with_default_values(factor, pgm_states)
         # Create a string name for this factor
         vars = factor.nodes
         if var_index_map:

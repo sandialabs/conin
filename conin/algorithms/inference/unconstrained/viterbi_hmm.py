@@ -2,6 +2,7 @@ import numpy as np
 from pyomo.common.timing import TicTocTimer
 
 from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.graphical_models.assignments import as_sequence
 from conin.algorithms.inference.results import (
     map_results,
     map_solution,
@@ -88,7 +89,9 @@ def viterbi(*, observed, hmm):
     Performs the Viterbi algorithm to find the most likely sequence of hidden states.
 
     Parameters:
-        observed (list): The sequence of observed labels to perform inference on.
+        observed (list): The sequence of observed labels to perform inference on
+            (not empty; a tuple or a dict keyed by ``0..T-1`` is accepted too).
+            Anything else raises ``InvalidInputError``.
         hmm (HiddenMarkovModel or ConstrainedHiddenMarkovModel): The HMM to use
             for inference.  A constrained model must have no constraints
             (otherwise ``InvalidInputError`` is raised).
@@ -104,7 +107,10 @@ def viterbi(*, observed, hmm):
     """
     cmodel = ConstrainedHiddenMarkovModel.ensure(hmm)
     # Raises InvalidInputError if there are constraints.
-    return _viterbi(cmodel.representation("matvec"), observed=observed)
+    return _viterbi(
+        cmodel.representation("matvec"),
+        observed=as_sequence(observed, "observed sequence"),
+    )
 
 
 def _viterbi(repn, *, observed):

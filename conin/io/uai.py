@@ -271,7 +271,7 @@ def _uai_text(pgm):
                 state = assignment[0][1]
             else:
                 state = tuple([t[1] for t in assignment])
-            table_values.append(str(factor.values[state]))
+            table_values.append(str(factor.values.get(state, factor.default_value)))
 
         tables += [(table_preamble, table_values)]
 

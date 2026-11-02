@@ -21,7 +21,8 @@ def rejection_sample_hidden(hmm, time_steps, *, max_failures=1000):
     time_steps : int
         Length of the sequence.
     max_failures : int, optional
-        Number of rejected samples after which the search gives up.
+        Number of rejected samples allowed: the search gives up when one more
+        sample is rejected (at most ``max_failures + 1`` samples are drawn).
 
     Returns
     -------
@@ -49,14 +50,12 @@ def rejection_sample_hidden(hmm, time_steps, *, max_failures=1000):
     repn = hmm.representation("oracle")
     start = repn.hmm.start_vec.tolist()
     transition = repn.hmm.transition_mat.tolist()
-    hidden = _hidden_indices(start, transition, time_steps)
-    ctr = 0
-    while not repn.is_feasible(hidden):
-        hidden = _hidden_indices(start, transition, time_steps)
-        ctr += 1
-        if ctr > max_failures:
-            raise RuntimeError(
-                f"Failed to generate a feasible hidden state after {max_failures} trials"
-            )
     h2e = repn.model.hidden_to_external
-    return [h2e[h] for h in hidden]
+    for _ in range(max_failures + 1):
+        hidden = _hidden_indices(start, transition, time_steps)
+        if repn.is_feasible(hidden):
+            return [h2e[h] for h in hidden]
+    raise RuntimeError(
+        "Failed to generate a feasible hidden state: "
+        f"{max_failures + 1} samples were rejected"
+    )
