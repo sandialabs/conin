@@ -61,20 +61,20 @@ def test_class_and_attributes():
     assert isinstance(repn, MatVecHMMRepresentation)
     assert repn.kind == "matvec"
     assert repn.model is hmm
-    assert (repn.num_hidden_states, repn.num_observed_states) == (3, 3)
+    assert (repn.num_hidden_states, repn.num_observable_states) == (3, 3)
     assert repn.start_vec.shape == (3,)
     assert repn.transition_mat.shape == (3, 3)
     assert repn.emission_mat.shape == (3, 3)
     for name in ARRAYS:
         assert getattr(repn, name).dtype == np.float64
     # Internal indices are the sorted labels, the positions in hidden_states
-    # and observed_states; missing entries of the label tables are zeros.
+    # and observable_states; missing entries of the label tables are zeros.
     assert repn.hidden_to_internal == {"a": 0, "b": 1, "c": 2}
-    assert repn.observed_to_internal == {"x": 0, "y": 1, "z": 2}
+    assert repn.observable_to_internal == {"x": 0, "y": 1, "z": 2}
     assert repn.hidden_states == ["a", "b", "c"] == hmm.hidden_states
-    assert repn.observed_states == ["x", "y", "z"] == hmm.observed_states
+    assert repn.observable_states == ["x", "y", "z"] == hmm.observable_states
     assert list(repn.hidden_to_internal) == repn.hidden_states
-    assert list(repn.observed_to_internal) == repn.observed_states
+    assert list(repn.observable_to_internal) == repn.observable_states
     assert repn.start_vec.tolist() == [0, 1.0, 0]
     assert repn.transition_mat.tolist() == [[1.0, 0, 0], [0, 0, 1.0], [1.0, 0, 0]]
     assert repn.emission_mat.tolist() == [[0, 0, 1.0], [0.25, 0, 0.75], [0, 1.0, 0]]
@@ -116,13 +116,18 @@ def test_the_model_is_not_shared_with_the_arrays():
     repn = ConstrainedHiddenMarkovModel(hmm).representation("matvec")
     copy_ = np.array(repn.transition_mat)
     copy_[0, 0] = 0.0
-    assert hmm.get_transition_probs()["h0", "h0"] == 0.9
+    assert hmm.transition_probs["h0", "h0"] == 0.9
     assert repn.transition_mat[0, 0] == 0.9
 
 
 @pytest.mark.parametrize(
     "name",
-    ["hidden_states", "observed_states", "hidden_to_internal", "observed_to_internal"],
+    [
+        "hidden_states",
+        "observable_states",
+        "hidden_to_internal",
+        "observable_to_internal",
+    ],
 )
 def test_index_maps_are_read_only(name):
     repn = tc.create_hmm1().representation("matvec")
@@ -136,7 +141,7 @@ def test_one_representation_serves_several_queries():
     before = {name: getattr(repn, name).copy() for name in ARRAYS}
     # h2 only emits o2 and never leaves, so o2 can only come last.
     observed = [
-        hmm.representation("matvec").observed_to_internal[o]
+        hmm.representation("matvec").observable_to_internal[o]
         for o in ["o0", "o1"] * 3 + ["o2"]
     ]
     first = viterbi_(observed=observed, hmm=repn)

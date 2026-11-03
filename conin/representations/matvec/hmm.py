@@ -19,8 +19,8 @@ class MatVecHMMRepresentation(Representation):
     The index view of an HMM, and the only place that converts between
     state labels and indices: used by Viterbi, A*, sampling, the network-flow
     formulation and the torch MVR kernels.  Hidden state ``i`` is
-    ``hidden_states[i]`` and observed state ``j`` is ``observed_states[j]``;
-    :attr:`hidden_to_internal` and :attr:`observed_to_internal` map the labels
+    ``hidden_states[i]`` and observable state ``j`` is ``observable_states[j]``;
+    :attr:`hidden_to_internal` and :attr:`observable_to_internal` map the labels
     back to indices.  The order is the model's (``model.hidden_states``).
 
     Parameters
@@ -32,12 +32,12 @@ class MatVecHMMRepresentation(Representation):
     ----------
     model : HiddenMarkovModel
         The HMM.
-    num_hidden_states, num_observed_states : int
+    num_hidden_states, num_observable_states : int
         ``n`` and ``m``.
-    hidden_states, observed_states : list
-        Read-only lists of the hidden and observed labels by index.
-    hidden_to_internal, observed_to_internal : dict
-        Read-only maps from hidden and observed labels to their indices.
+    hidden_states, observable_states : list
+        Read-only lists of the hidden and observable labels by index.
+    hidden_to_internal, observable_to_internal : dict
+        Read-only maps from hidden and observable labels to their indices.
     start_vec : numpy.ndarray
         Starting probabilities, shape ``(n,)``.
     transition_mat : numpy.ndarray
@@ -59,15 +59,15 @@ class MatVecHMMRepresentation(Representation):
         self.model = model
         # The model's label order is the index order.
         self.hidden_states = freeze(list(model.hidden_states))
-        self.observed_states = freeze(list(model.observed_states))
-        hidden, observed = self.hidden_states, self.observed_states
+        self.observable_states = freeze(list(model.observable_states))
+        hidden, observed = self.hidden_states, self.observable_states
         self.num_hidden_states = len(hidden)
-        self.num_observed_states = len(observed)
+        self.num_observable_states = len(observed)
         self.hidden_to_internal = freeze({h: i for i, h in enumerate(hidden)})
-        self.observed_to_internal = freeze({o: j for j, o in enumerate(observed)})
-        start = model.get_start_probs()
-        transition = model.get_transition_probs()
-        emission = model.get_emission_probs()
+        self.observable_to_internal = freeze({o: j for j, o in enumerate(observed)})
+        start = model.start_probs
+        transition = model.transition_probs
+        emission = model.emission_probs
         self.start_vec = _read_only([start[h] for h in hidden])
         self.transition_mat = _read_only(
             [[transition[h1, h2] for h2 in hidden] for h1 in hidden]

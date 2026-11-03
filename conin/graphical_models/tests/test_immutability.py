@@ -16,6 +16,7 @@ from conin.graphical_models import (
     DiscreteFactor,
     DiscreteMarkovNetwork,
     DynamicDiscreteBayesianNetwork,
+    HiddenMarkovModel,
     TimeIndex,
 )
 
@@ -58,6 +59,14 @@ def _dbn():
     )
 
 
+def _hmm():
+    return HiddenMarkovModel(
+        start_probs={"h0": 0.4, "h1": 0.6},
+        transition_probs={("h0", "h0"): 0.9, ("h0", "h1"): 0.1, ("h1", "h1"): 1.0},
+        emission_probs={("h0", "o0"): 1.0, ("h1", "o1"): 1.0},
+    )
+
+
 def _raises(mutate):
     with pytest.raises(TypeError, match="read-only"):
         mutate()
@@ -90,11 +99,26 @@ MUTATIONS = {
         lambda m: m.dynamic_edges.append(("X", "X")),
         lambda m: m.cpds[1].values[0].__setitem__(0, 0.99),
     ],
+    "hmm": [
+        lambda m: m.hidden_states.append("h2"),
+        lambda m: m.observable_states.__setitem__(0, "o9"),
+        lambda m: m.start_probs.__setitem__("h0", 1.0),
+        lambda m: m.transition_probs.pop(("h0", "h0")),
+        lambda m: m.emission_probs.update({("h0", "o0"): 0.5}),
+    ],
 }
-FACTORIES = {"mn": _mn, "bn": _bn, "dbn": _dbn}
+FACTORIES = {"mn": _mn, "bn": _bn, "dbn": _dbn, "hmm": _hmm}
 
 
 def _snapshot(model):
+    if isinstance(model, HiddenMarkovModel):
+        return [
+            repr(model.hidden_states),
+            repr(model.observable_states),
+            repr(model.start_probs),
+            repr(model.transition_probs),
+            repr(model.emission_probs),
+        ]
     parts = [repr(model.nodes), repr(model.states), repr(model.edges)]
     # The values, not the reprs: a DBN's CPD nodes hold its time index, whose
     # repr is its address (a copied DBN has its own).
@@ -190,7 +214,15 @@ def test_dbn_time_index_cannot_be_replaced():
         dbn.t = TimeIndex()
 
 
-@pytest.mark.parametrize("kind", list(FACTORIES))
+def test_pickled_and_copied_hmms_stay_read_only_and_equal():
+    hmm = _hmm()
+    for other in (pickle.loads(pickle.dumps(hmm)), copy.deepcopy(hmm)):
+        assert other == hmm and _snapshot(other) == _snapshot(hmm)
+        _raises(lambda: other.hidden_states.append("h2"))
+        _raises(lambda: other.emission_probs.clear())
+
+
+@pytest.mark.parametrize("kind", ["mn", "bn", "dbn"])
 def test_pickled_and_copied_models_stay_read_only(kind):
     model = FACTORIES[kind]()
     for other in (pickle.loads(pickle.dumps(model)), copy.deepcopy(model)):

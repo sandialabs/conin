@@ -109,4 +109,4 @@ def test_hmm_example_builds(builder):
     model = builder()
     assert isinstance(model, (HiddenMarkovModel, ConstrainedHiddenMarkovModel))
     hmm = getattr(model, "model", model)
-    assert hmm.hidden_states and hmm.observed_states
+    assert hmm.hidden_states and hmm.observable_states

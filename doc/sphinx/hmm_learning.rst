@@ -57,9 +57,9 @@ from simulations where both hidden and observed states are known.
        emission_tolerance=0,
    )
 
-   start_probs = hmm.get_start_probs()
-   transition_probs = hmm.get_transition_probs()
-   emission_probs = hmm.get_emission_probs()
+   start_probs = hmm.start_probs
+   transition_probs = hmm.transition_probs
+   emission_probs = hmm.emission_probs
 
    assert start_probs["h0"] == 0.5
    assert transition_probs["h0", "h1"] == 0.5
@@ -101,9 +101,9 @@ constructor raises ``InvalidInputError``.
        emission_prior={("h2", "o2"): 1.0},
    )
 
-   assert hmm.get_transition_probs()["h1", "h1"] == 1.0
-   assert hmm.get_transition_probs()["h2", "h2"] == 1.0
-   assert hmm.get_emission_probs()["h2", "o2"] == 1.0
+   assert hmm.transition_probs["h1", "h1"] == 1.0
+   assert hmm.transition_probs["h2", "h2"] == 1.0
+   assert hmm.emission_probs["h2", "o2"] == 1.0
 
 Unknown Hidden States
 ---------------------

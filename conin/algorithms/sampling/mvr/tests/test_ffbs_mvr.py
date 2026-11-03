@@ -99,7 +99,7 @@ def assert_matches_brute_force(hmm, mvrs, observed, T=None, seed=0):
 def hmm():
     return make_random_hmm(
         hidden_states=["A", "B", "C"],
-        observed_states=["o0", "o1"],
+        observable_states=["o0", "o1"],
         seed=7,
     )
 
@@ -119,16 +119,16 @@ def test_ffbs_random_instances_match_brute_force(seed):
     rng = np.random.default_rng(seed)
 
     hidden_states = [f"h{i}" for i in range(int(rng.integers(2, 4)))]
-    observed_states = ["o0", "o1"]
+    observable_states = ["o0", "o1"]
 
     hmm = make_random_hmm(
         hidden_states=hidden_states,
-        observed_states=observed_states,
+        observable_states=observable_states,
         seed=seed,
     )
 
     T = int(rng.integers(1, 6))
-    observed = [observed_states[rng.integers(2)] for _ in range(T)]
+    observed = [observable_states[rng.integers(2)] for _ in range(T)]
 
     mvrs = []
 

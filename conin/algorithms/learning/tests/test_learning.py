@@ -5,6 +5,7 @@ from conin.algorithms import learning
 from conin.exceptions import InvalidInputError
 from conin.algorithms.sampling.oracle import rejection_sample_hidden
 from conin.algorithms.sampling.unconstrained import generate_observed_from_hidden
+from conin.algorithms.scoring import log_probability
 import math
 import munch
 
@@ -83,9 +84,9 @@ def test_supervised_learning():
         start_tolerance=eps,
     )
 
-    start_probs = hmm.get_start_probs()
-    emission_probs = hmm.get_emission_probs()
-    transition_probs = hmm.get_transition_probs()
+    start_probs = hmm.start_probs
+    emission_probs = hmm.emission_probs
+    transition_probs = hmm.transition_probs
 
     assert math.isclose(start_probs["h0"], 0.5)
     assert math.isclose(start_probs["h1"], 0.5)
@@ -118,9 +119,9 @@ def test_supervised_learning_non_zero_tolerance():
         start_tolerance=eps,
     )
 
-    start_probs = hmm.get_start_probs()
-    emission_probs = hmm.get_emission_probs()
-    transition_probs = hmm.get_transition_probs()
+    start_probs = hmm.start_probs
+    emission_probs = hmm.emission_probs
+    transition_probs = hmm.transition_probs
 
     assert math.isclose(start_probs["h0"], 0.5)
     assert math.isclose(start_probs["h1"], 0.5)
@@ -153,9 +154,9 @@ def test_supervised_learning_extra_hidden_observed():
         start_tolerance=eps,
     )
 
-    start_probs = hmm.get_start_probs()
-    emission_probs = hmm.get_emission_probs()
-    transition_probs = hmm.get_transition_probs()
+    start_probs = hmm.start_probs
+    emission_probs = hmm.emission_probs
+    transition_probs = hmm.transition_probs
 
     assert math.isclose(start_probs["h0"], 0.5)
     assert math.isclose(start_probs["h1"], 0.5)
@@ -204,9 +205,9 @@ def test_supervised_learning_priors():
         emission_prior=emission_prior,
     )
 
-    start_probs = hmm.get_start_probs()
-    emission_probs = hmm.get_emission_probs()
-    transition_probs = hmm.get_transition_probs()
+    start_probs = hmm.start_probs
+    emission_probs = hmm.emission_probs
+    transition_probs = hmm.transition_probs
 
     assert math.isclose(start_probs["h0"], 0.5)
     assert math.isclose(start_probs["h1"], 0.5)
@@ -273,8 +274,8 @@ def test_supervised_learning_uniform_fallback_no_prior():
         start_tolerance=eps,
     )
 
-    transition_probs = hmm.get_transition_probs()
-    emission_probs = hmm.get_emission_probs()
+    transition_probs = hmm.transition_probs
+    emission_probs = hmm.emission_probs
 
     # h2 is never seen — should get uniform transition and emission fallbacks.
     assert math.isclose(transition_probs[("h2", "h0")], 1 / 3)
@@ -297,9 +298,9 @@ def test_supervised_learning_default_tolerances():
         observable_states=["o0", "o1"],
     )
 
-    start_probs = hmm.get_start_probs()
-    transition_probs = hmm.get_transition_probs()
-    emission_probs = hmm.get_emission_probs()
+    start_probs = hmm.start_probs
+    transition_probs = hmm.transition_probs
+    emission_probs = hmm.emission_probs
 
     # Start probs must sum to 1.
     assert math.isclose(sum(start_probs.values()), 1.0)
@@ -421,7 +422,10 @@ def test_mcem_trains_on_the_samples_it_scores(monkeypatch):
     # One draw per sample, and those are the training sequences.
     assert len(record.sampled) == 3
     assert record.trained == [record.sampled]
-    expected = sum(chmm.model.log_probability(observed, h) for h in record.sampled) / 3
+    expected = (
+        sum(log_probability(chmm.model, h, observed=observed) for h in record.sampled)
+        / 3
+    )
     assert log_prob == pytest.approx(expected)
 
 
@@ -488,11 +492,11 @@ def test_mcem_default_options(monkeypatch):
 def test_mcem_a_larger_log_probability_does_not_raise(monkeypatch):
     # The average log-probability is a Monte Carlo estimate; mcem asserted that
     # it never increased.  Make it increase on purpose.
-    from conin.graphical_models import HiddenMarkovModel
+    from conin.algorithms.learning.oracle import mcem_hmm
 
     scores = iter([-10.0, -5.0, -5.0, -5.0])
     monkeypatch.setattr(
-        HiddenMarkovModel, "log_probability", lambda self, o, h: next(scores)
+        mcem_hmm, "log_probability", lambda model, hidden, observed: next(scores)
     )
     log_prob = learning.mcem(**_mcem_args(samples_per_iteration=1, max_iterations=10))
     # -10, then -5 (larger), then -5 again: converged.

@@ -74,14 +74,15 @@ def enumerate_objectives(hmm, constraints, observations, horizons, posterior=Non
                 counts[1][left, right] += weight
             for t, label in as_obs_map(observed).items():
                 counts[2][
-                    states[t], hmm.representation("matvec").observed_to_internal[label]
+                    states[t],
+                    hmm.representation("matvec").observable_to_internal[label],
                 ] += weight
     return likelihood, surrogate, weights, counts
 
 
 def make_case(seed):
     hmm = make_random_hmm(
-        hidden_states=["C", "A", "B"], observed_states=["y", "x"], seed=seed
+        hidden_states=["C", "A", "B"], observable_states=["y", "x"], seed=seed
     )
     if seed == 4:
         start = np.asarray(hmm.representation("matvec").start_vec.tolist())
@@ -169,8 +170,7 @@ def test_gem_matches_enumeration(seed):
                 assert np.array_equal(before, after)
         hmm, previous = fitted, score
     assert previous > initial + 1e-6
-    for getter in ("get_start_probs", "get_transition_probs", "get_emission_probs"):
-        assert getattr(caller, getter)() == getattr(original, getter)()
+    assert caller == original
 
 
 @pytest.mark.parametrize("seed", range(6))
@@ -221,7 +221,7 @@ def test_chain_gradient_matches_finite_differences(seed):
 
 def test_pseudocount_keeps_unobserved_emissions_positive():
     hmm = make_random_hmm(
-        hidden_states=["A", "B"], observed_states=["x", "y", "z"], seed=3
+        hidden_states=["A", "B"], observable_states=["x", "y", "z"], seed=3
     )
     emission = hmm.representation("matvec").emission_mat.tolist()
     emission[0] = [0.5, 0.5, 0.0]
@@ -235,14 +235,16 @@ def test_pseudocount_keeps_unobserved_emissions_positive():
     with pytest.warns(UserWarning, match="emission"):
         fitted, _ = generalized_em_mvr_chmm(model, [["x", "y", "x"]], max_iter=1, tol=0)
     unobserved = np.asarray(fitted.representation("matvec").emission_mat.tolist())[
-        :, hmm.representation("matvec").observed_to_internal["z"]
+        :, hmm.representation("matvec").observable_to_internal["z"]
     ]
     assert unobserved[0] == 0 and unobserved[1] > 0
 
 
 def test_gem_history():
     # Deliberate executable spec: history follows Baum–Welch.
-    hmm = make_random_hmm(hidden_states=["A", "B"], observed_states=["x", "y"], seed=8)
+    hmm = make_random_hmm(
+        hidden_states=["A", "B"], observable_states=["x", "y"], seed=8
+    )
     model = ConstrainedHiddenMarkovModel(hmm)
     observations = [["x", "x", "y"]]
     fitted, history = generalized_em_mvr_chmm(model, observations, max_iter=2, tol=0)
@@ -259,7 +261,9 @@ def test_gem_history():
 
 
 def test_gem_backtracking_failure_retains_parameters():
-    hmm = make_random_hmm(hidden_states=["A", "B"], observed_states=["x", "y"], seed=8)
+    hmm = make_random_hmm(
+        hidden_states=["A", "B"], observable_states=["x", "y"], seed=8
+    )
     model = ConstrainedHiddenMarkovModel(hmm)
     with pytest.warns(RuntimeWarning, match="backtracking"):
         fitted, history = generalized_em_mvr_chmm(
@@ -289,7 +293,9 @@ def test_gem_backtracking_failure_retains_parameters():
     ids=["update", "budget", "empty"],
 )
 def test_gem_rejects_invalid_arguments(observations, kwargs):
-    hmm = make_random_hmm(hidden_states=["A", "B"], observed_states=["x", "y"], seed=8)
+    hmm = make_random_hmm(
+        hidden_states=["A", "B"], observable_states=["x", "y"], seed=8
+    )
     model = ConstrainedHiddenMarkovModel(hmm)
     with pytest.raises(InvalidInputError):
         generalized_em_mvr_chmm(model, observations, **kwargs)

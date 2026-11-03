@@ -140,7 +140,7 @@ def generate_observed_from_hidden(hmm, hidden, *, rng=None):
     """
     repn, _, _, emission = _arrays(hmm)
     h2i = repn.hidden_to_internal
-    o2e = repn.observed_states
+    o2e = repn.observable_states
     observed = _observed_indices(emission, [h2i[h] for h in hidden], as_rng(rng))
     return [o2e[o] for o in observed]
 
@@ -171,5 +171,5 @@ def generate_observed(hmm, time_steps, *, rng=None):
     repn, start, transition, emission = _arrays(hmm)
     rng = as_rng(rng)
     hidden = _hidden_indices(start, transition, time_steps, rng)
-    o2e = repn.observed_states
+    o2e = repn.observable_states
     return [o2e[o] for o in _observed_indices(emission, hidden, rng)]

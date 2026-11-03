@@ -116,7 +116,7 @@ def viterbi(*, observed, hmm):
 def _viterbi(repn, *, observed):
     """:func:`viterbi` on a ``"matvec"`` representation (external labels)."""
     hmm = repn.model
-    observed_ = [repn.observed_to_internal[o] for o in observed]
+    observed_ = [repn.observable_to_internal[o] for o in observed]
     ans_ = viterbi_(observed=observed_, hmm=repn)
 
     # Convert internal indices back to external labels

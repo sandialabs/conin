@@ -28,21 +28,21 @@ class Test_Oracle_ConstrainedHiddenMarkovModel:
         cpgm = tc.create_chmm1_oracle()
 
         assert cpgm.representation("oracle").hmm.start_vec.tolist() == [
-            cpgm.model.get_start_probs()[h] for h in cpgm.model.hidden_states
+            cpgm.model.start_probs[h] for h in cpgm.model.hidden_states
         ]
 
     def test_construct_model2(self):
         cpgm = tc.create_chmm1_oracle()
 
         _hmm = HiddenMarkovModel(
-            start_probs=cpgm.model.get_start_probs(),
-            emission_probs=cpgm.model.get_emission_probs(),
-            transition_probs=cpgm.model.get_transition_probs(),
+            start_probs=cpgm.model.start_probs,
+            emission_probs=cpgm.model.emission_probs,
+            transition_probs=cpgm.model.transition_probs,
         )
         _repn = ConstrainedHiddenMarkovModel(_hmm).representation("oracle")
 
         assert _repn.hmm.start_vec.tolist() == [
-            cpgm.model.get_start_probs()[h] for h in cpgm.model.hidden_states
+            cpgm.model.start_probs[h] for h in cpgm.model.hidden_states
         ]
 
     def test_construct_model3(self):
@@ -67,13 +67,6 @@ class Test_Oracle_ConstrainedHiddenMarkovModel:
         assert not cpgm.representation("oracle").is_feasible(fail_seq1)
         assert cpgm.representation("oracle").is_feasible(pass_seq)
         assert not cpgm.representation("oracle").is_feasible(fail_seq2)
-
-    def test_is_valid_hidden_state(self):
-        cpgm = tc.create_chmm1_oracle()
-        assert cpgm.model.is_valid_hidden_state("h0")
-        assert cpgm.model.is_valid_hidden_state("h1")
-        assert not cpgm.model.is_valid_hidden_state("invalid")
-        assert not cpgm.model.is_valid_hidden_state("")
 
     def test_same_seed_same_sequence(self):
         chmm = tc.create_chmm1_oracle()

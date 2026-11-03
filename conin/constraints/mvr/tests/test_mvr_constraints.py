@@ -53,13 +53,13 @@ skipif_no_greenery = pytest.mark.skipif(
 # ---------------------------------------------------------------------
 
 
-def make_hmm(hidden_states=ALPHABET, observed_states=("o1", "o2")):
+def make_hmm(hidden_states=ALPHABET, observable_states=("o1", "o2")):
     """Build a uniform HMM; only its labels matter to these tests."""
     hidden_states = list(hidden_states)
-    observed_states = list(observed_states)
+    observable_states = list(observable_states)
 
     num_hidden = len(hidden_states)
-    num_observed = len(observed_states)
+    num_observed = len(observable_states)
 
     hmm = HiddenMarkovModel(
         start_probs={h: 1.0 / num_hidden for h in hidden_states},
@@ -67,7 +67,7 @@ def make_hmm(hidden_states=ALPHABET, observed_states=("o1", "o2")):
             (h1, h2): 1.0 / num_hidden for h1 in hidden_states for h2 in hidden_states
         },
         emission_probs={
-            (h, o): 1.0 / num_observed for h in hidden_states for o in observed_states
+            (h, o): 1.0 / num_observed for h in hidden_states for o in observable_states
         },
     )
 

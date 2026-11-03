@@ -73,7 +73,7 @@ def brute_force_posteriors(hmm, mvrs, observed, T):
 def brute_force_counts(hmm, mvrs, observations, horizons):
     """Pooled expected sufficient statistics, straight from the enumeration."""
     K = hmm.num_hidden_states
-    num_observed = hmm.num_observed_states
+    num_observed = hmm.num_observable_states
 
     init_counts = np.zeros(K)
     trans_counts = np.zeros((K, K))
@@ -89,7 +89,7 @@ def brute_force_counts(hmm, mvrs, observations, horizons):
 
         for t, o in as_obs_map(observed).items():
             emit_counts[
-                :, hmm.representation("matvec").observed_to_internal[o]
+                :, hmm.representation("matvec").observable_to_internal[o]
             ] += gamma[t]
 
     return init_counts, trans_counts, emit_counts, total_loglik
@@ -117,7 +117,7 @@ def assert_matches_brute_force(hmm, mvrs, observed, T=None):
 def hmm():
     return make_random_hmm(
         hidden_states=["A", "B", "C"],
-        observed_states=["o0", "o1"],
+        observable_states=["o0", "o1"],
         seed=7,
     )
 
@@ -146,13 +146,13 @@ def test_forward_backward_random_instances(seed):
     rng = np.random.default_rng(seed)
 
     hidden_states = ["A", "B", "C"]
-    observed_states = ["o0", "o1"]
+    observable_states = ["o0", "o1"]
 
     model_hmm = make_random_hmm(
-        hidden_states=hidden_states, observed_states=observed_states, seed=seed
+        hidden_states=hidden_states, observable_states=observable_states, seed=seed
     )
     T = int(rng.integers(2, 7))
-    observed = [observed_states[i] for i in rng.integers(0, 2, size=T)]
+    observed = [observable_states[i] for i in rng.integers(0, 2, size=T)]
 
     mvrs = []
 
@@ -228,11 +228,14 @@ def test_forward_backward_raises_on_infeasible_constraints(hmm, observed):
 # ===========================
 
 
-def make_batch(observed_states, *, count, length, seed):
+def make_batch(observable_states, *, count, length, seed):
     rng = np.random.default_rng(seed)
 
     return [
-        [observed_states[i] for i in rng.integers(0, len(observed_states), size=length)]
+        [
+            observable_states[i]
+            for i in rng.integers(0, len(observable_states), size=length)
+        ]
         for _ in range(count)
     ]
 
@@ -295,10 +298,10 @@ def test_em_keeps_rows_that_collect_no_mass(hmm, observed):
 @pytest.mark.parametrize("seed", range(3))
 def test_em_log_likelihood_is_monotone(seed):
     hidden_states = ["A", "B", "C"]
-    observed_states = ["o0", "o1"]
+    observable_states = ["o0", "o1"]
 
     start_hmm = make_random_hmm(
-        hidden_states=hidden_states, observed_states=observed_states, seed=seed
+        hidden_states=hidden_states, observable_states=observable_states, seed=seed
     )
     mvrs = [
         make_forbid_mvr(
@@ -308,7 +311,7 @@ def test_em_log_likelihood_is_monotone(seed):
     ]
     model = ConstrainedHiddenMarkovModel(start_hmm, mvrs)
 
-    observations = make_batch(observed_states, count=4, length=6, seed=seed)
+    observations = make_batch(observable_states, count=4, length=6, seed=seed)
 
     _, history = baum_welch_mvr_chmm(model, observations, max_iter=25, tol=0.0)
 
@@ -319,10 +322,10 @@ def test_em_log_likelihood_is_monotone(seed):
 
 def test_em_handles_mixed_lengths_and_observation_forms():
     hidden_states = ["A", "B", "C"]
-    observed_states = ["o0", "o1"]
+    observable_states = ["o0", "o1"]
 
     start_hmm = make_random_hmm(
-        hidden_states=hidden_states, observed_states=observed_states, seed=5
+        hidden_states=hidden_states, observable_states=observable_states, seed=5
     )
     mvr = make_forbid_mvr(
         hidden_states=hidden_states, forbidden_state="A", time_range=[0, 2]
@@ -368,11 +371,11 @@ def test_em_write_back_preserves_indexing_and_rebuilds_repn(hmm, observed):
         == hmm.representation("matvec").hidden_to_internal
     )
     assert (
-        fitted.representation("matvec").observed_to_internal
-        == hmm.representation("matvec").observed_to_internal
+        fitted.representation("matvec").observable_to_internal
+        == hmm.representation("matvec").observable_to_internal
     )
     assert fitted.hidden_states == hmm.hidden_states
-    assert fitted.observed_states == hmm.observed_states
+    assert fitted.observable_states == hmm.observable_states
 
     # Stale arrays would leave inference running on the pre-fit parameters.
     # Row sums are not checked: the HiddenMarkovModel constructor validates them.
@@ -444,7 +447,7 @@ def test_em_updates_only_the_requested_blocks(hmm, observed, block, attribute):
 # ===========================
 
 
-def make_sparse_hmm(hidden_states, observed_states):
+def make_sparse_hmm(hidden_states, observable_states):
     """A model with a forbidden transition and a state that emits one symbol."""
     transition = {
         (h1, h2): (0.0 if (h1, h2) == ("A", "C") else 0.5)
@@ -457,9 +460,9 @@ def make_sparse_hmm(hidden_states, observed_states):
             transition[h1, h2] /= total
 
     emission = {
-        (h, o): (1.0 if o == observed_states[0] else 0.0) if h == "C" else 0.5
+        (h, o): (1.0 if o == observable_states[0] else 0.0) if h == "C" else 0.5
         for h in hidden_states
-        for o in observed_states
+        for o in observable_states
     }
 
     hmm = HiddenMarkovModel(
@@ -473,13 +476,13 @@ def make_sparse_hmm(hidden_states, observed_states):
 
 def test_em_preserves_structural_zeros_and_warns():
     hidden_states = ["A", "B", "C"]
-    observed_states = ["o0", "o1"]
+    observable_states = ["o0", "o1"]
 
-    sparse = make_sparse_hmm(hidden_states, observed_states)
+    sparse = make_sparse_hmm(hidden_states, observable_states)
     mvr = make_forbid_mvr(hidden_states=hidden_states, forbidden_state="A")
     model = ConstrainedHiddenMarkovModel(sparse, mvr)
 
-    observations = make_batch(observed_states, count=3, length=5, seed=2)
+    observations = make_batch(observable_states, count=3, length=5, seed=2)
 
     with pytest.warns(UserWarning, match="zero-probability entries"):
         fitted, _ = baum_welch_mvr_chmm(model, observations, max_iter=15, tol=0.0)

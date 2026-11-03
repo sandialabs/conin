@@ -70,7 +70,7 @@ def _total_weights(model, stop=None):
     if isinstance(base, HiddenMarkovModel):
         T = stop + 1
         for hidden in itertools.product(base.hidden_states, repeat=T):
-            for observed in itertools.product(base.observed_states, repeat=T):
+            for observed in itertools.product(base.observable_states, repeat=T):
                 lp = log_potential(model, list(hidden), observed=list(observed))
                 a = {("H", t): hidden[t] for t in range(T)}
                 a.update({("E", t): observed[t] for t in range(T)})
@@ -372,7 +372,7 @@ def test_long_hmm_sequences_do_not_underflow():
     hmm = _hmm()
     rng = random.Random(0)
     hidden = [rng.choice(hmm.hidden_states) for _ in range(600)]
-    observed = [rng.choice(hmm.observed_states) for _ in range(600)]
+    observed = [rng.choice(hmm.observable_states) for _ in range(600)]
     expected = log_probability(hmm, hidden, observed=observed)
     assert expected < math.log(1e-308)
     assignment = {("H", t): h for t, h in enumerate(hidden)}
