@@ -5,7 +5,9 @@ A representation is what a backend needs to answer queries on a
 ``(model, constraints)`` pair: an integer program, a cost function network,
 factor tables, aligned MVRs, the HMM parameters as arrays, and so on.
 ``cmodel.representation(kind, **structure_params)`` builds one; every call
-builds a new object. Structure parameters (such as ``start`` and ``stop`` for
+builds a new object. An unconstrained model has the same method:
+``model.representation(kind)`` wraps the model in its constrained model class
+without constraints, e.g. ``hmm.representation("matvec")``. Structure parameters (such as ``start`` and ``stop`` for
 DBNs and HMMs) are build arguments, while per-query inputs (evidence, solver
 options) are passed to the representation's ``create_model()`` or to the
 algorithm, so one representation can serve several queries.
@@ -56,9 +58,8 @@ a family is accepted for a model type if some builder is registered for it.
 
 .. doctest:: representations
 
-   >>> from conin.constrained_models import ConstrainedHiddenMarkovModel
    >>> from conin.examples.hidden_markov_model import create_hmm1
-   >>> repn = ConstrainedHiddenMarkovModel(create_hmm1()).representation("matvec")
+   >>> repn = create_hmm1().representation("matvec")
    >>> repn.num_hidden_states, repn.transition_mat.shape
    (2, (2, 2))
    >>> repn.transition_mat.flags.writeable

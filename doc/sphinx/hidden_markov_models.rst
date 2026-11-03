@@ -129,7 +129,9 @@ HMM unrolled over ``start..stop``, every backend (and ``is_feasible``) sets
 also set ``data.variables`` and ``data.evidence``, and the network-flow
 formulation puts its index sets in ``data.hmm``.
 
-Backend representations are built by ``representation(kind)``; each call
+Backend representations are built by ``representation(kind)``, on a
+constrained HMM or on a bare one (``hmm.representation("matvec")`` is
+``ConstrainedHiddenMarkovModel(hmm).representation("matvec")``); each call
 builds a new one. HMMs register these kinds: ``"matvec"`` (the HMM
 parameters as read-only NumPy arrays on internal indices, with their logarithms;
 no constraints only; used by Viterbi, A*, sampling and the torch MVR kernels),

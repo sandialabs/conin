@@ -16,7 +16,14 @@ from conin.constrained_models import (
 )
 from conin.constraints import OracleConstraint
 from conin.exceptions import InvalidInputError
-from conin.graphical_models import DiscreteFactor, DiscreteMarkovNetwork
+from conin.constrained_models.normalise import as_constrained_model
+from conin.graphical_models import (
+    DiscreteFactor,
+    DiscreteMarkovNetwork,
+    GraphicalModel,
+    HiddenMarkovModel,
+)
+from conin.graphical_models import base as gm_base
 from conin.representations import (
     Representation,
     register_representation,
@@ -50,6 +57,7 @@ class _Counting(Representation):
 
     def __init__(self, cmodel, **params):
         type(self).builds += 1
+        self.cmodel = cmodel
         self.params = params
         self.payload = {"values": [1, 2, 3]}
 
@@ -285,6 +293,106 @@ def test_unsupported_kind_lists_options(counting_kind):
     msg = str(exc.value)
     assert "'toulbar2'" in msg
     assert "('_test_counting', None)" in msg and "('_test_counting', 'pyomo')" in msg
+
+
+# --- representations of bare models -------------------------------------------
+
+
+def test_bare_model_representation_wraps_without_constraints(counting_kind):
+    mn = _mn()
+    repn = mn.representation(counting_kind, T=3)
+    assert _Counting.builds == 1
+    assert type(repn.cmodel) is ConstrainedDiscreteMarkovNetwork
+    assert repn.cmodel.model is mn and repn.cmodel.constraints == ()
+    assert repn.params == {"T": 3}
+    assert mn.representation(counting_kind) is not repn
+
+
+def test_bare_hmm_matvec_matches_the_constrained_one():
+    hmm = tc.create_hmm1()
+    bare = hmm.representation("matvec")
+    wrapped = ConstrainedHiddenMarkovModel(hmm).representation("matvec")
+    assert bare.model is hmm
+    for name in bare._ARRAYS:
+        assert (getattr(bare, name) == getattr(wrapped, name)).all()
+
+
+def test_bare_model_unsupported_kind_lists_options():
+    with pytest.raises(InvalidInputError, match="No 'matvec' representation"):
+        _mn().representation("matvec")
+
+
+def test_constrained_classes_are_registered_by_model_type():
+    assert gm_base.constrained_classes() == [
+        ConstrainedDiscreteMarkovNetwork,
+        ConstrainedDiscreteBayesianNetwork,
+        ConstrainedDynamicDiscreteBayesianNetwork,
+        ConstrainedHiddenMarkovModel,
+    ]
+    for cls in gm_base.constrained_classes():
+        assert gm_base.constrained_class(cls.model_type) is cls
+
+
+class _SubHMM(HiddenMarkovModel):
+    pass
+
+
+def test_model_subclass_uses_the_constrained_class_of_its_base():
+    hmm = tc.create_hmm1()
+    sub = _SubHMM(
+        start_probs=hmm.get_start_probs(),
+        transition_probs=hmm.get_transition_probs(),
+        emission_probs=hmm.get_emission_probs(),
+    )
+    assert gm_base.constrained_class(_SubHMM) is ConstrainedHiddenMarkovModel
+    assert type(as_constrained_model(sub)) is ConstrainedHiddenMarkovModel
+    assert sub.representation("matvec").model is sub
+
+
+class _Unregistered(GraphicalModel):
+    pass
+
+
+def test_unregistered_model_class_raises_type_error():
+    assert gm_base.constrained_class(_Unregistered) is None
+    with pytest.raises(TypeError, match="No constrained model class .* _Unregistered"):
+        _Unregistered().representation("matvec")
+    with pytest.raises(TypeError, match="Unsupported model type"):
+        as_constrained_model(_Unregistered())
+
+
+def test_constrained_subclass_without_model_type_is_not_registered():
+    class _Sub(ConstrainedHiddenMarkovModel):
+        pass
+
+    assert gm_base.constrained_class(HiddenMarkovModel) is ConstrainedHiddenMarkovModel
+    assert type(_Sub(tc.create_hmm1())) is _Sub
+
+
+def test_second_constrained_class_for_a_model_type_is_rejected():
+    with pytest.raises(TypeError, match="ConstrainedHiddenMarkovModel is already"):
+
+        class _Other(ConstrainedGraphicalModel):
+            model_type = HiddenMarkovModel
+
+    assert gm_base.constrained_class(HiddenMarkovModel) is ConstrainedHiddenMarkovModel
+
+
+def test_new_model_type_gets_representations():
+    class _Model(GraphicalModel):
+        pass
+
+    try:
+
+        class _Constrained(ConstrainedGraphicalModel):
+            model_type = _Model
+
+        assert gm_base.constrained_class(_Model) is _Constrained
+        assert type(as_constrained_model(_Model())) is _Constrained
+        with pytest.raises(InvalidInputError, match="Supported .* none"):
+            _Model().representation("matvec")
+    finally:
+        gm_base._CONSTRAINED_CLASSES.pop(_Model, None)
 
 
 def test_supported_representations_hmm():

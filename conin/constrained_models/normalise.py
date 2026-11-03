@@ -5,18 +5,9 @@ Internal: the query entry points (e.g. ``map_query``) call
 model (a bare model is wrapped with no constraints).
 """
 
-from .base import ConstrainedGraphicalModel
-from .bayesian_network import ConstrainedDiscreteBayesianNetwork
-from .dynamic_bayesian_network import ConstrainedDynamicDiscreteBayesianNetwork
-from .hidden_markov_model import ConstrainedHiddenMarkovModel
-from .markov_network import ConstrainedDiscreteMarkovNetwork
+from conin.graphical_models.base import constrained_class, constrained_classes
 
-CONSTRAINED_CLASSES = (
-    ConstrainedDiscreteMarkovNetwork,
-    ConstrainedDiscreteBayesianNetwork,
-    ConstrainedDynamicDiscreteBayesianNetwork,
-    ConstrainedHiddenMarkovModel,
-)
+from .base import ConstrainedGraphicalModel
 
 
 def pgmpy_hint(model):
@@ -42,11 +33,11 @@ def as_constrained_model(pgm):
     """
     if isinstance(pgm, ConstrainedGraphicalModel):
         return pgm
-    for cls in CONSTRAINED_CLASSES:
-        if isinstance(pgm, cls.model_type):
-            return cls(pgm)
+    cls = constrained_class(type(pgm))
+    if cls is not None:
+        return cls(pgm)
     expected = []
-    for cls in CONSTRAINED_CLASSES:
+    for cls in constrained_classes():
         expected += [cls.model_type.__name__, cls.__name__]
     raise TypeError(
         f"Unsupported model type: {type(pgm)}. Expected one of: "

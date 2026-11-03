@@ -264,6 +264,15 @@ Representations (new)
   with the same message for every backend.
 - Smoek constraints without the smoek package raise ImportError for every
   backend (the pyomo and toulbar2 translators raised TypeError).
+- Unconstrained models have representation(kind, **structure_params) too:
+  model.representation(kind) is the representation of the model without
+  constraints, e.g. hmm.representation("matvec") instead of
+  ConstrainedHiddenMarkovModel(hmm).representation("matvec").
+- Each Constrained* class registers itself, when it is defined, as the
+  constrained class of its model_type (a subclass of a model class uses its
+  base class's). map_query and the other queries wrap bare models with this
+  registry; a second constrained class for the same model_type raises
+  TypeError.
 
 Inference
 
