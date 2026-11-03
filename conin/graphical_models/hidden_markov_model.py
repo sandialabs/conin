@@ -1,7 +1,5 @@
 import numpy as np
 import pprint
-import json
-import ast
 
 from conin.exceptions import InvalidInputError
 from conin.util import Util, as_rng
@@ -264,60 +262,6 @@ class HiddenMarkovModel(GraphicalModel):
             emission_probs=Util.normalize_2d_dictionary(floored(self._emission_probs)),
             hidden_states=self._hidden_states,
             observable_states=self._observable_states,
-        )
-
-    def write_to_file(self, file_name):
-        """Write the model parameters to a JSON file.
-
-        Parameters
-        ----------
-        file_name : str or path-like
-            Destination file path.
-        """
-        # Convert tuples to strings for JSON serialization
-        data = {
-            "start_probs": dict(self._start_probs),
-            "transition_probs": {str(k): v for k, v in self._transition_probs.items()},
-            "emission_probs": {str(k): v for k, v in self._emission_probs.items()},
-        }
-
-        with open(file_name, "w") as json_file:
-            json.dump(data, json_file, indent=4)
-
-    @classmethod
-    def read_from_file(cls, file_name):
-        """Build a new model from parameters stored in a JSON file.
-
-        Parameters
-        ----------
-        file_name : str or path-like
-            Source file path.
-
-        Returns
-        -------
-        HiddenMarkovModel
-            A new model built from the file's parameters.
-        """
-
-        # Read the data from the JSON file
-        with open(file_name, "r") as json_file:
-            data = json.load(json_file)
-
-        # Convert string keys back to tuples
-        transition_probs = {
-            ast.literal_eval(k): v for k, v in data["transition_probs"].items()
-        }
-        emission_probs = {
-            ast.literal_eval(k): v for k, v in data["emission_probs"].items()
-        }
-
-        # Extract start probabilities
-        start_probs = data["start_probs"]
-
-        return cls(
-            start_probs=start_probs,
-            transition_probs=transition_probs,
-            emission_probs=emission_probs,
         )
 
 

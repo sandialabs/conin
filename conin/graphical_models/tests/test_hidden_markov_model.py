@@ -220,26 +220,6 @@ class Test_HMM1:
             ("h1", "o1"): 0.6,
         }
 
-    def test_read_and_write(self, tmp_path):
-        hmm = tc.create_hmm1()
-        hmm.write_to_file(tmp_path / "temp.txt")
-        _hmm = HiddenMarkovModel.read_from_file(tmp_path / "temp.txt")
-        assert _hmm.start_probs == {"h0": 0.4, "h1": 0.6}
-        assert _hmm.transition_probs == {
-            ("h0", "h0"): 0.9,
-            ("h0", "h1"): 0.1,
-            ("h1", "h0"): 0.2,
-            ("h1", "h1"): 0.8,
-        }
-        assert _hmm.emission_probs == {
-            ("h0", "o0"): 0.7,
-            ("h0", "o1"): 0.3,
-            ("h1", "o0"): 0.4,
-            ("h1", "o1"): 0.6,
-        }
-
-
-class Test_HMM_Util:
     def test_random_hmm(self):
         hidden_states = {1, 2, 3, 4}
         observable_states = ["a", "b", "c"]
@@ -470,6 +450,8 @@ class Test_HMM_Constructor:
             "is_valid_observed_state",
             "to_dict",
             "log_probability",
+            "write_to_file",
+            "read_from_file",
             "observed_states",
             "num_observed_states",
         ],

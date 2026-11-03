@@ -7,6 +7,7 @@ import pytest
 
 from conin.io import load_model, load_cfn
 from conin.graphical_models import DiscreteMarkovNetwork
+from conin.exceptions import InvalidInputError, ModelFileError
 
 
 def factor_values(pgm):
@@ -37,19 +38,19 @@ KNAPSACK = cfn(
 
 @pytest.mark.parametrize("cost_scale", [0, -1.0])
 def test_non_positive_cost_scale(cost_scale):
-    with pytest.raises(ValueError, match="cost_scale must be positive"):
+    with pytest.raises(InvalidInputError, match="cost_scale must be positive"):
         load_cfn(string=cfn(), cost_scale=cost_scale)
 
 
 def test_missing_cfn_file(tmp_path):
     name = str(tmp_path / "missing.cfn")
-    with pytest.raises(RuntimeError, match="Cannot read missing CFN file"):
+    with pytest.raises(FileNotFoundError, match="Cannot read missing CFN file"):
         load_cfn(filename=name)
 
 
 @pytest.mark.parametrize("filename", [None, ""])
 def test_neither_filename_nor_string(filename):
-    with pytest.raises(ValueError, match="Either a filename or a string"):
+    with pytest.raises(InvalidInputError, match="Either a filename or a string"):
         load_cfn(filename=filename)
 
 
@@ -73,12 +74,12 @@ def test_load_model_unknown_gz_suffix(tmp_path):
     name = tmp_path / "model.txt.gz"
     with gzip.open(name, "wt") as OUTPUT:
         OUTPUT.write(cfn())
-    with pytest.raises(RuntimeError, match="unexpected file.*model.txt.gz"):
+    with pytest.raises(InvalidInputError, match="model.txt.gz: unknown file suffix"):
         load_model(str(name))
 
 
 def test_load_model_missing_cfn_file(tmp_path):
-    with pytest.raises(RuntimeError, match="Missing file.*missing.cfn"):
+    with pytest.raises(FileNotFoundError, match="Missing file.*missing.cfn"):
         load_model(str(tmp_path / "missing.cfn"))
 
 
@@ -88,32 +89,32 @@ def test_load_model_missing_cfn_file(tmp_path):
 
 
 def test_unterminated_string():
-    with pytest.raises(ValueError, match="Unterminated string"):
+    with pytest.raises(ModelFileError, match="Unterminated string"):
         load_cfn(string='{"variables":{"x:2}}')
 
 
 @pytest.mark.parametrize("text", ["", "# only a comment\n", '{"variables":{"x":2}'])
 def test_unexpected_end(text):
-    with pytest.raises(ValueError, match="Unexpected end of CFN file"):
+    with pytest.raises(ModelFileError, match="Unexpected end of CFN file"):
         load_cfn(string=text)
 
 
 @pytest.mark.parametrize("key", ["{", "[", "]"])
 def test_unexpected_token_as_object_key(key):
     text = '{"variables":{%s "x":2}}' % key
-    with pytest.raises(ValueError, match="Unexpected token .* in CFN object"):
+    with pytest.raises(ModelFileError, match="Unexpected token .* in CFN object"):
         load_cfn(string=text)
 
 
 @pytest.mark.parametrize("text", ["]", "}", '{"variables" ]}', "[1 }]"])
 def test_unexpected_closing_token(text):
-    with pytest.raises(ValueError, match="Unexpected token .* in CFN file"):
+    with pytest.raises(ModelFileError, match="Unexpected token .* in CFN file"):
         load_cfn(string=text)
 
 
 @pytest.mark.parametrize("text", ["[1, 2]", "[[1]]", "42", "name"])
 def test_missing_top_level_object(text):
-    with pytest.raises(ValueError, match="must contain a top-level object"):
+    with pytest.raises(ModelFileError, match="must contain a top-level object"):
         load_cfn(string=text)
 
 
@@ -165,7 +166,7 @@ def test_bad_mustbe(mustbe):
         '{"problem":{"name":"p","mustbe":"%s"},"variables":{"x":2},'
         '"functions":{"f":{"scope":["x"],"costs":[0,1]}}}' % mustbe
     )
-    with pytest.raises(ValueError, match="Unexpected CFN 'mustbe' value"):
+    with pytest.raises(ModelFileError, match="Unexpected CFN 'mustbe' value"):
         load_cfn(string=text)
 
 
@@ -176,30 +177,32 @@ def test_bad_mustbe(mustbe):
 
 @pytest.mark.parametrize("variables", ["5", "[1, 2]", "[[1]]"])
 def test_variables_not_an_object(variables):
-    with pytest.raises(ValueError, match="'variables' entry must be an object"):
+    with pytest.raises(ModelFileError, match="'variables' entry must be an object"):
         load_cfn(string=cfn(variables=variables))
 
 
 def test_duplicate_variable():
-    with pytest.raises(ValueError, match="Duplicate CFN variable: x"):
+    with pytest.raises(ModelFileError, match="Duplicate CFN variable: x"):
         load_cfn(string=cfn(variables='{"x":2, "x":3}'))
 
 
 @pytest.mark.parametrize("size", [0, -2])
 def test_non_positive_domain_size(size):
-    with pytest.raises(ValueError, match="Variable x must have a positive domain size"):
+    with pytest.raises(
+        ModelFileError, match="Variable x must have a positive domain size"
+    ):
         load_cfn(string=cfn(variables='{"x":%d}' % size))
 
 
 @pytest.mark.parametrize("domain", ['["a","b","a"]', "[1, 1]", "[a a]"])
 def test_duplicate_value_names(domain):
-    with pytest.raises(ValueError, match="Variable x has duplicate value names"):
+    with pytest.raises(ModelFileError, match="Variable x has duplicate value names"):
         load_cfn(string=cfn(variables='{"x":%s}' % domain))
 
 
 @pytest.mark.parametrize("domain", ["2.5", "[]", '"two"'])
 def test_bad_domain_type(domain):
-    with pytest.raises(ValueError, match="Unexpected domain for CFN variable x"):
+    with pytest.raises(ModelFileError, match="Unexpected domain for CFN variable x"):
         load_cfn(string=cfn(variables='{"x":%s}' % domain))
 
 
@@ -215,7 +218,7 @@ def test_numeric_value_names():
     assert pgm.states == {"x": [10, 20]}
     assert factor_values(pgm)["x",] == {10: 1.0, 20: pytest.approx(math.exp(-2))}
 
-    with pytest.raises(ValueError, match="Invalid value 10 for CFN variable x"):
+    with pytest.raises(ModelFileError, match="Invalid value 10 for CFN variable x"):
         load_cfn(
             string=cfn(
                 variables='{"x":[10, 20]}',
@@ -231,7 +234,9 @@ def test_numeric_value_names():
 
 @pytest.mark.parametrize("functions", ["5", '"f"'])
 def test_functions_not_object_or_list(functions):
-    with pytest.raises(ValueError, match="'functions' entry must be an object or list"):
+    with pytest.raises(
+        ModelFileError, match="'functions' entry must be an object or list"
+    ):
         load_cfn(string=cfn(functions=functions))
 
 
@@ -245,27 +250,27 @@ def test_functions_not_object_or_list(functions):
     ],
 )
 def test_function_not_an_object(functions, fname):
-    with pytest.raises(ValueError, match=f"CFN function {fname} must be an object"):
+    with pytest.raises(ModelFileError, match=f"CFN function {fname} must be an object"):
         load_cfn(string=cfn(functions=functions))
 
 
 @pytest.mark.parametrize("index", [2, -1])
 def test_invalid_variable_index_in_scope(index):
     functions = '{"f":{"scope":[%d],"costs":[0,1]}}' % index
-    with pytest.raises(ValueError, match=f"Invalid variable index {index} in CFN"):
+    with pytest.raises(ModelFileError, match=f"Invalid variable index {index} in CFN"):
         load_cfn(string=cfn(variables='{"x":2,"y":2}', functions=functions))
 
 
 def test_unknown_variable_name_in_scope():
     functions = '{"g":{"scope":["x","nope"],"costs":[0,1,2,3]}}'
-    with pytest.raises(ValueError, match="Unknown variable nope in CFN function g"):
+    with pytest.raises(ModelFileError, match="Unknown variable nope in CFN function g"):
         load_cfn(string=cfn(functions=functions))
 
 
 @pytest.mark.parametrize("scope", ['["x","x"]', '["x",0]'])
 def test_repeated_variable_in_scope(scope):
     functions = '{"f":{"scope":%s,"costs":[0,1,2,3]}}' % scope
-    with pytest.raises(ValueError, match="CFN function f has a repeated variable"):
+    with pytest.raises(ModelFileError, match="CFN function f has a repeated variable"):
         load_cfn(string=cfn(functions=functions))
 
 
@@ -285,7 +290,7 @@ def test_cost_function_not_a_table(fdef):
 
 def test_full_table_size_mismatch_message():
     functions = '{"f":{"scope":["x","y"],"costs":[0,1,2]}}'
-    with pytest.raises(ValueError, match="has 3 costs but 6 were expected"):
+    with pytest.raises(ModelFileError, match="has 3 costs but 6 were expected"):
         load_cfn(string=cfn(variables='{"x":2,"y":3}', functions=functions))
 
 
@@ -298,20 +303,22 @@ def test_full_table_size_mismatch_message():
     ],
 )
 def test_non_numeric_costs(fdef):
-    with pytest.raises(ValueError, match="could not convert string to float"):
+    with pytest.raises(ModelFileError, match="could not convert string to float"):
         load_cfn(string=cfn(functions='{"f":%s}' % fdef))
 
 
 def test_sparse_costs_not_a_multiple_of_width():
     functions = '{"f":{"scope":["x","y"],"defaultcost":0,"costs":[0,1,5,1]}}'
-    with pytest.raises(ValueError, match="not a multiple of 3"):
+    with pytest.raises(ModelFileError, match="not a multiple of 3"):
         load_cfn(string=cfn(variables='{"x":2,"y":2}', functions=functions))
 
 
 @pytest.mark.parametrize("value", ["2", "-1", "1.0"])
 def test_invalid_value_index_in_sparse_costs(value):
     functions = '{"f":{"scope":["x"],"defaultcost":0,"costs":[%s,1]}}' % value
-    with pytest.raises(ValueError, match=f"Invalid value {value} for CFN variable x"):
+    with pytest.raises(
+        ModelFileError, match=f"Invalid value {value} for CFN variable x"
+    ):
         load_cfn(string=cfn(functions=functions))
 
 
@@ -393,13 +400,13 @@ def test_duplicate_function_names_are_kept():
 
 @pytest.mark.parametrize("params", ["5", "[1, 2]", '"capacity"'])
 def test_knapsack_params_not_an_object(params):
-    with pytest.raises(ValueError, match="must define 'params' as an object"):
+    with pytest.raises(ModelFileError, match="must define 'params' as an object"):
         load_cfn(string=KNAPSACKV % params)
 
 
 def test_knapsack_missing_params():
     text = cfn(functions='{"k":{"scope":["x"],"type":"knapsack"}}')
-    with pytest.raises(ValueError, match="must define 'params' as an object"):
+    with pytest.raises(ModelFileError, match="must define 'params' as an object"):
         load_cfn(string=text)
 
 
@@ -420,20 +427,20 @@ def test_knapsack_unexpected_parameters(template, params):
 @pytest.mark.parametrize("capacity", ['"a"', "[1]", "big"])
 def test_knapsack_non_numeric_capacity(capacity):
     params = '{"capacity":%s,"weights":[1,1]}' % capacity
-    with pytest.raises(ValueError, match="Expected a number for capacity"):
+    with pytest.raises(ModelFileError, match="Expected a number for capacity"):
         load_cfn(string=KNAPSACK % params)
 
 
 @pytest.mark.parametrize("weights", ["[1]", "[1,2,3]", "2"])
 def test_knapsack_wrong_number_of_weights(weights):
     params = '{"capacity":1,"weights":%s}' % weights
-    with pytest.raises(ValueError, match="must have one weight per scope variable"):
+    with pytest.raises(ModelFileError, match="must have one weight per scope variable"):
         load_cfn(string=KNAPSACK % params)
 
 
 def test_knapsack_non_numeric_weight():
     params = '{"capacity":1,"weights":[1,"w"]}'
-    with pytest.raises(ValueError, match="Expected a number for weights"):
+    with pytest.raises(ModelFileError, match="Expected a number for weights"):
         load_cfn(string=KNAPSACK % params)
 
 
@@ -445,27 +452,27 @@ def test_knapsackv_weightedvalues_not_a_list(weightedvalues):
         pgm = load_cfn(string=KNAPSACKV % params)
         assert pgm.constraints[0].terms == []
         return
-    with pytest.raises(ValueError, match="must define 'weightedvalues'"):
+    with pytest.raises(ModelFileError, match="must define 'weightedvalues'"):
         load_cfn(string=KNAPSACKV % params)
 
 
 @pytest.mark.parametrize("entry", ['["x",1]', '["x",1,1,1]', "5", '"x"'])
 def test_knapsackv_invalid_weighted_value(entry):
     params = '{"capacity":1,"weightedvalues":[%s]}' % entry
-    with pytest.raises(ValueError, match="has an invalid weighted value"):
+    with pytest.raises(ModelFileError, match="has an invalid weighted value"):
         load_cfn(string=KNAPSACKV % params)
 
 
 @pytest.mark.parametrize("index", [2, -1])
 def test_knapsackv_invalid_variable_index(index):
     params = '{"capacity":1,"weightedvalues":[[%d,0,1]]}' % index
-    with pytest.raises(ValueError, match=f"Invalid variable index {index} in CFN"):
+    with pytest.raises(ModelFileError, match=f"Invalid variable index {index} in CFN"):
         load_cfn(string=KNAPSACKV % params)
 
 
 def test_knapsackv_unknown_variable():
     params = '{"capacity":1,"weightedvalues":[["z",0,1]]}'
-    with pytest.raises(ValueError, match="Unknown variable z in CFN function k"):
+    with pytest.raises(ModelFileError, match="Unknown variable z in CFN function k"):
         load_cfn(string=KNAPSACKV % params)
 
 
@@ -475,7 +482,7 @@ def test_knapsackv_unknown_variable():
 )
 def test_knapsackv_invalid_value(value, match):
     params = '{"capacity":1,"weightedvalues":[["x",%s,1]]}' % value
-    with pytest.raises(ValueError, match=match):
+    with pytest.raises(ModelFileError, match=match):
         load_cfn(string=KNAPSACKV % params)
 
 
@@ -485,7 +492,7 @@ def test_knapsackv_value_name_and_non_numeric_weight():
     assert con.terms == [("x", "b", 2)]
 
     params = '{"capacity":1,"weightedvalues":[["x","b","w"]]}'
-    with pytest.raises(ValueError, match="Expected a number for weight in"):
+    with pytest.raises(ModelFileError, match="Expected a number for weight in"):
         load_cfn(string=KNAPSACKV % params)
 
 
@@ -494,7 +501,7 @@ def test_knapsack_scope_errors():
         functions='{"k":{"scope":["x","x"],"type":"knapsack",'
         '"params":{"capacity":1,"weights":[1,1]}}}'
     )
-    with pytest.raises(ValueError, match="repeated variable"):
+    with pytest.raises(ModelFileError, match="repeated variable"):
         load_cfn(string=text)
 
 
@@ -515,14 +522,22 @@ def test_unsupported_global_type_message():
 def test_object_domain_is_rejected():
     # An object domain is parsed as a list of (key, value) pairs; it passed
     # _parse_variables and its pairs became states.
-    with pytest.raises(ValueError, match="Unexpected domain for CFN variable x"):
+    with pytest.raises(ModelFileError, match="Unexpected domain for CFN variable x"):
         load_cfn(string=cfn(variables='{"x":{"a":1}}'))
 
 
 def test_all_infinite_costs_raise():
     # A table whose costs are all infinite gave NaN factor values (inf - inf).
-    with pytest.raises(ValueError, match="CFN function f forbids every assignment"):
+    with pytest.raises(ModelFileError, match="CFN function f forbids every assignment"):
         load_cfn(
             string='{"variables":{"x":2},'
             '"functions":{"f":{"scope":["x"],"costs":[1e400,1e400]}}}'
         )
+
+
+def test_errors_escaping_the_parser_are_model_file_errors():
+    # A non-numeric cost gets past the parser's own checks; its float()
+    # failure is reported as a ModelFileError, not a bare ValueError.
+    text = cfn(functions='{"f":{"scope":["x"],"costs":[0,"a"]}}')
+    with pytest.raises(ModelFileError, match="Invalid CFN data: could not convert"):
+        load_cfn(string=text)

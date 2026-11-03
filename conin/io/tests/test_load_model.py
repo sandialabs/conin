@@ -5,6 +5,7 @@ import importlib
 from conin.util import try_import
 import conin.io
 from conin.io import load_model
+from conin.exceptions import InvalidInputError
 
 with try_import() as pgmpy_available:
     import pgmpy
@@ -26,17 +27,17 @@ cwd = os.path.dirname(__file__)
 
 
 def test_load_model_error1():
-    with pytest.raises(RuntimeError):
+    with pytest.raises(FileNotFoundError):
         load_model(os.path.join(cwd, "unknown.uai"))
 
 
 def test_load_model_error2():
-    with pytest.raises(RuntimeError):
+    with pytest.raises(InvalidInputError, match="unknown file suffix"):
         load_model(os.path.join(cwd, "test_load_model.py"))
 
 
 def test_load_model_error3():
-    with pytest.raises(RuntimeError):
+    with pytest.raises(InvalidInputError, match="Unexpected model type"):
         load_model(os.path.join(cwd, "asia.uai"), model_type="unknown")
 
 
@@ -65,7 +66,7 @@ def test_pgmpy_load_model_requires_pgmpy(monkeypatch):
 @pytest.mark.parametrize("model_type", ["conin", "pgmpy"])
 def test_load_model_missing_bif_file(tmp_path, model_type):
     # A missing file used to be looked up as a pgmpy example model by name.
-    with pytest.raises(RuntimeError, match="Missing file"):
+    with pytest.raises(FileNotFoundError, match="Missing file"):
         load_model(str(tmp_path / "missing.bif"), model_type=model_type)
 
 
@@ -230,7 +231,7 @@ def test_pgmpy_load_model_unknown_suffix_names_the_file(tmp_path):
     module = importlib.import_module("conin.io.pgmpy.files")
     name = tmp_path / "model.txt"
     name.write_text("")
-    with pytest.raises(RuntimeError, match="model.txt"):
+    with pytest.raises(InvalidInputError, match="model.txt"):
         module.load_model(str(name))
 
 

@@ -50,11 +50,16 @@ UAI Files
 ---------
 
 The ``conin.io`` namespace exposes a small unified I/O interface. For CONIN
-models, ``save_model`` currently writes UAI files and ``load_model`` reads
-``.uai``, ``.uai.gz``, ``.cfn`` and ``.cfn.gz`` files.
+models, ``save_model`` writes UAI files (and JSON files for hidden Markov
+models, see :doc:`hidden_markov_models`), and ``load_model`` reads ``.uai``,
+``.cfn`` and ``.json`` files, optionally gzipped (``.uai.gz``, ...).
 
-Hidden Markov models use their own JSON methods, ``write_to_file`` and
-``read_from_file``; see :doc:`hidden_markov_models` for an example.
+Errors follow one policy: a missing file raises ``FileNotFoundError``; a file
+whose content is malformed, or does not describe a valid model, raises
+``conin.exceptions.ModelFileError`` (an ``InvalidInputError`` and a
+``ValueError``); an unknown file suffix or ``model_type`` raises
+``InvalidInputError``; a model the format cannot hold raises ``TypeError``;
+and a format that needs pgmpy raises ``ImportError`` without it.
 
 .. testcode::
 

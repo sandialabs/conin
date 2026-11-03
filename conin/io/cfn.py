@@ -22,6 +22,7 @@ import warnings
 from conin.constraints import Toulbar2Constraint
 from conin.graphical_models import DiscreteFactor, DiscreteMarkovNetwork
 from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
+from conin.exceptions import InvalidInputError, ModelFileError
 
 _number_re = re.compile(r"^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$")
 
@@ -61,7 +62,7 @@ def _tokenize(text):
         elif c == '"':
             j = text.find('"', i + 1)
             if j < 0:
-                raise ValueError("Unterminated string in CFN file")
+                raise ModelFileError("Unterminated string in CFN file")
             yield _Name(text[i + 1 : j])
             i = j + 1
         else:
@@ -90,7 +91,7 @@ def _parse_value(tokens, token):
             if _is_punct(key, "}"):
                 return items
             if _is_punct(key, "{[]"):
-                raise ValueError(f"Unexpected token {key!r} in CFN object")
+                raise ModelFileError(f"Unexpected token {key!r} in CFN object")
             items.append((str(key), _parse_value(tokens, next(tokens))))
     if _is_punct(token, "["):
         items = []
@@ -100,7 +101,7 @@ def _parse_value(tokens, token):
                 return items
             items.append(_parse_value(tokens, t))
     if _is_punct(token, "}]"):
-        raise ValueError(f"Unexpected token {token!r} in CFN file")
+        raise ModelFileError(f"Unexpected token {token!r} in CFN file")
     return token
 
 
@@ -109,9 +110,9 @@ def _parse(text):
     try:
         value = _parse_value(tokens, next(tokens))
     except StopIteration:
-        raise ValueError("Unexpected end of CFN file") from None
+        raise ModelFileError("Unexpected end of CFN file") from None
     if not isinstance(value, list) or (value and not isinstance(value[0], tuple)):
-        raise ValueError("A CFN file must contain a top-level object")
+        raise ModelFileError("A CFN file must contain a top-level object")
     return value
 
 
@@ -147,32 +148,34 @@ def _parse_bound(mustbe):
     elif mustbe.startswith(">"):
         sign = -1
     else:
-        raise ValueError(f"Unexpected CFN 'mustbe' value: {mustbe!r}")
+        raise ModelFileError(f"Unexpected CFN 'mustbe' value: {mustbe!r}")
     rest = mustbe[1:].strip()
     if not _number_re.match(rest):
-        raise ValueError(f"Unexpected CFN 'mustbe' value: {mustbe!r}")
+        raise ModelFileError(f"Unexpected CFN 'mustbe' value: {mustbe!r}")
     return sign, (float(rest) if sign == 1 else None)
 
 
 def _parse_variables(variables):
     """Return an ordered dict mapping variable names to lists of state names."""
     if not _is_object(variables):
-        raise ValueError("The CFN 'variables' entry must be an object")
+        raise ModelFileError("The CFN 'variables' entry must be an object")
     states = {}
     for name, domain in variables:
         if name in states:
-            raise ValueError(f"Duplicate CFN variable: {name}")
+            raise ModelFileError(f"Duplicate CFN variable: {name}")
         if isinstance(domain, int):
             if domain <= 0:
-                raise ValueError(f"Variable {name} must have a positive domain size")
+                raise ModelFileError(
+                    f"Variable {name} must have a positive domain size"
+                )
             states[name] = list(range(domain))
         elif isinstance(domain, list) and len(domain) > 0 and not _is_object(domain):
             # (An object is parsed as a list of (key, value) pairs.)
             states[name] = [str(v) if isinstance(v, _Name) else v for v in domain]
             if len(set(states[name])) != len(states[name]):
-                raise ValueError(f"Variable {name} has duplicate value names")
+                raise ModelFileError(f"Variable {name} has duplicate value names")
         else:
-            raise ValueError(f"Unexpected domain for CFN variable {name}: {domain}")
+            raise ModelFileError(f"Unexpected domain for CFN variable {name}: {domain}")
     return states
 
 
@@ -182,12 +185,12 @@ def _value_index(states, var, value):
         try:
             return states[var].index(str(value))
         except ValueError:
-            raise ValueError(
+            raise ModelFileError(
                 f"Unknown value {value!r} for CFN variable {var}"
             ) from None
     if isinstance(value, int) and 0 <= value < len(states[var]):
         return value
-    raise ValueError(f"Invalid value {value!r} for CFN variable {var}")
+    raise ModelFileError(f"Invalid value {value!r} for CFN variable {var}")
 
 
 def _parse_scope(fname, fdef, states, varnames):
@@ -195,14 +198,18 @@ def _parse_scope(fname, fdef, states, varnames):
     for v in _get(fdef, "scope", []):
         if isinstance(v, int) and not isinstance(v, bool):
             if not 0 <= v < len(varnames):
-                raise ValueError(f"Invalid variable index {v} in CFN function {fname}")
+                raise ModelFileError(
+                    f"Invalid variable index {v} in CFN function {fname}"
+                )
             v = varnames[v]
         v = str(v)
         if v not in states:
-            raise ValueError(f"Unknown variable {v} in CFN function {fname}")
+            raise ModelFileError(f"Unknown variable {v} in CFN function {fname}")
         scope.append(v)
     if len(set(scope)) != len(scope):
-        raise ValueError(f"CFN function {fname} has a repeated variable in its scope")
+        raise ModelFileError(
+            f"CFN function {fname} has a repeated variable in its scope"
+        )
     return scope
 
 
@@ -226,7 +233,7 @@ def _parse_function(fname, fdef, states, varnames, sign):
     if default is None:
         # Full table in lexicographic order (the last variable changes fastest)
         if len(costs) != size:
-            raise ValueError(
+            raise ModelFileError(
                 f"CFN function {fname} has {len(costs)} costs but {size} were expected"
             )
         table = [float(c) for c in costs]
@@ -234,7 +241,7 @@ def _parse_function(fname, fdef, states, varnames, sign):
         # Sparse table: a list of tuples (value_1, ..., value_k, cost)
         width = len(scope) + 1
         if len(costs) % width != 0:
-            raise ValueError(
+            raise ModelFileError(
                 f"CFN function {fname} has a sparse cost list whose length is "
                 f"not a multiple of {width}"
             )
@@ -257,7 +264,7 @@ _SUPPORTED_GLOBAL_TYPES = ("knapsack", "knapsackv")
 
 def _number(value, what, fname):
     if isinstance(value, bool) or not isinstance(value, (int, float)):
-        raise ValueError(f"Expected a number for {what} in CFN function {fname}")
+        raise ModelFileError(f"Expected a number for {what} in CFN function {fname}")
     return value
 
 
@@ -274,7 +281,7 @@ def _parse_knapsack(fname, fdef, states, varnames):
     scope = _parse_scope(fname, fdef, states, varnames)
     params = _get(fdef, "params")
     if not _is_object(params):
-        raise ValueError(f"CFN function {fname} must define 'params' as an object")
+        raise ModelFileError(f"CFN function {fname} must define 'params' as an object")
 
     expected = (
         {"capacity", "weights"}
@@ -298,7 +305,7 @@ def _parse_knapsack(fname, fdef, states, varnames):
         # applies when the variable takes its second value (value index 1).
         weights = _get(params, "weights")
         if not isinstance(weights, list) or len(weights) != len(scope):
-            raise ValueError(
+            raise ModelFileError(
                 f"CFN function {fname} must have one weight per scope variable"
             )
         for var, weight in zip(scope, weights):
@@ -314,22 +321,22 @@ def _parse_knapsack(fname, fdef, states, varnames):
         # given by name or by their index in the problem's variable list.
         weightedvalues = _get(params, "weightedvalues")
         if not isinstance(weightedvalues, list):
-            raise ValueError(f"CFN function {fname} must define 'weightedvalues'")
+            raise ModelFileError(f"CFN function {fname} must define 'weightedvalues'")
         for entry in weightedvalues:
             if not isinstance(entry, list) or len(entry) != 3:
-                raise ValueError(
+                raise ModelFileError(
                     f"CFN function {fname} has an invalid weighted value: {entry}"
                 )
             var, value, weight = entry
             if isinstance(var, int) and not isinstance(var, bool):
                 if not 0 <= var < len(varnames):
-                    raise ValueError(
+                    raise ModelFileError(
                         f"Invalid variable index {var} in CFN function {fname}"
                     )
                 var = varnames[var]
             var = str(var)
             if var not in states:
-                raise ValueError(f"Unknown variable {var} in CFN function {fname}")
+                raise ModelFileError(f"Unknown variable {var} in CFN function {fname}")
             index = _value_index(states, var, value)
             terms.append((var, states[var][index], _number(weight, "weight", fname)))
 
@@ -430,22 +437,38 @@ def load_cfn(filename=None, string=None, cost_scale=1.0):
 
     Raises
     ------
+    FileNotFoundError
+        If ``filename`` does not exist.
+    InvalidInputError
+        If ``cost_scale`` is not positive, or neither ``filename`` nor
+        ``string`` is given.
+    ModelFileError
+        If the CFN data is malformed or does not describe a valid model.
     NotImplementedError
         If the CFN contains global cost functions other than hard ``knapsack``
         and ``knapsackv`` functions, ``knapsack`` functions over non-Boolean
         variables, or cost functions that are not explicit tables.
     """
     if cost_scale <= 0:
-        raise ValueError(f"cost_scale must be positive: {cost_scale}")
+        raise InvalidInputError(f"cost_scale must be positive: {cost_scale}")
 
     if filename:
         if not os.path.exists(filename):
-            raise RuntimeError(f"Cannot read missing CFN file {filename}")
+            raise FileNotFoundError(f"Cannot read missing CFN file {filename}")
         with open(filename, "r") as INPUT:
             string = INPUT.read()
     if string is None:
-        raise ValueError("Either a filename or a string must be specified")
+        raise InvalidInputError("Either a filename or a string must be specified")
 
+    try:
+        return _load_cfn(string, cost_scale)
+    except ModelFileError:
+        raise
+    except (ValueError, IndexError, InvalidInputError) as e:
+        raise ModelFileError(f"Invalid CFN data: {e}") from e
+
+
+def _load_cfn(string, cost_scale):
     cfn = _parse(string)
 
     problem = _get(cfn, "problem", [])
@@ -461,13 +484,13 @@ def load_cfn(filename=None, string=None, cost_scale=1.0):
         # Toulbar2 also accepts a list of unnamed functions
         functions = [(f"F{i}", f) for i, f in enumerate(functions)]
     else:
-        raise ValueError("The CFN 'functions' entry must be an object or list")
+        raise ModelFileError("The CFN 'functions' entry must be an object or list")
 
     parsed = []
     constraints = []
     for fname, fdef in functions:
         if not _is_object(fdef):
-            raise ValueError(f"CFN function {fname} must be an object")
+            raise ModelFileError(f"CFN function {fname} must be an object")
         ftype = _get(fdef, "type")
         if ftype is None:
             parsed.append(
@@ -498,7 +521,7 @@ def load_cfn(filename=None, string=None, cost_scale=1.0):
         used.update(scope)
         fmin = min(table)
         if math.isinf(fmin):
-            raise ValueError(
+            raise ModelFileError(
                 f"CFN function {fname} forbids every assignment of its scope "
                 "(all its costs are infinite)"
             )

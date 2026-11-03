@@ -27,10 +27,10 @@ def test_convert_invalid_input():
     """Test error handling for invalid input types."""
     from conin.io.pgmpy import convert_conin_to_pgmpy_mn
 
-    with pytest.raises(ValueError, match="Expected conin DiscreteMarkovNetwork"):
+    with pytest.raises(TypeError, match="Expected conin DiscreteMarkovNetwork"):
         convert_conin_to_pgmpy_mn("not a model")
 
-    with pytest.raises(ValueError, match="Expected conin DiscreteMarkovNetwork"):
+    with pytest.raises(TypeError, match="Expected conin DiscreteMarkovNetwork"):
         convert_conin_to_pgmpy_mn(None)
 
 

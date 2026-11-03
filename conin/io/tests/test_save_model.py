@@ -6,6 +6,7 @@ from conin.util import try_import
 import conin.io
 from conin.io import save_model, load_model
 from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
+from conin.exceptions import InvalidInputError
 
 with try_import() as pgmpy_available:
     import pgmpy
@@ -98,12 +99,12 @@ def Xtest_save_model_error1():
 
 
 def test_save_model_error2(asia_uai):
-    with pytest.raises(RuntimeError):
+    with pytest.raises(InvalidInputError, match="Unknown format"):
         save_model(asia_uai, os.path.join(cwd, "test_save_model.py"))
 
 
 def test_save_model_error3(asia_uai):
-    with pytest.raises(RuntimeError):
+    with pytest.raises(InvalidInputError, match="Unexpected model type"):
         save_model(asia_uai, os.path.join(cwd, "asia.uai"), model_type="unknown")
 
 
@@ -254,7 +255,7 @@ def test_save_conin_bn_as_bif(cancer_bn_uai, tmp_path):
 def test_pgmpy_save_model_unknown_suffix_raises(tmp_path):
     # It used to return without writing anything.
     pgm = load_model(os.path.join(cwd, "asia.uai"), model_type="pgmpy")
-    with pytest.raises(RuntimeError, match="Unknown format.*model.txt"):
+    with pytest.raises(InvalidInputError, match="Unknown format.*model.txt"):
         save_model(pgm, str(tmp_path / "model.txt"), model_type="pgmpy")
 
 
@@ -289,7 +290,9 @@ def test_save_conin_mn_as_bif_is_converted_by_pgmpy(
 def test_save_conin_hmm_as_bif_raises(tmp_path):
     import conin.examples.hidden_markov_model as hex_
 
-    with pytest.raises(RuntimeError, match="Unexpected conin model type"):
+    with pytest.raises(
+        TypeError, match="Cannot save a conin model to BIF.*HiddenMarkovModel"
+    ):
         save_model(hex_.create_hmm1(), str(tmp_path / "hmm.bif"))
 
 
@@ -298,7 +301,7 @@ def test_save_conin_bif_without_pgmpy_raises(asia_uai, tmp_path, monkeypatch):
 
     save_module = importlib.import_module("conin.io.save")
     monkeypatch.setattr(save_module, "pgmpy_available", False)
-    with pytest.raises(RuntimeError, match="Unknown format.*asia.bif"):
+    with pytest.raises(ImportError, match="Saving a BIF file requires pgmpy"):
         save_model(asia_uai, str(tmp_path / "asia.bif"))
 
 
@@ -319,7 +322,7 @@ def test_pgmpy_save_model_without_readwrite_raises(tmp_path, monkeypatch, suffix
     module = importlib.import_module("conin.io.pgmpy.files")
     pgm = load_model(os.path.join(cwd, "asia.uai"), model_type="pgmpy")
     monkeypatch.setattr(module, "pgmpy_readwrite_available", False)
-    with pytest.raises(RuntimeError, match=f"{suffix.upper()} format"):
+    with pytest.raises(ImportError, match=f"{suffix.upper()} format"):
         module.save_model(pgm, str(tmp_path / f"asia.{suffix}"))
 
 

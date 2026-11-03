@@ -13,5 +13,16 @@ class InfeasibleQueryError(InvalidInputError):
     """
 
 
+class ModelFileError(InvalidInputError, ValueError):
+    """A model file (or string) cannot be read: its content is malformed or invalid.
+
+    Raised by :mod:`conin.io` for truncated or malformed UAI, CFN and JSON
+    data, and for data that does not describe a valid model.  It is an
+    ``InvalidInputError``, and also a ``ValueError`` (what the readers
+    raised before), so callers that caught either still do.  A missing file
+    raises ``FileNotFoundError``.
+    """
+
+
 class InsufficientSolutionsError(Exception):
     pass
