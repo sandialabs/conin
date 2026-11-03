@@ -93,7 +93,7 @@ class MVRHMMRepresentation(Representation):
 
     def __init__(self, cmodel):
         hmm = cmodel.model
-        hidden_to_external = list(hmm.hidden_to_external)
+        hidden_to_external = list(hmm.hidden_states)
         hidden_states = set(hidden_to_external)
 
         mvrs = []

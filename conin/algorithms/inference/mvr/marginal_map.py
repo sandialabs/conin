@@ -310,9 +310,7 @@ def marginal_map_torch_mvr_chmm(
 
     augmented_index_path.reverse()
 
-    hidden_path = [
-        hmm.hidden_to_external[aug_idx[0]] for aug_idx in augmented_index_path
-    ]
+    hidden_path = [hmm.hidden_states[aug_idx[0]] for aug_idx in augmented_index_path]
 
     if return_augmented:
         augmented_path = _decode_dynamic_augmented_path(

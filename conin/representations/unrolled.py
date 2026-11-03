@@ -5,7 +5,7 @@ of a DBN or an HMM are built on the model unrolled over ``start..stop``
 (``start`` and ``stop`` are structure parameters).  This module holds what they share:
 
 * :class:`UnrolledDBNMixin` and :class:`UnrolledHMMMixin`: the ``start``,
-  ``stop`` (and ``hidden_to_internal``) attributes, :attr:`time_steps` and the
+  ``stop`` (and ``hidden_states``) attributes, :attr:`time_steps` and the
   fields these add to the constraint ``data`` (:meth:`structure_fields`);
 * :func:`dbn_time_range` and :func:`hmm_time_range`: the default ``stop`` of
   a DBN and the check that an HMM has one.
@@ -75,14 +75,14 @@ class UnrolledHMMMixin(UnrolledDBNMixin):
     ----------
     start, stop : int
         The first and last unrolled time step.
-    hidden_to_internal : dict
-        The HMM's map from hidden-state labels to internal indices.
+    hidden_states : list
+        The HMM's hidden-state labels, in index order.
     """
 
-    def __init__(self, *, hidden_to_internal, **kwds):
-        self.hidden_to_internal = hidden_to_internal
+    def __init__(self, *, hidden_states, **kwds):
+        self.hidden_states = hidden_states
         super().__init__(**kwds)
 
     def structure_fields(self):
         """``Munch(start, stop, hmm=Munch(T, hidden_to_internal))``."""
-        return hmm_time_fields(self.start, self.stop, self.hidden_to_internal)
+        return hmm_time_fields(self.start, self.stop, self.hidden_states)

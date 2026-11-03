@@ -31,6 +31,6 @@ def _build(cmodel, *, start=0, stop=None):
         stop=stop,
         cls=PyomoHMMRepresentation,
         pgm=dbn,
-        hidden_to_internal=hmm.hidden_to_internal,
+        hidden_states=hmm.hidden_states,
         data=cmodel.data,
     )

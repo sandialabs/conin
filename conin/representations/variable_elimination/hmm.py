@@ -35,6 +35,6 @@ def _build(cmodel, *, start=0, stop=None):
         start=start,
         stop=stop,
         cls=VariableEliminationHMMRepresentation,
-        hidden_to_internal=hmm.hidden_to_internal,
+        hidden_states=hmm.hidden_states,
         data=cmodel.data,
     )

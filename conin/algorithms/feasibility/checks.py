@@ -178,7 +178,7 @@ def _is_feasible(cmodel: ConstrainedHiddenMarkovModel, assignment, observed):
         factor_assignment=factor_assignment,
         state_space=_hmm_state_space(hmm, T),
         data=merge_constraint_data(
-            cmodel.data, hmm_time_fields(0, T - 1, hmm.hidden_to_internal)
+            cmodel.data, hmm_time_fields(0, T - 1, hmm.hidden_states)
         ),
         hidden=hidden,
     )
@@ -224,8 +224,9 @@ def partial_is_feasible(cmodel, *, T, seq):
 
 @ovld
 def _partial_is_feasible(cmodel: ConstrainedHiddenMarkovModel, T, seq):
-    return cmodel.representation("oracle").partial_is_feasible(
-        T=T, seq=[cmodel.model.hidden_to_internal[h] for h in seq]
+    repn = cmodel.representation("oracle")
+    return repn.partial_is_feasible(
+        T=T, seq=[repn.hmm.hidden_to_internal[h] for h in seq]
     )
 
 

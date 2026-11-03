@@ -12,9 +12,15 @@ class Test_IndexSets1:
     def test_data(self):
         hmm = tc.create_hmm1()
         assert hmm.num_hidden_states == 2
-        assert hmm.start_vec == [0.4, 0.6]
-        assert hmm.emission_mat == [[0.7, 0.3], [0.4, 0.6]]
-        assert hmm.transition_mat == [[0.9, 0.1], [0.2, 0.8]]
+        assert hmm.representation("matvec").start_vec.tolist() == [0.4, 0.6]
+        assert hmm.representation("matvec").emission_mat.tolist() == [
+            [0.7, 0.3],
+            [0.4, 0.6],
+        ]
+        assert hmm.representation("matvec").transition_mat.tolist() == [
+            [0.9, 0.1],
+            [0.2, 0.8],
+        ]
 
     def test_index_sets(self):
         hmm = tc.create_hmm1()
@@ -86,13 +92,13 @@ class Test_IndexSets2:
     def test_data(self):
         hmm = tc.create_hmm2()
         assert hmm.num_hidden_states == 3
-        assert hmm.start_vec == [0.4, 0.6, 0.0]
-        assert hmm.emission_mat == [
+        assert hmm.representation("matvec").start_vec.tolist() == [0.4, 0.6, 0.0]
+        assert hmm.representation("matvec").emission_mat.tolist() == [
             [0.7, 0.3, 0.0],
             [0.4, 0.6, 0.0],
             [0.0, 0.0, 1.0],
         ]
-        assert hmm.transition_mat == [
+        assert hmm.representation("matvec").transition_mat.tolist() == [
             [0.8, 0.1, 0.1],
             [0.2, 0.7, 0.1],
             [0.0, 0.0, 1.0],

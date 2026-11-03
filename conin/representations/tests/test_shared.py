@@ -188,16 +188,16 @@ def test_dbn_mixin():
     assert repn.fields_at_init == repn.structure_fields()
 
 
-def test_hmm_mixin_copies_hidden_to_internal():
-    h2i = {"a": 0, "b": 1}
-    repn = _HMM(start=0, stop=1, hidden_to_internal=h2i)
+def test_hmm_mixin_builds_hidden_to_internal_from_the_hidden_states():
+    repn = _HMM(start=0, stop=1, hidden_states=["a", "b"])
     assert repn.time_steps == [0, 1]
     fields = repn.structure_fields()
     assert fields == munch.Munch(
-        start=0, stop=1, hmm=munch.Munch(T=[0, 1], hidden_to_internal=h2i)
+        start=0, stop=1, hmm=munch.Munch(T=[0, 1], hidden_to_internal={"a": 0, "b": 1})
     )
+    # Each call builds a new map, so a constraint function cannot change it.
     fields.hmm.hidden_to_internal["c"] = 2
-    assert h2i == {"a": 0, "b": 1}
+    assert repn.structure_fields().hmm.hidden_to_internal == {"a": 0, "b": 1}
     assert repn.fields_at_init == repn.structure_fields()
 
 
@@ -220,7 +220,8 @@ def _hmm_fields(hmm, stop):
         start=0,
         stop=stop,
         hmm=munch.Munch(
-            T=list(range(stop + 1)), hidden_to_internal=hmm.hidden_to_internal
+            T=list(range(stop + 1)),
+            hidden_to_internal=hmm.representation("matvec").hidden_to_internal,
         ),
     )
 
@@ -257,7 +258,7 @@ def test_hmm_representations_share_the_time_fields(kind):
     with pytest.raises(InvalidInputError, match="needs a stop time"):
         cmodel.representation(kind)
     repn = cmodel.representation(kind, stop=2)
-    assert repn.hidden_to_internal == hmm.hidden_to_internal
+    assert repn.hidden_states == hmm.hidden_states
     assert _structure_fields_of(repn) == _hmm_fields(hmm, 2)
 
 
@@ -300,7 +301,9 @@ def test_network_flow_data_has_the_hmm_time_fields_and_keeps_app_data():
     )
     assert (data.start, data.stop, data.limit) == (0, 2, 3)
     assert data.hmm.T == [0, 1, 2]
-    assert data.hmm.hidden_to_internal == hmm.hidden_to_internal
+    assert (
+        data.hmm.hidden_to_internal == hmm.representation("matvec").hidden_to_internal
+    )
     # The application data is not changed.
     assert app == munch.Munch(limit=3, hmm="replaced")
 

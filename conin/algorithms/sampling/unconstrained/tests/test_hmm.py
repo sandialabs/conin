@@ -71,7 +71,10 @@ class Test_HMM1:
 
 def _reference_hidden(hmm, time_steps, rng):
     # The sampler the HMM had as a method: start, then one transition per step.
-    start, transition = hmm.start_vec, hmm.transition_mat
+    start, transition = (
+        hmm.representation("matvec").start_vec.tolist(),
+        hmm.representation("matvec").transition_mat.tolist(),
+    )
     hidden = [Util.sample_from_vec(start, rng)]
     for t in range(time_steps - 1):
         hidden.append(Util.sample_from_vec(transition[hidden[t]], rng))
@@ -82,11 +85,13 @@ def _reference_hidden(hmm, time_steps, rng):
 def test_same_draws_as_the_reference_sampler(seed):
     hmm = tc.create_hmm2()
     rng = np.random.default_rng(seed)
-    hidden = [hmm.hidden_to_external[h] for h in _reference_hidden(hmm, 15, rng)]
-    emission = hmm.emission_mat
+    hidden = [hmm.hidden_states[h] for h in _reference_hidden(hmm, 15, rng)]
+    emission = hmm.representation("matvec").emission_mat.tolist()
     observed = [
-        hmm.observed_to_external[
-            Util.sample_from_vec(emission[hmm.hidden_to_internal[h]], rng)
+        hmm.observed_states[
+            Util.sample_from_vec(
+                emission[hmm.representation("matvec").hidden_to_internal[h]], rng
+            )
         ]
         for h in hidden
     ]

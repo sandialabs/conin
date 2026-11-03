@@ -393,7 +393,7 @@ def test_marginal_map_augmented_path_reports_query_times(hmm, observed):
 
     for entry in augmented:
         assert (
-            hmm.hidden_to_external[entry["hidden_index"]]
+            hmm.hidden_states[entry["hidden_index"]]
             == path[query_times.index(entry["time"])]
         )
         # The MVR is inactive at time 0 and active from time 2 on.

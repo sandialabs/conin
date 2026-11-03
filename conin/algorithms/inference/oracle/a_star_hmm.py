@@ -109,12 +109,12 @@ def _a_star(oracle, *, observed, **kwargs):
     if not oracle.constraints:
         oracle = None
 
-    observed_ = [hmm.observed_to_internal[o] for o in observed]
+    observed_ = [matvec.observed_to_internal[o] for o in observed]
     ans_ = a_star_(observed=observed_, oracle=oracle, hmm=matvec, **kwargs)
 
     # Convert internal indices back to external labels
     solutions = [
-        map_solution([hmm.hidden_to_external[h] for h in sol.states])
+        map_solution([hmm.hidden_states[h] for h in sol.states])
         for sol in ans_.solutions
     ]
     results = map_results(

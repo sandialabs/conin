@@ -81,7 +81,7 @@ def _network_flow_model(observed):
 
 def _set_hidden_path(M, data, hmm, hidden):
     for (t, a), var in M.hmm.x.items():
-        var.set_value(1 if hidden[t] == hmm.hidden_to_external[a] else 0)
+        var.set_value(1 if hidden[t] == hmm.hidden_states[a] else 0)
 
 
 # ---------------------------------------------------------------------
@@ -203,7 +203,7 @@ def _network_flow_solutions(paths):
         result = []
         for i, hidden in enumerate(paths):
             for (t, a), var in M.hmm.x.items():
-                var.set_value(1 if hidden[t] == hmm.hidden_to_external[a] else 0)
+                var.set_value(1 if hidden[t] == hmm.hidden_states[a] else 0)
             for var in M.component_data_objects(pyo.Var):
                 if var.value is None:
                     var.set_value(0)

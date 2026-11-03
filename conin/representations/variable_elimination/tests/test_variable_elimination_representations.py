@@ -156,7 +156,10 @@ def test_hmm_structure_params():
     assert repn.constraint_data() == munch.Munch(
         start=0,
         stop=3,
-        hmm=munch.Munch(T=[0, 1, 2, 3], hidden_to_internal=hmm.hidden_to_internal),
+        hmm=munch.Munch(
+            T=[0, 1, 2, 3],
+            hidden_to_internal=hmm.representation("matvec").hidden_to_internal,
+        ),
     )
     unrolled = create_bn_from_dbn(dbn=create_dbn_from_hmm(hmm), start=0, stop=3)
     assert set(repn.nodes) == set(unrolled.nodes)
@@ -200,7 +203,10 @@ def test_constraint_data_dbn_and_hmm():
         munch.Munch(
             start=0,
             stop=2,
-            hmm=munch.Munch(T=[0, 1, 2], hidden_to_internal=hmm.hidden_to_internal),
+            hmm=munch.Munch(
+                T=[0, 1, 2],
+                hidden_to_internal=hmm.representation("matvec").hidden_to_internal,
+            ),
         ),
     ]
 

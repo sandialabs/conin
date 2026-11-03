@@ -69,6 +69,7 @@ def _resolve_emit_weights(hmm, emission_mat, observed, time_horizon=None, *, log
     K = int(emission_mat.shape[0])
 
     times, obs_idx = [], []
+    observed_to_internal = {o: j for j, o in enumerate(hmm.observed_states)}
 
     for t, o in items:
         if not isinstance(t, (int, np.integer)):
@@ -77,11 +78,11 @@ def _resolve_emit_weights(hmm, emission_mat, observed, time_horizon=None, *, log
             raise InvalidInputError(
                 f"Observation time {t} is outside the horizon [0, {T})."
             )
-        if o not in hmm.observed_to_internal:
+        if o not in observed_to_internal:
             raise InvalidInputError(f"Unknown observed state: {o}")
 
         times.append(int(t))
-        obs_idx.append(hmm.observed_to_internal[o])
+        obs_idx.append(observed_to_internal[o])
 
     # The identity of the working space, so an unobserved time contributes nothing.
     identity = 0.0 if log else 1.0

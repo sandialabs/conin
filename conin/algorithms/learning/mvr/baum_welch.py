@@ -148,16 +148,17 @@ def _e_step_counts(ctx):
 # ======================================================================
 
 
-def _as_array(values):
-    return np.asarray(values, dtype=np.float64)
+def _parameters(hmm):
+    """``(start, transition, emission)``: the read-only arrays of ``hmm``'s ``"matvec"``."""
+    repn = hmm.representation("matvec")
+    return repn.start_vec, repn.transition_mat, repn.emission_mat
 
 
 def _support_masks(hmm):
     """Binary masks of the entries an initial HMM puts positive mass on."""
     masks = {
-        "start": (_as_array(hmm.start_vec) > 0.0).astype(np.float64),
-        "transition": (_as_array(hmm.transition_mat) > 0.0).astype(np.float64),
-        "emission": (_as_array(hmm.emission_mat) > 0.0).astype(np.float64),
+        name: (array > 0.0).astype(np.float64)
+        for name, array in zip(("start", "transition", "emission"), _parameters(hmm))
     }
 
     zeros = {
@@ -199,9 +200,7 @@ def _m_step(hmm, counts, masks, pseudocount, update):
     """Normalize the expected counts on support and return a new ``hmm``."""
     init_counts, trans_counts, emit_counts = (c.cpu().numpy() for c in counts)
 
-    start = _as_array(hmm.start_vec)
-    transition = _as_array(hmm.transition_mat)
-    emission = _as_array(hmm.emission_mat)
+    start, transition, emission = _parameters(hmm)
 
     if "start" in update:
         start = _normalize_on_support(
@@ -233,8 +232,8 @@ def _rebuild_hmm(hmm, start, transition, emission):
     # The constructor orders states by sorted label, and the dense dictionaries
     # below mention every label, so the rebuilt model keeps hmm's internal index
     # order (and with it the alignment of the MVRs of the "mvr" representation).
-    hidden = hmm.hidden_to_external
-    observed = hmm.observed_to_external
+    hidden = hmm.hidden_states
+    observed = hmm.observed_states
     new_hmm = HiddenMarkovModel(
         start_probs={h: float(start[i]) for i, h in enumerate(hidden)},
         transition_probs={
@@ -248,7 +247,7 @@ def _rebuild_hmm(hmm, start, transition, emission):
             for j, o in enumerate(observed)
         },
     )
-    if new_hmm.hidden_to_external != hidden or new_hmm.observed_to_external != observed:
+    if new_hmm.hidden_states != hidden or new_hmm.observed_states != observed:
         raise InvalidInputError(  # pragma: no cover
             "Rebuilding the HMM changed its internal state order"
         )

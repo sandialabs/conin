@@ -116,12 +116,12 @@ def viterbi(*, observed, hmm):
 def _viterbi(repn, *, observed):
     """:func:`viterbi` on a ``"matvec"`` representation (external labels)."""
     hmm = repn.model
-    observed_ = [hmm.observed_to_internal[o] for o in observed]
+    observed_ = [repn.observed_to_internal[o] for o in observed]
     ans_ = viterbi_(observed=observed_, hmm=repn)
 
     # Convert internal indices back to external labels
     solutions = [
-        map_solution([hmm.hidden_to_external[h] for h in sol.states])
+        map_solution([hmm.hidden_states[h] for h in sol.states])
         for sol in ans_.solutions
     ]
     results = map_results(

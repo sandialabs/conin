@@ -67,10 +67,15 @@ def test_class_and_attributes():
     assert repn.emission_mat.shape == (3, 3)
     for name in ARRAYS:
         assert getattr(repn, name).dtype == np.float64
-    # Internal indices are the sorted labels.
-    assert repn.start_vec.tolist() == hmm.start_vec == [0, 1.0, 0]
-    assert repn.transition_mat.tolist() == hmm.transition_mat
-    assert repn.emission_mat.tolist() == hmm.emission_mat
+    # Internal indices are the sorted labels, the positions in hidden_states
+    # and observed_states; missing entries of the label tables are zeros.
+    assert repn.hidden_to_internal == {"a": 0, "b": 1, "c": 2}
+    assert repn.observed_to_internal == {"x": 0, "y": 1, "z": 2}
+    assert list(repn.hidden_to_internal) == hmm.hidden_states
+    assert list(repn.observed_to_internal) == hmm.observed_states
+    assert repn.start_vec.tolist() == [0, 1.0, 0]
+    assert repn.transition_mat.tolist() == [[1.0, 0, 0], [0, 0, 1.0], [1.0, 0, 0]]
+    assert repn.emission_mat.tolist() == [[0, 0, 1.0], [0.25, 0, 0.75], [0, 1.0, 0]]
     for name in ("start_vec", "transition_mat", "emission_mat"):
         with np.errstate(divide="ignore"):
             expected = np.log(getattr(repn, name))
@@ -109,8 +114,15 @@ def test_the_model_is_not_shared_with_the_arrays():
     repn = ConstrainedHiddenMarkovModel(hmm).representation("matvec")
     copy_ = np.array(repn.transition_mat)
     copy_[0, 0] = 0.0
-    assert hmm.transition_mat[0][0] == 0.9
+    assert hmm.get_transition_probs()["h0", "h0"] == 0.9
     assert repn.transition_mat[0, 0] == 0.9
+
+
+@pytest.mark.parametrize("name", ["hidden_to_internal", "observed_to_internal"])
+def test_index_maps_are_read_only(name):
+    repn = tc.create_hmm1().representation("matvec")
+    with pytest.raises(TypeError):
+        getattr(repn, name)["new"] = 2
 
 
 def test_one_representation_serves_several_queries():
@@ -118,7 +130,10 @@ def test_one_representation_serves_several_queries():
     repn = ConstrainedHiddenMarkovModel(hmm).representation("matvec")
     before = {name: getattr(repn, name).copy() for name in ARRAYS}
     # h2 only emits o2 and never leaves, so o2 can only come last.
-    observed = [hmm.observed_to_internal[o] for o in ["o0", "o1"] * 3 + ["o2"]]
+    observed = [
+        hmm.representation("matvec").observed_to_internal[o]
+        for o in ["o0", "o1"] * 3 + ["o2"]
+    ]
     first = viterbi_(observed=observed, hmm=repn)
     second = viterbi_(observed=observed[:4], hmm=repn)
     again = viterbi_(observed=observed, hmm=repn)

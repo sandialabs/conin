@@ -38,12 +38,12 @@ from conin.algorithms.inference.pyomo import ip_inference
 
 def _reference_is_feasible(cmodel, seq):
     """Reference check: every constraint on the external labels of ``seq``."""
-    h2e = cmodel.model.hidden_to_external
+    h2e = cmodel.model.hidden_states
     return all(c({t: h2e[h] for t, h in enumerate(seq)}) for c in cmodel.constraints)
 
 
 def _reference_partial_is_feasible(cmodel, T, seq):
-    h2e = cmodel.model.hidden_to_external
+    h2e = cmodel.model.hidden_states
     states = {t: h2e[h] for t, h in enumerate(seq)}
     return all(c.partial_func(T, states) for c in cmodel.constraints)
 
@@ -77,7 +77,7 @@ def test_oracle_matches_the_reference_checks():
 def test_oracle_agrees_with_is_feasible_on_external_labels():
     cmodel = tc.create_chmm1_oracle()
     repn = cmodel.representation("oracle")
-    h2e = cmodel.model.hidden_to_external
+    h2e = cmodel.model.hidden_states
     for seq in ([0] * 9, [0] * 11, [0] * 10 + [1] * 5, [1] * 12):
         assert repn.is_feasible(seq) == is_feasible(cmodel, [h2e[h] for h in seq])
 
@@ -97,7 +97,10 @@ def test_oracle_two_argument_predicates_get_the_constraint_data():
     assert seen[0] == munch.Munch(
         start=0,
         stop=3,
-        hmm=munch.Munch(T=[0, 1, 2, 3], hidden_to_internal=hmm.hidden_to_internal),
+        hmm=munch.Munch(
+            T=[0, 1, 2, 3],
+            hidden_to_internal=hmm.representation("matvec").hidden_to_internal,
+        ),
     )
     # The same answer as is_feasible.
     assert is_feasible(cmodel, ["h0", "h0", "h1", "h1"])
@@ -134,7 +137,7 @@ def test_oracle_checks_do_not_change_the_representation():
 def _reference_generate_hidden(cmodel, time_steps, rng, max_failures=1000):
     """Reference rejection sampler: resample until every constraint holds."""
     hmm = cmodel.model
-    h2i = hmm.hidden_to_internal
+    h2i = hmm.representation("matvec").hidden_to_internal
     hidden = [h2i[h] for h in generate_hidden(hmm, time_steps, rng=rng)]
     ctr = 0
     while not _reference_is_feasible(cmodel, hidden):
@@ -142,7 +145,7 @@ def _reference_generate_hidden(cmodel, time_steps, rng, max_failures=1000):
         ctr += 1
         if ctr > max_failures:
             raise RuntimeError("failed")
-    return [cmodel.model.hidden_to_external[h] for h in hidden]
+    return [cmodel.model.hidden_states[h] for h in hidden]
 
 
 @pytest.mark.parametrize("seed", [0, 3, 11])
@@ -347,7 +350,7 @@ def test_mvr_factories_and_prebuilt_mvrs():
     assert isinstance(repn.mvrs, tuple)
     assert len(repn.mvrs) == 2
     assert all(isinstance(m, BaseMVR) for m in repn.mvrs)
-    assert all(list(m.hidden_states) == hmm.hidden_to_external for m in repn.mvrs)
+    assert all(list(m.hidden_states) == hmm.hidden_states for m in repn.mvrs)
     assert repn.model is hmm
 
 
@@ -400,7 +403,7 @@ def test_mvr_representation_without_constraints(model):
 
 def test_mvr_representation_aligns_hidden_states_to_the_hmm():
     hmm = _hmm(("c", "a", "b"))  # internal order is sorted: a, b, c
-    assert hmm.hidden_to_external == ["a", "b", "c"]
+    assert hmm.hidden_states == ["a", "b", "c"]
     mvr = mvr_forbid_state(hmm, ["a"])
     reordered = copy.copy(mvr)
     reordered.hidden_states = ["c", "a", "b"]

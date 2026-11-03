@@ -173,9 +173,17 @@ Models
   only when the numeric representation was first built.
 - HMM_MatVecRepn, HiddenMarkovModel.repn, initialize() and the initialize=
   argument are removed. The parameters as read-only float64 NumPy arrays on
-  internal indices (plus their logarithms) are
-  ConstrainedHiddenMarkovModel(hmm).representation("matvec"), a
-  MatVecHMMRepresentation; hmm.start_vec etc. still return lists.
+  internal indices (plus their logarithms) are hmm.representation("matvec"),
+  a MatVecHMMRepresentation.
+- HiddenMarkovModel has no index view: start_vec, transition_mat,
+  emission_mat, hidden_to_internal and observed_to_internal moved to the
+  "matvec" representation (repn = hmm.representation("matvec");
+  repn.start_vec, repn.hidden_to_internal, ...; the arrays are read-only
+  float64 NumPy arrays, not lists), and hidden_to_external/
+  observed_to_external are removed (use hidden_states/observed_states, the
+  same lists). hidden_states and observed_states are read-only FrozenLists
+  (no copy per access). Constraint functions still get
+  data.hmm.hidden_to_internal.
 - create_bn_from_dbn and the code unrolling DBNs and HMMs use the DBN's .t
   without changing it. create_bn_from_dbn unrolls one time step
   (stop == start); start must be 0 (InvalidInputError otherwise).
