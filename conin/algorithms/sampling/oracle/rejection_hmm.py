@@ -4,13 +4,13 @@ from conin.exceptions import InvalidInputError
 from conin.graphical_models import HiddenMarkovModel
 from conin.algorithms.sampling.unconstrained import generate_hidden
 from conin.algorithms.sampling.unconstrained.hmm import _hidden_indices
+from conin.util import as_rng
 
 
-def rejection_sample_hidden(hmm, time_steps, *, max_failures=1000):
+def rejection_sample_hidden(hmm, time_steps, *, max_failures=1000, rng=None):
     """Sample a hidden-state sequence that satisfies the oracle constraints.
 
-    Sequences are drawn from the unconstrained HMM (with NumPy's global random
-    state, see ``HiddenMarkovModel.set_seed``) until one is feasible.
+    Sequences are drawn from the unconstrained HMM until one is feasible.
 
     Parameters
     ----------
@@ -23,6 +23,9 @@ def rejection_sample_hidden(hmm, time_steps, *, max_failures=1000):
     max_failures : int, optional
         Number of rejected samples allowed: the search gives up when one more
         sample is rejected (at most ``max_failures + 1`` samples are drawn).
+    rng : None, int or numpy.random.Generator, optional
+        The random generator, or a seed for a new one (see
+        :func:`conin.util.as_rng`).
 
     Returns
     -------
@@ -37,9 +40,10 @@ def rejection_sample_hidden(hmm, time_steps, *, max_failures=1000):
         If ``time_steps`` is negative, ``hmm`` is not an HMM, or the
         constraint family has no ``"oracle"`` representation.
     """
+    rng = as_rng(rng)
     if isinstance(hmm, HiddenMarkovModel):
         # No constraints: every sample is feasible (same random draws).
-        return generate_hidden(hmm, time_steps)
+        return generate_hidden(hmm, time_steps, rng=rng)
     if not hasattr(hmm, "representation") or not isinstance(
         getattr(hmm, "model", None), HiddenMarkovModel
     ):
@@ -52,7 +56,7 @@ def rejection_sample_hidden(hmm, time_steps, *, max_failures=1000):
     transition = repn.hmm.transition_mat.tolist()
     h2e = repn.model.hidden_to_external
     for _ in range(max_failures + 1):
-        hidden = _hidden_indices(start, transition, time_steps)
+        hidden = _hidden_indices(start, transition, time_steps, rng)
         if repn.is_feasible(hidden):
             return [h2e[h] for h in hidden]
     raise RuntimeError(

@@ -203,7 +203,7 @@ def citation_constraint(states):
     return True
 
 
-def has_minimum_number_of_occurences(states, *, val, count):
+def has_minimum_number_of_occurrences(states, *, val, count):
     """Check whether ``val`` appears at least ``count`` times.
 
     The misspelling in this function name is preserved for API compatibility.
@@ -225,13 +225,13 @@ def has_minimum_number_of_occurences(states, *, val, count):
     return sum(1 for v in states.values() if v == val) >= count
 
 
-def has_minimum_number_of_occurences_constraint(*, val, count):
+def has_minimum_number_of_occurrences_constraint(*, val, count):
     """Return a constraint requiring at least ``count`` occurrences of ``val``.
 
     The misspelling in this function name is preserved for API compatibility.
     """
     return OracleConstraint(
-        func=lambda states: has_minimum_number_of_occurences(
+        func=lambda states: has_minimum_number_of_occurrences(
             states, val=val, count=count
         ),
         partial_func=lambda T, states: sum(1 for v in states.values() if v == val)
@@ -241,7 +241,7 @@ def has_minimum_number_of_occurences_constraint(*, val, count):
     )
 
 
-def has_maximum_number_of_occurences(states, *, val, count):
+def has_maximum_number_of_occurrences(states, *, val, count):
     """Check whether ``val`` appears at most ``count`` times.
 
     The misspelling in this function name is preserved for API compatibility.
@@ -263,7 +263,7 @@ def has_maximum_number_of_occurences(states, *, val, count):
     return sum(1 for v in states.values() if v == val) <= count
 
 
-def has_maximum_number_of_occurences_constraint(*, val, count):
+def has_maximum_number_of_occurrences_constraint(*, val, count):
     """Return a constraint requiring at most ``count`` occurrences of ``val``.
 
     The misspelling in this function name is preserved for API compatibility.
@@ -271,18 +271,18 @@ def has_maximum_number_of_occurences_constraint(*, val, count):
 
     @oracle_constraint_fn(name=constraint_name(), same_partial_as_func=True)
     def constraint(states):
-        return has_maximum_number_of_occurences(states, val=val, count=count)
+        return has_maximum_number_of_occurrences(states, val=val, count=count)
 
     return constraint
 
 
-def has_exact_number_of_occurences_constraint(*, val, count):
+def has_exact_number_of_occurrences_constraint(*, val, count):
     """Return a constraint requiring exactly ``count`` occurrences of ``val``.
 
     The misspelling in this function name is preserved for API compatibility.
     """
 
-    def has_exact_number_of_occurences(states, *, val, count):
+    def has_exact_number_of_occurrences(states, *, val, count):
         """
         Check if states has val appear exactly count times
 
@@ -297,7 +297,7 @@ def has_exact_number_of_occurences_constraint(*, val, count):
         return sum(1 for v in states.values() if v == val) == count
 
     return OracleConstraint(
-        func=lambda states: has_exact_number_of_occurences(
+        func=lambda states: has_exact_number_of_occurrences(
             states, val=val, count=count
         ),
         partial_func=lambda T, states: sum(1 for v in states.values() if v == val)
@@ -322,7 +322,7 @@ def appears_at_least_once_constraint(val):
 
     @oracle_constraint_fn(name=constraint_name())
     def constraint(states):
-        return has_minimum_number_of_occurences(states, val=val, count=1)
+        return has_minimum_number_of_occurrences(states, val=val, count=1)
 
     return constraint
 
@@ -343,7 +343,7 @@ def does_not_occur_constraint(val):
 
     @oracle_constraint_fn(name=constraint_name(), same_partial_as_func=True)
     def constraint(states):
-        return has_maximum_number_of_occurences(states, val=val, count=0)
+        return has_maximum_number_of_occurrences(states, val=val, count=0)
 
     return constraint
 

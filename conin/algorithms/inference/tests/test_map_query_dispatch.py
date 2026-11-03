@@ -193,16 +193,27 @@ def test_unknown_ip_formulation_raises_value_error():
 )
 def test_structure_params(model, kind, kwds, params):
     kwds = dict(dict(evidence=None, start=0, stop=None), **kwds)
-    kwds["observed"] = kwds.pop("evidence")
+    observed = kwds.pop("evidence")
+    if model == "hmm":
+        # As in map_query: the HMM's stop is set from the observations first.
+        kwds["start"], kwds["stop"], _ = mq._hmm_time_range(observed, **kwds)
     assert mq._structure_params(kind, _cmodel(model), **kwds) == params
 
 
-@pytest.mark.parametrize("kind", ["pyomo", "toulbar2", "variable_elimination"])
-def test_structure_params_stop_past_the_observations(kind):
+@pytest.mark.parametrize(
+    "stop,expected", [(None, (0, 4, OBSERVED)), (2, (0, 2, OBSERVED[:3]))]
+)
+def test_hmm_time_range(stop, expected):
+    assert mq._hmm_time_range(OBSERVED, 0, stop) == expected
+
+
+def test_hmm_time_range_of_sparse_observations():
+    assert mq._hmm_time_range(None, 0, 7) == (0, 7, None)
+
+
+def test_hmm_time_range_stop_past_the_observations():
     with pytest.raises(InvalidInputError, match="past the last observation"):
-        mq._structure_params(
-            kind, _cmodel("hmm"), observed=OBSERVED, start=0, stop=len(OBSERVED)
-        )
+        mq._hmm_time_range(OBSERVED, 0, len(OBSERVED))
 
 
 # ---------------------------------------------------------------------

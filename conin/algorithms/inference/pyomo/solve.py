@@ -10,10 +10,7 @@ from pyomo.common.timing import TicTocTimer
 
 from conin.config import default_mip_solver
 from conin.exceptions import InsufficientSolutionsError
-from conin.algorithms.inference.query_checks import (
-    full_query_variables,
-    reject_pruning_options,
-)
+from conin.algorithms.inference.query_checks import full_query_variables
 from conin.algorithms.inference.results import (
     map_results,
     map_solution,
@@ -118,8 +115,7 @@ def _solve_pyomo(repn, q):
     ``q`` is the query of :func:`~conin.algorithms.inference.map_query` (``variables``,
     ``evidence``, ``timing`` and ``options``).  The options are
     ``use_cut_generation`` (omit the c5 constraints and generate them as cuts
-    with gurobi), ``prune_network`` and ``create_MN`` (``True`` raises
-    ``RuntimeError``), and the options of :func:`solve_pyomo_map_query_model`.
+    with gurobi) and the options of :func:`solve_pyomo_map_query_model`.
     An HMM is solved as its unrolled DBN
     (:func:`~conin.algorithms.inference.hmm_results.solve_unrolled_hmm`).  The solutions
     are not scored here (``log_potential`` is ``None``): ``map_query`` scores
@@ -127,7 +123,6 @@ def _solve_pyomo(repn, q):
     """
     options = dict(q.options)
     use_cut_generation = options.pop("use_cut_generation", False)
-    reject_pruning_options(options)
     model = repn.create_model(
         evidence=q.evidence,
         variables=full_query_variables(q.variables, repn.nodes),

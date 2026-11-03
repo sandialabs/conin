@@ -187,9 +187,6 @@ DBN unrolling
 Open questions
 --------------
 
-- The unconstrained samplers, ``DBNSampler`` and rejection sampling use
-  NumPy's global random state, while the torch MVR samplers take a
-  ``generator``. A common random-state argument has not been designed.
 - The MVR algorithms build ``representation("mvr")`` per call, so stopped
   sampling (one ``sat_time`` call plus one ``ffbs`` call per distinct stopping
   time) deep-copies the prebuilt MVRs each time (about 1 ms per MVR). Measure

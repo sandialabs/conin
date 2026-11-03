@@ -34,7 +34,6 @@ transition, and emission probabilities and then passes them to the
        transition_probs=transition_probs,
        emission_probs=emission_probs,
    )
-   hmm.set_seed(0)
 
 The hidden and observed state labels are available from ``hmm.hidden_states``
 and ``hmm.observed_states``. Internally, states are indexed in sorted label
@@ -42,8 +41,10 @@ order. The constructor checks that the probabilities are nonnegative and that
 the start probabilities and each row of transition and emission probabilities
 sum to 1 (``InvalidInputError`` otherwise).
 
-Sequences are sampled with ``conin.algorithms.sampling.unconstrained`` (NumPy's global
-random state, which ``hmm.set_seed`` seeds):
+Sequences are sampled with ``conin.algorithms.sampling.unconstrained``. Every
+sampler takes ``rng``: a seed, or a ``numpy.random.Generator`` whose stream
+successive calls continue (without ``rng``, each call draws from a fresh
+generator):
 
 .. testcode::
 
@@ -53,9 +54,13 @@ random state, which ``hmm.set_seed`` seeds):
        generate_observed_from_hidden,
    )
 
-   hidden = generate_hidden(hmm, 5)
-   observed = generate_observed_from_hidden(hmm, hidden)
-   assert len(generate_observed(hmm, 5)) == 5
+   import numpy as np
+
+   rng = np.random.default_rng(0)
+   hidden = generate_hidden(hmm, 5, rng=rng)
+   observed = generate_observed_from_hidden(hmm, hidden, rng=rng)
+   assert len(generate_observed(hmm, 5, rng=rng)) == 5
+   assert generate_hidden(hmm, 5, rng=3) == generate_hidden(hmm, 5, rng=3)
 
 For a constrained HMM with oracle constraints, use
 ``conin.algorithms.sampling.oracle.rejection_sample_hidden(chmm, time_steps)``.
@@ -73,7 +78,7 @@ transition, and emission probabilities over a specified state space.
    hmm = random_hmm(
        hidden_states=["h0", "h1"],
        observed_states=["o0", "o1"],
-       seed=10,
+       rng=10,
    )
 
    assert hmm.hidden_states == ["h0", "h1"]

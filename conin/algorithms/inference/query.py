@@ -27,7 +27,8 @@ from conin.constrained_models import (
 )
 from conin.constrained_models.normalise import as_constrained_model
 from conin.exceptions import InfeasibleQueryError, InvalidInputError
-from conin.graphical_models.assignments import as_sequence, require_sequence_type
+from conin.graphical_models.assignments import as_sequence
+from conin.graphical_models.conversions import check_unroll_start
 from conin.representations.matvec import MatVecHMMRepresentation
 from conin.representations.mvr import MVRHMMRepresentation
 from conin.representations.oracle import OracleHMMRepresentation
@@ -95,15 +96,13 @@ def _representation_kind(method, cmodel, options):
     return representation_kind(method, cmodel, options)
 
 
-def _structure_params(kind, cmodel, *, observed, start, stop):
+def _structure_params(kind, cmodel, *, start, stop):
     """The structure parameters of the ``kind`` representation for this query.
 
     DBNs are unrolled over ``start..stop`` (``stop=None`` means ``1``, the
-    default of the DBN representations).  HMMs
-    are unrolled over ``start..stop``, where ``observed`` is the list of
-    observations and ``stop`` defaults to the last one (a later ``stop``
-    raises ``InvalidInputError``).  The other kinds have no structure
-    parameters here.
+    default of the DBN representations).  HMMs are unrolled over
+    ``start..stop`` (``stop`` is already set: see :func:`_hmm_time_range`).
+    The other kinds have no structure parameters here.
     """
     if kind not in ("pyomo", "toulbar2", "variable_elimination"):
         return {}
@@ -111,7 +110,6 @@ def _structure_params(kind, cmodel, *, observed, start, stop):
         start, stop = dbn_time_range(start, stop)
         return dict(start=start, stop=stop)
     if isinstance(cmodel, ConstrainedHiddenMarkovModel):
-        start, stop = _observed_time_range(observed, start, stop)
         return dict(start=start, stop=stop)
     return {}
 
@@ -140,19 +138,38 @@ def _hmm_observations(method, evidence):
     """Check the observations of an HMM query; return them as a list.
 
     The observations are a list or tuple, or a dict keyed by the times
-    ``0..T-1``.  ``mvr_viterbi`` also accepts a sparse ``{time: label}`` dict
-    (it returns ``None`` for it: the MVR Viterbi reads the evidence itself).
+    ``0..T-1``.  ``mvr_viterbi`` takes any ``{time: label}`` dict as sparse
+    observations (it returns ``None`` for a dict: the MVR Viterbi reads the
+    evidence itself).
 
     Raises
     ------
     InvalidInputError
         For any other evidence.
     """
-    what = f"evidence (the observations) of map_query(method={method!r}) on an HMM"
-    if method == "mvr_viterbi":
-        require_sequence_type(evidence, what)
+    if method == "mvr_viterbi" and isinstance(evidence, dict):
         return None
+    what = f"evidence (the observations) of map_query(method={method!r}) on an HMM"
     return as_sequence(evidence, what)
+
+
+def _hmm_time_range(observed, start, stop):
+    """The times ``(start, stop)`` and the observations of an HMM query.
+
+    Every HMM method infers over ``start..stop``: ``stop`` defaults to the
+    last observation, and the observations after ``stop`` are dropped.
+    ``observed`` is ``None`` for the sparse observations of ``mvr_viterbi``,
+    whose ``stop`` may also be after the last observation.
+
+    Raises
+    ------
+    InvalidInputError
+        If ``stop`` is past the last (list) observation.
+    """
+    if observed is None:
+        return start, stop, None
+    start, stop = _observed_time_range(observed, start, stop)
+    return start, stop, observed[: stop + 1]
 
 
 def map_query(
@@ -210,14 +227,16 @@ def map_query(
         Not used by every method.
     start : int, optional
         Initial time index for dynamic models (ignored by static models).
+        Only ``0`` is supported: any other value raises
+        ``InvalidInputError``.
     stop : int, optional
         Final time index for dynamic models (ignored by static models).
-        For DBNs it defaults to ``1``.  For HMMs, ``integer_program``,
-        ``toulbar2`` and ``variable_elimination`` infer over ``start..stop``,
-        with ``stop`` defaulting to ``len(evidence) - 1`` (a later ``stop``
-        raises ``InvalidInputError``); ``viterbi`` and ``a_star`` use every
-        observation.  For ``mvr_viterbi`` the horizon is ``stop + 1`` time
-        steps.
+        For DBNs it defaults to ``1``.  For HMMs, every method infers over
+        ``start..stop`` and ignores the observations after ``stop``, which
+        defaults to the last observation (a later ``stop`` raises
+        ``InvalidInputError``).  With sparse ``{time: label}`` observations,
+        ``mvr_viterbi`` infers over ``0..stop``, where ``stop`` defaults to
+        the last observed time and may be after it.
     options : dict, optional
         Additional keyword arguments forwarded to the selected
         inference helper, such as solver options or output-file settings.
@@ -256,8 +275,9 @@ def map_query(
     InvalidInputError
         If ``method`` does not support the model type or its constraint
         family (no such representation is registered), if the evidence of
-        an HMM is not a list, tuple or dict keyed by ``0..T-1``, or if
-        ``stop`` is past the last observation.
+        an HMM is not a list, tuple or dict keyed by ``0..T-1``, if
+        ``start`` is not ``0`` for a DBN or HMM, or if ``stop`` is past the
+        last observation.
     ImportError
         If the method's backend is not installed (pytoulbar2 for
         ``toulbar2``, torch for ``mvr_viterbi``).
@@ -281,12 +301,17 @@ def map_query(
     check_method(method, METHODS, "inference type")
     cmodel = as_constrained_model(pgm)
     observed = None
+    if isinstance(
+        cmodel,
+        (ConstrainedDynamicDiscreteBayesianNetwork, ConstrainedHiddenMarkovModel),
+    ):
+        check_unroll_start(start)
     if isinstance(cmodel, ConstrainedHiddenMarkovModel):
         observed = _hmm_observations(method, evidence)
+        start, stop, observed = _hmm_time_range(observed, start, stop)
     kind = _representation_kind(method, cmodel, options)
     repn = cmodel.representation(
-        kind,
-        **_structure_params(kind, cmodel, observed=observed, start=start, stop=stop),
+        kind, **_structure_params(kind, cmodel, start=start, stop=stop)
     )
     query = map_query_args(
         model=cmodel.model,
@@ -387,11 +412,8 @@ def _solve_map_query(repn: RecursiveHMMRepresentation, q):
 
 @ovld
 def _solve_map_query(repn: MVRHMMRepresentation, q):
-    if q.start != 0:
-        raise InvalidInputError(
-            f"mvr_viterbi infers over the times 0..stop; start must be 0, got {q.start}"
-        )
-    evidence = q.evidence
+    # List observations are already cut at stop (q.observed); a dict is sparse.
+    evidence = q.evidence if q.observed is None else q.observed
     if q.stop is not None:
         time_horizon = q.stop + 1
     elif isinstance(evidence, dict):

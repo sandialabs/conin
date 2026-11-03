@@ -1,6 +1,6 @@
 """Every method rejects the options it does not take, the HMM functions reject
-empty observations, and every backend reads the ``default_value`` of a sparse
-factor."""
+empty observations, ``start`` and ``stop`` mean the same for every method, and
+every backend reads the ``default_value`` of a sparse factor."""
 
 import pytest
 
@@ -112,6 +112,23 @@ def test_unknown_option_raises_type_error(method, make, kwds):
         map_query(make(), method=method, typo_option=1, **kwds)
 
 
+@pytest.mark.parametrize(
+    "method,kwds",
+    [
+        pytest.param("integer_program", MIP, marks=needs_mip_solver),
+        pytest.param("toulbar2", {}, marks=needs_toulbar2),
+        pytest.param("variable_elimination", {}),
+    ],
+)
+@pytest.mark.parametrize("option", ["prune_network", "create_MN"])
+@pytest.mark.parametrize("value", [False, True])
+def test_removed_pgmpy_options_raise_type_error(method, kwds, option, value):
+    # These pgmpy options were accepted with False and raised RuntimeError
+    # with True; they are gone.
+    with pytest.raises(TypeError, match=option):
+        map_query(_bn(), method=method, **{option: value}, **kwds)
+
+
 def test_log_probability_query_unknown_option_raises_type_error():
     with pytest.raises(TypeError, match="typo_option"):
         log_probability_query(
@@ -150,6 +167,87 @@ def test_hmm_functions_reject_empty_observations(search, make):
     # viterbi, a_star and recursive_a_star raised IndexError.
     with pytest.raises(InvalidInputError, match="must not be empty"):
         search(hmm=make(), observed=[])
+
+
+# ---------------------------------------------------------------------
+# start and stop mean the same for every HMM method
+# ---------------------------------------------------------------------
+
+HMM_METHODS = [
+    pytest.param("integer_program", MIP, marks=needs_mip_solver, id="ip"),
+    pytest.param(
+        "integer_program",
+        dict(ip_formulation="network_flow", **MIP),
+        marks=needs_mip_solver,
+        id="ip-network-flow",
+    ),
+    pytest.param("toulbar2", {}, marks=needs_toulbar2, id="toulbar2"),
+    pytest.param("variable_elimination", {}, id="ve"),
+    pytest.param("viterbi", {}, id="viterbi"),
+    pytest.param("a_star", {}, id="a-star"),
+    pytest.param("mvr_viterbi", {}, marks=needs_torch, id="mvr-viterbi"),
+]
+
+
+@pytest.mark.parametrize("method,kwds", HMM_METHODS)
+@pytest.mark.parametrize("evidence", [OBSERVED, dict(enumerate(OBSERVED))])
+def test_hmm_stop_drops_the_later_observations(method, kwds, evidence):
+    # viterbi, a_star and network flow ignored stop, and for mvr_viterbi it
+    # had to cover every observation.
+    hmm = hex_.create_hmm1()
+    if method == "mvr_viterbi" and isinstance(evidence, dict):
+        # mvr_viterbi reads a dict as sparse observations; see below.
+        evidence = OBSERVED
+    results = map_query(hmm, method=method, evidence=evidence, stop=2, **kwds)
+    expected = map_query(hmm, method="viterbi", evidence=OBSERVED[:3])
+    states = results.solution.states
+    if isinstance(states, dict):
+        assert list(states) == [0, 1, 2]
+        states = list(states.values())
+    assert states == expected.solution.states
+    assert results.solution.log_potential == pytest.approx(
+        expected.solution.log_potential
+    )
+
+
+@pytest.mark.parametrize("method,kwds", HMM_METHODS)
+def test_hmm_stop_past_the_last_observation_raises(method, kwds):
+    with pytest.raises(InvalidInputError, match="past the last observation"):
+        map_query(
+            hex_.create_hmm1(),
+            method=method,
+            evidence=OBSERVED,
+            stop=len(OBSERVED),
+            **kwds,
+        )
+
+
+@needs_torch
+def test_mvr_viterbi_sparse_observations_may_stop_after_the_last_one():
+    results = map_query(
+        hex_.create_hmm1(), method="mvr_viterbi", evidence={0: "o0", 2: "o1"}, stop=4
+    )
+    assert list(results.solution.states) == [0, 1, 2, 3, 4]
+
+
+@pytest.mark.parametrize("method,kwds", HMM_METHODS)
+def test_hmm_start_must_be_zero(method, kwds):
+    # viterbi, a_star and network flow ignored start.
+    with pytest.raises(InvalidInputError, match="only be unrolled from start=0"):
+        map_query(hex_.create_hmm1(), method=method, evidence=OBSERVED, start=1, **kwds)
+
+
+@pytest.mark.parametrize(
+    "method,kwds",
+    [
+        pytest.param("integer_program", MIP, marks=needs_mip_solver),
+        pytest.param("toulbar2", {}, marks=needs_toulbar2),
+        pytest.param("variable_elimination", {}),
+    ],
+)
+def test_dbn_start_must_be_zero(method, kwds):
+    with pytest.raises(InvalidInputError, match="only be unrolled from start=0"):
+        map_query(_dbn(), method=method, start=1, stop=3, **kwds)
 
 
 # ---------------------------------------------------------------------

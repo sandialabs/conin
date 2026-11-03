@@ -518,10 +518,21 @@ def test_a_variable_past_stop_is_unknown():
         log_probability_query(_hmm(), {("H", 3): "h0"}, stop=2)
 
 
-@pytest.mark.parametrize("start,stop", [(0, 0), (2, 1)])
-def test_stop_must_be_after_start(start, stop):
-    with pytest.raises(InvalidInputError, match="start < stop"):
-        log_probability_query(_dbn(), {("A", 0): 0}, start=start, stop=stop)
+def test_stop_must_not_be_before_start():
+    with pytest.raises(InvalidInputError, match="stop >= start"):
+        log_probability_query(_dbn(), {("A", 0): 0}, start=2, stop=1)
+
+
+@pytest.mark.parametrize("model", [_dbn, _hmm])
+def test_stop_equal_to_start_is_one_time_step(model):
+    # This raised InvalidInputError, although map_query and the
+    # representations unroll a single time step for stop == start.
+    variable = ("A", 0) if model is _dbn else ("H", 0)
+    state = 0 if model is _dbn else "h0"
+    one_step = log_probability_query(model(), {variable: state}, stop=0)
+    assert one_step == pytest.approx(
+        log_probability_query(model(), {variable: state}, stop=1)
+    )
 
 
 def test_unknown_options_raise_type_error():

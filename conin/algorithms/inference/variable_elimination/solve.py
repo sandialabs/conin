@@ -4,7 +4,6 @@ import math
 
 from pyomo.common.timing import TicTocTimer
 
-from conin.algorithms.inference.query_checks import reject_pruning_options
 from conin.algorithms.inference.results import (
     map_results,
     map_solution,
@@ -78,9 +77,8 @@ def _solve_variable_elimination(repn, q):
     ``write_uai_file`` (save the factor model, with the constraint factors,
     to this file), ``solution_with_evidence`` and its synonym
     ``solution_with_fixed`` (add the evidence to ``solution.states``; always
-    done when the model has constraints), and ``prune_network`` and
-    ``create_MN`` (``True`` raises ``RuntimeError``), as for the integer
-    program and toulbar2.  Other options raise ``TypeError``.  An HMM is
+    done when the model has constraints).  Other options raise
+    ``TypeError``.  An HMM is
     solved as its unrolled DBN
     (:func:`~conin.algorithms.inference.hmm_results.solve_unrolled_hmm`).
     """
@@ -89,7 +87,6 @@ def _solve_variable_elimination(repn, q):
     with_evidence = options.pop("solution_with_evidence", False)
     with_fixed = options.pop("solution_with_fixed", False)
     solution_with_evidence = with_evidence or with_fixed or len(repn.constraints) > 0
-    reject_pruning_options(options)
     reject_unexpected_options(options, "map_query(method='variable_elimination')")
 
     def _execute():

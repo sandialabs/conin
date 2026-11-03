@@ -1,3 +1,5 @@
+import numpy as np
+
 from conin.util import Util
 
 
@@ -26,8 +28,9 @@ class Test_Util:
 
     def test_sample_from_vec(self):
         vec = [0.1, 0.3, 0.6]
+        rng = np.random.default_rng(0)
         for i in range(10):
-            assert Util.sample_from_vec(vec) in {0, 1, 2}
+            assert Util.sample_from_vec(vec, rng) in {0, 1, 2}
 
     def test_normalize_vec(self):
         vec = [1, 2, 3, 4, 6]

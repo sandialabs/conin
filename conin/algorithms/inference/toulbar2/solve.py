@@ -6,10 +6,7 @@ The models are built by the ``"toulbar2"`` representations
 
 from pyomo.common.timing import TicTocTimer
 
-from conin.algorithms.inference.query_checks import (
-    full_query_variables,
-    reject_pruning_options,
-)
+from conin.algorithms.inference.query_checks import full_query_variables
 from conin.algorithms.inference.results import (
     map_results,
     map_solution,
@@ -29,8 +26,7 @@ def _solve_toulbar2(repn, q):
     ``q`` is the query of :func:`~conin.algorithms.inference.map_query` (``variables``,
     ``evidence``, ``timing`` and ``options``).  The options are ``verbose``
     (the toulbar2 verbosity, default ``-1``), ``write_uai_file`` (write the
-    UAI file that toulbar2 reads to this path), ``prune_network`` and
-    ``create_MN`` (``True`` raises ``RuntimeError``), and the options of
+    UAI file that toulbar2 reads to this path), and the options of
     :func:`solve_toulbar2_map_query_model`.  An HMM is solved as its unrolled
     DBN (:func:`~conin.algorithms.inference.hmm_results.solve_unrolled_hmm`).
 
@@ -44,7 +40,6 @@ def _solve_toulbar2(repn, q):
     options = dict(q.options)
     verbose = options.pop("verbose", -1)
     write_uai_file = options.pop("write_uai_file", None)
-    reject_pruning_options(options)
     solver_timer = TicTocTimer()
     solver_timer.tic(None)
     try:

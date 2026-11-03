@@ -61,7 +61,7 @@ def _structure_params(cmodel, *, variables, start, stop):
     Raises
     ------
     InvalidInputError
-        If ``stop`` is not after ``start``.
+        If ``stop`` is before ``start``.
     """
     if not isinstance(
         cmodel,
@@ -77,9 +77,9 @@ def _structure_params(cmodel, *, variables, start, stop):
             and isinstance(var[1], numbers.Integral)
         ]
         stop = max(times + [start + 1])
-    elif stop <= start:
+    elif stop < start:
         raise InvalidInputError(
-            f"A DBN or HMM is unrolled over start..stop with start < stop; got "
+            f"A DBN or HMM is unrolled over start..stop with stop >= start; got "
             f"start={start}, stop={stop}"
         )
     return dict(start=start, stop=stop)
@@ -159,7 +159,7 @@ def log_probability_query(
         If the method does not support the model's constraint family (no
         such representation is registered); for an ``assignment`` or
         ``evidence`` that is not a dict, an empty ``assignment``, a variable
-        in both, an unknown variable or state, or ``stop <= start``; or if
+        in both, an unknown variable or state, or ``stop < start``; or if
         the evidence (with the constraints) has probability zero, so the
         conditional is not defined.
 

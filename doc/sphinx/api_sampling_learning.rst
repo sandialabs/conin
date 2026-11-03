@@ -4,9 +4,12 @@ Sampling and Learning
 Sampling
 --------
 
-The unconstrained samplers and rejection sampling use NumPy's global random
-state (seed it with ``hmm.set_seed`` or ``numpy.random.seed``); the torch MVR
-samplers take a ``generator`` argument.
+The unconstrained samplers, ``DBNSampler``, rejection sampling and ``mcem``
+take an ``rng`` argument (``None``, a seed or a ``numpy.random.Generator``; see
+:func:`conin.util.as_rng`) and never use NumPy's global random state; the torch
+MVR samplers take a ``torch.Generator`` (``generator``).
+
+.. autofunction:: conin.util.as_rng
 
 .. autofunction:: conin.algorithms.sampling.unconstrained.generate_hidden
 

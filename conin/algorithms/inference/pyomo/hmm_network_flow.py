@@ -50,12 +50,8 @@ def _solve_network_flow(repn, q):
         logger.warning(
             "Cut generation is not supported for the HMM 'network_flow' integer programming formulation"
         )
-    observed = as_sequence(
-        q.evidence,
-        "evidence (the observations) of the 'network_flow' integer programming formulation",
-    )
     infer = _ip_inference if repn.constraints else _lp_inference
-    results = infer(repn, observed=observed, **options)
+    results = infer(repn, observed=q.observed, **options)
     if isinstance(q.evidence, dict):
         key_solutions_by_time(results)
     return results

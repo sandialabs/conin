@@ -343,7 +343,7 @@ class Test_HMM_Util:
         hmm = conin.graphical_models.random_hmm(
             hidden_states=hidden_states,
             observed_states=observed_states,
-            seed=seed,
+            rng=seed,
         )
         assert set(hmm.get_hidden_states()) == set(hidden_states)
         assert set(hmm.get_observable_states()) == set(observed_states)

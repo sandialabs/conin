@@ -8,15 +8,30 @@ class State:
     value: tuple
 
 
+def as_rng(rng=None):
+    """Return a :class:`numpy.random.Generator` for the ``rng`` argument of a sampler.
+
+    ``rng`` is ``None`` (a new generator seeded from the operating system),
+    an int or a :class:`numpy.random.SeedSequence` (a new generator with this
+    seed), or a :class:`numpy.random.Generator` (returned as is, so that
+    successive calls continue its stream), as for
+    :func:`numpy.random.default_rng`.
+    """
+    return np.random.default_rng(rng)
+
+
 class Util:
     @staticmethod
-    def sample_from_vec(probabilities):
-        val = np.random.uniform()
+    def sample_from_vec(probabilities, rng):
+        """Draw an index with the given probabilities, using the generator ``rng``."""
+        val = rng.random()
         temp = 0
         for i in range(len(probabilities)):
             temp += probabilities[i]
             if temp >= val:
                 return i
+        # The probabilities sum to slightly less than 1 (rounding).
+        return len(probabilities) - 1
 
     @staticmethod
     def normalize_vector(vec):
