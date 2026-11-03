@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 
 from conin.algorithms import learning
@@ -322,9 +323,9 @@ def test_mcem_runs_and_returns_log_prob():
     import conin.examples.hidden_markov_model as tc
 
     chmm = tc.create_chmm1_oracle()
-    chmm.model.set_seed(0)
+    rng = np.random.default_rng(0)
     observed = generate_observed_from_hidden(
-        chmm.model, rejection_sample_hidden(chmm, 11)
+        chmm.model, rejection_sample_hidden(chmm, 11, rng=rng), rng=rng
     )
 
     # mcem expects a ConstrainedHiddenMarkovModel (or a bare HMM) as app.
@@ -335,6 +336,7 @@ def test_mcem_runs_and_returns_log_prob():
         observable_states=["o0", "o1"],
         max_iterations=3,
         samples_per_iteration=2,
+        rng=rng,
     )
     assert isinstance(log_prob, float)
     assert log_prob < 0  # log-probability of any sequence is negative
@@ -349,8 +351,8 @@ def _mcem_spy(monkeypatch):
     record = munch.Munch(sampled_from=[], sampled=[], scored=[], trained=[])
     orig_sample = mcem_module.rejection_sample_hidden
 
-    def rejection_sample_hidden(cmodel, time_steps):
-        hidden = orig_sample(cmodel, time_steps)
+    def rejection_sample_hidden(cmodel, time_steps, *, rng):
+        hidden = orig_sample(cmodel, time_steps, rng=rng)
         record.sampled_from.append(cmodel.model)
         record.sampled.append(hidden)
         return hidden
@@ -376,7 +378,6 @@ def test_mcem_samples_from_the_reestimated_hmm(monkeypatch):
 
     record = _mcem_spy(monkeypatch)
     chmm = tc.create_chmm1_oracle()
-    chmm.model.set_seed(0)
     observed = ["o0"] * 11
     learning.mcem(
         app=chmm,
@@ -386,6 +387,7 @@ def test_mcem_samples_from_the_reestimated_hmm(monkeypatch):
         max_iterations=3,
         samples_per_iteration=2,
         convergence_tolerance=-1,  # run every iteration
+        rng=0,
     )
     # 2 samples per iteration; iteration k > 0 samples from the HMM fitted in
     # iteration k - 1, not from the original one.
@@ -406,7 +408,6 @@ def test_mcem_trains_on_the_samples_it_scores(monkeypatch):
 
     record = _mcem_spy(monkeypatch)
     chmm = tc.create_chmm1_oracle()
-    chmm.model.set_seed(1)
     observed = ["o0", "o1"] * 6
     log_prob = learning.mcem(
         app=chmm,
@@ -415,6 +416,7 @@ def test_mcem_trains_on_the_samples_it_scores(monkeypatch):
         observable_states=["o0", "o1"],
         max_iterations=1,
         samples_per_iteration=3,
+        rng=1,
     )
     # One draw per sample, and those are the training sequences.
     assert len(record.sampled) == 3
@@ -427,7 +429,6 @@ def test_mcem_accepts_a_bare_hmm():
     import conin.examples.hidden_markov_model as tc
 
     hmm = tc.create_hmm1()
-    hmm.set_seed(2)
     log_prob = learning.mcem(
         app=hmm,
         observed=["o0"] * 5,
@@ -435,6 +436,7 @@ def test_mcem_accepts_a_bare_hmm():
         observable_states=["o0", "o1"],
         max_iterations=2,
         samples_per_iteration=2,
+        rng=2,
     )
     assert log_prob < 0
 
@@ -453,6 +455,7 @@ def _mcem_args(**kwargs):
         hidden_states=["h0", "h1"],
         observable_states=["o0", "o1"],
         samples_per_iteration=2,
+        rng=0,
     )
     args.update(kwargs)
     return args
@@ -461,28 +464,19 @@ def _mcem_args(**kwargs):
 def test_mcem_stops_when_the_log_probability_converges(monkeypatch):
     # It never updated the previous log-probability, so the convergence test
     # never ran and every call did max_iterations iterations.
-    import numpy as np
-
     record = _mcem_spy(monkeypatch)
-    np.random.seed(0)
     learning.mcem(**_mcem_args(max_iterations=50, convergence_tolerance=1e-6))
     assert 2 <= len(record.trained) < 50
 
 
 def test_mcem_runs_max_iterations_without_convergence(monkeypatch):
-    import numpy as np
-
     record = _mcem_spy(monkeypatch)
-    np.random.seed(0)
     learning.mcem(**_mcem_args(max_iterations=4, convergence_tolerance=-1))
     assert len(record.trained) == 4
 
 
 def test_mcem_default_options(monkeypatch):
-    import numpy as np
-
     record = _mcem_spy(monkeypatch)
-    np.random.seed(0)
     args = _mcem_args()
     del args["samples_per_iteration"]
     log_prob = learning.mcem(**args)

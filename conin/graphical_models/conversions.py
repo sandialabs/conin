@@ -28,6 +28,24 @@ def _all_cpds(*args):
                 yield v
 
 
+def check_unroll_start(start):
+    """Raise unless ``start`` is ``0``, the only time a DBN or HMM can be unrolled from.
+
+    The CPDs of the first unrolled time step are the DBN's initial CPDs, which
+    describe time 0; starting later would need the marginal distribution at
+    ``start``.
+
+    Raises
+    ------
+    InvalidInputError
+        If ``start != 0``.
+    """
+    if start != 0:
+        raise InvalidInputError(
+            f"A DBN or HMM can only be unrolled from start=0; " f"got start={start}"
+        )
+
+
 def create_bn_from_dbn(*, dbn, start, stop):
     """Unroll a dynamic Bayesian network into a Bayesian network.
 
@@ -53,15 +71,10 @@ def create_bn_from_dbn(*, dbn, start, stop):
     InvalidInputError
         If ``start != 0`` or ``stop < start``.
     """
-    if start != 0:
-        # The transition CPDs at time `start` have parents at `start - 1`, which
-        # are not unrolled, so the time-`start` nodes would keep the initial
-        # CPDs of time 0 (this used to fail later with an AttributeError).
-        # Starting later would need the marginal distribution at `start`.
-        raise InvalidInputError(
-            f"A dynamic Bayesian network can only be unrolled from start=0; "
-            f"got start={start}"
-        )
+    # The transition CPDs at time `start` have parents at `start - 1`, which
+    # are not unrolled, so the time-`start` nodes would keep the initial CPDs
+    # of time 0 (this used to fail later with an AttributeError).
+    check_unroll_start(start)
     if stop < start:
         raise InvalidInputError(
             f"A dynamic Bayesian network is unrolled over start..stop with "

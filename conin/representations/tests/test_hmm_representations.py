@@ -131,14 +131,14 @@ def test_oracle_checks_do_not_change_the_representation():
 # ---------------------------------------------------------------------
 
 
-def _reference_generate_hidden(cmodel, time_steps, max_failures=1000):
+def _reference_generate_hidden(cmodel, time_steps, rng, max_failures=1000):
     """Reference rejection sampler: resample until every constraint holds."""
     hmm = cmodel.model
     h2i = hmm.hidden_to_internal
-    hidden = [h2i[h] for h in generate_hidden(hmm, time_steps)]
+    hidden = [h2i[h] for h in generate_hidden(hmm, time_steps, rng=rng)]
     ctr = 0
     while not _reference_is_feasible(cmodel, hidden):
-        hidden = [h2i[h] for h in generate_hidden(hmm, time_steps)]
+        hidden = [h2i[h] for h in generate_hidden(hmm, time_steps, rng=rng)]
         ctr += 1
         if ctr > max_failures:
             raise RuntimeError("failed")
@@ -148,21 +148,21 @@ def _reference_generate_hidden(cmodel, time_steps, max_failures=1000):
 @pytest.mark.parametrize("seed", [0, 3, 11])
 def test_rejection_sampling_matches_the_reference(seed):
     cmodel = tc.create_chmm1_oracle()
-    cmodel.model.set_seed(seed)
-    expected = [_reference_generate_hidden(cmodel, 20) for _ in range(3)]
-    cmodel.model.set_seed(seed)
-    new = [rejection_sample_hidden(cmodel, 20) for _ in range(3)]
+    rng = np.random.default_rng(seed)
+    expected = [_reference_generate_hidden(cmodel, 20, rng) for _ in range(3)]
+    rng = np.random.default_rng(seed)
+    new = [rejection_sample_hidden(cmodel, 20, rng=rng) for _ in range(3)]
     assert new == expected
 
 
 def test_rejection_sampling_bare_hmm_is_unconstrained_sampling():
     hmm = tc.create_hmm1()
-    hmm.set_seed(5)
-    expected = generate_hidden(hmm, 12)
-    hmm.set_seed(5)
-    assert rejection_sample_hidden(hmm, 12) == expected
-    hmm.set_seed(5)
-    assert rejection_sample_hidden(ConstrainedHiddenMarkovModel(hmm), 12) == expected
+    expected = generate_hidden(hmm, 12, rng=5)
+    assert rejection_sample_hidden(hmm, 12, rng=5) == expected
+    assert (
+        rejection_sample_hidden(ConstrainedHiddenMarkovModel(hmm), 12, rng=5)
+        == expected
+    )
 
 
 def test_rejection_sampling_gives_up_after_max_failures():

@@ -18,18 +18,18 @@ def add_unknowns(hidden_list, *, num=1, token="__UNKNOWN__"):
     Returns:
         list of lists: The modified version of hidden_vec
     """
-    num_occurences = {}
+    num_occurrences = {}
     for hidden in hidden_list:
         for val in hidden:
-            if val not in num_occurences:
-                num_occurences[val] = 1
+            if val not in num_occurrences:
+                num_occurrences[val] = 1
             else:
-                num_occurences[val] += 1
+                num_occurrences[val] += 1
 
     output = hidden_list
     for i, hidden in enumerate(output):
         for j, val in enumerate(hidden):
-            if num_occurences[val] <= num:
+            if num_occurrences[val] <= num:
                 output[i][j] = token  # Update the value in the output list
 
     return output

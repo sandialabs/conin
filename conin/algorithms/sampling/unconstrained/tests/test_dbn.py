@@ -117,10 +117,18 @@ class TestSampler(unittest.TestCase):
 
     def test_sample(self):
         sampler = DBNSampler(self.G)
-        runs = sampler.sample(T=6, N=8)
+        runs = sampler.sample(time_steps=6, num_samples=8)
         assert len(runs) == 8
-        for k, trace in runs.items():
+        for trace in runs:
             assert len(trace) == 6
+
+    def test_same_seed_same_samples(self):
+        runs = DBNSampler(self.G, rng=3).sample(time_steps=5, num_samples=4)
+        assert DBNSampler(self.G, rng=3).sample(time_steps=5, num_samples=4) == runs
+        # A sampler continues its generator's stream.
+        sampler = DBNSampler(self.G, rng=3)
+        assert sampler.sample(time_steps=5, num_samples=2) == runs[:2]
+        assert sampler.sample(time_steps=5, num_samples=2) == runs[2:]
 
     def test_does_not_mutate_input_dbn_t(self):
         t_before = self.G.t.value()
@@ -128,7 +136,7 @@ class TestSampler(unittest.TestCase):
         sampler = DBNSampler(self.G)
         assert sampler.G is not self.G
         sampler.set_time(3)
-        sampler.sample(T=4, N=2)
+        sampler.sample(time_steps=4, num_samples=2)
         assert self.G.t.value() is t_before
 
     def tearDown(self):

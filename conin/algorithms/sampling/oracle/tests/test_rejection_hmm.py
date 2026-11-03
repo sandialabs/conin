@@ -2,7 +2,6 @@
 
 import importlib
 
-import numpy as np
 import pytest
 
 import conin.examples.hidden_markov_model as hex_
@@ -31,25 +30,21 @@ def _at_least_one(state):
 
 def test_bare_hmm_draws_like_generate_hidden():
     hmm = hex_.create_hmm1()
-    np.random.seed(3)
-    expected = generate_hidden(hmm, 7)
-    np.random.seed(3)
-    assert rejection_sample_hidden(hmm, 7) == expected
+    assert rejection_sample_hidden(hmm, 7, rng=3) == generate_hidden(hmm, 7, rng=3)
 
 
 def test_unconstrained_cmodel_draws_like_generate_hidden():
     hmm = hex_.create_hmm1()
-    np.random.seed(5)
-    expected = generate_hidden(hmm, 6)
-    np.random.seed(5)
-    assert rejection_sample_hidden(ConstrainedHiddenMarkovModel(hmm), 6) == expected
+    expected = generate_hidden(hmm, 6, rng=5)
+    assert (
+        rejection_sample_hidden(ConstrainedHiddenMarkovModel(hmm), 6, rng=5) == expected
+    )
 
 
 @pytest.mark.parametrize("seed", [0, 1, 2])
 def test_samples_are_feasible(seed):
-    np.random.seed(seed)
     chmm = ConstrainedHiddenMarkovModel(hex_.create_hmm1(), _at_least_one("h0"))
-    hidden = rejection_sample_hidden(chmm, 4)
+    hidden = rejection_sample_hidden(chmm, 4, rng=seed)
     assert len(hidden) == 4
     assert set(hidden) <= {"h0", "h1"}
     assert "h0" in hidden
@@ -57,9 +52,8 @@ def test_samples_are_feasible(seed):
 
 
 def test_example_oracle_constraints_are_satisfied():
-    np.random.seed(0)
     chmm = hex_.create_chmm1_oracle()
-    hidden = rejection_sample_hidden(chmm, 15)
+    hidden = rejection_sample_hidden(chmm, 15, rng=0)
     assert 9 < hidden.count("h0") < 13
     assert is_feasible(chmm, hidden)
 

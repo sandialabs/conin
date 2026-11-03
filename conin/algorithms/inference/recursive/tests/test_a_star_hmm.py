@@ -136,7 +136,7 @@ def test_random_hmms_match_brute_force(seed, num_solutions):
     # Three hidden states, so many prefixes share a (last state, length,
     # count) node.
     hmm = random_hmm(
-        hidden_states=["a", "b", "c"], observed_states=["x", "y"], seed=seed
+        hidden_states=["a", "b", "c"], observed_states=["x", "y"], rng=seed
     )
     rng = random.Random(seed)
     observed = [rng.choice(["x", "y"]) for _ in range(6)]

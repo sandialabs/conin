@@ -5,7 +5,7 @@ import json
 import ast
 
 from conin.exceptions import InvalidInputError
-from conin.util import Util
+from conin.util import Util, as_rng
 from conin.graphical_models.base import GraphicalModel
 
 
@@ -256,16 +256,6 @@ class HiddenMarkovModel(GraphicalModel):
         """
         return h in self._hidden_to_internal
 
-    def set_seed(self, seed):
-        """Set the NumPy random seed used for model sampling.
-
-        Parameters
-        ----------
-        seed : int
-            Seed value for the random number generator.
-        """
-        np.random.seed(seed)
-
     def get_hidden_states(self):
         """Return the external hidden-state labels.
 
@@ -506,7 +496,7 @@ class HiddenMarkovModel(GraphicalModel):
         )
 
 
-def random_hmm(*, hidden_states, observed_states, seed=None):
+def random_hmm(*, hidden_states, observed_states, rng=None):
     """Generate a random hidden Markov model.
 
     Parameters
@@ -515,8 +505,9 @@ def random_hmm(*, hidden_states, observed_states, seed=None):
         Hidden state labels for the generated model.
     observed_states : iterable
         Observable state labels for the generated model.
-    seed : int, optional
-        Random seed used for reproducible sampling.
+    rng : None, int or numpy.random.Generator, optional
+        The random generator, or a seed for a new one (see
+        :func:`conin.util.as_rng`); pass a seed for a reproducible model.
 
     Returns
     -------
@@ -524,16 +515,15 @@ def random_hmm(*, hidden_states, observed_states, seed=None):
         Hidden Markov model with randomly generated start, transition, and
         emission probabilities.
     """
-    if seed is not None:
-        np.random.seed(seed)
+    rng = as_rng(rng)
 
-    S = Util.normalize_dictionary({s: np.random.uniform() for s in hidden_states})
+    S = Util.normalize_dictionary({s: rng.random() for s in hidden_states})
 
     T = Util.normalize_2d_dictionary(
-        {(a, b): np.random.uniform() for a in hidden_states for b in hidden_states}
+        {(a, b): rng.random() for a in hidden_states for b in hidden_states}
     )
     E = Util.normalize_2d_dictionary(
-        {(s, o): np.random.uniform() for s in hidden_states for o in observed_states}
+        {(s, o): rng.random() for s in hidden_states for o in observed_states}
     )
 
     hmm = HiddenMarkovModel(start_probs=S, transition_probs=T, emission_probs=E)

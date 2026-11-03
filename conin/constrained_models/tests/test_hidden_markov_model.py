@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 
 from conin.algorithms.feasibility import is_feasible
@@ -71,13 +72,10 @@ class Test_Oracle_ConstrainedHiddenMarkovModel:
         assert not cpgm.model.is_valid_hidden_state("invalid")
         assert not cpgm.model.is_valid_hidden_state("")
 
-    def test_set_seed_affects_generation(self):
-        # Calling set_seed with the same value should produce identical sequences.
+    def test_same_seed_same_sequence(self):
         chmm = tc.create_chmm1_oracle()
-        chmm.model.set_seed(42)
-        seq1 = generate_hidden(chmm.model, 10)
-        chmm.model.set_seed(42)
-        seq2 = generate_hidden(chmm.model, 10)
+        seq1 = generate_hidden(chmm.model, 10, rng=42)
+        seq2 = generate_hidden(chmm.model, 10, rng=42)
         assert seq1 == seq2
 
     def test_generate(self):
@@ -182,18 +180,19 @@ def _num_zeros_hmm():
 def test_integer_states_oracle_sampling_and_feasibility():
     hmm = _num_zeros_hmm()
     chmm = ConstrainedHiddenMarkovModel(
-        hmm, oc.has_exact_number_of_occurences_constraint(val=0, count=10)
+        hmm, oc.has_exact_number_of_occurrences_constraint(val=0, count=10)
     )
     assert not is_feasible(chmm, [0] * 9)
     assert is_feasible(chmm, [0] * 10)
     assert not is_feasible(chmm, [0] * 11)
 
-    hmm.set_seed(1)
+    rng = np.random.default_rng(1)
     for _ in range(5):
-        hidden = rejection_sample_hidden(chmm, 20)
+        hidden = rejection_sample_hidden(chmm, 20, rng=rng)
         assert len(hidden) == 20 and hidden.count(0) == 10
         assert is_feasible(chmm, hidden)
-        assert len(generate_observed_from_hidden(chmm.model, hidden)) == 20
+        observed = generate_observed_from_hidden(chmm.model, hidden, rng=rng)
+        assert len(observed) == 20
 
 
 @pytest.mark.skipif(not default_mip_solver, reason="No mip solver installed")

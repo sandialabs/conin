@@ -599,7 +599,7 @@ def test_map_query_mvr_viterbi_errors(hmm, observed):
     model = ConstrainedHiddenMarkovModel(
         hmm, make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="B")
     )
-    with pytest.raises(InvalidInputError, match="start must be 0"):
+    with pytest.raises(InvalidInputError, match="only be unrolled from start=0"):
         map_query(model, method="mvr_viterbi", evidence=observed, start=1)
     with pytest.raises(InvalidInputError, match="stop time or at least one"):
         map_query(model, method="mvr_viterbi", evidence={})

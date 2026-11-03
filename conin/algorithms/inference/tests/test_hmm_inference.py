@@ -54,8 +54,8 @@ def ub():
 
 @pytest.fixture
 def constraints(lb, ub):
-    num_zeros_lb = has_minimum_number_of_occurences_constraint(val="h0", count=lb)
-    num_zeros_ub = has_maximum_number_of_occurences_constraint(val="h0", count=ub)
+    num_zeros_lb = has_minimum_number_of_occurrences_constraint(val="h0", count=lb)
+    num_zeros_ub = has_maximum_number_of_occurrences_constraint(val="h0", count=ub)
     return [num_zeros_lb, num_zeros_ub]
 
 

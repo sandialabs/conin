@@ -38,7 +38,6 @@ def create_hmm0():
         transition_probs=transition_probs,
         emission_probs=emission_probs,
     )
-    hmm.set_seed(0)
     return hmm
 
 
@@ -61,7 +60,6 @@ def create_hmm1():
         transition_probs=transition_probs,
         emission_probs=emission_probs,
     )
-    hmm.set_seed(0)
     return hmm
 
 
@@ -92,7 +90,6 @@ def create_hmm1_aos():
         transition_probs=transition_probs,
         emission_probs=emission_probs,
     )
-    hmm.set_seed(0)
     return hmm
 
 
@@ -119,7 +116,6 @@ def create_hmm2():
         transition_probs=transition_probs,
         emission_probs=emission_probs,
     )
-    hmm.set_seed(0)
     return hmm
 
 
@@ -157,7 +153,6 @@ def create_hmm2_aos():
         transition_probs=transition_probs,
         emission_probs=emission_probs,
     )
-    hmm.set_seed(0)
     return hmm
 
 

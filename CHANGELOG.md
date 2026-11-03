@@ -230,6 +230,10 @@ Constraints
   occurs_only_in_time_frame_constraint and
   occurs_at_least_once_in_time_frame_constraint no longer reject completable
   prefixes.
+- The misspelt "occurences" names are spelt "occurrences":
+  has_minimum_number_of_occurrences(_constraint),
+  has_maximum_number_of_occurrences(_constraint) and
+  has_exact_number_of_occurrences_constraint (no aliases).
 - The MVR modules move to conin.constraints.mvr. mvr_timerange returns a new
   MVR (inplace=True for the old behaviour). MVR_MatVecRepn arrays are
   read-only copies.
@@ -269,7 +273,7 @@ Inference
   conin.inference.{mn,bn,dbn,hmm} packages are removed. CHMM inputs are no
   longer accepted.
 - New method="mvr_viterbi" (torch): the solution also has augmented; dict
-  evidence is sparse; start must be 0.
+  evidence is sparse.
 - method="a_star" with RecursiveConstraints runs recursive_a_star.
   recursive_a_star takes hmm= (a constrained HMM with RecursiveConstraints or
   a bare HMM); a_star_(..., chmm=) is a_star_(..., oracle=).
@@ -280,14 +284,23 @@ Inference
   sampling (they raised TypeError).
 - HMM observations are read one way everywhere: a non-empty list or tuple, or
   a dict keyed by exactly 0..T-1 (InvalidInputError otherwise; evidence=None
-  is refused for every method). integer_program, toulbar2 and
-  variable_elimination infer over start..stop (VE ignored stop); a stop past
-  the last observation raises InvalidInputError.
+  is refused for every method).
+- start and stop mean the same for every DBN and HMM method. start must be 0
+  (InvalidInputError, with the same message for every method; viterbi,
+  a_star and the network-flow integer program ignored it). For an HMM, every
+  method infers over 0..stop and ignores the observations after stop, which
+  defaults to the last observation; a stop past it raises InvalidInputError
+  (viterbi, a_star and network flow ignored stop, variable_elimination
+  ignored it too, and mvr_viterbi raised unless stop covered every
+  observation, and with list evidence accepted a later stop). Only
+  mvr_viterbi with sparse dict observations infers past the last
+  observation. log_probability_query accepts stop == start (one time step),
+  as map_query does (it raised InvalidInputError).
 - viterbi accepts an unconstrained ConstrainedHiddenMarkovModel; viterbi and
   a_star no longer accept an HMM_MatVecRepn. viterbi/a_star on an MN, BN or
   DBN raise InvalidInputError (was TypeError).
 - integer_program: ip_formulation is understood for every model type;
-  prune_network=False/create_MN=False are accepted; network flow refuses
+  network flow refuses
   unsupported evidence with InvalidInputError (it returned None) and uses
   lp_inference for an unconstrained ConstrainedHiddenMarkovModel.
 - toulbar2: works for every model type with verbose=; without pytoulbar2 it
@@ -320,12 +333,13 @@ Inference
   InvalidInputError (was TypeError).
 - The query-check messages changed: a partial variables query raises
   RuntimeError("Partial MAP queries are only supported by
-  method='variable_elimination'; ..."), and prune_network/create_MN=True raise
-  RuntimeError("<option>=True is not supported for CONIN models").
+  method='variable_elimination'; ...").
+- The pgmpy options prune_network and create_MN are removed: like any other
+  unknown option, they raise TypeError for every method (False was accepted
+  and True raised RuntimeError).
 - integer_program, toulbar2 and variable_elimination have one solver per
   backend for MN, BN and DBN, and solve an HMM as its unrolled DBN, so the
-  options mean the same for every model type: prune_network/create_MN are
-  checked on Markov networks too (they raised TypeError), timing=True is
+  options mean the same for every model type: timing=True is
   honoured by the integer program on DBNs and HMMs (it was ignored), and
   solution_with_evidence=True works for an HMM integer program with list
   evidence (it raised AttributeError).
@@ -333,8 +347,7 @@ Inference
   misspelt option is not silently ignored: variable_elimination and viterbi
   ignored unknown options (e.g. solver=). variable_elimination also accepts
   solution_with_fixed (a synonym of solution_with_evidence, as for
-  integer_program and toulbar2; it was ignored) and checks
-  prune_network/create_MN like the other two.
+  integer_program and toulbar2; it was ignored).
 - lp_inference and ip_inference (the network-flow integer program) pass
   solver_options to the solver (they were ignored for every solver but
   or_topas), and with solver="or_topas" pass tee (quiet=False) to both
@@ -387,9 +400,18 @@ Sampling and learning
 - HMM sampling functions:
   conin.algorithms.sampling.unconstrained.generate_hidden(hmm, T),
   generate_hidden_until_state, generate_observed_from_hidden,
-  generate_observed (same draws from NumPy's global state; hmm.set_seed
-  stays). Constrained HMMs:
+  generate_observed. Constrained HMMs:
   conin.algorithms.sampling.oracle.rejection_sample_hidden.
+- Every NumPy sampler takes rng (None, a seed or a numpy.random.Generator;
+  conin.util.as_rng): the HMM sampling functions, rejection_sample_hidden,
+  mcem and DBNSampler(dbn, rng=...). They no longer use NumPy's global random
+  state, so numpy.random.seed has no effect on them and the draws for a given
+  seed changed. HiddenMarkovModel.set_seed is removed (it only called
+  numpy.random.seed), the conin.examples HMM builders no longer reset the
+  global seed, and random_hmm(seed=...) is random_hmm(rng=...).
+  Util.sample_from_vec takes the generator as a second argument.
+- DBNSampler.sample(T, N) is sample(time_steps, num_samples) and returns a
+  list of traces (was a dict keyed 0..N-1); DBNSampler(G) is DBNSampler(dbn).
 - mcem(app=...) takes a constrained (or bare) HMM, samples from the
   re-estimated HMM each iteration and trains on the samples it scores (its
   results change), and no longer writes the HMM back to app.
@@ -517,7 +539,8 @@ Known issues
 
 - HiddenMarkovModel.log_probability raises ValueError for a zero-probability
   sequence (conin.algorithms.scoring.log_probability returns -inf).
-- DBNs and HMMs can only be unrolled from start=0.
+- DBNs and HMMs can only be unrolled from start=0 (start is kept so that a
+  later start can be supported without another API change).
 
 -------------------------------------------------------------------------------
 Conin 1.1.1

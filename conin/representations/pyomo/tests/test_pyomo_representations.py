@@ -313,34 +313,6 @@ def test_network_flow_smoek_constraints():
 
 
 # ---------------------------------------------------------------------
-# BN build options
-# ---------------------------------------------------------------------
-
-
-@skipif_no_mip_solver
-def test_bn_prune_network_false_is_accepted():
-
-    example = bex.cancer1_BN_conin()
-    results = map_query(
-        example.pgm,
-        method="integer_program",
-        solver=default_mip_solver,
-        prune_network=False,
-        create_MN=False,
-    )
-    assert results.solution.states == example.solutions[0].states
-
-
-@pytest.mark.parametrize("option", ["prune_network", "create_MN"])
-def test_bn_unsupported_build_options_raise(option):
-
-    with pytest.raises(RuntimeError):
-        map_query(
-            bex.cancer1_BN_conin().pgm, method="integer_program", **{option: True}
-        )
-
-
-# ---------------------------------------------------------------------
 # map_query(method="integer_program") on an HMM: the ip_formulation branches
 # ---------------------------------------------------------------------
 

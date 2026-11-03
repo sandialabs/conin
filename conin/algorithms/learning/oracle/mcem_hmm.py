@@ -5,6 +5,7 @@ from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.exceptions import InvalidInputError
 from conin.algorithms.learning.unconstrained.supervised import supervised_learning
 from conin.algorithms.sampling.oracle import rejection_sample_hidden
+from conin.util import as_rng
 
 nan = float("nan")
 
@@ -25,6 +26,7 @@ def mcem(
     start_tolerance=None,
     transition_tolerance=None,
     emission_tolerance=None,
+    rng=None,
 ):
     """Monte Carlo EM for an HMM with oracle constraints.
 
@@ -52,6 +54,9 @@ def mcem(
         iteration to the next.
     start_tolerance, transition_tolerance, emission_tolerance : float, optional
         Passed to ``supervised_learning`` (default 1e-4).
+    rng : None, int or numpy.random.Generator, optional
+        The random generator of the sampling, or a seed for a new one (see
+        :func:`conin.util.as_rng`).
 
     Returns
     -------
@@ -81,6 +86,7 @@ def mcem(
     # The re-estimated model is kept locally (a ConstrainedHiddenMarkovModel is
     # immutable) and is not written back to ``app``.
     cmodel = ConstrainedHiddenMarkovModel.ensure(app)
+    rng = as_rng(rng)
 
     prev_log_prob = nan
     iteration = 0
@@ -90,7 +96,7 @@ def mcem(
         simulations = []
         log_prob = 0.0
         for _ in range(samples_per_iteration):
-            feasible_hidden = rejection_sample_hidden(cmodel, len(observed))
+            feasible_hidden = rejection_sample_hidden(cmodel, len(observed), rng=rng)
             log_prob = log_prob + cmodel.model.log_probability(
                 observed, feasible_hidden
             )

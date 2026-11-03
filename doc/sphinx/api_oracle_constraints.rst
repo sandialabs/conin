@@ -37,14 +37,14 @@ of times in a sequence.
    from conin.constraints.oracle.library import (
        appears_at_least_once_constraint,
        does_not_occur_constraint,
-       has_exact_number_of_occurences_constraint,
-       has_maximum_number_of_occurences_constraint,
-       has_minimum_number_of_occurences_constraint,
+       has_exact_number_of_occurrences_constraint,
+       has_maximum_number_of_occurrences_constraint,
+       has_minimum_number_of_occurrences_constraint,
    )
 
-   at_least_two_h0 = has_minimum_number_of_occurences_constraint(val="h0", count=2)
-   at_most_three_h1 = has_maximum_number_of_occurences_constraint(val="h1", count=3)
-   exactly_one_h2 = has_exact_number_of_occurences_constraint(val="h2", count=1)
+   at_least_two_h0 = has_minimum_number_of_occurrences_constraint(val="h0", count=2)
+   at_most_three_h1 = has_maximum_number_of_occurrences_constraint(val="h1", count=3)
+   exactly_one_h2 = has_exact_number_of_occurrences_constraint(val="h2", count=1)
    includes_h0 = appears_at_least_once_constraint("h0")
    excludes_h3 = does_not_occur_constraint("h3")
 

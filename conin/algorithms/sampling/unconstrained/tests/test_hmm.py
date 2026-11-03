@@ -69,40 +69,61 @@ class Test_HMM1:
             assert h in {"o0", "o1"}
 
 
-def _reference_hidden(hmm, time_steps):
+def _reference_hidden(hmm, time_steps, rng):
     # The sampler the HMM had as a method: start, then one transition per step.
     start, transition = hmm.start_vec, hmm.transition_mat
-    hidden = [Util.sample_from_vec(start)]
+    hidden = [Util.sample_from_vec(start, rng)]
     for t in range(time_steps - 1):
-        hidden.append(Util.sample_from_vec(transition[hidden[t]]))
+        hidden.append(Util.sample_from_vec(transition[hidden[t]], rng))
     return hidden
 
 
 @pytest.mark.parametrize("seed", [0, 1, 2])
 def test_same_draws_as_the_reference_sampler(seed):
     hmm = tc.create_hmm2()
-    np.random.seed(seed)
-    hidden = [hmm.hidden_to_external[h] for h in _reference_hidden(hmm, 15)]
+    rng = np.random.default_rng(seed)
+    hidden = [hmm.hidden_to_external[h] for h in _reference_hidden(hmm, 15, rng)]
     emission = hmm.emission_mat
     observed = [
         hmm.observed_to_external[
-            Util.sample_from_vec(emission[hmm.hidden_to_internal[h]])
+            Util.sample_from_vec(emission[hmm.hidden_to_internal[h]], rng)
         ]
         for h in hidden
     ]
-    np.random.seed(seed)
-    assert generate_hidden(hmm, 15) == hidden
-    assert generate_observed_from_hidden(hmm, hidden) == observed
-    np.random.seed(seed)
-    assert generate_observed(hmm, 15) == observed
+    rng = np.random.default_rng(seed)
+    assert generate_hidden(hmm, 15, rng=rng) == hidden
+    assert generate_observed_from_hidden(hmm, hidden, rng=rng) == observed
+    assert generate_observed(hmm, 15, rng=seed) == observed
 
 
 def test_unconstrained_constrained_model_gives_the_same_draws():
     hmm = tc.create_hmm2()
-    np.random.seed(4)
-    expected = generate_observed(hmm, 10)
-    np.random.seed(4)
-    assert generate_observed(ConstrainedHiddenMarkovModel(hmm), 10) == expected
+    expected = generate_observed(hmm, 10, rng=4)
+    assert generate_observed(ConstrainedHiddenMarkovModel(hmm), 10, rng=4) == expected
+
+
+@pytest.mark.parametrize(
+    "sample",
+    [
+        lambda m, rng: generate_hidden(m, 8, rng=rng),
+        lambda m, rng: generate_observed(m, 8, rng=rng),
+        lambda m, rng: generate_observed_from_hidden(m, ["h0", "h1"] * 4, rng=rng),
+        lambda m, rng: generate_hidden_until_state(m, "h2", rng=rng),
+    ],
+)
+def test_rng_seed_and_generator(sample):
+    hmm = tc.create_hmm2()
+    # The same seed gives the same draws, a generator continues its stream, and
+    # the global NumPy random state is neither used nor changed.
+    np.random.seed(0)
+    state = np.random.get_state()[1].copy()
+    first = sample(hmm, 7)
+    assert sample(hmm, 7) == first
+    rng = np.random.default_rng(7)
+    assert sample(hmm, rng) == first
+    draws = [sample(hmm, rng) for _ in range(20)]
+    assert any(d != first for d in draws)
+    assert (np.random.get_state()[1] == state).all()
 
 
 @pytest.mark.parametrize(
@@ -123,21 +144,19 @@ def test_constraints_are_not_ignored(sample):
 
 def test_generate_observed_rejects_negative_time_steps_before_sampling():
     hmm = tc.create_hmm1()
-    np.random.seed(0)
-    state = np.random.get_state()[1].copy()
+    rng = np.random.default_rng(0)
     with pytest.raises(InvalidInputError):
-        generate_observed(hmm, -1)
-    assert (np.random.get_state()[1] == state).all()
+        generate_observed(hmm, -1, rng=rng)
+    assert rng.random() == np.random.default_rng(0).random()
 
 
 @pytest.mark.parametrize("generate", [generate_hidden, generate_observed])
 def test_zero_time_steps_gives_an_empty_sequence(generate):
     # It used to sample the start state anyway and return one label.
     hmm = tc.create_hmm1()
-    np.random.seed(0)
-    state = np.random.get_state()[1].copy()
-    assert generate(hmm, 0) == []
-    assert (np.random.get_state()[1] == state).all()
+    rng = np.random.default_rng(0)
+    assert generate(hmm, 0, rng=rng) == []
+    assert rng.random() == np.random.default_rng(0).random()
 
 
 @pytest.mark.parametrize("generate", [generate_hidden, generate_observed])

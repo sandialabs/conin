@@ -7,10 +7,7 @@ from conin.algorithms.inference.hmm_results import (
     unrolled_evidence,
 )
 from conin.algorithms.inference.query import _observed_time_range
-from conin.algorithms.inference.query_checks import (
-    full_query_variables,
-    reject_pruning_options,
-)
+from conin.algorithms.inference.query_checks import full_query_variables
 from conin.exceptions import InvalidInputError
 
 
@@ -47,15 +44,6 @@ def test_full_query_variables_rejects_a_partial_query():
     # Naming a node the model doesn't have is a partial query too.
     with pytest.raises(RuntimeError, match="Partial MAP queries"):
         full_query_variables(["A", "C"], ("A", "B"))
-
-
-@pytest.mark.parametrize("option", ["prune_network", "create_MN"])
-def test_reject_pruning_options(option):
-    options = {option: False, "solver": "x"}
-    reject_pruning_options(options)
-    assert options == {"solver": "x"}
-    with pytest.raises(RuntimeError, match=f"{option}=True is not supported"):
-        reject_pruning_options({option: True})
 
 
 def test_observed_time_range():

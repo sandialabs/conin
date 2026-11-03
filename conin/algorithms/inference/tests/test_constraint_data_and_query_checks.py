@@ -189,8 +189,7 @@ def test_oracle_predicates_see_the_application_data():
     assert a_star(observed=observed, hmm=cmodel.model).solution.states.count("h0") > 2
     assert is_feasible(cmodel, results.solution.states)
     assert not is_feasible(cmodel, ["h0"] * 6)
-    cmodel.model.set_seed(1)
-    assert rejection_sample_hidden(cmodel, 6).count("h0") <= 2
+    assert rejection_sample_hidden(cmodel, 6, rng=1).count("h0") <= 2
     assert cmodel.data == munch.Munch(k=2)
 
 
@@ -242,8 +241,7 @@ def test_integer_program_solves_with_the_application_data():
 
 # ---------------------------------------------------------------------
 # Regression: the toulbar2 queries ignored `variables` (they returned every
-# variable) and raised TypeError for prune_network/create_MN, while the
-# integer-program queries raise RuntimeError
+# variable), while the integer-program queries raise RuntimeError
 # ---------------------------------------------------------------------
 
 
@@ -295,59 +293,10 @@ def test_toulbar2_all_variables_is_a_full_query():
     assert named.solution.states == full.solution.states
 
 
-@skipif_toulbar2_not_available
-@pytest.mark.parametrize("option", ["prune_network", "create_MN"])
-@pytest.mark.parametrize(
-    "make,kwds",
-    [
-        (lambda: bex.cancer1_BN_conin().pgm, {}),
-        (lambda: dex.simple1_DDBN_conin().pgm, dict(stop=1)),
-        (hex_.create_hmm1, dict(evidence=["o0", "o1"])),
-    ],
-    ids=["bn", "dbn", "hmm"],
-)
-def test_toulbar2_prune_network_and_create_MN(option, make, kwds):
-    pgm = make()
-    expected = map_query(pgm, method="toulbar2", **kwds).solution.states
-    # False is accepted (it raised TypeError) ...
-    results = map_query(pgm, method="toulbar2", **{option: False}, **kwds)
-    assert results.solution.states == expected
-    # ... and True raises RuntimeError, as for the integer program.
-    with pytest.raises(RuntimeError):
-        map_query(pgm, method="toulbar2", **{option: True}, **kwds)
-
-
 # ---------------------------------------------------------------------
 # Regression: one solver per backend, so the options mean the same for every
 # model type
 # ---------------------------------------------------------------------
-
-
-def _backend_params():
-    return [
-        pytest.param(
-            "integer_program",
-            dict(solver=default_mip_solver),
-            marks=pytest.mark.skipif(
-                default_mip_solver is None, reason="No MIP solver installed"
-            ),
-        ),
-        pytest.param("toulbar2", {}, marks=skipif_toulbar2_not_available),
-    ]
-
-
-@pytest.mark.parametrize(
-    "method,solver",
-    _backend_params() + [pytest.param("variable_elimination", {})],
-)
-@pytest.mark.parametrize("option", ["prune_network", "create_MN"])
-def test_mn_prune_network_and_create_MN(method, solver, option):
-    # On a Markov network these options reached the solver (TypeError).
-    mn = mex.ABC_conin().pgm
-    results = map_query(mn, method=method, **{option: False}, **solver)
-    assert results.solution.states == {"A": 2, "B": 2, "C": 1}
-    with pytest.raises(RuntimeError, match=f"{option}=True is not supported"):
-        map_query(mn, method=method, **{option: True}, **solver)
 
 
 @pytest.mark.skipif(default_mip_solver is None, reason="No MIP solver installed")

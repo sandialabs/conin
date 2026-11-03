@@ -1,22 +1,30 @@
 import copy
 
-from conin.util import Util
+from conin.util import Util, as_rng
 from conin.graphical_models import TimeExpression
 
 
 class DBNSampler:
-    """
-    Class to handle sampling functions for the DBN G
+    """Forward sampling of a dynamic Bayesian network.
 
-    The sampler works on a private deep copy of ``G``, so changing the time
-    index (``set_time``, ``sample``) does not modify the shared ``t`` variable
-    of the DBN passed in.
+    The sampler works on a private deep copy of ``dbn`` (the attribute
+    ``G``), so changing the time index (``set_time``, ``sample``) does not
+    modify the shared ``t`` variable of the DBN passed in.
+
+    Parameters
+    ----------
+    dbn : DynamicDiscreteBayesianNetwork
+        The model to sample.
+    rng : None, int or numpy.random.Generator, optional
+        The random generator of every sample this sampler draws, or a seed
+        for a new one (see :func:`conin.util.as_rng`).
     """
 
-    def __init__(self, G):
-        # Deep-copy G so that the CPD time expressions refer to a private copy
-        # of the time variable G.t, which this class mutates while sampling.
-        self.G = copy.deepcopy(G)
+    def __init__(self, dbn, *, rng=None):
+        # Deep-copy the DBN so that the CPD time expressions refer to a private
+        # copy of the time variable G.t, which this class mutates while sampling.
+        self.G = copy.deepcopy(dbn)
+        self.rng = as_rng(rng)
         self.G.t.set_value(0)
         self.cpd_map = self.get_cpd_map()
         self.representation = self.build_representation()
@@ -127,14 +135,16 @@ class DBNSampler:
             for (_node, _cpd) in self.cpd_map.items()
         }
 
-    def sample_next_states(self, previous_states={}):
+    def sample_next_states(self, previous_states=None):
         """
-        Sample the next states for the DBN G given its previous state data and
+        Sample the next states for the DBN G given its previous states
 
         The states are sampled using a topological sort (Kahn's algorithm),
           whereby sort nodes by their in-degrees in the DBN and only
           process nodes with in-degree 0, updating the in-degree as we go
         """
+        if previous_states is None:
+            previous_states = {}
         if self.G.t.value() == 0 and len(previous_states) > 0:
             raise ValueError("G.t==0 but previous_states is non-empty")
 
@@ -179,7 +189,7 @@ class DBNSampler:
                 row = self.representation[node]["values"][table_key]
 
             # sample a new value
-            idx = Util.sample_from_vec(list(row.values()))
+            idx = Util.sample_from_vec(list(row.values()), self.rng)
             next_states[node] = list(row.keys())[idx]
 
             # decrement node and children
@@ -197,18 +207,23 @@ class DBNSampler:
 
         return next_states
 
-    def sample(self, T=10, N=10):
+    def sample(self, time_steps=10, num_samples=10):
+        """Sample ``num_samples`` traces of the DBN, each over ``time_steps`` time steps.
+
+        Returns
+        -------
+        list
+            The traces; each is a list of ``time_steps`` dicts
+            ``{node: state}``, one per time step.
         """
-        Sample N traces of G, each with length T
-        """
-        runs = {}
-        for n in range(N):
+        runs = []
+        for _ in range(num_samples):
             trace = []
             previous_states = {}
-            for t in range(T):
+            for t in range(time_steps):
                 self.set_time(t)
                 next_states = self.sample_next_states(previous_states=previous_states)
                 trace.append(next_states)
                 previous_states = next_states
-            runs[n] = trace
+            runs.append(trace)
         return runs
