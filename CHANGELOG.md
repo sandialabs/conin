@@ -148,8 +148,7 @@ Models
   are passed to the constructors; add_cpd/add_factor are replaced by the
   non-mutating with_cpd/with_factor. HiddenMarkovModel.load_model is removed:
   pass the required, non-empty start_probs, transition_probs and
-  emission_probs to the constructor; internal state indices follow the sorted
-  order of the state labels. DiscreteBayesianNetwork and
+  emission_probs to the constructor (see below for the state order). DiscreteBayesianNetwork and
   DynamicDiscreteBayesianNetwork require a non-empty cpds argument and
   DiscreteMarkovNetwork a non-empty factors argument; a DBN also needs states
   or dynamic_states. Time-indexed DBN CPDs are written against an
@@ -180,15 +179,46 @@ Models
   "matvec" representation (repn = hmm.representation("matvec");
   repn.start_vec, repn.hidden_to_internal, ...; the arrays are read-only
   float64 NumPy arrays, not lists), and hidden_to_external/
-  observed_to_external are removed (use hidden_states/observed_states, the
-  same lists). hidden_states and observed_states are read-only FrozenLists
+  observed_to_external are removed (use hidden_states/observable_states, the
+  same lists). hidden_states and observable_states are read-only FrozenLists
   (no copy per access). Constraint functions still get
   data.hmm.hidden_to_internal.
 - The "matvec" representation is the one place that converts between HMM
-  state labels and indices: repn.hidden_states/observed_states (index ->
-  label) and repn.hidden_to_internal/observed_to_internal (label -> index).
+  state labels and indices: repn.hidden_states/observable_states (index ->
+  label) and repn.hidden_to_internal/observable_to_internal (label -> index).
   The "mvr" representation aligns its MVRs to its .matvec, and the
   network-flow constraint data (data.hmm) also has hidden_states.
+- HiddenMarkovModel's observable labels are "observable" everywhere ("observed"
+  is kept for sequences of observations): observed_states,
+  num_observed_states and get_observable_states() are observable_states and
+  num_observable_states; matvec's observed_to_internal is
+  observable_to_internal; random_hmm(observed_states=) is
+  random_hmm(observable_states=). Error messages say "observable state".
+- HiddenMarkovModel(..., hidden_states=None, observable_states=None): the
+  state order (and so the "matvec" indices) is the given lists, or the sorted
+  labels by default. observable_states may list states that are never
+  emitted, and labels that cannot be sorted work with an explicit order. A
+  label in the probability tables that is not one of the given states, an
+  empty list or duplicate labels raise InvalidInputError. random_hmm,
+  supervised_learning, mcem, make_non_zero and the MVR learning algorithms
+  keep the order they are given (random_hmm and supervised_learning sorted
+  the labels before).
+- start_probs, transition_probs and emission_probs are read-only properties
+  (FrozenDicts with every entry, zeros included) replacing
+  get_start_probs()/get_transition_probs()/get_emission_probs() (which
+  returned new dicts); use dict(hmm.start_probs) for a copy to change.
+  get_hidden_states(), is_valid_hidden_state(h), is_valid_observed_state(o)
+  and to_dict() are removed (use hidden_states, h in hmm.hidden_states and
+  o in hmm.observable_states).
+- HiddenMarkovModel.log_probability(observed, hidden) is removed: use
+  conin.algorithms.scoring.log_probability(hmm, hidden, observed=observed)
+  (note the order), which returns -inf instead of raising ValueError for a
+  zero-probability sequence. mcem scores its samples with it.
+- HiddenMarkovModel has check_model() (the constructor's checks; it raises
+  InvalidInputError), __eq__/__hash__ (same states in the same order and the
+  same probabilities) and a short __repr__. The validation messages name the
+  table and the state ("transition_probs from 'h0' must sum to 1, got 0.9",
+  "must be nonnegative"; they said "must be positive floats").
 - create_bn_from_dbn and the code unrolling DBNs and HMMs use the DBN's .t
   without changing it. create_bn_from_dbn unrolls one time step
   (stop == start); start must be 0 (InvalidInputError otherwise).
@@ -563,8 +593,6 @@ Bug fixes
 
 Known issues
 
-- HiddenMarkovModel.log_probability raises ValueError for a zero-probability
-  sequence (conin.algorithms.scoring.log_probability returns -inf).
 - DBNs and HMMs can only be unrolled from start=0 (start is kept so that a
   later start can be supported without another API change).
 

@@ -35,13 +35,35 @@ transition, and emission probabilities and then passes them to the
        emission_probs=emission_probs,
    )
 
-The hidden and observed state labels are available from ``hmm.hidden_states``
-and ``hmm.observed_states`` (sorted, read-only lists). The model itself holds
-only label-keyed tables. The parameters as arrays on state indices are in
+The hidden and observable state labels are available from
+``hmm.hidden_states`` and ``hmm.observable_states``, and the probabilities from
+``hmm.start_probs``, ``hmm.transition_probs`` and ``hmm.emission_probs`` (the
+constructor's format, with every entry, zeros included). All of them are
+read-only, and the model is immutable; two models with the same states and
+probabilities are equal.
+
+The state lists are the model's state order. By default it is the sorted
+labels: the hidden states of ``transition_probs`` and the observable states of
+``emission_probs``. Pass ``hidden_states=`` and ``observable_states=`` to choose
+the order, or to declare an observable state that is never emitted:
+
+.. testcode::
+
+   ordered = HiddenMarkovModel(
+       start_probs=start_probs,
+       transition_probs=transition_probs,
+       emission_probs=emission_probs,
+       hidden_states=["h1", "h0"],
+       observable_states=["o0", "o1", "o2"],
+   )
+   assert ordered.hidden_states == ["h1", "h0"]
+   assert ordered.emission_probs[("h0", "o2")] == 0
+
+The model itself holds only label-keyed tables. The parameters as arrays on state indices are in
 the ``"matvec"`` representation, which is the one place that converts
 between labels and indices: ``repn.hidden_states[i]`` is the label of hidden
 index ``i`` and ``repn.hidden_to_internal[h]`` the index of label ``h`` (and
-likewise for the observed states):
+likewise for the observable states):
 
 .. code-block:: python
 
@@ -51,7 +73,9 @@ likewise for the observed states):
 
 The constructor checks that the probabilities are nonnegative and that
 the start probabilities and each row of transition and emission probabilities
-sum to 1 (``InvalidInputError`` otherwise).
+sum to 1 (``InvalidInputError`` otherwise; ``hmm.check_model()`` runs the same
+checks). The log-probability of a hidden path and its observations is
+``conin.algorithms.scoring.log_probability(hmm, hidden, observed=observed)``.
 
 Sequences are sampled with ``conin.algorithms.sampling.unconstrained``. Every
 sampler takes ``rng``: a seed, or a ``numpy.random.Generator`` whose stream
@@ -89,13 +113,13 @@ transition, and emission probabilities over a specified state space.
 
    hmm = random_hmm(
        hidden_states=["h0", "h1"],
-       observed_states=["o0", "o1"],
+       observable_states=["o0", "o1"],
        rng=10,
    )
 
    assert hmm.hidden_states == ["h0", "h1"]
-   assert hmm.observed_states == ["o0", "o1"]
-   assert abs(sum(hmm.get_start_probs().values()) - 1.0) < 1e-12
+   assert hmm.observable_states == ["o0", "o1"]
+   assert abs(sum(hmm.start_probs.values()) - 1.0) < 1e-12
 
 JSON I/O
 --------
@@ -115,9 +139,9 @@ format is separate from the UAI file support described in
 
    loaded = HiddenMarkovModel.read_from_file("hmm.json")
 
-   assert loaded.get_start_probs() == hmm.get_start_probs()
-   assert loaded.get_transition_probs() == hmm.get_transition_probs()
-   assert loaded.get_emission_probs() == hmm.get_emission_probs()
+   assert loaded.start_probs == hmm.start_probs
+   assert loaded.transition_probs == hmm.transition_probs
+   assert loaded.emission_probs == hmm.emission_probs
 
 Constrained hidden Markov models
 --------------------------------

@@ -8,6 +8,7 @@ from conin.exceptions import InvalidInputError
 from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.graphical_models import HiddenMarkovModel
 from conin.constraints.mvr import HomMVR, InhomMVR
+from conin.algorithms.scoring import log_probability
 
 # importorskip only catches ImportError; a broken torch install raises OSError.
 try:
@@ -24,11 +25,11 @@ from conin.algorithms.inference.mvr.viterbi import (  # noqa: E402
 # ===========================
 
 
-def make_random_hmm(*, hidden_states, observed_states, seed=0):
+def make_random_hmm(*, hidden_states, observable_states, seed=0):
     rng = np.random.default_rng(seed)
 
     num_hidden = len(hidden_states)
-    num_observed = len(observed_states)
+    num_observed = len(observable_states)
 
     start_vec = rng.random(num_hidden)
     start_vec = start_vec / start_vec.sum()
@@ -49,7 +50,7 @@ def make_random_hmm(*, hidden_states, observed_states, seed=0):
         emission_probs={
             (h, o): emission_mat[i, j]
             for i, h in enumerate(hidden_states)
-            for j, o in enumerate(observed_states)
+            for j, o in enumerate(observable_states)
         },
     )
 
@@ -143,7 +144,7 @@ def brute_force(hmm, mvrs, observed):
         if not all(mvr_accepts(mvr, path, T) for mvr in mvrs):
             continue
 
-        score = hmm.log_probability(observed, list(path))
+        score = log_probability(hmm, list(path), observed=observed)
 
         if score > best_score:
             best_path, best_score = list(path), score
@@ -155,7 +156,7 @@ def brute_force(hmm, mvrs, observed):
 def hmm():
     return make_random_hmm(
         hidden_states=["A", "B", "C"],
-        observed_states=["o0", "o1"],
+        observable_states=["o0", "o1"],
         seed=7,
     )
 
@@ -179,7 +180,7 @@ def assert_matches_brute_force(hmm, mvrs, observed):
     # The decoded path must be feasible and optimal, though not necessarily the
     # same optimal path brute force found when several are tied.
     assert all(mvr_accepts(mvr, path, len(observed)) for mvr in mvrs)
-    assert hmm.log_probability(observed, path) == pytest.approx(
+    assert log_probability(hmm, path, observed=observed) == pytest.approx(
         expected_score, abs=1e-4
     )
     assert score == pytest.approx(expected_score, abs=1e-4)
@@ -215,16 +216,16 @@ def test_viterbi_random_instances_match_brute_force(seed):
     rng = np.random.default_rng(seed)
 
     hidden_states = [f"h{i}" for i in range(int(rng.integers(2, 4)))]
-    observed_states = ["o0", "o1"]
+    observable_states = ["o0", "o1"]
 
     hmm = make_random_hmm(
         hidden_states=hidden_states,
-        observed_states=observed_states,
+        observable_states=observable_states,
         seed=seed,
     )
 
     T = int(rng.integers(1, 6))
-    observed = [observed_states[rng.integers(2)] for _ in range(T)]
+    observed = [observable_states[rng.integers(2)] for _ in range(T)]
 
     mvrs = []
 
@@ -266,7 +267,7 @@ def test_viterbi_random_instances_match_brute_force(seed):
     )
 
     assert all(mvr_accepts(mvr, path, T) for mvr in mvrs)
-    assert hmm.log_probability(observed, path) == pytest.approx(
+    assert log_probability(hmm, path, observed=observed) == pytest.approx(
         expected_score, abs=1e-4
     )
     assert score == pytest.approx(expected_score, abs=1e-4)
@@ -391,7 +392,7 @@ def score_path(hmm, path, obs_map):
 
     for t, o in obs_map.items():
         score += math.log(
-            emission[idx[t]][hmm.representation("matvec").observed_to_internal[o]]
+            emission[idx[t]][hmm.representation("matvec").observable_to_internal[o]]
         )
 
     return score
@@ -421,7 +422,7 @@ def test_viterbi_random_sparse_instances_match_brute_force(seed):
 
     hmm = make_random_hmm(
         hidden_states=["A", "B", "C"],
-        observed_states=["o0", "o1"],
+        observable_states=["o0", "o1"],
         seed=seed,
     )
 
@@ -473,7 +474,7 @@ def test_viterbi_random_sparse_instances_match_brute_force(seed):
         ({7: "o0"}, 3, "outside the horizon"),
         ({}, 0, "positive integer"),
         ([], None, "nonempty"),
-        (["o0", "not_an_observation"], None, "Unknown observed state"),
+        (["o0", "not_an_observation"], None, "Unknown observable state"),
     ],
 )
 def test_viterbi_rejects_bad_horizon_or_observations(
@@ -535,7 +536,7 @@ def test_map_query_mvr_viterbi_matches_viterbi_torch_mvr_chmm(hmm, observed):
     # accumulated from float32 log-weights.
     assert results.solution.log_potential == pytest.approx(score, abs=1e-4)
     assert results.solution.log_potential == pytest.approx(
-        hmm.log_probability(observed, path)
+        log_probability(hmm, path, observed=observed)
     )
     assert results.solution.solver_objective is None
     assert results.solution.augmented == augmented

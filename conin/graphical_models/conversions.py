@@ -179,7 +179,7 @@ def create_dbn_from_hmm(hmm, debug=False):
         equivalent to the input HMM.
     """
     hidden_states = list(sorted(hmm.hidden_states))
-    emission_states = list(sorted(hmm.observed_states))
+    emission_states = list(sorted(hmm.observable_states))
 
     #
     # An HMM has two time-indexed random variables:
@@ -192,9 +192,9 @@ def create_dbn_from_hmm(hmm, debug=False):
     # embedded in the CPDs' `node`/`parents` tuples.
     t = TimeIndex()
 
-    start_probs = hmm.get_start_probs()
-    transition_probs = hmm.get_transition_probs()
-    emission_probs = hmm.get_emission_probs()
+    start_probs = hmm.start_probs
+    transition_probs = hmm.transition_probs
+    emission_probs = hmm.emission_probs
 
     # Specify the CPD for the initial hidden states (time 0)
     cpd_H_0 = DiscreteCPD(

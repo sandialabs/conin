@@ -1,6 +1,5 @@
 import numpy as np
 import pprint
-import math
 import json
 import ast
 
@@ -10,59 +9,33 @@ from conin.util.frozen import freeze
 from conin.graphical_models.base import GraphicalModel
 
 
-def _validate_start_vec(start_vec):
-    """Check that the starting probabilities are nonnegative and sum to 1.
+def _state_order(name, given, labels):
+    """The state order: ``given`` (checked against ``labels``), or the sorted labels."""
+    if given is None:
+        return sorted(labels)
+    if isinstance(given, (str, bytes)):
+        raise InvalidInputError(f"{name} must be a list of labels, got {given!r}")
+    order = list(given)
+    if not order:
+        raise InvalidInputError(f"{name} must not be empty")
+    if len(set(order)) != len(order):
+        duplicates = sorted({repr(x) for x in order if order.count(x) > 1})
+        raise InvalidInputError(f"{name} has duplicate labels: {', '.join(duplicates)}")
+    return order
 
-    Raises
-    ------
-    InvalidInputError
-        If ``start_vec`` contains negative entries or does not sum to 1.
-    """
-    for prob in start_vec:
+
+def _check_row(name, values):
+    """Raise unless ``values`` are nonnegative probabilities summing to 1."""
+    for key, prob in values.items():
         if not prob >= 0:
-            raise InvalidInputError("start_probs values must be positive floats.")
-    if not np.isclose(sum(start_vec), 1):
-        raise InvalidInputError("start_prob values must sum to 1.")
-
-
-def _validate_transition_mat(transition_mat):
-    """Check that the transition probabilities are nonnegative and each row sums to 1.
-
-    Raises
-    ------
-    InvalidInputError
-        If ``transition_mat`` contains negative entries or rows that do not sum to
-        1.
-    """
-    for row in transition_mat:
-        for prob in row:
-            if not prob >= 0:
-                raise InvalidInputError("Transition_mat must be positive floats.")
-    for vec in transition_mat:
-        if not np.isclose(sum(vec), 1):
-            raise InvalidInputError("Transition_mat rows do not sum to 1.")
-
-
-def _validate_emission_mat(emission_mat):
-    """Check that the emission probabilities are nonnegative and each row sums to 1.
-
-    Raises
-    ------
-    InvalidInputError
-        If ``emission_mat`` contains negative entries or rows that do not sum to
-        1.
-    """
-    for row in emission_mat:
-        for prob in row:
-            if not prob >= 0:
-                raise InvalidInputError("Emission_mat must be positive floats.")
-    for vec in emission_mat:
-        if not np.isclose(sum(vec), 1):
-            raise InvalidInputError(f"Emission_mat rows do not sum to 1: {sum(vec)}")
+            raise InvalidInputError(f"{name} must be nonnegative, got {key!r}: {prob}")
+    total = sum(values.values())
+    if not np.isclose(total, 1):
+        raise InvalidInputError(f"{name} must sum to 1, got {total}")
 
 
 class HiddenMarkovModel(GraphicalModel):
-    """Hidden Markov model over labelled hidden and observed states.
+    """Hidden Markov model over labelled hidden and observable states.
 
     Parameters
     ----------
@@ -71,29 +44,33 @@ class HiddenMarkovModel(GraphicalModel):
     transition_probs : dict
         Mapping from ``(from_state, to_state)`` pairs to transition probabilities.
     emission_probs : dict
-        Mapping from ``(hidden_state, observed_state)`` pairs to emission
+        Mapping from ``(hidden_state, observable_state)`` pairs to emission
         probabilities.
+    hidden_states : list, optional
+        The hidden-state labels, in the model's state order.  Default: the
+        labels appearing in ``transition_probs``, sorted.
+    observable_states : list, optional
+        The observable-state labels, in the model's state order; a state
+        that is never emitted may be listed.  Default: the labels appearing
+        in ``emission_probs``, sorted.
 
     Raises
     ------
     InvalidInputError
-        If any of the probability dictionaries is empty, if they are
-        inconsistent with each other, or if a probability is negative or the
-        start probabilities, a row of transition probabilities or a row of
-        emission probabilities do not sum to 1.
+        If any of the probability dictionaries is empty, if they mention a
+        label that is not a state, if ``hidden_states`` or
+        ``observable_states`` is empty or has duplicates, or if a
+        probability is negative or the start probabilities, a row of
+        transition probabilities or a row of emission probabilities do not
+        sum to 1.
 
     Notes
     -----
-    The hidden states are the labels appearing in ``transition_probs``, and the
-    observed states are the observed labels appearing in ``emission_probs``.
-    Both are sorted (:attr:`hidden_states`, :attr:`observed_states`),
-    independent of dictionary insertion order and of which entries are
-    present. Missing entries are treated as zero probabilities.
-
-    The model holds label-keyed tables only.  The parameters as arrays on
-    state indices (position ``i`` of :attr:`hidden_states` is index ``i``),
-    and the label-to-index maps, are in the ``"matvec"`` representation:
-    ``hmm.representation("matvec")``.
+    Missing entries of the probability dictionaries are zero probabilities.
+    The model is immutable.  It holds label-keyed tables only; the
+    parameters as arrays on state indices are in the ``"matvec"``
+    representation (``hmm.representation("matvec")``), whose indices follow
+    the state order (:attr:`hidden_states`, :attr:`observable_states`).
     """
 
     def __init__(
@@ -102,6 +79,8 @@ class HiddenMarkovModel(GraphicalModel):
         start_probs,
         transition_probs,
         emission_probs,
+        hidden_states=None,
+        observable_states=None,
     ):
         start_probs = dict(start_probs)
         transition_probs = dict(transition_probs)
@@ -114,240 +93,150 @@ class HiddenMarkovModel(GraphicalModel):
             if not probs:
                 raise InvalidInputError(f"{name} must be a non-empty dictionary")
 
-        # Internal indices follow the sorted order of the state labels
-        hidden_to_external = sorted({h for key in transition_probs for h in key})
-        hidden_to_internal = {h: i for i, h in enumerate(hidden_to_external)}
-        observed_to_external = sorted({o for _, o in emission_probs})
-        observed_to_internal = {o: i for i, o in enumerate(observed_to_external)}
-        num_hidden_states = len(hidden_to_external)
-        num_observed_states = len(observed_to_external)
+        hidden = _state_order(
+            "hidden_states", hidden_states, {h for key in transition_probs for h in key}
+        )
+        observable = _state_order(
+            "observable_states", observable_states, {o for _, o in emission_probs}
+        )
+        known_hidden, known_observable = set(hidden), set(observable)
 
-        # Setup start_vec
-        start_vec = [0] * num_hidden_states
-        for h, prob in start_probs.items():
-            if h not in hidden_to_internal:
-                raise InvalidInputError(
-                    f"start_probs contains hidden state {h!r} that does not "
-                    "appear in transition_probs"
-                )
-            start_vec[hidden_to_internal[h]] = prob
+        def check_labels(name, key, labels):
+            for label, known, kind in labels:
+                if label not in known:
+                    entry = "" if key == label else f" entry {key!r}"
+                    raise InvalidInputError(
+                        f"{name}{entry} has {label!r}, which is not one of "
+                        f"the {kind} states"
+                    )
 
-        # Setup transition_mat
-        transition_mat = [[0] * num_hidden_states for _ in range(num_hidden_states)]
-        for (h1, h2), prob in transition_probs.items():
-            transition_mat[hidden_to_internal[h1]][hidden_to_internal[h2]] = prob
+        for h in start_probs:
+            check_labels("start_probs", h, [(h, known_hidden, "hidden")])
+        for h1, h2 in transition_probs:
+            check_labels(
+                "transition_probs",
+                (h1, h2),
+                [(h1, known_hidden, "hidden"), (h2, known_hidden, "hidden")],
+            )
+        for h, o in emission_probs:
+            check_labels(
+                "emission_probs",
+                (h, o),
+                [(h, known_hidden, "hidden"), (o, known_observable, "observable")],
+            )
 
-        # Setup emission_mat
-        emission_mat = [[0] * num_observed_states for _ in range(num_hidden_states)]
-        for (h, o), prob in emission_probs.items():
-            if h not in hidden_to_internal:
-                raise InvalidInputError(
-                    f"emission_probs contains hidden state {h!r} that does not "
-                    f"appear in transition_probs: ({h!r}, {o!r}): {prob}"
-                )
-            emission_mat[hidden_to_internal[h]][observed_to_internal[o]] = prob
-
-        _validate_start_vec(start_vec)
-        _validate_transition_mat(transition_mat)
-        _validate_emission_mat(emission_mat)
-
-        # Dense label-keyed tables (zeros included), in index order
-        self._hidden_states = freeze(hidden_to_external)
-        self._observed_states = freeze(observed_to_external)
-        self._start_probs = freeze(dict(zip(hidden_to_external, start_vec)))
+        # Dense label-keyed tables (zeros included), in state order
+        self._hidden_states = freeze(hidden)
+        self._observable_states = freeze(observable)
+        self._start_probs = freeze({h: start_probs.get(h, 0) for h in hidden})
         self._transition_probs = freeze(
-            {
-                (h1, h2): transition_mat[i][j]
-                for i, h1 in enumerate(hidden_to_external)
-                for j, h2 in enumerate(hidden_to_external)
-            }
+            {(a, b): transition_probs.get((a, b), 0) for a in hidden for b in hidden}
         )
         self._emission_probs = freeze(
-            {
-                (h, o): emission_mat[i][j]
-                for i, h in enumerate(hidden_to_external)
-                for j, o in enumerate(observed_to_external)
-            }
+            {(h, o): emission_probs.get((h, o), 0) for h in hidden for o in observable}
+        )
+        self.check_model()
+
+    def check_model(self):
+        """Validate the probabilities of the model.
+
+        The constructor calls this, so a model that exists is valid.
+
+        Raises
+        ------
+        InvalidInputError
+            If a probability is negative, or the start probabilities, a row
+            of transition probabilities or a row of emission probabilities do
+            not sum to 1.
+        """
+        _check_row("start_probs", self._start_probs)
+        for a in self._hidden_states:
+            _check_row(
+                f"transition_probs from {a!r}",
+                {(a, b): self._transition_probs[a, b] for b in self._hidden_states},
+            )
+        for h in self._hidden_states:
+            _check_row(
+                f"emission_probs of {h!r}",
+                {(h, o): self._emission_probs[h, o] for o in self._observable_states},
+            )
+
+    def _key(self):
+        return (
+            tuple(self._hidden_states),
+            tuple(self._observable_states),
+            tuple(self._start_probs.items()),
+            tuple(self._transition_probs.items()),
+            tuple(self._emission_probs.items()),
+        )
+
+    def __eq__(self, other):
+        """Models are equal if they have the same states, in the same order, and probabilities."""
+        if type(other) is not type(self):
+            return NotImplemented
+        return self._key() == other._key()
+
+    def __hash__(self):
+        return hash(self._key())
+
+    def __repr__(self):
+        return (
+            f"{type(self).__name__}(hidden_states={list(self._hidden_states)!r}, "
+            f"observable_states={list(self._observable_states)!r})"
         )
 
     def __str__(self):
-        """Return a readable dictionary-style representation of the model."""
-        return pprint.pformat(self.to_dict(tolerance=1e-3), indent=4, sort_dicts=True)
+        """Return the nonzero probabilities (above 1e-3) as a readable dictionary."""
+
+        def nonzero(table):
+            return [(key, v) for key, v in table.items() if v > 1e-3]
+
+        return pprint.pformat(
+            dict(
+                start_probs=nonzero(self._start_probs),
+                transition_probs=nonzero(self._transition_probs),
+                emission_probs=nonzero(self._emission_probs),
+                num_hidden=self.num_hidden_states,
+                num_observable=self.num_observable_states,
+            ),
+            indent=4,
+            sort_dicts=True,
+        )
 
     @property
     def num_hidden_states(self):
-        """Return the number of hidden states."""
+        """int: The number of hidden states."""
         return len(self._hidden_states)
 
     @property
-    def num_observed_states(self):
-        """Return the number of observed states."""
-        return len(self._observed_states)
+    def num_observable_states(self):
+        """int: The number of observable states."""
+        return len(self._observable_states)
 
     @property
     def hidden_states(self):
-        """Return the hidden-state labels.
-
-        Returns
-        -------
-        list
-            Sorted hidden-state labels (read-only); position ``i`` is the
-            state index of the ``"matvec"`` representation.
-        """
+        """list: The hidden-state labels in the model's state order (read-only)."""
         return self._hidden_states
 
     @property
-    def observed_states(self):
-        """Return the observed-state labels.
+    def observable_states(self):
+        """list: The observable-state labels in the model's state order (read-only)."""
+        return self._observable_states
 
-        Returns
-        -------
-        list
-            Sorted observed-state labels (read-only); position ``j`` is the
-            state index of the ``"matvec"`` representation.
-        """
-        return self._observed_states
+    @property
+    def start_probs(self):
+        """dict: ``{hidden_state: probability}`` for every hidden state (read-only)."""
+        return self._start_probs
 
-    def is_valid_observed_state(self, o):
-        """Check whether an observed-state label is valid.
+    @property
+    def transition_probs(self):
+        """dict: ``{(from_state, to_state): probability}`` for every pair (read-only)."""
+        return self._transition_probs
 
-        Parameters
-        ----------
-        o : Any
-            Observed-state label to validate.
-
-        Returns
-        -------
-        bool
-            ``True`` if ``o`` is a known observed-state label and ``False`` otherwise.
-        """
-        return o in self._observed_states
-
-    def is_valid_hidden_state(self, h):
-        """Check whether a hidden-state label is valid.
-
-        Parameters
-        ----------
-        h : Any
-            Hidden-state label to validate.
-
-        Returns
-        -------
-        bool
-            ``True`` if ``h`` is a known hidden-state label and ``False`` otherwise.
-        """
-        return h in self._hidden_states
-
-    def get_hidden_states(self):
-        """Return the external hidden-state labels.
-
-        Returns
-        -------
-        list
-            Hidden-state labels in internal index order.
-        """
-        return self.hidden_states
-
-    def get_observable_states(self):
-        """Return the external observed-state labels.
-
-        Returns
-        -------
-        list
-            Observed-state labels in internal index order.
-        """
-        return self.observed_states
-
-    def get_start_probs(self):
-        """Return the starting probabilities keyed by hidden-state label.
-
-        Returns
-        -------
-        dict
-            Mapping from hidden-state labels to starting probabilities.
-        """
-        # Same format as the constructor arguments
-        return dict(self._start_probs)
-
-    def get_transition_probs(self):
-        # Same format as the constructor arguments
-        """Return the transition probabilities keyed by hidden-state pairs.
-
-        Returns
-        -------
-        dict
-            Mapping from ``(from_state, to_state)`` pairs to transition
-            probabilities.
-        """
-        return dict(self._transition_probs)
-
-    def get_emission_probs(self):
-        """Return the emission probabilities keyed by state pairs.
-
-        Returns
-        -------
-        dict
-            Mapping from ``(hidden_state, observed_state)`` pairs to emission
-            probabilities.
-        """
-        # Same format as the constructor arguments
-        return dict(self._emission_probs)
-
-    def to_dict(self, tolerance=0.0):
-        """Return a dictionary representation of the model data.
-
-        Parameters
-        ----------
-        tolerance : float, optional
-            Minimum probability value to include in the serialized representation.
-
-        Returns
-        -------
-        dict
-            Dictionary representation of the model data.
-        """
-
-        start_probs = [(h, v) for h, v in self._start_probs.items() if v > tolerance]
-        transition_probs = [
-            (key, v) for key, v in self._transition_probs.items() if v > tolerance
-        ]
-        emission_probs = [
-            (key, v) for key, v in self._emission_probs.items() if v > tolerance
-        ]
-
-        return dict(
-            start_probs=start_probs,
-            transition_probs=transition_probs,
-            emission_probs=emission_probs,
-            num_hidden=self.num_hidden_states,
-            num_observed=self.num_observed_states,
-        )
-
-    def log_probability(self, observed, hidden):
-        """Compute the joint log-probability of aligned observed and hidden states.
-
-        Parameters
-        ----------
-        observed : list
-            Observed-state labels.
-        hidden : list
-            Hidden-state labels aligned with ``observed``.
-
-        Returns
-        -------
-        float
-            Log-probability of the paired hidden and observed sequences.
-        """
-
-        ans = math.log(self._start_probs[hidden[0]]) + math.log(
-            self._emission_probs[hidden[0], observed[0]]
-        )
-        for t in range(1, len(observed)):
-            ans += math.log(
-                self._transition_probs[hidden[t - 1], hidden[t]]
-            ) + math.log(self._emission_probs[hidden[t], observed[t]])
-
-        return ans
+    @property
+    def emission_probs(self):
+        """dict: ``{(hidden_state, observable_state): probability}`` for every pair (read-only)."""
+        return self._emission_probs
 
     def make_non_zero(self, tol=1e-6):
         """Return a new model with small probabilities floored and renormalized.
@@ -360,31 +249,21 @@ class HiddenMarkovModel(GraphicalModel):
         Returns
         -------
         HiddenMarkovModel
-            A new model with floored and renormalized probabilities; ``self``
-            is not modified.
+            A new model with floored and renormalized probabilities and the
+            same state order; ``self`` is not modified.
         """
-        start_probs = self.get_start_probs()
-        transition_probs = self.get_transition_probs()
-        emission_probs = self.get_emission_probs()
 
-        for h, val in start_probs.items():
-            if val < tol:
-                start_probs[h] = tol
-        for key, val in transition_probs.items():
-            if val < tol:
-                transition_probs[key] = tol
-        for key, val in emission_probs.items():
-            if val < tol:
-                emission_probs[key] = tol
-
-        start_probs = Util.normalize_dictionary(start_probs)
-        transition_probs = Util.normalize_2d_dictionary(transition_probs)
-        emission_probs = Util.normalize_2d_dictionary(emission_probs)
+        def floored(table):
+            return {key: max(val, tol) for key, val in table.items()}
 
         return HiddenMarkovModel(
-            start_probs=start_probs,
-            transition_probs=transition_probs,
-            emission_probs=emission_probs,
+            start_probs=Util.normalize_dictionary(floored(self._start_probs)),
+            transition_probs=Util.normalize_2d_dictionary(
+                floored(self._transition_probs)
+            ),
+            emission_probs=Util.normalize_2d_dictionary(floored(self._emission_probs)),
+            hidden_states=self._hidden_states,
+            observable_states=self._observable_states,
         )
 
     def write_to_file(self, file_name):
@@ -395,19 +274,11 @@ class HiddenMarkovModel(GraphicalModel):
         file_name : str or path-like
             Destination file path.
         """
-        start_probs = self.get_start_probs()
-        transition_probs = self.get_transition_probs()
-        emission_probs = self.get_emission_probs()
-
         # Convert tuples to strings for JSON serialization
-        transition_probs_serializable = {str(k): v for k, v in transition_probs.items()}
-        emission_probs_serializable = {str(k): v for k, v in emission_probs.items()}
-
-        # Create a dictionary to hold all the data
         data = {
-            "start_probs": start_probs,
-            "transition_probs": transition_probs_serializable,
-            "emission_probs": emission_probs_serializable,
+            "start_probs": dict(self._start_probs),
+            "transition_probs": {str(k): v for k, v in self._transition_probs.items()},
+            "emission_probs": {str(k): v for k, v in self._emission_probs.items()},
         }
 
         with open(file_name, "w") as json_file:
@@ -450,15 +321,15 @@ class HiddenMarkovModel(GraphicalModel):
         )
 
 
-def random_hmm(*, hidden_states, observed_states, rng=None):
+def random_hmm(*, hidden_states, observable_states, rng=None):
     """Generate a random hidden Markov model.
 
     Parameters
     ----------
     hidden_states : iterable
-        Hidden state labels for the generated model.
-    observed_states : iterable
-        Observable state labels for the generated model.
+        Hidden state labels for the generated model, in its state order.
+    observable_states : iterable
+        Observable state labels for the generated model, in its state order.
     rng : None, int or numpy.random.Generator, optional
         The random generator, or a seed for a new one (see
         :func:`conin.util.as_rng`); pass a seed for a reproducible model.
@@ -470,6 +341,7 @@ def random_hmm(*, hidden_states, observed_states, rng=None):
         emission probabilities.
     """
     rng = as_rng(rng)
+    hidden_states, observable_states = list(hidden_states), list(observable_states)
 
     S = Util.normalize_dictionary({s: rng.random() for s in hidden_states})
 
@@ -477,8 +349,13 @@ def random_hmm(*, hidden_states, observed_states, rng=None):
         {(a, b): rng.random() for a in hidden_states for b in hidden_states}
     )
     E = Util.normalize_2d_dictionary(
-        {(s, o): rng.random() for s in hidden_states for o in observed_states}
+        {(s, o): rng.random() for s in hidden_states for o in observable_states}
     )
 
-    hmm = HiddenMarkovModel(start_probs=S, transition_probs=T, emission_probs=E)
-    return hmm
+    return HiddenMarkovModel(
+        start_probs=S,
+        transition_probs=T,
+        emission_probs=E,
+        hidden_states=hidden_states,
+        observable_states=observable_states,
+    )

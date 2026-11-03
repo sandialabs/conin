@@ -13,6 +13,7 @@ from conin.exceptions import InvalidInputError
 from conin.graphical_models import random_hmm
 from conin.algorithms.inference.oracle import a_star
 from conin.algorithms.inference.recursive import recursive_a_star
+from conin.algorithms.scoring import log_probability
 
 
 def _num_h0(lb, ub, calls=None):
@@ -35,7 +36,9 @@ def _brute_force(cmodel, observed, num_solutions):
     scored = []
     for seq in itertools.product(hmm.hidden_states, repeat=len(observed)):
         if is_feasible(cmodel, list(seq)):
-            scored.append((hmm.log_probability(observed, list(seq)), list(seq)))
+            scored.append(
+                (log_probability(hmm, list(seq), observed=observed), list(seq))
+            )
     scored.sort(key=lambda x: -x[0])
     return scored[:num_solutions]
 
@@ -49,7 +52,7 @@ def _check_solutions(cmodel, observed, results, num_solutions):
     for sol in results.solutions:
         assert is_feasible(cmodel, sol.states)
         assert sol.log_potential == pytest.approx(
-            cmodel.model.log_probability(observed, sol.states)
+            log_probability(cmodel.model, sol.states, observed=observed)
         )
 
 
@@ -136,7 +139,7 @@ def test_random_hmms_match_brute_force(seed, num_solutions):
     # Three hidden states, so many prefixes share a (last state, length,
     # count) node.
     hmm = random_hmm(
-        hidden_states=["a", "b", "c"], observed_states=["x", "y"], rng=seed
+        hidden_states=["a", "b", "c"], observable_states=["x", "y"], rng=seed
     )
     rng = random.Random(seed)
     observed = [rng.choice(["x", "y"]) for _ in range(6)]

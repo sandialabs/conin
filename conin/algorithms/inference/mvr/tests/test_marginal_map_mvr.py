@@ -131,7 +131,7 @@ def assert_matches_brute_force(hmm, mvrs, observed, T, query_times):
 def hmm():
     return make_random_hmm(
         hidden_states=["A", "B", "C"],
-        observed_states=["o0", "o1"],
+        observable_states=["o0", "o1"],
         seed=7,
     )
 
@@ -263,7 +263,7 @@ def test_marginal_map_random_instances_match_brute_force(seed):
 
     hmm = make_random_hmm(
         hidden_states=["A", "B", "C"],
-        observed_states=["o0", "o1"],
+        observable_states=["o0", "o1"],
         seed=seed,
     )
 

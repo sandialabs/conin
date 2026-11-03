@@ -340,9 +340,9 @@ class _SubHMM(HiddenMarkovModel):
 def test_model_subclass_uses_the_constrained_class_of_its_base():
     hmm = tc.create_hmm1()
     sub = _SubHMM(
-        start_probs=hmm.get_start_probs(),
-        transition_probs=hmm.get_transition_probs(),
-        emission_probs=hmm.get_emission_probs(),
+        start_probs=hmm.start_probs,
+        transition_probs=hmm.transition_probs,
+        emission_probs=hmm.emission_probs,
     )
     assert gm_base.constrained_class(_SubHMM) is ConstrainedHiddenMarkovModel
     assert type(as_constrained_model(sub)) is ConstrainedHiddenMarkovModel

@@ -266,16 +266,19 @@ def test_hmm(f):
     ) == pytest.approx(expected)
 
 
-def test_hmm_matches_method():
+def test_hmm_hand_computed():
+    # The HiddenMarkovModel.log_probability method this replaces gave these.
     hmm = hmm_examples.create_hmm1()
-    hidden, observed = ["h1", "h0", "h0"], ["o0", "o0", "o1"]
-    assert log_probability(hmm, hidden, observed=observed) == pytest.approx(
-        hmm.log_probability(observed, hidden)
+    assert log_probability(hmm, ["h0"], observed=["o1"]) == pytest.approx(
+        math.log(0.4) + math.log(0.3)
+    )
+    assert log_probability(hmm, ["h1", "h0"], observed=["o0", "o0"]) == pytest.approx(
+        math.log(0.6) + math.log(0.4) + math.log(0.2) + math.log(0.7)
     )
 
 
 def test_hmm_zero_probability_is_minus_inf():
-    # HiddenMarkovModel.log_probability raises ValueError (math.log(0)) here.
+    # The old HiddenMarkovModel.log_probability raised ValueError (math.log(0)) here.
     assert log_probability(_hmm(), ["h1", "h0"], observed=["o0", "o0"]) == -math.inf
 
 
@@ -285,7 +288,7 @@ def test_hmm_zero_probability_is_minus_inf():
         (["h0"], None, "needs observed"),
         (["h0", "h0"], ["o0"], "same length"),
         (["hx"], ["o0"], "not a hidden state"),
-        (["h0"], ["ox"], "not an observed state"),
+        (["h0"], ["ox"], "not an observable state"),
         ([], [], "must not be empty"),
         ({1: "h0"}, ["o0"], "0..T-1"),
         ("h0", ["o0"], "list, a tuple or a dict"),

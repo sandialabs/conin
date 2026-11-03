@@ -31,7 +31,7 @@ from conin.algorithms.inference.results import (
     score_solutions,
 )
 from conin.algorithms.inference.unconstrained import viterbi
-from conin.algorithms.scoring import log_potential
+from conin.algorithms.scoring import log_potential, log_probability
 from conin.util import try_import
 
 with try_import() as pytoulbar2_available:
@@ -104,7 +104,9 @@ def test_hmm_results_have_the_same_shape_and_score(
     expected = ["h0"] * 5
     assert soln.states == (dict(enumerate(expected)) if dict_evidence else expected)
     # log P(hidden, observed), whatever the method
-    assert soln.log_potential == pytest.approx(hmm.log_probability(OBSERVED, expected))
+    assert soln.log_potential == pytest.approx(
+        log_probability(hmm, expected, observed=OBSERVED)
+    )
     assert soln.log_potential == pytest.approx(-3.968405374586326)
     if objective is None:
         assert soln.solver_objective is None
@@ -142,7 +144,7 @@ def test_hmm_score_covers_start_stop(method, options):
     results = map_query(hmm, method=method, evidence=OBSERVED, stop=2, **options)
     assert results.solution.states == ["h0"] * 3
     assert results.solution.log_potential == pytest.approx(
-        hmm.log_probability(OBSERVED[:3], ["h0"] * 3)
+        log_probability(hmm, ["h0"] * 3, observed=OBSERVED[:3])
     )
 
 
@@ -193,7 +195,9 @@ def test_a_star_k_best_scores_are_sorted():
     assert scores == sorted(scores, reverse=True)
     hmm = hex_.create_hmm1()
     for s in results.solutions:
-        assert s.log_potential == pytest.approx(hmm.log_probability(OBSERVED, s.states))
+        assert s.log_potential == pytest.approx(
+            log_probability(hmm, s.states, observed=OBSERVED)
+        )
 
 
 def test_no_solution_has_the_same_keys():
@@ -500,7 +504,7 @@ def test_is_infeasible_raises_for_other_solver_failures():
 
 def test_hmm_functions_have_the_same_shape():
     hmm = hex_.create_hmm1()
-    expected = hmm.log_probability(OBSERVED, ["h0"] * 5)
+    expected = log_probability(hmm, ["h0"] * 5, observed=OBSERVED)
     for results in [
         viterbi(observed=OBSERVED, hmm=hmm),
         a_star(observed=OBSERVED, hmm=hmm),
@@ -514,7 +518,7 @@ def test_hmm_functions_have_the_same_shape():
 @needs_mip
 def test_network_flow_functions_have_the_same_shape():
     hmm = hex_.create_hmm1()
-    expected = hmm.log_probability(OBSERVED, ["h0"] * 5)
+    expected = log_probability(hmm, ["h0"] * 5, observed=OBSERVED)
     lp = lp_inference(hmm=hmm, observed=OBSERVED, solver=default_mip_solver)
     _check_shape(lp)
     ip = ip_inference(
@@ -653,10 +657,10 @@ def test_score_hmm_solutions_sparse_observations():
     score_hmm_solutions(sparse, hmm, {0: "o0", 2: "o1"})
     dense = map_results([map_solution(hidden)], solvetime=0.0)
     score_hmm_solutions(dense, hmm, ["o0", "o1", "o1"])
-    full = hmm.log_probability(["o0", "o1", "o1"], hidden)
+    full = log_probability(hmm, hidden, observed=["o0", "o1", "o1"])
     h1, o1 = (
         hmm.representation("matvec").hidden_to_internal["h1"],
-        hmm.representation("matvec").observed_to_internal["o1"],
+        hmm.representation("matvec").observable_to_internal["o1"],
     )
     emission_at_1 = math.log(hmm.representation("matvec").emission_mat.tolist()[h1][o1])
     assert dense.solution.log_potential == pytest.approx(full)

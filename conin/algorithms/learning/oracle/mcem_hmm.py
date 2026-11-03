@@ -6,6 +6,7 @@ from conin.exceptions import InvalidInputError
 from conin.algorithms.learning.unconstrained.supervised import supervised_learning
 from conin.algorithms.sampling.oracle import rejection_sample_hidden
 from conin.util import as_rng
+from conin.algorithms.scoring import log_probability
 
 nan = float("nan")
 
@@ -97,8 +98,8 @@ def mcem(
         log_prob = 0.0
         for _ in range(samples_per_iteration):
             feasible_hidden = rejection_sample_hidden(cmodel, len(observed), rng=rng)
-            log_prob = log_prob + cmodel.model.log_probability(
-                observed, feasible_hidden
+            log_prob = log_prob + log_probability(
+                cmodel.model, feasible_hidden, observed=observed
             )
             simulations.append(munch.Munch(observed=observed, hidden=feasible_hidden))
 

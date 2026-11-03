@@ -321,13 +321,13 @@ def test_ip_inference_uses_the_pyomo_network_flow_representation():
 def _hmm(hidden_states=("a", "b", "c")):
     hidden_states = list(hidden_states)
     n = len(hidden_states)
-    observed_states = ["o1", "o2"]
+    observable_states = ["o1", "o2"]
     return HiddenMarkovModel(
         start_probs={h: 1.0 / n for h in hidden_states},
         transition_probs={
             (h1, h2): 1.0 / n for h1 in hidden_states for h2 in hidden_states
         },
-        emission_probs={(h, o): 0.5 for h in hidden_states for o in observed_states},
+        emission_probs={(h, o): 0.5 for h in hidden_states for o in observable_states},
     )
 
 

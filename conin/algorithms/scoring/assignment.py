@@ -255,9 +255,9 @@ def hmm_path_log_potential(hmm, hidden, observed):
     to one).  This is the score of the MVR Viterbi, which accepts sparse
     observations.
     """
-    start = hmm.get_start_probs()
-    transition = hmm.get_transition_probs()
-    emission = hmm.get_emission_probs()
+    start = hmm.start_probs
+    transition = hmm.transition_probs
+    emission = hmm.emission_probs
 
     def emit(t):
         label = observed.get(t)

@@ -31,6 +31,7 @@ from conin.algorithms.inference.pyomo.hmm_network_flow import (
     parse_aos_solution_pyomo_ip_inference,
     parse_model_solution_pyomo_ip_inference,
 )
+from conin.algorithms.scoring import log_probability
 
 solve_module = importlib.import_module("conin.algorithms.inference.pyomo.solve")
 
@@ -227,7 +228,7 @@ def test_ip_inference_or_topas_solutions(monkeypatch):
     hmm = chmm.model
     observed = ["o0", "o1", "o1"]
     assert [s.log_potential for s in results.solutions] == [
-        pytest.approx(hmm.log_probability(observed, p)) for p in PATHS
+        pytest.approx(log_probability(hmm, p, observed=observed)) for p in PATHS
     ]
 
 

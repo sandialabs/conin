@@ -131,7 +131,7 @@ def _e_step_counts(ctx):
     gamma, trans_counts, loglik, _, _ = _forward_backward(ctx)
 
     # Only observed times carry an emission statistic; the rest still drive the chain.
-    num_observed = ctx["hmm"].num_observed_states
+    num_observed = ctx["hmm"].num_observable_states
     emit_counts = torch.zeros((K, num_observed), dtype=ACCUM_DTYPE, device=device)
 
     if ctx["observed_index"]:
@@ -229,12 +229,11 @@ def _rebuild_hmm(hmm, start, transition, emission):
     ``HiddenMarkovModel`` is immutable, so updated parameters require a new
     instance. Arrays are indexed as ``hmm``'s ``"matvec"`` representation.
     """
-    # The constructor orders states by sorted label, and the dense dictionaries
-    # below mention every label, so the rebuilt model keeps hmm's internal index
-    # order (and with it the alignment of the MVRs of the "mvr" representation).
+    # The rebuilt model keeps hmm's state order, and with it the alignment of
+    # the MVRs of the "mvr" representation.
     old = hmm.representation("matvec")
-    hidden, observed = old.hidden_states, old.observed_states
-    new_hmm = HiddenMarkovModel(
+    hidden, observed = old.hidden_states, old.observable_states
+    return HiddenMarkovModel(
         start_probs={h: float(start[i]) for i, h in enumerate(hidden)},
         transition_probs={
             (h1, h2): float(transition[i][j])
@@ -246,14 +245,9 @@ def _rebuild_hmm(hmm, start, transition, emission):
             for i, h in enumerate(hidden)
             for j, o in enumerate(observed)
         },
+        hidden_states=hidden,
+        observable_states=observed,
     )
-    new = new_hmm.representation("matvec")
-    if new.hidden_states != hidden or new.observed_states != observed:
-        raise InvalidInputError(  # pragma: no cover
-            "Rebuilding the HMM changed its internal state order"
-        )
-
-    return new_hmm
 
 
 # ======================================================================
@@ -408,7 +402,7 @@ def baum_welch_mvr_chmm(
     hmm, constraints = _model_parts(model)
 
     K = hmm.num_hidden_states
-    num_observed = hmm.num_observed_states
+    num_observed = hmm.num_observable_states
 
     masks = _support_masks(hmm)
 

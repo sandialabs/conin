@@ -126,10 +126,10 @@ def hmm_sequences(hmm, hidden, observed=None):
             "sequences must have the same length"
         )
     for o in observed:
-        if o not in hmm.observed_states:
+        if o not in hmm.observable_states:
             raise InvalidInputError(
-                f"{o!r} is not an observed state; expected one of "
-                f"{hmm.observed_states}"
+                f"{o!r} is not an observable state; expected one of "
+                f"{hmm.observable_states}"
             )
     return hidden, observed
 

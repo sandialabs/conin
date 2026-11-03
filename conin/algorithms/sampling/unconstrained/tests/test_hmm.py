@@ -33,9 +33,9 @@ class Test_HMM1:
         hmm = tc.create_hmm1()
         # Make sure that we start in state h0 so we test sequences of length at
         # least 2
-        start_probs = hmm.get_start_probs()
-        tranisition_probs = hmm.get_transition_probs()
-        emission_probs = hmm.get_emission_probs()
+        start_probs = hmm.start_probs
+        tranisition_probs = hmm.transition_probs
+        emission_probs = hmm.emission_probs
         start_probs = {"h0": 1, "h1": 0}
         hmm = HiddenMarkovModel(
             start_probs=start_probs,
@@ -88,7 +88,7 @@ def test_same_draws_as_the_reference_sampler(seed):
     hidden = [hmm.hidden_states[h] for h in _reference_hidden(hmm, 15, rng)]
     emission = hmm.representation("matvec").emission_mat.tolist()
     observed = [
-        hmm.observed_states[
+        hmm.observable_states[
             Util.sample_from_vec(
                 emission[hmm.representation("matvec").hidden_to_internal[h]], rng
             )

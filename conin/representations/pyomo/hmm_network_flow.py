@@ -51,7 +51,7 @@ def _create_index_sets(*, hmm, observed, Tmax=None):
     """
     repn = MatVecHMMRepresentation(hmm)
     N = repn.num_hidden_states
-    obs = [repn.observed_to_internal[o] for o in observed]
+    obs = [repn.observable_to_internal[o] for o in observed]
     start_probs = repn.start_vec
     emission_probs = repn.emission_mat
     trans_mat = repn.transition_mat

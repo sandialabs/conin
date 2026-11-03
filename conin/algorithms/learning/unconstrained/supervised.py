@@ -22,7 +22,7 @@ def supervised_learning(
     Inputs:
         - simulations: Generated using helper.convert_to_simulations
         - hidden_states: Hidden states that you could possibly have (you don't need to see all of them in the simulations)
-        - observable_states: Same as hidden states but for observed states
+        - observable_states: Same as hidden states but for observable states
         - X_tolerance: If in a simulation we have a zero in our calculation we replace it with this tolerance
         - X_priors: These are only used for transitions or emissions which are not observed and for which we want some default values
     """
@@ -107,9 +107,10 @@ def supervised_learning(
             for o in observable_states:
                 emission_probs[i, o] /= rowsum[i]
 
-    hmm = HiddenMarkovModel(
+    return HiddenMarkovModel(
         start_probs=start_probs,
         transition_probs=transition_probs,
         emission_probs=emission_probs,
+        hidden_states=hidden_states,
+        observable_states=observable_states,
     )
-    return hmm

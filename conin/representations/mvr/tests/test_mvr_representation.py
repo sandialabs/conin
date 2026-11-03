@@ -26,13 +26,13 @@ def normalize_rows(mat: np.ndarray) -> np.ndarray:
 def make_random_hmm(
     *,
     hidden_states: list[str],
-    observed_states: list[str],
+    observable_states: list[str],
     seed: int = 123,
 ):
     rng = np.random.default_rng(seed)
 
     num_hidden = len(hidden_states)
-    num_observed = len(observed_states)
+    num_observed = len(observable_states)
 
     start_vec = normalize_vec(rng.random(num_hidden))
     transition_mat = normalize_rows(rng.random((num_hidden, num_hidden)))
@@ -49,7 +49,7 @@ def make_random_hmm(
     emission_probs = {
         (h, o): emission_mat[i, j]
         for i, h in enumerate(hidden_states)
-        for j, o in enumerate(observed_states)
+        for j, o in enumerate(observable_states)
     }
 
     hmm = HiddenMarkovModel(
@@ -362,7 +362,7 @@ def test_direct_mvr_matvec_repn_rejects_invalid_arrays(case, match):
 def test_mvr_representation_rejects_mismatched_hidden_states():
     hmm = make_random_hmm(
         hidden_states=["A", "B", "C"],
-        observed_states=["o0", "o1"],
+        observable_states=["o0", "o1"],
     )
 
     mvr = make_forbid_state_mvr(
@@ -380,7 +380,7 @@ def test_mvr_representation_rejects_mismatched_hidden_states():
 def test_mvr_representation_rejects_a_factory_that_returns_no_mvr():
     hmm = make_random_hmm(
         hidden_states=["A", "B", "C"],
-        observed_states=["o0", "o1"],
+        observable_states=["o0", "o1"],
     )
     bad = MVRConstraint(func=lambda hidden_markov_model: "not an MVR", name="bad")
 
@@ -390,12 +390,12 @@ def test_mvr_representation_rejects_a_factory_that_returns_no_mvr():
 
 def test_constrained_hmm_initializes_mvr_backend_from_functor():
     hidden_states = ["A", "B", "C"]
-    observed_states = ["o0", "o1"]
+    observable_states = ["o0", "o1"]
     forbidden_state = "B"
 
     hmm = make_random_hmm(
         hidden_states=hidden_states,
-        observed_states=observed_states,
+        observable_states=observable_states,
     )
 
     @mvr_constraint_fn(name="forbid_state")

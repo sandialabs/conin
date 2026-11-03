@@ -433,5 +433,5 @@ def _hmm_state_space(hmm, T):
     states = {}
     for t in range(T):
         states[("H", t)] = list(hmm.hidden_states)
-        states[("E", t)] = list(hmm.observed_states)
+        states[("E", t)] = list(hmm.observable_states)
     return StateSpace(states)

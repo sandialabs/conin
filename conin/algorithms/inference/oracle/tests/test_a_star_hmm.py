@@ -14,6 +14,7 @@ from conin.constraints.oracle.library import (
 )
 from conin.exceptions import InvalidInputError
 from conin.algorithms.inference.oracle import a_star
+from conin.algorithms.scoring import log_probability
 
 
 def _brute_force(cmodel, observed, num_solutions=1):
@@ -25,7 +26,7 @@ def _brute_force(cmodel, observed, num_solutions=1):
         if not is_feasible(cmodel, seq):
             continue
         p = (
-            hmm.log_probability(observed, seq)
+            log_probability(hmm, seq, observed=observed)
             if _possible(hmm, observed, seq)
             else None
         )
@@ -37,12 +38,12 @@ def _brute_force(cmodel, observed, num_solutions=1):
 
 def _possible(hmm, observed, seq):
     probs = [
-        hmm.get_start_probs()[seq[0]],
-        hmm.get_emission_probs()[seq[0], observed[0]],
+        hmm.start_probs[seq[0]],
+        hmm.emission_probs[seq[0], observed[0]],
     ]
     for t in range(1, len(seq)):
-        probs.append(hmm.get_transition_probs()[seq[t - 1], seq[t]])
-        probs.append(hmm.get_emission_probs()[seq[t], observed[t]])
+        probs.append(hmm.transition_probs[seq[t - 1], seq[t]])
+        probs.append(hmm.emission_probs[seq[t], observed[t]])
     return all(p > 0 for p in probs)
 
 

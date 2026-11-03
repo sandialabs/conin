@@ -83,7 +83,7 @@ def _resolve_emit_weights(
     K = int(emission_mat.shape[0])
 
     times, obs_idx = [], []
-    observed_to_internal = matvec.observed_to_internal
+    observable_to_internal = matvec.observable_to_internal
 
     for t, o in items:
         if not isinstance(t, (int, np.integer)):
@@ -92,11 +92,11 @@ def _resolve_emit_weights(
             raise InvalidInputError(
                 f"Observation time {t} is outside the horizon [0, {T})."
             )
-        if o not in observed_to_internal:
-            raise InvalidInputError(f"Unknown observed state: {o}")
+        if o not in observable_to_internal:
+            raise InvalidInputError(f"Unknown observable state: {o}")
 
         times.append(int(t))
-        obs_idx.append(observed_to_internal[o])
+        obs_idx.append(observable_to_internal[o])
 
     # The identity of the working space, so an unobserved time contributes nothing.
     identity = 0.0 if log else 1.0
