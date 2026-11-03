@@ -73,7 +73,7 @@ def generate_hidden(hmm, time_steps, *, rng=None):
     return [h2e[h] for h in hidden]
 
 
-def generate_hidden_until_state(hmm, h, *, rng=None):
+def generate_hidden_until_state(hmm, h, *, max_steps=10_000, rng=None):
     """Sample hidden-state labels until a target state is reached.
 
     Parameters
@@ -82,6 +82,10 @@ def generate_hidden_until_state(hmm, h, *, rng=None):
         The model (without constraints).
     h : Any
         Target hidden-state label at which sampling stops.
+    max_steps : int, optional
+        The longest sequence to sample (default 10000).  The target may be
+        unreachable (e.g. after an absorbing state), so sampling gives up
+        after ``max_steps`` states.
     rng : None, int or numpy.random.Generator, optional
         The random generator, or a seed for a new one (see
         :func:`conin.util.as_rng`).
@@ -89,13 +93,28 @@ def generate_hidden_until_state(hmm, h, *, rng=None):
     Returns
     -------
     list
-        Generated hidden-state labels ending in ``h``.
+        Generated hidden-state labels ending in ``h`` (at most
+        ``max_steps``).
+
+    Raises
+    ------
+    InvalidInputError
+        If ``max_steps`` is less than 1 or the model has constraints.
+    RuntimeError
+        If ``h`` is not reached within ``max_steps`` states.
     """
+    if max_steps < 1:
+        raise InvalidInputError(f"max_steps must be at least 1, got {max_steps}")
     model, start, transition, _ = _arrays(hmm)
     target = model.hidden_to_internal[h]
     rng = as_rng(rng)
     hidden = [Util.sample_from_vec(start, rng)]
     while hidden[-1] != target:
+        if len(hidden) == max_steps:
+            raise RuntimeError(
+                f"Failed to reach the hidden state {h!r} within "
+                f"max_steps={max_steps} states"
+            )
         hidden.append(Util.sample_from_vec(transition[hidden[-1]], rng))
     h2e = model.hidden_to_external
     return [h2e[i] for i in hidden]

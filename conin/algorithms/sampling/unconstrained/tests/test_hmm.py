@@ -142,6 +142,49 @@ def test_constraints_are_not_ignored(sample):
         sample(tc.create_chmm1_oracle())
 
 
+def test_until_state_gives_up_after_max_steps():
+    # create_hmm2's h2 is absorbing, so h1 can become unreachable: this
+    # looped forever.  The start state is h1 for 0.6 of the draws, so try
+    # several seeds for one that reaches h2 first.
+    hmm = tc.create_hmm2()
+    gave_up = 0
+    for seed in range(20):
+        try:
+            path = generate_hidden_until_state(hmm, "h1", max_steps=50, rng=seed)
+        except RuntimeError as e:
+            assert "within max_steps=50 states" in str(e)
+            gave_up += 1
+        else:
+            assert path[-1] == "h1" and len(path) <= 50
+    assert gave_up > 0
+
+
+@pytest.mark.parametrize("max_steps,length", [(1, 1), (3, 3)])
+def test_until_state_may_reach_the_target_at_max_steps(max_steps, length):
+    # A path that reaches the target at exactly max_steps states is returned:
+    # find a seed whose path to h0 has `length` states, then sample it again
+    # with max_steps=length.
+    hmm = tc.create_hmm2()
+    for seed in range(200):
+        try:
+            path = generate_hidden_until_state(hmm, "h0", max_steps=1000, rng=seed)
+        except RuntimeError:
+            continue  # absorbed in h2 before reaching h0
+        if len(path) == length:
+            again = generate_hidden_until_state(
+                hmm, "h0", max_steps=max_steps, rng=seed
+            )
+            assert again == path
+            return
+    pytest.fail(f"no seed gives a path of length {length}")
+
+
+@pytest.mark.parametrize("max_steps", [0, -1])
+def test_until_state_rejects_max_steps_below_one(max_steps):
+    with pytest.raises(InvalidInputError, match="max_steps must be at least 1"):
+        generate_hidden_until_state(tc.create_hmm1(), "h1", max_steps=max_steps)
+
+
 def test_generate_observed_rejects_negative_time_steps_before_sampling():
     hmm = tc.create_hmm1()
     rng = np.random.default_rng(0)

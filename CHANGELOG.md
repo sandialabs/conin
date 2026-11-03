@@ -410,6 +410,10 @@ Sampling and learning
   numpy.random.seed), the conin.examples HMM builders no longer reset the
   global seed, and random_hmm(seed=...) is random_hmm(rng=...).
   Util.sample_from_vec takes the generator as a second argument.
+- generate_hidden_until_state takes max_steps (default 10000) and raises
+  RuntimeError if the target is not reached within that many states (it
+  looped forever when the target became unreachable, e.g. after an absorbing
+  state).
 - DBNSampler.sample(T, N) is sample(time_steps, num_samples) and returns a
   list of traces (was a dict keyed 0..N-1); DBNSampler(G) is DBNSampler(dbn).
 - mcem(app=...) takes a constrained (or bare) HMM, samples from the
