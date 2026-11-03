@@ -8,7 +8,7 @@ import munch
 import pyomo.environ as pe
 from pyomo.common.timing import TicTocTimer
 
-from conin.config import default_mip_solver
+from conin.config import mip_solver
 from conin.exceptions import InsufficientSolutionsError
 from conin.algorithms.inference.query_checks import full_query_variables
 from conin.algorithms.inference.results import (
@@ -137,7 +137,7 @@ def _solve_pyomo(repn, q):
 def solve_pyomo_map_query_model(
     model,
     *,
-    solver=default_mip_solver,
+    solver=None,
     tee=False,
     solution_with_fixed=False,
     solution_with_evidence=False,
@@ -162,6 +162,7 @@ def solve_pyomo_map_query_model(
     failures raise ``RuntimeError``.  ``solver="or_topas"`` raises for an
     infeasible model too.
     """
+    solver = mip_solver(solver)
     if timing:  # pragma:nocover
         timer = TicTocTimer()
         timer.tic("optimize_map_query_model - START")

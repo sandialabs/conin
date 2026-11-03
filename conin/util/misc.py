@@ -1,3 +1,4 @@
+import importlib
 import copy
 from dataclasses import dataclass
 import numpy as np
@@ -107,6 +108,52 @@ class try_import:
 
     def __str__(self):
         return str(self.success)
+
+
+class lazy_import:
+    """An optional module that is imported the first time it is used.
+
+    ``bool(module)`` imports it and says whether the import worked (an
+    ``ImportError`` means it did not); an attribute lookup imports it and
+    raises ``ImportError`` if it is not available.  ``import conin`` uses
+    this for pgmpy, which takes several seconds to import (it imports torch).
+
+    >>> from conin.util import lazy_import
+    >>> json = lazy_import("json")
+    >>> bool(json), json.dumps([1])
+    (True, '[1]')
+    >>> bool(lazy_import("no_such_module"))
+    False
+    """
+
+    def __init__(self, name):
+        self._name = name
+        self._module = None
+        self._error = None
+
+    def _load(self):
+        if self._module is None and self._error is None:
+            try:
+                self._module = importlib.import_module(self._name)
+            except ImportError as e:
+                self._error = e
+        return self._module
+
+    def __bool__(self):
+        return self._load() is not None
+
+    def __getattr__(self, attr):
+        if attr.startswith("__"):
+            raise AttributeError(attr)
+        module = self._load()
+        if module is None:
+            raise ImportError(f"The {self._name} module is not available") from (
+                self._error
+            )
+        return getattr(module, attr)
+
+    def __repr__(self):
+        return f"lazy_import({self._name!r})"
 
 
 try:

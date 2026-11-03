@@ -15,7 +15,7 @@ and avoid ambiguity about Cartesian-product ordering.
 
 .. testcode::
 
-   from conin.graphical_models import DiscreteFactor
+   from conin import DiscreteFactor
 
    f_a = DiscreteFactor(["A"], {0: 1, 1: 1})
    f_ab = DiscreteFactor(
@@ -37,7 +37,7 @@ for each node and one pairwise factor.
 
 .. testcode::
 
-   from conin.graphical_models import DiscreteMarkovNetwork, DiscreteFactor
+   from conin import DiscreteMarkovNetwork, DiscreteFactor
 
    f_a = DiscreteFactor(["A"], {0: 1, 1: 1})
    f_b = DiscreteFactor(["B"], {0: 1, 1: 2})
@@ -64,7 +64,7 @@ pairwise interactions:
 .. testcode::
 
    import numpy as np
-   from conin.graphical_models import DiscreteMarkovNetwork, DiscreteFactor
+   from conin import DiscreteMarkovNetwork, DiscreteFactor
 
    f_a = DiscreteFactor(nodes=["A"], values=[1, 1, 2])
    f_b = DiscreteFactor(nodes=["B"], values=[1, 1, 3])
@@ -100,8 +100,7 @@ constraints to the optimization model:
 
 .. testcode::
 
-   from conin import pyomo_constraint_fn
-   from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
+   from conin import pyomo_constraint_fn, ConstrainedDiscreteMarkovNetwork
    from conin.examples.markov_network import ABC_conin
 
    base = ABC_conin().pgm
@@ -125,8 +124,7 @@ with the Toulbar2 interface:
 
 .. testcode::
 
-   from conin import toulbar2_constraint_fn
-   from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
+   from conin import toulbar2_constraint_fn, ConstrainedDiscreteMarkovNetwork
    from conin.examples.markov_network import ABC_conin
 
    base = ABC_conin().pgm
@@ -152,8 +150,7 @@ Oracle constraints with node scoping
 
 .. testcode::
 
-   from conin import oracle_constraint_fn
-   from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
+   from conin import oracle_constraint_fn, ConstrainedDiscreteMarkovNetwork
    from conin.examples.markov_network import ABC_conin
 
    base = ABC_conin().pgm

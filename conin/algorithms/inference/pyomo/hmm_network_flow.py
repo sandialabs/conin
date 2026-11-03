@@ -7,7 +7,7 @@ The model is built by the ``"pyomo_network_flow"`` representation
 import logging
 import math
 
-from conin.config import default_mip_solver
+from conin.config import mip_solver
 from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.exceptions import InfeasibleQueryError, InvalidInputError
 from conin.graphical_models.assignments import as_sequence
@@ -31,7 +31,7 @@ logger = logging.getLogger("conin")
 
 def _solver_factory(solver, solver_options):
     """The Pyomo solver ``solver``, with the options ``solver_options`` (a dict or ``None``)."""
-    opt = pyo.SolverFactory(solver)
+    opt = pyo.SolverFactory(mip_solver(solver))
     if solver_options:
         opt.options = dict(solver_options)
     return opt
@@ -62,7 +62,7 @@ def lp_inference(
     hmm,
     observed,
     num_solutions=1,
-    solver=default_mip_solver,
+    solver=None,
     solver_options=None,
     debug=False,
     quiet=True,
@@ -78,8 +78,9 @@ def lp_inference(
     num_solutions : int, optional
         Must be ``1``.
     solver, solver_options, debug, quiet
-        The Pyomo solver name, its options (set as ``opt.options``), debug
-        output and solver output.
+        The Pyomo solver name (default: ``conin.config.default_mip_solver``),
+        its options (set as ``opt.options``), debug output and solver
+        output.
 
     Returns
     -------
@@ -108,7 +109,7 @@ def _lp_inference(
     *,
     observed,
     num_solutions=1,
-    solver=default_mip_solver,
+    solver=None,
     solver_options=None,
     debug=False,
     quiet=True,
@@ -178,7 +179,7 @@ def ip_inference(
     *,
     hmm,
     observed,
-    solver=default_mip_solver,
+    solver=None,
     solver_options=None,
     debug=False,
     quiet=True,
@@ -194,7 +195,8 @@ def ip_inference(
         Observed labels: a non-empty list or tuple (or a dict keyed by
         ``0..T-1``); anything else raises ``InvalidInputError``.
     solver, solver_options, debug, quiet
-        The Pyomo solver name (``"or_topas"`` enumerates several solutions),
+        The Pyomo solver name (default: ``conin.config.default_mip_solver``;
+        ``"or_topas"`` enumerates several solutions),
         its options, debug output and solver output.
 
     Returns
@@ -223,7 +225,7 @@ def _ip_inference(
     repn,
     *,
     observed,
-    solver=default_mip_solver,
+    solver=None,
     solver_options=None,
     debug=False,
     quiet=True,

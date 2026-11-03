@@ -7,6 +7,12 @@ records design decisions that are not obvious from the code.
 Package layout
 --------------
 
+``conin``
+   The top-level public API, ``conin.__all__`` (see :doc:`api_conin`): the
+   names most code needs, re-exported from the subpackages below. Functions
+   specific to one model type (the HMM samplers, learning and inference
+   functions, ``partial_is_feasible``) stay in their subpackages.
+   ``conin/tests/test_public_api.py`` pins the list.
 ``conin.graphical_models``
    Unconstrained, immutable models (``DiscreteMarkovNetwork``,
    ``DiscreteBayesianNetwork``, ``DynamicDiscreteBayesianNetwork``,
@@ -35,7 +41,7 @@ Package layout
    share (the torch MVR kernels and variable elimination). ``map_query`` and ``log_probability_query``
    are the generic entry points.
 ``conin.io``
-   File I/O (UAI, CFN, BIF). ``conin.io.pgmpy`` is the only place that uses
+   File I/O (UAI, CFN, JSON, BIF). ``conin.io.pgmpy`` is the only place that uses
    pgmpy: BIF files and converting models between pgmpy and CONIN
    (``convert_pgmpy_to_conin``, ``convert_conin_to_pgmpy_bn``/``_mn``).
    Needs pgmpy only when called.
@@ -59,13 +65,17 @@ Layering
 - The ``algorithms`` packages sit above the model layer, in the order
   ``util``, ``feasibility``, ``scoring``, ``inference``, ``sampling``,
   ``learning``: each imports only the ones before it. ``examples`` and the
-  top-level ``conin`` package are at the top.
+  ``algorithms`` package itself (which imports all of them) come next, and
+  the top-level ``conin`` package, which re-exports the public API, is
+  above everything.
 - There are no module-level import cycles between modules. A conin module is
   imported inside a function only if it needs torch (the MVR algorithms and
   ``algorithms.util.mvr_kernels``); other function-level imports are of
   optional dependencies (torch).
-- ``import conin`` must not import torch. The MVR packages export their
-  algorithms through a lazy module ``__getattr__``.
+- ``import conin`` must not import torch or pgmpy (pgmpy imports torch, and
+  takes several seconds to import). The MVR packages export their
+  algorithms through a lazy module ``__getattr__``, and ``conin.io.pgmpy``
+  imports pgmpy with ``conin.util.lazy_import``.
 - ``conin/tests/test_layering.py`` checks these rules; its ``LAYERS`` table
   is the authoritative layer order, and a new package must be added to it.
 - Optional dependencies are imported with ``conin.util.try_import``, which

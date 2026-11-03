@@ -18,11 +18,8 @@ with an initial distribution and one transition CPD.
 
 .. testcode::
 
-   from conin.graphical_models import (
-       DynamicDiscreteBayesianNetwork,
-       TimeIndex,
-   )
-   from conin.graphical_models import DiscreteCPD
+   from conin import DynamicDiscreteBayesianNetwork, DiscreteCPD
+   from conin.graphical_models import TimeIndex
 
    t = TimeIndex()
 
@@ -46,11 +43,8 @@ The ``simple1_DDBN_conin`` example introduces two dynamic nodes:
 
 .. testcode::
 
-   from conin.graphical_models import (
-       DynamicDiscreteBayesianNetwork,
-       TimeIndex,
-   )
-   from conin.graphical_models import DiscreteCPD
+   from conin import DynamicDiscreteBayesianNetwork, DiscreteCPD
+   from conin.graphical_models import TimeIndex
 
    t = TimeIndex()
 
@@ -94,8 +88,10 @@ to stay fixed across the first two time steps:
 .. testcode::
 
    import pyomo.environ as pyo
-   from conin import pyomo_constraint_fn
-   from conin.constrained_models import ConstrainedDynamicDiscreteBayesianNetwork
+   from conin import (
+       pyomo_constraint_fn,
+       ConstrainedDynamicDiscreteBayesianNetwork,
+   )
    from conin.examples.dynamic_bayesian_network import simple1_DDBN_conin
 
    base = simple1_DDBN_conin().pgm
@@ -119,8 +115,10 @@ Toulbar2:
 
 .. testcode::
 
-   from conin import toulbar2_constraint_fn
-   from conin.constrained_models import ConstrainedDynamicDiscreteBayesianNetwork
+   from conin import (
+       toulbar2_constraint_fn,
+       ConstrainedDynamicDiscreteBayesianNetwork,
+   )
    from conin.examples.dynamic_bayesian_network import simple1_DDBN_conin
 
    base = simple1_DDBN_conin().pgm
@@ -153,8 +151,10 @@ for every backend (and for ``is_feasible``):
 
 .. testcode::
 
-   from conin import oracle_constraint_fn
-   from conin.constrained_models import ConstrainedDynamicDiscreteBayesianNetwork
+   from conin import (
+       oracle_constraint_fn,
+       ConstrainedDynamicDiscreteBayesianNetwork,
+   )
    from conin.examples.dynamic_bayesian_network import simple1_DDBN_conin
 
    base = simple1_DDBN_conin().pgm

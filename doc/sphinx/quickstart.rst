@@ -37,7 +37,7 @@ The following example creates a two-node Bayesian network with one root node
 
 .. doctest:: quickstart
 
-   >>> from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
+   >>> from conin import DiscreteBayesianNetwork, DiscreteCPD
    >>> cpd_a = DiscreteCPD(node="A", values=[0.9, 0.1])
    >>> cpd_b = DiscreteCPD(
    ...     node="B",
@@ -54,17 +54,17 @@ The following example creates a two-node Bayesian network with one root node
 Evaluate an Assignment
 ----------------------
 
-``conin.algorithms.scoring.log_probability`` returns the log-probability of a total
-assignment of a Bayesian network, a dynamic Bayesian network or an HMM.
-``conin.algorithms.scoring.log_potential`` also accepts Markov networks (where it returns
-the unnormalised log-probability) and constrained models (where it returns
-``-inf`` if a constraint is violated). ``conin.algorithms.scoring.log_probability_query``
+``conin.log_probability`` returns the log-probability of a total assignment
+of a Bayesian network, a dynamic Bayesian network or an HMM.
+``conin.log_potential`` also accepts Markov networks (where it returns the
+unnormalised log-probability) and constrained models (where it returns
+``-inf`` if a constraint is violated). ``conin.log_probability_query``
 computes marginal and conditional log-probabilities, also under constraints.
 See :doc:`model_conversion_io`.
 
 .. doctest:: quickstart
 
-   >>> from conin.algorithms.scoring import log_probability
+   >>> from conin import log_probability
    >>> value = log_probability(pgm, {"A": 0, "B": 1})
    >>> round(value, 6)
    -0.328504
@@ -80,7 +80,7 @@ For example, with variable elimination (part of the base package):
 
 .. testcode:: quickstart
 
-   from conin.algorithms.inference import map_query
+   from conin import map_query
 
    result = map_query(pgm, method="variable_elimination")
    print(sorted(result.solution.states.items()))
@@ -97,3 +97,4 @@ Next Steps
 - See :doc:`examples` for selected example factories.
 - See :doc:`model_conversion_io` for model conversion and file I/O.
 - See :doc:`hmm_learning` for HMM parameter learning.
+- See :doc:`api_conin` for the names that ``conin`` exports.

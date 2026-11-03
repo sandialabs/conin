@@ -29,7 +29,9 @@ LAYERS = [
     {"algorithms.inference"},
     {"algorithms.sampling"},
     {"algorithms.learning"},
-    {"examples", "algorithms", "conin"},
+    {"examples", "algorithms"},
+    # The top-level package re-exports the public API (conin.__all__).
+    {"conin"},
 ]
 SHARED_LAYERS = (0, 2)
 
@@ -198,20 +200,12 @@ def test_no_module_level_import_cycles():
     assert cycles == []
 
 
-def test_import_conin_does_not_import_torch():
-    # pgmpy imports torch itself when it is installed, so it is blocked here
-    # (conin imports it with try_import).  The MVR packages are imported too:
-    # they load their algorithms lazily.
+def test_import_conin_does_not_import_torch_or_pgmpy():
+    # pgmpy imports torch itself, and conin.io imports pgmpy when it is first
+    # used (lazy_import).  The MVR packages are imported too: they load their
+    # algorithms lazily.  Nor does it look for a MIP solver (conin.config).
     script = textwrap.dedent("""
         import sys
-
-        class BlockPgmpy:
-            def find_spec(self, name, path=None, target=None):
-                if name == "pgmpy" or name.startswith("pgmpy."):
-                    raise ModuleNotFoundError(f"No module named {name!r}")
-                return None
-
-        sys.meta_path.insert(0, BlockPgmpy())
 
         import conin
         import conin.algorithms.inference.mvr
@@ -223,10 +217,10 @@ def test_import_conin_does_not_import_torch():
         loaded = sorted(
             name
             for name in sys.modules
-            if name == "torch"
-            or name.startswith("torch.")
+            if name.partition(".")[0] in ("torch", "pgmpy")
             or name == "conin.algorithms.util.mvr_kernels"
         )
+        print(conin.config._find_mip_solver.cache_info().currsize)
         print(loaded)
         """)
     env = dict(os.environ, PYTHONPATH=str(PACKAGE_DIR.parent))
@@ -239,4 +233,4 @@ def test_import_conin_does_not_import_torch():
         timeout=600,
     )
     assert result.returncode == 0, result.stderr
-    assert result.stdout.strip().splitlines()[-1] == "[]"
+    assert result.stdout.strip().splitlines()[-2:] == ["0", "[]"]

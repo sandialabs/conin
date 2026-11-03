@@ -4,14 +4,13 @@ import os
 import gzip
 
 from conin.exceptions import InvalidInputError, ModelFileError
-from conin.util import try_import
+from conin.util import lazy_import
 
-with try_import() as pgmpy_available:
-    import pgmpy  # noqa: F401
-
-with try_import() as pgmpy_readwrite_available:
-    from pgmpy.readwrite.BIF import BIFReader, BIFWriter
-    from pgmpy.readwrite.UAI import UAIReader, UAIWriter
+# pgmpy is imported when it is first used (it is slow to import).
+pgmpy_available = lazy_import("pgmpy")
+pgmpy_readwrite_available = lazy_import("pgmpy.readwrite")
+pgmpy_bif = lazy_import("pgmpy.readwrite.BIF")
+pgmpy_uai = lazy_import("pgmpy.readwrite.UAI")
 
 
 def load_model(name, quiet=True):
@@ -34,18 +33,18 @@ def load_model(name, quiet=True):
                     raise ModelFileError(f"Cannot read {name}: {e}") from e
 
                 if name.endswith(".bif.gz"):
-                    reader = BIFReader(string=content.decode("utf-8"))
+                    reader = pgmpy_bif.BIFReader(string=content.decode("utf-8"))
                     return reader.get_model()
                 elif name.endswith(".uai.gz"):
-                    reader = UAIReader(string=content.decode("utf-8"))
+                    reader = pgmpy_uai.UAIReader(string=content.decode("utf-8"))
                     return reader.get_model()
 
         elif name.endswith(".bif"):
-            reader = BIFReader(name)
+            reader = pgmpy_bif.BIFReader(name)
             return reader.get_model()
 
         elif name.endswith(".uai"):
-            reader = UAIReader(name)
+            reader = pgmpy_uai.UAIReader(name)
             return reader.get_model()
 
         raise InvalidInputError(
@@ -63,7 +62,7 @@ def save_model(pgm, name, quiet=True):
             raise ImportError(
                 "Cannot save a pgmpy model to BIF format without importing pgmpy"
             )
-        writer = BIFWriter(pgm)
+        writer = pgmpy_bif.BIFWriter(pgm)
         writer.write(name)
 
     elif name.endswith(".uai"):
@@ -71,7 +70,7 @@ def save_model(pgm, name, quiet=True):
             raise ImportError(
                 "Cannot save a pgmpy model to UAI format without importing pgmpy"
             )
-        writer = UAIWriter(pgm)
+        writer = pgmpy_uai.UAIWriter(pgm)
         writer.write(name)
 
     else:
