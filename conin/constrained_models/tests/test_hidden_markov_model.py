@@ -50,7 +50,10 @@ class Test_Oracle_ConstrainedHiddenMarkovModel:
         constraints = [oc.all_diff_constraint]
         repn = ConstrainedHiddenMarkovModel(pgm, constraints).representation("oracle")
         assert isinstance(repn.hmm, MatVecHMMRepresentation)
-        assert repn.hmm.transition_mat.tolist() == pgm.transition_mat
+        assert (
+            repn.hmm.transition_mat.tolist()
+            == pgm.representation("matvec").transition_mat.tolist()
+        )
         assert len(repn.constraints) == 1
 
     def test_internal_is_feasible(self):

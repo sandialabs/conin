@@ -22,6 +22,7 @@ from conin.algorithms.util.mvr_kernels import (
 from .baum_welch import (
     _e_step_counts,
     _normalize_on_support,
+    _parameters,
     _rebuild_hmm,
     _resolve_time_horizons,
     _support_masks,
@@ -270,7 +271,7 @@ def generalized_em_mvr_chmm(
             stacklevel=2,
         )
     if max_iter:
-        current = (hmm.start_vec, hmm.transition_mat, hmm.emission_mat)
+        current = _parameters(hmm)
         hmm = _rebuild_hmm(
             hmm,
             *(

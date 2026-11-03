@@ -216,7 +216,10 @@ def test_constraint_data_hmm():
             stop=1,
             variables=None,
             evidence=evidence,
-            hmm=munch.Munch(T=[0, 1], hidden_to_internal=hmm.hidden_to_internal),
+            hmm=munch.Munch(
+                T=[0, 1],
+                hidden_to_internal=hmm.representation("matvec").hidden_to_internal,
+            ),
         )
     ]
 

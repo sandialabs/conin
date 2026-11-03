@@ -12,13 +12,13 @@ from conin.util import Util, as_rng
 
 
 def _arrays(hmm):
-    """Return ``(model, start, transition, emission)`` as lists on internal indices."""
+    """Return ``(repn, start, transition, emission)``: the ``"matvec"`` and its arrays as lists."""
     cmodel = ConstrainedHiddenMarkovModel.ensure(hmm)
     # Raises InvalidInputError if the model has constraints (no "matvec"
     # representation), so constraints are never silently ignored.
     repn = cmodel.representation("matvec")
     return (
-        cmodel.model,
+        repn,
         repn.start_vec.tolist(),
         repn.transition_mat.tolist(),
         repn.emission_mat.tolist(),
@@ -67,8 +67,8 @@ def generate_hidden(hmm, time_steps, *, rng=None):
     InvalidInputError
         If ``time_steps`` is negative or the model has constraints.
     """
-    model, start, transition, _ = _arrays(hmm)
-    h2e = model.hidden_to_external
+    repn, start, transition, _ = _arrays(hmm)
+    h2e = repn.hidden_states
     hidden = _hidden_indices(start, transition, time_steps, as_rng(rng))
     return [h2e[h] for h in hidden]
 
@@ -105,8 +105,8 @@ def generate_hidden_until_state(hmm, h, *, max_steps=10_000, rng=None):
     """
     if max_steps < 1:
         raise InvalidInputError(f"max_steps must be at least 1, got {max_steps}")
-    model, start, transition, _ = _arrays(hmm)
-    target = model.hidden_to_internal[h]
+    repn, start, transition, _ = _arrays(hmm)
+    target = repn.hidden_to_internal[h]
     rng = as_rng(rng)
     hidden = [Util.sample_from_vec(start, rng)]
     while hidden[-1] != target:
@@ -116,7 +116,7 @@ def generate_hidden_until_state(hmm, h, *, max_steps=10_000, rng=None):
                 f"max_steps={max_steps} states"
             )
         hidden.append(Util.sample_from_vec(transition[hidden[-1]], rng))
-    h2e = model.hidden_to_external
+    h2e = repn.hidden_states
     return [h2e[i] for i in hidden]
 
 
@@ -138,9 +138,9 @@ def generate_observed_from_hidden(hmm, hidden, *, rng=None):
     list
         Generated observed-state labels, one per hidden state.
     """
-    model, _, _, emission = _arrays(hmm)
-    h2i = model.hidden_to_internal
-    o2e = model.observed_to_external
+    repn, _, _, emission = _arrays(hmm)
+    h2i = repn.hidden_to_internal
+    o2e = repn.observed_states
     observed = _observed_indices(emission, [h2i[h] for h in hidden], as_rng(rng))
     return [o2e[o] for o in observed]
 
@@ -168,8 +168,8 @@ def generate_observed(hmm, time_steps, *, rng=None):
     InvalidInputError
         If ``time_steps`` is negative or the model has constraints.
     """
-    model, start, transition, emission = _arrays(hmm)
+    repn, start, transition, emission = _arrays(hmm)
     rng = as_rng(rng)
     hidden = _hidden_indices(start, transition, time_steps, rng)
-    o2e = model.observed_to_external
+    o2e = repn.observed_states
     return [o2e[o] for o in _observed_indices(emission, hidden, rng)]

@@ -39,7 +39,12 @@ from conin.algorithms.inference.mvr.tests.test_viterbi_mvr import (  # noqa: E40
 def enumerate_objectives(hmm, constraints, observations, horizons, posterior=None):
     likelihood, surrogate, weights = 0.0, 0.0, []
     counts = [
-        np.zeros_like(p) for p in (hmm.start_vec, hmm.transition_mat, hmm.emission_mat)
+        np.zeros_like(p)
+        for p in (
+            hmm.representation("matvec").start_vec.tolist(),
+            hmm.representation("matvec").transition_mat.tolist(),
+            hmm.representation("matvec").emission_mat.tolist(),
+        )
     ]
 
     def score(path, observed):
@@ -63,12 +68,14 @@ def enumerate_objectives(hmm, constraints, observations, horizons, posterior=Non
         surrogate += q[positive] @ scores[positive] - normalizer
         likelihood += joint - normalizer
         for path, weight in zip(paths, weights[-1]):
-            states = [hmm.hidden_to_internal[h] for h in path]
+            states = [hmm.representation("matvec").hidden_to_internal[h] for h in path]
             counts[0][states[0]] += weight
             for left, right in zip(states, states[1:]):
                 counts[1][left, right] += weight
             for t, label in as_obs_map(observed).items():
-                counts[2][states[t], hmm.observed_to_internal[label]] += weight
+                counts[2][
+                    states[t], hmm.representation("matvec").observed_to_internal[label]
+                ] += weight
     return likelihood, surrogate, weights, counts
 
 
@@ -77,15 +84,15 @@ def make_case(seed):
         hidden_states=["C", "A", "B"], observed_states=["y", "x"], seed=seed
     )
     if seed == 4:
-        start = np.asarray(hmm.start_vec)
+        start = np.asarray(hmm.representation("matvec").start_vec.tolist())
         start[1] = 0.0
-        transition = np.asarray(hmm.transition_mat)
+        transition = np.asarray(hmm.representation("matvec").transition_mat.tolist())
         transition[0, 1] = 0.0
         hmm = _rebuild_hmm(
             hmm,
             start / start.sum(),
             transition / transition.sum(axis=1, keepdims=True),
-            hmm.emission_mat,
+            hmm.representation("matvec").emission_mat.tolist(),
         )
     constraints = []
     if seed % 3:
@@ -142,25 +149,28 @@ def test_gem_matches_enumeration(seed):
         assert score >= previous - 1e-9
         assert new_q >= old_q - 1e-9
         if "emission" in update:
-            expected = np.asarray(hmm.emission_mat).copy()
+            expected = np.asarray(
+                hmm.representation("matvec").emission_mat.tolist()
+            ).copy()
             totals = counts[2].sum(axis=1, keepdims=True)
             occupied = totals[:, 0] > 0
             expected[occupied] = counts[2][occupied] / totals[occupied]
-            assert np.asarray(fitted.emission_mat) == pytest.approx(expected, abs=1e-9)
+            assert np.asarray(
+                fitted.representation("matvec").emission_mat.tolist()
+            ) == pytest.approx(expected, abs=1e-9)
         for name, attr in zip(
             ("start", "transition", "emission"),
             ("start_vec", "transition_mat", "emission_mat"),
         ):
-            before, after = np.asarray(getattr(hmm, attr)), np.asarray(
-                getattr(fitted, attr)
-            )
+            before = np.asarray(getattr(hmm.representation("matvec"), attr))
+            after = np.asarray(getattr(fitted.representation("matvec"), attr))
             assert after[before == 0] == pytest.approx(0)
             if name not in update:
                 assert np.array_equal(before, after)
         hmm, previous = fitted, score
     assert previous > initial + 1e-6
-    for attr in ("start_vec", "transition_mat", "emission_mat"):
-        assert getattr(caller, attr) == getattr(original, attr)
+    for getter in ("get_start_probs", "get_transition_probs", "get_emission_probs"):
+        assert getattr(caller, getter)() == getattr(original, getter)()
 
 
 @pytest.mark.parametrize("seed", range(6))
@@ -191,7 +201,11 @@ def test_chain_gradient_matches_finite_differences(seed):
             for delta in (-1e-5, 1e-5):
                 logits = logs[block].clone()
                 logits[index] += delta
-                params = [hmm.start_vec, hmm.transition_mat, hmm.emission_mat]
+                params = [
+                    hmm.representation("matvec").start_vec.tolist(),
+                    hmm.representation("matvec").transition_mat.tolist(),
+                    hmm.representation("matvec").emission_mat.tolist(),
+                ]
                 params[block] = logits.softmax(-1).tolist()
                 perturbed = _rebuild_hmm(hmm, *params)
                 values.append(
@@ -209,13 +223,20 @@ def test_pseudocount_keeps_unobserved_emissions_positive():
     hmm = make_random_hmm(
         hidden_states=["A", "B"], observed_states=["x", "y", "z"], seed=3
     )
-    emission = hmm.emission_mat
+    emission = hmm.representation("matvec").emission_mat.tolist()
     emission[0] = [0.5, 0.5, 0.0]
-    hmm = _rebuild_hmm(hmm, hmm.start_vec, hmm.transition_mat, emission)
+    hmm = _rebuild_hmm(
+        hmm,
+        hmm.representation("matvec").start_vec.tolist(),
+        hmm.representation("matvec").transition_mat.tolist(),
+        emission,
+    )
     model = ConstrainedHiddenMarkovModel(hmm)
     with pytest.warns(UserWarning, match="emission"):
         fitted, _ = generalized_em_mvr_chmm(model, [["x", "y", "x"]], max_iter=1, tol=0)
-    unobserved = np.asarray(fitted.emission_mat)[:, hmm.observed_to_internal["z"]]
+    unobserved = np.asarray(fitted.representation("matvec").emission_mat.tolist())[
+        :, hmm.representation("matvec").observed_to_internal["z"]
+    ]
     assert unobserved[0] == 0 and unobserved[1] > 0
 
 
@@ -231,7 +252,10 @@ def test_gem_history():
     assert history == pytest.approx([0, 0], abs=1e-12)
     fitted, history = generalized_em_mvr_chmm(model, observations, max_iter=0)
     assert history == []
-    assert fitted.emission_mat == hmm.emission_mat
+    assert (
+        fitted.representation("matvec").emission_mat.tolist()
+        == hmm.representation("matvec").emission_mat.tolist()
+    )
 
 
 def test_gem_backtracking_failure_retains_parameters():
@@ -247,10 +271,12 @@ def test_gem_backtracking_failure_retains_parameters():
             max_backtracks=1,
         )
     assert history == pytest.approx([history[0], history[0]])
-    assert fitted.start_vec == pytest.approx(hmm.start_vec)
-    assert np.asarray(fitted.transition_mat) == pytest.approx(
-        np.asarray(hmm.transition_mat)
+    assert fitted.representation("matvec").start_vec.tolist() == pytest.approx(
+        hmm.representation("matvec").start_vec.tolist()
     )
+    assert np.asarray(
+        fitted.representation("matvec").transition_mat.tolist()
+    ) == pytest.approx(np.asarray(hmm.representation("matvec").transition_mat.tolist()))
 
 
 @pytest.mark.parametrize(

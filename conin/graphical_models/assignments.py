@@ -113,7 +113,7 @@ def hmm_sequences(hmm, hidden, observed=None):
     """
     hidden = as_sequence(hidden, "hidden sequence")
     for h in hidden:
-        if h not in hmm.hidden_to_internal:
+        if h not in hmm.hidden_states:
             raise InvalidInputError(
                 f"{h!r} is not a hidden state; expected one of {hmm.hidden_states}"
             )
@@ -126,7 +126,7 @@ def hmm_sequences(hmm, hidden, observed=None):
             "sequences must have the same length"
         )
     for o in observed:
-        if o not in hmm.observed_to_internal:
+        if o not in hmm.observed_states:
             raise InvalidInputError(
                 f"{o!r} is not an observed state; expected one of "
                 f"{hmm.observed_states}"

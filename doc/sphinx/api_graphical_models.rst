@@ -7,6 +7,7 @@ Base class
 ----------
 
 .. autoclass:: conin.graphical_models.GraphicalModel
+   :members: representation
    :show-inheritance:
 
 Markov networks

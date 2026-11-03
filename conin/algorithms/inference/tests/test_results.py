@@ -654,7 +654,10 @@ def test_score_hmm_solutions_sparse_observations():
     dense = map_results([map_solution(hidden)], solvetime=0.0)
     score_hmm_solutions(dense, hmm, ["o0", "o1", "o1"])
     full = hmm.log_probability(["o0", "o1", "o1"], hidden)
-    h1, o1 = hmm.hidden_to_internal["h1"], hmm.observed_to_internal["o1"]
-    emission_at_1 = math.log(hmm.emission_mat[h1][o1])
+    h1, o1 = (
+        hmm.representation("matvec").hidden_to_internal["h1"],
+        hmm.representation("matvec").observed_to_internal["o1"],
+    )
+    emission_at_1 = math.log(hmm.representation("matvec").emission_mat.tolist()[h1][o1])
     assert dense.solution.log_potential == pytest.approx(full)
     assert sparse.solution.log_potential == pytest.approx(full - emission_at_1)

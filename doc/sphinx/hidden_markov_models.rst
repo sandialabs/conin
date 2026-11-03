@@ -36,8 +36,20 @@ transition, and emission probabilities and then passes them to the
    )
 
 The hidden and observed state labels are available from ``hmm.hidden_states``
-and ``hmm.observed_states``. Internally, states are indexed in sorted label
-order. The constructor checks that the probabilities are nonnegative and that
+and ``hmm.observed_states`` (sorted, read-only lists). The model itself holds
+only label-keyed tables. The parameters as arrays on state indices are in
+the ``"matvec"`` representation, which is the one place that converts
+between labels and indices: ``repn.hidden_states[i]`` is the label of hidden
+index ``i`` and ``repn.hidden_to_internal[h]`` the index of label ``h`` (and
+likewise for the observed states):
+
+.. code-block:: python
+
+   repn = hmm.representation("matvec")
+   repn.transition_mat[repn.hidden_to_internal["h0"]]  # a read-only NumPy row
+   repn.hidden_states[0]                               # "h0"
+
+The constructor checks that the probabilities are nonnegative and that
 the start probabilities and each row of transition and emission probabilities
 sum to 1 (``InvalidInputError`` otherwise).
 
@@ -129,7 +141,9 @@ HMM unrolled over ``start..stop``, every backend (and ``is_feasible``) sets
 also set ``data.variables`` and ``data.evidence``, and the network-flow
 formulation puts its index sets in ``data.hmm``.
 
-Backend representations are built by ``representation(kind)``; each call
+Backend representations are built by ``representation(kind)``, on a
+constrained HMM or on a bare one (``hmm.representation("matvec")`` is
+``ConstrainedHiddenMarkovModel(hmm).representation("matvec")``); each call
 builds a new one. HMMs register these kinds: ``"matvec"`` (the HMM
 parameters as read-only NumPy arrays on internal indices, with their logarithms;
 no constraints only; used by Viterbi, A*, sampling and the torch MVR kernels),

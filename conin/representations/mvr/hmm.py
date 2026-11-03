@@ -12,6 +12,7 @@ from conin.constraints.mvr import BaseMVR, MVR_MatVecRepn
 from conin.exceptions import InvalidInputError
 from conin.graphical_models import HiddenMarkovModel
 from conin.representations.base import Representation, register_representation
+from conin.representations.matvec import MatVecHMMRepresentation
 
 
 def align_hidden_states(mvr, hidden_to_external):
@@ -63,16 +64,19 @@ class MVRHMMRepresentation(Representation):
     ``MVRConstraint`` factories are called with ``(hmm, cmodel.data)``.
     Prebuilt MVRs are deep-copied, so the user's MVR objects are never
     changed through the representation.  Each MVR's hidden axis is then put
-    in the HMM's internal hidden-state order, so the torch algorithms can
+    in the hidden-state order of :attr:`matvec`, so the torch algorithms can
     index the MVR arrays and the HMM arrays the same way.
 
     Attributes
     ----------
     model : HiddenMarkovModel
         The wrapped HMM.
+    matvec : MatVecHMMRepresentation
+        The HMM's index view; ``matvec.hidden_states[i]`` is hidden index ``i``
+        of the MVRs.
     mvrs : tuple of BaseMVR
-        The built MVRs, aligned to the HMM's hidden-state order, in the order
-        of the constrained model's constraints (empty without constraints).
+        The built MVRs, aligned to ``matvec.hidden_states``, in the order of
+        the constrained model's constraints (empty without constraints).
 
     Notes
     -----
@@ -93,7 +97,8 @@ class MVRHMMRepresentation(Representation):
 
     def __init__(self, cmodel):
         hmm = cmodel.model
-        hidden_to_external = list(hmm.hidden_to_external)
+        matvec = MatVecHMMRepresentation(hmm)
+        hidden_to_external = list(matvec.hidden_states)
         hidden_states = set(hidden_to_external)
 
         mvrs = []
@@ -114,6 +119,7 @@ class MVRHMMRepresentation(Representation):
             mvrs.append(align_hidden_states(mvr, hidden_to_external))
 
         self.model = hmm
+        self.matvec = matvec
         self.mvrs = tuple(mvrs)
 
 

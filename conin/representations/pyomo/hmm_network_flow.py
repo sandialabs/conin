@@ -13,12 +13,12 @@ domains.
 import math
 
 import munch
-import numpy as np
 import pyomo.environ as pyo
 
 from conin.exceptions import InfeasibleQueryError
 from conin.graphical_models import HiddenMarkovModel
 from conin.representations.base import Representation, register_representation
+from conin.representations.matvec.hmm import MatVecHMMRepresentation
 from conin.util import State
 from conin.util.constraint_data import merge_constraint_data
 
@@ -49,11 +49,12 @@ def _create_index_sets(*, hmm, observed, Tmax=None):
         Collection of index sets, feasible transitions, and cached log
         probabilities for algebraic formulations.
     """
-    N = hmm.num_hidden_states
-    obs = [hmm.observed_to_internal[o] for o in observed]
-    start_probs = hmm.start_vec
-    emission_probs = hmm.emission_mat
-    trans_mat = np.array(hmm.transition_mat)
+    repn = MatVecHMMRepresentation(hmm)
+    N = repn.num_hidden_states
+    obs = [repn.observed_to_internal[o] for o in observed]
+    start_probs = repn.start_vec
+    emission_probs = repn.emission_mat
+    trans_mat = repn.transition_mat
 
     if Tmax is None:
         Tmax = len(observed)
@@ -142,7 +143,8 @@ def _create_index_sets(*, hmm, observed, Tmax=None):
     index_sets.GG = GG
     index_sets.states = states
     index_sets.observed_index = obs
-    index_sets.hidden_to_internal = hmm.hidden_to_internal
+    index_sets.hidden_states = list(repn.hidden_states)
+    index_sets.hidden_to_internal = dict(repn.hidden_to_internal)
 
     return index_sets
 
@@ -295,7 +297,7 @@ class PyomoNetworkFlowHMMRepresentation(Representation):
 
         M = _create_network_flow_model(
             D,
-            hidden_to_external=hmm.hidden_to_external,
+            hidden_to_external=D.hidden_states,
             x_binary=self.x_binary,
             y_binary=self.y_binary,
         )

@@ -81,6 +81,13 @@ Representations and dispatch
   constrained model accepts a constraint family only if some builder is
   registered for it. Supporting a new family or model means registering a
   builder.
+- A constrained model class registers itself as the constrained class of its
+  ``model_type`` when it is defined (``ConstrainedGraphicalModel.__init_subclass__``,
+  into ``conin.graphical_models.base``, the layer below). Queries wrap bare
+  models in it (``as_constrained_model``), and ``model.representation(kind)``
+  is ``ConstrainedX(model).representation(kind)``. A new model type needs a
+  ``GraphicalModel`` subclass and a ``ConstrainedGraphicalModel`` subclass
+  with ``model_type`` set, and no list to edit.
 - Each backend has one function that applies the constraints of a family
   (``apply_pyomo_constraints``, ``apply_toulbar2_constraints``,
   ``apply_variable_elimination_constraints``). Each passes ``apply_constraints``

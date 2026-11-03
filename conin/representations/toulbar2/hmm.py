@@ -2,6 +2,7 @@
 
 from conin.graphical_models import HiddenMarkovModel, create_dbn_from_hmm
 from conin.representations.base import register_representation
+from conin.representations.matvec import MatVecHMMRepresentation
 from conin.representations.unrolled import UnrolledHMMMixin, hmm_time_range
 
 from .common import Toulbar2FactorRepresentation
@@ -34,6 +35,6 @@ def _build(cmodel, *, start=0, stop=None):
         stop=stop,
         cls=Toulbar2HMMRepresentation,
         pgm=dbn,
-        hidden_to_internal=hmm.hidden_to_internal,
+        hidden_to_internal=MatVecHMMRepresentation(hmm).hidden_to_internal,
         data=cmodel.data,
     )

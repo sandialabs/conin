@@ -54,7 +54,7 @@ def rejection_sample_hidden(hmm, time_steps, *, max_failures=1000, rng=None):
     repn = hmm.representation("oracle")
     start = repn.hmm.start_vec.tolist()
     transition = repn.hmm.transition_mat.tolist()
-    h2e = repn.model.hidden_to_external
+    h2e = repn.hmm.hidden_states
     for _ in range(max_failures + 1):
         hidden = _hidden_indices(start, transition, time_steps, rng)
         if repn.is_feasible(hidden):

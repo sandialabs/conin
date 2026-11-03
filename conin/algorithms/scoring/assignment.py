@@ -255,16 +255,17 @@ def hmm_path_log_potential(hmm, hidden, observed):
     to one).  This is the score of the MVR Viterbi, which accepts sparse
     observations.
     """
-    h = [hmm.hidden_to_internal[x] for x in hidden]
-    start, transition, emission = hmm.start_vec, hmm.transition_mat, hmm.emission_mat
+    start = hmm.get_start_probs()
+    transition = hmm.get_transition_probs()
+    emission = hmm.get_emission_probs()
 
     def emit(t):
         label = observed.get(t)
         if label is None and t not in observed:
             return 0.0
-        return _log(emission[h[t]][hmm.observed_to_internal[label]])
+        return _log(emission[hidden[t], label])
 
-    total = _log(start[h[0]]) + emit(0)
-    for t in range(1, len(h)):
-        total += _log(transition[h[t - 1]][h[t]]) + emit(t)
+    total = _log(start[hidden[0]]) + emit(0)
+    for t in range(1, len(hidden)):
+        total += _log(transition[hidden[t - 1], hidden[t]]) + emit(t)
     return total

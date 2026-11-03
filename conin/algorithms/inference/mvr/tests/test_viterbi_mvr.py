@@ -303,7 +303,7 @@ def test_viterbi_augmented_path_reports_mediation_states(hmm, observed):
     path, augmented = viterbi_torch_mvr_chmm(model, observed)
 
     for t, entry in enumerate(augmented):
-        assert hmm.hidden_to_external[entry["hidden_index"]] == path[t]
+        assert hmm.hidden_states[entry["hidden_index"]] == path[t]
         # The MVR is active throughout and must never enter "violated".
         assert entry["mvr_states"][0] == "ok"
 
@@ -377,8 +377,12 @@ def as_obs_map(observed):
 
 def score_path(hmm, path, obs_map):
     """Log probability of a hidden path, scoring only the times that are observed."""
-    start, transition, emission = hmm.start_vec, hmm.transition_mat, hmm.emission_mat
-    idx = [hmm.hidden_to_internal[h] for h in path]
+    start, transition, emission = (
+        hmm.representation("matvec").start_vec.tolist(),
+        hmm.representation("matvec").transition_mat.tolist(),
+        hmm.representation("matvec").emission_mat.tolist(),
+    )
+    idx = [hmm.representation("matvec").hidden_to_internal[h] for h in path]
 
     score = math.log(start[idx[0]])
 
@@ -386,7 +390,9 @@ def score_path(hmm, path, obs_map):
         score += math.log(transition[idx[t - 1]][idx[t]])
 
     for t, o in obs_map.items():
-        score += math.log(emission[idx[t]][hmm.observed_to_internal[o]])
+        score += math.log(
+            emission[idx[t]][hmm.representation("matvec").observed_to_internal[o]]
+        )
 
     return score
 

@@ -6,6 +6,7 @@ import ast
 
 from conin.exceptions import InvalidInputError
 from conin.util import Util, as_rng
+from conin.util.frozen import freeze
 from conin.graphical_models.base import GraphicalModel
 
 
@@ -61,7 +62,7 @@ def _validate_emission_mat(emission_mat):
 
 
 class HiddenMarkovModel(GraphicalModel):
-    """Hidden Markov model with external-label and numeric representations.
+    """Hidden Markov model over labelled hidden and observed states.
 
     Parameters
     ----------
@@ -85,9 +86,14 @@ class HiddenMarkovModel(GraphicalModel):
     -----
     The hidden states are the labels appearing in ``transition_probs``, and the
     observed states are the observed labels appearing in ``emission_probs``.
-    The internal index order is the sorted order of these labels, independent
-    of dictionary insertion order and of which entries are present. Missing
-    entries are treated as zero probabilities.
+    Both are sorted (:attr:`hidden_states`, :attr:`observed_states`),
+    independent of dictionary insertion order and of which entries are
+    present. Missing entries are treated as zero probabilities.
+
+    The model holds label-keyed tables only.  The parameters as arrays on
+    state indices (position ``i`` of :attr:`hidden_states` is index ``i``),
+    and the label-to-index maps, are in the ``"matvec"`` representation:
+    ``hmm.representation("matvec")``.
     """
 
     def __init__(
@@ -145,86 +151,62 @@ class HiddenMarkovModel(GraphicalModel):
         _validate_transition_mat(transition_mat)
         _validate_emission_mat(emission_mat)
 
-        self._start_vec = start_vec
-        self._transition_mat = transition_mat
-        self._emission_mat = emission_mat
-        self._hidden_to_internal = hidden_to_internal
-        self._observed_to_internal = observed_to_internal
-        self._hidden_to_external = hidden_to_external
-        self._observed_to_external = observed_to_external
-        self._num_hidden_states = num_hidden_states
-        self._num_observed_states = num_observed_states
+        # Dense label-keyed tables (zeros included), in index order
+        self._hidden_states = freeze(hidden_to_external)
+        self._observed_states = freeze(observed_to_external)
+        self._start_probs = freeze(dict(zip(hidden_to_external, start_vec)))
+        self._transition_probs = freeze(
+            {
+                (h1, h2): transition_mat[i][j]
+                for i, h1 in enumerate(hidden_to_external)
+                for j, h2 in enumerate(hidden_to_external)
+            }
+        )
+        self._emission_probs = freeze(
+            {
+                (h, o): emission_mat[i][j]
+                for i, h in enumerate(hidden_to_external)
+                for j, o in enumerate(observed_to_external)
+            }
+        )
 
     def __str__(self):
         """Return a readable dictionary-style representation of the model."""
         return pprint.pformat(self.to_dict(tolerance=1e-3), indent=4, sort_dicts=True)
 
     @property
-    def start_vec(self):
-        """Return a copy of the starting-probability vector."""
-        return list(self._start_vec)
-
-    @property
-    def transition_mat(self):
-        """Return a copy of the hidden-state transition matrix."""
-        return [list(row) for row in self._transition_mat]
-
-    @property
-    def emission_mat(self):
-        """Return a copy of the emission probability matrix."""
-        return [list(row) for row in self._emission_mat]
-
-    @property
-    def hidden_to_internal(self):
-        """Return a copy of the mapping from hidden-state labels to indices."""
-        return dict(self._hidden_to_internal)
-
-    @property
-    def observed_to_internal(self):
-        """Return a copy of the mapping from observed-state labels to indices."""
-        return dict(self._observed_to_internal)
-
-    @property
-    def hidden_to_external(self):
-        """Return a copy of the mapping from hidden-state indices to labels."""
-        return list(self._hidden_to_external)
-
-    @property
-    def observed_to_external(self):
-        """Return a copy of the mapping from observed-state indices to labels."""
-        return list(self._observed_to_external)
-
-    @property
     def num_hidden_states(self):
         """Return the number of hidden states."""
-        return self._num_hidden_states
+        return len(self._hidden_states)
 
     @property
     def num_observed_states(self):
         """Return the number of observed states."""
-        return self._num_observed_states
+        return len(self._observed_states)
 
     @property
     def hidden_states(self):
-        """Return the external hidden-state labels.
+        """Return the hidden-state labels.
 
         Returns
         -------
         list
-            Hidden-state labels in internal index order.
+            Sorted hidden-state labels (read-only); position ``i`` is the
+            state index of the ``"matvec"`` representation.
         """
-        return self.hidden_to_external
+        return self._hidden_states
 
     @property
     def observed_states(self):
-        """Return the external observed-state labels.
+        """Return the observed-state labels.
 
         Returns
         -------
         list
-            Observed-state labels in internal index order.
+            Sorted observed-state labels (read-only); position ``j`` is the
+            state index of the ``"matvec"`` representation.
         """
-        return self.observed_to_external
+        return self._observed_states
 
     def is_valid_observed_state(self, o):
         """Check whether an observed-state label is valid.
@@ -239,7 +221,7 @@ class HiddenMarkovModel(GraphicalModel):
         bool
             ``True`` if ``o`` is a known observed-state label and ``False`` otherwise.
         """
-        return o in self._observed_to_internal
+        return o in self._observed_states
 
     def is_valid_hidden_state(self, h):
         """Check whether a hidden-state label is valid.
@@ -254,7 +236,7 @@ class HiddenMarkovModel(GraphicalModel):
         bool
             ``True`` if ``h`` is a known hidden-state label and ``False`` otherwise.
         """
-        return h in self._hidden_to_internal
+        return h in self._hidden_states
 
     def get_hidden_states(self):
         """Return the external hidden-state labels.
@@ -264,7 +246,7 @@ class HiddenMarkovModel(GraphicalModel):
         list
             Hidden-state labels in internal index order.
         """
-        return self.hidden_to_external
+        return self.hidden_states
 
     def get_observable_states(self):
         """Return the external observed-state labels.
@@ -274,7 +256,7 @@ class HiddenMarkovModel(GraphicalModel):
         list
             Observed-state labels in internal index order.
         """
-        return self.observed_to_external
+        return self.observed_states
 
     def get_start_probs(self):
         """Return the starting probabilities keyed by hidden-state label.
@@ -285,10 +267,7 @@ class HiddenMarkovModel(GraphicalModel):
             Mapping from hidden-state labels to starting probabilities.
         """
         # Same format as the constructor arguments
-        return {
-            self._hidden_to_external[h]: self._start_vec[h]
-            for h in range(self._num_hidden_states)
-        }
+        return dict(self._start_probs)
 
     def get_transition_probs(self):
         # Same format as the constructor arguments
@@ -300,14 +279,7 @@ class HiddenMarkovModel(GraphicalModel):
             Mapping from ``(from_state, to_state)`` pairs to transition
             probabilities.
         """
-        return {
-            (
-                self._hidden_to_external[h1],
-                self._hidden_to_external[h2],
-            ): self._transition_mat[h1][h2]
-            for h1 in range(self._num_hidden_states)
-            for h2 in range(self._num_hidden_states)
-        }
+        return dict(self._transition_probs)
 
     def get_emission_probs(self):
         """Return the emission probabilities keyed by state pairs.
@@ -319,14 +291,7 @@ class HiddenMarkovModel(GraphicalModel):
             probabilities.
         """
         # Same format as the constructor arguments
-        return {
-            (
-                self._hidden_to_external[h],
-                self._observed_to_external[o],
-            ): self._emission_mat[h][o]
-            for h in range(self._num_hidden_states)
-            for o in range(self._num_observed_states)
-        }
+        return dict(self._emission_probs)
 
     def to_dict(self, tolerance=0.0):
         """Return a dictionary representation of the model data.
@@ -342,30 +307,20 @@ class HiddenMarkovModel(GraphicalModel):
             Dictionary representation of the model data.
         """
 
-        start_probs = [
-            (self._hidden_to_external[i], v)
-            for i, v in enumerate(self._start_vec)
-            if v > tolerance
-        ]
+        start_probs = [(h, v) for h, v in self._start_probs.items() if v > tolerance]
         transition_probs = [
-            ((self._hidden_to_external[i], self._hidden_to_external[j]), v)
-            for i, row in enumerate(self._transition_mat)
-            for j, v in enumerate(row)
-            if v > tolerance
+            (key, v) for key, v in self._transition_probs.items() if v > tolerance
         ]
         emission_probs = [
-            ((self._hidden_to_external[i], self._observed_to_external[o]), v)
-            for i, row in enumerate(self._emission_mat)
-            for o, v in enumerate(row)
-            if v > tolerance
+            (key, v) for key, v in self._emission_probs.items() if v > tolerance
         ]
 
         return dict(
             start_probs=start_probs,
             transition_probs=transition_probs,
             emission_probs=emission_probs,
-            num_hidden=self._num_hidden_states,
-            num_observed=self._num_observed_states,
+            num_hidden=self.num_hidden_states,
+            num_observed=self.num_observed_states,
         )
 
     def log_probability(self, observed, hidden):
@@ -384,14 +339,13 @@ class HiddenMarkovModel(GraphicalModel):
             Log-probability of the paired hidden and observed sequences.
         """
 
-        h = [self._hidden_to_internal[hval] for hval in hidden]
-        o = [self._observed_to_internal[oval] for oval in observed]
-
-        ans = math.log(self._start_vec[h[0]]) + math.log(self._emission_mat[h[0]][o[0]])
+        ans = math.log(self._start_probs[hidden[0]]) + math.log(
+            self._emission_probs[hidden[0], observed[0]]
+        )
         for t in range(1, len(observed)):
-            ans += math.log(self._transition_mat[h[t - 1]][h[t]]) + math.log(
-                self._emission_mat[h[t]][o[t]]
-            )
+            ans += math.log(
+                self._transition_probs[hidden[t - 1], hidden[t]]
+            ) + math.log(self._emission_probs[hidden[t], observed[t]])
 
         return ans
 

@@ -17,7 +17,8 @@ def hmm_time_fields(start, stop, hidden_to_internal):
     """The fields of an HMM unrolled over ``start..stop``.
 
     ``Munch(start, stop, hmm=Munch(T, hidden_to_internal))``, with ``T`` as
-    for :func:`dbn_time_fields` and a copy of ``hidden_to_internal``.
+    for :func:`dbn_time_fields` and a copy of ``hidden_to_internal`` (the
+    map of the HMM's ``"matvec"`` representation).
     """
     return munch.Munch(
         start=start,

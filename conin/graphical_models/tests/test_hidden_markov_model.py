@@ -21,11 +21,11 @@ class Test_HMM1:
 
     def test_hidden_map(self):
         hmm = tc.create_hmm1()
-        assert hmm.hidden_to_internal == {"h0": 0, "h1": 1}
+        assert hmm.representation("matvec").hidden_to_internal == {"h0": 0, "h1": 1}
 
     def test_hidden_map_inv(self):
         hmm = tc.create_hmm1()
-        assert hmm.hidden_to_external == ["h0", "h1"]
+        assert hmm.hidden_states == ["h0", "h1"]
 
     def test_num_hidden_states(self):
         hmm = tc.create_hmm1()
@@ -33,11 +33,11 @@ class Test_HMM1:
 
     def test_observed_map(self):
         hmm = tc.create_hmm1()
-        assert hmm.observed_to_internal == {"o0": 0, "o1": 1}
+        assert hmm.representation("matvec").observed_to_internal == {"o0": 0, "o1": 1}
 
     def test_observed_map_inv(self):
         hmm = tc.create_hmm1()
-        assert hmm.observed_to_external == ["o0", "o1"]
+        assert hmm.observed_states == ["o0", "o1"]
 
     def test_num_observed_states(self):
         hmm = tc.create_hmm1()
@@ -45,7 +45,7 @@ class Test_HMM1:
 
     def test_start_vec(self):
         hmm = tc.create_hmm1()
-        assert hmm.start_vec == [0.4, 0.6]
+        assert hmm.representation("matvec").start_vec.tolist() == [0.4, 0.6]
 
     def test_start_vec_negative(self):
         hmm = tc.create_hmm1()
@@ -82,7 +82,10 @@ class Test_HMM1:
 
     def test_transition_matrix(self):
         hmm = tc.create_hmm1()
-        assert hmm.transition_mat == [[0.9, 0.1], [0.2, 0.8]]
+        assert hmm.representation("matvec").transition_mat.tolist() == [
+            [0.9, 0.1],
+            [0.2, 0.8],
+        ]
 
     def test_transition_mat_negative(self):
         hmm = tc.create_hmm1()
@@ -130,7 +133,10 @@ class Test_HMM1:
 
     def test_emission_matrix(self):
         hmm = tc.create_hmm1()
-        assert hmm.emission_mat == [[0.7, 0.3], [0.4, 0.6]]
+        assert hmm.representation("matvec").emission_mat.tolist() == [
+            [0.7, 0.3],
+            [0.4, 0.6],
+        ]
 
     def test_emission_mat_negative(self):
         hmm = tc.create_hmm1()
@@ -393,12 +399,24 @@ class Test_HMM_Constructor:
             transition_probs={("c", "a"): 1.0, ("b", "c"): 1.0, ("a", "a"): 1.0},
             emission_probs={("c", "y"): 1.0, ("b", "x"): 1.0, ("a", "z"): 1.0},
         )
-        assert hmm.hidden_to_external == ["a", "b", "c"]
-        assert hmm.hidden_to_internal == {"a": 0, "b": 1, "c": 2}
-        assert hmm.observed_to_external == ["x", "y", "z"]
-        assert hmm.start_vec == [0, 1.0, 0]
-        assert hmm.transition_mat == [[1.0, 0, 0], [0, 0, 1.0], [1.0, 0, 0]]
-        assert hmm.emission_mat == [[0, 0, 1.0], [1.0, 0, 0], [0, 1.0, 0]]
+        assert hmm.hidden_states == ["a", "b", "c"]
+        assert hmm.representation("matvec").hidden_to_internal == {
+            "a": 0,
+            "b": 1,
+            "c": 2,
+        }
+        assert hmm.observed_states == ["x", "y", "z"]
+        assert hmm.representation("matvec").start_vec.tolist() == [0, 1.0, 0]
+        assert hmm.representation("matvec").transition_mat.tolist() == [
+            [1.0, 0, 0],
+            [0, 0, 1.0],
+            [1.0, 0, 0],
+        ]
+        assert hmm.representation("matvec").emission_mat.tolist() == [
+            [0, 0, 1.0],
+            [1.0, 0, 0],
+            [0, 1.0, 0],
+        ]
 
     def test_round_trip_through_constructor(self):
         hmm = tc.create_hmm2()
@@ -407,11 +425,46 @@ class Test_HMM_Constructor:
             transition_probs=hmm.get_transition_probs(),
             emission_probs=hmm.get_emission_probs(),
         )
-        assert hmm2.hidden_to_external == hmm.hidden_to_external
-        assert hmm2.observed_to_external == hmm.observed_to_external
-        assert hmm2.start_vec == hmm.start_vec
-        assert hmm2.transition_mat == hmm.transition_mat
-        assert hmm2.emission_mat == hmm.emission_mat
+        assert hmm2.hidden_states == hmm.hidden_states
+        assert hmm2.observed_states == hmm.observed_states
+        assert (
+            hmm2.representation("matvec").start_vec.tolist()
+            == hmm.representation("matvec").start_vec.tolist()
+        )
+        assert (
+            hmm2.representation("matvec").transition_mat.tolist()
+            == hmm.representation("matvec").transition_mat.tolist()
+        )
+        assert (
+            hmm2.representation("matvec").emission_mat.tolist()
+            == hmm.representation("matvec").emission_mat.tolist()
+        )
+
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "start_vec",
+            "transition_mat",
+            "emission_mat",
+            "hidden_to_internal",
+            "observed_to_internal",
+            "hidden_to_external",
+            "observed_to_external",
+        ],
+    )
+    def test_index_view_is_in_matvec_only(self, name):
+        hmm = tc.create_hmm1()
+        assert not hasattr(hmm, name)
+        if not name.endswith("_external"):
+            assert hasattr(hmm.representation("matvec"), name)
+
+    def test_state_labels_are_read_only(self):
+        hmm = tc.create_hmm1()
+        assert hmm.hidden_states is hmm.hidden_states
+        with pytest.raises(TypeError, match="read-only"):
+            hmm.hidden_states.append("h2")
+        with pytest.raises(TypeError, match="read-only"):
+            hmm.observed_states[0] = "o9"
 
     def test_no_cached_numeric_representation(self):
         hmm = tc.create_hmm1()

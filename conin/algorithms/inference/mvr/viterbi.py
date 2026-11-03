@@ -102,17 +102,17 @@ def _viterbi_torch_mvr(
     return_score=False,
 ):
     """:func:`viterbi_torch_mvr_chmm` on an ``"mvr"`` representation."""
-    hmm, constraints = repn.model, list(repn.mvrs)
+    matvec, constraints = repn.matvec, list(repn.mvrs)
 
     log_start_vec, log_transition_mat, log_emission_mat = _hmm_to_torch(
-        hmm,
+        matvec,
         log=True,
         dtype=dtype,
         device=device,
     )
 
     T, log_emit_weights, _ = _resolve_emit_weights(
-        hmm,
+        matvec,
         log_emission_mat,
         observed,
         time_horizon,
@@ -215,9 +215,7 @@ def _viterbi_torch_mvr(
 
     augmented_index_path.reverse()
 
-    hidden_path = [
-        hmm.hidden_to_external[aug_idx[0]] for aug_idx in augmented_index_path
-    ]
+    hidden_path = [matvec.hidden_states[aug_idx[0]] for aug_idx in augmented_index_path]
 
     if return_augmented:
         augmented_path = _decode_dynamic_augmented_path(

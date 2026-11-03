@@ -2,6 +2,7 @@
 
 from conin.constraints.base import Constraint, constraint_families
 from conin.exceptions import InvalidInputError
+from conin.graphical_models.base import register_constrained_class
 from conin.representations.base import (
     build_representation,
     supported_representations,
@@ -34,12 +35,22 @@ class ConstrainedGraphicalModel:
 
     Representations are built by :meth:`representation` on every call (they
     are not cached).
+
+    A subclass that sets ``model_type`` becomes the constrained model class
+    of that model class: bare models are wrapped in it by the queries and by
+    ``model.representation(kind)``.  Only one class can be registered per
+    model class.
     """
 
     __slots__ = ("_model", "_constraints", "_family", "_data")
 
     model_type = None
     """type: The unconstrained model class this wrapper accepts (set by subclasses)."""
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        if cls.__dict__.get("model_type") is not None:
+            register_constrained_class(cls)
 
     def __init__(self, model, constraints=(), *, data=None):
         if self.model_type is None:

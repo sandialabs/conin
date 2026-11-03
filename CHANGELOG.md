@@ -173,9 +173,22 @@ Models
   only when the numeric representation was first built.
 - HMM_MatVecRepn, HiddenMarkovModel.repn, initialize() and the initialize=
   argument are removed. The parameters as read-only float64 NumPy arrays on
-  internal indices (plus their logarithms) are
-  ConstrainedHiddenMarkovModel(hmm).representation("matvec"), a
-  MatVecHMMRepresentation; hmm.start_vec etc. still return lists.
+  internal indices (plus their logarithms) are hmm.representation("matvec"),
+  a MatVecHMMRepresentation.
+- HiddenMarkovModel has no index view: start_vec, transition_mat,
+  emission_mat, hidden_to_internal and observed_to_internal moved to the
+  "matvec" representation (repn = hmm.representation("matvec");
+  repn.start_vec, repn.hidden_to_internal, ...; the arrays are read-only
+  float64 NumPy arrays, not lists), and hidden_to_external/
+  observed_to_external are removed (use hidden_states/observed_states, the
+  same lists). hidden_states and observed_states are read-only FrozenLists
+  (no copy per access). Constraint functions still get
+  data.hmm.hidden_to_internal.
+- The "matvec" representation is the one place that converts between HMM
+  state labels and indices: repn.hidden_states/observed_states (index ->
+  label) and repn.hidden_to_internal/observed_to_internal (label -> index).
+  The "mvr" representation aligns its MVRs to its .matvec, and the
+  network-flow constraint data (data.hmm) also has hidden_states.
 - create_bn_from_dbn and the code unrolling DBNs and HMMs use the DBN's .t
   without changing it. create_bn_from_dbn unrolls one time step
   (stop == start); start must be 0 (InvalidInputError otherwise).
@@ -264,6 +277,15 @@ Representations (new)
   with the same message for every backend.
 - Smoek constraints without the smoek package raise ImportError for every
   backend (the pyomo and toulbar2 translators raised TypeError).
+- Unconstrained models have representation(kind, **structure_params) too:
+  model.representation(kind) is the representation of the model without
+  constraints, e.g. hmm.representation("matvec") instead of
+  ConstrainedHiddenMarkovModel(hmm).representation("matvec").
+- Each Constrained* class registers itself, when it is defined, as the
+  constrained class of its model_type (a subclass of a model class uses its
+  base class's). map_query and the other queries wrap bare models with this
+  registry; a second constrained class for the same model_type raises
+  TypeError.
 
 Inference
 

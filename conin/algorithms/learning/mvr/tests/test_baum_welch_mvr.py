@@ -88,7 +88,9 @@ def brute_force_counts(hmm, mvrs, observations, horizons):
         total_loglik += loglik
 
         for t, o in as_obs_map(observed).items():
-            emit_counts[:, hmm.observed_to_internal[o]] += gamma[t]
+            emit_counts[
+                :, hmm.representation("matvec").observed_to_internal[o]
+            ] += gamma[t]
 
     return init_counts, trans_counts, emit_counts, total_loglik
 
@@ -255,15 +257,15 @@ def test_one_em_step_matches_brute_force_counts(hmm):
     )
 
     assert history[0] == pytest.approx(loglik, abs=1e-9)
-    assert np.asarray(fitted.start_vec) == pytest.approx(
-        init_counts / init_counts.sum(), abs=1e-9
-    )
-    assert np.asarray(fitted.transition_mat) == pytest.approx(
-        trans_counts / trans_counts.sum(axis=1, keepdims=True), abs=1e-9
-    )
-    assert np.asarray(fitted.emission_mat) == pytest.approx(
-        emit_counts / emit_counts.sum(axis=1, keepdims=True), abs=1e-9
-    )
+    assert np.asarray(
+        fitted.representation("matvec").start_vec.tolist()
+    ) == pytest.approx(init_counts / init_counts.sum(), abs=1e-9)
+    assert np.asarray(
+        fitted.representation("matvec").transition_mat.tolist()
+    ) == pytest.approx(trans_counts / trans_counts.sum(axis=1, keepdims=True), abs=1e-9)
+    assert np.asarray(
+        fitted.representation("matvec").emission_mat.tolist()
+    ) == pytest.approx(emit_counts / emit_counts.sum(axis=1, keepdims=True), abs=1e-9)
 
 
 def test_em_keeps_rows_that_collect_no_mass(hmm, observed):
@@ -273,15 +275,21 @@ def test_em_keeps_rows_that_collect_no_mass(hmm, observed):
 
     fitted, _ = baum_welch_mvr_chmm(model, [observed], max_iter=5, tol=0.0)
 
-    a = hmm.hidden_to_internal["A"]
+    a = hmm.representation("matvec").hidden_to_internal["A"]
 
-    assert np.asarray(fitted.transition_mat)[a] == pytest.approx(
-        np.asarray(hmm.transition_mat)[a]
+    assert np.asarray(fitted.representation("matvec").transition_mat.tolist())[
+        a
+    ] == pytest.approx(
+        np.asarray(hmm.representation("matvec").transition_mat.tolist())[a]
     )
-    assert np.asarray(fitted.emission_mat)[a] == pytest.approx(
-        np.asarray(hmm.emission_mat)[a]
+    assert np.asarray(fitted.representation("matvec").emission_mat.tolist())[
+        a
+    ] == pytest.approx(
+        np.asarray(hmm.representation("matvec").emission_mat.tolist())[a]
     )
-    assert fitted.start_vec[a] == pytest.approx(0.0, abs=1e-7)
+    assert fitted.representation("matvec").start_vec.tolist()[a] == pytest.approx(
+        0.0, abs=1e-7
+    )
 
 
 @pytest.mark.parametrize("seed", range(3))
@@ -334,13 +342,17 @@ def test_em_leaves_the_caller_model_untouched(hmm, observed):
     mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="A")
     model = ConstrainedHiddenMarkovModel(hmm, mvr)
 
-    before = np.asarray(hmm.transition_mat).copy()
+    before = np.asarray(hmm.representation("matvec").transition_mat.tolist()).copy()
 
     fitted, _ = baum_welch_mvr_chmm(model, [observed], max_iter=5, tol=0.0)
 
-    assert np.asarray(hmm.transition_mat) == pytest.approx(before)
+    assert np.asarray(
+        hmm.representation("matvec").transition_mat.tolist()
+    ) == pytest.approx(before)
     assert fitted is not hmm
-    assert not np.allclose(np.asarray(fitted.transition_mat), before)
+    assert not np.allclose(
+        np.asarray(fitted.representation("matvec").transition_mat.tolist()), before
+    )
 
 
 def test_em_write_back_preserves_indexing_and_rebuilds_repn(hmm, observed):
@@ -351,15 +363,24 @@ def test_em_write_back_preserves_indexing_and_rebuilds_repn(hmm, observed):
 
     fitted, _ = baum_welch_mvr_chmm(model, [observed], max_iter=3, tol=0.0)
 
-    assert fitted.hidden_to_internal == hmm.hidden_to_internal
-    assert fitted.observed_to_internal == hmm.observed_to_internal
-    assert fitted.hidden_to_external == hmm.hidden_to_external
-    assert fitted.observed_to_external == hmm.observed_to_external
+    assert (
+        fitted.representation("matvec").hidden_to_internal
+        == hmm.representation("matvec").hidden_to_internal
+    )
+    assert (
+        fitted.representation("matvec").observed_to_internal
+        == hmm.representation("matvec").observed_to_internal
+    )
+    assert fitted.hidden_states == hmm.hidden_states
+    assert fitted.observed_states == hmm.observed_states
 
     # Stale arrays would leave inference running on the pre-fit parameters.
     # Row sums are not checked: the HiddenMarkovModel constructor validates them.
     repn = ConstrainedHiddenMarkovModel(fitted).representation("matvec")
-    assert repn.transition_mat.tolist() == fitted.transition_mat
+    assert (
+        repn.transition_mat.tolist()
+        == fitted.representation("matvec").transition_mat.tolist()
+    )
 
 
 def test_em_stops_at_the_convergence_tolerance(hmm, observed):
@@ -412,7 +433,8 @@ def test_em_updates_only_the_requested_blocks(hmm, observed, block, attribute):
 
     for name in ("start_vec", "transition_mat", "emission_mat"):
         unchanged = np.allclose(
-            np.asarray(getattr(fitted, name)), np.asarray(getattr(hmm, name))
+            getattr(fitted.representation("matvec"), name),
+            getattr(hmm.representation("matvec"), name),
         )
         assert bool(unchanged) == (name != attribute)
 
@@ -462,8 +484,12 @@ def test_em_preserves_structural_zeros_and_warns():
     with pytest.warns(UserWarning, match="zero-probability entries"):
         fitted, _ = baum_welch_mvr_chmm(model, observations, max_iter=15, tol=0.0)
 
-    assert np.asarray(fitted.transition_mat)[0, 2] == 0.0
-    assert np.asarray(fitted.emission_mat)[2, 1] == 0.0
+    assert (
+        np.asarray(fitted.representation("matvec").transition_mat.tolist())[0, 2] == 0.0
+    )
+    assert (
+        np.asarray(fitted.representation("matvec").emission_mat.tolist())[2, 1] == 0.0
+    )
 
 
 def test_dense_model_does_not_warn(hmm, observed):

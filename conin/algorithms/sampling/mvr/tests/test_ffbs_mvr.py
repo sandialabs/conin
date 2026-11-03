@@ -219,7 +219,7 @@ def test_ffbs_return_shapes(hmm, observed):
     assert indices.shape == (6, T)
 
     for n in range(6):
-        assert [hmm.hidden_to_external[i] for i in indices[n].tolist()] == paths[n]
+        assert [hmm.hidden_states[i] for i in indices[n].tolist()] == paths[n]
         assert [entry["hidden_index"] for entry in augmented[n]] == indices[n].tolist()
 
         # The MVR is windowed, so it reports a mediation state only inside [1, 3].

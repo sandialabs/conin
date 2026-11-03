@@ -76,7 +76,8 @@ class UnrolledHMMMixin(UnrolledDBNMixin):
     start, stop : int
         The first and last unrolled time step.
     hidden_to_internal : dict
-        The HMM's map from hidden-state labels to internal indices.
+        The map from hidden-state labels to indices of the HMM's ``"matvec"``
+        representation.
     """
 
     def __init__(self, *, hidden_to_internal, **kwds):

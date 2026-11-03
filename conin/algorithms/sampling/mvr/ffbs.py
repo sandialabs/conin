@@ -190,7 +190,7 @@ def ffbs_torch_mvr_chmm(
         generator=generator,
     )
 
-    hidden_to_external = ctx["hmm"].hidden_to_external
+    hidden_to_external = ctx["matvec"].hidden_states
     paths = [[hidden_to_external[h] for h in row] for row in hidden.tolist()]
 
     result = (paths,)
