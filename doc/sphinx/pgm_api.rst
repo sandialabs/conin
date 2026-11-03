@@ -9,6 +9,7 @@ and I/O, and the sampling and learning algorithms.
 .. toctree::
    :maxdepth: 1
 
+   api_conin
    api_graphical_models
    api_constrained_graphical_models
    api_constraints

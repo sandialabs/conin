@@ -13,7 +13,7 @@ parents can be supplied as a dictionary keyed by parent assignments.
 
 .. testcode::
 
-   from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
+   from conin import DiscreteBayesianNetwork, DiscreteCPD
 
    cpd_a = DiscreteCPD(node="A", values=[0.9, 0.1])
    cpd_b = DiscreteCPD(
@@ -38,7 +38,7 @@ two nodes and one conditional dependency.
 
 .. testcode::
 
-   from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
+   from conin import DiscreteBayesianNetwork, DiscreteCPD
 
    cpd_a = DiscreteCPD(node="A", values=[0.9, 0.1])
    cpd_b = DiscreteCPD(
@@ -58,7 +58,7 @@ node with two parents:
 
 .. testcode::
 
-   from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
+   from conin import DiscreteBayesianNetwork, DiscreteCPD
 
    cpd_pollution = DiscreteCPD(node="Pollution", values=[0.9, 0.1])
    cpd_smoker = DiscreteCPD(node="Smoker", values=[0.3, 0.7])
@@ -122,8 +122,7 @@ choosing the same state:
 .. testcode::
 
    import pyomo.environ as pyo
-   from conin import pyomo_constraint_fn
-   from conin.constrained_models import ConstrainedDiscreteBayesianNetwork
+   from conin import pyomo_constraint_fn, ConstrainedDiscreteBayesianNetwork
    from conin.examples.bayesian_network import cancer1_BN_conin
 
    base = cancer1_BN_conin().pgm
@@ -144,8 +143,7 @@ interface:
 
 .. testcode::
 
-   from conin import toulbar2_constraint_fn
-   from conin.constrained_models import ConstrainedDiscreteBayesianNetwork
+   from conin import toulbar2_constraint_fn, ConstrainedDiscreteBayesianNetwork
    from conin.examples.bayesian_network import cancer1_BN_conin
 
    base = cancer1_BN_conin().pgm
@@ -173,8 +171,7 @@ auxiliary CPD:
 
 .. testcode::
 
-   from conin import oracle_constraint_fn
-   from conin.constrained_models import ConstrainedDiscreteBayesianNetwork
+   from conin import oracle_constraint_fn, ConstrainedDiscreteBayesianNetwork
    from conin.examples.bayesian_network import cancer1_BN_conin
 
    base = cancer1_BN_conin().pgm

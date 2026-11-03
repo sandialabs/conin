@@ -2,15 +2,16 @@ import math
 from math import prod
 
 from conin.exceptions import InvalidInputError
-from conin.util import try_import
+from conin.util import lazy_import
 from conin.graphical_models import DiscreteMarkovNetwork, DiscreteFactor
 from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
 from conin.graphical_models import DynamicDiscreteBayesianNetwork
 from conin.graphical_models import TimeIndex
 
-with try_import() as pgmpy_available:
-    import pgmpy.models
-    from pgmpy.models.DynamicBayesianNetwork import DynamicNode as pgmpy_DynamicNode
+# pgmpy is imported when it is first used (it is slow to import).
+pgmpy_available = lazy_import("pgmpy")
+pgmpy_models = lazy_import("pgmpy.models")
+pgmpy_dbn = lazy_import("pgmpy.models.DynamicBayesianNetwork")
 
 
 def _get_factor_value(f, values):
@@ -89,7 +90,7 @@ def convert_pgmpy_to_DynamicDiscreteBayesianNetwork(pgmpy_pgm):
     for k, v in pgmpy_pgm.states.items():
         if type(k) is tuple:
             tmp[k[0]] = v
-        elif type(k) is pgmpy_DynamicNode:
+        elif type(k) is pgmpy_dbn.DynamicNode:
             tmp[k.node] = v
         else:
             tmp[k] = v
@@ -174,13 +175,13 @@ def convert_pgmpy_to_conin(pgmpy_pgm):
     if not pgmpy_available:
         raise ImportError("Cannot convert a pgmpy model without importing pgmpy")
 
-    if type(pgmpy_pgm) is pgmpy.models.DiscreteMarkovNetwork:
+    if type(pgmpy_pgm) is pgmpy_models.DiscreteMarkovNetwork:
         return convert_pgmpy_to_DiscreteMarkovNetwork(pgmpy_pgm)
 
-    elif type(pgmpy_pgm) is pgmpy.models.DiscreteBayesianNetwork:
+    elif type(pgmpy_pgm) is pgmpy_models.DiscreteBayesianNetwork:
         return convert_pgmpy_to_DiscreteBayesianNetwork(pgmpy_pgm)
 
-    elif type(pgmpy_pgm) is pgmpy.models.DynamicBayesianNetwork:
+    elif type(pgmpy_pgm) is pgmpy_models.DynamicBayesianNetwork:
         return convert_pgmpy_to_DynamicDiscreteBayesianNetwork(pgmpy_pgm)
 
     else:

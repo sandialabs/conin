@@ -18,7 +18,7 @@ Markov network with three variables and pairwise interactions.
    :skipif: not toulbar2_available or not mip_solver_available
 
    from conin.config import default_mip_solver
-   from conin.algorithms.inference import map_query
+   from conin import map_query
    from conin.examples.markov_network import ABC_conin
 
    example = ABC_conin()
@@ -53,7 +53,7 @@ Viterbi and A* inference
 .. testcode::
 
    from conin.config import default_mip_solver
-   from conin.algorithms.inference import map_query
+   from conin import map_query
    from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
@@ -99,7 +99,7 @@ search stopped) and ``solvetime``. Each solution has
 
 .. testcode::
 
-   from conin.algorithms.scoring import log_potential
+   from conin import log_potential
 
    best = viterbi_results.solution
    assert best.log_potential == log_potential(hmm, best.states, observed=observed)
@@ -119,7 +119,7 @@ cannot be left and only ``"y"`` emits ``"b"``, so ``"b"`` cannot come before
 
 .. testcode::
 
-   from conin.graphical_models import HiddenMarkovModel
+   from conin import HiddenMarkovModel
 
    absorbing = HiddenMarkovModel(
        start_probs={"x": 0.5, "y": 0.5},
@@ -143,7 +143,7 @@ input model type and selected ``method`` determine the backend dispatch.
    :skipif: not toulbar2_available or not mip_solver_available
 
    from conin.config import default_mip_solver
-   from conin.algorithms.inference import map_query
+   from conin import map_query
    from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
@@ -175,7 +175,7 @@ Bayesian network and then unrolls it into a static Bayesian network.
 .. testcode::
 
    from conin.config import default_mip_solver
-   from conin.algorithms.inference import map_query
+   from conin import map_query
    from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
@@ -205,7 +205,7 @@ work with ``method="a_star"``. HMMs with MVR constraints work with
    :skipif: not toulbar2_available or not mip_solver_available
 
    from conin.config import default_mip_solver
-   from conin.algorithms.inference import map_query
+   from conin import map_query
    from conin.examples.hidden_markov_model import (
        create_chmm1_pyomo,
        create_chmm1_toulbar2,

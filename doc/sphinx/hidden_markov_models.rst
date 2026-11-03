@@ -13,7 +13,7 @@ transition, and emission probabilities and then passes them to the
 
 .. testcode::
 
-   from conin.graphical_models import HiddenMarkovModel
+   from conin import HiddenMarkovModel
 
    start_probs = {"h0": 0.4, "h1": 0.6}
    transition_probs = {
@@ -134,7 +134,7 @@ or ``None``. ``load_model`` also reads the files written by the
 .. testcode::
 
    from conin.examples.hidden_markov_model import create_hmm1
-   from conin.io import load_model, save_model
+   from conin import load_model, save_model
 
    hmm = create_hmm1()
    save_model(hmm, "hmm.json")
@@ -199,8 +199,7 @@ Oracle constraints
 
 .. testcode::
 
-   from conin.graphical_models import HiddenMarkovModel
-   from conin.constrained_models import ConstrainedHiddenMarkovModel
+   from conin import HiddenMarkovModel, ConstrainedHiddenMarkovModel
    from conin.constraints import OracleConstraint
    from conin.examples.hidden_markov_model import create_hmm1
 
@@ -229,7 +228,7 @@ Pyomo constraints
 
    import pyomo.environ as pe
    import conin
-   from conin.constrained_models import ConstrainedHiddenMarkovModel
+   from conin import ConstrainedHiddenMarkovModel
    from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
@@ -258,8 +257,7 @@ Toulbar2 constraints
 
 .. testcode::
 
-   from conin import toulbar2_constraint_fn
-   from conin.constrained_models import ConstrainedHiddenMarkovModel
+   from conin import toulbar2_constraint_fn, ConstrainedHiddenMarkovModel
    from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
@@ -295,8 +293,7 @@ Oracle constraints with node scoping
 
 .. testcode::
 
-   from conin import oracle_constraint_fn
-   from conin.constrained_models import ConstrainedHiddenMarkovModel
+   from conin import oracle_constraint_fn, ConstrainedHiddenMarkovModel
    from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
@@ -334,7 +331,7 @@ oracle constraint. ``create_chmm1_recursive`` expresses the condition of
 
 .. testcode::
 
-   from conin.constrained_models import ConstrainedHiddenMarkovModel
+   from conin import ConstrainedHiddenMarkovModel
    from conin.constraints import RecursiveConstraint
    from conin.examples.hidden_markov_model import create_hmm1
    from conin.algorithms.inference.recursive import recursive_a_star

@@ -64,7 +64,7 @@ and a format that needs pgmpy raises ``ImportError`` without it.
 .. testcode::
 
    from conin.examples.bayesian_network import simple1_BN_conin
-   from conin.io import load_model, save_model
+   from conin import load_model, save_model
 
    pgm = simple1_BN_conin().pgm
    save_model(pgm, "simple.uai")
@@ -101,7 +101,7 @@ load them with ``cost_scale=1e7``:
 
 .. testcode:: cfn
 
-   from conin.io import load_model
+   from conin import load_model
 
    pgm = load_model("model.cfn", cost_scale=1e7)
 
@@ -116,8 +116,7 @@ available as its ``model`` attribute:
 .. testcode:: cfn
    :skipif: not toulbar2_available
 
-   from conin.io import load_model
-   from conin.algorithms.inference import map_query
+   from conin import load_model, map_query
 
    cpgm = load_model("constrained_model.cfn")
    constrained = map_query(cpgm, method="toulbar2")
@@ -180,7 +179,7 @@ evidence (with the constraints) has probability zero.
        cancer1_BN_conin,
        cancer1_BN_constrained_oracle_conin,
    )
-   from conin.algorithms.scoring import log_probability_query
+   from conin import log_probability_query
 
    pgm = cancer1_BN_conin().pgm
    cpgm = cancer1_BN_constrained_oracle_conin().pgm
@@ -194,8 +193,7 @@ evidence (with the constraints) has probability zero.
    ...     simple1_BN_conin,
    ... )
    >>> from conin.graphical_models import is_polytree
-   >>> from conin.algorithms.feasibility import is_feasible
-   >>> from conin.algorithms.scoring import log_potential, log_probability
+   >>> from conin import is_feasible, log_potential, log_probability
    >>> pgm = simple1_BN_conin().pgm
    >>> is_polytree(pgm)
    True

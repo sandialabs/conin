@@ -33,6 +33,15 @@ Highlights
   conin.algorithms.scoring and the feasibility checks in
   conin.algorithms.feasibility; the torch MVR code no longer loads with
   import conin.
+- The top-level conin package exports the everyday API (conin.__all__): the
+  model and constrained model classes, the constraint helpers, map_query,
+  log_probability_query, log_probability, log_potential, is_feasible,
+  load_model, save_model and the exceptions, so
+  "from conin import HiddenMarkovModel, map_query" works. The docs and
+  notebooks import from conin.
+- import conin is several times faster: it no longer imports pgmpy (and
+  with it torch, scikit-learn and pandas) or looks for a MIP solver. pgmpy
+  is imported the first time a pgmpy converter or file reader is used.
 - pgmax, pomegranate and pyagrum support is removed.
 
 Migration table (old -> new)
@@ -501,6 +510,8 @@ I/O and conversion
   load_cfn (were load_conin_model_from_uai, save_model_uai and
   load_conin_model_from_cfn); load_model/save_model are unchanged.
 - New extras: toulbar2 (pytoulbar2) and torch.
+- conin.io.pgmpy imports pgmpy when it is first used (the new
+  conin.util.lazy_import), not when conin is imported.
 - Hidden Markov models are saved and loaded with save_model/load_model as
   CONIN JSON (.json or .json.gz): a tagged document ("format":
   "conin.HiddenMarkovModel", "version": 1) with the state order and the
@@ -523,6 +534,16 @@ I/O and conversion
   "unknown format" error for .bif). NotImplementedError for unsupported CFN
   features is unchanged. load_model now passes its options to the UAI and
   JSON readers too, so an option they do not take raises TypeError.
+
+Configuration
+
+- conin.config.default_mip_solver is looked up the first time it is used,
+  not when conin is imported. The Pyomo inference functions default to
+  solver=None, which means the default solver; the new
+  conin.config.mip_solver(solver) resolves it and raises RuntimeError if no
+  MIP solver is available (gurobi, glpk, highs or appsi_highs).
+- conin.config.conin_home (the unused conin_HOME environment variable) is
+  removed.
 
 Bug fixes
 

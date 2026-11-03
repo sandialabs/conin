@@ -54,12 +54,17 @@ Pyomo Solvers
 -------------
 
 ``pyomo`` is a base dependency, but Pyomo-based inference also needs an
-available optimization solver. ``conin`` checks for these solvers when selecting
-its default MIP solver:
+available optimization solver. Without a ``solver`` option, the
+``"integer_program"`` method uses ``conin.config.default_mip_solver``: the
+first available one of
 
 - ``gurobi``
-- ``highs``
 - ``glpk``
+- ``highs``
+- ``appsi_highs``
+
+``conin`` looks for them the first time a default solver is needed (not when
+it is imported), and raises ``RuntimeError`` if none is available.
 
 Use ``map_query(..., method="integer_program")`` for Pyomo-backed inference.
 
@@ -69,7 +74,7 @@ You can also pass a solver explicitly to ``map_query``:
    :skipif: not mip_solver_available
 
    from conin.config import default_mip_solver
-   from conin.algorithms.inference import map_query
+   from conin import map_query
    from conin.examples.markov_network import ABC_conin
 
    pgm = ABC_conin().pgm

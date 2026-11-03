@@ -1,10 +1,11 @@
 import itertools
-from conin.util import try_import
+from conin.util import lazy_import
 from conin.graphical_models import DiscreteMarkovNetwork, DiscreteFactor
 
-with try_import() as pgmpy_available:
-    from pgmpy.models import DiscreteMarkovNetwork as pgmpy_DiscreteMarkovNetwork
-    from pgmpy.factors.discrete import DiscreteFactor as pgmpy_DiscreteFactor
+# pgmpy is imported when it is first used (it is slow to import).
+pgmpy_available = lazy_import("pgmpy")
+pgmpy_models = lazy_import("pgmpy.models")
+pgmpy_discrete = lazy_import("pgmpy.factors.discrete")
 
 
 def convert_conin_to_pgmpy_mn(conin_pgm, check_model=True):
@@ -18,7 +19,7 @@ def convert_conin_to_pgmpy_mn(conin_pgm, check_model=True):
 
     Returns
     -------
-    pgmpy_DiscreteMarkovNetwork
+    pgmpy.models.DiscreteMarkovNetwork
         The converted pgmpy Markov network
 
     Raises
@@ -35,7 +36,7 @@ def convert_conin_to_pgmpy_mn(conin_pgm, check_model=True):
         raise TypeError(f"Expected conin DiscreteMarkovNetwork, got {type(conin_pgm)}")
 
     # Create pgmpy model
-    pgmpy_pgm = pgmpy_DiscreteMarkovNetwork()
+    pgmpy_pgm = pgmpy_models.DiscreteMarkovNetwork()
 
     # Add nodes
     for node in conin_pgm.nodes:
@@ -64,7 +65,7 @@ def convert_conin_to_pgmpy_mn(conin_pgm, check_model=True):
                 for assignment in itertools.product(*slist)
             ]
 
-        pgmpy_factor = pgmpy_DiscreteFactor(
+        pgmpy_factor = pgmpy_discrete.DiscreteFactor(
             variables=conin_factor.nodes,
             cardinality=[len(conin_pgm.states[v]) for v in conin_factor.nodes],
             values=values,

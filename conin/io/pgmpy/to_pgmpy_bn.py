@@ -1,10 +1,11 @@
 import itertools
-from conin.util import try_import
+from conin.util import lazy_import
 from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
 
-with try_import() as pgmpy_available:
-    from pgmpy.models import DiscreteBayesianNetwork as pgmpy_DiscreteBayesianNetwork
-    from pgmpy.factors.discrete import TabularCPD as pgmpy_TabularCPD
+# pgmpy is imported when it is first used (it is slow to import).
+pgmpy_available = lazy_import("pgmpy")
+pgmpy_models = lazy_import("pgmpy.models")
+pgmpy_discrete = lazy_import("pgmpy.factors.discrete")
 
 
 def convert_conin_to_pgmpy_bn(conin_pgm, check_model=True):
@@ -18,7 +19,7 @@ def convert_conin_to_pgmpy_bn(conin_pgm, check_model=True):
 
     Returns
     -------
-    pgmpy_DiscreteBayesianNetwork
+    pgmpy.models.DiscreteBayesianNetwork
         The converted pgmpy Bayesian network
 
     Raises
@@ -37,7 +38,7 @@ def convert_conin_to_pgmpy_bn(conin_pgm, check_model=True):
         )
 
     # Create pgmpy model
-    pgmpy_pgm = pgmpy_DiscreteBayesianNetwork()
+    pgmpy_pgm = pgmpy_models.DiscreteBayesianNetwork()
 
     # Add nodes
     for node in conin_pgm.nodes:
@@ -94,7 +95,7 @@ def _convert_conin_cpd_to_pgmpy_cpd(conin_cpd, conin_pgm):
 
     Returns
     -------
-    pgmpy_TabularCPD
+    pgmpy.factors.discrete.TabularCPD
         The converted pgmpy CPD
     """
     # Get variable cardinality
@@ -109,7 +110,7 @@ def _convert_conin_cpd_to_pgmpy_cpd(conin_cpd, conin_pgm):
     if not conin_cpd.parents:
         values = [[conin_cpd.values[p]] for p in variable_states]
 
-        return pgmpy_TabularCPD(
+        return pgmpy_discrete.TabularCPD(
             variable=conin_cpd.node,
             variable_card=variable_card,
             values=values,
@@ -133,7 +134,7 @@ def _convert_conin_cpd_to_pgmpy_cpd(conin_cpd, conin_pgm):
         for parent in evidence:
             state_names[parent] = conin_pgm.states_of(parent)
 
-        return pgmpy_TabularCPD(
+        return pgmpy_discrete.TabularCPD(
             variable=variable,
             variable_card=variable_card,
             values=values,
