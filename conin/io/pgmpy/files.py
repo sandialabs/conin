@@ -3,6 +3,7 @@
 import os
 import gzip
 
+from conin.exceptions import InvalidInputError, ModelFileError
 from conin.util import try_import
 
 with try_import() as pgmpy_available:
@@ -29,12 +30,8 @@ def load_model(name, quiet=True):
                     print(f"  Loading model from {name}")
                 try:
                     content = INPUT.read()
-                except Exception as e:  # pragma:nocover
-                    if not quiet:
-                        print(f"Error reading file {name}: {e}")
-                    content = None
-                if content is None:  # pragma:nocover
-                    raise RuntimeError(f"Error loading model with pgmpy: {name}")
+                except (OSError, EOFError) as e:  # pragma:nocover
+                    raise ModelFileError(f"Cannot read {name}: {e}") from e
 
                 if name.endswith(".bif.gz"):
                     reader = BIFReader(string=content.decode("utf-8"))
@@ -51,16 +48,19 @@ def load_model(name, quiet=True):
             reader = UAIReader(name)
             return reader.get_model()
 
-        raise RuntimeError(f"Unexpected model type: {name}")
+        raise InvalidInputError(
+            f"Cannot load a pgmpy model from {name}: unknown file suffix "
+            "(expected .bif or .uai, optionally with .gz)"
+        )
 
-    raise RuntimeError(f"Missing file {name}")
+    raise FileNotFoundError(f"Missing file {name}")
 
 
 def save_model(pgm, name, quiet=True):
 
     if name.endswith(".bif"):
         if not pgmpy_readwrite_available:
-            raise RuntimeError(
+            raise ImportError(
                 "Cannot save a pgmpy model to BIF format without importing pgmpy"
             )
         writer = BIFWriter(pgm)
@@ -68,13 +68,13 @@ def save_model(pgm, name, quiet=True):
 
     elif name.endswith(".uai"):
         if not pgmpy_readwrite_available:
-            raise RuntimeError(
+            raise ImportError(
                 "Cannot save a pgmpy model to UAI format without importing pgmpy"
             )
         writer = UAIWriter(pgm)
         writer.write(name)
 
     else:
-        raise RuntimeError(
+        raise InvalidInputError(
             f"Cannot save a pgmpy model.  Unknown format specified by filename suffix: {name}"
         )

@@ -130,7 +130,7 @@ Examples:
 
             # BIF format only supports Bayesian networks, not Markov networks
             if isinstance(pgm, DiscreteMarkovNetwork):
-                raise ValueError(
+                raise TypeError(
                     "Cannot save Markov network to BIF format. "
                     "BIF format only supports Bayesian networks. "
                     "Use --uai to save in UAI format instead."
@@ -140,7 +140,7 @@ Examples:
             if isinstance(pgm, DiscreteBayesianNetwork):
                 pgm_pgmpy = convert_conin_to_pgmpy_bn(pgm)
             else:
-                raise ValueError(
+                raise TypeError(
                     f"Cannot save model of type {type(pgm).__name__} to BIF format. "
                     "Only Bayesian networks are supported."
                 )

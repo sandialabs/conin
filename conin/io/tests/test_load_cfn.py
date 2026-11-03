@@ -7,6 +7,7 @@ import pytest
 
 from conin.util import try_import
 from conin.io import load_model, load_cfn
+from conin.exceptions import ModelFileError
 from conin.algorithms.scoring import log_potential
 from conin.constraints import Toulbar2Constraint
 from conin.algorithms.inference import map_query
@@ -268,12 +269,12 @@ def test_unsupported_global_cost_function_error(ftype, params):
     ],
 )
 def test_parse_errors(text):
-    with pytest.raises(ValueError):
+    with pytest.raises(ModelFileError):
         load_cfn(string=text)
 
 
 def test_missing_file():
-    with pytest.raises(RuntimeError):
+    with pytest.raises(FileNotFoundError):
         load_model(os.path.join(cwd, "unknown.cfn"))
 
 

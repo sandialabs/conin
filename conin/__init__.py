@@ -10,7 +10,7 @@ from .constraints import (
     toulbar2_constraint_fn,
     smoek_constraint_fn,
 )
-from .exceptions import InvalidInputError, InsufficientSolutionsError
+from .exceptions import InvalidInputError, InsufficientSolutionsError, ModelFileError
 from . import __about__
 from . import graphical_models
 from . import constrained_models

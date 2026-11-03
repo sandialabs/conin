@@ -25,14 +25,14 @@ def convert_conin_to_pgmpy_mn(conin_pgm, check_model=True):
     ------
     ImportError
         If pgmpy is not available
-    ValueError
+    TypeError
         If the input is not a conin DiscreteMarkovNetwork
     """
     if not pgmpy_available:
         raise ImportError("Cannot convert to pgmpy without pgmpy installed")
 
     if not isinstance(conin_pgm, DiscreteMarkovNetwork):
-        raise ValueError(f"Expected conin DiscreteMarkovNetwork, got {type(conin_pgm)}")
+        raise TypeError(f"Expected conin DiscreteMarkovNetwork, got {type(conin_pgm)}")
 
     # Create pgmpy model
     pgmpy_pgm = pgmpy_DiscreteMarkovNetwork()

@@ -25,14 +25,14 @@ def convert_conin_to_pgmpy_bn(conin_pgm, check_model=True):
     ------
     ImportError
         If pgmpy is not available
-    ValueError
+    TypeError
         If the input is not a conin DiscreteBayesianNetwork
     """
     if not pgmpy_available:
         raise ImportError("Cannot convert to pgmpy without pgmpy installed")
 
     if not isinstance(conin_pgm, DiscreteBayesianNetwork):
-        raise ValueError(
+        raise TypeError(
             f"Expected conin DiscreteBayesianNetwork, got {type(conin_pgm)}"
         )
 

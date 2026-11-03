@@ -30,6 +30,12 @@ File I/O
 
 .. autofunction:: conin.io.cfn.load_cfn
 
+.. automodule:: conin.io.json_format
+
+.. autofunction:: conin.io.json_format.save_json
+
+.. autofunction:: conin.io.json_format.load_json
+
 The ``convert_pgm`` console script (``conin.io.convert_pgm``) converts model
 files between formats; run ``convert_pgm --help`` for its options.
 
@@ -54,5 +60,7 @@ Exceptions
 .. autoexception:: conin.exceptions.InvalidInputError
 
 .. autoexception:: conin.exceptions.InfeasibleQueryError
+
+.. autoexception:: conin.exceptions.ModelFileError
 
 .. autoexception:: conin.exceptions.InsufficientSolutionsError

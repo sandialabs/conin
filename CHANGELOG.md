@@ -486,11 +486,11 @@ I/O and conversion
   and is_polytree for pgmpy models are removed; the new
   conin.graphical_models.is_polytree checks CONIN Bayesian networks.
 - conin.io.pgmpy.files.load_model no longer loads a pgmpy example model by
-  name when the file is missing; it raises RuntimeError("Missing file ...").
+  name when the file is missing; it raises FileNotFoundError.
 - pgmax, pomegranate and pyagrum support (converters, loaders, model_type
   values and the pgmax/pomegranate/pyagrum/pgm-all extras) is removed;
-  load_model with those model_type values raises RuntimeError("Unexpected
-  model type").
+  load_model with those model_type values raises InvalidInputError
+  ("Unexpected model type").
 - conin.common.pgmpy.log_potential and conin.common.pgmpy.custom_VE (dead,
   untested code) are removed.
 - conin/mediation_variables (an unused NumPy prototype of the mediation
@@ -501,6 +501,28 @@ I/O and conversion
   load_cfn (were load_conin_model_from_uai, save_model_uai and
   load_conin_model_from_cfn); load_model/save_model are unchanged.
 - New extras: toulbar2 (pytoulbar2) and torch.
+- Hidden Markov models are saved and loaded with save_model/load_model as
+  CONIN JSON (.json or .json.gz): a tagged document ("format":
+  "conin.HiddenMarkovModel", "version": 1) with the state order and the
+  nonzero probabilities, so a loaded model equals the saved one. State
+  labels must be JSON values (strings, numbers, booleans, None).
+  conin.io.save_json/load_json also work on JSON text. load_model still
+  reads the files of the removed HiddenMarkovModel.write_to_file and
+  read_from_file methods.
+- conin.io errors follow one policy: a missing file raises
+  FileNotFoundError (was RuntimeError); malformed or invalid file content
+  raises the new conin.exceptions.ModelFileError, an InvalidInputError and
+  a ValueError (UAI/CFN parse errors were ValueError, and int()/float()
+  failures or bad variable indices escaped as bare ValueError/IndexError);
+  an unknown file suffix or model_type, cost_scale <= 0 and load_cfn without
+  a filename or string raise InvalidInputError (were RuntimeError or
+  ValueError); a model a format or converter cannot hold raises TypeError
+  (save_uai, BIF, convert_conin_to_pgmpy_bn/mn and convert_pgmpy_to_conin
+  raised ValueError or RuntimeError); saving BIF or pgmpy files without
+  pgmpy's readers and writers raises ImportError (was RuntimeError, or an
+  "unknown format" error for .bif). NotImplementedError for unsupported CFN
+  features is unchanged. load_model now passes its options to the UAI and
+  JSON readers too, so an option they do not take raises TypeError.
 
 Bug fixes
 
@@ -551,10 +573,10 @@ Bug fixes
     hidden or observable states raise InvalidInputError;
   - or_topas without solutions raises InsufficientSolutionsError;
   - a mixed list of pyomo or toulbar2 constraints raises TypeError;
-  - a UAI file with an inconsistent function table raises ValueError, a
-    missing UAI file RuntimeError (as for CFN files), and MapCPD argument
-    errors ValueError.
-- pgmpy save_model with an unknown file suffix raises RuntimeError (it
+  - a UAI file with an inconsistent function table raises ModelFileError, a
+    missing UAI file FileNotFoundError (as for CFN files), and MapCPD
+    argument errors ValueError.
+- pgmpy save_model with an unknown file suffix raises InvalidInputError (it
   returned without writing), and the load_model message names the file.
 - The timing=True output of variable elimination prints its STOP line with
   the elapsed time.
@@ -564,7 +586,7 @@ Bug fixes
 - The UAI reader joins every pair of nodes in a Markov-network factor (it
   joined only the last node to the others, so pgmpy rejected the converted
   model: saving such a model as .bif failed). A truncated UAI file raises
-  ValueError (was StopIteration). Saving a DBN with dynamic nodes as UAI
+  ModelFileError (was StopIteration). Saving a DBN with dynamic nodes as UAI
   raises InvalidInputError asking to unroll it (was KeyError).
 - The CFN reader rejects an object as a variable domain and a cost function
   whose costs are all infinite (it gave NaN factor values).

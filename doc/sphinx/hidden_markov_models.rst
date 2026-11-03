@@ -124,24 +124,27 @@ transition, and emission probabilities over a specified state space.
 JSON I/O
 --------
 
-``HiddenMarkovModel`` can write its start, transition, and emission
-probabilities to a JSON file and load them back later. This HMM-specific JSON
-format is separate from the UAI file support described in
-:doc:`model_conversion_io`.
+``save_model`` and ``load_model`` (:mod:`conin.io`) write and read hidden
+Markov models as JSON (``.json``, or gzipped ``.json.gz``). The file keeps the
+state order and the nonzero probabilities, so the loaded model is equal to
+the saved one. State labels must be JSON values: strings, numbers, booleans
+or ``None``. ``load_model`` also reads the files written by the
+``write_to_file`` method of older CONIN versions.
 
 .. testcode::
 
-   from conin.graphical_models import HiddenMarkovModel
    from conin.examples.hidden_markov_model import create_hmm1
+   from conin.io import load_model, save_model
 
    hmm = create_hmm1()
-   hmm.write_to_file("hmm.json")
+   save_model(hmm, "hmm.json")
 
-   loaded = HiddenMarkovModel.read_from_file("hmm.json")
+   loaded = load_model("hmm.json")
 
-   assert loaded.start_probs == hmm.start_probs
-   assert loaded.transition_probs == hmm.transition_probs
-   assert loaded.emission_probs == hmm.emission_probs
+   assert loaded == hmm
+
+``conin.io.save_json`` and ``conin.io.load_json`` work on JSON text as well as
+files.
 
 Constrained hidden Markov models
 --------------------------------
@@ -368,11 +371,10 @@ Notes
 
 - The ``HiddenMarkovModel`` constructor requires non-empty ``start_probs``,
   ``transition_probs``, and ``emission_probs`` dictionaries keyed by hidden and
-  observed state labels. Models are immutable after construction.
+  observable state labels. Models are immutable after construction.
 - ``random_hmm`` is useful for tests, examples, and experiments where exact
   probabilities are less important than a valid model structure.
-- ``write_to_file`` and ``read_from_file`` provide HMM-specific JSON
-  serialization for model parameters.
+- ``save_model``/``load_model`` save and load HMMs as JSON files.
 - See :doc:`model_conversion_io` for converting HMMs to dynamic Bayesian
   networks.
 - See :doc:`hmm_learning` for estimating HMM parameters from labeled

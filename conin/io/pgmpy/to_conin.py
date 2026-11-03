@@ -165,7 +165,7 @@ def convert_pgmpy_to_conin(pgmpy_pgm):
     ------
     ImportError
         If pgmpy is not installed.
-    ValueError
+    TypeError
         For another model type.
     InvalidInputError
         If two time slices of a dynamic Bayesian network have different CPDs
@@ -184,4 +184,4 @@ def convert_pgmpy_to_conin(pgmpy_pgm):
         return convert_pgmpy_to_DynamicDiscreteBayesianNetwork(pgmpy_pgm)
 
     else:
-        raise ValueError(f"Unexpected pgmpy model type: {type(pgmpy_pgm)}")
+        raise TypeError(f"Unexpected pgmpy model type: {type(pgmpy_pgm)}")

@@ -4,7 +4,7 @@ import itertools
 import pprint
 from collections import defaultdict
 
-from conin.exceptions import InvalidInputError
+from conin.exceptions import InvalidInputError, ModelFileError
 from conin.graphical_models import DiscreteFactor, DiscreteMarkovNetwork
 from conin.graphical_models import DiscreteCPD, DiscreteBayesianNetwork
 from conin.graphical_models import DynamicDiscreteBayesianNetwork
@@ -15,7 +15,7 @@ lineno = 0
 def get_lines(filename, string):
     if filename:
         if not os.path.exists(filename):
-            raise RuntimeError(f"Cannot read missing UAI file {filename}")
+            raise FileNotFoundError(f"Cannot read missing UAI file {filename}")
         with open(filename, "r") as INPUT:
             for line in INPUT:
                 yield line
@@ -38,7 +38,7 @@ def tokenize(filename, string):
 
 
 class _Tokens:
-    """The UAI tokens; running out raises ``ValueError`` (a truncated file)."""
+    """The UAI tokens; running out raises ``ModelFileError`` (a truncated file)."""
 
     def __init__(self, tokens):
         self._tokens = tokens
@@ -50,7 +50,7 @@ class _Tokens:
         try:
             return next(self._tokens)
         except StopIteration:
-            raise ValueError(
+            raise ModelFileError(
                 f"Unexpected end of the UAI data after line {lineno + 1}"
             ) from None
 
@@ -76,11 +76,22 @@ def load_uai(filename=None, string=None, verbose=False):
 
     Raises
     ------
-    RuntimeError
+    FileNotFoundError
         If ``filename`` does not exist.
-    ValueError
-        If the data ends early or a function table has the wrong length.
+    ModelFileError
+        If the data is malformed (e.g. it ends early, a function table has
+        the wrong length or a number cannot be read) or does not describe a
+        valid model.
     """
+    try:
+        return _load_uai(filename, string, verbose)
+    except ModelFileError:
+        raise
+    except (ValueError, IndexError, InvalidInputError) as e:
+        raise ModelFileError(f"Invalid UAI data: {e}") from e
+
+
+def _load_uai(filename, string, verbose):
     global lineno
     lineno = -1
 
@@ -124,7 +135,7 @@ def load_uai(filename=None, string=None, verbose=False):
         for v in f:
             N *= vcard[v]
         if n != N:
-            raise ValueError(
+            raise ModelFileError(
                 f"Inconsistent function definition at line {lineno}: read {n} "
                 f"but expected {N} from function definition"
             )
@@ -213,6 +224,8 @@ def save_uai(pgm, name, quiet=True):
     ------
     InvalidInputError
         For a dynamic Bayesian network with dynamic nodes.
+    TypeError
+        For another kind of model.
     """
     text = _uai_text(pgm)
     with open(os.path.splitext(name)[0] + ".uai", "w") as f:
@@ -239,8 +252,10 @@ def _uai_text(pgm):
     elif isinstance(pgm, DiscreteMarkovNetwork):
         case = "MARKOV"
     else:
-        raise ValueError(
-            f"pgm must be an instance of a <Dynamic>DiscreteBayesianNetwork or DiscreteMarkovNetwork: {type(pgm)=}"
+        raise TypeError(
+            "A UAI file holds a DiscreteBayesianNetwork, a "
+            "DynamicDiscreteBayesianNetwork without time-indexed CPDs or a "
+            f"DiscreteMarkovNetwork, got {type(pgm).__name__}"
         )
 
     # get node2id mapping
