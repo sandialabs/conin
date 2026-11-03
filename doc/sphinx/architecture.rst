@@ -200,6 +200,25 @@ MVR static context
 DBN unrolling
    DBNs and HMMs are unrolled from ``start=0``; unrolling from a later time
    would need the marginal distribution at that time.
+No solutions of probability zero
+   Every method returns "no solution" when the evidence and the constraints
+   leave only assignments of probability zero. The shared scoring
+   (``conin.algorithms.inference.results``) drops such solutions, because
+   toulbar2 encodes a zero probability as a large finite cost and returns
+   them.
+
+Testing across methods
+----------------------
+
+``conin/algorithms/tests/test_random_cross_method.py`` builds small random
+models (``random_models.py``: MNs, BNs, DBNs and HMMs, some with zero
+probabilities), random evidence and a random count constraint written in
+every constraint family, and checks every MAP method, A* top-k, partial MAP
+and ``log_probability_query`` against brute force. The cases are seeded and
+reproducible (case ``hmm-17`` is always the same). ``CONIN_RANDOM_CASES``
+sets the number of cases per model type: 10 by default (a few seconds), and
+a few thousand for a sweep after changing an inference method. A new method
+or constraint family should be added to its method table.
 
 Open questions
 --------------

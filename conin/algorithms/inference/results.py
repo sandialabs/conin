@@ -11,9 +11,10 @@ functions it dispatches to) returns a ``Munch`` with
 ``termination_condition``
     ``"ok"``, or why the search stopped (for example
     ``"max_iterations: 10"``).  :data:`NO_FEASIBLE_SOLUTIONS` if the query has
-    no solution: the evidence or the constraints exclude every assignment.
-    Every method returns :func:`no_solution_results` then (``solution`` is
-    ``None`` and ``solutions`` empty), except the integer program with
+    no solution: the evidence or the constraints exclude every assignment,
+    or leave only assignments of probability zero.  Every method returns
+    :func:`no_solution_results` then (``solution`` is ``None`` and
+    ``solutions`` empty), except the integer program with
     ``solver="or_topas"``, which raises.
 ``solvetime``
     The time spent in the solver or the search, in seconds.
@@ -33,7 +34,9 @@ cut generation).  Each solution has
     probability of the constraints, so it is comparable across methods.
     ``None`` for a partial MAP query, and from the functions that solve a
     backend model directly (``solve_*_map_query_model``), which do not see
-    the model.
+    the model.  It is never ``-inf``: the scoring drops a solution of
+    probability zero (toulbar2 encodes a zero probability as a large finite
+    cost, so it can return one).
 ``solver_objective``
     The optimal objective value of the integer program or the toulbar2 cost
     function network, in the backend's own scale (not comparable across
@@ -43,6 +46,8 @@ The network-flow integer program adds ``variables`` (the nonzero model
 variables) to each solution, and the MVR Viterbi adds ``augmented`` (the
 decoded augmented path).
 """
+
+import math
 
 import munch
 
@@ -79,12 +84,29 @@ def no_solution_results(solvetime):
     )
 
 
+def _drop_impossible(results):
+    """Remove the solutions of probability zero (``log_potential == -inf``).
+
+    The results are changed in place: without a solution left, they become
+    :func:`no_solution_results`.
+    """
+    solutions = [s for s in results.solutions if s.log_potential != -math.inf]
+    if len(solutions) == len(results.solutions):
+        return results
+    results.solutions = solutions
+    results.solution = solutions[0] if solutions else None
+    if not solutions:
+        results.termination_condition = NO_FEASIBLE_SOLUTIONS
+    return results
+
+
 def score_solutions(results, model, *, evidence, nodes):
     """Set ``log_potential`` of the solutions of an MN, BN or DBN query.
 
     The assignment is the solution's ``states`` plus ``evidence``, restricted
     to ``nodes`` (the nodes of the model, unrolled for a DBN).  A solution
-    that does not cover ``nodes`` (a partial MAP query) gets ``None``.
+    that does not cover ``nodes`` (a partial MAP query) gets ``None``; one
+    of probability zero is dropped.
     """
     for soln in results.solutions:
         assignment = dict(evidence or {})
@@ -95,7 +117,7 @@ def score_solutions(results, model, *, evidence, nodes):
             )
         else:
             soln.log_potential = None
-    return results
+    return _drop_impossible(results)
 
 
 def score_hmm_solutions(results, hmm, observed):
@@ -104,7 +126,8 @@ def score_hmm_solutions(results, hmm, observed):
     ``observed`` is the list of observations (the solutions cover the times
     ``0..len(states) - 1``), or a ``{time: label}`` dict of the observed
     times (the sparse observations of the MVR Viterbi, where an unobserved
-    time contributes its transition only).
+    time contributes its transition only).  A solution of probability zero
+    is dropped.
     """
     for soln in results.solutions:
         hidden = as_sequence(soln.states, "hidden states")
@@ -113,4 +136,4 @@ def score_hmm_solutions(results, hmm, observed):
         else:
             obs = dict(enumerate(observed[: len(hidden)]))
         soln.log_potential = hmm_path_log_potential(hmm, hidden, obs)
-    return results
+    return _drop_impossible(results)

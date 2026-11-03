@@ -20,6 +20,7 @@ import conin.examples.dynamic_bayesian_network as dex
 import conin.examples.hidden_markov_model as hex_
 import conin.examples.markov_network as mex
 from conin.config import default_mip_solver
+from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
 from conin.algorithms.inference import map_query
 from conin.algorithms.inference.oracle import a_star
 from conin.algorithms.inference.pyomo import ip_inference, lp_inference
@@ -397,6 +398,15 @@ def _static_no_solution_cases():
         model.AddFunction([model.V["A"]], [0, model.Top, 0])
 
     infeasible = _abc_constrained(a_and_b_equal_and_different)
+    # B = 1 has probability zero.  toulbar2 encodes a zero probability as a
+    # large finite cost, so it found an assignment of probability zero.
+    zero_probability = DiscreteBayesianNetwork(
+        states={"A": [0, 1], "B": [0, 1]},
+        cpds=[
+            DiscreteCPD(node="A", values=[0.4, 0.6]),
+            DiscreteCPD(node="B", parents=["A"], values={0: [1.0, 0.0], 1: [1.0, 0.0]}),
+        ],
+    )
     for method, options, marks in [
         ("integer_program", dict(solver=default_mip_solver), needs_mip),
         ("toulbar2", {}, needs_toulbar2),
@@ -412,6 +422,14 @@ def _static_no_solution_cases():
             {"A": 1},
             marks=marks,
             id=f"constraint_vs_evidence-{method}",
+        )
+        yield pytest.param(
+            zero_probability,
+            method,
+            options,
+            {"B": 1},
+            marks=marks,
+            id=f"zero_probability_evidence-{method}",
         )
     # toulbar2 finds these contradictions while it adds the constraint
     yield pytest.param(
@@ -647,6 +665,28 @@ def test_score_solutions_restricts_to_the_nodes_and_adds_the_evidence():
         log_potential(pgm, {"A": 2, "B": 2, "C": 1})
     )
     assert results.solutions[1].log_potential is None
+
+
+def test_scoring_drops_solutions_of_probability_zero():
+    pgm = DiscreteBayesianNetwork(
+        states={"A": [0, 1]}, cpds=[DiscreteCPD(node="A", values=[1.0, 0.0])]
+    )
+    results = map_results(
+        [map_solution({"A": 1}), map_solution({"A": 0})], solvetime=0.0
+    )
+    score_solutions(results, pgm, evidence={}, nodes=("A",))
+    assert [s.states for s in results.solutions] == [{"A": 0}]
+    assert results.solution is results.solutions[0]
+    assert results.termination_condition == "ok"
+
+    results = map_results([map_solution({"A": 1})], solvetime=0.0)
+    score_solutions(results, pgm, evidence={}, nodes=("A",))
+    _check_no_solution(results)
+
+    hmm = _impossible_hmm()
+    results = map_results([map_solution(["x", "x"])], solvetime=0.0)
+    score_hmm_solutions(results, hmm, ["b", "b"])
+    _check_no_solution(results)
 
 
 def test_score_hmm_solutions_sparse_observations():

@@ -547,6 +547,16 @@ Configuration
 
 Bug fixes
 
+- map_query(method="toulbar2") returned an assignment of probability zero
+  (log_potential -inf) when the evidence and the constraints left no
+  assignment of positive probability: toulbar2 encodes a zero probability
+  as a large finite cost. The scoring now drops solutions of probability
+  zero, so every method returns no solution then. Found by the new
+  randomized cross-method tests (conin/algorithms/tests), which compare
+  every MAP method, A* top-k, partial MAP and log_probability_query with
+  brute force on small random models (CONIN_RANDOM_CASES sets the number
+  of cases).
+
 - save_uai (then save_model_uai) replaces the file extension with os.path.splitext: a dot in
   a directory name, or a "./" prefix, wrote another file.
 - Saving a CONIN model to a .bif file no longer raises "Unknown format" after
