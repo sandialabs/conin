@@ -227,13 +227,13 @@ def _rebuild_hmm(hmm, start, transition, emission):
     """Return a new ``HiddenMarkovModel`` with ``hmm``'s labels and new parameters.
 
     ``HiddenMarkovModel`` is immutable, so updated parameters require a new
-    instance. Arrays are indexed in ``hmm``'s internal state order.
+    instance. Arrays are indexed as ``hmm``'s ``"matvec"`` representation.
     """
     # The constructor orders states by sorted label, and the dense dictionaries
     # below mention every label, so the rebuilt model keeps hmm's internal index
     # order (and with it the alignment of the MVRs of the "mvr" representation).
-    hidden = hmm.hidden_states
-    observed = hmm.observed_states
+    old = hmm.representation("matvec")
+    hidden, observed = old.hidden_states, old.observed_states
     new_hmm = HiddenMarkovModel(
         start_probs={h: float(start[i]) for i, h in enumerate(hidden)},
         transition_probs={
@@ -247,7 +247,8 @@ def _rebuild_hmm(hmm, start, transition, emission):
             for j, o in enumerate(observed)
         },
     )
-    if new_hmm.hidden_states != hidden or new_hmm.observed_states != observed:
+    new = new_hmm.representation("matvec")
+    if new.hidden_states != hidden or new.observed_states != observed:
         raise InvalidInputError(  # pragma: no cover
             "Rebuilding the HMM changed its internal state order"
         )

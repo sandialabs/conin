@@ -37,14 +37,17 @@ transition, and emission probabilities and then passes them to the
 
 The hidden and observed state labels are available from ``hmm.hidden_states``
 and ``hmm.observed_states`` (sorted, read-only lists). The model itself holds
-only label-keyed tables. The parameters as arrays on state indices, where
-index ``i`` is ``hmm.hidden_states[i]``, are in the ``"matvec"``
-representation, together with the label-to-index maps:
+only label-keyed tables. The parameters as arrays on state indices are in
+the ``"matvec"`` representation, which is the one place that converts
+between labels and indices: ``repn.hidden_states[i]`` is the label of hidden
+index ``i`` and ``repn.hidden_to_internal[h]`` the index of label ``h`` (and
+likewise for the observed states):
 
 .. code-block:: python
 
    repn = hmm.representation("matvec")
    repn.transition_mat[repn.hidden_to_internal["h0"]]  # a read-only NumPy row
+   repn.hidden_states[0]                               # "h0"
 
 The constructor checks that the probabilities are nonnegative and that
 the start probabilities and each row of transition and emission probabilities

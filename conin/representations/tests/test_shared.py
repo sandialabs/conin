@@ -188,16 +188,16 @@ def test_dbn_mixin():
     assert repn.fields_at_init == repn.structure_fields()
 
 
-def test_hmm_mixin_builds_hidden_to_internal_from_the_hidden_states():
-    repn = _HMM(start=0, stop=1, hidden_states=["a", "b"])
+def test_hmm_mixin_copies_hidden_to_internal():
+    h2i = {"a": 0, "b": 1}
+    repn = _HMM(start=0, stop=1, hidden_to_internal=h2i)
     assert repn.time_steps == [0, 1]
     fields = repn.structure_fields()
     assert fields == munch.Munch(
-        start=0, stop=1, hmm=munch.Munch(T=[0, 1], hidden_to_internal={"a": 0, "b": 1})
+        start=0, stop=1, hmm=munch.Munch(T=[0, 1], hidden_to_internal=h2i)
     )
-    # Each call builds a new map, so a constraint function cannot change it.
     fields.hmm.hidden_to_internal["c"] = 2
-    assert repn.structure_fields().hmm.hidden_to_internal == {"a": 0, "b": 1}
+    assert h2i == {"a": 0, "b": 1}
     assert repn.fields_at_init == repn.structure_fields()
 
 
@@ -258,7 +258,7 @@ def test_hmm_representations_share_the_time_fields(kind):
     with pytest.raises(InvalidInputError, match="needs a stop time"):
         cmodel.representation(kind)
     repn = cmodel.representation(kind, stop=2)
-    assert repn.hidden_states == hmm.hidden_states
+    assert repn.hidden_to_internal == hmm.representation("matvec").hidden_to_internal
     assert _structure_fields_of(repn) == _hmm_fields(hmm, 2)
 
 

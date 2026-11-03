@@ -184,6 +184,11 @@ Models
   same lists). hidden_states and observed_states are read-only FrozenLists
   (no copy per access). Constraint functions still get
   data.hmm.hidden_to_internal.
+- The "matvec" representation is the one place that converts between HMM
+  state labels and indices: repn.hidden_states/observed_states (index ->
+  label) and repn.hidden_to_internal/observed_to_internal (label -> index).
+  The "mvr" representation aligns its MVRs to its .matvec, and the
+  network-flow constraint data (data.hmm) also has hidden_states.
 - create_bn_from_dbn and the code unrolling DBNs and HMMs use the DBN's .t
   without changing it. create_bn_from_dbn unrolls one time step
   (stop == start); start must be 0 (InvalidInputError otherwise).

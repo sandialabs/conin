@@ -8,6 +8,7 @@ import torch
 from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.constraints.mvr import InhomMVR
 from conin.exceptions import InvalidInputError
+from conin.representations.matvec import MatVecHMMRepresentation
 
 NEG_INF = float("-inf")
 
@@ -15,9 +16,16 @@ NEG_INF = float("-inf")
 ACCUM_DTYPE = torch.float64
 
 
+def _matvec(hmm):
+    """The ``"matvec"`` representation of an HMM (``hmm`` itself if it is one)."""
+    if isinstance(hmm, MatVecHMMRepresentation):
+        return hmm
+    return ConstrainedHiddenMarkovModel.ensure(hmm).representation("matvec")
+
+
 def _hmm_to_torch(hmm, *, log=False, dtype=torch.float32, device="cpu"):
-    """Convert a hidden Markov model into torch tensors, optionally in log space."""
-    repn = ConstrainedHiddenMarkovModel.ensure(hmm).representation("matvec")
+    """Convert an HMM (or its ``"matvec"``) into torch tensors, optionally in log space."""
+    repn = _matvec(hmm)
     # The float64 logs are taken before the cast: casting first would flush
     # subnormals to -inf.
     if log:
@@ -63,13 +71,19 @@ def _resolve_horizon(observed, time_horizon):
     return int(time_horizon), items
 
 
-def _resolve_emit_weights(hmm, emission_mat, observed, time_horizon=None, *, log=False):
-    """Build the dense ``(T, K)`` emission-weight table and ``{time: observed index}``."""
+def _resolve_emit_weights(
+    matvec, emission_mat, observed, time_horizon=None, *, log=False
+):
+    """Build the dense ``(T, K)`` emission-weight table and ``{time: observed index}``.
+
+    ``matvec`` is the HMM's ``"matvec"`` representation (its observed-state
+    indices).
+    """
     T, items = _resolve_horizon(observed, time_horizon)
     K = int(emission_mat.shape[0])
 
     times, obs_idx = [], []
-    observed_to_internal = {o: j for j, o in enumerate(hmm.observed_states)}
+    observed_to_internal = matvec.observed_to_internal
 
     for t, o in items:
         if not isinstance(t, (int, np.integer)):
@@ -231,15 +245,16 @@ def _build_sumprod_ctx(
     ``constraints`` are MVRs aligned to ``hmm`` (see ``_model_parts``).
     """
 
+    matvec = _matvec(hmm)
     # Both forms kept: _sum_step contracts against the probability-space matrix,
     # while _maxplus_step and the transition posteriors want the log.
-    _, transition_mat, _ = _hmm_to_torch(hmm, log=False, dtype=dtype, device=device)
+    _, transition_mat, _ = _hmm_to_torch(matvec, log=False, dtype=dtype, device=device)
     log_start_vec, log_transition_mat, log_emission_mat = _hmm_to_torch(
-        hmm, log=True, dtype=dtype, device=device
+        matvec, log=True, dtype=dtype, device=device
     )
 
     T, log_emit_weights, observed_index = _resolve_emit_weights(
-        hmm, log_emission_mat, observed, time_horizon, log=True
+        matvec, log_emission_mat, observed, time_horizon, log=True
     )
 
     K = int(log_start_vec.shape[0])
@@ -256,6 +271,7 @@ def _build_sumprod_ctx(
 
     return {
         "hmm": hmm,
+        "matvec": matvec,
         "constraints": constraints,
         "K": K,
         "T": T,

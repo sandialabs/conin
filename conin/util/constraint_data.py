@@ -13,19 +13,19 @@ def dbn_time_fields(start, stop):
     return munch.Munch(start=start, stop=stop, T=list(range(start, stop + 1)))
 
 
-def hmm_time_fields(start, stop, hidden_states):
+def hmm_time_fields(start, stop, hidden_to_internal):
     """The fields of an HMM unrolled over ``start..stop``.
 
     ``Munch(start, stop, hmm=Munch(T, hidden_to_internal))``, with ``T`` as
-    for :func:`dbn_time_fields` and ``hidden_to_internal`` the map from each
-    of the HMM's ``hidden_states`` to its index (a new dict).
+    for :func:`dbn_time_fields` and a copy of ``hidden_to_internal`` (the
+    map of the HMM's ``"matvec"`` representation).
     """
     return munch.Munch(
         start=start,
         stop=stop,
         hmm=munch.Munch(
             T=list(range(start, stop + 1)),
-            hidden_to_internal={h: i for i, h in enumerate(hidden_states)},
+            hidden_to_internal=dict(hidden_to_internal),
         ),
     )
 

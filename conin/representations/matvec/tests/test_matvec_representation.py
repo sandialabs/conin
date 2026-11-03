@@ -71,8 +71,10 @@ def test_class_and_attributes():
     # and observed_states; missing entries of the label tables are zeros.
     assert repn.hidden_to_internal == {"a": 0, "b": 1, "c": 2}
     assert repn.observed_to_internal == {"x": 0, "y": 1, "z": 2}
-    assert list(repn.hidden_to_internal) == hmm.hidden_states
-    assert list(repn.observed_to_internal) == hmm.observed_states
+    assert repn.hidden_states == ["a", "b", "c"] == hmm.hidden_states
+    assert repn.observed_states == ["x", "y", "z"] == hmm.observed_states
+    assert list(repn.hidden_to_internal) == repn.hidden_states
+    assert list(repn.observed_to_internal) == repn.observed_states
     assert repn.start_vec.tolist() == [0, 1.0, 0]
     assert repn.transition_mat.tolist() == [[1.0, 0, 0], [0, 0, 1.0], [1.0, 0, 0]]
     assert repn.emission_mat.tolist() == [[0, 0, 1.0], [0.25, 0, 0.75], [0, 1.0, 0]]
@@ -82,8 +84,8 @@ def test_class_and_attributes():
         assert np.array_equal(getattr(repn, "log_" + name), expected)
     assert repn.log_start_vec[0] == -np.inf
     assert repn.log_emission_mat[1, 0] == np.log(0.25)
-    # No sampling methods and no state-label ranges.
-    for name in ("generate_hidden", "generate_observed", "hidden_states"):
+    # No sampling methods.
+    for name in ("generate_hidden", "generate_observed"):
         assert not hasattr(repn, name)
 
 
@@ -118,11 +120,14 @@ def test_the_model_is_not_shared_with_the_arrays():
     assert repn.transition_mat[0, 0] == 0.9
 
 
-@pytest.mark.parametrize("name", ["hidden_to_internal", "observed_to_internal"])
+@pytest.mark.parametrize(
+    "name",
+    ["hidden_states", "observed_states", "hidden_to_internal", "observed_to_internal"],
+)
 def test_index_maps_are_read_only(name):
     repn = tc.create_hmm1().representation("matvec")
     with pytest.raises(TypeError):
-        getattr(repn, name)["new"] = 2
+        getattr(repn, name)[0] = "new"
 
 
 def test_one_representation_serves_several_queries():

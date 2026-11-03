@@ -114,7 +114,7 @@ def _a_star(oracle, *, observed, **kwargs):
 
     # Convert internal indices back to external labels
     solutions = [
-        map_solution([hmm.hidden_states[h] for h in sol.states])
+        map_solution([matvec.hidden_states[h] for h in sol.states])
         for sol in ans_.solutions
     ]
     results = map_results(

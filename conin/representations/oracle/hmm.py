@@ -48,10 +48,9 @@ class OracleHMMRepresentation(Representation):
         self.hmm = MatVecHMMRepresentation(self.model)
         self.constraints = cmodel.constraints
         self.data = cmodel.data
-        self._hidden_states = self.model.hidden_states
 
     def _external(self, seq):
-        h2e = self._hidden_states
+        h2e = self.hmm.hidden_states
         return {t: h2e[h] for t, h in enumerate(seq)}
 
     def is_feasible(self, seq):
@@ -70,7 +69,7 @@ class OracleHMMRepresentation(Representation):
             return True
         states = self._external(seq)
         data = merge_constraint_data(
-            self.data, hmm_time_fields(0, len(seq) - 1, self._hidden_states)
+            self.data, hmm_time_fields(0, len(seq) - 1, self.hmm.hidden_to_internal)
         )
         return all(oracle_accepts(c, states, data) for c in self.constraints)
 

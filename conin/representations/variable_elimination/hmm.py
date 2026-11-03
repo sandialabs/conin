@@ -2,6 +2,7 @@
 
 from conin.graphical_models import HiddenMarkovModel, create_dbn_from_hmm
 from conin.representations.base import register_representation
+from conin.representations.matvec import MatVecHMMRepresentation
 from conin.representations.unrolled import UnrolledHMMMixin, hmm_time_range
 
 from .common import VariableEliminationRepresentation
@@ -35,6 +36,6 @@ def _build(cmodel, *, start=0, stop=None):
         start=start,
         stop=stop,
         cls=VariableEliminationHMMRepresentation,
-        hidden_states=hmm.hidden_states,
+        hidden_to_internal=MatVecHMMRepresentation(hmm).hidden_to_internal,
         data=cmodel.data,
     )

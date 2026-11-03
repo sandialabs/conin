@@ -219,7 +219,7 @@ def marginal_map_torch_mvr_chmm(
         device=device,
     )
 
-    hmm = ctx["hmm"]
+    matvec = ctx["matvec"]
     K, T = ctx["K"], ctx["T"]
     mvr_infos = ctx["mvr_infos"]
     active_by_time = ctx["active_by_time"]
@@ -310,7 +310,7 @@ def marginal_map_torch_mvr_chmm(
 
     augmented_index_path.reverse()
 
-    hidden_path = [hmm.hidden_states[aug_idx[0]] for aug_idx in augmented_index_path]
+    hidden_path = [matvec.hidden_states[aug_idx[0]] for aug_idx in augmented_index_path]
 
     if return_augmented:
         augmented_path = _decode_dynamic_augmented_path(

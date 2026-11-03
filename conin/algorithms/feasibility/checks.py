@@ -178,7 +178,8 @@ def _is_feasible(cmodel: ConstrainedHiddenMarkovModel, assignment, observed):
         factor_assignment=factor_assignment,
         state_space=_hmm_state_space(hmm, T),
         data=merge_constraint_data(
-            cmodel.data, hmm_time_fields(0, T - 1, hmm.hidden_states)
+            cmodel.data,
+            hmm_time_fields(0, T - 1, hmm.representation("matvec").hidden_to_internal),
         ),
         hidden=hidden,
     )

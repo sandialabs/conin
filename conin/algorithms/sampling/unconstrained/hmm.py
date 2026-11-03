@@ -68,7 +68,7 @@ def generate_hidden(hmm, time_steps, *, rng=None):
         If ``time_steps`` is negative or the model has constraints.
     """
     repn, start, transition, _ = _arrays(hmm)
-    h2e = repn.model.hidden_states
+    h2e = repn.hidden_states
     hidden = _hidden_indices(start, transition, time_steps, as_rng(rng))
     return [h2e[h] for h in hidden]
 
@@ -116,7 +116,7 @@ def generate_hidden_until_state(hmm, h, *, max_steps=10_000, rng=None):
                 f"max_steps={max_steps} states"
             )
         hidden.append(Util.sample_from_vec(transition[hidden[-1]], rng))
-    h2e = repn.model.hidden_states
+    h2e = repn.hidden_states
     return [h2e[i] for i in hidden]
 
 
@@ -140,7 +140,7 @@ def generate_observed_from_hidden(hmm, hidden, *, rng=None):
     """
     repn, _, _, emission = _arrays(hmm)
     h2i = repn.hidden_to_internal
-    o2e = repn.model.observed_states
+    o2e = repn.observed_states
     observed = _observed_indices(emission, [h2i[h] for h in hidden], as_rng(rng))
     return [o2e[o] for o in observed]
 
@@ -171,5 +171,5 @@ def generate_observed(hmm, time_steps, *, rng=None):
     repn, start, transition, emission = _arrays(hmm)
     rng = as_rng(rng)
     hidden = _hidden_indices(start, transition, time_steps, rng)
-    o2e = repn.model.observed_states
+    o2e = repn.observed_states
     return [o2e[o] for o in _observed_indices(emission, hidden, rng)]

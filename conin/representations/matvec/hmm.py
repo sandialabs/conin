@@ -16,10 +16,12 @@ def _read_only(values):
 class MatVecHMMRepresentation(Representation):
     """The parameters of an HMM as read-only arrays on internal indices.
 
-    The index view of an HMM: used by Viterbi, A*, sampling and the torch MVR
-    kernels.  Hidden state ``i`` is ``model.hidden_states[i]`` and observed
-    state ``j`` is ``model.observed_states[j]``; :attr:`hidden_to_internal`
-    and :attr:`observed_to_internal` map the labels back to indices.
+    The index view of an HMM, and the only place that converts between
+    state labels and indices: used by Viterbi, A*, sampling, the network-flow
+    formulation and the torch MVR kernels.  Hidden state ``i`` is
+    ``hidden_states[i]`` and observed state ``j`` is ``observed_states[j]``;
+    :attr:`hidden_to_internal` and :attr:`observed_to_internal` map the labels
+    back to indices.  The order is the model's (``model.hidden_states``).
 
     Parameters
     ----------
@@ -32,6 +34,8 @@ class MatVecHMMRepresentation(Representation):
         The HMM.
     num_hidden_states, num_observed_states : int
         ``n`` and ``m``.
+    hidden_states, observed_states : list
+        Read-only lists of the hidden and observed labels by index.
     hidden_to_internal, observed_to_internal : dict
         Read-only maps from hidden and observed labels to their indices.
     start_vec : numpy.ndarray
@@ -53,7 +57,10 @@ class MatVecHMMRepresentation(Representation):
 
     def __init__(self, model):
         self.model = model
-        hidden, observed = model.hidden_states, model.observed_states
+        # The model's label order is the index order.
+        self.hidden_states = freeze(list(model.hidden_states))
+        self.observed_states = freeze(list(model.observed_states))
+        hidden, observed = self.hidden_states, self.observed_states
         self.num_hidden_states = len(hidden)
         self.num_observed_states = len(observed)
         self.hidden_to_internal = freeze({h: i for i, h in enumerate(hidden)})

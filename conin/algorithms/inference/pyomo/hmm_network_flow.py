@@ -152,7 +152,7 @@ def _lp_inference(
     for t in range(T):
         for a in data.hmm.A:
             if pyo.value(M.hmm.x[t, a]) > 0.5:
-                hidden[t] = hmm.hidden_states[a]
+                hidden[t] = data.hmm.hidden_states[a]
         assert (
             hidden[t] != "__UNKNOWN__"
         ), f"ERROR: Unexpected missing hidden state at time step {t}"
@@ -302,7 +302,7 @@ def parse_model_solution_pyomo_ip_inference(M, hmm, T, objective, *, data):
     for t in range(T):
         for a in data.hmm.A:
             if pyo.value(M.hmm.x[t, a]) > 0.5:
-                hidden[t] = hmm.hidden_states[a]
+                hidden[t] = data.hmm.hidden_states[a]
         assert (
             hidden[t] != "__UNKNOWN__"
         ), f"ERROR: Unexpected missing hidden state at time step {t}"
@@ -325,7 +325,7 @@ def parse_aos_solution_pyomo_ip_inference(aos_solution, M, hmm, T, *, data):
         for a in data.hmm.A:
             aos_var_hmm_x_t_a = aos_solution.variable(M.hmm.x[t, a].name)
             if aos_var_hmm_x_t_a.value > 0.5:
-                hidden[t] = hmm.hidden_states[a]
+                hidden[t] = data.hmm.hidden_states[a]
         assert (
             hidden[t] != "__UNKNOWN__"
         ), f"ERROR: Unexpected missing hidden state at time step {t}"

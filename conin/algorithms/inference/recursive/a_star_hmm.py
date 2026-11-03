@@ -74,7 +74,7 @@ def _recursive_a_star(
     """:func:`recursive_a_star` on a ``"recursive"`` representation."""
     hmm = constraint.model
     matvec = MatVecHMMRepresentation(hmm)
-    h2e = hmm.hidden_states
+    h2e = matvec.hidden_states
     observed_ = [matvec.observed_to_internal[o] for o in observed]
     ans_ = hmm_a_star(
         matvec,
