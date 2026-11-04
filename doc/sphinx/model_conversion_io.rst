@@ -1,9 +1,8 @@
 Model Conversion and I/O
 ========================
 
-``conin`` includes utilities for converting between model families, saving and
-loading UAI files, and interoperating with optional probabilistic graphical model
-libraries.
+``conin`` includes utilities for converting between model families and for
+saving and loading models in UAI, BIF, Toulbar2 CFN and JSON files.
 
 Core Conversions
 ----------------
@@ -51,15 +50,16 @@ UAI Files
 
 The ``conin.io`` namespace exposes a small unified I/O interface. For CONIN
 models, ``save_model`` writes UAI files (and JSON files for hidden Markov
-models, see :doc:`hidden_markov_models`), and ``load_model`` reads ``.uai``,
-``.cfn`` and ``.json`` files, optionally gzipped (``.uai.gz``, ...).
+models, see :doc:`hidden_markov_models`) and BIF files (Bayesian networks),
+and ``load_model`` reads ``.uai``, ``.bif``, ``.cfn`` and ``.json`` files,
+optionally gzipped (``.uai.gz``, ...).
 
 Errors follow one policy: a missing file raises ``FileNotFoundError``; a file
 whose content is malformed, or does not describe a valid model, raises
 ``conin.exceptions.ModelFileError`` (an ``InvalidInputError`` and a
 ``ValueError``); an unknown file suffix or ``model_type`` raises
 ``InvalidInputError``; a model the format cannot hold raises ``TypeError``;
-and a format that needs pgmpy raises ``ImportError`` without it.
+and a missing optional dependency raises ``ImportError``.
 
 .. testcode::
 
@@ -74,6 +74,26 @@ and a format that needs pgmpy raises ``ImportError`` without it.
 
 UAI files encode variables by integer position. When a model is loaded back into
 CONIN, nodes are named ``var0``, ``var1``, and so on.
+
+BIF Files
+---------
+
+``load_model`` and ``save_model`` read and write Bayesian networks in the
+Bayesian Interchange Format (``.bif`` and ``.bif.gz``), as used by the bnlearn
+repository (see :mod:`conin.io.bif` for the dialect).
+Unlike UAI files, BIF files keep the node and state names, as strings.
+
+.. testcode::
+
+   from conin.examples.bayesian_network import simple1_BN_conin
+   from conin import load_model, save_model
+
+   pgm = simple1_BN_conin().pgm
+   save_model(pgm, "simple.bif")
+   loaded = load_model("simple.bif")
+
+   assert loaded.nodes == ["A", "B"]
+   assert loaded.states == {"A": ["0", "1"], "B": ["0", "1"]}
 
 Toulbar2 CFN Files
 ------------------
@@ -149,9 +169,6 @@ variable has a value, so nothing is summed out.
   ``conin.algorithms.feasibility.is_feasible``;
   ``"pyomo"`` and ``"toulbar2"`` constraints raise ``NotImplementedError``.
 
-pgmpy models are not accepted: convert them with
-``conin.io.pgmpy.convert_pgmpy_to_conin`` first.
-
 ``log_probability_query(model, assignment, *, evidence=None,
 method="variable_elimination", start=0, stop=None)`` computes a marginal or
 conditional log-probability, ``log P(X = x | E = e)``, where the variables in
@@ -209,26 +226,6 @@ evidence (with the constraints) has probability zero.
 ``conin.graphical_models.is_polytree`` accepts CONIN ``DiscreteBayesianNetwork``
 instances and checks whether the underlying undirected graph is singly
 connected.
-
-Optional Backend Conversions
-----------------------------
-
-Additional conversion helpers are available when optional backend packages are
-installed. See :doc:`backends` for a summary of available extras and backend
-requirements.
-
-``pgmpy`` support includes:
-
-- ``conin.io.pgmpy.convert_pgmpy_to_conin``
-- ``conin.io.pgmpy.convert_conin_to_pgmpy_bn``
-- ``conin.io.pgmpy.convert_conin_to_pgmpy_mn``
-- reading and writing BIF files with ``conin.io.load_model`` and
-  ``conin.io.save_model``
-- ``conin.io.load_model(..., model_type="pgmpy")``
-- ``conin.io.save_model(..., model_type="pgmpy")``
-
-These conversions raise ``ImportError`` if the corresponding optional package is
-not installed.
 
 Reference
 ---------

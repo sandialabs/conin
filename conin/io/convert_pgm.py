@@ -15,7 +15,6 @@ import os
 from conin.io import load_model, save_model
 from conin.graphical_models import DiscreteBayesianNetwork
 from conin.graphical_models import DiscreteMarkovNetwork
-from conin.io.pgmpy import convert_conin_to_pgmpy_bn
 
 
 def main():
@@ -136,16 +135,13 @@ Examples:
                     "Use --uai to save in UAI format instead."
                 )
 
-            # Convert conin model to pgmpy before saving
-            if isinstance(pgm, DiscreteBayesianNetwork):
-                pgm_pgmpy = convert_conin_to_pgmpy_bn(pgm)
-            else:
+            if not isinstance(pgm, DiscreteBayesianNetwork):
                 raise TypeError(
                     f"Cannot save model of type {type(pgm).__name__} to BIF format. "
                     "Only Bayesian networks are supported."
                 )
 
-            save_model(pgm_pgmpy, output_file, model_type="pgmpy", quiet=args.quiet)
+            save_model(pgm, output_file, quiet=args.quiet)
 
             if not args.quiet:
                 print(f"Successfully saved to: {output_file}")

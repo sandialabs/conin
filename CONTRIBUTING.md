@@ -24,8 +24,8 @@ python -m sphinx -W --keep-going -b html doc/sphinx doc/sphinx/_build/html
 ```
 
 The CI ``docs`` job runs both, with warnings treated as errors. Examples that
-need an optional backend declare it with ``:skipif:`` (``not pgmpy_available``,
-``not toulbar2_available``, ``not mip_solver_available``; see
+need an optional backend declare it with ``:skipif:`` (``not
+toulbar2_available``, ``not mip_solver_available``; see
 ``doctest_global_setup`` in ``doc/sphinx/conf.py``), so the docs also build
 without the backends; the CI job installs them and sets
 ``CONIN_DOCS_REQUIRE_BACKENDS=1``, so there every example runs. No example
@@ -35,8 +35,8 @@ Code Organisation
 -----------------
 
 The package layout, the import layering rules (``graphical_models``,
-``util`` and ``exceptions`` import nothing from the packages above them, and
-``pgmpy`` imports only those; ``import conin`` must not import torch), the
+``util`` and ``exceptions`` import nothing from the packages above them;
+``import conin`` must not import torch), the
 representation registry and the design decisions behind them are described in
 ``doc/sphinx/architecture.rst`` (the "Architecture and Design Notes" page of
 the documentation). Read it before adding a backend, a constraint family or a
@@ -46,10 +46,10 @@ model type.
   they test (``<package>/tests/``).
 - Optional dependencies are imported with ``conin.util.try_import``; tests
   that need them skip when they are missing. A test module decides that with
-  the markers of ``conin/tests/optional.py`` (``needs_pgmpy``,
-  ``needs_torch``), which do not import the package, and imports pgmpy where
-  a test uses it: pytest-xdist imports every test module in every worker,
-  and pgmpy takes seconds to import.
+  the markers of ``conin/tests/optional.py`` (``needs_torch``), which do
+  not import the package, and imports torch where a test uses it:
+  pytest-xdist imports every test module in every worker, and torch takes
+  seconds to import.
 - There are no compatibility aliases for moved names: when a public name
   moves, update every importer (code, tests, docs, notebooks).
 - Code is formatted with ``black``.

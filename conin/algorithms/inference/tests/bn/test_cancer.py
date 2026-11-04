@@ -22,7 +22,7 @@ mip_solver = mip_solver[0] if mip_solver else None
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_cancer1_conin_ALL():
     """
-    Cancer model from pgmpy examples
+    The cancer model (Korb and Nicholson)
 
     No evidence
     """
@@ -41,7 +41,7 @@ def test_cancer1_conin_ALL():
 @pytest.mark.skipif(not pytoulbar2_available, reason="pytoulbar2 not installed")
 def test_cancer1_toulbar2_ALL():
     """
-    Cancer model from pgmpy examples
+    The cancer model (Korb and Nicholson)
 
     No evidence
     """
@@ -53,7 +53,7 @@ def test_cancer1_toulbar2_ALL():
 @pytest.mark.skipif(not mip_solver, reason="No mip solver installed")
 def test_cancer1_pyomo_conin_ALL_constrained2():
     """
-    Cancer model from pgmpy examples
+    The cancer model (Korb and Nicholson)
 
     No evidence
     Constrained inference of Xray and Dyspnoea so they are different

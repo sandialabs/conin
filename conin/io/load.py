@@ -6,15 +6,14 @@ from conin.exceptions import InvalidInputError, ModelFileError
 from .uai import load_uai
 from .cfn import load_cfn
 from .json_format import load_json
-from .pgmpy import convert_pgmpy_to_conin
-from .pgmpy import files as pgmpy_files
-from .pgmpy.files import pgmpy_available
+from .bif import load_bif
 
 # The CONIN loaders, by suffix: each takes string= (and the options).
 _LOADERS = {
     ".uai": lambda string, **options: load_uai(string=string, **options),
     ".cfn": lambda string, **options: load_cfn(string=string, **options),
     ".json": lambda string, **options: load_json(string=string, **options),
+    ".bif": lambda string, **options: load_bif(string=string, **options),
 }
 
 
@@ -25,10 +24,11 @@ def load_model(name, model_type="conin", quiet=True, **options):
     ----------
     name : str
         Model file name.  CONIN models can be loaded from ``.uai``, ``.bif``
-        (requires pgmpy), Toulbar2 ``.cfn`` and CONIN ``.json`` (hidden
-        Markov models) files, optionally gzipped (``.uai.gz``, ...).
+        (Bayesian networks; see :func:`conin.io.load_bif`), Toulbar2
+        ``.cfn`` and CONIN ``.json`` (hidden Markov models) files,
+        optionally gzipped (``.uai.gz``, ...).
     model_type : str, optional
-        The type of model to create: ``"conin"`` (default) or ``"pgmpy"``.
+        The type of model to create: only ``"conin"`` (the default).
     quiet : bool, optional
         If False, print diagnostic information.
     **options
@@ -44,32 +44,14 @@ def load_model(name, model_type="conin", quiet=True, **options):
         For an unknown ``model_type`` or file suffix.
     ModelFileError
         If the file content is malformed or does not describe a valid model.
-    ImportError
-        For ``model_type="pgmpy"`` or a BIF file without pgmpy.
+    NotImplementedError
+        For a BIF variable that is not discrete.
     """
 
     if model_type == "conin":
-        #
-        # For now, we load BIF files using pgmpy and convert the model to conin
-        #
-        if name.endswith(".bif") or name.endswith(".bif.gz"):
-            if not pgmpy_available:
-                raise ImportError("Loading a BIF file requires pgmpy.")
-            pgm = pgmpy_files.load_model(name, quiet=quiet)
-            return convert_pgmpy_to_conin(pgm)
-
         return load_conin_model(name, quiet=quiet, **options)
 
-    elif model_type == "pgmpy":
-        if not pgmpy_available:
-            raise ImportError(
-                "Missing import pgmpy, which is required to load a pgmpy model."
-            )
-        return pgmpy_files.load_model(name, quiet=quiet)
-
-    raise InvalidInputError(
-        f"Unexpected model type: {model_type!r} (expected 'conin' or 'pgmpy')"
-    )
+    raise InvalidInputError(f"Unexpected model type: {model_type!r} (expected 'conin')")
 
 
 def read_text(name, quiet=True):
@@ -97,13 +79,13 @@ def read_text(name, quiet=True):
 
 
 def load_conin_model(name, quiet=True, **options):
-    """Load a CONIN model from a UAI, Toulbar2 CFN or CONIN JSON file.
+    """Load a CONIN model from a UAI, BIF, Toulbar2 CFN or CONIN JSON file.
 
     Parameters
     ----------
     name : str
-        Name of a ``.uai``, ``.cfn`` or ``.json`` file, optionally gzipped
-        (``.uai.gz``, ``.cfn.gz``, ``.json.gz``).
+        Name of a ``.uai``, ``.bif``, ``.cfn`` or ``.json`` file, optionally
+        gzipped (``.uai.gz``, ``.bif.gz``, ``.cfn.gz``, ``.json.gz``).
     quiet : bool, optional
         If False, print diagnostic information.
     **options

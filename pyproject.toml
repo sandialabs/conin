@@ -46,7 +46,6 @@ test = [
     "pytest-cov",
     ]
 regex = ["greenery"]
-pgmpy = ["pgmpy"]
 toulbar2 = ["pytoulbar2"]
 torch = ["torch"]
 

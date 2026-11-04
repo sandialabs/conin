@@ -12,7 +12,7 @@ A Python library that supports constrained analysis and learning for probabilist
 
 ## Overview
 
-Conin supports constrained inference and learning for hidden Markov models, Bayesian networks, dynamic Bayesian networks, and Markov networks. It includes native model classes, reusable constraint declarations, HMM learning utilities, examples, and interfaces to optional backends such as pgmpy, Pyomo-compatible solvers, and Toulbar2.
+Conin supports constrained inference and learning for hidden Markov models, Bayesian networks, dynamic Bayesian networks, and Markov networks. It includes native model classes, reusable constraint declarations, HMM learning utilities, examples, and interfaces to optional backends such as Pyomo-compatible solvers and Toulbar2. Models can be read from and written to UAI, BIF, Toulbar2 CFN and JSON files.
 
 ## Installation
 
@@ -27,7 +27,6 @@ Optional extras are available for documentation, tests, and the optional backend
 ```
 python -m pip install -e .[docs]
 python -m pip install -e .[test]
-python -m pip install -e .[pgmpy]     # BIF files, pgmpy model conversion
 python -m pip install -e .[toulbar2]  # Toulbar2 inference
 python -m pip install -e .[torch]     # the MVR algorithms
 python -m pip install -e .[regex]     # mvr_regex
@@ -84,7 +83,7 @@ As an alternative to the documentation, the Jupyter notebooks in
   starting with [`overview`](doc/notebooks/MVR/overview.ipynb) (these need
   the `torch` extra; `regex_tutorial` needs the `regex` extra)
 
-Some notebooks use the optional backends (pgmpy, pytoulbar2, a MIP solver).
+Some notebooks use the optional backends (pytoulbar2, a MIP solver).
 
 ## Testing
 
@@ -95,7 +94,7 @@ cd conin
 pytest .
 ```
 
-Tests that need an optional backend (pgmpy, pytoulbar2, torch, a MIP solver)
+Tests that need an optional backend (pytoulbar2, torch, a MIP solver)
 are skipped when it is not installed. The notebooks in `doc/notebooks/` are
 run with `pytest --nbmake --nbmake-kernel=python3 doc/notebooks/*.ipynb doc/notebooks/MVR/*.ipynb`.
 

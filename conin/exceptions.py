@@ -8,7 +8,7 @@
   an option it does not take or the wrong number of arguments.
 * ``KeyError``: a model is asked about a node it does not have
   (``states_of``, ``card``).
-* ``ImportError``: an optional dependency (pgmpy, pytoulbar2, torch, smoek,
+* ``ImportError``: an optional dependency (pytoulbar2, torch, smoek,
   or_topas, ...) is not installed.
 * ``NotImplementedError`` (a ``RuntimeError``): the input is valid, but
   CONIN does not support it, e.g. a partial MAP query with a method other

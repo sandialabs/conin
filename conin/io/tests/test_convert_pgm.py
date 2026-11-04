@@ -1,4 +1,3 @@
-import pytest
 import os
 import sys
 import tempfile
@@ -7,11 +6,6 @@ from io import StringIO
 
 from conin.io import load_model
 from conin.io.convert_pgm import main
-from conin.tests.optional import pgmpy_installed
-
-pgmpy_available = pgmpy_installed
-pgmpy_readwrite_available = pgmpy_installed
-
 
 cwd = os.path.dirname(__file__)
 
@@ -106,7 +100,6 @@ class TestConvertPGMBasic:
 class TestConvertPGMUAI:
     """Test UAI format conversions"""
 
-    @pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
     def test_uai_auto_filename(self):
         """Test auto-generated filename for UAI output"""
         source_file = os.path.join(cwd, "asia.bif")
@@ -273,7 +266,6 @@ class TestConvertPGMUAI:
                 os.remove(output_file)
 
 
-@pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
 class TestConvertPGMBIF:
     """Test BIF format conversions"""
 
@@ -465,7 +457,6 @@ class TestConvertPGMBIF:
                 os.remove(output_file)
 
 
-@pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
 class TestConvertPGMMultipleFormats:
     """Test converting to multiple formats simultaneously"""
 
@@ -597,7 +588,6 @@ class TestConvertPGMRoundTrip:
             if os.path.exists(output_file):
                 os.remove(output_file)
 
-    @pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
     def test_bif_uai_bif_roundtrip(self):
         """Test BIF -> UAI -> BIF preserves structure"""
         source_file = os.path.join(cwd, "asia.bif")
