@@ -193,17 +193,15 @@ def _load_uai(filename, string, verbose):
                 )
             )
 
-    # Add factors/cpds
-    if is_bayes:
-        pgm = DiscreteBayesianNetwork(states=states, cpds=factors)
-    else:
+    # Add factors/cpds; the constructors validate the model
+    try:
+        if is_bayes:
+            return DiscreteBayesianNetwork(states=states, cpds=factors)
         # The edges are inferred from the factor scopes (every pair of nodes in
         # a factor).
-        pgm = DiscreteMarkovNetwork(states=states, factors=factors)
-
-    pgm.check_model()
-
-    return pgm
+        return DiscreteMarkovNetwork(states=states, factors=factors)
+    except InvalidInputError as e:
+        raise ModelFileError(f"Invalid UAI model: {e}") from e
 
 
 def save_uai(pgm, name, quiet=True):

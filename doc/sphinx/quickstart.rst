@@ -45,7 +45,6 @@ The following example creates a two-node Bayesian network with one root node
    ...     values={0: [0.2, 0.8], 1: [0.9, 0.1]},
    ... )
    >>> pgm = DiscreteBayesianNetwork(states={"A": [0, 1], "B": [0, 1]}, cpds=[cpd_a, cpd_b])
-   >>> pgm.check_model()
    >>> pgm.nodes
    ['A', 'B']
    >>> pgm.edges

@@ -164,6 +164,20 @@ Models
   TimeIndex (conin.graphical_models) passed to the constructor as t.
   read_from_file is a classmethod returning a new instance; make_non_zero
   returns a new instance.
+- The model constructors validate the model, as the HiddenMarkovModel
+  constructor already did, so a model that exists is valid: DiscreteBayesianNetwork and DynamicDiscreteBayesianNetwork raise
+  InvalidInputError for a node without a CPD, a distribution that does not
+  sum to 1 or a cycle, and DiscreteMarkovNetwork for a node without a factor
+  or a negative value. Incomplete models can no longer be built and
+  completed with with_cpd/with_factor; pass every CPD or factor to the
+  constructor. DynamicDiscreteBayesianNetwork.with_cpd is removed (a new
+  node must be declared in the states, and a declared node without a CPD
+  is not valid). DiscreteMarkovNetwork infers the states of nodes that are
+  not in states from its dictionary-valued factors, as
+  DiscreteBayesianNetwork does from its CPDs. check_model() is removed from
+  the models and the constrained models (it could no longer fail); the UAI
+  reader raises ModelFileError for an invalid model in the file (e.g. a
+  distribution that does not sum to 1).
 - The data of the MN, BN and DBN classes and of DiscreteFactor/DiscreteCPD
   is read-only: nodes, edges, states_of(node), the state lists in states and
   dynamic_states, factor and CPD values (also the nested CPD tables), factor
@@ -223,8 +237,7 @@ Models
   conin.algorithms.scoring.log_probability(hmm, hidden, observed=observed)
   (note the order), which returns -inf instead of raising ValueError for a
   zero-probability sequence. mcem scores its samples with it.
-- HiddenMarkovModel has check_model() (the constructor's checks; it raises
-  InvalidInputError), __eq__/__hash__ (same states in the same order and the
+- HiddenMarkovModel has __eq__/__hash__ (same states in the same order and the
   same probabilities) and a short __repr__. The validation messages name the
   table and the state ("transition_probs from 'h0' must sum to 1, got 0.9",
   "must be nonnegative"; they said "must be positive floats").
@@ -547,17 +560,28 @@ Configuration
 
 Bug fixes
 
-- DiscreteBayesianNetwork.check_model() now rejects a node without a CPD
+- The validation of DiscreteBayesianNetwork now rejects a node without a CPD
   or with more than one, a distribution that does not sum to 1, a missing
   parent state and a cycle (it accepted all of them; inference then failed
   later or gave wrong results). DynamicDiscreteBayesianNetwork.check_model()
-  was a placeholder that returned True: it now unrolls the DBN until every
-  CPD template applies (plus one time step) and checks the unrolled
-  network, so e.g. an initial CPD for a time where a template also applies
-  raises InvalidInputError ("Invalid dynamic Bayesian network ..."). It
-  returns None, as the other check_model methods. create_bn_from_dbn moved
-  to conin.graphical_models.dynamic_bayesian_network (still exported by
+  was a placeholder that returned True: the validation now unrolls the DBN
+  until every CPD template applies (plus one time step) and checks the
+  unrolled network, so e.g. an initial CPD for a time where a template also
+  applies raises InvalidInputError ("Invalid dynamic Bayesian network
+  ..."). create_bn_from_dbn moved to
+  conin.graphical_models.dynamic_bayesian_network (still exported by
   conin.graphical_models).
+- List-valued CPDs and factors with the wrong number of values were
+  truncated (or left states without a probability) without an error; they
+  now raise InvalidInputError. A DiscreteMarkovNetwork whose nodes were
+  only named by its factors had no states, so inference raised KeyError.
+  A DynamicDiscreteBayesianNetwork accepted CPDs for nodes that are neither
+  static nodes nor (dynamic node, time) pairs, and unrolling made up nodes
+  such as ("W", <TimeIndex>); they are now rejected, and so are CPD times
+  that are neither integers nor written with the network's t (e.g.
+  ("A", None) raised AttributeError). The list-valued
+  CPDs of a DiscreteBayesianNetwork no longer need the CPDs of their
+  parents to come first when the parents' states are inferred.
 - map_query(method="variable_elimination") added the evidence to
   solution.states when the model had constraints, but not without them.
   It now adds it only with solution_with_evidence=True (or
@@ -610,8 +634,8 @@ Bug fixes
   time_steps=0 return an empty list (they returned one state).
 - Invalid user input raises an exception instead of failing an assert (the
   checks were skipped under python -O):
-  - DiscreteMarkovNetwork.check_model and DiscreteBayesianNetwork.check_model
-    raise InvalidInputError (was AssertionError, or RuntimeError for an edge
+  - the validation of DiscreteMarkovNetwork and DiscreteBayesianNetwork
+    raises InvalidInputError (was AssertionError, or RuntimeError for an edge
     to an unknown node);
   - the "pyomo", "toulbar2" and "variable_elimination" HMM representations
     without stop,

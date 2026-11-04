@@ -6,7 +6,7 @@ from conin.graphical_models.bayesian_network import (
     DiscreteBayesianNetwork,
     DiscreteCPD,
 )
-from conin.graphical_models.time_index import TimeIndex
+from conin.graphical_models.time_index import TimeExpression, TimeIndex
 from conin.util.frozen import freeze
 
 
@@ -44,8 +44,16 @@ class DynamicDiscreteBayesianNetwork(GraphicalModel):
         Raises
         ------
         InvalidInputError
-            If ``cpds`` is empty, or if both ``states`` and ``dynamic_states``
-            are empty.
+            If ``cpds`` is empty, both ``states`` and ``dynamic_states`` are
+            empty, a CPD uses a node that is neither a static node nor a
+            ``(dynamic node, time)`` pair (with an integer time or one
+            written with ``t``), or the network unrolled over its first time
+            steps is not a valid
+            :class:`~conin.graphical_models.DiscreteBayesianNetwork`: every
+            dynamic node needs exactly one CPD at every time step (an initial
+            CPD for the times before its template applies, and none where
+            the template applies too), the distributions must sum to 1 and
+            the CPDs must have no cycle.
         """
         cpds = list(cpds)
         if not cpds:
@@ -86,6 +94,7 @@ class DynamicDiscreteBayesianNetwork(GraphicalModel):
         self._dynamic_states = freeze(self._dynamic_states)
 
         self._t = t if t is not None else TimeIndex()
+        self._check_model()
 
     @property
     def t(self):
@@ -97,24 +106,17 @@ class DynamicDiscreteBayesianNetwork(GraphicalModel):
         """
         return self._t
 
-    def check_model(self):
-        """Validate the model by unrolling it over the first time steps.
+    def _check_model(self):
+        """Raise ``InvalidInputError`` unless the network is valid.
+
+        The constructor calls this.
 
         The DBN is unrolled (:func:`create_bn_from_dbn`) over ``0..k + 1``,
         where ``k`` is the first time step at which every CPD template
-        applies, and the unrolled Bayesian network is checked
-        (:meth:`DiscreteBayesianNetwork.check_model`).  So every dynamic node
-        must have exactly one CPD at every time step (an initial CPD for the
-        times before its template applies, and no initial CPD where the
-        template applies too), the distributions must sum to 1, and the CPDs
-        must have no cycle.  Later time steps repeat the templates, so they
-        need no further checks.
-
-        Raises
-        ------
-        InvalidInputError
-            If the unrolled network is not valid.
+        applies; building the unrolled Bayesian network checks it.  Later
+        time steps repeat the templates, so they need no further checks.
         """
+        self._check_cpd_nodes()
         stop = self._check_horizon()
         try:
             create_bn_from_dbn(dbn=self, start=0, stop=stop)
@@ -123,8 +125,26 @@ class DynamicDiscreteBayesianNetwork(GraphicalModel):
                 f"Invalid dynamic Bayesian network (unrolled over 0..{stop}): {e}"
             ) from e
 
+    def _check_cpd_nodes(self):
+        """Raise unless every node of every CPD is a static or a dynamic node."""
+        for cpd in self._cpds:
+            for v in [cpd.node, *(cpd.parents or [])]:
+                if (
+                    type(v) is tuple
+                    and len(v) == 2
+                    and v[0] in self._dynamic_states
+                    and (type(v[1]) is int or isinstance(v[1], TimeExpression))
+                ):
+                    continue
+                if v in self._states:
+                    continue
+                raise InvalidInputError(
+                    f"The CPD of {cpd.node!r} uses {v!r}, which is neither a "
+                    "static node nor a (dynamic node, time) pair"
+                )
+
     def _check_horizon(self):
-        """The last time step :meth:`check_model` unrolls."""
+        """The last time step :meth:`_check_model` unrolls."""
         probe = 1000
         t_value = self._t.value()
         latest = 0
@@ -136,9 +156,18 @@ class DynamicDiscreteBayesianNetwork(GraphicalModel):
                         continue
                     if type(v[1]) is int:
                         latest = max(latest, v[1])
-                    else:
-                        # The template applies from the time at which v is at 0.
-                        latest = max(latest, probe - v[1].value())
+                        continue
+                    try:
+                        time = v[1].value()
+                    except TypeError:
+                        time = None
+                    if type(time) is not int:
+                        raise InvalidInputError(
+                            f"The CPD of {cpd.node!r} uses {v!r}, whose time is "
+                            "not written in terms of the network's time index t"
+                        )
+                    # The template applies from the time at which v is at 0.
+                    latest = max(latest, probe - time)
         finally:
             self._t.set_value(t_value)
         return latest + 1
@@ -213,7 +242,11 @@ class DynamicDiscreteBayesianNetwork(GraphicalModel):
         --------
         >>> from conin.graphical_models import DynamicDiscreteBayesianNetwork, DiscreteCPD
         >>> ddbn = DynamicDiscreteBayesianNetwork(
-        ...     states=[4, 3], cpds=[DiscreteCPD(node=0, values=[0.25] * 4)]
+        ...     states=[4, 3],
+        ...     cpds=[
+        ...         DiscreteCPD(node=0, values=[0.25] * 4),
+        ...         DiscreteCPD(node=1, values=[0.2, 0.3, 0.5]),
+        ...     ],
         ... )
         >>> ddbn.nodes
         [0, 1]
@@ -222,7 +255,10 @@ class DynamicDiscreteBayesianNetwork(GraphicalModel):
 
         >>> ddbn = DynamicDiscreteBayesianNetwork(
         ...     states={"A": ["T", "F"], "B": [-1, 1]},
-        ...     cpds=[DiscreteCPD(node="A", values=[0.5, 0.5])],
+        ...     cpds=[
+        ...         DiscreteCPD(node="A", values=[0.5, 0.5]),
+        ...         DiscreteCPD(node="B", values=[0.1, 0.9]),
+        ...     ],
         ... )
         >>> ddbn.nodes
         ['A', 'B']
@@ -243,10 +279,17 @@ class DynamicDiscreteBayesianNetwork(GraphicalModel):
 
         Examples
         --------
-        >>> from conin.graphical_models import DynamicDiscreteBayesianNetwork, DiscreteCPD
+        >>> from conin.graphical_models import (
+        ...     DynamicDiscreteBayesianNetwork, DiscreteCPD, TimeIndex
+        ... )
+        >>> t = TimeIndex()
         >>> ddbn = DynamicDiscreteBayesianNetwork(
         ...     dynamic_states={"A": ["T", "F"], "B": [-1, 1]},
-        ...     cpds=[DiscreteCPD(node=("A", 0), values=[0.5, 0.5])],
+        ...     cpds=[
+        ...         DiscreteCPD(node=("A", t), values=[0.5, 0.5]),
+        ...         DiscreteCPD(node=("B", t), values=[0.1, 0.9]),
+        ...     ],
+        ...     t=t,
         ... )
         >>> ddbn.dynamic_nodes
         ['A', 'B']
@@ -326,45 +369,33 @@ class DynamicDiscreteBayesianNetwork(GraphicalModel):
 
         Examples
         --------
-        >>> from conin.graphical_models import DynamicDiscreteBayesianNetwork, DiscreteCPD
+        >>> from conin.graphical_models import (
+        ...     DynamicDiscreteBayesianNetwork, DiscreteCPD, TimeIndex
+        ... )
+        >>> t = TimeIndex()
         >>> ddbn = DynamicDiscreteBayesianNetwork(
         ...     states={"X": ["T", "F"], "Y": [-1, 1]},
         ...     dynamic_states={"A": ["t", "f"], "B": [2, 3]},
         ...     cpds=[
+        ...         DiscreteCPD(node="X", values=[0.5, 0.5]),
+        ...         DiscreteCPD(node="Y", values=[0.5, 0.5]),
         ...         DiscreteCPD(
-        ...             node=("A", None),
+        ...             node=("A", t),
         ...             parents=["X"],
         ...             values={"T": {"t": 0.3, "f": 0.7}, "F": {"t": 0.4, "f": 0.6}},
         ...         ),
         ...         DiscreteCPD(
-        ...             node=("B", 0),
+        ...             node=("B", t),
         ...             parents=["Y"],
         ...             values={-1: {2: 0.3, 3: 0.7}, 1: {2: 0.4, 3: 0.6}},
         ...         ),
         ...     ],
+        ...     t=t,
         ... )
+        >>> len(ddbn.cpds)
+        4
         """
         return list(self._cpds)
-
-    def with_cpd(self, cpd):
-        """Return a new network with ``cpd`` added to its collection of CPDs.
-
-        Parameters
-        ----------
-        cpd : DiscreteCPD
-            CPD to add to the network.
-
-        Returns
-        -------
-        DynamicDiscreteBayesianNetwork
-            A new network containing the existing CPDs plus ``cpd``.
-        """
-        return DynamicDiscreteBayesianNetwork(
-            states=self.states,
-            dynamic_states=self.dynamic_states,
-            cpds=self.cpds + [cpd],
-            t=self.t,
-        )
 
 
 # Unrolling into a Bayesian network
@@ -458,10 +489,7 @@ def create_bn_from_dbn(*, dbn, start, stop):
     finally:
         dbn.t.set_value(t_value)
 
-    pgm = DiscreteBayesianNetwork(states=states, cpds=cpds)
-    pgm.check_model()
-
-    return pgm
+    return DiscreteBayesianNetwork(states=states, cpds=cpds)
 
 
 def _unroll_cpds(dbn, start, stop):

@@ -14,6 +14,21 @@ from conin.graphical_models.markov_network import DiscreteFactor
 # NOTE: We leave the states dictionary off of the CPD object for now.  This is not
 # currently used for CPD operations.
 #
+def _inferred_states(cpd):
+    """The sorted states of ``cpd.node``, from the keys of its distributions."""
+    values = cpd.values
+    if isinstance(values, dict):
+        row = next(iter(values.values()))
+        if not cpd.parents and not isinstance(row, (dict, list)):
+            return sorted(values)
+        if isinstance(row, dict):
+            return sorted(row)
+    raise InvalidInputError(
+        f"The states of node {cpd.node!r} are not given, and its CPD does not "
+        "name them"
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class DiscreteCPD:
     """Define a discrete conditional probability distribution (CPD).
@@ -92,7 +107,10 @@ class DiscreteCPD:
 
     >>> bn = DiscreteBayesianNetwork(
     ...     states={'A': [0, 1], 'B': [0, 1]},
-    ...     cpds=[DiscreteCPD(node='A', values=[0.5, 0.5])],
+    ...     cpds=[
+    ...         DiscreteCPD(node='A', values=[0.5, 0.5]),
+    ...         DiscreteCPD(node='B', values=[0.5, 0.5]),
+    ...     ],
     ... )
     >>> cpd = DiscreteCPD(node='B', parents=['A'], values={0: [0.2, 0.8], 1: [0.9, 0.1]})
     >>> cpd.normalize(bn).values
@@ -138,6 +156,12 @@ class DiscreteCPD:
         -------
         DiscreteCPD
             CPD with dictionary-valued entries.
+
+        Raises
+        ------
+        InvalidInputError
+            If a list of values does not have one value per state of
+            ``node`` (and combination of parent states).
         """
         if isinstance(self.values, dict):
             tmp = next(iter(self.values.values()))
@@ -146,6 +170,12 @@ class DiscreteCPD:
                 # Convert a CPD specified with list values into a CPD with dictionary values.
                 #
                 states = pgm.states_of(self.node)
+                for key, val in self.values.items():
+                    if len(val) != len(states):
+                        raise InvalidInputError(
+                            f"The CPD of {self.node!r} has {len(val)} values for "
+                            f"the parent states {key!r}, expected {len(states)}"
+                        )
                 return DiscreteCPD(
                     node=self.node,
                     default_value=self.default_value,
@@ -163,8 +193,15 @@ class DiscreteCPD:
             # Convert a CPD specified with a dict of list values into a CPD with dictionary values.
             #
             var_states = pgm.states_of(self.node)
+            slist = [pgm.states_of(node) for node in self.parents or []]
+            # The list of values must cover all combinations of node states
+            expected = len(var_states) * prod(len(states) for states in slist)
+            if len(self.values) != expected:
+                raise InvalidInputError(
+                    f"The CPD of {self.node!r} has {len(self.values)} values, "
+                    f"expected {expected}"
+                )
             if self.parents:
-                slist = [pgm.states_of(node) for node in self.parents]
                 node_values = [
                     dict(zip(var_states, vals))
                     for vals in batched(self.values, len(var_states))
@@ -230,12 +267,18 @@ class DiscreteBayesianNetwork(GraphicalModel):
         states : list or dict, optional
             Mapping from each node to its possible states, or a list of
             cardinalities for anonymous nodes. States of nodes that are not
-            listed are inferred from their CPDs.
+            listed are inferred from their CPDs, which must then have
+            dictionary values.
 
         Raises
         ------
         InvalidInputError
-            If ``cpds`` is empty.
+            If ``cpds`` is empty, the states of a node can't be inferred, a
+            CPD uses a node or state that is not in the network, a node has
+            no CPD or more than one, a probability is not in ``[0, 1]``, a
+            distribution (for some parent states) is missing or does not sum
+            to 1, a list of values does not have one value per state (and
+            parent state), or the CPDs have a cycle.
         """
         cpds = list(cpds)
         if not cpds:
@@ -252,15 +295,12 @@ class DiscreteBayesianNetwork(GraphicalModel):
             self._states = dict(states)
         else:
             raise TypeError(f"Unexpected type for states: {type(states)}")
-        normalized_cpds = []
         for cpd in cpds:
             if cpd.node not in self._states:
-                tmp = next(iter(cpd.values.values()))
-                self._states[cpd.node] = list(sorted(tmp.keys()))
+                self._states[cpd.node] = _inferred_states(cpd)
                 if cpd.node not in self._nodes:
                     self._nodes.append(cpd.node)
-            normalized_cpds.append(cpd.normalize(self))
-        self._cpds = freeze(normalized_cpds)
+        self._cpds = freeze([cpd.normalize(self) for cpd in cpds])
         self._nodes = freeze(self._nodes)
         self._states = freeze(self._states)
         # Sorted as the nodes are, so that names and (name, t) tuples mix.
@@ -274,19 +314,17 @@ class DiscreteBayesianNetwork(GraphicalModel):
                 key=lambda edge: tuple(node_sort_key(node) for node in edge),
             )
         )
+        self._check_model()
 
-    def check_model(self):
-        """Validate that the network structure and CPDs are well formed.
+    def _check_model(self):
+        """Raise ``InvalidInputError`` unless the network is valid.
 
-        The method checks that every CPD references known nodes, that every
-        node has exactly one CPD, that the probabilities are non-negative and
-        cover every possible configuration implied by the node states, that
-        each distribution sums to 1, and that the CPDs have no cycle.
+        The constructor calls this.
 
-        Raises
-        ------
-        InvalidInputError
-            If the network contains inconsistent definitions.
+        Every CPD must use known nodes and states, every node must have
+        exactly one CPD, the probabilities must be in ``[0, 1]`` and cover
+        every parent configuration, each distribution must sum to 1, and the
+        CPDs must have no cycle.
         """
         model_nodes = set(self._states.keys())
 

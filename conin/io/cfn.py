@@ -557,7 +557,6 @@ def _load_cfn(string, cost_scale):
             )
 
     pgm = DiscreteMarkovNetwork(states=states, factors=factors)
-    pgm.check_model()
     if constraints:
         return ConstrainedDiscreteMarkovNetwork(pgm, constraints=constraints)
     return pgm

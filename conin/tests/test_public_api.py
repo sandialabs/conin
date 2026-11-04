@@ -1,5 +1,7 @@
 """The top-level public API, ``conin.__all__`` (doc/sphinx/api_conin.rst)."""
 
+import pytest
+
 import conin
 import conin.algorithms.feasibility
 import conin.algorithms.inference
@@ -82,3 +84,22 @@ def test_subpackages_are_loaded():
         assert hasattr(conin, name), name
     for name in ["feasibility", "inference", "learning", "sampling", "scoring"]:
         assert hasattr(conin.algorithms, name), name
+
+
+@pytest.mark.parametrize(
+    "cls",
+    [
+        conin.DiscreteMarkovNetwork,
+        conin.DiscreteBayesianNetwork,
+        conin.DynamicDiscreteBayesianNetwork,
+        conin.HiddenMarkovModel,
+        conin.ConstrainedDiscreteMarkovNetwork,
+        conin.ConstrainedDiscreteBayesianNetwork,
+        conin.ConstrainedDynamicDiscreteBayesianNetwork,
+        conin.ConstrainedHiddenMarkovModel,
+    ],
+)
+def test_models_have_no_check_model(cls):
+    # The constructors validate the models, so a model that exists is valid
+    # and there is nothing left for a public check_model to check.
+    assert not hasattr(cls, "check_model")

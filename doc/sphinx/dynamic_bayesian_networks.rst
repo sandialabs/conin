@@ -33,11 +33,11 @@ with an initial distribution and one transition CPD.
    dbn = DynamicDiscreteBayesianNetwork(
        dynamic_states={"Z": [0, 1]}, cpds=[z_start, z_transition], t=t
    )
-   dbn.check_model()
 
-``check_model()`` unrolls the network over its first time steps (until
-every CPD template applies, plus one) and checks the unrolled Bayesian
-network: every dynamic node needs exactly one CPD at every time step (here
+The constructor validates the network: every CPD must use static nodes and
+``(dynamic node, time)`` pairs, and the network is unrolled over its first
+time steps (until every CPD template applies, plus one) and the unrolled
+Bayesian network is checked: every dynamic node needs exactly one CPD at every time step (here
 ``("Z", 0)`` has its own CPD, and the template covers the later times), the
 distributions must sum to 1 and the CPDs must have no cycle. It raises
 ``InvalidInputError`` otherwise.
@@ -68,7 +68,6 @@ The ``simple1_DDBN_conin`` example introduces two dynamic nodes:
        cpds=[cpd_start_a, cpd_start_b, cpd_trans_a],
        t=t,
    )
-   dbn.check_model()
 
 Constrained dynamic Bayesian networks
 -------------------------------------

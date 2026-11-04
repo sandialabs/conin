@@ -156,7 +156,6 @@ def _static_and_dynamic_DDBN():
         cpds=[s_cpd, z_start_cpd, z_trans_cpd],
         t=t,
     )
-    pgm.check_model()
     # MAP by enumeration: S=1, Z0=1, Z1=1 has probability 0.6*0.8*0.9 = 0.432
     return pgm, {"S": 1, ("Z", 0): 1, ("Z", 1): 1}
 

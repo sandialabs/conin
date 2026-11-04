@@ -72,8 +72,6 @@ def cancer1_BN_conin(debug=False):
         states=states, cpds=[cpd_poll, cpd_smoke, cpd_cancer, cpd_xray, cpd_dysp]
     )
 
-    # Step 4: Check if the model is correctly defined.
-    cancer_model.check_model()
     return Munch(
         pgm=cancer_model,
         solutions=[
@@ -213,7 +211,6 @@ def simple1_BN_conin(debug=False):
         print(cpd_A)
         print(cpd_B)
     G = DiscreteBayesianNetwork(states={"A": [0, 1], "B": [0, 1]}, cpds=[cpd_A, cpd_B])
-    G.check_model()
     return Munch(pgm=G, solutions=[MPESolution(states={"A": 0, "B": 1})])
 
 
@@ -276,7 +273,6 @@ def DBDA_5_1_conin(debug=False):
         states=model_states,
         cpds=[disease_state_CPD, test_result_CPD_1, test_result_CPD_2],
     )
-    model.check_model()
 
     if debug:  # pragma:nocover
         print(disease_state_CPD)
@@ -359,7 +355,6 @@ def holmes_conin(debug=False):
     G = DiscreteBayesianNetwork(
         states=g_states, cpds=[cpd_E, cpd_B, cpd_R, cpd_A, cpd_W, cpd_G]
     )
-    G.check_model()
     return Munch(
         pgm=G,
         solutions=[
@@ -400,7 +395,6 @@ def tb2_BN_conin(debug=False):
         states={"A": [0, 1], "B": [2, 3], "C": [4, 5, 6]},
         cpds=[cpd_A, cpd_B, cpd_C],
     )
-    G.check_model()
     return Munch(pgm=G, solutions=[MPESolution(states={"A": 0, "B": 3, "C": 4})])
 
 
@@ -446,7 +440,6 @@ def wide_BN_conin(debug=False):
             print(cpd)
 
     G = DiscreteBayesianNetwork(states=states, cpds=cpds)
-    G.check_model()
 
     solution_states = {("A", i): 1 for i in range(N)}
     solution_states["A", 0] = 0

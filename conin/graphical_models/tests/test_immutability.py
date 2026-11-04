@@ -196,7 +196,7 @@ def test_mn_edges_are_fixed_at_construction():
     # with_factor as if they had been given, so the new factor's edges were
     # missing.
     mn = DiscreteMarkovNetwork(
-        states={"A": [0, 1], "B": [0, 1], "C": [0, 1]},
+        states={"A": [0, 1], "B": [0, 1]},
         factors=_mn().factors,
     )
     assert mn.edges == [("A", "B")]

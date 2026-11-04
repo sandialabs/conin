@@ -61,18 +61,6 @@ def test_static_states_alone_are_enough():
     assert dbn.dynamic_nodes == []
 
 
-def test_with_cpd_does_not_mutate():
-    t = TimeIndex()
-    cpds = _z_cpds(t)
-    dbn = DynamicDiscreteBayesianNetwork(
-        dynamic_states={"Z": [0, 1]}, cpds=cpds[:1], t=t
-    )
-    dbn2 = dbn.with_cpd(cpds[1])
-    assert len(dbn.cpds) == 1
-    assert len(dbn2.cpds) == 2
-    assert dbn2.t is t
-
-
 # ---------------------------------------------------------------------
 # The accessors (states_of, card, nodes, edges) and the argument checks
 # ---------------------------------------------------------------------
@@ -115,7 +103,7 @@ def test_nodes_states_and_edges():
     assert dbn.states == {"S": ["lo", "mid", "hi"]}
     assert dbn.dynamic_states == {"Z": [0, 1]}
     assert dbn.edges == [] and dbn.dynamic_edges == []
-    dbn.check_model()
+    dbn._check_model()
 
 
 def test_states_and_dynamic_states_are_copies():
@@ -128,7 +116,11 @@ def test_states_and_dynamic_states_are_copies():
 
 def test_list_states_name_the_nodes_by_index():
     dbn = DynamicDiscreteBayesianNetwork(
-        states=[3, 2], cpds=[DiscreteCPD(node=0, values=[0.2, 0.3, 0.5])]
+        states=[3, 2],
+        cpds=[
+            DiscreteCPD(node=0, values=[0.2, 0.3, 0.5]),
+            DiscreteCPD(node=1, values=[0.4, 0.6]),
+        ],
     )
     assert dbn.nodes == [0, 1]
     assert dbn.states == {0: [0, 1, 2], 1: [0, 1]}
@@ -173,61 +165,96 @@ def _b_given_a(node, parent):
 
 def test_check_model_accepts_a_valid_dbn():
     t = TimeIndex()
-    _ab_dbn(t, _a_cpds(t) + [_b_given_a(("B", t), ("A", t))]).check_model()
+    dbn = _ab_dbn(t, _a_cpds(t) + [_b_given_a(("B", t), ("A", t))])
+    dbn._check_model()
     # The time variable is left as it was.
     assert t.value() is None
 
 
-def test_check_model_initial_cpd_where_the_template_applies():
+# The constructor validates the network.
+
+
+def test_initial_cpd_where_the_template_applies():
     # The template B_t | A_t also applies at time 0.
     t = TimeIndex()
-    dbn = _ab_dbn(
-        t,
-        _a_cpds(t) + [_b_given_a(("B", 0), ("A", 0)), _b_given_a(("B", t), ("A", t))],
-    )
     with pytest.raises(
         InvalidInputError,
         match=r"Invalid dynamic Bayesian network \(unrolled over 0..2\): "
         r"There is more than one CPD for node \('B', 0\)",
     ):
-        dbn.check_model()
+        _ab_dbn(
+            t,
+            _a_cpds(t)
+            + [_b_given_a(("B", 0), ("A", 0)), _b_given_a(("B", t), ("A", t))],
+        )
 
 
-def test_check_model_missing_initial_cpd():
+def test_missing_initial_cpd():
     # A_t | A_{t-1} applies from time 1: A_0 needs its own CPD.
     t = TimeIndex()
-    dbn = _ab_dbn(t, _a_cpds(t)[1:] + [_b_given_a(("B", t), ("A", t))])
     with pytest.raises(InvalidInputError, match=r"no CPD for the nodes \[\('A', 0\)\]"):
-        dbn.check_model()
+        _ab_dbn(t, _a_cpds(t)[1:] + [_b_given_a(("B", t), ("A", t))])
 
 
-def test_check_model_template_distribution():
+def test_template_distribution():
     t = TimeIndex()
     bad = DiscreteCPD(
         node=("A", t), parents=[("A", t - 1)], values={0: [0.2, 0.9], 1: [0.9, 0.1]}
     )
-    dbn = _ab_dbn(t, [_a_cpds(t)[0], bad, _b_given_a(("B", t), ("A", t))])
     with pytest.raises(InvalidInputError, match=r"\('A', 1\) .* must sum to 1"):
-        dbn.check_model()
+        _ab_dbn(t, [_a_cpds(t)[0], bad, _b_given_a(("B", t), ("A", t))])
 
 
-def test_check_model_unrolls_past_the_longest_lag():
+def test_unrolls_past_the_longest_lag():
     # B_t | B_{t-2} applies from time 2, so B_0 and B_1 need initial CPDs.
     t = TimeIndex()
     b_t = _b_given_a(("B", t), ("B", t - 2))
     b0 = DiscreteCPD(node=("B", 0), values=[0.5, 0.5])
     b1 = DiscreteCPD(node=("B", 1), values=[0.5, 0.5])
-    _ab_dbn(t, _a_cpds(t) + [b0, b1, b_t]).check_model()
+    _ab_dbn(t, _a_cpds(t) + [b0, b1, b_t])
     with pytest.raises(
         InvalidInputError, match=r"0..3\): There is no CPD for the nodes \[\('B', 1\)\]"
     ):
-        _ab_dbn(t, _a_cpds(t) + [b0, b_t]).check_model()
+        _ab_dbn(t, _a_cpds(t) + [b0, b_t])
 
 
-def test_constrained_dbn_checks_the_model():
-    from conin.constrained_models import ConstrainedDynamicDiscreteBayesianNetwork
-
+@pytest.mark.parametrize(
+    "extra,match",
+    [
+        # W is not a dynamic node
+        (lambda t: DiscreteCPD(node=("W", t), values={0: 0.5, 1: 0.5}), r"\('W', "),
+        # X is not a static node
+        (lambda t: DiscreteCPD(node="X", values={0: 0.5, 1: 0.5}), "'X'"),
+        # nor is the parent Y
+        (
+            lambda t: DiscreteCPD(
+                node=("B", t), parents=["Y"], values={0: [0.5, 0.5], 1: [0.5, 0.5]}
+            ),
+            "'Y'",
+        ),
+    ],
+)
+def test_cpds_must_use_the_nodes_of_the_network(extra, match):
+    # Before, these were accepted, and unrolling made up nodes such as
+    # ("W", <TimeIndex>).
     t = TimeIndex()
-    dbn = _ab_dbn(t, _a_cpds(t)[1:] + [_b_given_a(("B", t), ("A", t))])
-    with pytest.raises(InvalidInputError, match="Invalid dynamic Bayesian network"):
-        ConstrainedDynamicDiscreteBayesianNetwork(dbn).check_model()
+    with pytest.raises(InvalidInputError, match=match + ".*neither a static node"):
+        _ab_dbn(t, _a_cpds(t) + [_b_given_a(("B", t), ("A", t)), extra(t)])
+
+
+@pytest.mark.parametrize(
+    "time", [None, "t", TimeIndex()], ids=["none", "str", "other_t"]
+)
+def test_cpd_times_must_use_the_time_index(time):
+    # ("A", None) used to fail with AttributeError while checking; a CPD
+    # written against another TimeIndex cannot be unrolled.
+    t = TimeIndex()
+    with pytest.raises(InvalidInputError, match=r"The CPD of \('A', "):
+        _ab_dbn(
+            t,
+            _a_cpds(t)[:1]
+            + [
+                DiscreteCPD(node=("A", time), values=[0.5, 0.5]),
+                _b_given_a(("B", t), ("A", t)),
+            ],
+        )

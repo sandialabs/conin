@@ -57,7 +57,11 @@ def tiny_bn_orig():
     }
     pgm = DiscreteBayesianNetwork(
         states={"node_%i" % i: [0, 1] for i in range(3)},
-        cpds=[DiscreteCPD(node="node_2", parents=["node_0", "node_1"], values=values)],
+        cpds=[
+            DiscreteCPD(node="node_0", values=[0.4, 0.6]),
+            DiscreteCPD(node="node_1", values=[0.3, 0.7]),
+            DiscreteCPD(node="node_2", parents=["node_0", "node_1"], values=values),
+        ],
     )
     return pgm
 
@@ -72,7 +76,11 @@ def tiny_bn_permuted():
     }
     pgm = DiscreteBayesianNetwork(
         states={"node_%i" % i: [0, 1] for i in range(3)},
-        cpds=[DiscreteCPD(node="node_2", parents=["node_0", "node_1"], values=values)],
+        cpds=[
+            DiscreteCPD(node="node_0", values=[0.4, 0.6]),
+            DiscreteCPD(node="node_1", values=[0.3, 0.7]),
+            DiscreteCPD(node="node_2", parents=["node_0", "node_1"], values=values),
+        ],
     )
     return pgm
 

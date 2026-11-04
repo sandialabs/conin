@@ -56,7 +56,6 @@ for each node and one pairwise factor.
        edges=[("A", "B")],
        factors=[f_a, f_b, f_ab],
    )
-   pgm.check_model()
 
 For a slightly larger example, ``ABC_conin`` defines three variables with
 pairwise interactions:
@@ -78,7 +77,6 @@ pairwise interactions:
        edges=[("A", "B"), ("B", "C"), ("A", "C")],
        factors=[f_a, f_b, f_c, f_ab, f_bc, f_ac],
    )
-   pgm.check_model()
 
 Constrained Markov networks
 ---------------------------
@@ -170,9 +168,13 @@ Notes
 
 - ``factors`` is required and must be non-empty. Models are immutable after
   construction; use ``with_factor`` to get a new model with an extra factor.
-- ``states`` defines the allowed values for each random variable.
+- ``states`` defines the allowed values for each random variable. The states
+  of nodes that are not listed are the values they take in the factors with
+  dictionary values.
 - ``edges`` can be given explicitly or inferred from the factor scopes.
-- ``check_model()`` is a good final step after constructing the model; it
+- The constructor validates the model: every node
+  appears in a factor, the factor values are non-negative and use valid
+  states, and a list of values has one value per combination of states. It
   raises ``InvalidInputError`` for an inconsistent model.
 - See :doc:`model_conversion_io` for UAI file I/O and Bayesian-network to
   Markov-network conversion.

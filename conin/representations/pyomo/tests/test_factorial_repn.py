@@ -63,7 +63,6 @@ def test_example6():
 
     if True:
         pgm = examples.example6_conin().pgm
-        pgm.check_model()
         S_, J_, v_, w_ = extract_factor_representation(pgm)
         assert S == S_
         assert J == J_

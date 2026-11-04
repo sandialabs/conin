@@ -32,7 +32,6 @@ def simple0_DDBN_conin(debug=False):
     G = DynamicDiscreteBayesianNetwork(
         dynamic_states={"Z": [0, 1]}, cpds=[z_start_cpd, z_trans_cpd], t=t
     )
-    G.check_model()
 
     if debug:  # pragma:nocover
         for cpd in G.cpds:
@@ -64,7 +63,6 @@ def simple1_DDBN_conin(debug=False):
         cpds=[cpd_start_A, cpd_start_B, cpd_trans_A],
         t=t,
     )
-    G.check_model()
 
     if debug:  # pragma:nocover
         for cpd in G.cpds:
