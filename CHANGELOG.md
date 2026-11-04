@@ -547,6 +547,22 @@ Configuration
 
 Bug fixes
 
+- DiscreteBayesianNetwork.check_model() now rejects a node without a CPD
+  or with more than one, a distribution that does not sum to 1, a missing
+  parent state and a cycle (it accepted all of them; inference then failed
+  later or gave wrong results). DynamicDiscreteBayesianNetwork.check_model()
+  was a placeholder that returned True: it now unrolls the DBN until every
+  CPD template applies (plus one time step) and checks the unrolled
+  network, so e.g. an initial CPD for a time where a template also applies
+  raises InvalidInputError ("Invalid dynamic Bayesian network ..."). It
+  returns None, as the other check_model methods. create_bn_from_dbn moved
+  to conin.graphical_models.dynamic_bayesian_network (still exported by
+  conin.graphical_models).
+- map_query(method="variable_elimination") added the evidence to
+  solution.states when the model had constraints, but not without them.
+  It now adds it only with solution_with_evidence=True (or
+  solution_with_fixed), as integer_program and toulbar2 do.
+
 - map_query(method="toulbar2") returned an assignment of probability zero
   (log_potential -inf) when the evidence and the constraints left no
   assignment of positive probability: toulbar2 encodes a zero probability

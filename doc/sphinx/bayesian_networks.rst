@@ -192,7 +192,10 @@ Notes
 - ``DiscreteCPD`` supports both dictionary-based and list-based probability
   declarations.
 - ``check_model()`` verifies that the CPDs are consistent with the network
-  structure and state definitions, and raises ``InvalidInputError`` if not.
+  structure and state definitions: every node has exactly one CPD, every
+  distribution (for every parent state) sums to 1, and the CPDs have no
+  cycle. It raises ``InvalidInputError`` if not. The constructor does not
+  call it.
 - See :doc:`model_conversion_io` for converting Bayesian networks to Markov
   networks and saving/loading UAI files.
 - For introductory work, ``simple1_BN_conin`` is the easiest example to adapt.

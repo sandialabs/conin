@@ -1,4 +1,5 @@
 import itertools
+import math
 from math import prod
 from dataclasses import dataclass
 
@@ -277,9 +278,10 @@ class DiscreteBayesianNetwork(GraphicalModel):
     def check_model(self):
         """Validate that the network structure and CPDs are well formed.
 
-        The method checks that every CPD references known nodes and that the
-        probabilities are non-negative, normalized, and cover every possible
-        configuration implied by the node states.
+        The method checks that every CPD references known nodes, that every
+        node has exactly one CPD, that the probabilities are non-negative and
+        cover every possible configuration implied by the node states, that
+        each distribution sums to 1, and that the CPDs have no cycle.
 
         Raises
         ------
@@ -367,6 +369,67 @@ class DiscreteBayesianNetwork(GraphicalModel):
             raise InvalidInputError(
                 "There are differences between the model nodes and the nodes used "
                 f"in the model\n{sorted(model_nodes)=}\n{sorted(cnodes)=}"
+            )
+
+        self._check_one_cpd_per_node()
+        for cpd in self._cpds:
+            self._check_distributions(cpd)
+        self._check_acyclic()
+
+    def _check_one_cpd_per_node(self):
+        seen = set()
+        for cpd in self._cpds:
+            if cpd.node in seen:
+                raise InvalidInputError(
+                    f"There is more than one CPD for node {cpd.node!r}"
+                )
+            seen.add(cpd.node)
+        missing = [n for n in self._nodes if n not in seen]
+        if missing:
+            raise InvalidInputError(f"There is no CPD for the nodes {missing!r}")
+
+    def _check_distributions(self, cpd):
+        """Raise unless ``cpd`` has a distribution summing to 1 for every parent state."""
+        cpd = cpd.normalize(self)
+        if not cpd.parents:
+            rows = {None: cpd.values}
+        else:
+            rows = dict(cpd.values)
+            keys = itertools.product(*(self._states[p] for p in cpd.parents))
+            for key in keys:
+                key = key[0] if len(cpd.parents) == 1 else key
+                if key not in rows:
+                    raise InvalidInputError(
+                        f"The CPD of {cpd.node!r} has no distribution for the "
+                        f"parent states {key!r}"
+                    )
+        for key, row in rows.items():
+            total = sum(row.values())
+            if not math.isclose(total, 1, rel_tol=1e-5, abs_tol=1e-8):
+                where = "" if key is None else f" for the parent states {key!r}"
+                raise InvalidInputError(
+                    f"The CPD of {cpd.node!r}{where} must sum to 1, got {total}"
+                )
+
+    def _check_acyclic(self):
+        children = {n: [] for n in self._nodes}
+        indegree = {n: 0 for n in self._nodes}
+        for parent, child in self._edges:
+            children[parent].append(child)
+            indegree[child] += 1
+        ready = [n for n, d in indegree.items() if d == 0]
+        visited = 0
+        while ready:
+            node = ready.pop()
+            visited += 1
+            for child in children[node]:
+                indegree[child] -= 1
+                if indegree[child] == 0:
+                    ready.append(child)
+        if visited != len(indegree):
+            cycle = sorted((n for n, d in indegree.items() if d > 0), key=node_sort_key)
+            raise InvalidInputError(
+                f"The CPDs have a cycle through the nodes {cycle!r}"
             )
 
     #

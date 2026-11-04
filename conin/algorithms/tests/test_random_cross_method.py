@@ -284,10 +284,7 @@ def test_partial_map_variable_elimination_agrees_with_brute_force(kind, i, famil
         assert results.solution is None
         return
     best = max(totals.values())
-    states = dict(results.solution.states)
-    # With constraints, the solution also has the evidence.
-    for v in set(states) - set(variables):
-        assert family is not None and states.pop(v) == c.evidence[v]
+    states = results.solution.states
     assert set(states) == set(variables)
     assert totals.get(tuple(states[v] for v in variables), -math.inf) == pytest.approx(
         best, abs=TOL
