@@ -2,22 +2,14 @@ import pytest
 import os.path
 import importlib
 
-from conin.util import try_import
 import conin.io
 from conin.io import load_model
 from conin.exceptions import InvalidInputError
+from conin.tests.optional import pgmpy_installed
 
-with try_import() as pgmpy_available:
-    import pgmpy
+pgmpy_available = pgmpy_installed
+pgmpy_readwrite_available = pgmpy_installed
 
-#
-# Note that pgmpy is needed to read BIF files by conin.
-#
-# These tests check if pgmpy.readwrite is available, which isn't true of all
-# installations.
-#
-with try_import() as pgmpy_readwrite_available:
-    import pgmpy.readwrite  # noqa: F401
 
 cwd = os.path.dirname(__file__)
 

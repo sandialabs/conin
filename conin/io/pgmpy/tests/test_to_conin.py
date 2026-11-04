@@ -2,15 +2,12 @@ import pytest
 import os.path
 import importlib
 
-from conin.util import try_import
 from conin.io import load_model
+from conin.io.pgmpy import convert_pgmpy_to_conin
+from conin.tests.optional import pgmpy_installed
 
-with try_import() as pgmpy_available:
-    import pgmpy
-
-with try_import() as pgmpy_readwrite_available:
-    import pgmpy.readwrite  # noqa: F401
-    from conin.io.pgmpy import convert_pgmpy_to_conin
+pgmpy_available = pgmpy_installed
+pgmpy_readwrite_available = pgmpy_installed
 
 
 # The model files of conin/io/tests

@@ -17,13 +17,12 @@ from conin.algorithms.inference.pyomo import ip_inference, lp_inference
 from conin.algorithms.inference.recursive import recursive_a_star
 from conin.algorithms.inference.unconstrained import viterbi
 from conin.algorithms.scoring import log_probability_query
+from conin.tests.optional import needs_torch
 from conin.util import try_import
 
 with try_import() as pytoulbar2_available:
     import pytoulbar2  # noqa: F401
 
-with try_import() as torch_available:
-    import torch  # noqa: F401
 
 needs_mip_solver = pytest.mark.skipif(
     default_mip_solver is None, reason="No MIP solver installed"
@@ -31,7 +30,6 @@ needs_mip_solver = pytest.mark.skipif(
 needs_toulbar2 = pytest.mark.skipif(
     not pytoulbar2_available, reason="pytoulbar2 not installed"
 )
-needs_torch = pytest.mark.skipif(not torch_available, reason="torch not installed")
 
 OBSERVED = ["o0", "o0", "o1", "o0", "o0"]
 MIP = dict(solver=default_mip_solver)

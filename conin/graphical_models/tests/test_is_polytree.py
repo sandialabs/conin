@@ -1,13 +1,11 @@
 import pytest
 import os.path
 
-from conin.util import try_import
 from conin.graphical_models import is_polytree
 from conin.io import load_model
+from conin.tests.optional import pgmpy_installed
 
-# BIF files are read with pgmpy
-with try_import() as pgmpy_readwrite_available:
-    import pgmpy.readwrite  # noqa: F401
+pgmpy_readwrite_available = pgmpy_installed
 
 
 cwd = os.path.join(

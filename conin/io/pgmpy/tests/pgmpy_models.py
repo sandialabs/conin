@@ -8,25 +8,51 @@ example that describes the same model.
 
 from munch import Munch
 import numpy as np
-import pandas as pd
 
 from conin.examples.dynamic_bayesian_network import q_weather_A
-from conin.util import MPESolution
+from conin.util import MPESolution, lazy_import
 
-from pgmpy.models import DiscreteBayesianNetwork as pgmpy_DiscreteBayesianNetwork
-from pgmpy.models import DiscreteMarkovNetwork as pgmpy_MarkovNetwork
-from pgmpy.models import DynamicBayesianNetwork as pgmpy_DynamicBayesianNetwork
-from pgmpy.factors.discrete import DiscreteFactor as pgmpy_DiscreteFactor
-from pgmpy.factors.discrete import TabularCPD
-from pgmpy.factors.discrete import TabularCPD as pgmpy_TabularCPD
+# pgmpy (with pandas, scipy and scikit-learn) takes seconds to import, and
+# pytest-xdist imports every test module in every worker, so it is imported
+# when a model is first built.
+pd = lazy_import("pandas")
+_models = lazy_import("pgmpy.models")
+_discrete = lazy_import("pgmpy.factors.discrete")
 
-try:
-    # Newer pgmpy versions fit with an estimator instance.
-    from pgmpy.parameter_estimator import DiscreteMLE as _Estimator
 
-    _ESTIMATOR = _Estimator()
-except ImportError:  # pragma: no cover
-    from pgmpy.estimators.MLE import MaximumLikelihoodEstimator as _ESTIMATOR
+def pgmpy_DiscreteBayesianNetwork(*args, **kwds):
+    return _models.DiscreteBayesianNetwork(*args, **kwds)
+
+
+def pgmpy_MarkovNetwork(*args, **kwds):
+    return _models.DiscreteMarkovNetwork(*args, **kwds)
+
+
+def pgmpy_DynamicBayesianNetwork(*args, **kwds):
+    return _models.DynamicBayesianNetwork(*args, **kwds)
+
+
+def pgmpy_DiscreteFactor(*args, **kwds):
+    return _discrete.DiscreteFactor(*args, **kwds)
+
+
+def pgmpy_TabularCPD(*args, **kwds):
+    return _discrete.TabularCPD(*args, **kwds)
+
+
+TabularCPD = pgmpy_TabularCPD
+
+
+def _estimator():
+    try:
+        # Newer pgmpy versions fit with an estimator instance.
+        from pgmpy.parameter_estimator import DiscreteMLE
+
+        return DiscreteMLE()
+    except ImportError:  # pragma: no cover
+        from pgmpy.estimators.MLE import MaximumLikelihoodEstimator
+
+        return MaximumLikelihoodEstimator
 
 
 def example6_pgmpy():
@@ -281,7 +307,7 @@ def pgmpy_issue_1177_pgmpy(debug=False):
             "SHKJ",
         ],
     )
-    model.fit(data, estimator=_ESTIMATOR)
+    model.fit(data, estimator=_estimator())
     return model
 
 

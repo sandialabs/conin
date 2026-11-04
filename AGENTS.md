@@ -21,5 +21,6 @@
 
 - New behavior should include tests or updates to existing tests.
 - Run targeted tests for the code you change. Use the full suite when feasible with `pytest`.
+- Don't import pgmpy (or torch, outside the MVR tests) at module level in a test module just to skip tests: use the `needs_pgmpy`/`needs_torch` markers of `conin/tests/optional.py`, which don't import them (every pytest-xdist worker imports every test module).
 - For docs changes, run `python -m sphinx -b doctest doc/sphinx doc/sphinx/_build/doctest` and `python -m sphinx -W --keep-going -b html doc/sphinx doc/sphinx/_build/html` (CI runs both, with warnings as errors, and with `CONIN_DOCS_REQUIRE_BACKENDS=1`, so a missing backend fails instead of skipping examples).
 - Remove generated `doc/sphinx/_build` output before committing.

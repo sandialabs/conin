@@ -33,6 +33,7 @@ from conin.algorithms.inference.results import (
 )
 from conin.algorithms.inference.unconstrained import viterbi
 from conin.algorithms.scoring import log_potential, log_probability
+from conin.tests.optional import needs_torch
 from conin.util import try_import
 
 with try_import() as pytoulbar2_available:
@@ -249,11 +250,6 @@ def _available(solver):
     except Exception:
         return False
 
-
-with try_import() as torch_available:
-    import torch  # noqa: F401
-
-needs_torch = pytest.mark.skipif(not torch_available, reason="torch not installed")
 
 # Each Pyomo solver interface reports infeasibility differently ("highs" and
 # "appsi_highs" raised while loading the missing solution).

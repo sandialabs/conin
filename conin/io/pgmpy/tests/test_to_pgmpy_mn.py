@@ -1,18 +1,17 @@
 import pytest
 import numpy as np
 
-from conin.util import try_import
+from conin.tests.optional import needs_pgmpy
+from conin.util import lazy_import
 from conin.io.pgmpy import convert_conin_to_pgmpy_mn
 from conin.graphical_models import create_mn_from_bn
 import conin.examples.markov_network
 import conin.examples.bayesian_network
 
-with try_import() as pgmpy_available:
-    import pgmpy  # noqa: F401
-    from pgmpy.models import DiscreteMarkovNetwork as pgmpy_DiscreteMarkovNetwork
+# pgmpy is imported by the first test that uses it.
+pgmpy_models = lazy_import("pgmpy.models")
 
-# Mark tests that require pgmpy
-require_pgmpy = pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+require_pgmpy = needs_pgmpy
 
 
 def test_import_convert_function():
@@ -48,7 +47,7 @@ def test_ABC():
     pgmpy_pgm = convert_conin_to_pgmpy_mn(conin_pgm)
 
     # Verify structure
-    assert isinstance(pgmpy_pgm, pgmpy_DiscreteMarkovNetwork)
+    assert isinstance(pgmpy_pgm, pgmpy_models.DiscreteMarkovNetwork)
     assert set(pgmpy_pgm.nodes()) == {"A", "B", "C"}
     assert len(pgmpy_pgm.edges()) == 3
     assert len(pgmpy_pgm.factors) == 6
@@ -86,7 +85,7 @@ def test_ABC2():
     pgmpy_pgm = convert_conin_to_pgmpy_mn(conin_pgm)
 
     # Verify structure
-    assert isinstance(pgmpy_pgm, pgmpy_DiscreteMarkovNetwork)
+    assert isinstance(pgmpy_pgm, pgmpy_models.DiscreteMarkovNetwork)
     assert set(pgmpy_pgm.nodes()) == {"A", "B", "C"}
     assert len(pgmpy_pgm.edges()) == 3
     assert len(pgmpy_pgm.factors) == 6
@@ -136,7 +135,7 @@ def test_integration_with_bayesian_examples():
 
         # Verify basic properties
         assert len(pgmpy_pgm.nodes()) == len(conin_mn.nodes)
-        assert isinstance(pgmpy_pgm, pgmpy_DiscreteMarkovNetwork)
+        assert isinstance(pgmpy_pgm, pgmpy_models.DiscreteMarkovNetwork)
 
         # Verify model validity
         pgmpy_pgm.check_model()

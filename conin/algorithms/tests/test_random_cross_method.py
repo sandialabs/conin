@@ -27,15 +27,13 @@ from conin import log_probability_query, map_query
 from conin.config import default_mip_solver
 from conin.exceptions import InvalidInputError
 from conin.graphical_models import create_bn_from_dbn
+from conin.tests.optional import torch_installed as torch_available
 from conin.util import try_import
 
 from . import random_models as rm
 
 with try_import() as pytoulbar2_available:
     import pytoulbar2  # noqa: F401
-
-with try_import() as torch_available:
-    import torch  # noqa: F401
 
 NUM_CASES = int(os.environ.get("CONIN_RANDOM_CASES", "10"))
 KINDS = ["mn", "bn", "dbn", "hmm"]
