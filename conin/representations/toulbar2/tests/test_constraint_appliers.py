@@ -112,7 +112,7 @@ def test_indexed_constraints():
     ],
 )
 def test_nonlinear_constraints_raise(expr, match):
-    with pytest.raises(ValueError, match=match):
+    with pytest.raises(NotImplementedError, match=match):
         _calls(expr)
 
 

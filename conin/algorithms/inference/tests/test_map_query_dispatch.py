@@ -115,7 +115,7 @@ def test_unsupported_model_type_raises_type_error(model, method):
 
 
 def test_unknown_method_raises_value_error():
-    with pytest.raises(ValueError, match="Unsupported inference type: bogus"):
+    with pytest.raises(InvalidInputError, match="Unsupported inference type: bogus"):
         map_query(hex_.create_hmm1(), method="bogus", evidence=OBSERVED)
 
 
@@ -159,7 +159,9 @@ def test_a_star_kind_depends_on_the_constraint_family(cmodel, kind):
 
 
 def test_unknown_ip_formulation_raises_value_error():
-    with pytest.raises(ValueError, match="Unexpected ip_formulation value: 'bogus'"):
+    with pytest.raises(
+        InvalidInputError, match="Unexpected ip_formulation value: 'bogus'"
+    ):
         map_query(
             hex_.create_hmm1(),
             method="integer_program",

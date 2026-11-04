@@ -19,7 +19,7 @@ class PyomoVarWrapper(dict):
 
     Raises
     ------
-    ValueError
+    TypeError
         If called with other than 2 or 3 arguments.
     KeyError
         If the variable does not exist.
@@ -38,7 +38,7 @@ class PyomoVarWrapper(dict):
             r, i, s = args
             r = (r, i)
         else:
-            raise ValueError("There must be either 2 or 3 arguments")
+            raise TypeError(f"V() takes 2 or 3 arguments, got {len(args)}")
 
         if type(s) is not State:
             s = State(s)

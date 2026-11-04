@@ -180,7 +180,7 @@ def test_rejection_sampling_rejects_other_families():
         rejection_sample_hidden(tc.create_chmm1_pyomo(), 5)
     with pytest.raises(InvalidInputError):
         rejection_sample_hidden(tc.create_chmm1_recursive(), 5)
-    with pytest.raises(InvalidInputError):
+    with pytest.raises(TypeError):
         rejection_sample_hidden("not a model", 5)
 
 

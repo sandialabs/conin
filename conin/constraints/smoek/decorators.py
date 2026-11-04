@@ -8,6 +8,7 @@ which are then translated to Pyomo or Toulbar2 constraint declarations.
 
 import inspect
 from conin.constraints.base import Constraint
+from conin.exceptions import InvalidInputError
 from conin.constraints.smoek.bridge import ConinVarNode
 from conin.util import try_import
 
@@ -37,7 +38,7 @@ class ConinV:
             ConinVarNode that can participate in smoek expression building
 
         Raises:
-            ValueError: If number of arguments is not 2 or 3
+            TypeError: If number of arguments is not 2 or 3
         """
         if len(args) == 2:
             node, state = args
@@ -46,7 +47,7 @@ class ConinV:
             node, time, state = args
             return ConinVarNode(node, state, time=time)
         else:
-            raise ValueError(f"V() requires 2 or 3 arguments, got {len(args)}")
+            raise TypeError(f"V() takes 2 or 3 arguments, got {len(args)}")
 
 
 class SmoekConstraint(Constraint):
@@ -68,7 +69,9 @@ class SmoekConstraint(Constraint):
         """
         num_args = len(inspect.signature(func).parameters)
         if num_args > 2:
-            raise ValueError("Smoek constraint defined with more than 2 arguments")
+            raise InvalidInputError(
+                "Smoek constraint defined with more than 2 arguments"
+            )
 
         self._set(func=func, num_args=num_args, name=name if name else func.__name__)
 

@@ -451,7 +451,9 @@ def test_zero_probability_constraints_raise():
 
 
 def test_unknown_method_raises():
-    with pytest.raises(ValueError, match="Unsupported log-probability method: viterbi"):
+    with pytest.raises(
+        InvalidInputError, match="Unsupported log-probability method: viterbi"
+    ):
         log_probability_query(_bn(), {"Xray": 1}, method="viterbi")
 
 

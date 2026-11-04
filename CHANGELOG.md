@@ -44,6 +44,12 @@ Highlights
   with it torch, scikit-learn and pandas) or looks for a MIP solver. pgmpy
   is imported the first time a pgmpy converter or file reader is used.
 - pgmax, pomegranate and pyagrum support is removed.
+- One error policy for the whole package (see conin.exceptions):
+  InvalidInputError, now a ValueError, for invalid argument values;
+  TypeError for an argument of the wrong model class or a wrong call;
+  ImportError for a missing optional dependency; NotImplementedError for
+  valid input that CONIN does not support; RuntimeError for a failed
+  computation.
 
 Migration table (old -> new)
 
@@ -562,6 +568,36 @@ I/O and conversion
   "unknown format" error for .bif). NotImplementedError for unsupported CFN
   features is unchanged. load_model now passes its options to the UAI and
   JSON readers too, so an option they do not take raises TypeError.
+
+Errors
+
+- conin.exceptions documents which error CONIN raises when, and every
+  module follows it:
+  - InvalidInputError is a ValueError (it was a plain Exception), and
+    replaces the remaining bare ValueErrors: an unknown method or
+    ip_formulation in map_query/log_probability_query, a constraint
+    function with more than two arguments, registering a second
+    representation builder for a key, invalid DBNSampler arguments, an
+    unknown or_topas topas_method (was RuntimeError), and
+    supervised_learning without simulations and with start_tolerance=0
+    (was "YOU SHOULD NOT SEE THIS"). Code that caught ValueError still
+    catches all of these.
+  - A constrained model built with a model of another class, and
+    rejection_sample_hidden with something that is not an HMM, raise
+    TypeError (was InvalidInputError), as map_query does.
+  - model.V() with other than 2 or 3 arguments in Pyomo, toulbar2 and
+    smoek constraint functions raises TypeError (was ValueError).
+  - NotImplementedError (a RuntimeError, so code that caught RuntimeError
+    still catches it) for a partial MAP query with a method other than
+    variable_elimination and for omitted c5 constraints with a solver
+    other than gurobi (both were RuntimeError), and for nonlinear or
+    quadratic Pyomo constraints with toulbar2 (was ValueError).
+  - solver="or_topas" without or_topas raises ImportError (was
+    RuntimeError).
+  - DynamicDiscreteBayesianNetwork.states_of/card of an unknown node raise
+    KeyError (was ValueError), as for the other models.
+  - InsufficientSolutionsError is a RuntimeError.
+  - ModelFileError is unchanged (an InvalidInputError, so a ValueError).
 
 Configuration
 

@@ -59,7 +59,7 @@ class ConstrainedGraphicalModel:
                 "instantiate one of the concrete constrained model classes"
             )
         if not isinstance(model, self.model_type):
-            raise InvalidInputError(
+            raise TypeError(
                 f"{type(self).__name__} expects a {self.model_type.__name__} "
                 f"as its model, got {type(model).__name__}"
             )
@@ -175,7 +175,7 @@ class ConstrainedGraphicalModel:
 
         Lets functions that accept either a bare or a constrained model work
         on the constrained one. A bare model is wrapped with no constraints.
-        Anything else raises ``InvalidInputError``, as the constructor does.
+        Anything else raises ``TypeError``, as the constructor does.
         """
         if isinstance(model, cls):
             return model

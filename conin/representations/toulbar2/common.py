@@ -77,7 +77,7 @@ class Toulbar2VarWrapper(object):
             r, i, s = args
             r = (r, i)
         else:
-            raise ValueError("There must be either 2 or 3 arguments")
+            raise TypeError(f"V() takes 2 or 3 arguments, got {len(args)}")
 
         return (self._V[r], self._V_state[r, s], coef)
 
@@ -309,7 +309,7 @@ def add_smoek_constraints_to_toulbar2_model(*, pgm, constraints, model, data):
     ------
     ImportError
         If smoek is not installed.
-    ValueError
+    NotImplementedError
         For a nonlinear constraint.
     """
     smoek_model = build_smoek_model(constraints, data)
@@ -359,7 +359,7 @@ def add_toulbar2_constraints(model, pyomo_model):
 
     Raises
     ------
-    ValueError
+    NotImplementedError
         If a nonlinear constraint is encountered.
 
     Notes
@@ -393,14 +393,14 @@ def add_toulbar2_constraints(model, pyomo_model):
 
             # Check if the constraint is nonlinear
             if repn.nonlinear_expr is not None:
-                raise ValueError(
+                raise NotImplementedError(
                     f"Nonlinear constraint detected: {constraint_component.name}[{index}]. "
                     "Only linear constraints are supported when adding Pyomo constraints to Toulbar2."
                 )
 
             # Check for quadratic terms
             if repn.quadratic_vars:
-                raise ValueError(
+                raise NotImplementedError(
                     f"Quadratic constraint detected: {constraint_component.name}[{index}]. "
                     "Only linear constraints are supported when adding Pyomo constraints to Toulbar2."
                 )

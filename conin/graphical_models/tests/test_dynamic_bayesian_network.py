@@ -90,9 +90,9 @@ def test_states_of_and_card(node, states):
 @pytest.mark.parametrize("node", ["X", ("X", 0), ("S", 0)])
 def test_states_of_and_card_unknown_node(node):
     dbn = _mixed_dbn()
-    with pytest.raises(ValueError, match="Unexpected node value"):
+    with pytest.raises(KeyError):
         dbn.states_of(node)
-    with pytest.raises(ValueError, match="Unexpected node value"):
+    with pytest.raises(KeyError):
         dbn.card(node)
 
 

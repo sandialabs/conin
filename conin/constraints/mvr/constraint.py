@@ -13,9 +13,11 @@ class MVRConstraint(Constraint):
         if func is not None:
             num_args = len(inspect.signature(func).parameters)
             if num_args > 2:
-                raise ValueError("MVR constraint defined with more than 2 arguments")
+                raise InvalidInputError(
+                    "MVR constraint defined with more than 2 arguments"
+                )
             if num_args == 0:
-                raise ValueError(
+                raise InvalidInputError(
                     "An MVR constraint function takes (hidden_markov_model) or "
                     f"(hidden_markov_model, data); {func.__name__} takes none"
                 )

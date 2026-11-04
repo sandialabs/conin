@@ -20,7 +20,7 @@ from conin.constrained_models import (
     ConstrainedDiscreteMarkovNetwork,
     ConstrainedHiddenMarkovModel,
 )
-from conin.exceptions import InsufficientSolutionsError
+from conin.exceptions import InsufficientSolutionsError, InvalidInputError
 from conin.algorithms.inference import map_query
 from conin.algorithms.inference.pyomo import ip_inference, solve_pyomo_map_query_model
 from conin.algorithms.inference.pyomo.solve import (
@@ -282,9 +282,15 @@ def test_or_topas_without_solutions_raises(monkeypatch, solve):
         solve()
 
 
+def test_or_topas_not_installed_raises_import_error(monkeypatch):
+    monkeypatch.setattr(solve_module, "or_topas_available", False)
+    with pytest.raises(ImportError, match="needs or_topas"):
+        ip_inference(hmm=hex_.create_chmm1_pyomo(), observed=["o0"], solver="or_topas")
+
+
 def test_unknown_topas_method_raises(monkeypatch):
     _use_aos(monkeypatch, lambda model: [])
-    with pytest.raises(RuntimeError, match="not supported"):
+    with pytest.raises(InvalidInputError, match="not supported"):
         ip_inference(
             hmm=hex_.create_chmm1_pyomo(),
             observed=["o0"],

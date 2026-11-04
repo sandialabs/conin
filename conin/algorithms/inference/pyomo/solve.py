@@ -9,7 +9,7 @@ import pyomo.environ as pe
 from pyomo.common.timing import TicTocTimer
 
 from conin.config import mip_solver
-from conin.exceptions import InsufficientSolutionsError
+from conin.exceptions import InsufficientSolutionsError, InvalidInputError
 from conin.algorithms.inference.query_checks import full_query_variables
 from conin.algorithms.inference.results import (
     map_results,
@@ -83,13 +83,15 @@ def solve_with_or_topas(model, solver_options, *, tee=False):
 
     Raises
     ------
-    RuntimeError
-        If or_topas is not installed, or for an unknown ``topas_method``.
+    ImportError
+        If or_topas is not installed.
+    InvalidInputError
+        For an unknown ``topas_method``.
     InsufficientSolutionsError
         If or_topas finds no solution (e.g. the model is infeasible).
     """
     if not or_topas_available:
-        raise RuntimeError("solver='or_topas' needs or_topas, which is not installed")
+        raise ImportError("solver='or_topas' needs or_topas, which is not installed")
     # Copy, so that popping topas_method leaves the caller's dict unchanged.
     solver_options = dict(solver_options or {})
     topas_method = solver_options.pop("topas_method", "balas")
@@ -98,7 +100,7 @@ def solve_with_or_topas(model, solver_options, *, tee=False):
     elif topas_method == "gurobi_solution_pool":
         generate = aos.gurobi_generate_solutions
     else:
-        raise RuntimeError(f"Asked for {topas_method=}, which is not supported")
+        raise InvalidInputError(f"Asked for {topas_method=}, which is not supported")
 
     solver_timer = TicTocTimer()
     solver_timer.tic(None)
@@ -169,7 +171,7 @@ def solve_pyomo_map_query_model(
 
     cut_stats = None
     if has_omitted_c5(model) and solver != "gurobi":
-        raise RuntimeError(
+        raise NotImplementedError(
             f"The c5 constraints were omitted, but cut generation is not supported for solver={solver}."
         )
 

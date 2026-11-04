@@ -57,6 +57,9 @@ import time.
 Exceptions
 ----------
 
+.. automodule:: conin.exceptions
+   :no-members:
+
 .. autoexception:: conin.exceptions.InvalidInputError
 
 .. autoexception:: conin.exceptions.InfeasibleQueryError

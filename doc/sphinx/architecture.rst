@@ -210,6 +210,15 @@ MVR static context
 DBN unrolling
    DBNs and HMMs are unrolled from ``start=0``; unrolling from a later time
    would need the marginal distribution at that time.
+One error policy
+   ``conin.exceptions`` lists which error CONIN raises when, and new code
+   should follow it: ``InvalidInputError`` (a ``ValueError``) for invalid
+   argument values, ``TypeError`` for an argument of the wrong model class
+   or a wrong call, ``KeyError`` for an unknown node, ``ImportError`` for a
+   missing optional dependency, ``NotImplementedError`` for valid input
+   that CONIN does not support, and ``RuntimeError`` for a computation
+   that failed (and internal errors). Don't raise a bare ``ValueError``.
+   ``conin.io`` adds ``ModelFileError`` and ``FileNotFoundError``.
 No solutions of probability zero
    Every method returns "no solution" when the evidence and the constraints
    leave only assignments of probability zero. The shared scoring

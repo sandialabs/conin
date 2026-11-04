@@ -601,7 +601,7 @@ def test_matvec_repn_copies_stay_read_only(duplicate, arrays):
 def test_mvr_constraint_takes_one_or_two_arguments(func, match):
     # A function without arguments was accepted and then failed with a
     # TypeError when the constraint was called.
-    with pytest.raises(ValueError, match=match):
+    with pytest.raises(InvalidInputError, match=match):
         MVRConstraint(func=func)
 
 

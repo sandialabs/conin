@@ -1,5 +1,6 @@
 import copy
 
+from conin.exceptions import InvalidInputError
 from conin.util import Util, as_rng
 from conin.graphical_models import TimeExpression
 
@@ -48,7 +49,7 @@ class DBNSampler:
                 if (isinstance(_cpd.node, tuple) and _cpd.node[0] == node)
             ]
             if len(potential_cpds) == 0 or len(potential_cpds) > 2:
-                raise ValueError(
+                raise InvalidInputError(
                     f"Unexpected no. of potential cpds ({len(potential_cpds)}) for dynamic node {node}"
                 )
             if len(potential_cpds) > 1 and self.G.t.value() == 0:
@@ -69,13 +70,13 @@ class DBNSampler:
             # static nodes only have one match
             potential_cpds = [_cpd for _cpd in self.G.cpds if _cpd.node == node]
             if len(potential_cpds) != 1:
-                raise ValueError(
+                raise InvalidInputError(
                     f"Unexpected no. of potential cpds ({len(potential_cpds)}) for static node {node}"
                 )
             cpd = potential_cpds[0]
 
         else:
-            raise ValueError(f"Could not find node {node} in G.cpds")
+            raise InvalidInputError(f"Could not find node {node} in G.cpds")
 
         return cpd
 
@@ -146,7 +147,7 @@ class DBNSampler:
         if previous_states is None:
             previous_states = {}
         if self.G.t.value() == 0 and len(previous_states) > 0:
-            raise ValueError("G.t==0 but previous_states is non-empty")
+            raise InvalidInputError("G.t==0 but previous_states is non-empty")
 
         # get all nodes that need to be updated
         nodes_to_update = self.G.dynamic_nodes.copy()  # prevent side-effects

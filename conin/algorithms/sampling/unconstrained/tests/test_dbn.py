@@ -1,6 +1,7 @@
 import pytest
 import unittest
 
+from conin.exceptions import InvalidInputError
 from conin.algorithms.sampling.unconstrained import DBNSampler
 import conin.algorithms.sampling.unconstrained.tests.dbn_examples as tc
 
@@ -93,7 +94,9 @@ class TestSampler(unittest.TestCase):
 
     def test_sample_next_states_bad_init(self):
         sampler = DBNSampler(self.G)
-        with pytest.raises(ValueError, match="G.t==0 but previous_states is non-empty"):
+        with pytest.raises(
+            InvalidInputError, match="G.t==0 but previous_states is non-empty"
+        ):
             sampler.sample_next_states(previous_states={"A": 0.7})
 
     def test_sample_next_states_values(self):

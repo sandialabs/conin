@@ -5,7 +5,6 @@ import pytest
 import conin.examples.bayesian_network
 import conin.examples.dynamic_bayesian_network
 from conin.constrained_models import ConstrainedDynamicDiscreteBayesianNetwork
-from conin.exceptions import InvalidInputError
 
 
 def _make_dbn():
@@ -35,5 +34,5 @@ class TestConstrainedDynamicDiscreteBayesianNetwork:
 
     def test_wrong_model_type_rejected(self):
         bn = conin.examples.bayesian_network.simple1_BN_conin().pgm
-        with pytest.raises(InvalidInputError):
+        with pytest.raises(TypeError):
             ConstrainedDynamicDiscreteBayesianNetwork(bn)

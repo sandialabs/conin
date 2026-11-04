@@ -42,12 +42,12 @@ def full_query_variables(variables, nodes):
 
     Raises
     ------
-    RuntimeError
+    NotImplementedError
         For a partial MAP query (any other ``variables``).
     """
     if not variables or set(variables) == set(nodes):
         return None
-    raise RuntimeError(
+    raise NotImplementedError(
         "Partial MAP queries are only supported by "
         "method='variable_elimination'; this method needs variables=None or "
         f"every node (got variables={list(variables)!r})"

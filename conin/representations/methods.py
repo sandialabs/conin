@@ -7,6 +7,8 @@ both.  Which (model type, constraint family) pairs a method supports is
 decided by the representation registry, not here.
 """
 
+from conin.exceptions import InvalidInputError
+
 
 def _integer_program_kind(cmodel, options):
     """``ip_formulation`` (popped from ``options``) selects the formulation."""
@@ -15,7 +17,7 @@ def _integer_program_kind(cmodel, options):
         return "pyomo"
     if ip_formulation == "network_flow":
         return "pyomo_network_flow"
-    raise ValueError(f"Unexpected ip_formulation value: '{ip_formulation}'")
+    raise InvalidInputError(f"Unexpected ip_formulation value: '{ip_formulation}'")
 
 
 def _a_star_kind(cmodel, options):
@@ -48,9 +50,9 @@ LOG_PROBABILITY_METHODS = ("variable_elimination",)
 
 
 def check_method(method, methods, what):
-    """Raise ``ValueError("Unsupported <what>: ...")`` unless ``method`` is in ``methods``."""
+    """Raise ``InvalidInputError("Unsupported <what>: ...")`` unless ``method`` is in ``methods``."""
     if method not in methods:
-        raise ValueError(
+        raise InvalidInputError(
             f"Unsupported {what}: {method}. Expected one of: {', '.join(methods)}"
         )
 
@@ -76,7 +78,7 @@ def representation_kind(method, cmodel, options):
 
     Raises
     ------
-    ValueError
+    InvalidInputError
         For an unknown ``ip_formulation``.
     """
     kind = REPRESENTATION_KINDS[method]

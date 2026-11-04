@@ -98,12 +98,12 @@ def test_every_drawn_sample_is_checked(monkeypatch, max_failures):
 
 @pytest.mark.parametrize("hmm", [ABC_conin().pgm, "hmm", None])
 def test_rejects_models_that_are_not_hmms(hmm):
-    with pytest.raises(InvalidInputError, match="expects a HiddenMarkovModel"):
+    with pytest.raises(TypeError, match="expects a HiddenMarkovModel"):
         rejection_sample_hidden(hmm, 3)
 
 
 def test_rejects_a_constrained_model_of_another_type():
-    with pytest.raises(InvalidInputError, match="expects a HiddenMarkovModel"):
+    with pytest.raises(TypeError, match="expects a HiddenMarkovModel"):
         rejection_sample_hidden(ConstrainedDiscreteMarkovNetwork(ABC_conin().pgm), 3)
 
 

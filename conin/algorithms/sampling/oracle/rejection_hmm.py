@@ -1,6 +1,5 @@
 """Rejection sampling of feasible hidden-state sequences."""
 
-from conin.exceptions import InvalidInputError
 from conin.graphical_models import HiddenMarkovModel
 from conin.algorithms.sampling.unconstrained import generate_hidden
 from conin.algorithms.sampling.unconstrained.hmm import _hidden_indices
@@ -36,9 +35,11 @@ def rejection_sample_hidden(hmm, time_steps, *, max_failures=1000, rng=None):
     ------
     RuntimeError
         If more than ``max_failures`` samples are rejected.
+    TypeError
+        If ``hmm`` is not an HMM or a constrained HMM.
     InvalidInputError
-        If ``time_steps`` is negative, ``hmm`` is not an HMM, or the
-        constraint family has no ``"oracle"`` representation.
+        If ``time_steps`` is negative, or the constraint family has no
+        ``"oracle"`` representation.
     """
     rng = as_rng(rng)
     if isinstance(hmm, HiddenMarkovModel):
@@ -47,7 +48,7 @@ def rejection_sample_hidden(hmm, time_steps, *, max_failures=1000, rng=None):
     if not hasattr(hmm, "representation") or not isinstance(
         getattr(hmm, "model", None), HiddenMarkovModel
     ):
-        raise InvalidInputError(
+        raise TypeError(
             "rejection_sample_hidden expects a HiddenMarkovModel or a "
             f"ConstrainedHiddenMarkovModel, got {type(hmm).__name__}"
         )

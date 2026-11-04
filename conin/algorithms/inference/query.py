@@ -90,7 +90,7 @@ def _representation_kind(method, cmodel, options):
 
     Raises
     ------
-    ValueError
+    InvalidInputError
         For an unknown ``ip_formulation``.
     """
     return representation_kind(method, cmodel, options)
@@ -212,8 +212,8 @@ def map_query(
     variables : list, optional
         Variables included in the MAP query. Support for partial MAP queries
         depends on the selected method: ``variable_elimination`` supports
-        them; ``integer_program`` and ``toulbar2`` raise ``RuntimeError``
-        unless ``variables`` names every node.
+        them; the other methods raise ``NotImplementedError`` unless
+        ``variables`` names every node.
     evidence : dict or list, optional
         Observed variable assignments. For static models, a dictionary of
         ``{variable: state}``. For dynamic Bayesian networks, a dictionary
@@ -267,17 +267,18 @@ def map_query(
 
     Raises
     ------
-    ValueError
-        For an unknown ``method`` or ``ip_formulation``.
+    InvalidInputError
+        For an unknown ``method`` or ``ip_formulation``, if ``method`` does
+        not support the model type or its constraint family (no such
+        representation is registered), if the evidence of an HMM is not a
+        list, tuple or dict keyed by ``0..T-1``, if ``start`` is not ``0``
+        for a DBN or HMM, or if ``stop`` is past the last observation.
     TypeError
         If ``pgm`` is not a supported model type, or for an option that the
         method does not take.
-    InvalidInputError
-        If ``method`` does not support the model type or its constraint
-        family (no such representation is registered), if the evidence of
-        an HMM is not a list, tuple or dict keyed by ``0..T-1``, if
-        ``start`` is not ``0`` for a DBN or HMM, or if ``stop`` is past the
-        last observation.
+    NotImplementedError
+        For a partial MAP query (``variables``) with a method other than
+        ``variable_elimination``.
     ImportError
         If the method's backend is not installed (pytoulbar2 for
         ``toulbar2``, torch for ``mvr_viterbi``).
