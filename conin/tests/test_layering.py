@@ -27,6 +27,7 @@ LAYERS = [
     {"algorithms.feasibility"},
     {"algorithms.scoring"},
     {"algorithms.inference"},
+    {"algorithms.other_queries"},
     {"algorithms.sampling"},
     {"algorithms.learning"},
     {"examples", "algorithms"},
@@ -41,6 +42,7 @@ TORCH_MODULES = (
     "conin.algorithms.util.mvr_kernels",
     "conin.algorithms.inference.mvr.",
     "conin.algorithms.learning.mvr.",
+    "conin.algorithms.other_queries.mvr.",
     "conin.algorithms.sampling.mvr.",
 )
 
@@ -210,6 +212,7 @@ def test_import_conin_does_not_import_torch_or_pgmpy():
         import conin
         import conin.algorithms.inference.mvr
         import conin.algorithms.learning.mvr
+        import conin.algorithms.other_queries.mvr
         import conin.algorithms.sampling.mvr
         import conin.algorithms.util
         import conin.representations.mvr

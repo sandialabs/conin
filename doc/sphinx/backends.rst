@@ -155,7 +155,8 @@ pgmpy.
 torch (MVR algorithms)
 ----------------------
 
-The MVR algorithms in ``conin.algorithms.inference.mvr``, ``conin.algorithms.learning.mvr`` and
+The MVR algorithms in ``conin.algorithms.inference.mvr``,
+``conin.algorithms.other_queries.mvr``, ``conin.algorithms.learning.mvr`` and
 ``conin.algorithms.sampling.mvr``, and
 ``map_query(..., method="mvr_viterbi")``, require ``torch`` (the ``torch``
 extra). torch is imported the first time one of these algorithms is used:

@@ -2,8 +2,9 @@
 
 It builds the MVRs of the constrained model and aligns their hidden-state
 axes with the HMM, for the torch MVR algorithms
-(:mod:`conin.algorithms.inference.mvr`, :mod:`conin.algorithms.learning.mvr` and
-:mod:`conin.algorithms.sampling.mvr`).
+(:mod:`conin.algorithms.inference.mvr`,
+:mod:`conin.algorithms.other_queries.mvr`, :mod:`conin.algorithms.learning.mvr`
+and :mod:`conin.algorithms.sampling.mvr`).
 """
 
 import copy

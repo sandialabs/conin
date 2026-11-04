@@ -29,7 +29,8 @@ Highlights
   log-probabilities, also under constraints.
 - New RecursiveConstraint for recursive A*; map_query(method="a_star") uses it.
 - Algorithms are organised by backend under conin.algorithms.inference,
-  conin.algorithms.learning and conin.algorithms.sampling, with scoring in
+  conin.algorithms.learning and conin.algorithms.sampling (the MVR
+  satisfaction queries in conin.algorithms.other_queries), with scoring in
   conin.algorithms.scoring and the feasibility checks in
   conin.algorithms.feasibility; the torch MVR code no longer loads with
   import conin.
@@ -96,9 +97,10 @@ Migration table (old -> new)
                                        RecursiveConstraint or data=...
   supervised_learning, mcem, add_unknowns, convert_to_simulations
                                     -> conin.algorithms.learning
-  inference.viterbi_mvr, inference.marginal_map_mvr,
-  other_queries.sat_prob_mvr, other_queries.sat_time_mvr
+  inference.viterbi_mvr, inference.marginal_map_mvr
                                     -> conin.algorithms.inference.mvr
+  other_queries.sat_prob_mvr, other_queries.sat_time_mvr
+                                    -> conin.algorithms.other_queries.mvr
   learning.baum_welch_mvr, learning.generalized_em_mvr
                                     -> conin.algorithms.learning.mvr
   sampling.ffbs_mvr, sampling.stopped_sampling_mvr
@@ -517,8 +519,8 @@ I/O and conversion
   untested code) are removed.
 - conin/mediation_variables (an unused NumPy prototype of the mediation
   variable algorithms, with its notebooks) is removed; the MVR algorithms are
-  in conin.algorithms.inference.mvr, conin.algorithms.learning.mvr and
-  conin.algorithms.sampling.mvr.
+  in conin.algorithms.inference.mvr, conin.algorithms.other_queries.mvr,
+  conin.algorithms.learning.mvr and conin.algorithms.sampling.mvr.
 - The format loaders and saver are renamed to match: load_uai, save_uai and
   load_cfn (were load_conin_model_from_uai, save_model_uai and
   load_conin_model_from_cfn); load_model/save_model are unchanged.
