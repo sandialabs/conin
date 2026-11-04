@@ -7,12 +7,7 @@ from itertools import combinations, product
 from typing import Any, Literal
 
 from conin.exceptions import InvalidInputError
-from .base import (
-    BaseMVR,
-    HomMVR,
-    InhomMVR,
-    _normalize_time_range,
-)
+from .base import BaseMVR, HomMVR, InhomMVR
 
 
 class OperatorFunctor(ABC):
@@ -154,23 +149,15 @@ def _combined_time_horizon(mvrs: list[MVR]) -> int | None:
 def mvr_timerange(
     mvrs: list[MVR],
     time_range: list[int] = None,
-    inplace: bool = False,
 ) -> MVR:
-    """Return the MVR with its time range set to ``time_range``.
+    """Return a new MVR with its time range set to ``time_range``.
 
-    By default this returns a new MVR and leaves the input unchanged (``None``
-    clears the range). ``inplace=True`` sets the range on the input and
-    returns it.
+    The input is unchanged (MVRs are immutable); ``None`` clears the range.
     """
     mvr = mvrs[0]
 
     if not isinstance(mvr, (HomMVR, InhomMVR)):
         raise InvalidInputError("mvr must be an instance of HomMVR or InhomMVR.")
-
-    if inplace:
-        time_horizon = mvr.time_horizon if isinstance(mvr, InhomMVR) else None
-        mvr._time_range = _normalize_time_range(time_range, time_horizon)
-        return mvr
 
     if isinstance(mvr, HomMVR):
         result = HomMVR(
@@ -195,7 +182,7 @@ def mvr_timerange(
             name=mvr.name,
         )
 
-    result._prefix = mvr._prefix
+    result = result._replace(_prefix=mvr._prefix)
     return result
 
 
@@ -336,7 +323,7 @@ def mvr_and(
     )
 
     # Respects prefix property: output has _prefix=True if any input does.
-    result._prefix = any(mvr.prefix for mvr in mvrs)
+    result = result._replace(_prefix=any(mvr.prefix for mvr in mvrs))
     return result
 
 
@@ -575,7 +562,7 @@ def mvr_sattime(
             upd=upd,
             evl=evl,
         )
-        result._prefix = True
+        result = result._replace(_prefix=True)
 
         return result
 
@@ -623,7 +610,7 @@ def mvr_sattime(
         evl=evl,
     )
 
-    result._prefix = True
+    result = result._replace(_prefix=True)
 
     return result
 
@@ -697,7 +684,7 @@ def mvr_setdiff(
     )
 
     # Respects prefix property: output has _prefix=True if mvr1 does.
-    result._prefix = mvr1.prefix
+    result = result._replace(_prefix=mvr1.prefix)
     return result
 
 
@@ -769,7 +756,7 @@ def mvr_concatenate(
     )
 
     # Respects prefix property: output has _prefix=True if both inputs do.
-    result._prefix = mvr1.prefix and mvr2.prefix
+    result = result._replace(_prefix=mvr1.prefix and mvr2.prefix)
     return result
 
 
@@ -825,7 +812,7 @@ def mvr_concatenate_prefix(
         upd=upd,
         evl=evl,
     )
-    result._prefix = True
+    result = result._replace(_prefix=True)
 
     return result
 
@@ -854,7 +841,7 @@ def mvr_kfold_product(
         )
 
         # Respects prefix property: output has _prefix=True if input does.
-        result._prefix = mvr.prefix
+        result = result._replace(_prefix=mvr.prefix)
         return result
 
     return mvr_concatenate(

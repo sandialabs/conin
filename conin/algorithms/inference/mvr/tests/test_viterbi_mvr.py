@@ -357,7 +357,7 @@ def test_viterbi_rejects_inhom_mvr_with_too_short_horizon(hmm, observed):
         time_range=[0, 1],
     )
     # Widen the window past what the MVR's own horizon can support.
-    mvr._time_range = [0, 4]
+    mvr = mvr._replace(_time_range=[0, 4])
     model = ConstrainedHiddenMarkovModel(hmm, mvr)
 
     with pytest.raises(InvalidInputError, match="time_horizon is too short"):

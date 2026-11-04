@@ -364,15 +364,16 @@ def test_mvr_mismatched_hidden_states_raise():
         cmodel.representation("mvr")
 
 
-def test_mvr_prebuilt_mvrs_are_not_shared_with_the_user():
+def test_mvr_prebuilt_mvrs_are_used_as_they_are():
+    # MVRs are immutable, so the representation does not copy them.
     hmm = _hmm()
     prebuilt = mvr_forbid_state(hmm, ["a"])
     cmodel = ConstrainedHiddenMarkovModel(hmm, prebuilt)
     first = cmodel.representation("mvr")
-    assert first.mvrs[0] is not prebuilt
-    assert first.mvrs[0].time_range is None
-    mvr_timerange(first.mvrs[0], [0, 3], inplace=True)
-    assert first.mvrs[0].time_range == [0, 3]
+    assert first.mvrs[0] is prebuilt
+    with pytest.raises(AttributeError, match="immutable"):
+        first.mvrs[0]._time_range = [0, 3]
+    assert mvr_timerange(first.mvrs[0], [0, 3]).time_range == [0, 3]
     assert prebuilt.time_range is None
 
     second = cmodel.representation("mvr")
@@ -405,13 +406,14 @@ def test_mvr_representation_aligns_hidden_states_to_the_hmm():
     hmm = _hmm(("c", "a", "b"))  # internal order is sorted: a, b, c
     assert hmm.hidden_states == ["a", "b", "c"]
     mvr = mvr_forbid_state(hmm, ["a"])
-    reordered = copy.copy(mvr)
-    reordered.hidden_states = ["c", "a", "b"]
     perm = [2, 0, 1]  # reordered axis -> mvr axis
-    reordered._repn = MVR_MatVecRepn(
-        ini_array=mvr.repn.ini_array[perm],
-        upd_array=mvr.repn.upd_array[perm],
-        evl_array=mvr.repn.evl_array,
+    reordered = mvr._replace(
+        hidden_states=["c", "a", "b"],
+        _repn=MVR_MatVecRepn(
+            ini_array=mvr.repn.ini_array[perm],
+            upd_array=mvr.repn.upd_array[perm],
+            evl_array=mvr.repn.evl_array,
+        ),
     )
 
     repn = ConstrainedHiddenMarkovModel(hmm, reordered).representation("mvr")

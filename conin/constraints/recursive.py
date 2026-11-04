@@ -77,12 +77,14 @@ class RecursiveConstraint(Constraint):
                 "RecursiveConstraint: feasible_partial must be callable, got "
                 f"{type(feasible_partial).__name__}"
             )
-        self.initial = initial
-        self.update = update
-        self.feasible = feasible
-        self.feasible_partial = (
-            _always_true if feasible_partial is None else feasible_partial
+        if name is None:
+            name = getattr(feasible, "__name__", None)
+        self._set(
+            initial=initial,
+            update=update,
+            feasible=feasible,
+            feasible_partial=(
+                _always_true if feasible_partial is None else feasible_partial
+            ),
+            name=name if name is not None else "Unnamed constraint",
         )
-        self.name = name if name is not None else getattr(feasible, "__name__", None)
-        if self.name is None:
-            self.name = "Unnamed constraint"

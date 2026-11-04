@@ -6,7 +6,6 @@ up to that time.
 
 from __future__ import annotations
 
-import copy
 
 import torch
 
@@ -29,13 +28,11 @@ from .ffbs import _draw, _positive_int, ffbs_torch_mvr_chmm
 def _with_time_range(mvr, time_range):
     """Return a shallow copy of ``mvr`` with another time range; ``mvr`` is unchanged.
 
-    Unlike ``mvr_timerange(..., inplace=False)``, this neither rebuilds nor
+    Unlike ``mvr_timerange``, this neither rebuilds nor
     prunes the MVR, so the mediation axes (and the sampling draws) stay those
     of ``mvr``.  The copy shares the read-only array representation.
     """
-    result = copy.copy(mvr)
-    result._time_range = None if time_range is None else list(time_range)
-    return result
+    return mvr._replace(_time_range=None if time_range is None else list(time_range))
 
 
 def stopped_sampling_torch_mvr_chmm(

@@ -768,7 +768,7 @@ def _lower(node, hidden_markov_model, formula):
 
     if isinstance(node, _Window):
         # Applied last and never in place.
-        return mvr_timerange(operand, list(node.time_range), inplace=False)
+        return mvr_timerange(operand, list(node.time_range))
 
     if isinstance(node, _Binary):
         left = _lower(node.left, hidden_markov_model, formula)
@@ -826,10 +826,7 @@ def _named_parts(formula: str, name: str = None) -> list:
 
 def _build_named(part, hidden_markov_model, formula, name):
     """Name the lowered conjunct after operators have dropped _name."""
-    mvr = _lower(part, hidden_markov_model, formula)
-    mvr.name = name
-
-    return mvr
+    return _lower(part, hidden_markov_model, formula).with_name(name)
 
 
 def _builder(part, formula, name):

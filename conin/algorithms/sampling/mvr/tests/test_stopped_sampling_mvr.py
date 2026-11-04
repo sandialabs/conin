@@ -212,9 +212,9 @@ def test_stopped_sampling_random_instances_match_brute_force(seed):
 
 
 def test_prefix_free_substitution_is_transparent(hmm, observed, target, capsys):
-    already = mvr_sattime(target)
-    already._time_range = target._time_range
-    already._name = target._name
+    already = mvr_sattime(target)._replace(
+        _time_range=target._time_range, _name=target._name
+    )
 
     def draw(mvr):
         model = ConstrainedHiddenMarkovModel(hmm, mvr)

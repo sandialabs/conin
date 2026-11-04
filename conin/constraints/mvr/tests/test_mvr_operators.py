@@ -750,10 +750,7 @@ def test_prune_returns_self_when_fully_reachable():
 
 
 def test_prune_preserves_prefix_and_time_range_and_name():
-    mvr = orphan_state_mvr()
-    mvr._prefix = True
-    mvr._time_range = [1, 3]
-    mvr.name = "visit_a"
+    mvr = orphan_state_mvr()._replace(_prefix=True, _time_range=[1, 3], _name="visit_a")
 
     pruned = mvr.prune()
 
@@ -818,14 +815,15 @@ def test_mvr_timerange():
     contains_a = contains_symbol_mvr("a")
 
     time_range = [1, 3]
-    result = mvr_timerange(contains_a, time_range, inplace=True)
+    result = mvr_timerange(contains_a, time_range)
 
-    assert result is contains_a  # inplace=True mutates and returns the input
+    assert result is not contains_a
+    assert contains_a.time_range is None
     assert result.time_range == [1, 3]
     assert result.time_range is not time_range  # the MVR owns its range
 
     # a bare call clears it
-    assert mvr_timerange(contains_a, inplace=True).time_range is None
+    assert mvr_timerange(result).time_range is None
 
     inhom = trivial_inhom_mvr(time_horizon=3)
 
@@ -834,11 +832,9 @@ def test_mvr_timerange():
     with pytest.raises(InvalidInputError):
         mvr_timerange(inhom, [0, 4])
 
-    single_a = exact_word_mvr("a")
-    single_a.name = "single_a"
-    single_a._prefix = True
+    single_a = exact_word_mvr("a")._replace(_name="single_a", _prefix=True)
 
-    rebuilt = mvr_timerange(single_a, [1, 3], inplace=False)
+    rebuilt = mvr_timerange(single_a, [1, 3])
 
     assert rebuilt is not single_a
     assert single_a.time_range is None
@@ -850,18 +846,8 @@ def test_mvr_timerange():
     assert_language(rebuilt, {"a": True, "b": False, "aa": False, "ab": False})
 
 
-def test_mvr_timerange_inplace_preserves_identity_before_pruning():
-    mvr = orphan_state_mvr()
-
-    result = mvr_timerange(mvr, [1, 3], inplace=True)
-
-    assert result is mvr
-    assert result.time_range == [1, 3]
-
-
 def test_mvr_timerange_does_not_mutate_by_default():
-    contains_a = contains_symbol_mvr("a")
-    contains_a.name = "contains_a"
+    contains_a = contains_symbol_mvr("a").with_name("contains_a")
 
     result = mvr_timerange(contains_a, [1, 3])
 

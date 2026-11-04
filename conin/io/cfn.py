@@ -367,15 +367,21 @@ def _create_knapsack_constraint(fname, ftype, scope, terms, capacity):
             capacity,
         )
 
-    con = Toulbar2Constraint(func=constraint, name=fname)
-    # Keep a solver-independent description of the constraint so that it can
-    # be converted to other constraint representations later.
-    con.cfn_type = ftype
-    con.scope = scope
-    con.terms = terms
-    con.operator = ">="
-    con.rhs = capacity
-    return con
+    return _KnapsackConstraint(constraint, fname, ftype, scope, terms, capacity)
+
+
+class _KnapsackConstraint(Toulbar2Constraint):
+    """A toulbar2 knapsack constraint read from a CFN file.
+
+    Besides the toulbar2 function, it keeps a solver-independent description
+    of the constraint (``cfn_type``, ``scope``, ``terms``, ``operator`` and
+    ``rhs``), so that it can be converted to other constraint
+    representations later.
+    """
+
+    def __init__(self, func, name, cfn_type, scope, terms, rhs):
+        super().__init__(func=func, name=name)
+        self._set(cfn_type=cfn_type, scope=scope, terms=terms, operator=">=", rhs=rhs)
 
 
 def load_cfn(filename=None, string=None, cost_scale=1.0):

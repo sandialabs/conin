@@ -7,8 +7,6 @@ axes with the HMM, for the torch MVR algorithms
 and :mod:`conin.algorithms.sampling.mvr`).
 """
 
-import copy
-
 from conin.constraints.mvr import BaseMVR, MVR_MatVecRepn
 from conin.exceptions import InvalidInputError
 from conin.graphical_models import HiddenMarkovModel
@@ -41,30 +39,27 @@ def align_hidden_states(mvr, hidden_to_external):
     repn = mvr.repn
     upd_array = repn.upd_array
 
-    aligned = copy.copy(mvr)
-    aligned.hidden_states = list(hidden_to_external)
-
     # Validation is skipped, since the existing MVR should have validated already.
-    aligned._repn = MVR_MatVecRepn(
-        ini_array=repn.ini_array[perm],
-        upd_array=(
-            [upd_t[perm] for upd_t in upd_array]
-            if isinstance(upd_array, list)
-            else upd_array[perm]
+    return mvr._replace(
+        hidden_states=list(hidden_to_external),
+        _repn=MVR_MatVecRepn(
+            ini_array=repn.ini_array[perm],
+            upd_array=(
+                [upd_t[perm] for upd_t in upd_array]
+                if isinstance(upd_array, list)
+                else upd_array[perm]
+            ),
+            evl_array=repn.evl_array,
+            check_errors=False,
         ),
-        evl_array=repn.evl_array,
-        check_errors=False,
     )
-
-    return aligned
 
 
 class MVRHMMRepresentation(Representation):
     """The built MVRs of a constrained HMM, aligned to the HMM.
 
     ``MVRConstraint`` factories are called with ``(hmm, cmodel.data)``.
-    Prebuilt MVRs are deep-copied, so the user's MVR objects are never
-    changed through the representation.  Each MVR's hidden axis is then put
+    Prebuilt MVRs are used as they are (they are immutable).  Each MVR's hidden axis is then put
     in the hidden-state order of :attr:`matvec`, so the torch algorithms can
     index the MVR arrays and the HMM arrays the same way.
 
@@ -105,7 +100,7 @@ class MVRHMMRepresentation(Representation):
         mvrs = []
         for i, c in enumerate(cmodel.constraints):
             if isinstance(c, BaseMVR):
-                mvr = copy.deepcopy(c)
+                mvr = c
             elif callable(c):
                 mvr = c(hmm, cmodel.data)
             else:
