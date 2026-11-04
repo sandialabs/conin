@@ -211,8 +211,8 @@ def _log_bn(bn, assignment):
     seen = set()
     for cpd in bn.cpds:
         if cpd.node in seen:
-            # check_model() does not catch this; the product of the CPDs
-            # would not be a probability.
+            # The constructor does not call check_model(), which rejects
+            # this; the product of the CPDs would not be a probability.
             raise InvalidInputError(
                 f"The Bayesian network has more than one CPD for node {cpd.node!r}"
             )

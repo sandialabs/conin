@@ -402,3 +402,61 @@ def test_list_cpd_with_two_parents_is_normalised_to_a_dict():
     (c,) = [cpd for cpd in bn.cpds if cpd.node == "C"]
     assert c.values[(1, 0)] == {"x": 0.3, "y": 0.7}
     bn.check_model()
+
+
+_S = {"A": [0, 1], "B": [0, 1]}
+_A = DiscreteCPD(node="A", values=[0.5, 0.5])
+_B_GIVEN_A = DiscreteCPD(node="B", parents=["A"], values={0: [0.5, 0.5], 1: [0.1, 0.9]})
+
+
+@pytest.mark.parametrize(
+    "cpds,match",
+    [
+        ([_B_GIVEN_A], r"There is no CPD for the nodes \['A'\]"),
+        (
+            [_A, DiscreteCPD(node="A", values=[0.2, 0.8]), _B_GIVEN_A],
+            "more than one CPD for node 'A'",
+        ),
+        (
+            [DiscreteCPD(node="A", values=[0.5, 0.2]), _B_GIVEN_A],
+            "The CPD of 'A' must sum to 1, got 0.7",
+        ),
+        (
+            [
+                _A,
+                DiscreteCPD(
+                    node="B", parents=["A"], values={0: [0.5, 0.5], 1: [0.9, 0.9]}
+                ),
+            ],
+            "The CPD of 'B' for the parent states 1 must sum to 1, got 1.8",
+        ),
+        (
+            [_A, DiscreteCPD(node="B", parents=["A"], values={0: [0.5, 0.5]})],
+            "The CPD of 'B' has no distribution for the parent states 1",
+        ),
+        (
+            [
+                DiscreteCPD(
+                    node="A", parents=["B"], values={0: [0.5, 0.5], 1: [0.5, 0.5]}
+                ),
+                _B_GIVEN_A,
+            ],
+            r"cycle through the nodes \['A', 'B'\]",
+        ),
+    ],
+    ids=["no_cpd", "two_cpds", "sum", "row_sum", "missing_row", "cycle"],
+)
+def test_check_model_rejects_invalid_networks(cpds, match):
+    bn = DiscreteBayesianNetwork(states=_S, cpds=cpds)
+    with pytest.raises(InvalidInputError, match=match):
+        bn.check_model()
+
+
+def test_check_model_sum_tolerance():
+    # Probabilities written with 6 digits (as in UAI files) are accepted.
+    third = 0.333333
+    bn = DiscreteBayesianNetwork(
+        states={"A": [0, 1, 2]},
+        cpds=[DiscreteCPD(node="A", values=[third, third, 1 - 2 * third + 1e-6])],
+    )
+    bn.check_model()

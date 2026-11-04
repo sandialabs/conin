@@ -28,7 +28,7 @@ from conin.constrained_models import (
 from conin.constrained_models.normalise import as_constrained_model
 from conin.exceptions import InfeasibleQueryError, InvalidInputError
 from conin.graphical_models.assignments import as_sequence
-from conin.graphical_models.conversions import check_unroll_start
+from conin.graphical_models.dynamic_bayesian_network import check_unroll_start
 from conin.representations.matvec import MatVecHMMRepresentation
 from conin.representations.mvr import MVRHMMRepresentation
 from conin.representations.oracle import OracleHMMRepresentation

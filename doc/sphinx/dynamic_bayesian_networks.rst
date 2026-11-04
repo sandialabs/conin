@@ -35,9 +35,12 @@ with an initial distribution and one transition CPD.
    )
    dbn.check_model()
 
-``check_model()`` is currently a lightweight consistency hook for dynamic
-Bayesian networks. Static Bayesian networks produced from a dynamic network are
-validated when they are unrolled for inference.
+``check_model()`` unrolls the network over its first time steps (until
+every CPD template applies, plus one) and checks the unrolled Bayesian
+network: every dynamic node needs exactly one CPD at every time step (here
+``("Z", 0)`` has its own CPD, and the template covers the later times), the
+distributions must sum to 1 and the CPDs must have no cycle. It raises
+``InvalidInputError`` otherwise.
 
 The ``simple1_DDBN_conin`` example introduces two dynamic nodes:
 

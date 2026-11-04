@@ -288,10 +288,19 @@ def test_constrained_mn_keeps_user_evidence():
     cmodel = ConstrainedDiscreteMarkovNetwork(pgm, con)
     # The constrained optimum without evidence is A=0, B=2, C=1, so B=0 is
     # a real restriction (the old code ignored it and returned B=2).
+    expected = _brute_force(pgm, con, {"B": 0})
+    assert expected["B"] == 0
     results = map_query(cmodel, method="variable_elimination", evidence={"B": 0})
-    states = results.solution.states
-    assert states["B"] == 0
-    assert states == _brute_force(pgm, con, {"B": 0})
+    # The evidence is not in the solution (as without constraints) ...
+    assert results.solution.states == {k: v for k, v in expected.items() if k != "B"}
+    # ... unless solution_with_evidence is set.
+    results = map_query(
+        cmodel,
+        method="variable_elimination",
+        evidence={"B": 0},
+        solution_with_evidence=True,
+    )
+    assert results.solution.states == expected
 
 
 def test_constrained_mn_does_not_force_a_scope_node_to_one():
