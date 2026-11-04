@@ -51,7 +51,6 @@ two nodes and one conditional dependency.
        states={"A": [0, 1], "B": [0, 1]},
        cpds=[cpd_a, cpd_b],
    )
-   pgm.check_model()
 
 A larger example is ``cancer1_BN_conin``, which uses explicit state names and a
 node with two parents:
@@ -99,7 +98,6 @@ node with two parents:
            cpd_dyspnoea,
        ],
    )
-   cancer.check_model()
 
 Constrained Bayesian networks
 -----------------------------
@@ -193,7 +191,7 @@ Notes
   then need dictionary values).
 - ``DiscreteCPD`` supports both dictionary-based and list-based probability
   declarations.
-- The constructor validates the network (``check_model()``): the CPDs must
+- The constructor validates the network: the CPDs must
   be consistent with the network structure and state definitions, every
   node has exactly one CPD, every distribution (for every parent state)
   sums to 1, a list of values has one value per state (and parent state),

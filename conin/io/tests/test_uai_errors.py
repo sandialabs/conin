@@ -166,3 +166,18 @@ def test_corrupt_gzip_file_raises_model_file_error(tmp_path):
     name.write_bytes(b"not gzip data")
     with pytest.raises(ModelFileError, match="Cannot read"):
         load_model(str(name))
+
+
+@pytest.mark.parametrize(
+    "text,match",
+    [
+        # The distribution of var0 sums to 0.5
+        ("BAYES\n1\n2\n1\n1 0\n\n2\n0.2 0.3\n", "must sum to 1, got 0.5"),
+        # A negative factor value
+        ("MARKOV\n1\n2\n1\n1 0\n\n2\n-1 2\n", "negative factor value"),
+    ],
+)
+def test_invalid_model(text, match):
+    # The file is well formed, but the model it describes is not valid.
+    with pytest.raises(ModelFileError, match="Invalid UAI model: .*" + match):
+        load_uai(string=text)

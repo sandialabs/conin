@@ -33,10 +33,6 @@ class TestConstrainedDynamicDiscreteBayesianNetwork:
             assert cdbn.states_of(node) == dbn.states_of(node)
             assert cdbn.states_of((node, 0)) == dbn.states_of((node, 0))
 
-    def test_check_model_delegates(self):
-        cdbn = ConstrainedDynamicDiscreteBayesianNetwork(_make_dbn())
-        cdbn.check_model()  # should not raise
-
     def test_wrong_model_type_rejected(self):
         bn = conin.examples.bayesian_network.simple1_BN_conin().pgm
         with pytest.raises(InvalidInputError):

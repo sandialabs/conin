@@ -208,15 +208,6 @@ def _log_mn(mn, assignment):
 
 def _log_bn(bn, assignment):
     check_total_assignment(bn.states, assignment)
-    seen = set()
-    for cpd in bn.cpds:
-        if cpd.node in seen:
-            # The constructor does not call check_model(), which rejects
-            # this; the product of the CPDs would not be a probability.
-            raise InvalidInputError(
-                f"The Bayesian network has more than one CPD for node {cpd.node!r}"
-            )
-        seen.add(cpd.node)
     total = 0.0
     for cpd in bn.cpds:
         if cpd.parents:

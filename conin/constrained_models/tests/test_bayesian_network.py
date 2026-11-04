@@ -30,10 +30,6 @@ class TestConstrainedDiscreteBayesianNetwork:
         for node in bn.nodes:
             assert cbn.states_of(node) == bn.states_of(node)
 
-    def test_check_model_delegates(self):
-        cbn = ConstrainedDiscreteBayesianNetwork(_make_bn())
-        cbn.check_model()  # should not raise
-
     def test_wrong_model_type_rejected(self):
         mn = conin.examples.markov_network.ABC_conin().pgm
         with pytest.raises(InvalidInputError):

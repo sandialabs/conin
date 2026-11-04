@@ -167,8 +167,11 @@ class DiscreteMarkovNetwork(GraphicalModel):
         ------
         InvalidInputError
             If ``factors`` is empty, the states of a node are not given and
-            no factor with dictionary values uses it, or the model is not
-            valid (:meth:`check_model`).
+            no factor with dictionary values uses it, an edge uses a node
+            that is not in the model, a node has no factor, a factor value
+            is negative, a factor uses a state that its node does not have,
+            or a list of factor values does not have one value per
+            combination of states.
         """
         factors = list(factors)
         if not factors:
@@ -210,28 +213,18 @@ class DiscreteMarkovNetwork(GraphicalModel):
                 ):
                     edges.add(edge)
             self._edges = freeze(list(edges))
-        self.check_model()
+        self._check_model()
 
-    def check_model(self):
-        """Validate structural consistency of nodes, edges, and factors.
+    def _check_model(self):
+        """Raise ``InvalidInputError`` unless the model is valid.
 
-        The constructor calls this, so a model that exists is valid.
+        The constructor calls this.
 
-        Ensures that:
-
-        - All nodes referenced by edges and factor scopes match the model's
-          nodes, and every node appears in a factor.
-        - Factor values are non-negative and use valid node states.
-
-        (A list of factor values with the wrong length is rejected when the
-        factor is converted to a dictionary, :meth:`DiscreteFactor.normalize`.)
-
-        Raises
-        ------
-        InvalidInputError
-            If an edge or factor references a node that is not in the model,
-            a node has no factor, a factor value is negative, or a factor uses
-            an invalid node state.
+        The edges and factors must use the model's nodes, every node must
+        appear in a factor, and the factor values must be non-negative and
+        use valid states.  (A list of factor values with the wrong length is
+        rejected when the factor is converted to a dictionary,
+        :meth:`DiscreteFactor.normalize`.)
         """
         model_nodes = set(self._states.keys())
 

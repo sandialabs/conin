@@ -133,19 +133,12 @@ class HiddenMarkovModel(GraphicalModel):
         self._emission_probs = freeze(
             {(h, o): emission_probs.get((h, o), 0) for h in hidden for o in observable}
         )
-        self.check_model()
+        self._check_model()
 
-    def check_model(self):
-        """Validate the probabilities of the model.
+    def _check_model(self):
+        """Raise ``InvalidInputError`` unless the probabilities are valid.
 
-        The constructor calls this, so a model that exists is valid.
-
-        Raises
-        ------
-        InvalidInputError
-            If a probability is negative, or the start probabilities, a row
-            of transition probabilities or a row of emission probabilities do
-            not sum to 1.
+        The constructor calls this.
         """
         _check_row("start_probs", self._start_probs)
         for a in self._hidden_states:

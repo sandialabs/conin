@@ -22,7 +22,6 @@ def _make_simple_mn():
     mn = DiscreteMarkovNetwork(
         states={"A": [0, 1], "B": [0, 1]}, factors=[f_a, f_b, f_ab]
     )
-    mn.check_model()
     return mn
 
 
@@ -91,8 +90,3 @@ class TestConstrainedDiscreteMarkovNetwork:
         mn = _make_simple_mn()
         with pytest.raises(InvalidInputError):
             ConstrainedDiscreteMarkovNetwork(mn, constraints="not-a-list")
-
-    def test_check_model_delegates(self):
-        mn = _make_simple_mn()
-        cmn = ConstrainedDiscreteMarkovNetwork(mn)
-        cmn.check_model()  # should not raise

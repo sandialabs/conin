@@ -555,4 +555,4 @@ class Test_HMM_Equality:
         assert "'num_observable': 2" in text and "('h0', 'o0')" in text
 
     def test_check_model(self):
-        assert tc.create_hmm1().check_model() is None
+        assert tc.create_hmm1()._check_model() is None

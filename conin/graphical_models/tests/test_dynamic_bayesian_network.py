@@ -2,7 +2,6 @@
 
 import pytest
 
-from conin.constrained_models import ConstrainedDynamicDiscreteBayesianNetwork
 from conin.exceptions import InvalidInputError
 from conin.graphical_models import (
     DiscreteCPD,
@@ -104,7 +103,7 @@ def test_nodes_states_and_edges():
     assert dbn.states == {"S": ["lo", "mid", "hi"]}
     assert dbn.dynamic_states == {"Z": [0, 1]}
     assert dbn.edges == [] and dbn.dynamic_edges == []
-    dbn.check_model()
+    dbn._check_model()
 
 
 def test_states_and_dynamic_states_are_copies():
@@ -167,13 +166,12 @@ def _b_given_a(node, parent):
 def test_check_model_accepts_a_valid_dbn():
     t = TimeIndex()
     dbn = _ab_dbn(t, _a_cpds(t) + [_b_given_a(("B", t), ("A", t))])
-    dbn.check_model()
-    ConstrainedDynamicDiscreteBayesianNetwork(dbn).check_model()
+    dbn._check_model()
     # The time variable is left as it was.
     assert t.value() is None
 
 
-# The constructor calls check_model.
+# The constructor validates the network.
 
 
 def test_initial_cpd_where_the_template_applies():

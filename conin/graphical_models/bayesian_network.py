@@ -273,8 +273,12 @@ class DiscreteBayesianNetwork(GraphicalModel):
         Raises
         ------
         InvalidInputError
-            If ``cpds`` is empty, the states of a node can't be inferred, or
-            the network is not valid (:meth:`check_model`).
+            If ``cpds`` is empty, the states of a node can't be inferred, a
+            CPD uses a node or state that is not in the network, a node has
+            no CPD or more than one, a probability is not in ``[0, 1]``, a
+            distribution (for some parent states) is missing or does not sum
+            to 1, a list of values does not have one value per state (and
+            parent state), or the CPDs have a cycle.
         """
         cpds = list(cpds)
         if not cpds:
@@ -310,22 +314,17 @@ class DiscreteBayesianNetwork(GraphicalModel):
                 key=lambda edge: tuple(node_sort_key(node) for node in edge),
             )
         )
-        self.check_model()
+        self._check_model()
 
-    def check_model(self):
-        """Validate that the network structure and CPDs are well formed.
+    def _check_model(self):
+        """Raise ``InvalidInputError`` unless the network is valid.
 
-        The constructor calls this, so a model that exists is valid.
+        The constructor calls this.
 
-        The method checks that every CPD references known nodes, that every
-        node has exactly one CPD, that the probabilities are non-negative and
-        cover every possible configuration implied by the node states, that
-        each distribution sums to 1, and that the CPDs have no cycle.
-
-        Raises
-        ------
-        InvalidInputError
-            If the network contains inconsistent definitions.
+        Every CPD must use known nodes and states, every node must have
+        exactly one CPD, the probabilities must be in ``[0, 1]`` and cover
+        every parent configuration, each distribution must sum to 1, and the
+        CPDs must have no cycle.
         """
         model_nodes = set(self._states.keys())
 

@@ -45,7 +45,15 @@ class DynamicDiscreteBayesianNetwork(GraphicalModel):
         ------
         InvalidInputError
             If ``cpds`` is empty, both ``states`` and ``dynamic_states`` are
-            empty, or the network is not valid (:meth:`check_model`).
+            empty, a CPD uses a node that is neither a static node nor a
+            ``(dynamic node, time)`` pair (with an integer time or one
+            written with ``t``), or the network unrolled over its first time
+            steps is not a valid
+            :class:`~conin.graphical_models.DiscreteBayesianNetwork`: every
+            dynamic node needs exactly one CPD at every time step (an initial
+            CPD for the times before its template applies, and none where
+            the template applies too), the distributions must sum to 1 and
+            the CPDs must have no cycle.
         """
         cpds = list(cpds)
         if not cpds:
@@ -86,7 +94,7 @@ class DynamicDiscreteBayesianNetwork(GraphicalModel):
         self._dynamic_states = freeze(self._dynamic_states)
 
         self._t = t if t is not None else TimeIndex()
-        self.check_model()
+        self._check_model()
 
     @property
     def t(self):
@@ -98,27 +106,15 @@ class DynamicDiscreteBayesianNetwork(GraphicalModel):
         """
         return self._t
 
-    def check_model(self):
-        """Validate the model by unrolling it over the first time steps.
+    def _check_model(self):
+        """Raise ``InvalidInputError`` unless the network is valid.
 
-        The constructor calls this, so a model that exists is valid.
+        The constructor calls this.
 
         The DBN is unrolled (:func:`create_bn_from_dbn`) over ``0..k + 1``,
         where ``k`` is the first time step at which every CPD template
-        applies, and the unrolled Bayesian network is checked
-        (:meth:`DiscreteBayesianNetwork.check_model`).  So every dynamic node
-        must have exactly one CPD at every time step (an initial CPD for the
-        times before its template applies, and no initial CPD where the
-        template applies too), the distributions must sum to 1, and the CPDs
-        must have no cycle.  Later time steps repeat the templates, so they
-        need no further checks.
-
-        Raises
-        ------
-        InvalidInputError
-            If a CPD uses a node that is neither a static node nor a
-            ``(dynamic node, time)`` pair, or the unrolled network is not
-            valid.
+        applies; building the unrolled Bayesian network checks it.  Later
+        time steps repeat the templates, so they need no further checks.
         """
         self._check_cpd_nodes()
         stop = self._check_horizon()
@@ -148,7 +144,7 @@ class DynamicDiscreteBayesianNetwork(GraphicalModel):
                 )
 
     def _check_horizon(self):
-        """The last time step :meth:`check_model` unrolls."""
+        """The last time step :meth:`_check_model` unrolls."""
         probe = 1000
         t_value = self._t.value()
         latest = 0
@@ -493,10 +489,7 @@ def create_bn_from_dbn(*, dbn, start, stop):
     finally:
         dbn.t.set_value(t_value)
 
-    pgm = DiscreteBayesianNetwork(states=states, cpds=cpds)
-    pgm.check_model()
-
-    return pgm
+    return DiscreteBayesianNetwork(states=states, cpds=cpds)
 
 
 def _unroll_cpds(dbn, start, stop):

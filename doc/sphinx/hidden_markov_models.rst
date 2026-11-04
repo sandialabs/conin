@@ -73,8 +73,7 @@ likewise for the observable states):
 
 The constructor checks that the probabilities are nonnegative and that
 the start probabilities and each row of transition and emission probabilities
-sum to 1 (``InvalidInputError`` otherwise; ``hmm.check_model()`` runs the same
-checks). The log-probability of a hidden path and its observations is
+sum to 1 (``InvalidInputError`` otherwise). The log-probability of a hidden path and its observations is
 ``conin.algorithms.scoring.log_probability(hmm, hidden, observed=observed)``.
 
 Sequences are sampled with ``conin.algorithms.sampling.unconstrained``. Every

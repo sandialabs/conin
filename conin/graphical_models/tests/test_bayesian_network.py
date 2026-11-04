@@ -24,7 +24,7 @@ def _make_simple_bn():
         values={0: [0.2, 0.8], 1: [0.9, 0.1]},
     )
     bn = DiscreteBayesianNetwork(states={"A": [0, 1], "B": [0, 1]}, cpds=[cpd_A, cpd_B])
-    bn.check_model()
+    bn._check_model()
     return bn
 
 
@@ -185,7 +185,7 @@ class TestDiscreteBayesianNetwork:
     def test_edges_no_parents(self):
         cpd = DiscreteCPD(node="A", values=[0.5, 0.5])
         bn = DiscreteBayesianNetwork(states={"A": [0, 1]}, cpds=[cpd])
-        bn.check_model()
+        bn._check_model()
         assert bn.edges == []
 
     def test_num_cpd_parameters(self):
@@ -204,7 +204,7 @@ class TestDiscreteBayesianNetwork:
         cpd_B = DiscreteCPD(node="B", values=[0.5, 0.5])
         bn._cpds = [cpd_B]
         with pytest.raises(InvalidInputError):
-            bn.check_model()
+            bn._check_model()
 
     def test_check_model_missing_node(self):
         # Only provide CPD for A, leaving B without one.
@@ -247,7 +247,7 @@ class TestCreateMNFromBN:
 
 
 # ---------------------------------------------------------------------
-# check_model raises InvalidInputError with a message (it used assert)
+# _check_model raises InvalidInputError with a message (it used assert)
 # ---------------------------------------------------------------------
 
 
@@ -269,11 +269,11 @@ def test_check_model_messages(cpd, match):
     )
     bn._cpds = [cpd]
     with pytest.raises(InvalidInputError, match=match):
-        bn.check_model()
+        bn._check_model()
 
 
 def _bn_with_raw_cpds(*cpds, states=None):
-    """A BN whose CPDs are set as given (check_model then validates them)."""
+    """A BN whose CPDs are set as given (_check_model then validates them)."""
     states = states or {"A": [0, 1], "B": [0, 1]}
     bn = DiscreteBayesianNetwork(
         states=states, cpds=[DiscreteCPD(node=n, values=[0.5, 0.5]) for n in states]
@@ -334,7 +334,7 @@ def test_check_model_dict_cpds(cpd, match):
     if cpd.node == "A":
         bn._cpds.append(DiscreteCPD(node="B", values=[0.5, 0.5]))
     with pytest.raises(InvalidInputError, match=match):
-        bn.check_model()
+        bn._check_model()
 
 
 def test_check_model_tuple_parent_keys():
@@ -345,25 +345,25 @@ def test_check_model_tuple_parent_keys():
     bn = _bn_with_raw_cpds(
         a, b, DiscreteCPD(node="C", parents=["A", "B"], values=good), states=states
     )
-    bn.check_model()
+    bn._check_model()
     bad = dict(good)
     bad[(0, 7)] = [0.5, 0.5]
     bn._cpds[2] = DiscreteCPD(node="C", parents=["A", "B"], values=bad)
     with pytest.raises(InvalidInputError, match="Unexpected value 7 in the 1-th"):
-        bn.check_model()
+        bn._check_model()
 
 
 def test_check_model_list_cpd_with_parents_wrong_length():
     a = DiscreteCPD(node="A", values=[0.5, 0.5])
     bad = DiscreteCPD(node="B", parents=["A"], values=[0.5, 0.5, 0.5])
     with pytest.raises(InvalidInputError, match="has 3 values, expected 4"):
-        _bn_with_raw_cpds(a, bad).check_model()
+        _bn_with_raw_cpds(a, bad)._check_model()
 
 
 def test_check_model_nodes_without_a_cpd():
     bn = _bn_with_raw_cpds(DiscreteCPD(node="A", values=[0.5, 0.5]))
     with pytest.raises(InvalidInputError, match="differences between the model nodes"):
-        bn.check_model()
+        bn._check_model()
 
 
 def test_list_states_name_the_nodes_by_index():
@@ -376,7 +376,7 @@ def test_list_states_name_the_nodes_by_index():
     )
     assert bn.nodes == [0, 1]
     assert bn.states == {0: [0, 1], 1: [0, 1, 2]}
-    bn.check_model()
+    bn._check_model()
 
 
 def test_states_must_be_a_list_or_dict():
@@ -401,7 +401,7 @@ def test_list_cpd_with_two_parents_is_normalised_to_a_dict():
     )
     (c,) = [cpd for cpd in bn.cpds if cpd.node == "C"]
     assert c.values[(1, 0)] == {"x": 0.3, "y": 0.7}
-    bn.check_model()
+    bn._check_model()
 
 
 _S = {"A": [0, 1], "B": [0, 1]}
@@ -469,7 +469,7 @@ _B_GIVEN_A = DiscreteCPD(node="B", parents=["A"], values={0: [0.5, 0.5], 1: [0.1
     ],
 )
 def test_constructor_rejects_invalid_networks(cpds, match):
-    # The constructor calls check_model.  Lists with the wrong length used
+    # The constructor validates the network.  Lists with the wrong length used
     # to be truncated (or padded with missing states) without an error.
     with pytest.raises(InvalidInputError, match=match):
         DiscreteBayesianNetwork(states=_S, cpds=cpds)
@@ -499,4 +499,4 @@ def test_check_model_sum_tolerance():
         states={"A": [0, 1, 2]},
         cpds=[DiscreteCPD(node="A", values=[third, third, 1 - 2 * third + 1e-6])],
     )
-    bn.check_model()
+    bn._check_model()

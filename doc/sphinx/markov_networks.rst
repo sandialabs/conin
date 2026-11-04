@@ -56,7 +56,6 @@ for each node and one pairwise factor.
        edges=[("A", "B")],
        factors=[f_a, f_b, f_ab],
    )
-   pgm.check_model()
 
 For a slightly larger example, ``ABC_conin`` defines three variables with
 pairwise interactions:
@@ -78,7 +77,6 @@ pairwise interactions:
        edges=[("A", "B"), ("B", "C"), ("A", "C")],
        factors=[f_a, f_b, f_c, f_ab, f_bc, f_ac],
    )
-   pgm.check_model()
 
 Constrained Markov networks
 ---------------------------
@@ -174,7 +172,7 @@ Notes
   of nodes that are not listed are the values they take in the factors with
   dictionary values.
 - ``edges`` can be given explicitly or inferred from the factor scopes.
-- The constructor validates the model (``check_model()``): every node
+- The constructor validates the model: every node
   appears in a factor, the factor values are non-negative and use valid
   states, and a list of values has one value per combination of states. It
   raises ``InvalidInputError`` for an inconsistent model.

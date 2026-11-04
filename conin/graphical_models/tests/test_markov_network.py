@@ -219,7 +219,7 @@ class TestDiscreteMarkovNetwork:
         # f_a: 2, f_b: 2, f_ab: 4
         assert mn.num_factor_parameters() == 8
 
-    # --- check_model ---
+    # --- _check_model ---
 
     def test_check_model_passes(self):
         _make_simple_mn()  # should not raise
@@ -230,11 +230,11 @@ class TestDiscreteMarkovNetwork:
         mn = _mn({"A": [0, 1]})
         mn._factors = [DiscreteFactor(nodes=["B"], values={0: 1.0, 1: 2.0})]
         with pytest.raises(InvalidInputError, match="Unexpected node 'B'"):
-            mn.check_model()
+            mn._check_model()
 
 
 # ---------------------------------------------------------------------
-# The constructor calls check_model, which raises InvalidInputError with a
+# The constructor validates the model; it raises InvalidInputError with a
 # message (it used assert, so the checks vanished under python -O)
 # ---------------------------------------------------------------------
 
@@ -313,4 +313,4 @@ def test_check_model_list_factor_over_a_subset_of_the_nodes():
             DiscreteFactor(nodes=["A", "B"], values=[1.0] * 6),
         ],
     )
-    mn.check_model()
+    mn._check_model()

@@ -20,10 +20,6 @@ class ConstrainedDiscreteBayesianNetwork(ConstrainedGraphicalModel):
 
     model_type = DiscreteBayesianNetwork
 
-    def check_model(self):
-        """Validate the underlying model."""
-        self.model.check_model()
-
     @property
     def nodes(self):
         """Return the underlying model's nodes."""
