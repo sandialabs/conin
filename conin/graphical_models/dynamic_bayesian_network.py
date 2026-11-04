@@ -316,7 +316,7 @@ class DynamicDiscreteBayesianNetwork(GraphicalModel):
 
         Raises
         ------
-        ValueError
+        KeyError
             If ``node`` does not correspond to a known static or dynamic node.
         """
         if node in self._states:
@@ -325,7 +325,7 @@ class DynamicDiscreteBayesianNetwork(GraphicalModel):
             return self._dynamic_states[node]
         elif type(node) is tuple and node[0] in self._dynamic_states:
             return self._dynamic_states[node[0]]
-        raise ValueError(f"Unexpected node value: {node}")
+        raise KeyError(node)
 
     def card(self, node):
         """Return the cardinality of a node.
@@ -342,7 +342,7 @@ class DynamicDiscreteBayesianNetwork(GraphicalModel):
 
         Raises
         ------
-        ValueError
+        KeyError
             If ``node`` does not correspond to a known static or dynamic node.
         """
         if node in self._states:
@@ -351,7 +351,7 @@ class DynamicDiscreteBayesianNetwork(GraphicalModel):
             return len(self._dynamic_states[node])
         elif type(node) is tuple and node[0] in self._dynamic_states:
             return len(self._dynamic_states[node[0]])
-        raise ValueError(f"Unexpected node value: {node}")
+        raise KeyError(node)
 
     #
     # CPDs

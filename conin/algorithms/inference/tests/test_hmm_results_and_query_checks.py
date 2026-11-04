@@ -39,10 +39,10 @@ def test_full_query_variables(variables):
 
 
 def test_full_query_variables_rejects_a_partial_query():
-    with pytest.raises(RuntimeError, match="method='variable_elimination'"):
+    with pytest.raises(NotImplementedError, match="method='variable_elimination'"):
         full_query_variables(["A"], ("A", "B"))
     # Naming a node the model doesn't have is a partial query too.
-    with pytest.raises(RuntimeError, match="Partial MAP queries"):
+    with pytest.raises(NotImplementedError, match="Partial MAP queries"):
         full_query_variables(["A", "C"], ("A", "B"))
 
 

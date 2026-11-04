@@ -5,7 +5,6 @@ import pytest
 import conin.examples.bayesian_network
 import conin.examples.markov_network
 from conin.constrained_models import ConstrainedDiscreteBayesianNetwork
-from conin.exceptions import InvalidInputError
 
 
 def _make_bn():
@@ -32,5 +31,5 @@ class TestConstrainedDiscreteBayesianNetwork:
 
     def test_wrong_model_type_rejected(self):
         mn = conin.examples.markov_network.ABC_conin().pgm
-        with pytest.raises(InvalidInputError):
+        with pytest.raises(TypeError):
             ConstrainedDiscreteBayesianNetwork(mn)

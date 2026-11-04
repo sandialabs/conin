@@ -82,7 +82,7 @@ def register_representation(kind, model_type, families=(None,)):
 
     Raises
     ------
-    ValueError
+    InvalidInputError
         If a builder is already registered for one of the keys.
     """
     families = tuple(families)
@@ -91,7 +91,7 @@ def register_representation(kind, model_type, families=(None,)):
         for family in families:
             key = (kind, model_type, family)
             if key in _REGISTRY and _REGISTRY[key] is not builder:
-                raise ValueError(
+                raise InvalidInputError(
                     f"A representation builder is already registered for {key}"
                 )
         for family in families:

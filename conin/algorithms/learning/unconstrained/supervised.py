@@ -44,8 +44,11 @@ def supervised_learning(
         start_probs[sim.hidden[0]] += 1
 
     total = sum(start_probs.values())
-    if total == 0.0:  # pragma: no cover
-        raise ValueError("YOU SHOULD NOT SEE THIS.")
+    if total == 0.0:
+        raise InvalidInputError(
+            "There are no simulations and start_tolerance is 0, so the start "
+            "probabilities cannot be estimated"
+        )
     else:
         for i in start_probs:
             start_probs[i] /= total

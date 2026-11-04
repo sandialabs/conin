@@ -153,7 +153,7 @@ def test_omit_c5_fallback():
     """
     example = examples.ABC_conin()
     with pytest.raises(
-        RuntimeError,
+        NotImplementedError,
         match=r"The c5 constraints were omitted, but cut generation is not supported for solver=",
     ):
         map_query(

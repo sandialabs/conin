@@ -1,5 +1,7 @@
 import inspect
 
+from conin.exceptions import InvalidInputError
+
 from .base import Constraint
 
 
@@ -10,7 +12,9 @@ class PyomoConstraint(Constraint):
     def __init__(self, func, name=None):
         num_args = len(inspect.signature(func).parameters)
         if num_args > 2:
-            raise ValueError("Pyomo constraint defined with more than 2 arguments")
+            raise InvalidInputError(
+                "Pyomo constraint defined with more than 2 arguments"
+            )
 
         # If no name is provided, use the function's name
         self._set(

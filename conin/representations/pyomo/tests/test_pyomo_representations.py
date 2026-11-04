@@ -280,9 +280,9 @@ def test_network_flow_V_bad_arity_raises():
         "pyomo_network_flow"
     )
     M, _ = repn.create_model(observed=["o0", "o1"])
-    with pytest.raises(ValueError, match="2 or 3 arguments"):
+    with pytest.raises(TypeError, match="2 or 3 arguments"):
         M.V("H")
-    with pytest.raises(ValueError, match="2 or 3 arguments"):
+    with pytest.raises(TypeError, match="2 or 3 arguments"):
         M.V("H", 0, "h0", "extra")
 
 
@@ -321,7 +321,9 @@ def test_network_flow_smoek_constraints():
 
 
 def test_hmm_unknown_ip_formulation_raises():
-    with pytest.raises(ValueError, match="Unexpected ip_formulation value: 'bogus'"):
+    with pytest.raises(
+        InvalidInputError, match="Unexpected ip_formulation value: 'bogus'"
+    ):
         map_query(
             hex_.create_hmm1(),
             method="integer_program",

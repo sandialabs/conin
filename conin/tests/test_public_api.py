@@ -103,3 +103,12 @@ def test_models_have_no_check_model(cls):
     # The constructors validate the models, so a model that exists is valid
     # and there is nothing left for a public check_model to check.
     assert not hasattr(cls, "check_model")
+
+
+def test_exception_hierarchy():
+    # InvalidInputError is a ValueError, so callers that caught the
+    # ValueErrors CONIN raised before still catch it.
+    assert issubclass(conin.InvalidInputError, ValueError)
+    assert issubclass(conin.ModelFileError, conin.InvalidInputError)
+    assert issubclass(conin.exceptions.InfeasibleQueryError, conin.InvalidInputError)
+    assert issubclass(conin.InsufficientSolutionsError, RuntimeError)

@@ -113,14 +113,14 @@ def test_model_keyword():
 
 
 def test_wrong_model_type_rejected():
-    with pytest.raises(InvalidInputError, match="expects a HiddenMarkovModel"):
+    with pytest.raises(TypeError, match="expects a HiddenMarkovModel"):
         ConstrainedHiddenMarkovModel(_mn())
 
 
 def test_hmm_matvec_repn_rejected():
     hmm = tc.create_hmm1()
     repn = ConstrainedHiddenMarkovModel(hmm).representation("matvec")
-    with pytest.raises(InvalidInputError):
+    with pytest.raises(TypeError):
         ConstrainedHiddenMarkovModel(repn)
 
 
@@ -255,9 +255,9 @@ def test_ensure():
     assert type(w) is ConstrainedDiscreteMarkovNetwork
     assert w.model is mn and w.constraints == () and w.data is None
     # anything else is rejected by the constructor
-    with pytest.raises(InvalidInputError, match="expects a DiscreteMarkovNetwork"):
+    with pytest.raises(TypeError, match="expects a DiscreteMarkovNetwork"):
         ConstrainedDiscreteMarkovNetwork.ensure(tc.create_hmm1())
-    with pytest.raises(InvalidInputError, match="expects a HiddenMarkovModel"):
+    with pytest.raises(TypeError, match="expects a HiddenMarkovModel"):
         ConstrainedHiddenMarkovModel.ensure(c)
     with pytest.raises(TypeError, match="does not define model_type"):
         ConstrainedGraphicalModel.ensure(mn)
@@ -429,7 +429,7 @@ def test_supported_representations_hmm():
 
 
 def test_duplicate_registration_rejected(counting_kind):
-    with pytest.raises(ValueError, match="already registered"):
+    with pytest.raises(InvalidInputError, match="already registered"):
 
         @register_representation(counting_kind, DiscreteMarkovNetwork, (None,))
         def _other(cmodel):

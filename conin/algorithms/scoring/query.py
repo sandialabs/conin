@@ -151,7 +151,7 @@ def log_probability_query(
 
     Raises
     ------
-    ValueError
+    InvalidInputError
         For an unknown ``method``.
     TypeError
         If ``pgm`` is not a supported model type, or for an unknown option.

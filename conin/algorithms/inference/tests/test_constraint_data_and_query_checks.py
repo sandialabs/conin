@@ -256,8 +256,8 @@ def test_integer_program_solves_with_the_application_data():
     ],
     ids=["mn", "bn", "dbn", "hmm"],
 )
-def test_toulbar2_partial_variables_raise_runtime_error(make, kwds, variables):
-    with pytest.raises(RuntimeError):
+def test_toulbar2_partial_variables_raise_not_implemented_error(make, kwds, variables):
+    with pytest.raises(NotImplementedError):
         map_query(make(), method="toulbar2", variables=variables, **kwds)
 
 
@@ -279,7 +279,7 @@ def test_partial_variables_raise_the_same_error_on_both_backends(make, kwds, var
         ("toulbar2", {}),
         ("integer_program", dict(solver=default_mip_solver)),
     ]:
-        with pytest.raises(RuntimeError) as exc:
+        with pytest.raises(NotImplementedError) as exc:
             map_query(make(), method=method, variables=variables, **solver, **kwds)
         messages.append(str(exc.value))
     assert messages[0] == messages[1]
