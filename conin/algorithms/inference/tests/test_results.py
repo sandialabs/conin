@@ -471,13 +471,13 @@ def test_hmm_functions_without_a_solution_have_no_solution():
     _check_no_solution(recursive_a_star(hmm=hmm, observed=["a", "b"]))
 
 
-@needs_mip
-def test_network_flow_functions_without_a_solution_have_no_solution():
+@pytest.mark.parametrize("solver", IP_SOLVERS)
+def test_network_flow_functions_without_a_solution_have_no_solution(solver):
     _check_no_solution(
-        lp_inference(hmm=_impossible_hmm(), observed=["a", "b"], solver="glpk")
+        lp_inference(hmm=_impossible_hmm(), observed=["a", "b"], solver=solver)
     )
     _check_no_solution(
-        ip_inference(hmm=_hmm_never_x_at_time_1(), observed=["a", "a"], solver="glpk")
+        ip_inference(hmm=_hmm_never_x_at_time_1(), observed=["a", "a"], solver=solver)
     )
 
 

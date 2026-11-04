@@ -17,6 +17,7 @@ if not smoek_available:
 
 import pyomo.environ as pyo
 
+from conin.config import default_mip_solver
 from conin.examples.bayesian_network import cancer1_BN_conin
 from conin.constrained_models import ConstrainedDiscreteBayesianNetwork
 from conin.algorithms.inference import map_query
@@ -30,11 +31,13 @@ with try_import() as pytoulbar2_available:
 skipif_toulbar2_not_available = pytest.mark.skipif(
     not pytoulbar2_available, reason="pytoulbar2 not installed"
 )
+needs_mip = pytest.mark.skipif(default_mip_solver is None, reason="no MIP solver")
 
 
 class TestBasicSmoekConstraints:
     """Test basic smoek constraint functionality."""
 
+    @needs_mip
     def test_simple_pyomo_constraint(self):
         """Test that a simple smoek constraint works with Pyomo."""
         pgm = cancer1_BN_conin().pgm
@@ -54,6 +57,7 @@ class TestBasicSmoekConstraints:
         assert result is not None
         assert "Cancer" in result.solution.states
 
+    @needs_mip
     def test_multiple_pyomo_constraints(self):
         """Test smoek constraint returning multiple constraints."""
         pgm = cancer1_BN_conin().pgm
@@ -74,6 +78,7 @@ class TestBasicSmoekConstraints:
         assert result is not None
         assert "Cancer" in result.solution.states
 
+    @needs_mip
     def test_comparison_with_traditional_syntax(self):
         """Test that algebraic and traditional syntax produce same results."""
         pgm = cancer1_BN_conin().pgm
@@ -140,6 +145,7 @@ class TestBasicSmoekConstraints:
 class TestArithmeticOperations:
     """Test various arithmetic operations in smoek constraints."""
 
+    @needs_mip
     def test_addition(self):
         """Test addition operation."""
         pgm = cancer1_BN_conin().pgm
@@ -153,6 +159,7 @@ class TestArithmeticOperations:
         result = map_query(cpgm, method="integer_program", evidence=evidence)
         assert result is not None
 
+    @needs_mip
     def test_subtraction(self):
         """Test subtraction operation."""
         pgm = cancer1_BN_conin().pgm
@@ -166,6 +173,7 @@ class TestArithmeticOperations:
         result = map_query(cpgm, method="integer_program", evidence=evidence)
         assert result is not None
 
+    @needs_mip
     def test_multiplication_by_constant(self):
         """Test multiplication by constant."""
         pgm = cancer1_BN_conin().pgm
@@ -179,6 +187,7 @@ class TestArithmeticOperations:
         result = map_query(cpgm, method="integer_program", evidence=evidence)
         assert result is not None
 
+    @needs_mip
     def test_complex_expression(self):
         """Test complex arithmetic expression."""
         pgm = cancer1_BN_conin().pgm
@@ -201,6 +210,7 @@ class TestArithmeticOperations:
 class TestComparisonOperators:
     """Test different comparison operators."""
 
+    @needs_mip
     def test_less_than_or_equal(self):
         """Test <= operator."""
         pgm = cancer1_BN_conin().pgm
@@ -214,6 +224,7 @@ class TestComparisonOperators:
         result = map_query(cpgm, method="integer_program", evidence=evidence)
         assert result is not None
 
+    @needs_mip
     def test_greater_than_or_equal(self):
         """Test >= operator."""
         pgm = cancer1_BN_conin().pgm
@@ -227,6 +238,7 @@ class TestComparisonOperators:
         result = map_query(cpgm, method="integer_program", evidence=evidence)
         assert result is not None
 
+    @needs_mip
     def test_equality(self):
         """Test == operator."""
         pgm = cancer1_BN_conin().pgm
@@ -244,6 +256,7 @@ class TestComparisonOperators:
 class TestDataUsage:
     """Test using data parameter in constraints."""
 
+    @needs_mip
     def test_constraint_with_data(self):
         """Test constraint that uses data parameter."""
         pgm = cancer1_BN_conin().pgm
@@ -285,6 +298,7 @@ class TestToulbar2BasicSmoekConstraints:
         assert result is not None
         assert "Cancer" in result.solution.states
 
+    @needs_mip
     @skipif_toulbar2_not_available
     def test_comparison_pyomo_toulbar2(self):
         """Test that integer_program and toulbar2 produce same results for smoek constraints."""
@@ -308,6 +322,7 @@ class TestToulbar2BasicSmoekConstraints:
 class TestToulbar2ArithmeticOperations:
     """Test various arithmetic operations with both solvers."""
 
+    @needs_mip
     @skipif_toulbar2_not_available
     def test_addition_toulbar2(self):
         """Test addition operation with Toulbar2."""
@@ -327,6 +342,7 @@ class TestToulbar2ArithmeticOperations:
         assert result_toulbar2 is not None
         assert result_pyomo.solution.states == result_toulbar2.solution.states
 
+    @needs_mip
     @skipif_toulbar2_not_available
     def test_multiplication_by_constant_toulbar2(self):
         """Test multiplication by constant with Toulbar2."""
@@ -346,6 +362,7 @@ class TestToulbar2ArithmeticOperations:
         assert result_toulbar2 is not None
         assert result_pyomo.solution.states == result_toulbar2.solution.states
 
+    @needs_mip
     @skipif_toulbar2_not_available
     def test_complex_expression_toulbar2(self):
         """Test complex arithmetic expression with Toulbar2."""
@@ -374,6 +391,7 @@ class TestToulbar2ArithmeticOperations:
 class TestToulbar2ComparisonOperators:
     """Test different comparison operators with both solvers."""
 
+    @needs_mip
     @skipif_toulbar2_not_available
     def test_less_than_or_equal_toulbar2(self):
         """Test <= operator with Toulbar2."""
@@ -393,6 +411,7 @@ class TestToulbar2ComparisonOperators:
         assert result_toulbar2 is not None
         assert result_pyomo.solution.states == result_toulbar2.solution.states
 
+    @needs_mip
     @skipif_toulbar2_not_available
     def test_greater_than_or_equal_toulbar2(self):
         """Test >= operator with Toulbar2."""
@@ -412,6 +431,7 @@ class TestToulbar2ComparisonOperators:
         assert result_toulbar2 is not None
         assert result_pyomo.solution.states == result_toulbar2.solution.states
 
+    @needs_mip
     @skipif_toulbar2_not_available
     def test_equality_toulbar2(self):
         """Test == operator with Toulbar2."""
@@ -435,6 +455,7 @@ class TestToulbar2ComparisonOperators:
 class TestToulbar2MultipleConstraints:
     """Test multiple smoek constraints with both solvers."""
 
+    @needs_mip
     @skipif_toulbar2_not_available
     def test_multiple_constraints_toulbar2(self):
         """Test multiple smoek constraints work with Toulbar2."""
@@ -457,6 +478,7 @@ class TestToulbar2MultipleConstraints:
         assert result_toulbar2 is not None
         assert result_pyomo.solution.states == result_toulbar2.solution.states
 
+    @needs_mip
     @skipif_toulbar2_not_available
     def test_complex_multiple_constraints_toulbar2(self):
         """Test complex multiple smoek constraints with Toulbar2."""
