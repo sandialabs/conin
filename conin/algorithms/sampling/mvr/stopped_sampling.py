@@ -15,7 +15,7 @@ from conin.constraints.mvr import mvr_sattime
 from conin.exceptions import InvalidInputError
 
 from conin.algorithms.util.mvr_kernels import NEG_INF, _model_parts
-from conin.algorithms.inference.mvr.sat_time import (
+from conin.algorithms.other_queries.mvr.sat_time import (
     _resolve_target,
     sat_time_torch_mvr_chmm,
 )

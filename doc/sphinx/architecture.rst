@@ -33,6 +33,8 @@ Package layout
    ``conin.algorithms.learning`` and ``conin.algorithms.sampling`` are each
    organised by representation (``unconstrained``, ``pyomo``, ``toulbar2``,
    ``variable_elimination``, ``oracle``, ``recursive``, ``mvr``);
+   ``conin.algorithms.other_queries.mvr`` has the MVR satisfaction
+   probability and first satisfaction time queries;
    ``conin.algorithms.scoring`` scores assignments (``log_potential``,
    ``log_probability``), and ``conin.algorithms.feasibility`` checks them
    against the constraints (``is_feasible``, dispatched on the constrained
@@ -63,8 +65,8 @@ Layering
   ``io`` builds constrained models), which is why the registry imports its
   builders on first use.
 - The ``algorithms`` packages sit above the model layer, in the order
-  ``util``, ``feasibility``, ``scoring``, ``inference``, ``sampling``,
-  ``learning``: each imports only the ones before it. ``examples`` and the
+  ``util``, ``feasibility``, ``scoring``, ``inference``, ``other_queries``,
+  ``sampling``, ``learning``: each imports only the ones before it. ``examples`` and the
   ``algorithms`` package itself (which imports all of them) come next, and
   the top-level ``conin`` package, which re-exports the public API, is
   above everything.
