@@ -11,9 +11,9 @@ The ``create_hmm1`` example is a compact starting point. It defines start,
 transition, and emission probabilities and then passes them to the
 ``HiddenMarkovModel`` constructor.
 
-.. code-block:: python
+.. testcode::
 
-   from conin.hidden_markov_model import HiddenMarkovModel
+   from conin import HiddenMarkovModel
 
    start_probs = {"h0": 0.4, "h1": 0.6}
    transition_probs = {
@@ -34,11 +34,71 @@ transition, and emission probabilities and then passes them to the
        transition_probs=transition_probs,
        emission_probs=emission_probs,
    )
-   hmm.set_seed(0)
 
-The hidden and observed state labels are available from ``hmm.hidden_states``
-and ``hmm.observed_states``. Internally, states are indexed in sorted label
-order.
+The hidden and observable state labels are available from
+``hmm.hidden_states`` and ``hmm.observable_states``, and the probabilities from
+``hmm.start_probs``, ``hmm.transition_probs`` and ``hmm.emission_probs`` (the
+constructor's format, with every entry, zeros included). All of them are
+read-only, and the model is immutable; two models with the same states and
+probabilities are equal.
+
+The state lists are the model's state order. By default it is the sorted
+labels: the hidden states of ``transition_probs`` and the observable states of
+``emission_probs``. Pass ``hidden_states=`` and ``observable_states=`` to choose
+the order, or to declare an observable state that is never emitted:
+
+.. testcode::
+
+   ordered = HiddenMarkovModel(
+       start_probs=start_probs,
+       transition_probs=transition_probs,
+       emission_probs=emission_probs,
+       hidden_states=["h1", "h0"],
+       observable_states=["o0", "o1", "o2"],
+   )
+   assert ordered.hidden_states == ["h1", "h0"]
+   assert ordered.emission_probs[("h0", "o2")] == 0
+
+The model itself holds only label-keyed tables. The parameters as arrays on state indices are in
+the ``"matvec"`` representation, which is the one place that converts
+between labels and indices: ``repn.hidden_states[i]`` is the label of hidden
+index ``i`` and ``repn.hidden_to_internal[h]`` the index of label ``h`` (and
+likewise for the observable states):
+
+.. code-block:: python
+
+   repn = hmm.representation("matvec")
+   repn.transition_mat[repn.hidden_to_internal["h0"]]  # a read-only NumPy row
+   repn.hidden_states[0]                               # "h0"
+
+The constructor checks that the probabilities are nonnegative and that
+the start probabilities and each row of transition and emission probabilities
+sum to 1 (``InvalidInputError`` otherwise). The log-probability of a hidden path and its observations is
+``conin.algorithms.scoring.log_probability(hmm, hidden, observed=observed)``.
+
+Sequences are sampled with ``conin.algorithms.sampling.unconstrained``. Every
+sampler takes ``rng``: a seed, or a ``numpy.random.Generator`` whose stream
+successive calls continue (without ``rng``, each call draws from a fresh
+generator):
+
+.. testcode::
+
+   from conin.algorithms.sampling.unconstrained import (
+       generate_hidden,
+       generate_observed,
+       generate_observed_from_hidden,
+   )
+
+   import numpy as np
+
+   rng = np.random.default_rng(0)
+   hidden = generate_hidden(hmm, 5, rng=rng)
+   observed = generate_observed_from_hidden(hmm, hidden, rng=rng)
+   assert len(generate_observed(hmm, 5, rng=rng)) == 5
+   assert generate_hidden(hmm, 5, rng=3) == generate_hidden(hmm, 5, rng=3)
+
+For a constrained HMM with oracle constraints, use
+``conin.algorithms.sampling.oracle.rejection_sample_hidden(chmm, time_steps)``.
 
 Random HMMs
 -----------
@@ -46,54 +106,90 @@ Random HMMs
 Use ``random_hmm`` to create a reproducible HMM with randomly generated start,
 transition, and emission probabilities over a specified state space.
 
-.. code-block:: python
+.. testcode::
 
-   from conin.hidden_markov_model import random_hmm
+   from conin.graphical_models import random_hmm
 
    hmm = random_hmm(
        hidden_states=["h0", "h1"],
-       observed_states=["o0", "o1"],
-       seed=10,
+       observable_states=["o0", "o1"],
+       rng=10,
    )
 
    assert hmm.hidden_states == ["h0", "h1"]
-   assert hmm.observed_states == ["o0", "o1"]
-   assert abs(sum(hmm.get_start_probs().values()) - 1.0) < 1e-12
+   assert hmm.observable_states == ["o0", "o1"]
+   assert abs(sum(hmm.start_probs.values()) - 1.0) < 1e-12
 
 JSON I/O
 --------
 
-``HiddenMarkovModel`` can write its start, transition, and emission
-probabilities to a JSON file and load them back later. This HMM-specific JSON
-format is separate from the UAI file support described in
-:doc:`model_conversion_io`.
+``save_model`` and ``load_model`` (:mod:`conin.io`) write and read hidden
+Markov models as JSON (``.json``, or gzipped ``.json.gz``). The file keeps the
+state order and the nonzero probabilities, so the loaded model is equal to
+the saved one. State labels must be JSON values: strings, numbers, booleans
+or ``None``. ``load_model`` also reads the files written by the
+``write_to_file`` method of older CONIN versions.
 
-.. code-block:: python
+.. testcode::
 
-   from conin.hidden_markov_model import HiddenMarkovModel
-   from conin.hidden_markov_model.examples import create_hmm1
+   from conin.examples.hidden_markov_model import create_hmm1
+   from conin import load_model, save_model
 
    hmm = create_hmm1()
-   hmm.write_to_file("hmm.json")
+   save_model(hmm, "hmm.json")
 
-   loaded = HiddenMarkovModel.read_from_file("hmm.json")
+   loaded = load_model("hmm.json")
 
-   assert loaded.get_start_probs() == hmm.get_start_probs()
-   assert loaded.get_transition_probs() == hmm.get_transition_probs()
-   assert loaded.get_emission_probs() == hmm.get_emission_probs()
+   assert loaded == hmm
+
+``conin.io.save_json`` and ``conin.io.load_json`` work on JSON text as well as
+files.
 
 Constrained hidden Markov models
 --------------------------------
 
-``ConstrainedHiddenMarkovModel`` wraps a base HMM and a list of constraint
-functors. The public examples include oracle, Pyomo, and Toulbar2 constraints.
-Oracle constraints with ``nodes`` generate auxiliary factors for
-variable-elimination inference.
+``ConstrainedHiddenMarkovModel`` wraps a base HMM and a list of
+constraints. The public examples include oracle, Pyomo, and Toulbar2 constraints.
+Oracle constraints with ``nodes`` (``FactorOracleConstraint``) generate
+auxiliary factors for variable-elimination inference.
 
-``initialize_chmm()`` constructs an internal constrained HMM object for oracle,
-Pyomo, and MVR constraints. Toulbar2 constraints are consumed by the
-corresponding inference methods instead of initializing a standalone CHMM object
-directly.
+Constrained models are immutable: ``ConstrainedHiddenMarkovModel(hmm,
+constraints, data=None)`` stores the HMM as ``.model`` and the constraints as a
+tuple in ``.constraints``. All constraints must belong to one constraint family,
+which is available as ``.constraint_family`` (``None`` when there are no
+constraints); mixing families raises ``InvalidInputError``. Application data
+used by constraint functions and MVR factories is passed to the constructor
+with ``data=``. Every backend passes it on: constraint functions that take a
+``data`` argument see a copy of it with the backend's own fields set. For an
+HMM unrolled over ``start..stop``, every backend (and ``is_feasible``) sets
+``data.start``, ``data.stop``, ``data.hmm.T`` (``list(range(start, stop +
+1))``) and ``data.hmm.hidden_to_internal``; the Pyomo and toulbar2 backends
+also set ``data.variables`` and ``data.evidence``, and the network-flow
+formulation puts its index sets in ``data.hmm``.
+
+Backend representations are built by ``representation(kind)``, on a
+constrained HMM or on a bare one (``hmm.representation("matvec")`` is
+``ConstrainedHiddenMarkovModel(hmm).representation("matvec")``); each call
+builds a new one. HMMs register these kinds: ``"matvec"`` (the HMM
+parameters as read-only NumPy arrays on internal indices, with their logarithms;
+no constraints only; used by Viterbi, A*, sampling and the torch MVR kernels),
+``"oracle"`` (feasibility checks
+for A* and rejection sampling; no constraints or oracle constraints),
+``"recursive"`` (for recursive A*; no constraints or recursive constraints),
+``"variable_elimination"`` (the factors of the unrolled model; no constraints,
+factor-oracle or smoek constraints), ``"pyomo"`` (the integer program of the
+unrolled model; no constraints, Pyomo or smoek constraints),
+``"pyomo_network_flow"`` (the network-flow integer program; no constraints,
+Pyomo or smoek constraints), ``"toulbar2"`` (the cost function network of
+the unrolled model; no constraints, Toulbar2 or smoek constraints) and
+``"mvr"`` (no constraints or MVR constraints; the built MVRs, aligned to the
+HMM, are ``chmm.representation("mvr").mvrs``). The torch MVR algorithms in
+``conin.algorithms.inference.mvr``, ``conin.algorithms.other_queries.mvr``,
+``conin.algorithms.learning.mvr`` and ``conin.algorithms.sampling.mvr``
+take a ``ConstrainedHiddenMarkovModel`` with MVR
+constraints; see the notebooks in ``doc/notebooks/MVR``.
+``map_query(chmm, method="mvr_viterbi", evidence=observed)`` runs the torch
+MVR Viterbi (``viterbi_torch_mvr_chmm``) through the common entry point.
 
 Oracle constraints
 ^^^^^^^^^^^^^^^^^^
@@ -101,14 +197,11 @@ Oracle constraints
 ``create_chmm1_oracle`` uses two oracle constraints to restrict the number of
 ``"h0"`` states in the hidden sequence.
 
-.. code-block:: python
+.. testcode::
 
-   from conin.hidden_markov_model import (
-       HiddenMarkovModel,
-       ConstrainedHiddenMarkovModel,
-   )
+   from conin import HiddenMarkovModel, ConstrainedHiddenMarkovModel
    from conin.constraints import OracleConstraint
-   from conin.hidden_markov_model.examples import create_hmm1
+   from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
 
@@ -122,22 +215,21 @@ Oracle constraints
    )
 
    chmm = ConstrainedHiddenMarkovModel(
-       hmm=hmm,
+       hmm,
        constraints=[num_zeros_greater_than_nine, num_zeros_less_than_thirteen],
    )
-   chmm.initialize_chmm()
 
 Pyomo constraints
 ^^^^^^^^^^^^^^^^^
 
 ``create_chmm1_pyomo`` expresses the same condition algebraically:
 
-.. code-block:: python
+.. testcode::
 
    import pyomo.environ as pe
    import conin
-   from conin.hidden_markov_model import ConstrainedHiddenMarkovModel
-   from conin.hidden_markov_model.examples import create_hmm1
+   from conin import ConstrainedHiddenMarkovModel
+   from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
 
@@ -154,21 +246,19 @@ Pyomo constraints
        )
 
    chmm = ConstrainedHiddenMarkovModel(
-       hmm=hmm,
+       hmm,
        constraints=[num_zeros_greater_than_nine, num_zeros_less_than_thirteen],
    )
-   chmm.initialize_chmm()
 
 Toulbar2 constraints
 ^^^^^^^^^^^^^^^^^^^^
 
 ``create_chmm1_toulbar2`` uses the Toulbar2 linear-constraint interface:
 
-.. code-block:: python
+.. testcode::
 
-   from conin import toulbar2_constraint_fn
-   from conin.hidden_markov_model import ConstrainedHiddenMarkovModel
-   from conin.hidden_markov_model.examples import create_hmm1
+   from conin import toulbar2_constraint_fn, ConstrainedHiddenMarkovModel
+   from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
 
@@ -189,7 +279,7 @@ Toulbar2 constraints
        )
 
    chmm = ConstrainedHiddenMarkovModel(
-       hmm=hmm,
+       hmm,
        constraints=[num_zeros_greater_than_nine, num_zeros_less_than_thirteen],
    )
 
@@ -199,13 +289,12 @@ the Toulbar2 model.
 Oracle constraints with node scoping
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-``create_chmm1_oracle`` adds the same logic through generated factors:
+``create_chmm1_oracle_ve`` adds the same logic through generated factors:
 
-.. code-block:: python
+.. testcode::
 
-   from conin import oracle_constraint_fn
-   from conin.hidden_markov_model import ConstrainedHiddenMarkovModel
-   from conin.hidden_markov_model.examples import create_hmm1
+   from conin import oracle_constraint_fn, ConstrainedHiddenMarkovModel
+   from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
 
@@ -224,23 +313,65 @@ Oracle constraints with node scoping
        return num <= 12
 
    chmm = ConstrainedHiddenMarkovModel(
-       hmm=hmm,
+       hmm,
        constraints=[num_zeros_greater_than_nine, num_zeros_less_than_thirteen],
    )
 
-``map_query(..., method="variable_elimination")`` can consume oracle constraints
-with ``nodes`` by expanding them into auxiliary factors.
+``oracle_constraint_fn(nodes=...)`` creates a ``FactorOracleConstraint``, which
+``map_query(..., method="variable_elimination")`` expands into indicator factors.
+
+Recursive constraints
+^^^^^^^^^^^^^^^^^^^^^
+
+A ``RecursiveConstraint`` summarises a prefix of the hidden sequence in a
+hashable state, updated one hidden state at a time. ``recursive_a_star`` merges
+prefixes with the same state, which can make it much faster than A* with an
+oracle constraint. ``create_chmm1_recursive`` expresses the condition of
+``create_chmm1_oracle`` this way:
+
+.. testcode::
+
+   from conin import ConstrainedHiddenMarkovModel
+   from conin.constraints import RecursiveConstraint
+   from conin.examples.hidden_markov_model import create_hmm1
+   from conin.algorithms.inference.recursive import recursive_a_star
+
+   lb, ub = 10, 12
+   num_zeros = RecursiveConstraint(
+       initial=lambda h: 1 if h == "h0" else 0,
+       update=lambda n, h: n + 1 if h == "h0" else n,
+       feasible=lambda n: lb <= n <= ub,
+       feasible_partial=lambda n, t, T: n + (T - t) >= lb and n <= ub,
+   )
+   chmm = ConstrainedHiddenMarkovModel(create_hmm1(), num_zeros)
+
+   results = recursive_a_star(hmm=chmm, observed=["o0"] * 15)
+   print(results.solution.states.count("h0"))
+
+.. testoutput::
+
+   12
+
+``map_query(chmm, method="a_star", evidence=observed)`` runs
+``recursive_a_star`` when the constraints are recursive, and A* with the oracle
+representation otherwise. Both calls return the usual result (see
+:doc:`inference`); through ``map_query`` the ``states`` are keyed by time for
+dict evidence.
+
+Prefixes with the same ``(last hidden state, length, constraint state)``
+have the same completions, so ``recursive_a_star`` treats them as one search
+node and expands it at most ``num_solutions`` times. Its solutions are still
+the ``num_solutions`` most likely feasible sequences, as for ``a_star``.
 
 Notes
 -----
 
 - The ``HiddenMarkovModel`` constructor requires non-empty ``start_probs``,
   ``transition_probs``, and ``emission_probs`` dictionaries keyed by hidden and
-  observed state labels. Models are immutable after construction.
+  observable state labels. Models are immutable after construction.
 - ``random_hmm`` is useful for tests, examples, and experiments where exact
   probabilities are less important than a valid model structure.
-- ``write_to_file`` and ``read_from_file`` provide HMM-specific JSON
-  serialization for model parameters.
+- ``save_model``/``load_model`` save and load HMMs as JSON files.
 - See :doc:`model_conversion_io` for converting HMMs to dynamic Bayesian
   networks.
 - See :doc:`hmm_learning` for estimating HMM parameters from labeled

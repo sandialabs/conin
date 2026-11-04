@@ -1,0 +1,402 @@
+import itertools
+from math import prod
+from dataclasses import dataclass
+
+from conin.exceptions import InvalidInputError
+from conin.graphical_models.base import GraphicalModel, node_sort_key
+from conin.util.frozen import freeze
+
+
+@dataclass(frozen=True, slots=True)
+class DiscreteFactor:
+    """A factor over one or more discrete variables.
+
+    Represents a non-negative function over random variables with finite state
+    spaces. The ``values`` can be provided either as a mapping from assignments
+    to weights or as a list of weights. The ``normalize`` method converts the
+    factor representation to a dictionary keyed by assignments.
+
+    Parameters
+    ----------
+    nodes : list
+        Ordered list of node identifiers that correspond to random variables
+        over which the factor is defined.
+    values : list or dict
+        Factor weights as a dictionary or a list. For a dictionary, keys are
+        node values. Use a single value for unary factors, such as
+        ``{"A_val": weight}``, and tuples for multivariate factors, such as
+        ``{("A_val", "B_val"): weight}``. A list can be used to specify
+        factor weights associated with the Cartesian product of the node
+        values.
+    default_value : int or str, optional
+        Optional fallback value used when a specific assignment is missing.
+        This value is only used when factor weights are specified with a
+        dictionary. Defaults to 0.
+
+    Notes
+    -----
+    ``nodes`` and ``values`` are read-only copies of the arguments (a
+    :class:`~conin.util.frozen.FrozenList` or
+    :class:`~conin.util.frozen.FrozenDict`), so a factor cannot be changed
+    after construction, also not through a model that holds it.
+    """
+
+    nodes: list
+    values: list | dict
+    default_value: str | int = 0
+
+    def __post_init__(self):
+        values = self.values if isinstance(self.values, dict) else list(self.values)
+        object.__setattr__(self, "values", freeze(values))
+        object.__setattr__(self, "nodes", freeze(list(self.nodes)))
+
+    def assignments(self, states):
+        """Iterate over assignments for this factor's scope.
+
+        Parameters
+        ----------
+        states : Mapping[Any, Iterable[Any]]
+            Mapping from node identifiers to the ordered collection of allowed
+            state values.
+
+        Yields
+        ------
+        list of tuple
+            A sequence of ``(node, value)`` pairs ordered consistently with
+            ``nodes``.
+        """
+        if len(self.nodes) == 1:
+            for node_value in states[self.nodes[0]]:
+                yield [(self.nodes[0], node_value)]
+        else:
+            slist = [states[node] for node in self.nodes]
+            for assignment in itertools.product(*slist):
+                yield [(node, assignment[i]) for i, node in enumerate(self.nodes)]
+
+    def normalize(self, pgm):
+        """Return a factor with dictionary-valued weights.
+
+        If this factor's ``values`` are already a dictionary, ``self`` is
+        returned. Otherwise, the flat list is converted to a dictionary keyed by
+        assignments constructed from the provided model's state order.
+
+        Parameters
+        ----------
+        pgm : DiscreteMarkovNetwork
+            The probabilistic graphical model whose node state definitions are
+            used to expand list-based factor values.
+
+        Returns
+        -------
+        DiscreteFactor
+            A factor whose ``values`` attribute is a dictionary keyed by state
+            assignments instead of a flat list.
+
+        Raises
+        ------
+        InvalidInputError
+            If the list does not have one value per combination of the
+            states of ``nodes``.
+        """
+        if isinstance(self.values, dict):
+            return self
+        else:
+            slist = [pgm.states_of(node) for node in self.nodes]
+            # The list of values must cover all combinations of node states
+            expected = prod(len(states) for states in slist)
+            if len(self.values) != expected:
+                raise InvalidInputError(
+                    f"The factor over {list(self.nodes)} has {len(self.values)} "
+                    f"values, expected {expected} (one per combination of their "
+                    "states)"
+                )
+            if len(slist) == 1:
+                values = dict(zip(slist[0], self.values))
+            else:
+                indices = [
+                    index[::-1] for index in itertools.product(*list(reversed(slist)))
+                ]
+                values = dict(zip(indices, self.values))
+
+            return DiscreteFactor(
+                nodes=self.nodes, values=values, default_value=self.default_value
+            )
+
+
+def _inferred_states(node, factors):
+    """The sorted values of ``node`` in the factors with dictionary values."""
+    values = set()
+    for factor in factors:
+        if node in factor.nodes and isinstance(factor.values, dict):
+            i = list(factor.nodes).index(node)
+            for key in factor.values:
+                values.add(key[i] if type(key) is tuple else key)
+    if not values:
+        raise InvalidInputError(
+            f"The states of node {node!r} are not given, and no factor with "
+            "dictionary values uses it"
+        )
+    return sorted(values)
+
+
+class DiscreteMarkovNetwork(GraphicalModel):
+    """A discrete Markov network over finite-valued nodes.
+
+    Stores node state spaces, optional undirected edges, and factor potentials.
+    If edges are not explicitly provided, they are inferred from factor scopes.
+    When factors are assigned, any list-based ``values`` are normalized to a
+    dictionary keyed by assignments using the model's states.
+    """
+
+    def __init__(self, *, factors, states=None, edges=None):
+        """Initialize a discrete Markov network.
+
+        Parameters
+        ----------
+        factors : Iterable[DiscreteFactor]
+            Non-empty collection of factors that encode the potential of each
+            clique in the network.
+        states : dict or list, optional
+            Mapping from node identifiers to ordered states or a list of node
+            cardinalities. The states of nodes that are not listed are the
+            (sorted) values they take in the factors with dictionary values.
+        edges : Iterable[tuple], optional
+            Pairwise edges that connect nodes in the network.
+
+        Raises
+        ------
+        InvalidInputError
+            If ``factors`` is empty, the states of a node are not given and
+            no factor with dictionary values uses it, an edge uses a node
+            that is not in the model, a node has no factor, a factor value
+            is negative, a factor uses a state that its node does not have,
+            or a list of factor values does not have one value per
+            combination of states.
+        """
+        factors = list(factors)
+        if not factors:
+            raise InvalidInputError("factors must be a non-empty list")
+        if states is None:
+            states = {}
+        if isinstance(states, list):
+            self._nodes = list(range(len(states)))
+            self._states = {i: list(range(v)) for i, v in enumerate(states)}
+        elif isinstance(states, dict):
+            tmp = list(states.keys())
+            tmp.sort(key=node_sort_key)
+            self._nodes = tmp
+            self._states = dict(states)
+        else:
+            raise TypeError(f"Unexpected type for states: {type(states)}")
+
+        # The edges as given; None means "inferred from the factor scopes"
+        # (see the edges property).
+        self._given_edges = freeze(list(edges)) if edges is not None else None
+
+        tmp = set(self._nodes)
+        for factor in factors:
+            for node in factor.nodes:
+                if node not in tmp:
+                    tmp.add(node)
+                    self._nodes.append(node)
+                    self._states[node] = _inferred_states(node, factors)
+        self._factors = freeze([factor.normalize(self) for factor in factors])
+        self._nodes = freeze(self._nodes)
+        self._states = freeze(self._states)
+        if self._given_edges:
+            self._edges = self._given_edges
+        else:
+            edges = set()
+            for factor in self._factors:
+                for edge in itertools.combinations(
+                    sorted(factor.nodes, key=node_sort_key), 2
+                ):
+                    edges.add(edge)
+            self._edges = freeze(list(edges))
+        self._check_model()
+
+    def _check_model(self):
+        """Raise ``InvalidInputError`` unless the model is valid.
+
+        The constructor calls this.
+
+        The edges and factors must use the model's nodes, every node must
+        appear in a factor, and the factor values must be non-negative and
+        use valid states.  (A list of factor values with the wrong length is
+        rejected when the factor is converted to a dictionary,
+        :meth:`DiscreteFactor.normalize`.)
+        """
+        model_nodes = set(self._states.keys())
+
+        if self._given_edges:
+            enodes = set()
+            for v, w in self._given_edges:
+                enodes.add(v)
+                enodes.add(w)
+
+            # Note: We have an error if the edges contain nodes that aren't in the model.
+            # BUT, we may have a model_node that is not in any edge
+            if enodes - model_nodes:
+                raise InvalidInputError(
+                    "Unexpected discrepancy in model nodes: the set of edge nodes "
+                    "contains the following nodes that do not appear in the model: "
+                    f"{enodes - model_nodes}"
+                )
+
+        fnodes = set()
+        for factor_num, f in enumerate(self._factors):
+            for node in f.nodes:
+                if node not in self._states:
+                    raise InvalidInputError(
+                        f"Unexpected node {node!r} in factor {factor_num}"
+                    )
+                fnodes.add(node)
+            if isinstance(f.values, dict):
+                node_states = [self._states[node] for node in f.nodes]
+                for k, v in f.values.items():
+                    if v < 0:
+                        raise InvalidInputError(f"Unexpected negative factor value {v}")
+                    if type(k) is tuple:
+                        for i, iv in enumerate(k):
+                            if iv not in node_states[i]:
+                                raise InvalidInputError(
+                                    f"Unexpected node value {k} for factor "
+                                    f"{factor_num}: the {i}-th value is {iv} but "
+                                    f"should be in {node_states[i]}"
+                                )
+                    elif k not in node_states[0]:
+                        raise InvalidInputError(
+                            f"Unexpected node value {k} in factor {factor_num}"
+                        )
+
+        # Every node must be used in the model
+        if model_nodes != fnodes:
+            raise InvalidInputError(
+                "Every node must appear in a factor; nodes without a factor: "
+                f"{sorted(map(str, model_nodes - fnodes))}"
+            )
+
+    #
+    # Nodes
+    #
+
+    @property
+    def nodes(self):
+        """List of node identifiers in the model.
+
+        Returns
+        -------
+        list
+            Node identifiers registered with the model (read-only).
+        """
+        return self._nodes
+
+    @property
+    def states(self):
+        """Mapping from node to its allowed states.
+
+        Returns
+        -------
+        dict
+            Dictionary mapping each node to the ordered list of valid states
+            (a new dict; the state lists are read-only).
+        """
+        return dict(self._states)
+
+    def states_of(self, node):
+        """Return the allowed states for a node.
+
+        Parameters
+        ----------
+        node : Hashable
+            Identifier of the node of interest.
+
+        Returns
+        -------
+        list
+            Ordered list of valid states for ``node`` (read-only).
+        """
+        return self._states[node]
+
+    def card(self, node):
+        """Return the cardinality of a node.
+
+        Parameters
+        ----------
+        node : Hashable
+            Identifier of the node of interest.
+
+        Returns
+        -------
+        int
+            Cardinality of the node.
+        """
+        return len(self._states[node])
+
+    #
+    # Edges
+    #
+
+    @property
+    def edges(self):
+        """List of undirected edges.
+
+        If edges are not explicitly set, they are inferred from the scopes of
+        the current factors.
+
+        Returns
+        -------
+        list
+            Edge list describing pairwise connections between nodes
+            (read-only).
+        """
+        return self._edges
+
+    #
+    # Factors
+    #
+
+    @property
+    def factors(self):
+        """Return the factors registered with the model.
+
+        Returns
+        -------
+        list of DiscreteFactor
+            Factor objects representing clique potentials (a new list; the
+            factors themselves are immutable).
+        """
+        return list(self._factors)
+
+    def with_factor(self, factor):
+        """Return a new model with ``factor`` appended to its factor list.
+
+        Parameters
+        ----------
+        factor : DiscreteFactor
+            Factor to add to the model.
+
+        Returns
+        -------
+        DiscreteMarkovNetwork
+            A new model with the same states and edges as ``self`` plus the
+            additional factor.
+
+        Examples
+        --------
+        >>> from conin.graphical_models import DiscreteMarkovNetwork, DiscreteFactor
+        >>> f1 = DiscreteFactor(nodes=[0, 1], values={(0, 0): 1, (0, 1): 2, (0, 2): 3})
+        >>> f2 = DiscreteFactor(nodes=[0], values={0: 0, 1: 1, 2: 2, 3: 3})
+        >>> dmn = DiscreteMarkovNetwork(states=[4, 3], factors=[f1])
+        >>> dmn = dmn.with_factor(f2)
+        >>> len(dmn.factors)
+        2
+        """
+        return DiscreteMarkovNetwork(
+            states=self.states,
+            edges=self._given_edges,
+            factors=self.factors + [factor],
+        )
+
+    def num_factor_parameters(self):
+        return sum(len(f.values) for f in self.factors)

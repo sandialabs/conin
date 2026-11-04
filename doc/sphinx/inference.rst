@@ -11,42 +11,50 @@ See :doc:`backends` for backend-specific installation and solver requirements.
 Markov network inference
 ------------------------
 
-The ``ABC_conin`` example from ``conin.markov_network.examples`` is a compact
+The ``ABC_conin`` example from ``conin.examples.markov_network`` is a compact
 Markov network with three variables and pairwise interactions.
 
-.. code-block:: python
+.. testcode::
+   :skipif: not toulbar2_available or not mip_solver_available
 
-   from conin.inference import map_query
-   from conin.markov_network.examples import ABC_conin
+   from conin.config import default_mip_solver
+   from conin import map_query
+   from conin.examples.markov_network import ABC_conin
 
    example = ABC_conin()
    pgm = example.pgm
 
    cfn_results = map_query(pgm, method="toulbar2")
-   ip_results = map_query(pgm, method="integer_program", solver="glpk")
+   ip_results = map_query(pgm, method="integer_program", solver=default_mip_solver)
    ve_results = map_query(pgm, method="variable_elimination")
 
-   print(cfn_results.solution.states)
-   print(ip_results.solution.states)
-   print(ve_results.solution.states)
+   print(sorted(cfn_results.solution.states.items()))
+   assert ip_results.solution.states == cfn_results.solution.states
+   assert ve_results.solution.states == cfn_results.solution.states
+
+.. testoutput::
+   :skipif: not toulbar2_available or not mip_solver_available
+
+   [('A', 2), ('B', 2), ('C', 1)]
 
 The ``method`` argument selects the backend: ``toulbar2`` dispatches to the
 Toulbar2 backend, ``integer_program`` creates a Pyomo optimization model, and
-``variable_elimination`` uses pgmpy's variable elimination solver.
+``variable_elimination`` uses CONIN's variable elimination.
 
 Hidden Markov model inference
 -----------------------------
 
-The ``create_hmm1`` example from ``conin.hidden_markov_model.examples`` is
+The ``create_hmm1`` example from ``conin.examples.hidden_markov_model`` is
 small enough to use throughout the documentation.
 
 Viterbi and A* inference
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. code-block:: python
+.. testcode::
 
-   from conin.inference import map_query
-   from conin.hidden_markov_model.examples import create_hmm1
+   from conin.config import default_mip_solver
+   from conin import map_query
+   from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
    observed = ["o0", "o0", "o1", "o0", "o0"]
@@ -57,9 +65,73 @@ Viterbi and A* inference
    print(a_star_results.solution.states)
    print(viterbi_results.solution.states)
 
-Both methods accept dense evidence lists. Methods that also support a dictionary
-form can use a mapping such as ``{0: "o0", 1: "o0", 2: "o1"}`` when you want the
-returned hidden states keyed by time index.
+.. testoutput::
+
+   ['h0', 'h0', 'h0', 'h0', 'h0']
+   ['h0', 'h0', 'h0', 'h0', 'h0']
+
+Both methods accept the observations as a list or tuple, or as a dictionary
+keyed by every time ``0..T-1``, such as ``{0: "o0", 1: "o0", 2: "o1"}``, which
+returns the hidden states keyed by time index. HMM queries need the
+observations: other evidence (including a dictionary with missing times)
+raises ``InvalidInputError``. The integer-program, toulbar2 and
+variable-elimination methods infer over the times ``start..stop``, with
+``stop`` defaulting to the last observation.
+
+Results
+^^^^^^^
+
+Every method returns the same keys: ``solution`` (the best solution),
+``solutions`` (best first), ``termination_condition`` (``"ok"``, or why the
+search stopped) and ``solvetime``. Each solution has
+
+- ``states``: the MAP assignment, ``{node: state}``, or the hidden states of
+  an HMM;
+- ``log_potential``: the score of the assignment together with the evidence,
+  :func:`conin.algorithms.scoring.log_potential` on the model without its constraints
+  (for an HMM, ``log P(hidden, observed)``; for a Markov network the sum of
+  the log factors). It is not renormalised by the probability of the
+  constraints, and it is the same for every method, so it can be compared
+  across methods; ``None`` for a partial MAP query;
+- ``solver_objective``: the objective value of the integer program or the
+  toulbar2 cost function network, in the backend's own scale; ``None`` for
+  the other methods.
+
+.. testcode::
+
+   from conin import log_potential
+
+   best = viterbi_results.solution
+   assert best.log_potential == log_potential(hmm, best.states, observed=observed)
+   assert best.log_potential == a_star_results.solution.log_potential
+   print(round(best.log_potential, 4), best.solver_objective)
+
+.. testoutput::
+
+   -3.9684 None
+
+If the evidence or the constraints exclude every assignment, there is no
+solution: every method then returns ``solution=None``, ``solutions=[]`` and
+``termination_condition="error: no feasible solutions"``. (The integer program
+with ``solver="or_topas"`` raises instead.) Here the hidden state ``"y"``
+cannot be left and only ``"y"`` emits ``"b"``, so ``"b"`` cannot come before
+``"a"``:
+
+.. testcode::
+
+   from conin import HiddenMarkovModel
+
+   absorbing = HiddenMarkovModel(
+       start_probs={"x": 0.5, "y": 0.5},
+       transition_probs={("x", "x"): 0.5, ("x", "y"): 0.5, ("y", "y"): 1.0},
+       emission_probs={("x", "a"): 1.0, ("y", "b"): 1.0},
+   )
+   results = map_query(absorbing, method="viterbi", evidence=["b", "a"])
+   print(results.solution, results.termination_condition)
+
+.. testoutput::
+
+   None error: no feasible solutions
 
 Optimization and Toulbar2 inference on HMMs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -67,10 +139,12 @@ Optimization and Toulbar2 inference on HMMs
 Dynamic Bayesian networks and HMMs use the same ``map_query`` function. The
 input model type and selected ``method`` determine the backend dispatch.
 
-.. code-block:: python
+.. testcode::
+   :skipif: not toulbar2_available or not mip_solver_available
 
-   from conin.inference import map_query
-   from conin.hidden_markov_model.examples import create_hmm1
+   from conin.config import default_mip_solver
+   from conin import map_query
+   from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
    observed = ["o0", "o0", "o1", "o0", "o0"]
@@ -80,22 +154,29 @@ input model type and selected ``method`` determine the backend dispatch.
        hmm,
        method="integer_program",
        evidence=observed,
-       solver="glpk",
+       solver=default_mip_solver,
    )
 
    print(cfn_results.solution.states)
    print(ip_results.solution.states)
 
+.. testoutput::
+   :skipif: not toulbar2_available or not mip_solver_available
+
+   ['h0', 'h0', 'h0', 'h0', 'h0']
+   ['h0', 'h0', 'h0', 'h0', 'h0']
+
 Variable elimination on HMMs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The ``variable_elimination`` method first converts the HMM into a dynamic
-Bayesian network and then unrolls it into a static Bayesian network for pgmpy.
+Bayesian network and then unrolls it into a static Bayesian network.
 
-.. code-block:: python
+.. testcode::
 
-   from conin.inference import map_query
-   from conin.hidden_markov_model.examples import create_hmm1
+   from conin.config import default_mip_solver
+   from conin import map_query
+   from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
    observed = ["o0", "o0", "o1", "o0", "o0"]
@@ -103,20 +184,29 @@ Bayesian network and then unrolls it into a static Bayesian network for pgmpy.
    results = map_query(hmm, method="variable_elimination", evidence=observed)
    print(results.solution.states)
 
+.. testoutput::
+
+   ['h0', 'h0', 'h0', 'h0', 'h0']
+
 Constrained HMM inference
 -------------------------
 
 The constrained examples from
-``conin.hidden_markov_model.examples`` can be used with the same ``map_query``
+``conin.examples.hidden_markov_model`` can be used with the same ``map_query``
 entry point.
 For example, the Pyomo-constrained model ``create_chmm1_pyomo()`` works with
-``method="integer_program"``, and the Toulbar2-constrained model
-``create_chmm1_toulbar2()`` works with ``method="toulbar2"``.
+``method="integer_program"``, the Toulbar2-constrained model
+``create_chmm1_toulbar2()`` works with ``method="toulbar2"``, and the oracle and
+recursive models ``create_chmm1_oracle()`` and ``create_chmm1_recursive()``
+work with ``method="a_star"``. HMMs with MVR constraints work with
+``method="mvr_viterbi"`` (requires torch).
 
-.. code-block:: python
+.. testcode::
+   :skipif: not toulbar2_available or not mip_solver_available
 
-   from conin.inference import map_query
-   from conin.hidden_markov_model.examples import (
+   from conin.config import default_mip_solver
+   from conin import map_query
+   from conin.examples.hidden_markov_model import (
        create_chmm1_pyomo,
        create_chmm1_toulbar2,
    )
@@ -128,7 +218,7 @@ For example, the Pyomo-constrained model ``create_chmm1_pyomo()`` works with
        pyomo_hmm,
        method="integer_program",
        evidence=observed,
-       solver="glpk",
+       solver=default_mip_solver,
    )
 
    toulbar2_hmm = create_chmm1_toulbar2()
@@ -140,6 +230,12 @@ For example, the Pyomo-constrained model ``create_chmm1_pyomo()`` works with
 
    print(pyomo_results.solution.states)
    print(toulbar2_results.solution.states)
+
+.. testoutput::
+   :skipif: not toulbar2_available or not mip_solver_available
+
+   ['h1', 'h1', 'h1', 'h0', 'h0', 'h0', 'h0', 'h0', 'h0', 'h0', 'h0', 'h0', 'h0', 'h0', 'h0']
+   ['h1', 'h1', 'h1', 'h0', 'h0', 'h0', 'h0', 'h0', 'h0', 'h0', 'h0', 'h0', 'h0', 'h0', 'h0']
 
 Notes
 -----

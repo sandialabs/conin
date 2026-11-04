@@ -1,14 +1,14 @@
 # MVR formula syntax — cheatsheet
 
-A formula string is parsed into calls to `mvr_constraints.py` and
-`mvr_operators.py`. Nothing new is constructed, so every formula below is
+A formula string is parsed into calls to `conin.constraints.mvr.primitives` and
+`conin.constraints.mvr.operators`. Nothing new is constructed, so every formula below is
 shorthand for calls you could write by hand. Worked demo: [`formula.ipynb`](formula.ipynb).
 
 ```python
-from conin.hidden_markov_model.mvr_formula import build_mvr, build_mvr_functor
+from conin.constraints.mvr import build_mvr, build_mvr_functor
 
-build_mvr(hmm, "reach B before A[2]")     # -> list[BaseMVR],       for MVR_CHMM(constraints=...)
-build_mvr_functor("reach B before A[2]")  # -> list[MVRConstraint], for ConstrainedHiddenMarkovModel(constraints=...)
+build_mvr(hmm, "reach B before A[2]")     # -> list[BaseMVR],       for ConstrainedHiddenMarkovModel(hmm, constraints)
+build_mvr_functor("reach B before A[2]")  # -> list[MVRConstraint], for ConstrainedHiddenMarkovModel(hmm, constraints)
 ```
 
 Both return a **list**, one entry per top-level `and`. Downstream algorithms take
@@ -17,10 +17,11 @@ constraint. The two differ only in when the MVR is built:
 
  - `build_mvr` takes an `hmm` and builds the MVRs for that HMM right away.
  - `build_mvr_functor` takes no `hmm`. It builds `MVRConstraint` factories, each of
-   which constructs its MVR later, when `initialize_chmm` supplies an HMM.
+   which constructs its MVR later, when a `ConstrainedHiddenMarkovModel` builds its
+   `"mvr"` representation (`chmm.representation("mvr")`).
 
 Each result is named after its own formula — `"never A and reach B[0]"` — unless
-you pass `name=`. That name is what `sat_time_mvr` and `sat_prob_mvr` accept as
+you pass `name=`. That name is what `sat_time_torch_mvr_chmm` and `sat_prob_torch_mvr_chmm` accept as
 `target="..."`.
 
 ## 1. Atoms
@@ -182,6 +183,6 @@ High priority listed first. Parentheses to override.
 | `match "<A><B>*"` | one `A` followed by any number of `B`s |
 | `reverse (A cat B)` | a `B` before an `A`, read backwards |
 
-Anything the grammar cannot say is still reachable by calling `mvr_constraints`
-and `mvr_operators` directly. The formula layer is a convenience over that
+Anything the grammar cannot say is still reachable by calling the primitives
+and operators in `conin.constraints.mvr` directly. The formula layer is a convenience over that
 algebra, not a replacement for it.

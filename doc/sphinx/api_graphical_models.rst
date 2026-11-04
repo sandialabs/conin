@@ -3,15 +3,22 @@ Graphical Models
 
 The following probabilistic graphical models are defined in conin.
 
+Base class
+----------
+
+.. autoclass:: conin.graphical_models.GraphicalModel
+   :members: representation
+   :show-inheritance:
+
 Markov networks
 ---------------
 
-.. autoclass:: conin.markov_network.DiscreteFactor
+.. autoclass:: conin.graphical_models.DiscreteFactor
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. autoclass:: conin.markov_network.DiscreteMarkovNetwork
+.. autoclass:: conin.graphical_models.DiscreteMarkovNetwork
    :members:
    :undoc-members:
    :show-inheritance:
@@ -19,12 +26,12 @@ Markov networks
 Bayesian networks
 -----------------
 
-.. autoclass:: conin.bayesian_network.DiscreteCPD
+.. autoclass:: conin.graphical_models.DiscreteCPD
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. autoclass:: conin.bayesian_network.DiscreteBayesianNetwork
+.. autoclass:: conin.graphical_models.DiscreteBayesianNetwork
    :members:
    :undoc-members:
    :show-inheritance:
@@ -32,7 +39,7 @@ Bayesian networks
 Hidden Markov models
 --------------------
 
-.. autoclass:: conin.hidden_markov_model.HiddenMarkovModel
+.. autoclass:: conin.graphical_models.HiddenMarkovModel
    :members:
    :undoc-members:
    :show-inheritance:
@@ -40,7 +47,25 @@ Hidden Markov models
 Dynamic Bayesian networks
 -------------------------
 
-.. autoclass:: conin.dynamic_bayesian_network.DynamicDiscreteBayesianNetwork
+.. autoclass:: conin.graphical_models.DynamicDiscreteBayesianNetwork
    :members:
    :undoc-members:
    :show-inheritance:
+
+Time indices and conversions
+----------------------------
+
+.. autoclass:: conin.graphical_models.TimeIndex
+   :show-inheritance:
+
+.. autoclass:: conin.graphical_models.TimeExpression
+
+.. autofunction:: conin.graphical_models.random_hmm
+
+.. autofunction:: conin.graphical_models.create_mn_from_bn
+
+.. autofunction:: conin.graphical_models.create_bn_from_dbn
+
+.. autofunction:: conin.graphical_models.create_dbn_from_hmm
+
+.. autofunction:: conin.graphical_models.is_polytree

@@ -1,11 +1,10 @@
 Hidden Markov Model Learning
 ============================
 
-``conin.hidden_markov_model.learning`` contains helpers for estimating HMM
+``conin.algorithms.learning`` contains helpers for estimating HMM
 parameters from simulated or labeled sequences. The supervised-learning path is
 the most direct and best-tested interface. Monte Carlo EM support exists, but it
-is more experimental and expects an application object with domain-specific
-sampling behavior.
+is more experimental.
 
 Simulation Format
 -----------------
@@ -14,9 +13,9 @@ Learning helpers use a list of simulation records. Each record has aligned
 ``hidden`` and ``observed`` sequences, plus an ``index`` field. The
 ``convert_to_simulations`` helper creates this format from parallel lists.
 
-.. code-block:: python
+.. testcode::
 
-   from conin.hidden_markov_model import learning
+   from conin.algorithms import learning
 
    hidden = [["h0", "h0", "h1"], ["h1", "h1", "h1", "h0"]]
    observed = [["o0", "o0", "o0"], ["o1", "o1", "o1", "o1"]]
@@ -36,9 +35,9 @@ Supervised Learning
 ``supervised_learning`` estimates start, transition, and emission probabilities
 from simulations where both hidden and observed states are known.
 
-.. code-block:: python
+.. testcode::
 
-   from conin.hidden_markov_model import learning
+   from conin.algorithms import learning
 
    hidden_states = ["h0", "h1"]
    observable_states = ["o0", "o1"]
@@ -58,9 +57,9 @@ from simulations where both hidden and observed states are known.
        emission_tolerance=0,
    )
 
-   start_probs = hmm.get_start_probs()
-   transition_probs = hmm.get_transition_probs()
-   emission_probs = hmm.get_emission_probs()
+   start_probs = hmm.start_probs
+   transition_probs = hmm.transition_probs
+   emission_probs = hmm.emission_probs
 
    assert start_probs["h0"] == 0.5
    assert transition_probs["h0", "h1"] == 0.5
@@ -77,11 +76,15 @@ Unobserved States and Priors
 The ``hidden_states`` and ``observable_states`` arguments define the full state
 spaces, not just states present in the training data. If a hidden state has no
 observed outgoing transitions or emissions, ``supervised_learning`` uses uniform
-probabilities unless a prior dictionary is supplied.
+probabilities unless a prior dictionary is supplied. A prior replaces the whole
+row of every such state, and the entries it does not list are 0, so it must
+give each of these rows probabilities that sum to 1 (here ``h1`` is never
+left and ``h2`` is never visited); otherwise the ``HiddenMarkovModel``
+constructor raises ``InvalidInputError``.
 
-.. code-block:: python
+.. testcode::
 
-   from conin.hidden_markov_model import learning
+   from conin.algorithms import learning
 
    simulations = learning.convert_to_simulations(
        hidden_list=[["h0", "h1"]],
@@ -94,12 +97,13 @@ probabilities unless a prior dictionary is supplied.
        start_tolerance=0,
        transition_tolerance=0,
        emission_tolerance=0,
-       transition_prior={("h2", "h2"): 1.0},
+       transition_prior={("h1", "h1"): 1.0, ("h2", "h2"): 1.0},
        emission_prior={("h2", "o2"): 1.0},
    )
 
-   assert hmm.get_transition_probs()["h2", "h2"] == 1.0
-   assert hmm.get_emission_probs()["h2", "o2"] == 1.0
+   assert hmm.transition_probs["h1", "h1"] == 1.0
+   assert hmm.transition_probs["h2", "h2"] == 1.0
+   assert hmm.emission_probs["h2", "o2"] == 1.0
 
 Unknown Hidden States
 ---------------------
@@ -107,9 +111,9 @@ Unknown Hidden States
 ``add_unknowns`` replaces hidden-state values that occur at most ``num`` times
 with a token. This is useful for collapsing rare labels before fitting a model.
 
-.. code-block:: python
+.. testcode::
 
-   from conin.hidden_markov_model import learning
+   from conin.algorithms import learning
 
    hidden = [[0, 0, 1], [2], [0, 1, 3], [4]]
    collapsed = learning.add_unknowns(hidden, num=1)
@@ -127,14 +131,16 @@ to preserve the original sequences.
 Monte Carlo EM
 --------------
 
-``mcem`` is an experimental Monte Carlo EM helper. It is intended for workflows
-where an application object can sample feasible hidden-state sequences for a
-fixed observed sequence, then refit the HMM with ``supervised_learning``.
+``mcem`` is an experimental Monte Carlo EM helper. ``app`` is a
+``ConstrainedHiddenMarkovModel`` with oracle constraints (or a bare HMM). Each
+iteration samples feasible hidden sequences for a fixed observed sequence by
+rejection sampling (``conin.algorithms.sampling.oracle.rejection_sample_hidden``), scores each sample under the current
+HMM, and refits the HMM from the samples with ``supervised_learning``. The next
+iteration samples from the refitted HMM (``app.with_model(new_hmm)``, with the
+same constraints and data).
 
-At a high level, the application object is expected to provide:
-
-- ``generate_hidden(observed)`` for sampling a feasible hidden sequence.
-- ``hmm`` with a ``log_probability(observed, hidden)`` method.
+``app`` is not changed, and ``mcem`` returns the final average
+log-probability, not the fitted HMM.
 
 Because this path is less stable and more application-specific, prefer
 ``supervised_learning`` for labeled data and treat ``mcem`` as an advanced API.
@@ -142,10 +148,10 @@ Because this path is less stable and more application-specific, prefer
 Reference
 ---------
 
-.. autofunction:: conin.hidden_markov_model.learning.convert_to_simulations
+.. autofunction:: conin.algorithms.learning.convert_to_simulations
 
-.. autofunction:: conin.hidden_markov_model.learning.supervised_learning
+.. autofunction:: conin.algorithms.learning.supervised_learning
 
-.. autofunction:: conin.hidden_markov_model.learning.add_unknowns
+.. autofunction:: conin.algorithms.learning.add_unknowns
 
-.. autofunction:: conin.hidden_markov_model.learning.mcem
+.. autofunction:: conin.algorithms.learning.mcem

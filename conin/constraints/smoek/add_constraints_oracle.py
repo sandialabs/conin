@@ -1,0 +1,187 @@
+import pyomo.environ as pyo
+from pyomo.core.expr.visitor import identify_variables
+
+from conin.constraints.oracle import oracle_constraint_fn
+from .decorators import build_smoek_model
+from conin.util import try_import, State
+from conin.util.var_wrapper import PyomoVarWrapper
+
+with try_import() as smoek_available:
+    import smoek
+
+
+class StateSpace:
+    """The ``nodes`` and ``states_of`` of a (possibly unrolled) model.
+
+    This is the part of a graphical model the smoek-constraint compiler
+    reads.
+    """
+
+    def __init__(self, states):
+        self._states = dict(states)
+
+    @property
+    def nodes(self):
+        return list(self._states)
+
+    def states_of(self, node):
+        return self._states[node]
+
+
+def create_oracle_constraints_from_smoek(*, pgm, constraints, data, name=None):
+    """
+    Convert a list of SmoekConstraints into a list with a single FactorOracleConstraint.
+
+    This function:
+    1. Takes a list of SmoekConstraints
+    2. Generates a string representation of each constraint
+    3. Composes these string representations into a function that returns True
+       if all constraints are satisfied
+
+    Parameters:
+        pgm: The PGM model providing node/state information.
+        constraints: A list of SmoekConstraints.
+        data: Inference-time data passed to each constraint.
+        name: Optional name for the resulting FactorOracleConstraint.
+
+    Returns:
+        A list with a single FactorOracleConstraint that evaluates all the smoek constraints
+    """
+    if len(constraints) == 0:
+        return []
+
+    smoek_model = build_smoek_model(constraints, data)
+
+    # The generated function takes data if the first constraint does.
+    num_args = constraints[0].num_args
+
+    # Collect all nodes referenced in the constraints
+    nodes_set = set()
+
+    node_map = pyo.ComponentMap()
+    pyomo_model = pyo.ConcreteModel()
+    tmp = {}
+    for k in pgm.nodes:
+        for s in pgm.states_of(k):
+            if type(s) is str:
+                s_str = f'"{s}"'
+            else:
+                s_str = str(s)
+            if type(k) is tuple:
+                k_, t_ = k
+                if type(k_) is str:
+                    k_str = f'"{k_}"'
+                else:
+                    k_str = str(k_)
+                pyomo_var_name = f"m_.V({k_str}, {t_}, {s_str})"
+            else:
+                if type(k) is str:
+                    k_str = f'"{k}"'
+                else:
+                    k_str = str(k)
+                pyomo_var_name = f"m_.V({k_str}, {s_str})"
+            setattr(pyomo_model, pyomo_var_name, pyo.Var(name=pyomo_var_name))
+            v = getattr(pyomo_model, pyomo_var_name)
+            node_map[v] = k
+            tmp[k, State(s)] = v
+
+    pyomo_model.V = PyomoVarWrapper(tmp)
+
+    pyomo_model = smoek.pymodel.pyomo.generate(
+        model=smoek_model,
+        data=data,
+        pyomo_model=pyomo_model,
+    )
+
+    # Walk the expression trees to collect constraint strings and node references
+    constraint_strings = []
+    for constraint_component in pyomo_model.component_objects(
+        pyo.Constraint, active=True
+    ):
+        # Iterate through each constraint data object (handles indexed constraints)
+        for index in constraint_component:
+            constraint_data = constraint_component[index]
+
+            # Skip inactive constraints
+            if not constraint_data.active:
+                continue
+
+            constraint_strings.append(str(constraint_data.expr).replace("'", ""))
+
+            for var in identify_variables(constraint_data.expr):
+                nodes_set.add(node_map[var])
+
+    # Convert nodes_set to sorted list for deterministic ordering
+    nodes = sorted(list(nodes_set))
+
+    # Generate a single Python function as a string
+    # This function will be compiled once and can be called many times
+    function_code = _generate_constraint_function_code(constraint_strings, num_args)
+
+    # Compile the function code
+    namespace = {}
+    try:
+        exec(function_code, namespace)
+        composite_constraint_function = namespace["constraint_function"]
+    except Exception as e:
+        raise RuntimeError(
+            f"Failed to compile constraint function: {e}\n\nGenerated code:\n{function_code}"
+        )
+
+    # Create name if not provided
+    if name is None:
+        constraint_names = [c.name for c in constraints]
+        name = f"composite_{'_'.join(constraint_names)}"
+
+    # Use the oracle_constraint_fn decorator to create the FactorOracleConstraint
+    oracle_constraint = oracle_constraint_fn(nodes=nodes, name=name)(
+        composite_constraint_function
+    )
+
+    return [oracle_constraint]
+
+
+def _generate_constraint_function_code(constraint_strings, num_args):
+    """
+    Generate Python function code that evaluates all constraints.
+
+    Parameters:
+        constraint_strings: List of constraint expression strings
+        num_args: Number of arguments (1 or 2) for the function
+
+    Returns:
+        String containing Python function definition
+    """
+    # Build the function signature based on num_args
+    if num_args == 1:
+        signature = "def constraint_function(args):"
+    else:
+        signature = "def constraint_function(args, data=None):"
+
+    # Build the V() helper function that maps m_.V() calls to actual state checks
+    v_helper = '''
+    class m_:
+        @staticmethod
+        def V(node, state, aux=None):
+            """Return 1 if args[node] == state, else 0"""
+            if aux is not None:
+                node = (node,state)
+                state = aux
+            if node not in args:
+                raise KeyError(f"Node {node} not found in args")
+            return 1 if args.get(node) == state else 0
+'''
+
+    # Build the constraint check expression
+    # Combine all constraints with 'and' operator
+    if len(constraint_strings) == 1:
+        constraint_check = f"    return ({constraint_strings[0]})"
+    else:
+        # Join constraints with ' and \\\n        ' for readability
+        constraints_joined = ") and \\\n        (".join(constraint_strings)
+        constraint_check = f"    return ({constraints_joined})"
+
+    # Combine all parts
+    function_code = f"{signature}\n{v_helper}\n{constraint_check}"
+
+    return function_code

@@ -13,9 +13,9 @@ flat list interpreted in the model's state order.
 For multi-node factors, dictionary values are the most explicit representation
 and avoid ambiguity about Cartesian-product ordering.
 
-.. code-block:: python
+.. testcode::
 
-   from conin.markov_network import DiscreteFactor
+   from conin import DiscreteFactor
 
    f_a = DiscreteFactor(["A"], {0: 1, 1: 1})
    f_ab = DiscreteFactor(
@@ -31,13 +31,13 @@ and avoid ambiguity about Cartesian-product ordering.
 Markov networks
 ---------------
 
-The smallest complete example in ``conin.markov_network.examples`` is
+The smallest complete example in ``conin.examples.markov_network`` is
 ``example6_conin``. It builds a two-node Markov network with one unary factor
 for each node and one pairwise factor.
 
-.. code-block:: python
+.. testcode::
 
-   from conin.markov_network import DiscreteMarkovNetwork, DiscreteFactor
+   from conin import DiscreteMarkovNetwork, DiscreteFactor
 
    f_a = DiscreteFactor(["A"], {0: 1, 1: 1})
    f_b = DiscreteFactor(["B"], {0: 1, 1: 2})
@@ -56,15 +56,14 @@ for each node and one pairwise factor.
        edges=[("A", "B")],
        factors=[f_a, f_b, f_ab],
    )
-   pgm.check_model()
 
 For a slightly larger example, ``ABC_conin`` defines three variables with
 pairwise interactions:
 
-.. code-block:: python
+.. testcode::
 
    import numpy as np
-   from conin.markov_network import DiscreteMarkovNetwork, DiscreteFactor
+   from conin import DiscreteMarkovNetwork, DiscreteFactor
 
    f_a = DiscreteFactor(nodes=["A"], values=[1, 1, 2])
    f_b = DiscreteFactor(nodes=["B"], values=[1, 1, 3])
@@ -78,19 +77,18 @@ pairwise interactions:
        edges=[("A", "B"), ("B", "C"), ("A", "C")],
        factors=[f_a, f_b, f_c, f_ab, f_bc, f_ac],
    )
-   pgm.check_model()
 
 Constrained Markov networks
 ---------------------------
 
 ``ConstrainedDiscreteMarkovNetwork`` wraps a base Markov network together with a
-list of constraint functors. The examples in
-``conin.markov_network.examples`` use the same three-variable ``ABC`` model and
+list of constraints. The examples in
+``conin.examples.markov_network`` use the same three-variable ``ABC`` model and
 add an all-different constraint.
 
 The Pyomo and Toulbar2 examples require their respective solver backends. Oracle
-constraints with ``nodes`` are represented as additional factors and can also be
-consumed by variable-elimination workflows when ``pgmpy`` is installed.
+constraints with ``nodes`` (``FactorOracleConstraint``) are represented as
+additional indicator factors by the variable-elimination backend.
 
 Pyomo constraints
 ^^^^^^^^^^^^^^^^^
@@ -98,11 +96,10 @@ Pyomo constraints
 ``ABC_constrained_pyomo_conin`` uses ``@pyomo_constraint_fn`` to add algebraic
 constraints to the optimization model:
 
-.. code-block:: python
+.. testcode::
 
-   from conin import pyomo_constraint_fn
-   from conin.markov_network import ConstrainedDiscreteMarkovNetwork
-   from conin.markov_network.examples import ABC_conin
+   from conin import pyomo_constraint_fn, ConstrainedDiscreteMarkovNetwork
+   from conin.examples.markov_network import ABC_conin
 
    base = ABC_conin().pgm
 
@@ -114,7 +111,7 @@ constraints to the optimization model:
 
    constrained = ConstrainedDiscreteMarkovNetwork(
        base,
-       constraints=[constraint_fn],
+       constraints=constraint_fn,
    )
 
 Toulbar2 constraints
@@ -123,11 +120,10 @@ Toulbar2 constraints
 ``ABC_constrained_toulbar2_conin`` expresses the same all-different constraint
 with the Toulbar2 interface:
 
-.. code-block:: python
+.. testcode::
 
-   from conin import toulbar2_constraint_fn
-   from conin.markov_network import ConstrainedDiscreteMarkovNetwork
-   from conin.markov_network.examples import ABC_conin
+   from conin import toulbar2_constraint_fn, ConstrainedDiscreteMarkovNetwork
+   from conin.examples.markov_network import ABC_conin
 
    base = ABC_conin().pgm
 
@@ -142,7 +138,7 @@ with the Toulbar2 interface:
 
    constrained = ConstrainedDiscreteMarkovNetwork(
        base,
-       constraints=[constraint_fn],
+       constraints=constraint_fn,
    )
 
 Oracle constraints with node scoping
@@ -150,11 +146,10 @@ Oracle constraints with node scoping
 
 ``ABC_constrained_oracle_conin`` creates the constraint as an auxiliary factor:
 
-.. code-block:: python
+.. testcode::
 
-   from conin import oracle_constraint_fn
-   from conin.markov_network import ConstrainedDiscreteMarkovNetwork
-   from conin.markov_network.examples import ABC_conin
+   from conin import oracle_constraint_fn, ConstrainedDiscreteMarkovNetwork
+   from conin.examples.markov_network import ABC_conin
 
    base = ABC_conin().pgm
 
@@ -165,7 +160,7 @@ Oracle constraints with node scoping
 
    constrained = ConstrainedDiscreteMarkovNetwork(
        base,
-       constraints=[constraint_fn],
+       constraints=constraint_fn,
    )
 
 Notes
@@ -173,9 +168,14 @@ Notes
 
 - ``factors`` is required and must be non-empty. Models are immutable after
   construction; use ``with_factor`` to get a new model with an extra factor.
-- ``states`` defines the allowed values for each random variable.
+- ``states`` defines the allowed values for each random variable. The states
+  of nodes that are not listed are the values they take in the factors with
+  dictionary values.
 - ``edges`` can be given explicitly or inferred from the factor scopes.
-- ``check_model()`` is a good final step after constructing the model.
+- The constructor validates the model: every node
+  appears in a factor, the factor values are non-negative and use valid
+  states, and a list of values has one value per combination of states. It
+  raises ``InvalidInputError`` for an inconsistent model.
 - See :doc:`model_conversion_io` for UAI file I/O and Bayesian-network to
   Markov-network conversion.
 - Simpler examples such as ``example6_conin`` and ``ABC_conin`` are usually the

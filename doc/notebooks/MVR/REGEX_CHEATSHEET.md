@@ -7,7 +7,7 @@ way to write an automaton by hand. Worked demo:
 [`regex_tutorial.ipynb`](regex_tutorial.ipynb).
 
 ```python
-from conin.hidden_markov_model.mvr_constraints import mvr_regex
+from conin.constraints.mvr import mvr_regex
 
 mvr_regex(hmm, "<a><b>*<c>")            # -> HomMVR
 build_mvr(hmm, 'match "<a><b>*<c>"')    # the same automaton, from the formula layer

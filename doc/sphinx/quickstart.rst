@@ -37,7 +37,7 @@ The following example creates a two-node Bayesian network with one root node
 
 .. doctest:: quickstart
 
-   >>> from conin.bayesian_network import DiscreteBayesianNetwork, DiscreteCPD
+   >>> from conin import DiscreteBayesianNetwork, DiscreteCPD
    >>> cpd_a = DiscreteCPD(node="A", values=[0.9, 0.1])
    >>> cpd_b = DiscreteCPD(
    ...     node="B",
@@ -45,7 +45,6 @@ The following example creates a two-node Bayesian network with one root node
    ...     values={0: [0.2, 0.8], 1: [0.9, 0.1]},
    ... )
    >>> pgm = DiscreteBayesianNetwork(states={"A": [0, 1], "B": [0, 1]}, cpds=[cpd_a, cpd_b])
-   >>> pgm.check_model()
    >>> pgm.nodes
    ['A', 'B']
    >>> pgm.edges
@@ -54,15 +53,20 @@ The following example creates a two-node Bayesian network with one root node
 Evaluate an Assignment
 ----------------------
 
-``conin.common.log_potential`` evaluates a fully specified assignment for a
-native CONIN Bayesian network or Markov network.
+``conin.log_probability`` returns the log-probability of a total assignment
+of a Bayesian network, a dynamic Bayesian network or an HMM.
+``conin.log_potential`` also accepts Markov networks (where it returns the
+unnormalised log-probability) and constrained models (where it returns
+``-inf`` if a constraint is violated). ``conin.log_probability_query``
+computes marginal and conditional log-probabilities, also under constraints.
+See :doc:`model_conversion_io`.
 
 .. doctest:: quickstart
 
-   >>> from conin.common import log_potential
-   >>> value = log_potential(pgm, {"A": 0, "B": 1})
+   >>> from conin import log_probability
+   >>> value = log_probability(pgm, {"A": 0, "B": 1})
    >>> round(value, 6)
-   np.float64(-0.328504)
+   -0.328504
 
 Run Inference
 -------------
@@ -71,14 +75,18 @@ For MAP inference on Bayesian networks, use the high-level ``map_query`` entry
 point with the desired backend method. Backend-specific requirements are listed
 in :doc:`backends`.
 
-For example, with ``pgmpy`` installed:
+For example, with variable elimination (part of the base package):
 
-.. code-block:: python
+.. testcode:: quickstart
 
-   from conin.inference import map_query
+   from conin import map_query
 
    result = map_query(pgm, method="variable_elimination")
-   print(result.solution.states)
+   print(sorted(result.solution.states.items()))
+
+.. testoutput:: quickstart
+
+   [('A', 0), ('B', 1)]
 
 Next Steps
 ----------
@@ -88,3 +96,4 @@ Next Steps
 - See :doc:`examples` for selected example factories.
 - See :doc:`model_conversion_io` for model conversion and file I/O.
 - See :doc:`hmm_learning` for HMM parameter learning.
+- See :doc:`api_conin` for the names that ``conin`` exports.

@@ -14,11 +14,12 @@ The base package dependencies are declared in ``pyproject.toml``:
 - ``numpy``
 - ``pandas``
 - ``pyomo``
+- ``ovld``
+- ``smoek`` (the ``"smoek"`` constraint family)
 
 With only the base dependencies, users can create native CONIN models, work with
-HMM utilities, use oracle, factor, Pyomo, and Toulbar2 constraint declarations,
-and run HMM Viterbi/A* inference. Algebraic constraints additionally require
-``smoek``.
+HMM utilities, declare every kind of constraint, and run HMM Viterbi/A*
+inference.
 
 .. list-table:: Base functionality
    :header-rows: 1
@@ -27,85 +28,100 @@ and run HMM Viterbi/A* inference. Algebraic constraints additionally require
      - Available with base dependencies
    * - Markov network, Bayesian network, dynamic Bayesian network, and HMM model construction
      - Yes
-   * - Oracle and factor constraint declaration
+   * - Oracle, factor-oracle, recursive, Pyomo, Toulbar2, smoek and MVR constraint declaration
      - Yes
-   * - Algebraic constraint declaration with ``algebraic_constraint_fn``
-     - Requires ``smoek``
-   * - HMM generation with ``random_hmm``
-     - Yes
-   * - HMM supervised learning
+   * - HMM generation with ``random_hmm`` and sampling with ``conin.algorithms.sampling``
+     - Yes (the MVR samplers need torch)
+   * - HMM supervised learning and Monte Carlo EM
      - Yes
    * - HMM ``map_query`` with ``method="viterbi"`` or ``method="a_star"``
      - Yes
+   * - ``log_probability`` and ``log_potential`` (``conin.algorithms.scoring``)
+     - Yes
+
+Optional extras are declared in ``pyproject.toml``:
+
+.. code-block:: shell
+
+   python -m pip install -e .[pgmpy]     # pgmpy conversion, BIF files
+   python -m pip install -e .[toulbar2]  # pytoulbar2
+   python -m pip install -e .[torch]     # the MVR algorithms
+   python -m pip install -e .[regex]     # greenery, for mvr_regex
+   python -m pip install -e .[docs]      # Sphinx
+   python -m pip install -e .[test]      # pytest
 
 Pyomo Solvers
 -------------
 
 ``pyomo`` is a base dependency, but Pyomo-based inference also needs an
-available optimization solver. ``conin`` checks for these solvers when selecting
-its default MIP solver:
+available optimization solver. Without a ``solver`` option, the
+``"integer_program"`` method uses ``conin.config.default_mip_solver``: the
+first available one of
 
 - ``gurobi``
-- ``highs``
 - ``glpk``
+- ``highs``
+- ``appsi_highs``
+
+``conin`` looks for them the first time a default solver is needed (not when
+it is imported), and raises ``RuntimeError`` if none is available.
 
 Use ``map_query(..., method="integer_program")`` for Pyomo-backed inference.
 
 You can also pass a solver explicitly to ``map_query``:
 
-.. code-block:: python
+.. testcode::
+   :skipif: not mip_solver_available
 
-   from conin.inference import map_query
-   from conin.markov_network.examples import ABC_conin
+   from conin.config import default_mip_solver
+   from conin import map_query
+   from conin.examples.markov_network import ABC_conin
 
    pgm = ABC_conin().pgm
-   results = map_query(pgm, method="integer_program", solver="highs")
+   results = map_query(pgm, method="integer_program", solver=default_mip_solver)
 
 If no supported solver is installed, Pyomo model construction may still work,
 but optimization-based inference will not be able to solve the model.
 
+``solver="or_topas"`` enumerates several optimal solutions with the
+`or_topas <https://github.com/sandialabs/or_topas>`_ package, which is not
+on PyPI; the conda environment files install it from GitHub. Its
+``solver_options`` may include ``topas_method`` (``"balas"``, the default, or
+``"gurobi_solution_pool"``).
+
 Toulbar2
 --------
 
-Toulbar2-backed inference requires ``pytoulbar2`` and a working Toulbar2
-installation. The conda environment files include ``pytoulbar2`` as a pip
-dependency, but it is not currently exposed as a Python package extra in
-``pyproject.toml``.
+Toulbar2-backed inference requires ``pytoulbar2`` (the ``toulbar2`` extra).
 
 Use ``map_query(..., method="toulbar2")`` for Toulbar2-backed inference.
 
 Toulbar2 CFN model files (``.cfn``, ``.cfn.gz``) can be loaded into CONIN
-Markov networks with ``conin.common.load_model``. Linear constraints in these
+Markov networks with ``conin.io.load_model``. Linear constraints in these
 files are loaded as Toulbar2 constraints. Loading does not require
 ``pytoulbar2``, but inference with the loaded constraints does; see
 :doc:`model_conversion_io`.
 
-When ``pytoulbar2`` is unavailable, some static-model Toulbar2 helpers return
-an empty result object with a termination condition indicating that
-``pytoulbar2`` is not available. Dynamic Bayesian network and HMM Toulbar2
-inference paths should be treated as requiring ``pytoulbar2`` at runtime.
+When ``pytoulbar2`` is unavailable, ``map_query(..., method="toulbar2")``
+raises ``ImportError``, as the other methods do when their backend is
+missing.
 
-Smoek Algebraic Constraints
----------------------------
+Smoek Constraints
+-----------------
 
-The ``algebraic_constraint_fn`` decorator uses ``smoek`` to let users write
-linear constraints with normal algebraic syntax. For example, an HMM constraint
-can return expressions such as ``sum(model.V("H", t, "h0") for t in data.hmm.T)
-<= 12`` instead of mutating a Pyomo model or Toulbar2 model directly.
+The ``smoek_constraint_fn`` decorator uses ``smoek`` (a base dependency)
+to let users write linear constraints with normal algebraic syntax. For
+example, an HMM constraint can return expressions such as
+``sum(model.V("H", t, "h0") for t in data.hmm.T) <= 12`` instead of mutating a
+Pyomo model or Toulbar2 model directly.
 
-``smoek`` is required when algebraic constraints are applied by the inference
-backends. The conda environment files install it from the Sandia GitHub
-repository:
-
-.. code-block:: shell
-
-   python -m pip install -e git+https://github.com/sandialabs/smoek.git#egg=smoek
-
-Algebraic constraints can be used with:
+Smoek constraints can be used with:
 
 - ``map_query(..., method="integer_program")``, which translates them to Pyomo.
 - ``map_query(..., method="toulbar2")``, which translates supported linear
   constraints to Toulbar2.
+- ``map_query(..., method="variable_elimination")`` and
+  ``log_probability_query``, which compile them into factor-oracle constraints.
 
 The selected inference method still needs its own backend dependencies, such as
 a Pyomo-supported MIP solver for ``integer_program`` or ``pytoulbar2`` for
@@ -122,47 +138,31 @@ pgmpy
 
 Features requiring ``pgmpy`` include:
 
-- ``map_query(..., method="variable_elimination")``
-- Loading BIF files through ``conin.common.load_model(..., model_type="conin")``
-- ``conin.common.load_model(..., model_type="pgmpy")``
-- ``conin.common.save_model(..., model_type="pgmpy")``
-- ``conin.common.pgmpy.convert_pgmpy_to_conin``
-- ``conin.common.conin.convert_conin_to_pgmpy_bn``
-- ``conin.common.conin.convert_conin_to_pgmpy_mn``
+- Loading and saving BIF files through ``conin.io.load_model`` and
+  ``conin.io.save_model``
+- ``conin.io.load_model(..., model_type="pgmpy")``
+- ``conin.io.save_model(..., model_type="pgmpy")``
+- ``conin.io.pgmpy.convert_pgmpy_to_conin``
+- ``conin.io.pgmpy.convert_conin_to_pgmpy_bn``
+- ``conin.io.pgmpy.convert_conin_to_pgmpy_mn``
 
-Other Optional Integrations
----------------------------
+CONIN's algorithms take CONIN models only; a pgmpy model is converted with
+``convert_pgmpy_to_conin`` first. Variable elimination
+(``map_query(..., method="variable_elimination")`` and
+``log_probability_query``) is part of the base package; it does not need
+pgmpy.
 
-Additional extras are declared for model-loading and conversion integrations:
+torch (MVR algorithms)
+----------------------
 
-The ``pyagrum``, ``pgmax``, and ``pomegranate`` loaders use ``pgmpy`` as an
-intermediate representation, so those extras include ``pgmpy`` in addition to
-the target package.
-
-.. list-table:: Optional integration extras
-   :header-rows: 1
-
-   * - Extra
-     - Package
-     - Related functionality
-   * - ``pyagrum``
-     - ``pgmpy``, ``pyagrum``
-     - ``conin.common.load_model(..., model_type="pyagrum")``
-   * - ``pgmax``
-     - ``pgmpy``, ``pgmax``
-     - ``conin.common.load_model(..., model_type="pgmax")`` and ``convert_pgmpy_to_pgmax``
-   * - ``pomegranate``
-     - ``pgmpy``, ``pomegranate``
-     - ``conin.common.load_model(..., model_type="pomegranate")`` and ``convert_pgmpy_to_pomegranate``
-   * - ``pgm-all``
-     - ``pgmpy``, ``pyagrum``, ``pgmax``, ``pomegranate``
-     - Installs the declared optional PGM integration packages
-
-For example:
-
-.. code-block:: shell
-
-   python -m pip install -e .[pgm-all]
+The MVR algorithms in ``conin.algorithms.inference.mvr``,
+``conin.algorithms.other_queries.mvr``, ``conin.algorithms.learning.mvr`` and
+``conin.algorithms.sampling.mvr``, and
+``map_query(..., method="mvr_viterbi")``, require ``torch`` (the ``torch``
+extra). torch is imported the first time one of these algorithms is used:
+``import conin`` and importing these packages do not import it. Declaring MVR
+constraints (``conin.constraints.mvr``) does not need torch, but
+``mvr_regex`` needs ``greenery`` (the ``regex`` extra).
 
 Development Environments
 ------------------------
@@ -172,8 +172,9 @@ The repository also includes conda environment files:
 - ``environment.yml`` for a runtime-style environment.
 - ``dev_environment.yml`` for development and testing.
 
-Both include ``pytoulbar2`` and ``highspy`` through pip. The development
-environment additionally includes ``pytest`` and ``pytest-cov``.
+Both include ``pytoulbar2``, ``highspy``, ``smoek`` and ``or_topas`` through
+pip. The development environment additionally includes ``pytest``,
+``pytest-cov``, ``nbmake`` and ``nbstripout``.
 
 Quick Selection Guide
 ---------------------
@@ -189,17 +190,19 @@ Quick Selection Guide
      - Base package
    * - Run supervised HMM learning
      - Base package
-   * - Run variable elimination inference
-     - ``pgmpy``
-   * - Use algebraic constraints
-     - ``smoek`` plus the selected inference backend
+   * - Run variable elimination inference or ``log_probability_query``
+     - Base package
+   * - Use smoek constraints
+     - Base package plus the selected inference backend
    * - Convert to/from pgmpy models
      - ``pgmpy``
    * - Run integer-programming inference
      - Pyomo plus ``gurobi``, ``highs``, or ``glpk``
+   * - Enumerate several optimal solutions
+     - ``or_topas`` plus a MIP solver
    * - Run Toulbar2/CFN inference
-     - ``pytoulbar2``/Toulbar2
+     - ``pytoulbar2``
    * - Load Toulbar2 CFN files
      - Base package
-   * - Use pgmax, pomegranate, or pyagrum integrations
-     - Corresponding optional extra, which also installs ``pgmpy``
+   * - Run the MVR algorithms
+     - ``torch`` (``greenery`` for ``mvr_regex``)

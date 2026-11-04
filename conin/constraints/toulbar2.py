@@ -1,0 +1,45 @@
+import inspect
+
+from conin.exceptions import InvalidInputError
+
+from .base import Constraint
+
+
+class Toulbar2Constraint(Constraint):
+
+    family = "toulbar2"
+
+    def __init__(self, func, name=None):
+        num_args = len(inspect.signature(func).parameters)
+        if num_args > 2:
+            raise InvalidInputError(
+                "Toulbar2 constraint defined with more than 2 arguments"
+            )
+
+        # If no name is provided, use the function's name
+        self._set(
+            func=func,
+            num_args=num_args,
+            name=name if name is not None else func.__name__,
+        )
+
+    def __call__(self, model, data):
+        if self.num_args == 1:
+            model_ = self.func(model)
+        else:
+            model_ = self.func(model, data)
+        return model if model_ is None else model_
+
+
+def toulbar2_constraint_fn(*, name=None):
+    """
+    Decorator factory that takes the 'name' and returns a decorator function that creates an instance of Toulbar2Constraint.
+    """
+
+    def decorator(func):
+        """
+        The actual decorator that wraps the user constraint function in a Toulbar2Constraint class.
+        """
+        return Toulbar2Constraint(func=func, name=name)
+
+    return decorator

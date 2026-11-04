@@ -5,7 +5,7 @@ This page describes how to create a ``DynamicDiscreteBayesianNetwork`` instance 
 ``DiscreteCPD`` objects.
 ``DynamicDiscreteBayesianNetwork`` represents a two-slice dynamic Bayesian
 network whose conditional probability distributions can reference the symbolic
-time variable ``t``. Create an ``ExpressionVariable`` for ``t``, use it to
+time variable ``t``. Create a ``TimeIndex`` for ``t``, use it to
 define the CPDs, and pass the same object to the constructor, which also
 requires a non-empty list of CPDs and at least one of ``states`` or
 ``dynamic_states``.
@@ -16,15 +16,12 @@ Dynamic Bayesian networks
 The simplest example is ``simple0_DDBN_conin``, which contains one dynamic node
 with an initial distribution and one transition CPD.
 
-.. code-block:: python
+.. testcode::
 
-   from conin.dynamic_bayesian_network import (
-       DynamicDiscreteBayesianNetwork,
-       ExpressionVariable,
-   )
-   from conin.bayesian_network import DiscreteCPD
+   from conin import DynamicDiscreteBayesianNetwork, DiscreteCPD
+   from conin.graphical_models import TimeIndex
 
-   t = ExpressionVariable()
+   t = TimeIndex()
 
    z_start = DiscreteCPD(node=("Z", 0), values=[0.5, 0.5])
    z_transition = DiscreteCPD(
@@ -36,23 +33,23 @@ with an initial distribution and one transition CPD.
    dbn = DynamicDiscreteBayesianNetwork(
        dynamic_states={"Z": [0, 1]}, cpds=[z_start, z_transition], t=t
    )
-   dbn.check_model()
 
-``check_model()`` is currently a lightweight consistency hook for dynamic
-Bayesian networks. Static Bayesian networks produced from a dynamic network are
-validated when they are unrolled for inference.
+The constructor validates the network: every CPD must use static nodes and
+``(dynamic node, time)`` pairs, and the network is unrolled over its first
+time steps (until every CPD template applies, plus one) and the unrolled
+Bayesian network is checked: every dynamic node needs exactly one CPD at every time step (here
+``("Z", 0)`` has its own CPD, and the template covers the later times), the
+distributions must sum to 1 and the CPDs must have no cycle. It raises
+``InvalidInputError`` otherwise.
 
 The ``simple1_DDBN_conin`` example introduces two dynamic nodes:
 
-.. code-block:: python
+.. testcode::
 
-   from conin.dynamic_bayesian_network import (
-       DynamicDiscreteBayesianNetwork,
-       ExpressionVariable,
-   )
-   from conin.bayesian_network import DiscreteCPD
+   from conin import DynamicDiscreteBayesianNetwork, DiscreteCPD
+   from conin.graphical_models import TimeIndex
 
-   t = ExpressionVariable()
+   t = TimeIndex()
 
    cpd_start_a = DiscreteCPD(node=("A", 0), values=[0.9, 0.1])
    cpd_start_b = DiscreteCPD(
@@ -71,18 +68,17 @@ The ``simple1_DDBN_conin`` example introduces two dynamic nodes:
        cpds=[cpd_start_a, cpd_start_b, cpd_trans_a],
        t=t,
    )
-   dbn.check_model()
 
 Constrained dynamic Bayesian networks
 -------------------------------------
 
 ``ConstrainedDynamicDiscreteBayesianNetwork`` wraps a base dynamic Bayesian
 network together with a list of constraints. The examples in
-``conin.dynamic_bayesian_network.examples`` use the same decorators as the
+``conin.examples.dynamic_bayesian_network`` use the same decorators as the
 other model families.
 
 The Pyomo and Toulbar2 examples require their respective solver backends. Oracle
-constraints with ``nodes`` are converted into auxiliary CPDs during supported
+constraints with ``nodes`` (``FactorOracleConstraint``) are converted into auxiliary CPDs during supported
 inference workflows.
 
 Pyomo constraints
@@ -91,12 +87,14 @@ Pyomo constraints
 ``simple1_DDBN_constrained_pyomo_conin`` requires the values of ``A`` and ``B``
 to stay fixed across the first two time steps:
 
-.. code-block:: python
+.. testcode::
 
    import pyomo.environ as pyo
-   from conin import pyomo_constraint_fn
-   from conin.dynamic_bayesian_network import ConstrainedDynamicDiscreteBayesianNetwork
-   from conin.dynamic_bayesian_network.examples import simple1_DDBN_conin
+   from conin import (
+       pyomo_constraint_fn,
+       ConstrainedDynamicDiscreteBayesianNetwork,
+   )
+   from conin.examples.dynamic_bayesian_network import simple1_DDBN_conin
 
    base = simple1_DDBN_conin().pgm
 
@@ -108,7 +106,7 @@ to stay fixed across the first two time steps:
 
    constrained = ConstrainedDynamicDiscreteBayesianNetwork(
        base,
-       constraints=[constraints],
+       constraints=constraints,
    )
 
 Toulbar2 constraints
@@ -117,11 +115,13 @@ Toulbar2 constraints
 ``simple1_DDBN_constrained_toulbar2_conin`` expresses the same condition with
 Toulbar2:
 
-.. code-block:: python
+.. testcode::
 
-   from conin import toulbar2_constraint_fn
-   from conin.dynamic_bayesian_network import ConstrainedDynamicDiscreteBayesianNetwork
-   from conin.dynamic_bayesian_network.examples import simple1_DDBN_conin
+   from conin import (
+       toulbar2_constraint_fn,
+       ConstrainedDynamicDiscreteBayesianNetwork,
+   )
+   from conin.examples.dynamic_bayesian_network import simple1_DDBN_conin
 
    base = simple1_DDBN_conin().pgm
 
@@ -140,20 +140,24 @@ Toulbar2:
 
    constrained = ConstrainedDynamicDiscreteBayesianNetwork(
        base,
-       constraints=[constraints],
+       constraints=constraints,
    )
 
 Oracle constraints with node scoping
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ``simple1_DDBN_constrained_oracle_conin`` creates a constraint over a generated
-set of nodes:
+set of nodes. The ``data`` of a DBN unrolled over ``start..stop`` has
+``data.start``, ``data.stop`` and ``data.T = list(range(start, stop + 1))``
+for every backend (and for ``is_feasible``):
 
-.. code-block:: python
+.. testcode::
 
-   from conin import oracle_constraint_fn
-   from conin.dynamic_bayesian_network import ConstrainedDynamicDiscreteBayesianNetwork
-   from conin.dynamic_bayesian_network.examples import simple1_DDBN_conin
+   from conin import (
+       oracle_constraint_fn,
+       ConstrainedDynamicDiscreteBayesianNetwork,
+   )
+   from conin.examples.dynamic_bayesian_network import simple1_DDBN_conin
 
    base = simple1_DDBN_conin().pgm
 
@@ -168,7 +172,7 @@ set of nodes:
 
    constrained = ConstrainedDynamicDiscreteBayesianNetwork(
        base,
-       constraints=[constraints],
+       constraints=constraints,
    )
 
 Notes
@@ -177,7 +181,7 @@ Notes
 - ``cpds`` is required and must be non-empty, and at least one of ``states``
   and ``dynamic_states`` must be non-empty.
 - ``dynamic_states`` lists the state space for time-indexed variables.
-- ``t`` is a symbolic ``ExpressionVariable`` used when declaring repeated CPDs.
+- ``t`` is a symbolic ``TimeIndex`` used when declaring repeated CPDs.
   Pass the same object that the CPDs use to the constructor; it is available
   afterwards as ``dbn.t``.
 - See :doc:`model_conversion_io` for unrolling dynamic Bayesian networks into

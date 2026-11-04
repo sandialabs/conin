@@ -11,9 +11,9 @@ Conditional Probability Distributions
 can be supplied as a list ordered by the node's state list, while CPDs with
 parents can be supplied as a dictionary keyed by parent assignments.
 
-.. code-block:: python
+.. testcode::
 
-   from conin.bayesian_network import DiscreteBayesianNetwork, DiscreteCPD
+   from conin import DiscreteBayesianNetwork, DiscreteCPD
 
    cpd_a = DiscreteCPD(node="A", values=[0.9, 0.1])
    cpd_b = DiscreteCPD(
@@ -36,9 +36,9 @@ Bayesian networks
 The ``simple1_BN_conin`` example is a good starting point because it has only
 two nodes and one conditional dependency.
 
-.. code-block:: python
+.. testcode::
 
-   from conin.bayesian_network import DiscreteBayesianNetwork, DiscreteCPD
+   from conin import DiscreteBayesianNetwork, DiscreteCPD
 
    cpd_a = DiscreteCPD(node="A", values=[0.9, 0.1])
    cpd_b = DiscreteCPD(
@@ -51,14 +51,13 @@ two nodes and one conditional dependency.
        states={"A": [0, 1], "B": [0, 1]},
        cpds=[cpd_a, cpd_b],
    )
-   pgm.check_model()
 
 A larger example is ``cancer1_BN_conin``, which uses explicit state names and a
 node with two parents:
 
-.. code-block:: python
+.. testcode::
 
-   from conin.bayesian_network import DiscreteBayesianNetwork, DiscreteCPD
+   from conin import DiscreteBayesianNetwork, DiscreteCPD
 
    cpd_pollution = DiscreteCPD(node="Pollution", values=[0.9, 0.1])
    cpd_smoker = DiscreteCPD(node="Smoker", values=[0.3, 0.7])
@@ -99,18 +98,18 @@ node with two parents:
            cpd_dyspnoea,
        ],
    )
-   cancer.check_model()
 
 Constrained Bayesian networks
 -----------------------------
 
 ``ConstrainedDiscreteBayesianNetwork`` uses the same constraint decorators as
-other model families. The examples in ``conin.bayesian_network.examples`` apply
+other model families. The examples in ``conin.examples.bayesian_network`` apply
 constraints to the cancer network.
 
 The Pyomo and Toulbar2 snippets below require their respective solver backends.
-Oracle constraints with ``nodes`` are converted into auxiliary CPDs and can also
-be used by the variable-elimination backend when ``pgmpy`` is installed.
+Oracle constraints with ``nodes`` (``FactorOracleConstraint``) are converted into
+indicator factors (``0`` on infeasible assignments) by the variable-elimination
+backend.
 
 Pyomo constraints
 ^^^^^^^^^^^^^^^^^
@@ -118,12 +117,11 @@ Pyomo constraints
 ``cancer1_BN_constrained_pyomo_conin`` prevents ``Dyspnoea`` and ``Xray`` from
 choosing the same state:
 
-.. code-block:: python
+.. testcode::
 
    import pyomo.environ as pyo
-   from conin import pyomo_constraint_fn
-   from conin.bayesian_network import ConstrainedDiscreteBayesianNetwork
-   from conin.bayesian_network.examples import cancer1_BN_conin
+   from conin import pyomo_constraint_fn, ConstrainedDiscreteBayesianNetwork
+   from conin.examples.bayesian_network import cancer1_BN_conin
 
    base = cancer1_BN_conin().pgm
 
@@ -133,7 +131,7 @@ choosing the same state:
        model.c.add(model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1)
        model.c.add(model.V("Dyspnoea", 0) + model.V("Xray", 0) <= 1)
 
-   constrained = ConstrainedDiscreteBayesianNetwork(base, constraints=[constraints])
+   constrained = ConstrainedDiscreteBayesianNetwork(base, constraints=constraints)
 
 Toulbar2 constraints
 ^^^^^^^^^^^^^^^^^^^^
@@ -141,11 +139,10 @@ Toulbar2 constraints
 ``cancer1_BN_constrained_toulbar2_conin`` uses the Toulbar2 linear-constraint
 interface:
 
-.. code-block:: python
+.. testcode::
 
-   from conin import toulbar2_constraint_fn
-   from conin.bayesian_network import ConstrainedDiscreteBayesianNetwork
-   from conin.bayesian_network.examples import cancer1_BN_conin
+   from conin import toulbar2_constraint_fn, ConstrainedDiscreteBayesianNetwork
+   from conin.examples.bayesian_network import cancer1_BN_conin
 
    base = cancer1_BN_conin().pgm
 
@@ -162,7 +159,7 @@ interface:
            1,
        )
 
-   constrained = ConstrainedDiscreteBayesianNetwork(base, constraints=[constraints])
+   constrained = ConstrainedDiscreteBayesianNetwork(base, constraints=constraints)
 
 Oracle constraints with node scoping
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -170,11 +167,10 @@ Oracle constraints with node scoping
 ``cancer1_BN_constrained_oracle_conin`` creates a binary constraint as an
 auxiliary CPD:
 
-.. code-block:: python
+.. testcode::
 
-   from conin import oracle_constraint_fn
-   from conin.bayesian_network import ConstrainedDiscreteBayesianNetwork
-   from conin.bayesian_network.examples import cancer1_BN_conin
+   from conin import oracle_constraint_fn, ConstrainedDiscreteBayesianNetwork
+   from conin.examples.bayesian_network import cancer1_BN_conin
 
    base = cancer1_BN_conin().pgm
 
@@ -182,19 +178,25 @@ auxiliary CPD:
    def constraints(states):
        return states["Dyspnoea"] != states["Xray"]
 
-   constrained = ConstrainedDiscreteBayesianNetwork(base, constraints=[constraints])
+   constrained = ConstrainedDiscreteBayesianNetwork(base, constraints=constraints)
 
 Notes
 -----
 
 - ``cpds`` is required and must be non-empty. Models are immutable after
-  construction; use ``with_cpd`` to get a new model with an extra CPD.
+  construction; use ``with_cpd`` to get a new model with an extra CPD (the
+  new model must be valid too).
 - ``states`` defines the state names used by every CPD. It is optional: the
-  states of nodes that are not listed are inferred from their CPDs.
+  states of nodes that are not listed are inferred from their CPDs (which
+  then need dictionary values).
 - ``DiscreteCPD`` supports both dictionary-based and list-based probability
   declarations.
-- ``check_model()`` verifies that the CPDs are consistent with the network
-  structure and state definitions.
+- The constructor validates the network: the CPDs must
+  be consistent with the network structure and state definitions, every
+  node has exactly one CPD, every distribution (for every parent state)
+  sums to 1, a list of values has one value per state (and parent state),
+  and the CPDs have no cycle. It raises ``InvalidInputError`` if not, so a
+  network that exists is valid.
 - See :doc:`model_conversion_io` for converting Bayesian networks to Markov
   networks and saving/loading UAI files.
 - For introductory work, ``simple1_BN_conin`` is the easiest example to adapt.

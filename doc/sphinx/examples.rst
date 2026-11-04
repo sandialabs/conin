@@ -7,20 +7,21 @@ model and, when available, a ``solutions`` field with expected MAP/MPE results
 used by the test suite.
 
 This page highlights representative examples that are useful starting points for
-new models. It is not an exhaustive API listing; inspect each model package's
-``examples.py`` module for every available factory.
+new models. It is not an exhaustive API listing; inspect the ``conin.examples``
+modules (``conin/examples/markov_network.py``, ``bayesian_network.py``,
+``dynamic_bayesian_network.py`` and ``hidden_markov_model.py``) for
+every available factory.
 
 Backend Requirements
 --------------------
 
-Examples whose names end in ``_conin`` construct native CONIN models. Examples
-whose names end in ``_pgmpy`` require ``pgmpy``. See :doc:`backends` for optional
+The examples construct native CONIN models. See :doc:`backends` for optional
 package and solver requirements.
 
 Markov Network Examples
 -----------------------
 
-Selected Markov network examples live in ``conin.markov_network.examples``.
+Selected Markov network examples live in ``conin.examples.markov_network``.
 
 .. list-table::
    :header-rows: 1
@@ -43,20 +44,12 @@ Selected Markov network examples live in ``conin.markov_network.examples``.
      - Adds an all-different oracle constraint to ``ABC_conin``.
    * - ``ABC2_constrained_oracle_conin``
      - Adds an all-different oracle constraint to ``ABC2_conin``.
-   * - ``example6_pgmpy``
-     - ``pgmpy`` implementation of the two-node Markov network.
-   * - ``ABC_pgmpy``
-     - ``pgmpy`` implementation of the three-variable ``ABC`` network.
-   * - ``ABC_constrained_pyomo_pgmpy``
-     - Converts a ``pgmpy`` ``ABC`` model to CONIN and adds a Pyomo constraint.
-   * - ``ABC_constrained_toulbar2_pgmpy``
-     - Converts a ``pgmpy`` ``ABC`` model to CONIN and adds a Toulbar2 constraint.
 
 Example usage:
 
-.. code-block:: python
+.. testcode::
 
-   from conin.markov_network.examples import ABC_conin
+   from conin.examples.markov_network import ABC_conin
 
    example = ABC_conin()
    pgm = example.pgm
@@ -65,7 +58,7 @@ Example usage:
 Bayesian Network Examples
 -------------------------
 
-Selected Bayesian network examples live in ``conin.bayesian_network.examples``.
+Selected Bayesian network examples live in ``conin.examples.bayesian_network``.
 
 .. list-table::
    :header-rows: 1
@@ -88,14 +81,12 @@ Selected Bayesian network examples live in ``conin.bayesian_network.examples``.
      - Adds an oracle constraint to the cancer network.
    * - ``cancer1_BN_constrained_toulbar2_conin``
      - Adds Toulbar2 constraints to the cancer network.
-   * - ``*_pgmpy`` examples
-     - ``pgmpy`` versions of selected Bayesian network examples.
 
 Example usage:
 
-.. code-block:: python
+.. testcode::
 
-   from conin.bayesian_network.examples import simple1_BN_conin
+   from conin.examples.bayesian_network import simple1_BN_conin
 
    example = simple1_BN_conin()
    pgm = example.pgm
@@ -105,7 +96,7 @@ Dynamic Bayesian Network Examples
 ---------------------------------
 
 Selected dynamic Bayesian network examples live in
-``conin.dynamic_bayesian_network.examples``.
+``conin.examples.dynamic_bayesian_network``.
 
 .. list-table::
    :header-rows: 1
@@ -130,14 +121,12 @@ Selected dynamic Bayesian network examples live in
      - Adds an oracle constraint to the weather model.
    * - ``weather_constrained_toulbar2_conin``
      - Adds a Toulbar2-style constraint to the weather model.
-   * - ``*_pgmpy`` examples
-     - ``pgmpy`` versions of selected dynamic Bayesian network examples.
 
 Example usage:
 
-.. code-block:: python
+.. testcode::
 
-   from conin.dynamic_bayesian_network.examples import simple0_DDBN_conin
+   from conin.examples.dynamic_bayesian_network import simple0_DDBN_conin
 
    example = simple0_DDBN_conin()
    dbn = example.pgm
@@ -147,7 +136,7 @@ Hidden Markov Model Examples
 ----------------------------
 
 Selected hidden Markov model examples live in
-``conin.hidden_markov_model.examples``.
+``conin.examples.hidden_markov_model``.
 
 .. list-table::
    :header-rows: 1
@@ -166,10 +155,14 @@ Selected hidden Markov model examples live in
      - Three-state HMM configured for all-optimal-solution testing.
    * - ``create_chmm1_oracle``
      - Constrained HMM using oracle sequence constraints.
-   * - ``create_chmm1_oracle``
-     - Constrained HMM using oracle constraints for variable-elimination workflows.
+   * - ``create_chmm1_oracle_ve``
+     - Constrained HMM using factor-oracle constraints for variable-elimination workflows.
+   * - ``create_chmm1_recursive``
+     - Constrained HMM using a recursive constraint (for ``recursive_a_star``).
    * - ``create_chmm1_pyomo``
      - Constrained HMM using Pyomo constraints.
+   * - ``create_chmm1_smoek``
+     - Constrained HMM using smoek constraints (Pyomo, Toulbar2 and variable elimination).
    * - ``create_chmm1_toulbar2``
      - Constrained HMM using Toulbar2 constraints.
    * - ``create_chmm1_pyomo_aos``
@@ -179,10 +172,11 @@ Selected hidden Markov model examples live in
 
 Example usage:
 
-.. code-block:: python
+.. testcode::
 
-   from conin.hidden_markov_model.examples import create_hmm1
+   from conin.examples.hidden_markov_model import create_hmm1
+   from conin.algorithms.sampling.unconstrained import generate_hidden
 
    hmm = create_hmm1()
    observed = ["o0", "o0", "o1"]
-   hidden = hmm.generate_hidden(len(observed))
+   hidden = generate_hidden(hmm, len(observed))

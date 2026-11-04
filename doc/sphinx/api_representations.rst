@@ -1,0 +1,188 @@
+Representations
+===============
+
+A representation is what a backend needs to answer queries on a
+``(model, constraints)`` pair: an integer program, a cost function network,
+factor tables, aligned MVRs, the HMM parameters as arrays, and so on.
+``cmodel.representation(kind, **structure_params)`` builds one; every call
+builds a new object. An unconstrained model has the same method:
+``model.representation(kind)`` wraps the model in its constrained model class
+without constraints, e.g. ``hmm.representation("matvec")``. Structure parameters (such as ``start`` and ``stop`` for
+DBNs and HMMs) are build arguments, while per-query inputs (evidence, solver
+options) are passed to the representation's ``create_model()`` or to the
+algorithm, so one representation can serve several queries.
+
+Builders are registered per ``(kind, model_type, constraint_family)``. The
+registry also decides which constraint families a constrained model accepts:
+a family is accepted for a model type if some builder is registered for it.
+
+.. list-table:: Registered kinds and constraint families
+   :header-rows: 1
+
+   * - Kind
+     - Models
+     - Constraint families (besides none)
+     - Used by
+   * - ``"pyomo"``
+     - MN, BN, DBN, HMM
+     - ``pyomo``, ``smoek``
+     - ``integer_program``
+   * - ``"pyomo_network_flow"``
+     - HMM
+     - ``pyomo``, ``smoek``
+     - ``integer_program`` with ``ip_formulation="network_flow"``
+   * - ``"toulbar2"``
+     - MN, BN, DBN, HMM
+     - ``toulbar2``, ``smoek``
+     - ``toulbar2``
+   * - ``"variable_elimination"``
+     - MN, BN, DBN, HMM
+     - ``factor_oracle``, ``smoek``
+     - ``variable_elimination``, ``log_probability_query``
+   * - ``"matvec"``
+     - HMM
+     - (none only)
+     - ``viterbi``, A*, sampling, the MVR kernels
+   * - ``"oracle"``
+     - HMM
+     - ``oracle``
+     - ``a_star``, rejection sampling
+   * - ``"recursive"``
+     - HMM
+     - ``recursive``
+     - ``a_star`` with recursive constraints
+   * - ``"mvr"``
+     - HMM
+     - ``mvr``
+     - ``mvr_viterbi`` and the torch MVR algorithms
+
+.. doctest:: representations
+
+   >>> from conin.examples.hidden_markov_model import create_hmm1
+   >>> repn = create_hmm1().representation("matvec")
+   >>> repn.num_hidden_states, repn.transition_mat.shape
+   (2, (2, 2))
+   >>> repn.transition_mat.flags.writeable
+   False
+
+Registry
+--------
+
+.. autoclass:: conin.representations.Representation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autofunction:: conin.representations.register_representation
+
+.. autofunction:: conin.representations.unregister_representation
+
+.. autofunction:: conin.representations.build_representation
+
+.. autofunction:: conin.representations.base.apply_constraints
+
+Unrolled DBNs and HMMs
+----------------------
+
+.. automodule:: conin.representations.unrolled
+   :members:
+
+.. autofunction:: conin.representations.supported_representations
+
+.. autofunction:: conin.representations.get_representation_builder
+
+Pyomo
+-----
+
+.. autoclass:: conin.representations.pyomo.PyomoFactorRepresentation
+   :members:
+   :show-inheritance:
+
+.. autoclass:: conin.representations.pyomo.PyomoMNRepresentation
+   :show-inheritance:
+
+.. autoclass:: conin.representations.pyomo.PyomoBNRepresentation
+   :show-inheritance:
+
+.. autoclass:: conin.representations.pyomo.PyomoDBNRepresentation
+   :show-inheritance:
+
+.. autoclass:: conin.representations.pyomo.PyomoHMMRepresentation
+   :show-inheritance:
+
+.. autoclass:: conin.representations.pyomo.PyomoNetworkFlowHMMRepresentation
+   :members:
+   :show-inheritance:
+
+.. autoclass:: conin.representations.pyomo.PyomoVarWrapper
+   :members:
+   :show-inheritance:
+
+.. autofunction:: conin.representations.pyomo.common.apply_pyomo_constraints
+
+Toulbar2
+--------
+
+.. autoclass:: conin.representations.toulbar2.Toulbar2FactorRepresentation
+   :members:
+   :show-inheritance:
+
+.. autoclass:: conin.representations.toulbar2.Toulbar2MNRepresentation
+   :show-inheritance:
+
+.. autoclass:: conin.representations.toulbar2.Toulbar2BNRepresentation
+   :show-inheritance:
+
+.. autoclass:: conin.representations.toulbar2.Toulbar2DBNRepresentation
+   :show-inheritance:
+
+.. autoclass:: conin.representations.toulbar2.Toulbar2HMMRepresentation
+   :show-inheritance:
+
+The ``Toulbar2VarWrapper`` and the constraint helpers of
+``conin.representations.toulbar2.common`` are documented in
+:doc:`api_constraints`.
+
+Variable elimination
+--------------------
+
+.. autoclass:: conin.representations.variable_elimination.VariableEliminationRepresentation
+   :members:
+   :show-inheritance:
+
+.. autoclass:: conin.representations.variable_elimination.VariableEliminationMNRepresentation
+   :show-inheritance:
+
+.. autoclass:: conin.representations.variable_elimination.VariableEliminationBNRepresentation
+   :show-inheritance:
+
+.. autoclass:: conin.representations.variable_elimination.VariableEliminationDBNRepresentation
+   :show-inheritance:
+
+.. autoclass:: conin.representations.variable_elimination.VariableEliminationHMMRepresentation
+   :show-inheritance:
+
+.. autofunction:: conin.representations.variable_elimination.apply_variable_elimination_constraints
+
+.. autofunction:: conin.representations.variable_elimination.materialise_factor_oracle
+
+HMM representations
+-------------------
+
+.. autoclass:: conin.representations.matvec.MatVecHMMRepresentation
+   :members:
+   :show-inheritance:
+
+.. autoclass:: conin.representations.oracle.OracleHMMRepresentation
+   :members:
+   :show-inheritance:
+
+.. autoclass:: conin.representations.recursive.RecursiveHMMRepresentation
+   :members:
+   :show-inheritance:
+
+.. autoclass:: conin.representations.mvr.MVRHMMRepresentation
+   :members:
+   :show-inheritance:
+
+.. autofunction:: conin.representations.mvr.align_hidden_states

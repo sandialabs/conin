@@ -1,15 +1,9 @@
 # conin.constraints.__init__.py
 
-from .constraint import (
-    ConstraintFunctor,
-    MVRConstraint,
-    mvr_constraint_fn,
-    PyomoConstraint,
-    pyomo_constraint_fn,
-    OracleConstraint,
-    oracle_constraint_fn,
-    Toulbar2Constraint,
-    toulbar2_constraint_fn,
-)
-from .algebraic import algebraic_constraint_fn, AlgebraicConstraint
-from .oracle import *
+from .base import Constraint
+from .pyomo import PyomoConstraint, pyomo_constraint_fn
+from .toulbar2 import Toulbar2Constraint, toulbar2_constraint_fn
+from .oracle import OracleConstraint, oracle_constraint_fn, FactorOracleConstraint
+from .recursive import RecursiveConstraint
+from .mvr.constraint import MVRConstraint, mvr_constraint_fn
+from .smoek import smoek_constraint_fn, SmoekConstraint

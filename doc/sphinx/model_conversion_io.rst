@@ -11,10 +11,10 @@ Core Conversions
 Bayesian networks can be converted to Markov networks by transforming each CPD
 into a factor.
 
-.. code-block:: python
+.. testcode::
 
-   from conin.bayesian_network import create_mn_from_bn
-   from conin.bayesian_network.examples import simple1_BN_conin
+   from conin.graphical_models import create_mn_from_bn
+   from conin.examples.bayesian_network import simple1_BN_conin
 
    bn = simple1_BN_conin().pgm
    mn = create_mn_from_bn(bn)
@@ -27,11 +27,11 @@ Bayesian networks can then be unrolled into static Bayesian networks over a
 specified inclusive time horizon. The HMM conversion creates dynamic variables
 ``H`` for hidden states and ``E`` for emitted observations.
 
-.. code-block:: python
+.. testcode::
 
-   from conin.dynamic_bayesian_network import create_bn_from_dbn
-   from conin.hidden_markov_model import create_dbn_from_hmm
-   from conin.hidden_markov_model.examples import create_hmm1
+   from conin.graphical_models import create_bn_from_dbn
+   from conin.graphical_models import create_dbn_from_hmm
+   from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
    dbn = create_dbn_from_hmm(hmm)
@@ -40,20 +40,31 @@ specified inclusive time horizon. The HMM conversion creates dynamic variables
    assert sorted(dbn.dynamic_states) == ["E", "H"]
    assert len(bn.nodes) == 6
 
+``create_bn_from_dbn`` unrolls from ``start=0`` (the DBN's initial CPDs
+describe time 0; another ``start`` raises ``InvalidInputError``) to ``stop``
+inclusive; ``stop=0`` gives one time step. The ``start`` argument of
+``map_query`` with ``integer_program``, ``toulbar2`` and
+``variable_elimination`` on DBNs and HMMs follows the same rule.
+
 UAI Files
 ---------
 
-The ``conin.common`` namespace exposes a small unified I/O interface. For CONIN
-models, ``save_model`` currently writes UAI files and ``load_model`` reads
-``.uai``, ``.uai.gz``, ``.cfn`` and ``.cfn.gz`` files.
+The ``conin.io`` namespace exposes a small unified I/O interface. For CONIN
+models, ``save_model`` writes UAI files (and JSON files for hidden Markov
+models, see :doc:`hidden_markov_models`), and ``load_model`` reads ``.uai``,
+``.cfn`` and ``.json`` files, optionally gzipped (``.uai.gz``, ...).
 
-Hidden Markov models use their own JSON methods, ``write_to_file`` and
-``read_from_file``; see :doc:`hidden_markov_models` for an example.
+Errors follow one policy: a missing file raises ``FileNotFoundError``; a file
+whose content is malformed, or does not describe a valid model, raises
+``conin.exceptions.ModelFileError`` (an ``InvalidInputError`` and a
+``ValueError``); an unknown file suffix or ``model_type`` raises
+``InvalidInputError``; a model the format cannot hold raises ``TypeError``;
+and a format that needs pgmpy raises ``ImportError`` without it.
 
-.. code-block:: python
+.. testcode::
 
-   from conin.bayesian_network.examples import simple1_BN_conin
-   from conin.common import load_model, save_model
+   from conin.examples.bayesian_network import simple1_BN_conin
+   from conin import load_model, save_model
 
    pgm = simple1_BN_conin().pgm
    save_model(pgm, "simple.uai")
@@ -78,9 +89,19 @@ get zero factor values. CFN files that Toulbar2 writes from probabilistic
 models store costs as negative log-probabilities multiplied by ``10**7``, so
 load them with ``cost_scale=1e7``:
 
-.. code-block:: python
+.. testsetup:: cfn
 
-   from conin.common import load_model
+   import os
+   import shutil
+   import conin.io
+
+   _cfn_dir = os.path.join(os.path.dirname(conin.io.__file__), "tests")
+   shutil.copy(os.path.join(_cfn_dir, "cancer_mn.cfn"), "model.cfn")
+   shutil.copy(os.path.join(_cfn_dir, "abc_constrained.cfn"), "constrained_model.cfn")
+
+.. testcode:: cfn
+
+   from conin import load_model
 
    pgm = load_model("model.cfn", cost_scale=1e7)
 
@@ -90,16 +111,16 @@ and ``knapsackv`` global cost functions; they are written by pytoulbar2's
 ``AddGeneralizedLinearConstraint`` methods. When a file contains such
 constraints, ``load_model`` returns a ``ConstrainedDiscreteMarkovNetwork``
 whose constraints are Toulbar2 constraints, and the unconstrained model is
-available as its ``pgm`` attribute:
+available as its ``model`` attribute:
 
-.. code-block:: python
+.. testcode:: cfn
+   :skipif: not toulbar2_available
 
-   from conin.common import load_model
-   from conin.inference import map_query
+   from conin import load_model, map_query
 
    cpgm = load_model("constrained_model.cfn")
    constrained = map_query(cpgm, method="toulbar2")
-   unconstrained = map_query(cpgm.pgm, method="toulbar2")
+   unconstrained = map_query(cpgm.model, method="toulbar2")
 
 Loaded constraints can only be used with ``method="toulbar2"``. Each one also
 stores a description of its linear constraint (``terms``, ``operator`` and
@@ -112,22 +133,82 @@ loaded as zero-valued factor entries, not as CONIN constraints.
 Model Utilities
 ---------------
 
-``log_potential`` evaluates a fully specified assignment for a CONIN Markov or
-Bayesian network. The current implementation requires values for every model
-node; it does not marginalize over latent variables.
+``log_probability`` and ``log_potential`` evaluate a total assignment: every
+variable has a value, so nothing is summed out.
 
-.. code-block:: python
+- ``log_probability(model, assignment, *, observed=None)`` returns ``log P(x)``
+  for a Bayesian network, a dynamic Bayesian network (``{(name, t): state}``
+  over the times ``0..stop``) or an HMM (the hidden states, plus the
+  ``observed`` states). It raises ``InvalidInputError`` for Markov networks and
+  constrained models, whose probabilities need an inference query.
+- ``log_potential`` takes the same arguments. It also accepts Markov networks,
+  where it returns the sum of the log factors (``log P(x) + log Z``), and
+  constrained models, where it returns ``-inf`` if a constraint is violated.
+  Constraints of the ``"oracle"`` and ``"recursive"`` (HMMs), ``"factor_oracle"``,
+  ``"smoek"`` and ``"mvr"`` (HMMs) families are checked with
+  ``conin.algorithms.feasibility.is_feasible``;
+  ``"pyomo"`` and ``"toulbar2"`` constraints raise ``NotImplementedError``.
 
-   from conin.bayesian_network.examples import simple1_BN_conin
-   from conin.common import is_polytree, log_potential
+pgmpy models are not accepted: convert them with
+``conin.io.pgmpy.convert_pgmpy_to_conin`` first.
 
-   pgm = simple1_BN_conin().pgm
+``log_probability_query(model, assignment, *, evidence=None,
+method="variable_elimination", start=0, stop=None)`` computes a marginal or
+conditional log-probability, ``log P(X = x | E = e)``, where the variables in
+neither ``assignment`` nor ``evidence`` are summed out. For a constrained
+model it is the probability under the constraints, ``log P(X = x | E = e, C)``
+(``C``: every constraint holds), and Markov networks are normalised. It returns
+a float (``-inf`` for probability zero) and raises ``InvalidInputError`` if the
+evidence (with the constraints) has probability zero.
 
-   assert is_polytree(pgm)
-   value = log_potential(pgm, {"A": 0, "B": 1})
+- ``assignment`` and ``evidence`` are dicts. The variables of a dynamic
+  Bayesian network are ``(name, t)``; those of an HMM are ``("H", t)`` (hidden)
+  and ``("E", t)`` (observed), so ``{("E", t): o, ...}`` with no evidence is
+  the likelihood of the observations.
+- Dynamic models are unrolled over ``start..stop``; ``stop`` defaults to the
+  largest time in the query (at least ``start + 1``). With constraints, it sets
+  the time steps the constraints see.
+- ``method="variable_elimination"`` (the only method) runs on the
+  ``"variable_elimination"`` representation: unconstrained models and the
+  ``"factor_oracle"`` and ``"smoek"`` constraint families. Other families
+  raise ``InvalidInputError``.
 
-``is_polytree`` accepts CONIN ``DiscreteBayesianNetwork`` instances and checks
-whether the underlying undirected graph is singly connected.
+.. testcode::
+
+   from conin.examples.bayesian_network import (
+       cancer1_BN_conin,
+       cancer1_BN_constrained_oracle_conin,
+   )
+   from conin import log_probability_query
+
+   pgm = cancer1_BN_conin().pgm
+   cpgm = cancer1_BN_constrained_oracle_conin().pgm
+   log_probability_query(pgm, {"Cancer": 1}, evidence={"Xray": 1})
+   log_probability_query(cpgm, {"Cancer": 1})  # log P(Cancer=1 | constraints)
+
+.. doctest:: model_utilities
+
+   >>> from conin.examples.bayesian_network import (
+   ...     cancer1_BN_constrained_oracle_conin,
+   ...     simple1_BN_conin,
+   ... )
+   >>> from conin.graphical_models import is_polytree
+   >>> from conin import is_feasible, log_potential, log_probability
+   >>> pgm = simple1_BN_conin().pgm
+   >>> is_polytree(pgm)
+   True
+   >>> round(log_probability(pgm, {"A": 0, "B": 1}), 6)
+   -0.328504
+   >>> cpgm = cancer1_BN_constrained_oracle_conin().pgm
+   >>> x = {"Cancer": 1, "Dyspnoea": 0, "Pollution": 0, "Smoker": 1, "Xray": 1}
+   >>> is_feasible(cpgm, x), round(log_potential(cpgm, x), 6)
+   (True, -1.890152)
+   >>> is_feasible(cpgm, {**x, "Xray": 0}), log_potential(cpgm, {**x, "Xray": 0})
+   (False, -inf)
+
+``conin.graphical_models.is_polytree`` accepts CONIN ``DiscreteBayesianNetwork``
+instances and checks whether the underlying undirected graph is singly
+connected.
 
 Optional Backend Conversions
 ----------------------------
@@ -138,18 +219,13 @@ requirements.
 
 ``pgmpy`` support includes:
 
-- ``conin.common.pgmpy.convert_pgmpy_to_conin``
-- ``conin.common.conin.convert_conin_to_pgmpy_bn``
-- ``conin.common.conin.convert_conin_to_pgmpy_mn``
-
-Additional optional integrations include:
-
-- ``conin.common.pgmpy.convert_pgmpy_to_pgmax``
-- ``conin.common.pgmpy.convert_pgmpy_to_pomegranate``
-- ``conin.common.load_model(..., model_type="pgmpy")``
-- ``conin.common.load_model(..., model_type="pgmax")``
-- ``conin.common.load_model(..., model_type="pomegranate")``
-- ``conin.common.load_model(..., model_type="pyagrum")``
+- ``conin.io.pgmpy.convert_pgmpy_to_conin``
+- ``conin.io.pgmpy.convert_conin_to_pgmpy_bn``
+- ``conin.io.pgmpy.convert_conin_to_pgmpy_mn``
+- reading and writing BIF files with ``conin.io.load_model`` and
+  ``conin.io.save_model``
+- ``conin.io.load_model(..., model_type="pgmpy")``
+- ``conin.io.save_model(..., model_type="pgmpy")``
 
 These conversions raise ``ImportError`` if the corresponding optional package is
 not installed.
@@ -157,28 +233,4 @@ not installed.
 Reference
 ---------
 
-.. autofunction:: conin.bayesian_network.create_mn_from_bn
-
-.. autofunction:: conin.dynamic_bayesian_network.create_bn_from_dbn
-
-.. autofunction:: conin.hidden_markov_model.create_dbn_from_hmm
-
-.. autofunction:: conin.common.load_model
-
-.. autofunction:: conin.common.save_model
-
-.. autofunction:: conin.common.log_potential
-
-.. autofunction:: conin.common.is_polytree
-
-.. autofunction:: conin.common.conin.load_uai.load_conin_model_from_uai
-
-.. autofunction:: conin.common.conin.load_cfn.load_conin_model_from_cfn
-
-.. autofunction:: conin.common.conin.save_model.save_model_uai
-
-.. autofunction:: conin.common.conin.convert_conin_to_pgmpy_bn
-
-.. autofunction:: conin.common.conin.convert_conin_to_pgmpy_mn
-
-.. autofunction:: conin.common.pgmpy.convert_pgmpy_to_conin
+The functions on this page are documented in :doc:`api_scoring_io`.

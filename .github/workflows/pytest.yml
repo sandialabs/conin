@@ -285,3 +285,52 @@ jobs:
         # The MVR notebooks declare a local "conin" kernel; force the default one.
         run: pytest --nbmake --nbmake-kernel=python3 doc/notebooks/*.ipynb doc/notebooks/MVR/*.ipynb -v
 
+
+  docs:
+    needs: format-check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache conda environment
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/conda_pkgs_dir
+            ~/.conda
+            ~/miniconda3/envs
+          key: conda-ubuntu-latest-3.13-docs-${{ hashFiles('dev_environment.yml') }}
+          restore-keys: |
+            conda-ubuntu-latest-3.13-docs-
+            conda-ubuntu-latest-3.13-
+
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniconda-version: "latest"
+          auto-update-conda: true
+          python-version: 3.13
+          channels: conda-forge,defaults
+          activate-environment: conin_dev
+          environment-file: dev_environment.yml
+          use-mamba: true
+
+      - name: Install package
+        run: pip install -e .[docs]
+
+      - name: Install pgmpy
+        run: pip install pgmpy
+
+      # Every documentation example runs: CONIN_DOCS_REQUIRE_BACKENDS makes
+      # doc/sphinx/conf.py fail if pgmpy, pytoulbar2 or a MIP solver is
+      # missing (the examples that need one would otherwise be skipped).
+      - name: Run the documentation examples
+        env:
+          CONIN_DOCS_REQUIRE_BACKENDS: "1"
+        run: python -m sphinx -b doctest doc/sphinx doc/sphinx/_build/doctest
+
+      - name: Build the documentation (warnings are errors)
+        run: python -m sphinx -W --keep-going -b html doc/sphinx doc/sphinx/_build/html

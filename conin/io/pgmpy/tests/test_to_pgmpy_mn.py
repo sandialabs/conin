@@ -1,0 +1,166 @@
+import pytest
+import numpy as np
+
+from conin.tests.optional import needs_pgmpy
+from conin.util import lazy_import
+from conin.io.pgmpy import convert_conin_to_pgmpy_mn
+from conin.graphical_models import create_mn_from_bn
+import conin.examples.markov_network
+import conin.examples.bayesian_network
+
+# pgmpy is imported by the first test that uses it.
+pgmpy_models = lazy_import("pgmpy.models")
+
+require_pgmpy = needs_pgmpy
+
+
+def test_import_convert_function():
+    """Test that the conversion function can be imported."""
+    from conin.io.pgmpy import convert_conin_to_pgmpy_mn
+
+    assert callable(convert_conin_to_pgmpy_mn)
+
+
+@require_pgmpy
+def test_convert_invalid_input():
+    """Test error handling for invalid input types."""
+    from conin.io.pgmpy import convert_conin_to_pgmpy_mn
+
+    with pytest.raises(TypeError, match="Expected conin DiscreteMarkovNetwork"):
+        convert_conin_to_pgmpy_mn("not a model")
+
+    with pytest.raises(TypeError, match="Expected conin DiscreteMarkovNetwork"):
+        convert_conin_to_pgmpy_mn(None)
+
+
+def check_values(factor, values):
+    for i, assign in enumerate(factor.assignment(list(range(len(values))))):
+        kwargs = {k: v for k, v in assign}
+        assert factor.get_value(**kwargs) == values[i]
+
+
+@require_pgmpy
+def test_ABC():
+    conin_pgm = conin.examples.markov_network.ABC_conin().pgm
+
+    # Convert to pgmpy
+    pgmpy_pgm = convert_conin_to_pgmpy_mn(conin_pgm)
+
+    # Verify structure
+    assert isinstance(pgmpy_pgm, pgmpy_models.DiscreteMarkovNetwork)
+    assert set(pgmpy_pgm.nodes()) == {"A", "B", "C"}
+    assert len(pgmpy_pgm.edges()) == 3
+    assert len(pgmpy_pgm.factors) == 6
+
+    # Check variables
+    assert pgmpy_pgm.factors[0].variables == ["A"]
+    assert pgmpy_pgm.factors[1].variables == ["B"]
+    assert pgmpy_pgm.factors[2].variables == ["C"]
+    assert pgmpy_pgm.factors[3].variables == ["A", "B"]
+    assert pgmpy_pgm.factors[4].variables == ["B", "C"]
+    assert pgmpy_pgm.factors[5].variables == ["A", "C"]
+
+    # Check cardinality
+    assert pgmpy_pgm.factors[0].cardinality == [3]
+    assert pgmpy_pgm.factors[1].cardinality == [3]
+    assert pgmpy_pgm.factors[2].cardinality == [3]
+    assert list(pgmpy_pgm.factors[3].cardinality) == [3, 3]
+    assert list(pgmpy_pgm.factors[4].cardinality) == [3, 3]
+    assert list(pgmpy_pgm.factors[5].cardinality) == [3, 3]
+
+    # Check values
+    check_values(pgmpy_pgm.factors[0], [1, 1, 2])
+    check_values(pgmpy_pgm.factors[1], [1, 1, 3])
+    check_values(pgmpy_pgm.factors[2], [1, 2, 1])
+    check_values(pgmpy_pgm.factors[3], np.ones(9))
+    check_values(pgmpy_pgm.factors[4], np.ones(9))
+    check_values(pgmpy_pgm.factors[5], np.ones(9))
+
+
+@require_pgmpy
+def test_ABC2():
+    conin_pgm = conin.examples.markov_network.ABC2_conin().pgm
+
+    # Convert to pgmpy
+    pgmpy_pgm = convert_conin_to_pgmpy_mn(conin_pgm)
+
+    # Verify structure
+    assert isinstance(pgmpy_pgm, pgmpy_models.DiscreteMarkovNetwork)
+    assert set(pgmpy_pgm.nodes()) == {"A", "B", "C"}
+    assert len(pgmpy_pgm.edges()) == 3
+    assert len(pgmpy_pgm.factors) == 6
+
+    # Check variables
+    assert pgmpy_pgm.factors[0].variables == ["A"]
+    assert pgmpy_pgm.factors[1].variables == ["B"]
+    assert pgmpy_pgm.factors[2].variables == ["C"]
+    assert pgmpy_pgm.factors[3].variables == ["A", "B"]
+    assert pgmpy_pgm.factors[4].variables == ["B", "C"]
+    assert pgmpy_pgm.factors[5].variables == ["A", "C"]
+
+    # Check cardinality
+    assert pgmpy_pgm.factors[0].cardinality == [3]
+    assert pgmpy_pgm.factors[1].cardinality == [3]
+    assert pgmpy_pgm.factors[2].cardinality == [3]
+    assert list(pgmpy_pgm.factors[3].cardinality) == [3, 3]
+    assert list(pgmpy_pgm.factors[4].cardinality) == [3, 3]
+    assert list(pgmpy_pgm.factors[5].cardinality) == [3, 3]
+
+    # Check values
+    check_values(pgmpy_pgm.factors[0], [10, 19, 20])
+    check_values(pgmpy_pgm.factors[1], [10, 10, 30])
+    check_values(pgmpy_pgm.factors[2], [10, 20, 10])
+    check_values(pgmpy_pgm.factors[3], np.ones(9))
+    check_values(pgmpy_pgm.factors[4], np.ones(9))
+    check_values(pgmpy_pgm.factors[5], np.ones(9))
+
+
+@require_pgmpy
+def test_integration_with_bayesian_examples():
+    """Test conversion works with various examples from the bayesian_network module."""
+    from conin.examples.bayesian_network import (
+        simple1_BN_conin,
+        DBDA_5_1_conin,
+        holmes_conin,
+        tb2_BN_conin,
+    )
+
+    examples = [simple1_BN_conin(), DBDA_5_1_conin(), holmes_conin(), tb2_BN_conin()]
+
+    for example_data in examples:
+        # Convert to pgmpy
+        conin_bn = example_data.pgm
+        conin_mn = create_mn_from_bn(conin_bn)
+        pgmpy_pgm = convert_conin_to_pgmpy_mn(conin_mn)
+
+        # Verify basic properties
+        assert len(pgmpy_pgm.nodes()) == len(conin_mn.nodes)
+        assert isinstance(pgmpy_pgm, pgmpy_models.DiscreteMarkovNetwork)
+
+        # Verify model validity
+        pgmpy_pgm.check_model()
+
+        # Verify all CPDs were converted
+        assert len(pgmpy_pgm.get_factors()) == len(conin_mn.factors)
+
+        pgmpy_pgm.check_model()
+
+
+@require_pgmpy
+def test_convert_sparse_factors_use_default_value():
+    # The missing assignments of a factor's dict raised KeyError.
+    from conin.graphical_models import DiscreteFactor, DiscreteMarkovNetwork
+
+    pgm = DiscreteMarkovNetwork(
+        states={"A": [0, 1, 2], "B": [0, 1, 2]},
+        factors=[
+            DiscreteFactor(nodes=["A"], values={0: 1}, default_value=3),
+            DiscreteFactor(nodes=["A", "B"], values={(1, 0): 5}, default_value=1),
+        ],
+    )
+    pgmpy_pgm = convert_conin_to_pgmpy_mn(pgm)
+    unary, pairwise = pgmpy_pgm.factors
+    check_values(unary, [1, 3, 3])
+    check_values(
+        pairwise, [5 if (a, b) == (1, 0) else 1 for a in range(3) for b in range(3)]
+    )
