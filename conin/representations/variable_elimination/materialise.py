@@ -46,7 +46,7 @@ def materialise_factor_oracle(constraint, pgm, data=None):
             f"Expected a FactorOracleConstraint, got {type(constraint).__name__}"
         )
 
-    if type(constraint.nodes) is list:
+    if not callable(constraint.nodes):
         nodes = constraint.nodes
     else:
         nodes = list(constraint.nodes(data))

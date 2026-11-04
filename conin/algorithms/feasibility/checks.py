@@ -314,7 +314,7 @@ def _accepts(constraint: OracleConstraint, ctx):
 
 @ovld
 def _accepts(constraint: FactorOracleConstraint, ctx):
-    if type(constraint.nodes) is list:
+    if not callable(constraint.nodes):
         nodes = constraint.nodes
     else:
         nodes = list(constraint.nodes(ctx.data))

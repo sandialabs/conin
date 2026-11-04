@@ -8,16 +8,16 @@ class PyomoConstraint(Constraint):
     family = "pyomo"
 
     def __init__(self, func, name=None):
-        self.func = func
-        self.num_args = len(inspect.signature(self.func).parameters)
-        if self.num_args > 2:
+        num_args = len(inspect.signature(func).parameters)
+        if num_args > 2:
             raise ValueError("Pyomo constraint defined with more than 2 arguments")
 
         # If no name is provided, use the function's name
-        if name is not None:
-            self.name = name
-        else:
-            self.name = func.__name__
+        self._set(
+            func=func,
+            num_args=num_args,
+            name=name if name is not None else func.__name__,
+        )
 
     def __call__(self, model, data):
         if self.num_args == 1:

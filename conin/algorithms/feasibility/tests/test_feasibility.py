@@ -239,7 +239,7 @@ def test_hmm_mvr_constraint_factory_sees_data():
 
 def test_hmm_mvr_time_range():
     hmm = hmm_examples.create_hmm1()
-    mvr = mvr_timerange(mvr_forbid_state(hmm, ["h1"]), [1, 2], inplace=False)
+    mvr = mvr_timerange(mvr_forbid_state(hmm, ["h1"]), [1, 2])
     cmodel = ConstrainedHiddenMarkovModel(hmm, [mvr])
     assert is_feasible(cmodel, ["h1", "h0", "h0", "h1"])
     assert not is_feasible(cmodel, ["h0", "h0", "h1", "h0"])

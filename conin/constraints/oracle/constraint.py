@@ -1,9 +1,18 @@
+import functools
 import inspect
 
 from conin.constraints.base import Constraint
 from conin.exceptions import InvalidInputError
 
 from .factor import FactorOracleConstraint
+
+
+def _always_feasible(T, states):
+    return True
+
+
+def _partial_from_func(func, T, states):
+    return func(states)
 
 
 class OracleConstraint(Constraint):
@@ -50,28 +59,20 @@ class OracleConstraint(Constraint):
             If ``True``, ``partial_func`` is set to
             ``lambda T, states: func(states)``.
         """
-        self.func = func
-
+        # Module-level functions rather than lambdas, so that the constraint
+        # can be pickled.
         if same_partial_as_func is True:
-            self.partial_func = lambda T, states: func(states)
-        elif partial_func is not None:
-            self.partial_func = partial_func
-        else:
-            self.partial_func = lambda T, states: True
+            partial_func = functools.partial(_partial_from_func, func)
+        elif partial_func is None:
+            partial_func = _always_feasible
 
         # Determine how many positional args `func` accepts (1 or 2).
-        if func is not None:
-            self.num_args = len(inspect.signature(func).parameters)
-        else:
-            self.num_args = None
+        num_args = len(inspect.signature(func).parameters) if func is not None else None
 
         # If no name is provided, use the function's name
-        if name is not None:
-            self.name = name
-        elif func is not None:
-            self.name = func.__name__
-        else:
-            self.name = "Unnamed constraint"  # Could also be none
+        if name is None:
+            name = func.__name__ if func is not None else "Unnamed constraint"
+        self._set(func=func, partial_func=partial_func, num_args=num_args, name=name)
 
     def __call__(self, *args, **kwargs):
         """

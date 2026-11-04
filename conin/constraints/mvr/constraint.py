@@ -10,26 +10,22 @@ class MVRConstraint(Constraint):
     family = "mvr"
 
     def __init__(self, func=None, name=None):
-        self.func = func
-        if self.func is not None:
-            self.num_args = len(inspect.signature(self.func).parameters)
-            if self.num_args > 2:
+        if func is not None:
+            num_args = len(inspect.signature(func).parameters)
+            if num_args > 2:
                 raise ValueError("MVR constraint defined with more than 2 arguments")
-            if self.num_args == 0:
+            if num_args == 0:
                 raise ValueError(
                     "An MVR constraint function takes (hidden_markov_model) or "
-                    f"(hidden_markov_model, data); {self.func.__name__} takes none"
+                    f"(hidden_markov_model, data); {func.__name__} takes none"
                 )
         else:
-            self.num_args = None
+            num_args = None
 
         # If no name is provided, use the function's name
-        if name is not None:
-            self.name = name
-        elif func is not None:
-            self.name = func.__name__
-        else:
-            self.name = "Unnamed constraint"
+        if name is None:
+            name = func.__name__ if func is not None else "Unnamed constraint"
+        self._set(func=func, num_args=num_args, name=name)
 
     def __call__(self, hidden_markov_model, data=None):
         if self.func is None:

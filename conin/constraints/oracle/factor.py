@@ -21,8 +21,8 @@ class FactorOracleConstraint(Constraint):
         inference-time data.  ``assignment`` is a dict mapping node names to
         states.
     nodes : list or callable
-        Node scope: a list of node names, or a callable ``nodes(data)`` that
-        yields node names.
+        Node scope: a list of node names (stored as a read-only list), or a
+        callable ``nodes(data)`` that yields node names.
     name : str, optional
         Human-readable name.  Defaults to ``func.__name__``.
 
@@ -39,10 +39,12 @@ class FactorOracleConstraint(Constraint):
             raise InvalidInputError(
                 "FactorOracleConstraint requires a nodes scope (a list or a callable)."
             )
-        self.func = func
-        self.nodes = nodes
-        self.num_args = len(inspect.signature(func).parameters)
-        self.name = name if name is not None else func.__name__
+        self._set(
+            func=func,
+            nodes=nodes if callable(nodes) else list(nodes),
+            num_args=len(inspect.signature(func).parameters),
+            name=name if name is not None else func.__name__,
+        )
 
     def __call__(self, assignment, data=None):
         """

@@ -181,25 +181,32 @@ Composition, not inheritance
    constrained model and drop its constraints. ``ensure(model)`` wraps a bare
    model.
 Immutability
-   Models, constrained models and the read-only arrays of the ``"matvec"``
-   and MVR representations are not changed after construction, and the
-   constructors validate them. Use ``with_model``/``with_constraints`` (or
+   Models, constraints (including MVRs), constrained models and the
+   read-only arrays of the ``"matvec"`` and MVR representations are not
+   changed after construction, and the constructors validate them.
+   Assigning an attribute of a constraint raises ``AttributeError``;
+   constraint classes set their attributes in ``__init__`` with
+   ``Constraint._set``, and the library derives changed constraints (an MVR
+   with another name or time range, an MVR aligned to an HMM) with
+   ``Constraint._replace``. The functions a constraint holds and the
+   constrained model's ``data`` are the caller's: CONIN never changes them,
+   and copies ``data`` before adding the query's fields to it. Use ``with_model``/``with_constraints`` (or
    ``with_cpd``/``with_factor`` for Bayesian and Markov networks) to derive
    new objects. The lists and dicts of the models, factors and CPDs
    are ``FrozenList``/``FrozenDict`` (``conin.util.frozen``): read-only
    subclasses of ``list`` and ``dict``, so they compare equal to and print
    like the built-in types, and code that reads them needs no change. Test
    for them with ``isinstance(x, list)``/``isinstance(x, dict)``, not
-   ``type(x) is list``. The constructors copy their arguments into them
-   (``freeze``). A DBN's ``t`` is the exception: it
+   ``type(x) is list``. The constructors (also those of the constraints)
+   copy their arguments into them (``freeze``). A DBN's ``t`` is the exception: it
    is the time index that unrolling and sampling set while they evaluate the
    CPD templates.
 MVR static context
    The torch kernels (``conin.algorithms.util.mvr_kernels``) build their
    per-query context (tensors, shapes, active sets) from ``repn.mvrs``,
    because it depends on the horizon, the dtype, the device and the semiring.
-   The ``"mvr"`` representation deep-copies prebuilt MVRs at build time, so
-   the user's objects are never changed.
+   The ``"mvr"`` representation uses prebuilt MVRs as they are (they are
+   immutable) and aligns them to the HMM with copies.
 DBN unrolling
    DBNs and HMMs are unrolled from ``start=0``; unrolling from a later time
    would need the marginal distribution at that time.
@@ -222,12 +229,3 @@ reproducible (case ``hmm-17`` is always the same). ``CONIN_RANDOM_CASES``
 sets the number of cases per model type: 10 by default (a few seconds), and
 a few thousand for a sweep after changing an inference method. A new method
 or constraint family should be added to its method table.
-
-Open questions
---------------
-
-- The MVR algorithms build ``representation("mvr")`` per call, so stopped
-  sampling (one ``sat_time`` call plus one ``ffbs`` call per distinct stopping
-  time) deep-copies the prebuilt MVRs each time (about 1 ms per MVR). Measure
-  before optimising (a cache inside ``representation()``, or passing the
-  built MVRs on internally).

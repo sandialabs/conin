@@ -78,7 +78,7 @@ class OpaqueMVR(BaseMVR):
 
     def __init__(self):
         super().__init__()
-        self.hidden_states = list(ALPHABET)
+        self._set(hidden_states=list(ALPHABET))
 
 
 def valid_hom_arrays():
@@ -100,21 +100,24 @@ def valid_inhom_arrays():
 
 
 @pytest.mark.parametrize("bad_name", [1, b"x", ["x"]])
-def test_name_setter_rejects_non_strings(bad_name):
+def test_names_must_be_strings(bad_name):
     mvr = HomMVR(**hom_kwargs())
 
     with pytest.raises(InvalidInputError, match="name must be a string or None"):
-        mvr.name = bad_name
+        mvr.with_name(bad_name)
 
     with pytest.raises(InvalidInputError, match=type(bad_name).__name__):
         HomMVR(**hom_kwargs(), name=bad_name)
 
 
-def test_name_setter_accepts_none_and_strings():
+def test_with_name_returns_a_renamed_copy():
     mvr = HomMVR(**hom_kwargs(), name="x")
     assert mvr.name == "x"
-    mvr.name = None
-    assert mvr.name is None
+
+    renamed = mvr.with_name(None)
+    assert renamed.name is None
+    assert mvr.name == "x"
+    assert renamed.repn is mvr.repn
 
 
 def test_base_mvr_hooks_must_be_implemented():
@@ -133,7 +136,7 @@ def test_repn_is_rebuilt_lazily_and_initialize_is_idempotent():
 
     assert mvr.initialize() is repn
 
-    mvr._repn = None
+    mvr = mvr._replace(_repn=None)
     rebuilt = mvr.repn
 
     assert rebuilt is not repn
@@ -944,25 +947,24 @@ def test_mvr_count_rejects_invalid_conditions(condition, match, inhom):
         ([2, 1], "with start <= end"),
     ],
 )
-@pytest.mark.parametrize("inplace", [False, True])
-def test_mvr_timerange_rejects_invalid_ranges(time_range, match, inplace):
+def test_mvr_timerange_rejects_invalid_ranges(time_range, match):
     mvr = contains_symbol_mvr("a")
 
     with pytest.raises(InvalidInputError, match=match):
-        mvr_timerange(mvr, time_range, inplace=inplace)
+        mvr_timerange(mvr, time_range)
 
     assert mvr.time_range is None
 
 
-def test_mvr_timerange_inplace_checks_the_inhom_horizon():
+def test_mvr_timerange_checks_the_inhom_horizon():
     inhom = trivial_inhom_mvr(time_horizon=2)
 
     with pytest.raises(InvalidInputError, match="longer than the time horizon"):
-        mvr_timerange(inhom, [1, 4], inplace=True)
+        mvr_timerange(inhom, [1, 4])
 
     assert inhom.time_range is None
-    assert mvr_timerange(inhom, [1, 3], inplace=True) is inhom
-    assert inhom.time_range == [1, 3]
+    assert mvr_timerange(inhom, [1, 3]).time_range == [1, 3]
+    assert inhom.time_range is None
 
 
 # ---------------------------------------------------------------------

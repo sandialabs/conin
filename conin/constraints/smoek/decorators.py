@@ -66,12 +66,11 @@ class SmoekConstraint(Constraint):
             func: User function that returns expression(s)
             name: Optional constraint name (defaults to function name)
         """
-        self.func = func
-        self.num_args = len(inspect.signature(self.func).parameters)
-        if self.num_args > 2:
+        num_args = len(inspect.signature(func).parameters)
+        if num_args > 2:
             raise ValueError("Smoek constraint defined with more than 2 arguments")
 
-        self.name = name if name else func.__name__
+        self._set(func=func, num_args=num_args, name=name if name else func.__name__)
 
     def __call__(self, model, data):
         """

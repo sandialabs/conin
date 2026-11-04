@@ -255,6 +255,19 @@ Constrained models
   with_constraints/with_model to derive new ones, and ensure(model) to wrap a
   bare model.
 - .model replaces .pgm and .hidden_markov_model (no aliases).
+- Constraints are immutable too, so a constrained model cannot be changed
+  through its constraints: assigning or deleting an attribute of any
+  Constraint (Pyomo, Toulbar2, smoek, oracle, factor oracle, recursive and
+  MVR constraints, and the MVRs HomMVR/InhomMVR) raises AttributeError, and
+  their lists and dicts (FactorOracleConstraint.nodes, an MVR's
+  hidden_states, mediation_states, ini, upd, evl and time_range) are
+  read-only copies. The MVR array representation (mvr.repn) is immutable as
+  well. mvr.name can no longer be set: use mvr.with_name(name), which
+  returns a renamed copy. mvr_timerange loses inplace= (it always returns a
+  new MVR). The "mvr" representation no longer deep-copies prebuilt MVRs.
+  OracleConstraint's default partial function is a module-level function,
+  so oracle constraints can be pickled. Constraint subclasses must set their
+  attributes in __init__ with self._set(name=value, ...).
 - A single Constraint is accepted. Mixed constraint families, non-Constraint
   objects, a string and a wrong model type raise InvalidInputError at
   construction.

@@ -6,6 +6,7 @@ import numpy as np
 
 from conin.exceptions import InvalidInputError
 from conin.constraints.base import Constraint
+from conin.util.frozen import freeze
 
 
 def _has_product_domain(mapping, first, second):
@@ -41,8 +42,22 @@ def _normalize_time_range(
     return list(time_range)
 
 
+def _checked_name(name):
+    """Return ``name`` if it is a string or None, else raise ``InvalidInputError``."""
+    if name is not None and not isinstance(name, str):
+        raise InvalidInputError(
+            f"name must be a string or None, got {type(name).__name__}"
+        )
+    return name
+
+
 class BaseMVR(Constraint):
-    """Auxiliary state process tracking a constraint on hidden-state sequences."""
+    """Auxiliary state process tracking a constraint on hidden-state sequences.
+
+    MVRs are immutable (see :class:`~conin.constraints.Constraint`): the
+    operators and :meth:`with_name` return new MVRs, and the array
+    representation (:attr:`repn`) is read-only.
+    """
 
     family = "mvr"
 
@@ -58,22 +73,19 @@ class BaseMVR(Constraint):
     _name: str | None  # optional label for this instance
 
     def __init__(self):
-        self._repn = None
-        self._prefix = False
-        self._time_range = None
-        self._name = None
+        self._set(_repn=None, _prefix=False, _time_range=None, _name=None)
 
     @property
     def name(self):
         return self._name
 
-    @name.setter
-    def name(self, value):
-        if value is not None and not isinstance(value, str):
-            raise InvalidInputError(
-                f"name must be a string or None, got {type(value).__name__}"
-            )
-        self._name = value
+    def with_name(self, name):
+        """Return a copy of this MVR named ``name`` (a string or ``None``).
+
+        The operators return unnamed MVRs; the name is what the MVR queries
+        take as ``target``.
+        """
+        return self._replace(_name=_checked_name(name))
 
     @property
     def prefix(self):
@@ -96,10 +108,13 @@ class BaseMVR(Constraint):
 
         ini_array, upd_array, evl_array = self._build_array_repn()
 
-        self._repn = MVR_MatVecRepn(
-            ini_array=ini_array,
-            upd_array=upd_array,
-            evl_array=evl_array,
+        # A cache: the representation is a function of the (immutable) MVR.
+        self._set(
+            _repn=MVR_MatVecRepn(
+                ini_array=ini_array,
+                upd_array=upd_array,
+                evl_array=evl_array,
+            )
         )
 
         return self._repn
@@ -173,14 +188,15 @@ class HomMVR(BaseMVR):
             raise InvalidInputError("range(values) of evl must be boolean")
 
         super().__init__()
-        self.hidden_states = list(hidden_states)
-        self.mediation_states = list(mediation_states)
-        self.ini = dict(ini)
-        self.upd = dict(upd)
-        self.evl = dict(evl)
-        self._time_range = _normalize_time_range(time_range)
-
-        self.name = name
+        self._set(
+            hidden_states=list(hidden_states),
+            mediation_states=list(mediation_states),
+            ini=dict(ini),
+            upd=dict(upd),
+            evl=dict(evl),
+            _time_range=_normalize_time_range(time_range),
+            _name=_checked_name(name),
+        )
         # Build repn
         self.initialize()
 
@@ -217,9 +233,7 @@ class HomMVR(BaseMVR):
             name=self._name,
         )
 
-        pruned._prefix = self._prefix
-
-        return pruned
+        return pruned._replace(_prefix=self._prefix)
 
     def _build_array_repn(self):
         """Build integer-indexed NumPy arrays for a homogeneous MVR."""
@@ -352,17 +366,18 @@ class InhomMVR(BaseMVR):
             m_space_prev = m_space
 
         super().__init__()
-        self.hidden_states = list(hidden_states)
-        self.mediation_states = [
-            list(mediation_states_t) for mediation_states_t in mediation_states
-        ]
-        self.ini = dict(ini)
-        self.upd = [dict(upd_t) for upd_t in upd]
-        self.evl = [dict(evl_t) for evl_t in evl]
-        self.time_horizon = time_horizon
-        self._time_range = _normalize_time_range(time_range, time_horizon)
-
-        self.name = name
+        self._set(
+            hidden_states=list(hidden_states),
+            mediation_states=[
+                list(mediation_states_t) for mediation_states_t in mediation_states
+            ],
+            ini=dict(ini),
+            upd=[dict(upd_t) for upd_t in upd],
+            evl=[dict(evl_t) for evl_t in evl],
+            time_horizon=time_horizon,
+            _time_range=_normalize_time_range(time_range, time_horizon),
+            _name=_checked_name(name),
+        )
         # Build repn
         self.initialize()
 
@@ -405,9 +420,7 @@ class InhomMVR(BaseMVR):
             name=self._name,
         )
 
-        pruned._prefix = self._prefix
-
-        return pruned
+        return pruned._replace(_prefix=self._prefix)
 
     def _build_array_repn(self):
         """Build integer-indexed NumPy arrays for an inhomogeneous MVR."""
@@ -518,9 +531,11 @@ def _read_only(array):
 class MVR_MatVecRepn:
     """Integer-indexed NumPy representation of a homogeneous or inhomogeneous MVR.
 
-    The arrays (``ini_array``, ``upd_array``, ``evl_array``, ``ini_idx``,
-    ``next_idx``) are read-only copies of the inputs, so they cannot be
-    changed through an MVR or a representation that shares it.
+    It is immutable: the arrays (``ini_array``, ``upd_array``, ``evl_array``,
+    ``ini_idx``, ``next_idx``) are read-only copies of the inputs, the lists
+    are read-only, and assigning or deleting an attribute after construction
+    raises ``AttributeError``, so it cannot be changed through an MVR or a
+    representation that shares it.
     """
 
     def __init__(
@@ -544,7 +559,22 @@ class MVR_MatVecRepn:
 
     def _freeze(self):
         for name in ("ini_array", "upd_array", "evl_array", "ini_idx", "next_idx"):
-            setattr(self, name, _read_only(getattr(self, name)))
+            object.__setattr__(self, name, _read_only(getattr(self, name)))
+        for name in ("hidden_states", "mediation_states", "num_mediation_states"):
+            object.__setattr__(self, name, freeze(getattr(self, name)))
+        object.__setattr__(self, "_frozen", True)
+
+    def __setattr__(self, name, value):
+        if getattr(self, "_frozen", False):
+            raise AttributeError(
+                f"{type(self).__name__} is immutable; cannot set {name!r}"
+            )
+        object.__setattr__(self, name, value)
+
+    def __delattr__(self, name):
+        raise AttributeError(
+            f"{type(self).__name__} is immutable; cannot delete {name!r}"
+        )
 
     def __setstate__(self, state):
         # copy.deepcopy and pickle give writeable arrays; make them read-only again.
