@@ -186,16 +186,19 @@ Notes
 -----
 
 - ``cpds`` is required and must be non-empty. Models are immutable after
-  construction; use ``with_cpd`` to get a new model with an extra CPD.
+  construction; use ``with_cpd`` to get a new model with an extra CPD (the
+  new model must be valid too).
 - ``states`` defines the state names used by every CPD. It is optional: the
-  states of nodes that are not listed are inferred from their CPDs.
+  states of nodes that are not listed are inferred from their CPDs (which
+  then need dictionary values).
 - ``DiscreteCPD`` supports both dictionary-based and list-based probability
   declarations.
-- ``check_model()`` verifies that the CPDs are consistent with the network
-  structure and state definitions: every node has exactly one CPD, every
-  distribution (for every parent state) sums to 1, and the CPDs have no
-  cycle. It raises ``InvalidInputError`` if not. The constructor does not
-  call it.
+- The constructor validates the network (``check_model()``): the CPDs must
+  be consistent with the network structure and state definitions, every
+  node has exactly one CPD, every distribution (for every parent state)
+  sums to 1, a list of values has one value per state (and parent state),
+  and the CPDs have no cycle. It raises ``InvalidInputError`` if not, so a
+  network that exists is valid.
 - See :doc:`model_conversion_io` for converting Bayesian networks to Markov
   networks and saving/loading UAI files.
 - For introductory work, ``simple1_BN_conin`` is the easiest example to adapt.

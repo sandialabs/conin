@@ -180,9 +180,10 @@ Composition, not inheritance
    model.
 Immutability
    Models, constrained models and the read-only arrays of the ``"matvec"``
-   and MVR representations are not changed after construction. Use
-   ``with_model``/``with_constraints`` (or ``with_cpd``/``with_factor``) to
-   derive new objects. The lists and dicts of the models, factors and CPDs
+   and MVR representations are not changed after construction, and the
+   constructors validate them. Use ``with_model``/``with_constraints`` (or
+   ``with_cpd``/``with_factor`` for Bayesian and Markov networks) to derive
+   new objects. The lists and dicts of the models, factors and CPDs
    are ``FrozenList``/``FrozenDict`` (``conin.util.frozen``): read-only
    subclasses of ``list`` and ``dict``, so they compare equal to and print
    like the built-in types, and code that reads them needs no change. Test

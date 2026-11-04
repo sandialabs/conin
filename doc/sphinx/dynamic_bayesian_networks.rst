@@ -35,9 +35,11 @@ with an initial distribution and one transition CPD.
    )
    dbn.check_model()
 
-``check_model()`` unrolls the network over its first time steps (until
-every CPD template applies, plus one) and checks the unrolled Bayesian
-network: every dynamic node needs exactly one CPD at every time step (here
+The constructor validates the network (``check_model()``, which you can also
+call yourself): every CPD must use static nodes and ``(dynamic node, time)``
+pairs, and the network is unrolled over its first time steps (until every
+CPD template applies, plus one) and the unrolled Bayesian network is
+checked: every dynamic node needs exactly one CPD at every time step (here
 ``("Z", 0)`` has its own CPD, and the template covers the later times), the
 distributions must sum to 1 and the CPDs must have no cycle. It raises
 ``InvalidInputError`` otherwise.

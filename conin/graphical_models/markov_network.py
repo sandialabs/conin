@@ -91,11 +91,25 @@ class DiscreteFactor:
         DiscreteFactor
             A factor whose ``values`` attribute is a dictionary keyed by state
             assignments instead of a flat list.
+
+        Raises
+        ------
+        InvalidInputError
+            If the list does not have one value per combination of the
+            states of ``nodes``.
         """
         if isinstance(self.values, dict):
             return self
         else:
             slist = [pgm.states_of(node) for node in self.nodes]
+            # The list of values must cover all combinations of node states
+            expected = prod(len(states) for states in slist)
+            if len(self.values) != expected:
+                raise InvalidInputError(
+                    f"The factor over {list(self.nodes)} has {len(self.values)} "
+                    f"values, expected {expected} (one per combination of their "
+                    "states)"
+                )
             if len(slist) == 1:
                 values = dict(zip(slist[0], self.values))
             else:
@@ -107,6 +121,22 @@ class DiscreteFactor:
             return DiscreteFactor(
                 nodes=self.nodes, values=values, default_value=self.default_value
             )
+
+
+def _inferred_states(node, factors):
+    """The sorted values of ``node`` in the factors with dictionary values."""
+    values = set()
+    for factor in factors:
+        if node in factor.nodes and isinstance(factor.values, dict):
+            i = list(factor.nodes).index(node)
+            for key in factor.values:
+                values.add(key[i] if type(key) is tuple else key)
+    if not values:
+        raise InvalidInputError(
+            f"The states of node {node!r} are not given, and no factor with "
+            "dictionary values uses it"
+        )
+    return sorted(values)
 
 
 class DiscreteMarkovNetwork(GraphicalModel):
@@ -128,14 +158,17 @@ class DiscreteMarkovNetwork(GraphicalModel):
             clique in the network.
         states : dict or list, optional
             Mapping from node identifiers to ordered states or a list of node
-            cardinalities. Defaults to an empty dictionary.
+            cardinalities. The states of nodes that are not listed are the
+            (sorted) values they take in the factors with dictionary values.
         edges : Iterable[tuple], optional
             Pairwise edges that connect nodes in the network.
 
         Raises
         ------
         InvalidInputError
-            If ``factors`` is empty.
+            If ``factors`` is empty, the states of a node are not given and
+            no factor with dictionary values uses it, or the model is not
+            valid (:meth:`check_model`).
         """
         factors = list(factors)
         if not factors:
@@ -163,6 +196,7 @@ class DiscreteMarkovNetwork(GraphicalModel):
                 if node not in tmp:
                     tmp.add(node)
                     self._nodes.append(node)
+                    self._states[node] = _inferred_states(node, factors)
         self._factors = freeze([factor.normalize(self) for factor in factors])
         self._nodes = freeze(self._nodes)
         self._states = freeze(self._states)
@@ -176,25 +210,28 @@ class DiscreteMarkovNetwork(GraphicalModel):
                 ):
                     edges.add(edge)
             self._edges = freeze(list(edges))
+        self.check_model()
 
     def check_model(self):
         """Validate structural consistency of nodes, edges, and factors.
 
+        The constructor calls this, so a model that exists is valid.
+
         Ensures that:
 
         - All nodes referenced by edges and factor scopes match the model's
-          nodes.
-        - Factor values are non-negative.
-        - For list-based factors, the number of values equals the product of
-          the cardinalities for the factor's nodes.
+          nodes, and every node appears in a factor.
+        - Factor values are non-negative and use valid node states.
+
+        (A list of factor values with the wrong length is rejected when the
+        factor is converted to a dictionary, :meth:`DiscreteFactor.normalize`.)
 
         Raises
         ------
         InvalidInputError
             If an edge or factor references a node that is not in the model,
-            a node has no factor, a factor value is negative, a factor uses
-            an invalid node state, or a list of factor values has the wrong
-            length.
+            a node has no factor, a factor value is negative, or a factor uses
+            an invalid node state.
         """
         model_nodes = set(self._states.keys())
 
@@ -238,19 +275,6 @@ class DiscreteMarkovNetwork(GraphicalModel):
                         raise InvalidInputError(
                             f"Unexpected node value {k} in factor {factor_num}"
                         )
-            else:
-                if any(v < 0 for v in f.values):
-                    raise InvalidInputError(
-                        f"Unexpected negative factor value in factor {factor_num}"
-                    )
-                # The list of values must cover all combinations of node states
-                expected = prod(len(self._states[node]) for node in f.nodes)
-                if len(f.values) != expected:
-                    raise InvalidInputError(
-                        f"Factor {factor_num} has {len(f.values)} values, expected "
-                        f"{expected} (one per combination of the states of "
-                        f"{list(f.nodes)})"
-                    )
 
         # Every node must be used in the model
         if model_nodes != fnodes:

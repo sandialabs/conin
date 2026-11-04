@@ -164,6 +164,18 @@ Models
   TimeIndex (conin.graphical_models) passed to the constructor as t.
   read_from_file is a classmethod returning a new instance; make_non_zero
   returns a new instance.
+- The model constructors validate the model (they call check_model(), as
+  the HiddenMarkovModel constructor already did), so a model that exists is
+  valid: DiscreteBayesianNetwork and DynamicDiscreteBayesianNetwork raise
+  InvalidInputError for a node without a CPD, a distribution that does not
+  sum to 1 or a cycle, and DiscreteMarkovNetwork for a node without a factor
+  or a negative value. Incomplete models can no longer be built and
+  completed with with_cpd/with_factor; pass every CPD or factor to the
+  constructor. DynamicDiscreteBayesianNetwork.with_cpd is removed (a new
+  node must be declared in the states, and a declared node without a CPD
+  is not valid). DiscreteMarkovNetwork infers the states of nodes that are
+  not in states from its dictionary-valued factors, as
+  DiscreteBayesianNetwork does from its CPDs.
 - The data of the MN, BN and DBN classes and of DiscreteFactor/DiscreteCPD
   is read-only: nodes, edges, states_of(node), the state lists in states and
   dynamic_states, factor and CPD values (also the nested CPD tables), factor
@@ -558,6 +570,17 @@ Bug fixes
   returns None, as the other check_model methods. create_bn_from_dbn moved
   to conin.graphical_models.dynamic_bayesian_network (still exported by
   conin.graphical_models).
+- List-valued CPDs and factors with the wrong number of values were
+  truncated (or left states without a probability) without an error; they
+  now raise InvalidInputError. A DiscreteMarkovNetwork whose nodes were
+  only named by its factors had no states, so inference raised KeyError.
+  A DynamicDiscreteBayesianNetwork accepted CPDs for nodes that are neither
+  static nodes nor (dynamic node, time) pairs, and unrolling made up nodes
+  such as ("W", <TimeIndex>); check_model now rejects them, and CPD times
+  that are neither integers nor written with the network's t (e.g.
+  ("A", None) raised AttributeError). The list-valued
+  CPDs of a DiscreteBayesianNetwork no longer need the CPDs of their
+  parents to come first when the parents' states are inferred.
 - map_query(method="variable_elimination") added the evidence to
   solution.states when the model had constraints, but not without them.
   It now adds it only with solution_with_evidence=True (or

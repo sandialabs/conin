@@ -2,6 +2,7 @@
 
 import pytest
 
+from conin import map_query
 from conin.exceptions import InvalidInputError
 from conin.graphical_models import DiscreteFactor, DiscreteMarkovNetwork
 
@@ -20,7 +21,6 @@ def _make_simple_mn():
     mn = DiscreteMarkovNetwork(
         states={"A": [0, 1], "B": [0, 1]}, factors=[f_a, f_b, f_ab]
     )
-    mn.check_model()
     return mn
 
 
@@ -142,6 +142,7 @@ class TestDiscreteMarkovNetwork:
             factors=[DiscreteFactor(nodes=["A"], values={0: 1.0, 1: 2.0})]
         )
         assert mn.nodes == ["A"]
+        assert mn.states == {"A": [0, 1]}
 
     # --- states_of / card ---
 
@@ -223,92 +224,83 @@ class TestDiscreteMarkovNetwork:
     def test_check_model_passes(self):
         _make_simple_mn()  # should not raise
 
-    def test_check_model_negative_value(self):
-        mn = DiscreteMarkovNetwork(
-            states={"A": [0, 1]},
-            factors=[DiscreteFactor(nodes=["A"], values={0: -1.0, 1: 2.0})],
-        )
-        with pytest.raises(InvalidInputError):
-            mn.check_model()
-
-    def test_check_model_invalid_node_state_in_factor(self):
-        # State 99 does not exist for node A
-        mn = DiscreteMarkovNetwork(
-            states={"A": [0, 1]},
-            factors=[DiscreteFactor(nodes=["A"], values={99: 1.0, 0: 1.0})],
-        )
-        with pytest.raises(InvalidInputError):
-            mn.check_model()
-
     def test_check_model_factor_node_not_in_model(self):
-        # Factor references node B which is not in states
+        # Factor references node B which is not in states (only reachable by
+        # bypassing the constructor, which infers B's states)
         mn = _mn({"A": [0, 1]})
         mn._factors = [DiscreteFactor(nodes=["B"], values={0: 1.0, 1: 2.0})]
-        with pytest.raises(InvalidInputError):
-            mn.check_model()
-
-    def test_check_model_edge_node_not_in_model(self):
-        mn = DiscreteMarkovNetwork(
-            states={"A": [0, 1]},
-            edges=[("A", "Z")],  # Z is not in states
-            factors=[DiscreteFactor(nodes=["A"], values={0: 1.0, 1: 2.0})],
-        )
-        with pytest.raises(InvalidInputError):
-            mn.check_model()
-
-    def test_check_model_list_factor_wrong_length(self):
-        # Should have 2 values for a binary node, not 3
-        mn = _mn({"A": [0, 1]})
-        mn._factors = [DiscreteFactor(nodes=["A"], values=[1.0, 2.0, 3.0])]
-        with pytest.raises(InvalidInputError):
-            mn.check_model()
-
-    def test_check_model_missing_node(self):
-        # Only A has a factor; B is missing
-        mn = DiscreteMarkovNetwork(
-            states={"A": [0, 1], "B": [0, 1]},
-            factors=[DiscreteFactor(nodes=["A"], values={0: 1.0, 1: 2.0})],
-        )
-        with pytest.raises(InvalidInputError):
+        with pytest.raises(InvalidInputError, match="Unexpected node 'B'"):
             mn.check_model()
 
 
 # ---------------------------------------------------------------------
-# check_model raises InvalidInputError with a message (it used assert, so the
-# checks vanished under python -O)
+# The constructor calls check_model, which raises InvalidInputError with a
+# message (it used assert, so the checks vanished under python -O)
 # ---------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
-    "factors,match",
+    "kwargs,match",
     [
-        ([DiscreteFactor(nodes=["A"], values={0: -1.0, 1: 2.0})], "negative"),
-        ([DiscreteFactor(nodes=["A"], values=[1.0, -2.0])], "negative"),
         (
-            [DiscreteFactor(nodes=["A"], values={99: 1.0, 0: 1.0})],
+            dict(factors=[DiscreteFactor(nodes=["A"], values={0: -1.0, 1: 2.0})]),
+            "negative",
+        ),
+        (
+            dict(factors=[DiscreteFactor(nodes=["A"], values=[1.0, -2.0])]),
+            "negative",
+        ),
+        (
+            dict(factors=[DiscreteFactor(nodes=["A"], values={99: 1.0, 0: 1.0})]),
             "Unexpected node value",
         ),
         (
-            [DiscreteFactor(nodes=["A"], values=[1.0, 2.0, 3.0])],
-            "has 3 values, expected 2",
+            dict(factors=[DiscreteFactor(nodes=["A"], values=[1.0, 2.0, 3.0])]),
+            r"over \['A'\] has 3 values, expected 2",
         ),
-        ([DiscreteFactor(nodes=["B"], values={0: 1.0, 1: 2.0})], "Unexpected node 'B'"),
+        (
+            dict(factors=[DiscreteFactor(nodes=["A"], values=[1.0])]),
+            "has 1 values, expected 2",
+        ),
+        (
+            dict(
+                edges=[("A", "Z")],
+                factors=[DiscreteFactor(nodes=["A"], values={0: 1.0, 1: 2.0})],
+            ),
+            "edge nodes contains the following nodes",
+        ),
     ],
 )
-def test_check_model_messages(factors, match):
-    mn = _mn({"A": [0, 1]})
-    mn._factors = factors
+def test_invalid_networks_are_rejected(kwargs, match):
     with pytest.raises(InvalidInputError, match=match):
-        mn.check_model()
+        DiscreteMarkovNetwork(states={"A": [0, 1]}, **kwargs)
 
 
-def test_check_model_names_the_nodes_without_a_factor():
-    mn = DiscreteMarkovNetwork(
-        states={"A": [0, 1], "B": [0, 1]},
-        factors=[DiscreteFactor(nodes=["A"], values={0: 1.0, 1: 2.0})],
-    )
+def test_every_node_needs_a_factor():
     with pytest.raises(InvalidInputError, match=r"without a factor: \['B'\]"):
-        mn.check_model()
+        DiscreteMarkovNetwork(
+            states={"A": [0, 1], "B": [0, 1]},
+            factors=[DiscreteFactor(nodes=["A"], values={0: 1.0, 1: 2.0})],
+        )
+
+
+def test_states_are_inferred_from_dict_factors():
+    # A node without given states takes the values it has in the factors
+    # (before, its states were missing and inference raised KeyError).
+    mn = DiscreteMarkovNetwork(
+        factors=[
+            DiscreteFactor(nodes=["A"], values={1: 2.0, 0: 1.0}),
+            DiscreteFactor(nodes=["A", "B"], values={(0, "x"): 1.0, (1, "y"): 2.0}),
+        ]
+    )
+    assert mn.states == {"A": [0, 1], "B": ["x", "y"]}
+    results = map_query(mn, method="variable_elimination")
+    assert results.solution.states == {"A": 1, "B": "y"}
+
+
+def test_states_cannot_be_inferred_from_list_factors():
+    with pytest.raises(InvalidInputError, match="states of node 'A' are not given"):
+        DiscreteMarkovNetwork(factors=[DiscreteFactor(nodes=["A"], values=[1.0, 2.0])])
 
 
 def test_check_model_list_factor_over_a_subset_of_the_nodes():

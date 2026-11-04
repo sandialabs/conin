@@ -159,13 +159,14 @@ class TestDiscreteBayesianNetwork:
 
     def test_with_cpd_does_not_mutate(self):
         bn = DiscreteBayesianNetwork(
-            states={"A": [0, 1], "B": [0, 1]},
+            states={"A": [0, 1]},
             cpds=[DiscreteCPD(node="A", values=[0.5, 0.5])],
         )
-        bn2 = bn.with_cpd(DiscreteCPD(node="B", values=[0.5, 0.5]))
+        bn2 = bn.with_cpd(DiscreteCPD(node="B", values={0: 0.5, 1: 0.5}))
         assert len(bn.cpds) == 1
         assert len(bn2.cpds) == 2
-        bn2.check_model()
+        assert bn.nodes == ["A"]
+        assert bn2.nodes == ["A", "B"]
 
     def test_states_of(self):
         bn = _make_simple_bn()
@@ -207,12 +208,11 @@ class TestDiscreteBayesianNetwork:
 
     def test_check_model_missing_node(self):
         # Only provide CPD for A, leaving B without one.
-        bn = DiscreteBayesianNetwork(
-            states={"A": [0, 1], "B": [0, 1]},
-            cpds=[DiscreteCPD(node="A", values=[0.5, 0.5])],
-        )
         with pytest.raises(InvalidInputError):
-            bn.check_model()
+            DiscreteBayesianNetwork(
+                states={"A": [0, 1], "B": [0, 1]},
+                cpds=[DiscreteCPD(node="A", values=[0.5, 0.5])],
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -443,13 +443,53 @@ _B_GIVEN_A = DiscreteCPD(node="B", parents=["A"], values={0: [0.5, 0.5], 1: [0.1
             ],
             r"cycle through the nodes \['A', 'B'\]",
         ),
+        (
+            [DiscreteCPD(node="A", values=[1.0]), _B_GIVEN_A],
+            "The CPD of 'A' has 1 values, expected 2",
+        ),
+        (
+            [_A, DiscreteCPD(node="B", parents=["A"], values=[0.5, 0.5, 0.5])],
+            "The CPD of 'B' has 3 values, expected 4",
+        ),
+        (
+            [_A, DiscreteCPD(node="B", parents=["A"], values={0: [1.0], 1: [1.0]})],
+            "The CPD of 'B' has 1 values for the parent states 0, expected 2",
+        ),
     ],
-    ids=["no_cpd", "two_cpds", "sum", "row_sum", "missing_row", "cycle"],
+    ids=[
+        "no_cpd",
+        "two_cpds",
+        "sum",
+        "row_sum",
+        "missing_row",
+        "cycle",
+        "short_list",
+        "flat_list_length",
+        "row_list_length",
+    ],
 )
-def test_check_model_rejects_invalid_networks(cpds, match):
-    bn = DiscreteBayesianNetwork(states=_S, cpds=cpds)
+def test_constructor_rejects_invalid_networks(cpds, match):
+    # The constructor calls check_model.  Lists with the wrong length used
+    # to be truncated (or padded with missing states) without an error.
     with pytest.raises(InvalidInputError, match=match):
-        bn.check_model()
+        DiscreteBayesianNetwork(states=_S, cpds=cpds)
+
+
+def test_states_are_inferred_from_dict_cpds():
+    bn = DiscreteBayesianNetwork(
+        cpds=[
+            # B's CPD comes first and is a list; A's states come from A's CPD
+            DiscreteCPD(node="B", parents=["A"], values=[0.5, 0.5, 0.1, 0.9]),
+            DiscreteCPD(node="A", values={"y": 0.4, "x": 0.6}),
+        ],
+        states={"B": [0, 1]},
+    )
+    assert bn.states == {"A": ["x", "y"], "B": [0, 1]}
+
+
+def test_states_cannot_be_inferred_from_list_cpds():
+    with pytest.raises(InvalidInputError, match="states of node 'A' are not given"):
+        DiscreteBayesianNetwork(cpds=[DiscreteCPD(node="A", values=[0.5, 0.5])])
 
 
 def test_check_model_sum_tolerance():
