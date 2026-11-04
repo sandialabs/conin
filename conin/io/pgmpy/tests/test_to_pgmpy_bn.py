@@ -1,16 +1,15 @@
 import pytest
 import numpy as np
 
-from conin.util import try_import
+from conin.tests.optional import needs_pgmpy
+from conin.util import lazy_import
 from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
 from conin.io.pgmpy import convert_conin_to_pgmpy_bn
 
-with try_import() as pgmpy_available:
-    import pgmpy  # noqa: F401
-    from pgmpy.models import DiscreteBayesianNetwork as pgmpy_DiscreteBayesianNetwork
+# pgmpy is imported by the first test that uses it.
+pgmpy_models = lazy_import("pgmpy.models")
 
-# Mark tests that require pgmpy
-require_pgmpy = pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
+require_pgmpy = needs_pgmpy
 
 
 def test_import_convert_function():
@@ -48,7 +47,7 @@ def test_simple_root_node_conversion():
     pgmpy_pgm = convert_conin_to_pgmpy_bn(conin_pgm)
 
     # Verify structure
-    assert isinstance(pgmpy_pgm, pgmpy_DiscreteBayesianNetwork)
+    assert isinstance(pgmpy_pgm, pgmpy_models.DiscreteBayesianNetwork)
     assert set(pgmpy_pgm.nodes()) == {"A", "B"}
     assert len(pgmpy_pgm.edges()) == 0  # No edges for root nodes
 
@@ -88,7 +87,7 @@ def test_simple_parent_child_conversion():
     pgmpy_pgm = convert_conin_to_pgmpy_bn(conin_pgm)
 
     # Verify structure
-    assert isinstance(pgmpy_pgm, pgmpy_DiscreteBayesianNetwork)
+    assert isinstance(pgmpy_pgm, pgmpy_models.DiscreteBayesianNetwork)
     assert set(pgmpy_pgm.nodes()) == {"A", "B"}
     assert len(pgmpy_pgm.edges()) == 1
     assert ("A", "B") in pgmpy_pgm.edges()
@@ -298,7 +297,7 @@ def test_integration_with_bayesian_examples():
 
         # Verify basic properties
         assert len(pgmpy_pgm.nodes()) == len(conin_pgm.nodes)
-        assert isinstance(pgmpy_pgm, pgmpy_DiscreteBayesianNetwork)
+        assert isinstance(pgmpy_pgm, pgmpy_models.DiscreteBayesianNetwork)
 
         # Verify model validity
         pgmpy_pgm.check_model()

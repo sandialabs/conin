@@ -45,7 +45,11 @@ model type.
 - Public examples live in ``conin/examples/``; tests live next to the code
   they test (``<package>/tests/``).
 - Optional dependencies are imported with ``conin.util.try_import``; tests
-  that need them skip when they are missing.
+  that need them skip when they are missing. A test module decides that with
+  the markers of ``conin/tests/optional.py`` (``needs_pgmpy``,
+  ``needs_torch``), which do not import the package, and imports pgmpy where
+  a test uses it: pytest-xdist imports every test module in every worker,
+  and pgmpy takes seconds to import.
 - There are no compatibility aliases for moved names: when a public name
   moves, update every importer (code, tests, docs, notebooks).
 - Code is formatted with ``black``.

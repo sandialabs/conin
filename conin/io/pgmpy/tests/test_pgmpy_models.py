@@ -12,21 +12,22 @@ import random
 
 import pytest
 
-pytest.importorskip("pgmpy")
-
-from conin.algorithms.inference import map_query  # noqa: E402
-from conin.algorithms.scoring import (  # noqa: E402
+from conin.algorithms.inference import map_query
+from conin.algorithms.scoring import (
     log_potential,
     log_probability,
     log_probability_query,
 )
-from conin.graphical_models import (  # noqa: E402
+from conin.graphical_models import (
     DynamicDiscreteBayesianNetwork,
     create_bn_from_dbn,
 )
-from conin.io.pgmpy import convert_pgmpy_to_conin  # noqa: E402
+from conin.io.pgmpy import convert_pgmpy_to_conin
+from conin.tests.optional import needs_pgmpy
 
-from . import pgmpy_models  # noqa: E402
+from . import pgmpy_models
+
+pytestmark = needs_pgmpy
 
 
 def _twin(name):
@@ -69,13 +70,13 @@ def test_converted_model_matches_its_conin_twin(name):
     [
         name
         for name in sorted(pgmpy_models.CONIN_TWINS)
-        if "DDBN" not in name
-        and "weather" not in name
-        and getattr(pgmpy_models, name)().solutions[0].states is not None
+        if "DDBN" not in name and "weather" not in name
     ],
 )
 def test_converted_model_has_the_map_solution(name):
     example = getattr(pgmpy_models, name)()
+    if example.solutions[0].states is None:
+        pytest.skip(f"{name} has no recorded MAP solution")
     results = map_query(
         convert_pgmpy_to_conin(example.pgm), method="variable_elimination"
     )

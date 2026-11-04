@@ -2,17 +2,15 @@ import pytest
 import os.path
 import filecmp
 
-from conin.util import try_import
 import conin.io
 from conin.io import save_model, load_model
 from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
 from conin.exceptions import InvalidInputError
+from conin.tests.optional import pgmpy_installed
 
-with try_import() as pgmpy_available:
-    import pgmpy
+pgmpy_available = pgmpy_installed
+pgmpy_readwrite_available = pgmpy_installed
 
-with try_import() as pgmpy_readwrite_available:
-    import pgmpy.readwrite  # noqa: F401
 
 cwd = os.path.dirname(__file__)
 

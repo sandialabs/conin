@@ -5,15 +5,13 @@ import tempfile
 import shutil
 from io import StringIO
 
-from conin.util import try_import
 from conin.io import load_model
 from conin.io.convert_pgm import main
+from conin.tests.optional import pgmpy_installed
 
-with try_import() as pgmpy_available:
-    import pgmpy
+pgmpy_available = pgmpy_installed
+pgmpy_readwrite_available = pgmpy_installed
 
-with try_import() as pgmpy_readwrite_available:
-    import pgmpy.readwrite  # noqa: F401
 
 cwd = os.path.dirname(__file__)
 
