@@ -186,20 +186,20 @@ def _create_network_flow_model(D, *, hidden_to_external, x_binary, y_binary):
     # Shortest path constraints
 
     def flow_(m, t, b):
+        # The flow into (t, b) leaves it.  At t = 0 it comes from the source
+        # edge, and at t = Tmax - 1 it goes to the sink edge (both at once
+        # for a single observation).
         if b not in D.states[t]:
             return pyo.Constraint.Skip
-        elif t == 0:
-            return m.y[t, -1, b] == sum(
-                m.y[t + 1, b, a] for a in D.A if (t + 1, b, a) in D.Gt
-            )
-        elif t == D.Tmax - 1:
-            return (
-                sum(m.y[t, a, b] for a in D.A if (t, a, b) in D.Gt) == m.y[t + 1, b, -2]
-            )
+        if t == 0:
+            inflow = m.y[t, -1, b]
         else:
-            return sum(m.y[t, a, b] for a in D.A if (t, a, b) in D.Gt) == sum(
-                m.y[t + 1, b, a] for a in D.A if (t + 1, b, a) in D.Gt
-            )
+            inflow = sum(m.y[t, a, b] for a in D.A if (t, a, b) in D.Gt)
+        if t == D.Tmax - 1:
+            outflow = m.y[t + 1, b, -2]
+        else:
+            outflow = sum(m.y[t + 1, b, a] for a in D.A if (t + 1, b, a) in D.Gt)
+        return inflow == outflow
 
     M.hmm.flow = pyo.Constraint(D.T, D.A, rule=flow_)
 

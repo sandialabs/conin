@@ -2,7 +2,9 @@
 
 Each case is a small random model (MN, BN, DBN or HMM, sometimes with zero
 probabilities), random evidence and a random count constraint
-(``random_models.py``).  ``map_query`` solves it with every method and
+(``random_models.py``).  The ``tiny-*`` kinds are degenerate models: 1-2
+nodes, nodes with a single state, HMMs with a single hidden or observable
+state, and HMM horizons from 1.  ``map_query`` solves it with every method and
 constraint family that applies, and each result is compared with
 enumeration: the best score, a feasible argmax, or no solution if the
 evidence and the constraint exclude every assignment.  A* top-k, partial
@@ -36,7 +38,8 @@ with try_import() as pytoulbar2_available:
     import pytoulbar2  # noqa: F401
 
 NUM_CASES = int(os.environ.get("CONIN_RANDOM_CASES", "10"))
-KINDS = ["mn", "bn", "dbn", "hmm"]
+BASE_KINDS = ["mn", "bn", "dbn", "hmm"]
+KINDS = BASE_KINDS + [f"tiny-{kind}" for kind in BASE_KINDS]
 TOL = 1e-6
 
 # (name, method, options, constraint families; None is no constraint)
@@ -87,10 +90,12 @@ def case(kind, i):
     constraint), ``score`` (``x -> log P``) and, for HMMs, ``T``.
     """
     rng = _rng(kind, i)
+    tiny = kind.startswith("tiny-")
+    base = kind.removeprefix("tiny-")
     zeros = rng.random() < 0.3
-    if kind == "hmm":
-        pgm = rm.random_hmm_case(rng, zeros=zeros)
-        T = int(rng.integers(2, 6))
+    if base == "hmm":
+        pgm = rm.random_hmm_case(rng, zeros=zeros, tiny=tiny)
+        T = int(rng.integers(1, 4)) if tiny else int(rng.integers(2, 6))
         observed = [
             pgm.observable_states[int(k)]
             for k in rng.integers(len(pgm.observable_states), size=T)
@@ -101,7 +106,7 @@ def case(kind, i):
         if lb == 0 and ub == T:
             ub = T - 1
         return munch.Munch(
-            kind=kind,
+            kind=base,
             pgm=pgm,
             T=T,
             observed=observed,
@@ -112,12 +117,12 @@ def case(kind, i):
             score=lambda x: rm.score(pgm, x, observed),
         )
 
-    make = {"mn": rm.random_mn, "bn": rm.random_bn, "dbn": rm.random_dbn}[kind]
-    pgm = make(rng, zeros=zeros)
-    stop = int(rng.integers(1, 3)) if kind == "dbn" else None
+    make = {"mn": rm.random_mn, "bn": rm.random_bn, "dbn": rm.random_dbn}[base]
+    pgm = make(rng, zeros=zeros, tiny=tiny)
+    stop = int(rng.integers(1, 3)) if base == "dbn" else None
     domains = rm.variables(pgm, stop=stop)
     names = list(domains)
-    k = int(rng.integers(0, min(2, len(names) - 2) + 1))
+    k = int(rng.integers(0, max(0, min(2, len(names) - 2)) + 1))
     evidence = {}
     for j in rng.choice(len(names), size=k, replace=False):
         v = names[j]
@@ -128,7 +133,7 @@ def case(kind, i):
     if stop:
         query["stop"] = stop
     return munch.Munch(
-        kind=kind,
+        kind=base,
         pgm=pgm,
         stop=stop,
         query=query,
@@ -212,7 +217,7 @@ def _ids(kinds):
 @pytest.mark.parametrize("kind,i", _ids(KINDS))
 def test_map_query_agrees_with_brute_force(kind, i):
     c = case(kind, i)
-    methods = HMM_METHODS if kind == "hmm" else STATIC_METHODS
+    methods = HMM_METHODS if c.kind == "hmm" else STATIC_METHODS
     problems = []
     for name, method, options, families in methods:
         if not _available(name):
@@ -233,7 +238,7 @@ def test_map_query_agrees_with_brute_force(kind, i):
     assert not problems, f"case {kind}-{i} ({c.count}):\n" + "\n".join(problems)
 
 
-@pytest.mark.parametrize("kind,i", _ids(["hmm"]))
+@pytest.mark.parametrize("kind,i", _ids(["hmm", "tiny-hmm"]))
 @pytest.mark.parametrize("family", [None, "oracle", "recursive"])
 def test_a_star_top_k_agrees_with_brute_force(kind, i, family):
     c = case(kind, i)
@@ -258,12 +263,16 @@ def _random_subset(rng, names, low, high):
     return [names[j] for j in sorted(rng.choice(len(names), size=k, replace=False))]
 
 
-@pytest.mark.parametrize("kind,i", _ids(["mn", "bn", "dbn"]))
+@pytest.mark.parametrize(
+    "kind,i", _ids(["mn", "bn", "dbn", "tiny-mn", "tiny-bn", "tiny-dbn"])
+)
 @pytest.mark.parametrize("family", [None, "factor_oracle", "smoek"])
 def test_partial_map_variable_elimination_agrees_with_brute_force(kind, i, family):
     c = case(kind, i)
     rng = _rng("partial", i)
     free = [v for v in c.domains if v not in c.evidence]
+    if len(free) < 2:
+        pytest.skip("partial MAP needs two free variables")
     variables = _random_subset(rng, free, 1, len(free) - 1)
     constrained = family is not None
     # max over the query variables of the sum over the others
@@ -336,7 +345,9 @@ def test_log_probability_query_agrees_with_brute_force(kind, i, family):
     denominator = rm.logsumexp(
         s for s, x in joint if all(x[v] == value for v, value in evidence.items())
     )
-    horizon = {"stop": c.T - 1} if kind == "hmm" else {"stop": c.stop} if c.stop else {}
+    horizon = (
+        {"stop": c.T - 1} if c.kind == "hmm" else {"stop": c.stop} if c.stop else {}
+    )
     model = constrained_model(c, family)
     if denominator == -math.inf:
         with pytest.raises(InvalidInputError):

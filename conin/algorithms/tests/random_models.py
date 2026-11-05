@@ -67,17 +67,23 @@ def _distribution(rng, states, zeros):
     return {s: float(p) for s, p in zip(states, w / w.sum())}
 
 
-def _states(rng, nodes):
-    return {n: list(range(int(rng.integers(2, 4)))) for n in nodes}
+def _states(rng, nodes, tiny=False):
+    """2-3 states per node; with ``tiny``, 1-2 (a node can have a single state)."""
+    low, high = (1, 3) if tiny else (2, 4)
+    return {n: list(range(int(rng.integers(low, high)))) for n in nodes}
 
 
-def random_mn(rng, *, zeros=False):
-    """A Markov network over 3-4 nodes: unary factors and random pair factors."""
-    nodes = ["A", "B", "C", "D"][: int(rng.integers(3, 5))]
-    states = _states(rng, nodes)
+def random_mn(rng, *, zeros=False, tiny=False):
+    """A Markov network over 3-4 nodes: unary factors and random pair factors.
+
+    With ``tiny``, 1-2 nodes with 1-2 states each.
+    """
+    count = int(rng.integers(1, 3)) if tiny else int(rng.integers(3, 5))
+    nodes = ["A", "B", "C", "D"][:count]
+    states = _states(rng, nodes, tiny)
     scopes = [[n] for n in nodes]
     scopes += [list(p) for p in itertools.combinations(nodes, 2) if rng.random() < 0.6]
-    if rng.random() < 0.3:
+    if len(nodes) >= 3 and rng.random() < 0.3:
         scopes.append(list(rng.choice(nodes, size=3, replace=False)))
     factors = []
     for scope in scopes:
@@ -88,10 +94,14 @@ def random_mn(rng, *, zeros=False):
     return DiscreteMarkovNetwork(states=states, factors=factors)
 
 
-def random_bn(rng, *, zeros=False):
-    """A Bayesian network over 3-5 nodes; each node has up to 2 earlier parents."""
-    nodes = ["A", "B", "C", "D", "E"][: int(rng.integers(3, 6))]
-    states = _states(rng, nodes)
+def random_bn(rng, *, zeros=False, tiny=False):
+    """A Bayesian network over 3-5 nodes; each node has up to 2 earlier parents.
+
+    With ``tiny``, 1-2 nodes with 1-2 states each.
+    """
+    count = int(rng.integers(1, 3)) if tiny else int(rng.integers(3, 6))
+    nodes = ["A", "B", "C", "D", "E"][:count]
+    states = _states(rng, nodes, tiny)
     cpds = []
     for i, node in enumerate(nodes):
         k = int(rng.integers(0, min(i, 2) + 1))
@@ -113,10 +123,13 @@ def _cpd(rng, node, parents, states, zeros, key=lambda n: n):
     return DiscreteCPD(node=node, parents=parents, values=values)
 
 
-def random_dbn(rng, *, zeros=False):
-    """A DBN with dynamic nodes A and B: A_t | A_{t-1} and B_t | A_t (, B_{t-1})."""
+def random_dbn(rng, *, zeros=False, tiny=False):
+    """A DBN with dynamic nodes A and B: A_t | A_{t-1} and B_t | A_t (, B_{t-1}).
+
+    With ``tiny``, A and B have 1-2 states each.
+    """
     t = TimeIndex()
-    states = _states(rng, ["A", "B"])
+    states = _states(rng, ["A", "B"], tiny)
     name = lambda node: node[0]  # noqa: E731
     cpds = [
         _cpd(rng, ("A", 0), [], states, zeros, name),
@@ -132,10 +145,11 @@ def random_dbn(rng, *, zeros=False):
     return DynamicDiscreteBayesianNetwork(dynamic_states=states, cpds=cpds, t=t)
 
 
-def random_hmm_case(rng, *, zeros=False):
-    """A random HMM with 2-3 hidden and 2-3 observable states."""
-    hidden = [f"h{i}" for i in range(int(rng.integers(2, 4)))]
-    observable = [f"o{i}" for i in range(int(rng.integers(2, 4)))]
+def random_hmm_case(rng, *, zeros=False, tiny=False):
+    """A random HMM with 2-3 hidden and 2-3 observable states (1-2 with ``tiny``)."""
+    low, high = (1, 3) if tiny else (2, 4)
+    hidden = [f"h{i}" for i in range(int(rng.integers(low, high)))]
+    observable = [f"o{i}" for i in range(int(rng.integers(low, high)))]
     hmm = random_hmm(hidden_states=hidden, observable_states=observable, rng=rng)
     if not zeros:
         return hmm
@@ -216,7 +230,7 @@ def random_count(rng, domains, *, size=None):
     may be infeasible together with the evidence.
     """
     names = list(domains)
-    size = size or int(rng.integers(2, min(len(names), 4) + 1))
+    size = size or int(rng.integers(min(2, len(names)), min(len(names), 4) + 1))
     chosen = [
         names[i] for i in sorted(rng.choice(len(names), size=size, replace=False))
     ]
