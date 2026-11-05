@@ -140,10 +140,20 @@ def test_cfn_errors_are_reraised_with_the_constraint_name():
         ([2.0, 4.0], 6.0, ([1, 2], 3, 0.5)),
         ([0.5, 0.25], 0.5, ([2, 1], 2, 4.0)),
         ([0.0, 1.0], 0.0, ([0, 1], 0, 1.0)),
+        ([0.5, 0.25, 0.125], 1.75, ([4, 2, 1], 14, 8.0)),
+        ([0.1, 0.2, 0.3], 0.6, ([1, 2, 3], 6, 10.0)),
+        ([1.5, 2.25, 0.333], 5.0, ([1500, 2250, 333], 5000, 1000.0)),
+        # Scaled by 1000, then reduced by the GCD.
+        ([0.001, 0.002, 0.003], 0.01, ([1, 2, 3], 10, 1000.0)),
+        # A zero coefficient does not affect the GCD reduction.
+        ([1.5, 0.0, 2.5], 4.0, ([3, 0, 5], 8, 2.0)),
     ],
 )
 def test_scale_to_integers(coefficients, rhs, expected):
-    assert _scale_to_integers(coefficients, rhs) == expected
+    scaled_coefs, scaled_rhs, scale = _scale_to_integers(coefficients, rhs)
+    assert (scaled_coefs, scaled_rhs, scale) == expected
+    assert all(type(c) is int for c in scaled_coefs)
+    assert type(scaled_rhs) is int
 
 
 # ---------------------------------------------------------------------

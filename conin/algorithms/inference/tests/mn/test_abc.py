@@ -38,18 +38,6 @@ skipif_toulbar2_not_available = pytest.mark.skipif(
 
 
 @skipif_no_mip_solvers
-def test_ABC_conin_mip():
-    """
-    Testing ABC using the conin repn with Pyomo MIP solvers
-    """
-    example = examples.ABC_conin()
-    q = example.solutions[0].states
-
-    results = map_query(example.pgm, method="integer_program", solver=mip_solver)
-    assert q == results.solution.states
-
-
-@skipif_no_mip_solvers
 def test2_ABC_conin_mip():
     """
     Testing ABC using the conin repn with Pyomo MIP solvers
@@ -104,16 +92,6 @@ def test_ABC_constrained_pyomo_conin_mip():
 # Toulbar2 tests
 #
 # ===============================================================================
-
-
-@skipif_toulbar2_not_available
-def test_ABC_conin_toulbar2():
-    """
-    Testing ABC using the conin repn with toulbar2 solver
-    """
-    example = examples.ABC_conin()
-    results = map_query(example.pgm, method="toulbar2")
-    assert results.solution.states == example.solutions[0].states
 
 
 @skipif_toulbar2_not_available

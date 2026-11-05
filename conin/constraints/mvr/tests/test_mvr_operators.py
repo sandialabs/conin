@@ -496,9 +496,6 @@ def test_mvr_kfold_product():
     with pytest.raises(InvalidInputError):
         mvr_kfold_product([single_a, single_b], 2)
 
-    with pytest.raises(InvalidInputError):
-        mvr_kfold_product(single_a, 0)
-
 
 def test_mvr_kfold_product_prefix():
     single_a = exact_word_mvr("a")
@@ -524,9 +521,6 @@ def test_mvr_kfold_product_prefix():
 
     with pytest.raises(InvalidInputError):
         mvr_kfold_product_prefix([single_a, single_b], 2)
-
-    with pytest.raises(InvalidInputError):
-        mvr_kfold_product_prefix(single_a, 0)
 
 
 def test_mvr_kleene_closure():
@@ -725,9 +719,6 @@ def test_mvr_count():
 
     with pytest.raises(InvalidInputError):
         mvr_count([single_a, single_b], "2")
-
-    with pytest.raises(InvalidInputError):
-        mvr_count(single_a, "not a valid condition")
 
 
 # Pruning

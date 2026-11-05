@@ -4,6 +4,7 @@ import filecmp
 
 import conin.io
 from conin.io import save_model, load_model
+from conin.algorithms.inference import map_query
 from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
 from conin.exceptions import InvalidInputError
 from conin.tests.optional import pgmpy_installed
@@ -21,11 +22,6 @@ def asia_uai():
 
 
 @pytest.fixture
-def barley_uai():
-    return load_model(os.path.join(cwd, "barley.uai"))
-
-
-@pytest.fixture
 def cancer_bn_uai():
     return load_model(os.path.join(cwd, "cancer_bn.uai"))
 
@@ -33,11 +29,6 @@ def cancer_bn_uai():
 @pytest.fixture
 def cancer_mn_uai():
     return load_model(os.path.join(cwd, "cancer_mn.uai"))
-
-
-@pytest.fixture
-def deer_uai():
-    return load_model(os.path.join(cwd, "deer.uai"))
 
 
 @pytest.fixture
@@ -99,11 +90,6 @@ if pgmpy_readwrite_available:
 #
 
 
-def Xtest_save_model_error1():
-    with pytest.raises(RuntimeError):
-        save_model(os.path.join(cwd, "unknown.uai"))
-
-
 def test_save_model_error2(asia_uai):
     with pytest.raises(InvalidInputError, match="Unknown format"):
         save_model(asia_uai, os.path.join(cwd, "test_save_model.py"))
@@ -130,29 +116,44 @@ def test_save_model_error4(asia_uai):
 
 
 #
-# asia.uai
+# Round trips
 #
 
 
-def test_save_model_asia_uai1_uai(asia_uai, tmp_path):
-    fname = str(tmp_path / "asia_test.uai")
-    save_model(asia_uai, fname)
+@pytest.mark.parametrize(
+    "filename",
+    [
+        "asia.uai",
+        "cancer_bn.uai",
+        "cancer_mn.uai",
+        "toulbar2_bn.uai",
+        # save_uai writes the variables in string order (var0, var1, var10,
+        # ...) but load_uai names them by position, so a file with more than
+        # 10 variables comes back with the variables renamed.
+        pytest.param("barley.uai", marks=pytest.mark.xfail(strict=True)),
+        pytest.param("deer.uai", marks=pytest.mark.xfail(strict=True)),
+    ],
+)
+def test_save_model_uai_round_trip(filename, tmp_path, assert_same_model):
+    model = load_model(os.path.join(cwd, filename))
+    fname = str(tmp_path / "round_trip.uai")
+    save_model(model, fname)
+    assert_same_model(load_model(fname), model)
 
 
 @pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
-def test_save_model_asia_uai1_bif(asia_bif, tmp_path):
+def test_save_model_asia_bif_as_uai(asia_bif, tmp_path):
+    # A UAI file has no variable or state names, so compare a quantity that
+    # does not depend on them: the MAP log-probability.
     fname = str(tmp_path / "asia_test.uai")
     save_model(asia_bif, fname)
-
-
-#
-# barley.uai
-#
-
-
-def test_save_model_barley_uai1_uai(barley_uai, tmp_path):
-    fname = str(tmp_path / "barley_test.uai")
-    save_model(barley_uai, fname)
+    loaded = load_model(fname)
+    assert len(loaded.nodes) == len(asia_bif.nodes)
+    expected = map_query(asia_bif, method="variable_elimination")
+    result = map_query(loaded, method="variable_elimination")
+    assert result.solution.log_potential == pytest.approx(
+        expected.solution.log_potential
+    )
 
 
 #
@@ -179,16 +180,6 @@ def test_save_model_cancer_mn_uai(cancer_mn_uai, tmp_path):
 
     orig = os.path.join(cwd, "cancer_mn.uai")
     assert filecmp.cmp(orig, fname)
-
-
-#
-# deer.uai
-#
-
-
-def test_save_model_deer1_conin(deer_uai, tmp_path):
-    fname = str(tmp_path / "deer_test.uai")
-    save_model(deer_uai, fname)
 
 
 #

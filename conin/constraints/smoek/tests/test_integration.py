@@ -1,9 +1,13 @@
 """
 Integration tests for the smoek algebraic modeling extension.
 
-These tests verify end-to-end functionality by creating constrained models
-and comparing results with the traditional constraint syntax.
+These tests verify end-to-end functionality by creating constrained models,
+checking the MAP solutions against brute force and comparing results with the
+traditional constraint syntax.
 """
+
+import itertools
+from types import SimpleNamespace
 
 import pytest
 from conin.util import try_import
@@ -21,6 +25,7 @@ from conin.config import default_mip_solver
 from conin.examples.bayesian_network import cancer1_BN_conin
 from conin.constrained_models import ConstrainedDiscreteBayesianNetwork
 from conin.algorithms.inference import map_query
+from conin.algorithms.scoring import log_potential
 from conin.exceptions import InvalidInputError
 from conin import pyomo_constraint_fn, smoek_constraint_fn
 from conin.util import try_import
@@ -34,49 +39,118 @@ skipif_toulbar2_not_available = pytest.mark.skipif(
 needs_mip = pytest.mark.skipif(default_mip_solver is None, reason="no MIP solver")
 
 
+EVIDENCE = {"Pollution": 0, "Smoker": 1}
+
+
+def V(states, node, value):
+    """The value of the indicator variable V(node, value) in an assignment."""
+    return int(states[node] == value)
+
+
+# (smoek constraint expressions, the same constraints on an assignment, data).
+# Without constraints the MAP solution is Cancer=1, Dyspnoea=1, Xray=1, so
+# every case but the last excludes it.
+CASES = {
+    "addition": (
+        lambda m, d: m.V("Dyspnoea", 1) + m.V("Xray", 1) <= 1,
+        lambda s, d: V(s, "Dyspnoea", 1) + V(s, "Xray", 1) <= 1,
+        None,
+    ),
+    "subtraction": (
+        lambda m, d: m.V("Xray", 1) - m.V("Dyspnoea", 1) >= 1,
+        lambda s, d: V(s, "Xray", 1) - V(s, "Dyspnoea", 1) >= 1,
+        None,
+    ),
+    "multiplication_by_constant": (
+        lambda m, d: 2 * m.V("Dyspnoea", 1) + m.V("Xray", 1) <= 2,
+        lambda s, d: 2 * V(s, "Dyspnoea", 1) + V(s, "Xray", 1) <= 2,
+        None,
+    ),
+    "complex_expression": (
+        lambda m, d: 2 * m.V("Dyspnoea", 1) + 3 * m.V("Xray", 1) - m.V("Cancer", 0)
+        <= 3,
+        lambda s, d: 2 * V(s, "Dyspnoea", 1) + 3 * V(s, "Xray", 1) - V(s, "Cancer", 0)
+        <= 3,
+        None,
+    ),
+    "greater_than_or_equal": (
+        lambda m, d: m.V("Dyspnoea", 0) + m.V("Xray", 0) >= 1,
+        lambda s, d: V(s, "Dyspnoea", 0) + V(s, "Xray", 0) >= 1,
+        None,
+    ),
+    "equality": (
+        lambda m, d: m.V("Dyspnoea", 1) == 0,
+        lambda s, d: V(s, "Dyspnoea", 1) == 0,
+        None,
+    ),
+    "data": (
+        lambda m, d: m.V("Dyspnoea", 1) + m.V("Xray", 1) <= d.limit,
+        lambda s, d: V(s, "Dyspnoea", 1) + V(s, "Xray", 1) <= d.limit,
+        SimpleNamespace(limit=0),
+    ),
+    "multiple_constraints": (
+        lambda m, d: [
+            m.V("Dyspnoea", 1) + m.V("Xray", 1) <= 1,
+            m.V("Dyspnoea", 0) + m.V("Xray", 0) <= 1,
+        ],
+        lambda s, d: V(s, "Dyspnoea", 1) + V(s, "Xray", 1) <= 1
+        and V(s, "Dyspnoea", 0) + V(s, "Xray", 0) <= 1,
+        None,
+    ),
+    "non_binding": (
+        lambda m, d: [
+            m.V("Dyspnoea", 1) - m.V("Xray", 1) >= -1,
+            m.V("Dyspnoea", 0) + m.V("Xray", 0) >= 0,
+        ],
+        lambda s, d: True,
+        None,
+    ),
+}
+
+METHODS = [
+    pytest.param("integer_program", marks=needs_mip),
+    pytest.param("toulbar2", marks=skipif_toulbar2_not_available),
+    "variable_elimination",
+]
+
+
+def brute_force_map(pgm, accepts, data):
+    free = [node for node in pgm.nodes if node not in EVIDENCE]
+    best = None
+    for values in itertools.product(*(pgm.states_of(node) for node in free)):
+        states = dict(zip(free, values), **EVIDENCE)
+        if accepts(states, data):
+            score = log_potential(pgm, states)
+            if best is None or score > best[0]:
+                best = (score, states)
+    return best
+
+
+@pytest.mark.parametrize("method", METHODS)
+@pytest.mark.parametrize("case", list(CASES))
+def test_smoek_constraints_match_brute_force(case, method):
+    expression, accepts, data = CASES[case]
+    pgm = cancer1_BN_conin().pgm
+
+    @smoek_constraint_fn()
+    def constraint(model, data):
+        return expression(model, data)
+
+    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint, data=data)
+    result = map_query(cpgm, method=method, evidence=EVIDENCE)
+
+    states = dict(result.solution.states, **EVIDENCE)
+    assert accepts(states, data)
+    score, expected = brute_force_map(pgm, accepts, data)
+    assert states == expected
+    assert result.solution.log_potential == pytest.approx(score)
+    if case != "non_binding":
+        unconstrained = map_query(pgm, method="variable_elimination", evidence=EVIDENCE)
+        assert result.solution.states != unconstrained.solution.states
+
+
 class TestBasicSmoekConstraints:
     """Test basic smoek constraint functionality."""
-
-    @needs_mip
-    def test_simple_pyomo_constraint(self):
-        """Test that a simple smoek constraint works with Pyomo."""
-        pgm = cancer1_BN_conin().pgm
-
-        @smoek_constraint_fn()
-        def smoek_constraint(model, data):
-            # Simple constraint: V("Dyspnoea", 1) + V("Xray", 1) <= 1
-            return model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1
-
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=smoek_constraint)
-
-        # Should be able to create inference model
-        evidence = {"Pollution": 0, "Smoker": 1}
-        result = map_query(cpgm, method="integer_program", evidence=evidence)
-
-        # Verify we got a valid result
-        assert result is not None
-        assert "Cancer" in result.solution.states
-
-    @needs_mip
-    def test_multiple_pyomo_constraints(self):
-        """Test smoek constraint returning multiple constraints."""
-        pgm = cancer1_BN_conin().pgm
-
-        @smoek_constraint_fn()
-        def smoek_constraints(model, data):
-            # Return list of constraints
-            return [
-                model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1,
-                model.V("Dyspnoea", 0) + model.V("Xray", 0) <= 1,
-            ]
-
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=smoek_constraints)
-
-        evidence = {"Pollution": 0, "Smoker": 1}
-        result = map_query(cpgm, method="integer_program", evidence=evidence)
-
-        assert result is not None
-        assert "Cancer" in result.solution.states
 
     @needs_mip
     def test_comparison_with_traditional_syntax(self):
@@ -140,363 +214,3 @@ class TestBasicSmoekConstraints:
             ConstrainedDiscreteBayesianNetwork(
                 pgm, constraints=[traditional_constraint, smoek_constraint]
             )
-
-
-class TestArithmeticOperations:
-    """Test various arithmetic operations in smoek constraints."""
-
-    @needs_mip
-    def test_addition(self):
-        """Test addition operation."""
-        pgm = cancer1_BN_conin().pgm
-
-        @smoek_constraint_fn()
-        def constraint(model, data):
-            return model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1
-
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint)
-        evidence = {"Pollution": 0, "Smoker": 1}
-        result = map_query(cpgm, method="integer_program", evidence=evidence)
-        assert result is not None
-
-    @needs_mip
-    def test_subtraction(self):
-        """Test subtraction operation."""
-        pgm = cancer1_BN_conin().pgm
-
-        @smoek_constraint_fn()
-        def constraint(model, data):
-            return model.V("Dyspnoea", 1) - model.V("Xray", 1) >= -1
-
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint)
-        evidence = {"Pollution": 0, "Smoker": 1}
-        result = map_query(cpgm, method="integer_program", evidence=evidence)
-        assert result is not None
-
-    @needs_mip
-    def test_multiplication_by_constant(self):
-        """Test multiplication by constant."""
-        pgm = cancer1_BN_conin().pgm
-
-        @smoek_constraint_fn()
-        def constraint(model, data):
-            return 2 * model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 2
-
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint)
-        evidence = {"Pollution": 0, "Smoker": 1}
-        result = map_query(cpgm, method="integer_program", evidence=evidence)
-        assert result is not None
-
-    @needs_mip
-    def test_complex_expression(self):
-        """Test complex arithmetic expression."""
-        pgm = cancer1_BN_conin().pgm
-
-        @smoek_constraint_fn()
-        def constraint(model, data):
-            return (
-                2 * model.V("Dyspnoea", 1)
-                + 3 * model.V("Xray", 1)
-                - model.V("Cancer", 0)
-                <= 3
-            )
-
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint)
-        evidence = {"Pollution": 0, "Smoker": 1}
-        result = map_query(cpgm, method="integer_program", evidence=evidence)
-        assert result is not None
-
-
-class TestComparisonOperators:
-    """Test different comparison operators."""
-
-    @needs_mip
-    def test_less_than_or_equal(self):
-        """Test <= operator."""
-        pgm = cancer1_BN_conin().pgm
-
-        @smoek_constraint_fn()
-        def constraint(model, data):
-            return model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1
-
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint)
-        evidence = {"Pollution": 0, "Smoker": 1}
-        result = map_query(cpgm, method="integer_program", evidence=evidence)
-        assert result is not None
-
-    @needs_mip
-    def test_greater_than_or_equal(self):
-        """Test >= operator."""
-        pgm = cancer1_BN_conin().pgm
-
-        @smoek_constraint_fn()
-        def constraint(model, data):
-            return model.V("Dyspnoea", 1) + model.V("Xray", 1) >= 0
-
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint)
-        evidence = {"Pollution": 0, "Smoker": 1}
-        result = map_query(cpgm, method="integer_program", evidence=evidence)
-        assert result is not None
-
-    @needs_mip
-    def test_equality(self):
-        """Test == operator."""
-        pgm = cancer1_BN_conin().pgm
-
-        @smoek_constraint_fn()
-        def constraint(model, data):
-            return model.V("Dyspnoea", 1) == 0
-
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint)
-        evidence = {"Pollution": 0, "Smoker": 1}
-        result = map_query(cpgm, method="integer_program", evidence=evidence)
-        assert result is not None
-
-
-class TestDataUsage:
-    """Test using data parameter in constraints."""
-
-    @needs_mip
-    def test_constraint_with_data(self):
-        """Test constraint that uses data parameter."""
-        pgm = cancer1_BN_conin().pgm
-
-        @smoek_constraint_fn()
-        def constraint(model, data):
-            # Use data if available
-            limit = 1  # Default
-            if hasattr(data, "limit"):
-                limit = data.limit
-            return model.V("Dyspnoea", 1) + model.V("Xray", 1) <= limit
-
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint)
-        evidence = {"Pollution": 0, "Smoker": 1}
-        result = map_query(cpgm, method="integer_program", evidence=evidence)
-        assert result is not None
-
-
-class TestToulbar2BasicSmoekConstraints:
-    """Test basic smoek constraint functionality with Toulbar2."""
-
-    @skipif_toulbar2_not_available
-    def test_simple_smoek_constraint_toulbar2(self):
-        """Test that a simple smoek constraint works with Toulbar2."""
-        pgm = cancer1_BN_conin().pgm
-
-        @smoek_constraint_fn()
-        def smoek_constraint(model, data):
-            # Simple constraint: V("Dyspnoea", 1) + V("Xray", 1) <= 1
-            return model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1
-
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=smoek_constraint)
-
-        # Should be able to create inference model
-        evidence = {"Pollution": 0, "Smoker": 1}
-        result = map_query(cpgm, method="toulbar2", evidence=evidence)
-
-        # Verify we got a valid result
-        assert result is not None
-        assert "Cancer" in result.solution.states
-
-    @needs_mip
-    @skipif_toulbar2_not_available
-    def test_comparison_pyomo_toulbar2(self):
-        """Test that integer_program and toulbar2 produce same results for smoek constraints."""
-        pgm = cancer1_BN_conin().pgm
-
-        @smoek_constraint_fn()
-        def smoek_constraint(model, data):
-            return model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1
-
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=smoek_constraint)
-        evidence = {"Pollution": 0, "Smoker": 1}
-
-        # Solve with both methods
-        result_pyomo = map_query(cpgm, method="integer_program", evidence=evidence)
-        result_toulbar2 = map_query(cpgm, method="toulbar2", evidence=evidence)
-
-        # Results should be identical
-        assert result_pyomo.solution.states == result_toulbar2.solution.states
-
-
-class TestToulbar2ArithmeticOperations:
-    """Test various arithmetic operations with both solvers."""
-
-    @needs_mip
-    @skipif_toulbar2_not_available
-    def test_addition_toulbar2(self):
-        """Test addition operation with Toulbar2."""
-        pgm = cancer1_BN_conin().pgm
-
-        @smoek_constraint_fn()
-        def constraint(model, data):
-            return model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1
-
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint)
-        evidence = {"Pollution": 0, "Smoker": 1}
-
-        result_pyomo = map_query(cpgm, method="integer_program", evidence=evidence)
-        result_toulbar2 = map_query(cpgm, method="toulbar2", evidence=evidence)
-
-        assert result_pyomo is not None
-        assert result_toulbar2 is not None
-        assert result_pyomo.solution.states == result_toulbar2.solution.states
-
-    @needs_mip
-    @skipif_toulbar2_not_available
-    def test_multiplication_by_constant_toulbar2(self):
-        """Test multiplication by constant with Toulbar2."""
-        pgm = cancer1_BN_conin().pgm
-
-        @smoek_constraint_fn()
-        def constraint(model, data):
-            return 2 * model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 2
-
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint)
-        evidence = {"Pollution": 0, "Smoker": 1}
-
-        result_pyomo = map_query(cpgm, method="integer_program", evidence=evidence)
-        result_toulbar2 = map_query(cpgm, method="toulbar2", evidence=evidence)
-
-        assert result_pyomo is not None
-        assert result_toulbar2 is not None
-        assert result_pyomo.solution.states == result_toulbar2.solution.states
-
-    @needs_mip
-    @skipif_toulbar2_not_available
-    def test_complex_expression_toulbar2(self):
-        """Test complex arithmetic expression with Toulbar2."""
-        pgm = cancer1_BN_conin().pgm
-
-        @smoek_constraint_fn()
-        def constraint(model, data):
-            return (
-                2 * model.V("Dyspnoea", 1)
-                + 3 * model.V("Xray", 1)
-                - model.V("Cancer", 0)
-                <= 3
-            )
-
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint)
-        evidence = {"Pollution": 0, "Smoker": 1}
-
-        result_pyomo = map_query(cpgm, method="integer_program", evidence=evidence)
-        result_toulbar2 = map_query(cpgm, method="toulbar2", evidence=evidence)
-
-        assert result_pyomo is not None
-        assert result_toulbar2 is not None
-        assert result_pyomo.solution.states == result_toulbar2.solution.states
-
-
-class TestToulbar2ComparisonOperators:
-    """Test different comparison operators with both solvers."""
-
-    @needs_mip
-    @skipif_toulbar2_not_available
-    def test_less_than_or_equal_toulbar2(self):
-        """Test <= operator with Toulbar2."""
-        pgm = cancer1_BN_conin().pgm
-
-        @smoek_constraint_fn()
-        def constraint(model, data):
-            return model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1
-
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint)
-        evidence = {"Pollution": 0, "Smoker": 1}
-
-        result_pyomo = map_query(cpgm, method="integer_program", evidence=evidence)
-        result_toulbar2 = map_query(cpgm, method="toulbar2", evidence=evidence)
-
-        assert result_pyomo is not None
-        assert result_toulbar2 is not None
-        assert result_pyomo.solution.states == result_toulbar2.solution.states
-
-    @needs_mip
-    @skipif_toulbar2_not_available
-    def test_greater_than_or_equal_toulbar2(self):
-        """Test >= operator with Toulbar2."""
-        pgm = cancer1_BN_conin().pgm
-
-        @smoek_constraint_fn()
-        def constraint(model, data):
-            return model.V("Dyspnoea", 1) + model.V("Xray", 1) >= 0
-
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint)
-        evidence = {"Pollution": 0, "Smoker": 1}
-
-        result_pyomo = map_query(cpgm, method="integer_program", evidence=evidence)
-        result_toulbar2 = map_query(cpgm, method="toulbar2", evidence=evidence)
-
-        assert result_pyomo is not None
-        assert result_toulbar2 is not None
-        assert result_pyomo.solution.states == result_toulbar2.solution.states
-
-    @needs_mip
-    @skipif_toulbar2_not_available
-    def test_equality_toulbar2(self):
-        """Test == operator with Toulbar2."""
-        pgm = cancer1_BN_conin().pgm
-
-        @smoek_constraint_fn()
-        def constraint(model, data):
-            return model.V("Dyspnoea", 1) == 0
-
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint)
-        evidence = {"Pollution": 0, "Smoker": 1}
-
-        result_pyomo = map_query(cpgm, method="integer_program", evidence=evidence)
-        result_toulbar2 = map_query(cpgm, method="toulbar2", evidence=evidence)
-
-        assert result_pyomo is not None
-        assert result_toulbar2 is not None
-        assert result_pyomo.solution.states == result_toulbar2.solution.states
-
-
-class TestToulbar2MultipleConstraints:
-    """Test multiple smoek constraints with both solvers."""
-
-    @needs_mip
-    @skipif_toulbar2_not_available
-    def test_multiple_constraints_toulbar2(self):
-        """Test multiple smoek constraints work with Toulbar2."""
-        pgm = cancer1_BN_conin().pgm
-
-        @smoek_constraint_fn()
-        def smoek_constraint(model, data):
-            return [
-                model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1,
-                model.V("Dyspnoea", 0) + model.V("Xray", 0) <= 1,
-            ]
-
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=smoek_constraint)
-        evidence = {"Pollution": 0, "Smoker": 1}
-
-        result_pyomo = map_query(cpgm, method="integer_program", evidence=evidence)
-        result_toulbar2 = map_query(cpgm, method="toulbar2", evidence=evidence)
-
-        assert result_pyomo is not None
-        assert result_toulbar2 is not None
-        assert result_pyomo.solution.states == result_toulbar2.solution.states
-
-    @needs_mip
-    @skipif_toulbar2_not_available
-    def test_complex_multiple_constraints_toulbar2(self):
-        """Test complex multiple smoek constraints with Toulbar2."""
-        pgm = cancer1_BN_conin().pgm
-
-        @smoek_constraint_fn()
-        def smoek_constraint(model, data):
-            return [
-                2 * model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 2,
-                model.V("Dyspnoea", 0) + model.V("Xray", 0) >= 0,
-            ]
-
-        cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=smoek_constraint)
-        evidence = {"Pollution": 0, "Smoker": 1}
-
-        result_pyomo = map_query(cpgm, method="integer_program", evidence=evidence)
-        result_toulbar2 = map_query(cpgm, method="toulbar2", evidence=evidence)
-
-        assert result_pyomo is not None
-        assert result_toulbar2 is not None
-        assert result_pyomo.solution.states == result_toulbar2.solution.states

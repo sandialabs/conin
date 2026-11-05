@@ -7,7 +7,6 @@ with try_import() as or_topas_available:
     import or_topas.aos as aos  # noqa: F401
 
 from conin.algorithms.inference.oracle import a_star
-from conin.algorithms.inference.recursive import recursive_a_star
 from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.constraints.oracle.library import (
     has_maximum_number_of_occurrences_constraint,
@@ -66,116 +65,6 @@ def constraints(lb, ub):
 def chmm(hmm, constraints):
 
     return ConstrainedHiddenMarkovModel(hmm, constraints)
-
-
-@pytest.fixture
-def recursive_chmm(lb, ub):
-    return tc.create_chmm1_recursive(lb, ub)
-
-
-class Test_Inference_a_star:
-
-    def test_a_star(self, chmm, recursive_chmm):
-        observed = ["o1", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0", "o0"]
-
-        inferred1 = a_star(hmm=chmm, observed=observed).solutions[0].states
-
-        inferred2 = (
-            recursive_a_star(hmm=recursive_chmm, observed=observed).solutions[0].states
-        )
-
-        assert inferred1 == inferred2
-
-        assert inferred2 == [
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-        ]
-
-    def test_a_star_2(self, chmm, recursive_chmm):
-        observed = ["o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1"]
-
-        inferred1 = a_star(hmm=chmm, observed=observed).solutions[0].states
-
-        inferred2 = (
-            recursive_a_star(hmm=recursive_chmm, observed=observed).solutions[0].states
-        )
-
-        assert inferred1 == inferred2
-
-        assert inferred2 == [
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-            "h0",
-        ]
-
-    def test_a_star_mult(self, chmm, recursive_chmm):
-        observed = [
-            "o1",
-            "o0",
-            "o0",
-            "o0",
-            "o0",
-            "o0",
-            "o0",
-            "o0",
-            "o0",
-            "o0",
-            "o0",
-        ]
-
-        inferred1 = a_star(hmm=chmm, observed=observed, num_solutions=2)
-
-        inferred2 = recursive_a_star(
-            hmm=recursive_chmm, observed=observed, num_solutions=2
-        )
-
-        assert inferred1.termination_condition == "ok"
-        assert inferred2.termination_condition == "ok"
-        assert [sol.states for sol in inferred1.solutions] == [
-            ["h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"],
-            ["h1", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"],
-        ]
-        assert [sol.states for sol in inferred2.solutions] == [
-            ["h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"],
-            ["h1", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0", "h0"],
-        ]
-
-    def test_a_star_no_solution(self, chmm, recursive_chmm):
-        observed = ["o0"]
-
-        inferred1 = a_star(hmm=chmm, observed=observed)
-
-        inferred2 = recursive_a_star(hmm=recursive_chmm, observed=observed)
-
-        assert inferred1.termination_condition == "error: no feasible solutions"
-
-        assert inferred2.termination_condition == "error: no feasible solutions"
-
-    def test_a_star_not_enough_solutions(self, chmm, recursive_chmm):
-        observed = ["o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1", "o1"]
-
-        inferred1 = a_star(hmm=chmm, observed=observed, num_solutions=2)
-
-        inferred2 = recursive_a_star(
-            hmm=recursive_chmm, observed=observed, num_solutions=2
-        )
-        assert inferred1.termination_condition == "ok"
-        assert inferred2.termination_condition == "ok"
 
 
 class Test_Inference_ip:

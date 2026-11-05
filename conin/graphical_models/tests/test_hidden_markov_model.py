@@ -10,14 +10,6 @@ import conin.examples.hidden_markov_model as tc
 class Test_HMM1:
     T = 25
 
-    def test_HMM(self):
-        hmm = tc.create_hmm1()
-        assert hmm is not None
-
-    def test_HMM_print(self):
-        hmm = tc.create_hmm1()
-        print(hmm)
-
     def test_hidden_map(self):
         hmm = tc.create_hmm1()
         assert hmm.representation("matvec").hidden_to_internal == {"h0": 0, "h1": 1}
@@ -553,6 +545,3 @@ class Test_HMM_Equality:
     def test_str_lists_the_nonzero_probabilities(self):
         text = str(tc.create_hmm1())
         assert "'num_observable': 2" in text and "('h0', 'o0')" in text
-
-    def test_check_model(self):
-        assert tc.create_hmm1()._check_model() is None

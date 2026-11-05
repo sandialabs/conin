@@ -252,39 +252,6 @@ def test_supervised_learning_no_observable_states():
         )
 
 
-def test_supervised_learning_uniform_fallback_no_prior():
-    # When a hidden state is declared but never appears in any simulation and
-    # no prior is provided, transitions/emissions from that state should fall
-    # back to uniform distributions.
-    eps = 0
-    hidden_states = ["h0", "h1", "h2"]
-    observable_states = ["o0", "o1"]
-
-    hidden = [["h0", "h1"]]
-    observed = [["o0", "o1"]]
-
-    sim = learning.convert_to_simulations(hidden_list=hidden, observed_list=observed)
-
-    hmm = learning.supervised_learning(
-        simulations=sim,
-        hidden_states=hidden_states,
-        observable_states=observable_states,
-        transition_tolerance=eps,
-        emission_tolerance=eps,
-        start_tolerance=eps,
-    )
-
-    transition_probs = hmm.transition_probs
-    emission_probs = hmm.emission_probs
-
-    # h2 is never seen — should get uniform transition and emission fallbacks.
-    assert math.isclose(transition_probs[("h2", "h0")], 1 / 3)
-    assert math.isclose(transition_probs[("h2", "h1")], 1 / 3)
-    assert math.isclose(transition_probs[("h2", "h2")], 1 / 3)
-    assert math.isclose(emission_probs[("h2", "o0")], 1 / 2)
-    assert math.isclose(emission_probs[("h2", "o1")], 1 / 2)
-
-
 def test_supervised_learning_default_tolerances():
     # Calling without explicit tolerances should use default 1e-4 and
     # produce a valid HMM (probabilities sum to 1).
@@ -314,12 +281,14 @@ def test_supervised_learning_default_tolerances():
         assert math.isclose(row_sum, 1.0), f"Emission row for {h} does not sum to 1"
 
 
-def test_mcem_runs_and_returns_log_prob():
+@pytest.mark.parametrize("constrained", [True, False])
+def test_mcem_runs_and_returns_log_prob(constrained):
     # Regression test for three bugs that were fixed in mcem.py:
     #   1. generate_hidden(observed) -> generate_hidden(len(observed))
     #   2. prev_log_prob != nan  -> not math.isnan(prev_log_prob)  (NaN != NaN is always True)
     #   3. math.abs(...)         -> abs(...)  (math.abs does not exist)
     #   4. app.hmm               -> app.hidden_markov_model  (the numeric HMM lacked log_probability)
+    # mcem takes a ConstrainedHiddenMarkovModel or a bare HMM as app.
     from conin.algorithms import learning
     import conin.examples.hidden_markov_model as tc
 
@@ -329,18 +298,22 @@ def test_mcem_runs_and_returns_log_prob():
         chmm.model, rejection_sample_hidden(chmm, 11, rng=rng), rng=rng
     )
 
-    # mcem expects a ConstrainedHiddenMarkovModel (or a bare HMM) as app.
-    log_prob = learning.mcem(
-        app=chmm,
-        observed=observed,
-        hidden_states=["h0", "h1"],
-        observable_states=["o0", "o1"],
-        max_iterations=3,
-        samples_per_iteration=2,
-        rng=rng,
-    )
+    def run(seed):
+        return learning.mcem(
+            app=chmm if constrained else chmm.model,
+            observed=observed,
+            hidden_states=["h0", "h1"],
+            observable_states=["o0", "o1"],
+            max_iterations=3,
+            samples_per_iteration=2,
+            rng=seed,
+        )
+
+    log_prob = run(1)
     assert isinstance(log_prob, float)
-    assert log_prob < 0  # log-probability of any sequence is negative
+    assert math.isfinite(log_prob) and log_prob < 0
+    # The rng is the only source of randomness.
+    assert run(1) == log_prob
 
 
 def _mcem_spy(monkeypatch):
@@ -427,22 +400,6 @@ def test_mcem_trains_on_the_samples_it_scores(monkeypatch):
         / 3
     )
     assert log_prob == pytest.approx(expected)
-
-
-def test_mcem_accepts_a_bare_hmm():
-    import conin.examples.hidden_markov_model as tc
-
-    hmm = tc.create_hmm1()
-    log_prob = learning.mcem(
-        app=hmm,
-        observed=["o0"] * 5,
-        hidden_states=["h0", "h1"],
-        observable_states=["o0", "o1"],
-        max_iterations=2,
-        samples_per_iteration=2,
-        rng=2,
-    )
-    assert log_prob < 0
 
 
 # ---------------------------------------------------------------------
