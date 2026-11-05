@@ -224,16 +224,40 @@ def save_uai(pgm, name, quiet=True):
         For a dynamic Bayesian network with dynamic nodes.
     TypeError
         For another kind of model.
+
+    Notes
+    -----
+    A UAI file has no variable names.  The variables are numbered in
+    ``pgm.nodes`` order, except that if the nodes are ``var0`` ...
+    ``var{n-1}`` (the names :func:`load_uai` gives), ``var{i}`` is variable
+    ``i``, so saving a loaded file keeps its variable numbers.
     """
-    text = _uai_text(pgm)
+    text = _uai_text(pgm, keep_loaded_numbers=True)
     with open(os.path.splitext(name)[0] + ".uai", "w") as f:
         f.write(text)
 
 
-def _uai_text(pgm):
-    """Return the UAI text that :func:`save_uai` writes for ``pgm``.
+def _uai_variable_order(nodes):
+    """The order in which :func:`save_uai` numbers the variables.
 
-    Variables are numbered in ``pgm.nodes`` order and states in
+    If the nodes are ``var0`` ... ``var{n-1}``, the names :func:`load_uai`
+    gives, ``var{i}`` is variable ``i``, so saving a loaded file keeps its
+    variable numbers.  (``nodes`` are sorted as strings, so for more than 10
+    variables their order puts ``var10`` before ``var2``.)  Otherwise the
+    variables are numbered in ``nodes`` order.
+    """
+    names = [f"var{i}" for i in range(len(nodes))]
+    if set(nodes) == set(names):
+        return names
+    return list(nodes)
+
+
+def _uai_text(pgm, keep_loaded_numbers=False):
+    """Return the UAI text of ``pgm``.
+
+    Variables are numbered in ``pgm.nodes`` order (which the toulbar2
+    representation relies on), or in :func:`_uai_variable_order` if
+    ``keep_loaded_numbers`` (what :func:`save_uai` writes), and states in
     ``pgm.states[node]`` order.
     """
     if isinstance(pgm, DiscreteBayesianNetwork):
@@ -256,11 +280,13 @@ def _uai_text(pgm):
             f"DiscreteMarkovNetwork, got {type(pgm).__name__}"
         )
 
+    nodes = _uai_variable_order(pgm.nodes) if keep_loaded_numbers else pgm.nodes
+
     # get node2id mapping
-    node2id = {n: i for i, n in enumerate(pgm.nodes)}
+    node2id = {n: i for i, n in enumerate(nodes)}
 
     # get domain sizes
-    sizes = [str(len(pgm.states[n])) for n in pgm.nodes]
+    sizes = [str(len(pgm.states[n])) for n in nodes]
 
     # get factors
     if case == "BAYES":

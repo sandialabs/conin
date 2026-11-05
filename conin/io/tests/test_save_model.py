@@ -127,11 +127,11 @@ def test_save_model_error4(asia_uai):
         "cancer_bn.uai",
         "cancer_mn.uai",
         "toulbar2_bn.uai",
-        # save_uai writes the variables in string order (var0, var1, var10,
-        # ...) but load_uai names them by position, so a file with more than
-        # 10 variables comes back with the variables renamed.
-        pytest.param("barley.uai", marks=pytest.mark.xfail(strict=True)),
-        pytest.param("deer.uai", marks=pytest.mark.xfail(strict=True)),
+        # More than 10 variables: save_uai wrote them in string order (var0,
+        # var1, var10, ...) but load_uai names them by position, so they came
+        # back renamed (var2 was the old var10).
+        "barley.uai",
+        "deer.uai",
     ],
 )
 def test_save_model_uai_round_trip(filename, tmp_path, assert_same_model):
@@ -139,6 +139,32 @@ def test_save_model_uai_round_trip(filename, tmp_path, assert_same_model):
     fname = str(tmp_path / "round_trip.uai")
     save_model(model, fname)
     assert_same_model(load_model(fname), model)
+
+
+def test_save_model_uai_keeps_the_variable_numbers(tmp_path):
+    # The header lists the cardinalities in variable order, so it is the same
+    # as the original file's (and UAI evidence files, which refer to the
+    # variables by number, still apply).
+    fname = str(tmp_path / "barley_test.uai")
+    save_model(load_model(os.path.join(cwd, "barley.uai")), fname)
+    with open(os.path.join(cwd, "barley.uai")) as orig, open(fname) as saved:
+        assert saved.read().split("\n")[:3] == orig.read().split("\n")[:3]
+
+
+def test_save_model_uai_numbers_other_names_in_node_order(tmp_path):
+    # Nodes that are not var0 ... var{n-1} (here var1 is missing) are numbered
+    # in pgm.nodes order.
+    pgm = DiscreteBayesianNetwork(
+        states={"var0": [0, 1], "var2": [0, 1, 2]},
+        cpds=[
+            DiscreteCPD(node="var0", values=[0.4, 0.6]),
+            DiscreteCPD(node="var2", values=[0.2, 0.3, 0.5]),
+        ],
+    )
+    fname = str(tmp_path / "other_names.uai")
+    save_model(pgm, fname)
+    with open(fname) as f:
+        assert f.read().split("\n")[:3] == ["BAYES", "2", "2 3"]
 
 
 @pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
