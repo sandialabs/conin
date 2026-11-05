@@ -22,11 +22,15 @@ the ``str()`` of the label tuples).
 """
 
 import ast
+import gzip
 import json
 import math
+import os
 
 from conin.exceptions import InvalidInputError, ModelFileError
 from conin.graphical_models import HiddenMarkovModel
+
+from .text import read_text
 
 HMM_FORMAT = "conin.HiddenMarkovModel"
 HMM_VERSION = 1
@@ -69,7 +73,8 @@ def save_json(model, filename=None):
     model : HiddenMarkovModel
         The model.
     filename : str or path-like, optional
-        The output file.  Without it, the JSON text is returned.
+        The output file (gzipped if it ends with ``.gz``).  Without it, the
+        JSON text is returned.
 
     Returns
     -------
@@ -90,8 +95,12 @@ def save_json(model, filename=None):
     text = json.dumps(_hmm_document(model), indent=2) + "\n"
     if filename is None:
         return text
-    with open(filename, "w") as f:
-        f.write(text)
+    if os.fspath(filename).endswith(".gz"):
+        with gzip.open(filename, "wt", encoding="utf-8") as f:
+            f.write(text)
+    else:
+        with open(filename, "w", encoding="utf-8") as f:
+            f.write(text)
 
 
 def _entries(doc, name, key_length):
@@ -184,7 +193,7 @@ def load_json(filename=None, string=None):
     Parameters
     ----------
     filename : str or path-like, optional
-        The input file.
+        The input file (gzipped if it ends with ``.gz``).
     string : str, optional
         The JSON text (used when ``filename`` is not given).
 
@@ -199,12 +208,12 @@ def load_json(filename=None, string=None):
     InvalidInputError
         If neither ``filename`` nor ``string`` is given.
     ModelFileError
-        If the data is not JSON, not a CONIN model (or an old
+        If the file cannot be read (not UTF-8, or a bad ``.gz`` file), or
+        the data is not JSON, not a CONIN model (or an old
         ``write_to_file`` file), or does not describe a valid model.
     """
     if filename is not None:
-        with open(filename) as f:
-            string = f.read()
+        string = read_text(filename)
     if string is None:
         raise InvalidInputError("Either a filename or a string must be specified")
     try:

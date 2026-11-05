@@ -1,11 +1,9 @@
-import os
-import gzip
-
-from conin.exceptions import InvalidInputError, ModelFileError
+from conin.exceptions import InvalidInputError
 
 from .uai import load_uai
 from .cfn import load_cfn
 from .json_format import load_json
+from .text import read_text
 from .pgmpy import convert_pgmpy_to_conin
 from .pgmpy import files as pgmpy_files
 from .pgmpy.files import pgmpy_available
@@ -70,30 +68,6 @@ def load_model(name, model_type="conin", quiet=True, **options):
     raise InvalidInputError(
         f"Unexpected model type: {model_type!r} (expected 'conin' or 'pgmpy')"
     )
-
-
-def read_text(name, quiet=True):
-    """The text of ``name``, decompressed if it ends with ``.gz``.
-
-    Raises
-    ------
-    FileNotFoundError
-        If the file does not exist.
-    ModelFileError
-        If a ``.gz`` file cannot be decompressed or the text is not UTF-8.
-    """
-    if not os.path.exists(name):
-        raise FileNotFoundError(f"Missing file {name}")
-    if not quiet:  # pragma:nocover
-        print(f"  Loading model from {name}")
-    try:
-        if name.endswith(".gz"):
-            with gzip.open(name) as INPUT:
-                return INPUT.read().decode("utf-8")
-        with open(name, encoding="utf-8") as INPUT:
-            return INPUT.read()
-    except (OSError, EOFError, UnicodeDecodeError) as e:
-        raise ModelFileError(f"Cannot read {name}: {e}") from e
 
 
 def load_conin_model(name, quiet=True, **options):
