@@ -532,3 +532,26 @@ def test_em_rejects_bad_arguments(hmm, kwargs, observations, message):
 
     with pytest.raises(InvalidInputError, match=message):
         baum_welch_mvr_chmm(model, observations, max_iter=1, **kwargs)
+
+
+@pytest.mark.filterwarnings("ignore:.*without reaching tol")
+def test_em_warns_when_the_log_likelihood_decreases(hmm, observed, monkeypatch):
+    # EM is monotone, so a decrease means a numerical problem.  Make the
+    # E step report a lower log-likelihood at every iteration.
+    import importlib
+
+    module = importlib.import_module("conin.algorithms.learning.mvr.baum_welch")
+    original = module._e_step_counts
+    calls = []
+
+    def decreasing(ctx):
+        counts = original(ctx)
+        calls.append(None)
+        return (*counts[:3], counts[3] - 10.0 * len(calls), *counts[4:])
+
+    monkeypatch.setattr(module, "_e_step_counts", decreasing)
+    mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="A")
+    model = ConstrainedHiddenMarkovModel(hmm, mvr)
+    with pytest.warns(UserWarning, match="Log-likelihood decreased at iteration 1"):
+        _, history = baum_welch_mvr_chmm(model, [observed], max_iter=2, tol=0.0)
+    assert history[1] < history[0]

@@ -8,6 +8,7 @@ from conin.constraints import (
     OracleConstraint,
     FactorOracleConstraint,
     MVRConstraint,
+    RecursiveConstraint,
     SmoekConstraint,
     oracle_constraint_fn,
 )
@@ -105,3 +106,59 @@ def test_oracle_has_no_nodes():
     c = OracleConstraint(func=lambda s: True)
     assert not hasattr(c, "nodes")
     assert c({"A": 0}) is True
+
+
+@pytest.mark.parametrize(
+    "cls,family",
+    [
+        (PyomoConstraint, "Pyomo"),
+        (Toulbar2Constraint, "Toulbar2"),
+        (SmoekConstraint, "Smoek"),
+    ],
+)
+def test_more_than_two_arguments_rejected(cls, family):
+    def three(model, data, extra):
+        return model
+
+    with pytest.raises(
+        InvalidInputError, match=f"{family} constraint defined with more than 2"
+    ):
+        cls(three)
+
+    def two(model, data):
+        return model
+
+    assert cls(two).num_args == 2
+
+
+def _identity(*args):
+    return None
+
+
+@pytest.mark.parametrize("argument", ["initial", "update", "feasible"])
+def test_recursive_constraint_functions_must_be_callable(argument):
+    kwargs = dict(initial=_identity, update=_identity, feasible=_identity)
+    kwargs[argument] = 3
+    with pytest.raises(
+        InvalidInputError,
+        match=f"RecursiveConstraint: {argument} must be callable, got int",
+    ):
+        RecursiveConstraint(**kwargs)
+
+
+def test_recursive_constraint_feasible_partial_must_be_callable():
+    with pytest.raises(
+        InvalidInputError, match="feasible_partial must be callable, got str"
+    ):
+        RecursiveConstraint(
+            initial=_identity,
+            update=_identity,
+            feasible=_identity,
+            feasible_partial="x",
+        )
+    assert (
+        RecursiveConstraint(
+            initial=_identity, update=_identity, feasible=_identity
+        ).family
+        == "recursive"
+    )
