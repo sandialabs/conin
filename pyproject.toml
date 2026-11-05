@@ -8,7 +8,6 @@ version="2.0.0"
 dependencies = [
     "munch",
     "numpy",
-    "pandas",
     "pyomo",
     "ovld",
     "smoek",
@@ -46,7 +45,6 @@ test = [
     "pytest-cov",
     ]
 regex = ["greenery"]
-pgmpy = ["pgmpy"]
 toulbar2 = ["pytoulbar2"]
 torch = ["torch"]
 

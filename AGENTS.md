@@ -15,12 +15,13 @@
 
 - Update docs when code changes affect public behavior, public APIs, examples, optional dependencies, installation, or backend requirements.
 - User-facing docs live in `doc/sphinx/`; Sphinx config is `doc/sphinx/conf.py`; Read the Docs config is `.readthedocs.yaml`.
-- Every Python example in `doc/sphinx/` must be a `testcode` or `doctest` block (not `code-block:: python`), so the CI `docs` job runs it. Examples that need pgmpy, pytoulbar2 or a MIP solver add `:skipif: not pgmpy_available` (or `not toulbar2_available`, `not mip_solver_available`; defined in `doctest_global_setup` in `doc/sphinx/conf.py`). No example may need torch.
+- Every Python example in `doc/sphinx/` must be a `testcode` or `doctest` block (not `code-block:: python`), so the CI `docs` job runs it. Examples that need pytoulbar2 or a MIP solver add `:skipif: not toulbar2_available` (or `not mip_solver_available`; defined in `doctest_global_setup` in `doc/sphinx/conf.py`). No example may need torch.
 
 ## Testing
 
 - New behavior should include tests or updates to existing tests.
 - Run targeted tests for the code you change. Use the full suite when feasible with `pytest`.
-- Don't import pgmpy (or torch, outside the MVR tests) at module level in a test module just to skip tests: use the `needs_pgmpy`/`needs_torch` markers of `conin/tests/optional.py`, which don't import them (every pytest-xdist worker imports every test module).
+- File formats are read and written by conin itself (`conin/io`: UAI, BIF, CFN, JSON); don't add a third-party graphical-model library as a dependency.
+- Don't import torch (outside the MVR tests) at module level in a test module just to skip tests: use the `needs_torch` marker of `conin/tests/optional.py`, which doesn't import it (every pytest-xdist worker imports every test module).
 - For docs changes, run `python -m sphinx -b doctest doc/sphinx doc/sphinx/_build/doctest` and `python -m sphinx -W --keep-going -b html doc/sphinx doc/sphinx/_build/html` (CI runs both, with warnings as errors, and with `CONIN_DOCS_REQUIRE_BACKENDS=1`, so a missing backend fails instead of skipping examples).
 - Remove generated `doc/sphinx/_build` output before committing.

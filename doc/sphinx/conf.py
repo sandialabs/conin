@@ -43,13 +43,11 @@ extensions = [
 
 # Mock only the optional backends that are not installed: mocking an installed
 # backend would also replace it in the conin modules that the doctests run.
-autodoc_mock_imports = [
-    name for name in ("pgmpy", "pytoulbar2", "torch") if _missing(name)
-]
+autodoc_mock_imports = [name for name in ("pytoulbar2", "torch") if _missing(name)]
 
 # Import the conin modules now, without the mocks.  Otherwise autodoc imports
 # some of them under the mocks, and conin's optional-import checks then see a
-# mocked backend as installed (e.g. pgmpy classes become mocks), which breaks
+# mocked backend as installed (e.g. pytoulbar2 classes become mocks), which breaks
 # the doctests that run that code.  Modules that need a missing backend (the
 # torch MVR modules) fail here and are imported under the mocks by autodoc.
 if autodoc_mock_imports:
@@ -69,7 +67,7 @@ if autodoc_mock_imports:
 # fails the build instead of silently skipping the examples that need it.
 # (No example needs torch; its API pages build with the mock.)
 if os.environ.get("CONIN_DOCS_REQUIRE_BACKENDS") == "1":
-    _required = [name for name in ("pgmpy", "pytoulbar2") if _missing(name)]
+    _required = [name for name in ("pytoulbar2",) if _missing(name)]
     if _required:
         raise RuntimeError(
             "CONIN_DOCS_REQUIRE_BACKENDS=1, but these backends are missing: "
@@ -94,7 +92,6 @@ def _available(name):
         return False
     return True
 
-pgmpy_available = _available("pgmpy")
 toulbar2_available = _available("pytoulbar2")
 
 from conin.config import default_mip_solver

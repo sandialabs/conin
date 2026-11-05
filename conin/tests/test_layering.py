@@ -202,10 +202,8 @@ def test_no_module_level_import_cycles():
     assert cycles == []
 
 
-def test_import_conin_does_not_import_torch_or_pgmpy():
-    # pgmpy imports torch itself, and conin.io imports pgmpy when it is first
-    # used (lazy_import).  The MVR packages are imported too: they load their
-    # algorithms lazily.  Nor does it look for a MIP solver (conin.config).
+def test_import_conin_does_not_import_torch():
+    # The MVR packages are imported too: they load their algorithms lazily.  Nor does it look for a MIP solver (conin.config).
     script = textwrap.dedent("""
         import sys
 
@@ -220,7 +218,7 @@ def test_import_conin_does_not_import_torch_or_pgmpy():
         loaded = sorted(
             name
             for name in sys.modules
-            if name.partition(".")[0] in ("torch", "pgmpy")
+            if name.partition(".")[0] == "torch"
             or name == "conin.algorithms.util.mvr_kernels"
         )
         print(conin.config._find_mip_solver.cache_info().currsize)

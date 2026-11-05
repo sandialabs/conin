@@ -205,8 +205,7 @@ def map_query(
     Parameters
     ----------
     pgm : Graphical model to solve.
-        A CONIN model or constrained model.  Convert a pgmpy model with
-        :func:`conin.io.pgmpy.convert_pgmpy_to_conin` first.
+        A CONIN model or constrained model.
     method : string
         The string name of the inference method.
     variables : list, optional

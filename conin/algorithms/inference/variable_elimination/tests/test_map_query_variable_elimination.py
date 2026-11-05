@@ -114,8 +114,8 @@ def test_hmm_timing(capsys):
 # ---------------------------------------------------------------------
 #
 # The materialised factor of a constraint over one node is keyed by the
-# node's states, not by 1-tuples (with pgmpy, 1-tuples raised KeyError for
-# every such constraint, feasible or not).
+# node's states, not by 1-tuples (1-tuples raised KeyError for every such
+# constraint, feasible or not).
 
 
 def _one_node_constraints():

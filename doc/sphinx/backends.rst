@@ -12,7 +12,6 @@ The base package dependencies are declared in ``pyproject.toml``:
 
 - ``munch``
 - ``numpy``
-- ``pandas``
 - ``pyomo``
 - ``ovld``
 - ``smoek`` (the ``"smoek"`` constraint family)
@@ -43,7 +42,6 @@ Optional extras are declared in ``pyproject.toml``:
 
 .. code-block:: shell
 
-   python -m pip install -e .[pgmpy]     # pgmpy conversion, BIF files
    python -m pip install -e .[toulbar2]  # pytoulbar2
    python -m pip install -e .[torch]     # the MVR algorithms
    python -m pip install -e .[regex]     # greenery, for mvr_regex
@@ -127,31 +125,6 @@ The selected inference method still needs its own backend dependencies, such as
 a Pyomo-supported MIP solver for ``integer_program`` or ``pytoulbar2`` for
 ``toulbar2``.
 
-pgmpy
------
-
-``pgmpy`` is optional and can be installed with:
-
-.. code-block:: shell
-
-   python -m pip install -e .[pgmpy]
-
-Features requiring ``pgmpy`` include:
-
-- Loading and saving BIF files through ``conin.io.load_model`` and
-  ``conin.io.save_model``
-- ``conin.io.load_model(..., model_type="pgmpy")``
-- ``conin.io.save_model(..., model_type="pgmpy")``
-- ``conin.io.pgmpy.convert_pgmpy_to_conin``
-- ``conin.io.pgmpy.convert_conin_to_pgmpy_bn``
-- ``conin.io.pgmpy.convert_conin_to_pgmpy_mn``
-
-CONIN's algorithms take CONIN models only; a pgmpy model is converted with
-``convert_pgmpy_to_conin`` first. Variable elimination
-(``map_query(..., method="variable_elimination")`` and
-``log_probability_query``) is part of the base package; it does not need
-pgmpy.
-
 torch (MVR algorithms)
 ----------------------
 
@@ -194,8 +167,6 @@ Quick Selection Guide
      - Base package
    * - Use smoek constraints
      - Base package plus the selected inference backend
-   * - Convert to/from pgmpy models
-     - ``pgmpy``
    * - Run integer-programming inference
      - Pyomo plus ``gurobi``, ``highs``, or ``glpk``
    * - Enumerate several optimal solutions

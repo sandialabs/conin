@@ -1,15 +1,9 @@
 import pytest
 import os.path
-import importlib
 
 import conin.io
 from conin.io import load_model
 from conin.exceptions import InvalidInputError
-from conin.tests.optional import pgmpy_installed
-
-pgmpy_available = pgmpy_installed
-pgmpy_readwrite_available = pgmpy_installed
-
 
 cwd = os.path.dirname(__file__)
 
@@ -33,42 +27,14 @@ def test_load_model_error3():
         load_model(os.path.join(cwd, "asia.uai"), model_type="unknown")
 
 
+def test_load_model_missing_bif_file(tmp_path):
+    with pytest.raises(FileNotFoundError, match="Missing file"):
+        load_model(str(tmp_path / "missing.bif"))
+
+
 def test_load_model_documented_io_namespace():
     pgm = conin.io.load_model(os.path.join(cwd, "asia.uai"), model_type="conin")
     assert pgm.nodes
-
-
-@pytest.mark.skipif(
-    pgmpy_available, reason="Testing an error when pgmpy is not installed"
-)
-def test_load_model_error4():
-    with pytest.raises(ImportError):
-        load_model(os.path.join(cwd, "asia.uai"), model_type="pgmpy")
-
-
-def test_pgmpy_load_model_requires_pgmpy(monkeypatch):
-    module = importlib.import_module("conin.io.pgmpy.files")
-    monkeypatch.setattr(module, "pgmpy_available", False)
-
-    with pytest.raises(ImportError, match="pgmpy"):
-        module.load_model(os.path.join(cwd, "asia.uai"))
-
-
-@pytest.mark.skipif(not pgmpy_available, reason="pgmpy not installed")
-@pytest.mark.parametrize("model_type", ["conin", "pgmpy"])
-def test_load_model_missing_bif_file(tmp_path, model_type):
-    # A missing file used to be looked up as a pgmpy example model by name.
-    with pytest.raises(FileNotFoundError, match="Missing file"):
-        load_model(str(tmp_path / "missing.bif"), model_type=model_type)
-
-
-def test_pgmpy_load_model_file_requires_readwrite(monkeypatch):
-    module = importlib.import_module("conin.io.pgmpy.files")
-    monkeypatch.setattr(module, "pgmpy_available", True)
-    monkeypatch.setattr(module, "pgmpy_readwrite_available", False)
-
-    with pytest.raises(ImportError, match="pgmpy.readwrite"):
-        module.load_model(os.path.join(cwd, "asia.uai"))
 
 
 #
@@ -80,18 +46,8 @@ def test_load_model_asia_uai1_conin():
     load_model(os.path.join(cwd, "asia.uai"))
 
 
-@pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
-def test_load_model_asia_uai1_pgmpy():
-    load_model(os.path.join(cwd, "asia.uai"), model_type="pgmpy")
-
-
 def test_load_model_asia_uai2_conin():
     load_model(os.path.join(cwd, "asia_compressed.uai.gz"))
-
-
-@pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
-def test_load_model_asia_uai2_pgmpy():
-    load_model(os.path.join(cwd, "asia_compressed.uai.gz"), model_type="pgmpy")
 
 
 #
@@ -99,24 +55,12 @@ def test_load_model_asia_uai2_pgmpy():
 #
 
 
-@pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
 def test_load_model_asia_bif1_conin():
     load_model(os.path.join(cwd, "asia.bif"))
 
 
-@pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
-def test_load_model_asia_bif1_pgmpy():
-    load_model(os.path.join(cwd, "asia.bif"), model_type="pgmpy")
-
-
-@pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
 def test_load_model_asia_bif2_conin():
     load_model(os.path.join(cwd, "asia_compressed.bif.gz"))
-
-
-@pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
-def test_load_model_asia_bif2_pgmpy():
-    load_model(os.path.join(cwd, "asia_compressed.bif.gz"), model_type="pgmpy")
 
 
 #
@@ -213,18 +157,6 @@ def test_load_bn_model_toulbar2_conin():
         0: {0: 0.21, 1: 0.333, 2: 0.457},
         1: {0: 0.811, 1: 0.0, 2: 0.189},
     }
-
-
-@pytest.mark.skipif(
-    not pgmpy_readwrite_available, reason="pgmpy.readwrite is not available"
-)
-def test_pgmpy_load_model_unknown_suffix_names_the_file(tmp_path):
-    # The message was not an f-string, so it printed "{name}".
-    module = importlib.import_module("conin.io.pgmpy.files")
-    name = tmp_path / "model.txt"
-    name.write_text("")
-    with pytest.raises(InvalidInputError, match="model.txt"):
-        module.load_model(str(name))
 
 
 def test_uai_markov_network_edges_join_every_pair_of_factor_nodes():

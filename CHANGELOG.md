@@ -21,10 +21,12 @@ Highlights
   each model type accepts.
 - map_query normalises every model (bare or constrained) and dispatches on
   the representation, for every method; new method="mvr_viterbi".
-- Variable elimination is CONIN's own (numpy, in log space), so
-  map_query(method="variable_elimination") and log_probability_query no
-  longer need pgmpy. pgmpy is used only by conin.io.pgmpy (BIF files and
-  model conversion); the algorithms take CONIN models only.
+- Variable elimination is CONIN's own (numpy, in log space).
+- pgmpy support is removed (see I/O and conversion). BIF files are read and
+  written by CONIN's own conin.io.bif.
+- pandas is no longer a dependency (CONIN did not use it; the MVR notebooks
+  print their tables without it). environment.yml and dev_environment.yml
+  now install ovld, a required dependency they were missing.
 - New conin.algorithms.scoring.log_probability_query: marginal and conditional
   log-probabilities, also under constraints.
 - New RecursiveConstraint for recursive A*; map_query(method="a_star") uses it.
@@ -40,9 +42,8 @@ Highlights
   load_model, save_model and the exceptions, so
   "from conin import HiddenMarkovModel, map_query" works. The docs and
   notebooks import from conin.
-- import conin is several times faster: it no longer imports pgmpy (and
-  with it torch, scikit-learn and pandas) or looks for a MIP solver. pgmpy
-  is imported the first time a pgmpy converter or file reader is used.
+- import conin is several times faster: it no longer imports torch,
+  scikit-learn or pandas, or looks for a MIP solver.
 - pgmax, pomegranate and pyagrum support is removed.
 - One error policy for the whole package (see conin.exceptions):
   InvalidInputError, now a ValueError, for invalid argument values;
@@ -134,11 +135,9 @@ Migration table (old -> new)
                                     -> conin.representations.toulbar2(.common)
   conin.common.load_model/save_model, conin.common.conin.* loaders/savers
                                     -> conin.io (load_model, save_model,
-                                       uai, cfn, pgmpy.files)
-  conin.common.pgmpy.convert_pgmpy_to_conin
-                                    -> conin.io.pgmpy.convert_pgmpy_to_conin
-  conin.common.pgmpy.MapCPD, is_polytree (pgmpy models), *_pgmpy examples
-                                    -> removed
+                                       uai, cfn, bif)
+  conin.common.pgmpy (convert_pgmpy_to_conin, MapCPD, is_polytree for
+  pgmpy models), *_pgmpy examples   -> removed
   log_probability, log_potential    -> conin.algorithms.scoring
   MAP solution keys: hidden         -> states
                      log_likelihood, log_factor_sum
@@ -287,7 +286,7 @@ Constrained models
   backend, as a shallow copy with the backend's fields (T, hmm, start, stop,
   variables, evidence, ...) set. The time fields are the same for every
   backend and for is_feasible: start, stop and T for a DBN; start, stop and
-  hmm = Munch(T, hidden_to_internal) for an HMM (the pgmpy, oracle and
+  hmm = Munch(T, hidden_to_internal) for an HMM (the variable elimination, oracle and
   is_feasible data had only T or hmm.T, and network flow no start/stop).
 - The feasibility checks are functions, not methods:
   conin.algorithms.feasibility.is_feasible(cmodel, assignment) for every
@@ -429,7 +428,7 @@ Inference
 - The query-check messages changed: a partial variables query raises
   RuntimeError("Partial MAP queries are only supported by
   method='variable_elimination'; ...").
-- The pgmpy options prune_network and create_MN are removed: like any other
+- The options prune_network and create_MN are removed: like any other
   unknown option, they raise TypeError for every method (False was accepted
   and True raised RuntimeError).
 - integer_program, toulbar2 and variable_elimination have one solver per
@@ -480,15 +479,12 @@ Scoring
 
 - log_probability and log_potential move to conin.algorithms.scoring.
   log_potential accepts DBNs, HMMs and constrained models (-inf when
-  infeasible); log_potential and log_probability raise TypeError for pgmpy
-  models (convert them with conin.io.pgmpy.convert_pgmpy_to_conin);
-  evidence= is removed (it returned the joint); an assignment that is not
+  infeasible); evidence= is removed (it returned the joint); an assignment that is not
   total raises InvalidInputError; missing factor entries use the factor's
   default_value. New log_probability (BN, DBN, HMM).
 - New log_probability_query(pgm, assignment, *, evidence=None,
   method="variable_elimination", start=0, stop=None): log P(x | e), under the
-  constraints for a constrained model. It raises TypeError for pgmpy
-  models, as map_query does.
+  constraints for a constrained model.
 
 Sampling and learning
 
@@ -521,21 +517,23 @@ Sampling and learning
 I/O and conversion
 
 - File I/O moves from conin.common to conin.io; load_model/save_model accept
-  model_type="conin" or "pgmpy". The convert_pgm script is
-  conin.io.convert_pgm:main (same name and options).
-- pgmpy conversion moves from conin.common.pgmpy to conin.io.pgmpy
-  (convert_pgmpy_to_conin, and the new convert_conin_to_pgmpy_bn and
-  convert_conin_to_pgmpy_mn), with the pgmpy file readers and writers. MapCPD
-  and is_polytree for pgmpy models are removed; the new
+  only model_type="conin" (the default).
+  The convert_pgm script is conin.io.convert_pgm:main (same name and
+  options).
+- pgmpy support is removed (its converters, model_type="pgmpy", MapCPD and
+  the pgmpy extra); conin takes and produces CONIN models only. The new
   conin.graphical_models.is_polytree checks CONIN Bayesian networks.
-- conin.io.pgmpy.files.load_model no longer loads a pgmpy example model by
-  name when the file is missing; it raises FileNotFoundError.
+- BIF files are read and written natively by the new conin.io.bif
+  (load_bif, save_bif), also gzipped (.bif.gz), for the bnlearn/JavaBayes
+  dialect: comments, property statements, quoted and multi-word names, the
+  old "probability ( node parents )" header, table entries (also for nodes
+  with parents) and default entries.
+  Loaded nodes and states are strings, in the file's order; save_bif writes
+  labels with str (quoted when needed) and probabilities exactly.
 - pgmax, pomegranate and pyagrum support (converters, loaders, model_type
   values and the pgmax/pomegranate/pyagrum/pgm-all extras) is removed;
   load_model with those model_type values raises InvalidInputError
   ("Unexpected model type").
-- conin.common.pgmpy.log_potential and conin.common.pgmpy.custom_VE (dead,
-  untested code) are removed.
 - conin/mediation_variables (an unused NumPy prototype of the mediation
   variable algorithms, with its notebooks) is removed; the MVR algorithms are
   in conin.algorithms.inference.mvr, conin.algorithms.other_queries.mvr,
@@ -544,8 +542,6 @@ I/O and conversion
   load_cfn (were load_conin_model_from_uai, save_model_uai and
   load_conin_model_from_cfn); load_model/save_model are unchanged.
 - New extras: toulbar2 (pytoulbar2) and torch.
-- conin.io.pgmpy imports pgmpy when it is first used (the new
-  conin.util.lazy_import), not when conin is imported.
 - Hidden Markov models are saved and loaded with save_model/load_model as
   CONIN JSON (.json or .json.gz): a tagged document ("format":
   "conin.HiddenMarkovModel", "version": 1) with the state order and the
@@ -562,11 +558,9 @@ I/O and conversion
   an unknown file suffix or model_type, cost_scale <= 0 and load_cfn without
   a filename or string raise InvalidInputError (were RuntimeError or
   ValueError); a model a format or converter cannot hold raises TypeError
-  (save_uai, BIF, convert_conin_to_pgmpy_bn/mn and convert_pgmpy_to_conin
-  raised ValueError or RuntimeError); saving BIF or pgmpy files without
-  pgmpy's readers and writers raises ImportError (was RuntimeError, or an
-  "unknown format" error for .bif). NotImplementedError for unsupported CFN
-  features is unchanged. load_model now passes its options to the UAI and
+  (save_uai and BIF raised ValueError or RuntimeError).
+  NotImplementedError for unsupported CFN features and non-discrete BIF
+  variables. load_model now passes its options to the UAI and
   JSON readers too, so an option they do not take raises TypeError.
 
 Errors
@@ -655,8 +649,6 @@ Bug fixes
 - toulbar2 queries work after reading a .cfn file with pytoulbar2 (its global
   input-format options are reset).
 - solver="or_topas" no longer mutates the caller's solver_options.
-- convert_pgmpy_to_conin keeps one CPD per template when pgmpy holds a CPD
-  for several time slices (the unrolled network had two CPDs per node).
 - map_query on a one-observation HMM (integer_program, toulbar2,
   variable_elimination) no longer raises AssertionError; create_bn_from_dbn
   with start > 0 raises InvalidInputError instead of AttributeError.
@@ -698,16 +690,13 @@ Bug fixes
   - a UAI file with an inconsistent function table raises ModelFileError, a
     missing UAI file FileNotFoundError (as for CFN files), and MapCPD
     argument errors ValueError.
-- pgmpy save_model with an unknown file suffix raises InvalidInputError (it
-  returned without writing), and the load_model message names the file.
 - The timing=True output of variable elimination prints its STOP line with
   the elapsed time.
 - mcem stops when the average log-probability converges (it never updated
   the previous value, so it always ran max_iterations iterations), and no
   longer asserts that the Monte Carlo estimate never increases.
 - The UAI reader joins every pair of nodes in a Markov-network factor (it
-  joined only the last node to the others, so pgmpy rejected the converted
-  model: saving such a model as .bif failed). A truncated UAI file raises
+  joined only the last node to the others). A truncated UAI file raises
   ModelFileError (was StopIteration). Saving a DBN with dynamic nodes as UAI
   raises InvalidInputError asking to unroll it (was KeyError).
 - The CFN reader rejects an object as a variable domain and a cost function
@@ -723,8 +712,8 @@ Bug fixes
   raises InvalidInputError naming the array for a ragged or non-numeric one
   (it raised a NumPy ValueError, or a misleading "must be a 3D array").
 - Factors whose dict values omit assignments (they get the factor's
-  default_value) work with save_uai, toulbar2, the integer program and
-  convert_conin_to_pgmpy_mn: save_uai, toulbar2 and the converter raised
+  default_value) work with save_uai, toulbar2 and the integer program:
+  save_uai and toulbar2 raised
   KeyError, and the integer program left the omitted assignments out of the
   model (as if their weight were 0), so it could return a wrong assignment or
   no solution.

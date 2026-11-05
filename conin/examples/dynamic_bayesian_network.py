@@ -215,17 +215,16 @@ q_weather_A = {
 
 def weather_conin(debug=False):
     """
-    A DDBN example adapted from pgmpy documentation.
+    A DDBN example: a 2-TBN of the weather.
 
     Using explicit state names.
     """
     # Initialize a simple DDBN model modeling the Weather (W), Rain (O),
     # Temperature (T), and Humidity (H).
 
-    # pgmpy requires the user to define the structure of the first time slice and the edges
-    # connecting the first time slice to the second time slice.
-    # pgmpy assumes that this structure remains constant for further time
-    # slices, i.e., it is a 2-TBN.
+    # The model is a 2-TBN: the structure of the first time slice and the
+    # edges from one time slice to the next stay the same for every later
+    # time slice.
 
     W_states = ["Sunny", "Cloudy", "Rainy"]
     T_states = ["Hot", "Mild", "Cold"]
@@ -252,8 +251,8 @@ def weather_conin(debug=False):
     #    ]
     # )
 
-    # Define the parameters of the model. Again pgmpy assumes that these CPDs
-    # remain the same for future time slices.
+    # Define the parameters of the model. These CPDs are the same for every
+    # later time slice.
 
     # Define CPDs
     # CPD for W (Weather transition)

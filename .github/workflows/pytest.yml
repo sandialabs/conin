@@ -93,12 +93,10 @@ jobs:
       - name: Install package
         run: pip install -e .
 
-      - name: Install pgmpy
+      - name: Install torch
         run: |
             conda install -c pytorch pytorch
             conda install -c pytorch cpuonly
-            pip install pgmpy
-            python -c "import pgmpy; from pgmpy import config; config.set_backend('numpy'); print('pgmpy initialized')"
 
       - name: Test with pytest
         run: |
@@ -207,8 +205,6 @@ jobs:
             pip install -e .
             conda install -c pytorch pytorch
             conda install -c pytorch cpuonly
-            pip install pgmpy
-            python -c "import pgmpy; from pgmpy import config; config.set_backend('numpy'); print('pgmpy initialized')"
 
       - name: Test with pytest & coverage
         run: pytest --cov --cov-branch --cov-report=xml --junitxml=junit.xml -vv conin
@@ -254,12 +250,10 @@ jobs:
       - name: Install package
         run: pip install -e .
 
-      - name: Install pgmpy
+      - name: Install torch
         run: |
             conda install -c pytorch pytorch
             conda install -c pytorch cpuonly
-            pip install pgmpy
-            python -c "import pgmpy; from pgmpy import config; config.set_backend('numpy'); print('pgmpy initialized')"
 
       - name: Install MVR notebook dependencies
         run: |
@@ -321,11 +315,8 @@ jobs:
       - name: Install package
         run: pip install -e .[docs]
 
-      - name: Install pgmpy
-        run: pip install pgmpy
-
       # Every documentation example runs: CONIN_DOCS_REQUIRE_BACKENDS makes
-      # doc/sphinx/conf.py fail if pgmpy, pytoulbar2 or a MIP solver is
+      # doc/sphinx/conf.py fail if pytoulbar2 or a MIP solver is
       # missing (the examples that need one would otherwise be skipped).
       - name: Run the documentation examples
         env:

@@ -120,9 +120,9 @@ def test_unknown_option_raises_type_error(method, make, kwds):
 )
 @pytest.mark.parametrize("option", ["prune_network", "create_MN"])
 @pytest.mark.parametrize("value", [False, True])
-def test_removed_pgmpy_options_raise_type_error(method, kwds, option, value):
-    # These pgmpy options were accepted with False and raised RuntimeError
-    # with True; they are gone.
+def test_removed_options_raise_type_error(method, kwds, option, value):
+    # These options were accepted with False and raised RuntimeError with
+    # True; they are gone.
     with pytest.raises(TypeError, match=option):
         map_query(_bn(), method=method, **{option: value}, **kwds)
 

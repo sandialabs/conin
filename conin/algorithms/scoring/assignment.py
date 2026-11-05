@@ -27,7 +27,6 @@ from conin.graphical_models import (
 )
 from conin.algorithms.feasibility import is_feasible
 from conin.constrained_models import ConstrainedGraphicalModel
-from conin.constrained_models.normalise import pgmpy_hint
 from conin.graphical_models.assignments import (
     check_total_assignment,
     dbn_horizon,
@@ -175,7 +174,7 @@ def log_potential(model, assignment, *, observed=None):
 def _check_model_type(model):
     if isinstance(model, (GraphicalModel, ConstrainedGraphicalModel)):
         return model
-    raise TypeError(f"Unexpected model type: {type(model)}.{pgmpy_hint(model)}")
+    raise TypeError(f"Unexpected model type: {type(model)}.")
 
 
 def _no_observed(model, observed):

@@ -10,16 +10,6 @@ from conin.graphical_models.base import constrained_class, constrained_classes
 from .base import ConstrainedGraphicalModel
 
 
-def pgmpy_hint(model):
-    """A hint for the ``TypeError`` of a pgmpy model (empty for other objects)."""
-    if type(model).__module__.split(".")[0] == "pgmpy":
-        return (
-            " pgmpy models are not accepted: convert them with "
-            "conin.io.pgmpy.convert_pgmpy_to_conin."
-        )
-    return ""
-
-
 def as_constrained_model(pgm):
     """Return ``pgm`` as a constrained CONIN model.
 
@@ -29,7 +19,7 @@ def as_constrained_model(pgm):
     Raises
     ------
     TypeError
-        If ``pgm`` is not a supported model (e.g. a pgmpy model).
+        If ``pgm`` is not a supported model.
     """
     if isinstance(pgm, ConstrainedGraphicalModel):
         return pgm
@@ -41,5 +31,5 @@ def as_constrained_model(pgm):
         expected += [cls.model_type.__name__, cls.__name__]
     raise TypeError(
         f"Unsupported model type: {type(pgm)}. Expected one of: "
-        f"{', '.join(expected)}.{pgmpy_hint(pgm)}"
+        f"{', '.join(expected)}."
     )

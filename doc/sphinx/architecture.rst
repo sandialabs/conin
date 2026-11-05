@@ -43,10 +43,7 @@ Package layout
    share (the torch MVR kernels and variable elimination). ``map_query`` and ``log_probability_query``
    are the generic entry points.
 ``conin.io``
-   File I/O (UAI, CFN, JSON, BIF). ``conin.io.pgmpy`` is the only place that uses
-   pgmpy: BIF files and converting models between pgmpy and CONIN
-   (``convert_pgmpy_to_conin``, ``convert_conin_to_pgmpy_bn``/``_mn``).
-   Needs pgmpy only when called.
+   File I/O (UAI, CFN, JSON, BIF), all implemented in CONIN.
 ``conin.examples``
    The example factories used by the docs and the tests.
 ``conin.util``, ``conin.exceptions``
@@ -74,10 +71,9 @@ Layering
   imported inside a function only if it needs torch (the MVR algorithms and
   ``algorithms.util.mvr_kernels``); other function-level imports are of
   optional dependencies (torch).
-- ``import conin`` must not import torch or pgmpy (pgmpy imports torch, and
-  takes several seconds to import). The MVR packages export their
-  algorithms through a lazy module ``__getattr__``, and ``conin.io.pgmpy``
-  imports pgmpy with ``conin.util.lazy_import``.
+- ``import conin`` must not import torch (it takes several seconds to
+  import). The MVR packages export their algorithms through a lazy module
+  ``__getattr__``.
 - ``conin/tests/test_layering.py`` checks these rules; its ``LAYERS`` table
   is the authoritative layer order, and a new package must be added to it.
 - Optional dependencies are imported with ``conin.util.try_import``, which
@@ -110,7 +106,7 @@ Representations and dispatch
   ``time_steps`` and their constraint-``data`` time fields from the mixins in
   ``conin.representations.unrolled``, so the backends cannot drift apart.
 - ``map_query`` (and ``log_probability_query``) normalise the model (bare
-  models are wrapped as ``Constrained*(model)``; pgmpy models are rejected),
+  models are wrapped as ``Constrained*(model)``; other objects are rejected),
   map the method to a representation kind (one table for both queries,
   ``conin.representations.methods``), build the representation with its
   structure parameters, and dispatch with ``ovld`` on the representation
@@ -170,11 +166,10 @@ Variable elimination is CONIN's own
    once, as an indicator factor, into a Markov network of the model's factors
    (a Bayesian network's CPDs). ``conin.algorithms.util.variable_elimination``
    eliminates on numpy tables of log values, in a greedy (smallest new table)
-   order, for MAP, partial MAP and ``log_probability_query``. It replaced
-   pgmpy's variable elimination, which needed a pgmpy model per query, a
-   constraint node with evidence for each constraint of a Bayesian network,
-   a second elimination to detect infeasibility, and summed in linear space
-   (long sequences underflowed).
+   order, for MAP, partial MAP and ``log_probability_query``. Working in
+   log space keeps long sequences from underflowing, and each constraint is
+   one factor (no extra nodes or evidence, and no second elimination to
+   detect infeasibility).
 Composition, not inheritance
    A constrained model holds its model (``cmodel.model``) rather than
    subclassing it, so code written for bare models cannot silently accept a
