@@ -165,7 +165,7 @@ def test_save_model_cancer_bn_uai(cancer_bn_uai, tmp_path):
     save_model(cancer_bn_uai, fname)
 
     orig = os.path.join(cwd, "cancer_bn.uai")
-    assert filecmp.cmp(orig, fname) == True
+    assert filecmp.cmp(orig, fname)
 
 
 #
@@ -178,7 +178,7 @@ def test_save_model_cancer_mn_uai(cancer_mn_uai, tmp_path):
     save_model(cancer_mn_uai, fname)
 
     orig = os.path.join(cwd, "cancer_mn.uai")
-    assert filecmp.cmp(orig, fname) == True
+    assert filecmp.cmp(orig, fname)
 
 
 #
@@ -201,7 +201,7 @@ def test_save_model_toulbar2_conin(toulbar2_bn_uai, tmp_path):
     save_model(toulbar2_bn_uai, fname)
 
     orig = os.path.join(cwd, "toulbar2_bn.uai")
-    assert filecmp.cmp(orig, fname) == True
+    assert filecmp.cmp(orig, fname)
 
 
 #

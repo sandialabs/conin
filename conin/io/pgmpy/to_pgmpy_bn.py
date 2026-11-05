@@ -1,6 +1,6 @@
 import itertools
 from conin.util import lazy_import
-from conin.graphical_models import DiscreteBayesianNetwork, DiscreteCPD
+from conin.graphical_models import DiscreteBayesianNetwork
 
 # pgmpy is imported when it is first used (it is slow to import).
 pgmpy_available = lazy_import("pgmpy")

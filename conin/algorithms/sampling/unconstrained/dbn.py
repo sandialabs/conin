@@ -203,7 +203,7 @@ class DBNSampler:
 
         # any prevous_states that are not updated are copied to next_states
         for node in previous_states:
-            if not node in next_states:
+            if node not in next_states:
                 next_states[node] = previous_states[node]
 
         return next_states

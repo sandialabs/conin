@@ -708,9 +708,9 @@ def _resolve_labels(hidden_markov_model, labels, formula, column):
 
 def _lower(node, hidden_markov_model, formula):
     """Lower one syntax node through the MVR algebra."""
-    labels = lambda values: _resolve_labels(
-        hidden_markov_model, values, formula, node.column
-    )
+
+    def labels(values):
+        return _resolve_labels(hidden_markov_model, values, formula, node.column)
 
     if isinstance(node, _States):
         return mvr_current_state(hidden_markov_model, set(labels(node.labels)))

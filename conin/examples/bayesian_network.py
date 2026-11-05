@@ -528,7 +528,7 @@ def wide_BN_constrained2_conin_pyomo(debug=False):
 
     @pyomo_constraint_fn()
     def constraints(model):
-        model.I = pyo.RangeSet(0, N - 1)
+        model.I = pyo.RangeSet(0, N - 1)  # noqa: E741
 
         def rule(model, i):
             if i == 0:
@@ -555,14 +555,14 @@ def wide_BN_constrained2_conin_smoek(debug=False):
 
     @smoek_constraint_fn()
     def constraints(M):
-        I = smk.sequence(start=1, stop=N - 1)
+        seq = smk.sequence(start=1, stop=N - 1)
         i = smk.index()
         c = (
             smk.constraint()
             .expr(M.V(("A", i - 1), 1) + M.V(("A", i), 1) <= 1)
-            .forall(i in I)
+            .forall(i in seq)
         )
-        M.add_components(I=I, i=i, c=c)
+        M.add_components(I=seq, i=i, c=c)
 
     cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraints)
     solution_states = {("A", i): 1 for i in range(N)}

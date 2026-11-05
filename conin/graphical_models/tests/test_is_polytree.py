@@ -19,13 +19,13 @@ cwd = os.path.join(
 
 def test_is_polytree_conin_asia():
     pgm = load_model(os.path.join(cwd, "asia.uai"))
-    assert is_polytree(pgm) == False
+    assert not is_polytree(pgm)
 
 
 @pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
 def test_is_polytree_bif_asia():
     pgm = load_model(os.path.join(cwd, "asia.bif"))
-    assert is_polytree(pgm) == False
+    assert not is_polytree(pgm)
 
 
 #
@@ -35,7 +35,7 @@ def test_is_polytree_bif_asia():
 
 def test_is_polytree_conin_barley():
     pgm = load_model(os.path.join(cwd, "barley.uai"))
-    assert is_polytree(pgm) == False
+    assert not is_polytree(pgm)
 
 
 #
@@ -45,13 +45,13 @@ def test_is_polytree_conin_barley():
 
 def test_is_polytree_conin_cancer():
     pgm = load_model(os.path.join(cwd, "cancer_bn.uai"))
-    assert is_polytree(pgm) == True
+    assert is_polytree(pgm)
 
 
 @pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
 def test_is_polytree_bif_cancer():
     pgm = load_model(os.path.join(cwd, "cancer_bn.bif"))
-    assert is_polytree(pgm) == True
+    assert is_polytree(pgm)
 
 
 #

@@ -1,6 +1,6 @@
 import itertools
 from conin.util import lazy_import
-from conin.graphical_models import DiscreteMarkovNetwork, DiscreteFactor
+from conin.graphical_models import DiscreteMarkovNetwork
 
 # pgmpy is imported when it is first used (it is slow to import).
 pgmpy_available = lazy_import("pgmpy")
@@ -42,9 +42,8 @@ def convert_conin_to_pgmpy_mn(conin_pgm, check_model=True):
     for node in conin_pgm.nodes:
         pgmpy_pgm.add_node(node)
 
-    # Convert factors and build edges
+    # Convert factors
     pgmpy_factors = []
-    edges = set()
 
     for conin_factor in conin_pgm.factors:
         # Convert factor
