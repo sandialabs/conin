@@ -1,0 +1,11 @@
+[flake8]
+max-line-length = 127
+# E203 (whitespace before ':') conflicts with black's slice formatting.
+extend-ignore = E203
+extend-exclude = .venv,venv,.opencode-workspace,.codex,build
+per-file-ignores =
+    # Package __init__ modules re-export names.
+    __init__.py:F401
+    # ovld overloads redefine the same function name.
+    conin/algorithms/feasibility/checks.py:F811
+    conin/algorithms/inference/query.py:F811

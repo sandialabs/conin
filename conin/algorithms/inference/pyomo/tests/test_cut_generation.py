@@ -28,7 +28,7 @@ try:
     gurobi_available = pyo.SolverFactory("gurobi_persistent").available(
         exception_flag=False
     )
-except:
+except Exception:
     gurobi_available = False
 
 skipif_no_mip_solvers = pytest.mark.skipif(

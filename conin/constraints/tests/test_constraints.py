@@ -2,7 +2,26 @@ import pytest
 
 from conin.exceptions import InvalidInputError
 from conin.constraints import OracleConstraint, oracle_constraint_fn
-from conin.constraints.oracle.library import *
+from conin.constraints.oracle.library import (
+    all_diff_constraint,
+    always_appears_after_constraint,
+    always_appears_before_constraint,
+    and_constraints,
+    appears_at_least_once_after_constraint,
+    appears_at_least_once_before_constraint,
+    appears_at_least_once_constraint,
+    citation_constraint,
+    does_not_occur_constraint,
+    fix_final_state_constraint,
+    has_exact_number_of_occurrences_constraint,
+    has_maximum_number_of_occurrences_constraint,
+    has_minimum_number_of_occurrences_constraint,
+    not_constraint,
+    occurs_at_least_once_in_time_frame_constraint,
+    occurs_only_in_time_frame_constraint,
+    or_constraints,
+    xor_constraints,
+)
 
 
 def _d(seq):

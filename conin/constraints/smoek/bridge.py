@@ -13,7 +13,7 @@ with try_import() as smoek_available:
 
 if not smoek_available:
 
-    class ExprLeaf(object):
+    class ExprLeaf(object):  # noqa: F811
         pass
 
 

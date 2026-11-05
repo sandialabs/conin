@@ -110,7 +110,7 @@ def make_forbid_state_inhom_mvr(
 
     mediation_states = [[f"ok_{t}", f"violated_{t}"] for t in range(time_horizon + 1)]
 
-    ini = {h: f"violated_0" if h == forbidden_state else f"ok_0" for h in hidden_states}
+    ini = {h: "violated_0" if h == forbidden_state else "ok_0" for h in hidden_states}
 
     upd = []
 

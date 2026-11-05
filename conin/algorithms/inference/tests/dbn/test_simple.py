@@ -1,4 +1,5 @@
 import pyomo.opt
+import pytest
 
 from conin.util import try_import
 
@@ -11,7 +12,6 @@ with try_import() as pytoulbar2_available:
 mip_solver = pyomo.opt.check_available_solvers("gurobi", "highs", "glpk")
 mip_solver = mip_solver[0] if mip_solver else None
 
-import pytest
 
 skipif_no_mip_solver = pytest.mark.skipif(
     not mip_solver, reason="No mip solver installed"

@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from conin.algorithms.feasibility import is_feasible
-from conin import *
+from conin import InvalidInputError, pyomo_constraint_fn
 from conin.constrained_models import ConstrainedHiddenMarkovModel
 from conin.graphical_models import HiddenMarkovModel
 

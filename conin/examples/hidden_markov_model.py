@@ -7,7 +7,6 @@ from conin.constraints import (
 from conin.constraints import (
     pyomo_constraint_fn,
     toulbar2_constraint_fn,
-    oracle_constraint_fn,
     smoek_constraint_fn,
 )
 from conin.constrained_models import ConstrainedHiddenMarkovModel
