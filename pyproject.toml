@@ -8,7 +8,6 @@ version="2.0.0"
 dependencies = [
     "munch",
     "numpy",
-    "pandas",
     "pyomo",
     "ovld",
     "smoek",

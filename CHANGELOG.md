@@ -24,6 +24,9 @@ Highlights
 - Variable elimination is CONIN's own (numpy, in log space).
 - pgmpy support is removed (see I/O and conversion). BIF files are read and
   written by CONIN's own conin.io.bif.
+- pandas is no longer a dependency (CONIN did not use it; the MVR notebooks
+  print their tables without it). environment.yml and dev_environment.yml
+  now install ovld, a required dependency they were missing.
 - New conin.algorithms.scoring.log_probability_query: marginal and conditional
   log-probabilities, also under constraints.
 - New RecursiveConstraint for recursive A*; map_query(method="a_star") uses it.

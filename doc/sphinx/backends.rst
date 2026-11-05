@@ -12,7 +12,6 @@ The base package dependencies are declared in ``pyproject.toml``:
 
 - ``munch``
 - ``numpy``
-- ``pandas``
 - ``pyomo``
 - ``ovld``
 - ``smoek`` (the ``"smoek"`` constraint family)
