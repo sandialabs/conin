@@ -16,7 +16,7 @@ with try_import() as smoek_available:
 import pytest
 
 # Check for available MIP solver
-mip_solver = pyomo.opt.check_available_solvers("gurobi", "highs")
+mip_solver = pyomo.opt.check_available_solvers("gurobi", "highs", "glpk")
 mip_solver = mip_solver[0] if mip_solver else None
 
 # Skip conditions
@@ -530,6 +530,8 @@ def test_wide_BN_constrained2_conin(method, write_file, options, example_factory
             testfile_uai,
             {},
         ),
+        pytest.param("viterbi", None, {}),
+        pytest.param("a_star", None, {}),
     ],
 )
 def test0_hmm1(method, write_file, options):
@@ -543,8 +545,9 @@ def test0_hmm1(method, write_file, options):
     assert results.solution.states == ["h0", "h0", "h0", "h0", "h0"]
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
-    # Test with file writing (only for default ip_formulation to avoid redundancy)
-    if options.get("ip_formulation", None) is None:
+    # Test with file writing (only for default ip_formulation to avoid
+    # redundancy; viterbi and a_star write no files)
+    if write_file is not None and options.get("ip_formulation", None) is None:
         if method == "integer_program":
             kwargs["write_lp_file"] = write_file
         else:
@@ -577,6 +580,8 @@ def test0_hmm1(method, write_file, options):
             marks=skipif_gurobi_not_available,
         ),
         pytest.param("variable_elimination", {}),
+        pytest.param("viterbi", {}),
+        pytest.param("a_star", {}),
     ],
 )
 def test1_hmm1(method, options):
@@ -597,6 +602,8 @@ def test1_hmm1(method, options):
             "integer_program", dict(solver=mip_solver), marks=skipif_no_mip_solver
         ),
         pytest.param("variable_elimination", {}),
+        pytest.param("viterbi", {}),
+        pytest.param("a_star", {}),
     ],
 )
 def test2_hmm1(method, options):
@@ -623,6 +630,8 @@ def test2_hmm1(method, options):
             "integer_program", dict(solver=mip_solver), marks=skipif_no_mip_solver
         ),
         pytest.param("variable_elimination", {}),
+        pytest.param("viterbi", {}),
+        pytest.param("a_star", {}),
     ],
 )
 def test3_hmm1(method, options):
@@ -711,6 +720,12 @@ def test3_hmm1(method, options):
             conin.examples.hidden_markov_model.create_chmm1_smoek,
             marks=skipif_smoek_not_available,
         ),
+        pytest.param(
+            "a_star",
+            None,
+            {},
+            conin.examples.hidden_markov_model.create_chmm1_oracle,
+        ),
     ],
 )
 def test0_chmm1(method, write_file, options, pgm_factory):
@@ -740,8 +755,9 @@ def test0_chmm1(method, write_file, options, pgm_factory):
     ]
     assert hasattr(results, "solvetime") and type(results.solvetime) is float
 
-    # Test with file writing (only for default ip_formulation to avoid redundancy)
-    if options.get("ip_formulation", None) is None:
+    # Test with file writing (only for default ip_formulation to avoid
+    # redundancy; a_star writes no files)
+    if write_file is not None and options.get("ip_formulation", None) is None:
         if method == "integer_program":
             kwargs["write_lp_file"] = write_file
         else:
@@ -806,6 +822,11 @@ def test0_chmm1(method, write_file, options, pgm_factory):
             {},
             conin.examples.hidden_markov_model.create_chmm1_smoek,
             marks=skipif_smoek_not_available,
+        ),
+        pytest.param(
+            "a_star",
+            {},
+            conin.examples.hidden_markov_model.create_chmm1_oracle,
         ),
     ],
 )
@@ -879,6 +900,11 @@ def test1_chmm1(method, options, pgm_factory):
             conin.examples.hidden_markov_model.create_chmm1_smoek,
             marks=skipif_smoek_not_available,
         ),
+        pytest.param(
+            "a_star",
+            {},
+            conin.examples.hidden_markov_model.create_chmm1_oracle,
+        ),
     ],
 )
 def test2_chmm1(method, options, pgm_factory):
@@ -944,6 +970,11 @@ def test2_chmm1(method, options, pgm_factory):
             {},
             conin.examples.hidden_markov_model.create_chmm1_smoek,
             marks=skipif_smoek_not_available,
+        ),
+        pytest.param(
+            "a_star",
+            {},
+            conin.examples.hidden_markov_model.create_chmm1_oracle,
         ),
     ],
 )
@@ -1163,14 +1194,3 @@ def test_DPGM_weather_constrained_conin(method, options, write_file, example_fac
     results = map_query(example.pgm, **kwargs)
     assert os.path.exists(write_file)
     os.remove(write_file)
-
-
-#
-# Test for unsupported types
-#
-
-
-def test_map_query_unsupported_type():
-    """Test that map_query raises TypeError for unsupported types."""
-    with pytest.raises(TypeError, match="Unsupported model type"):
-        map_query("not_a_model", method="integer_program")

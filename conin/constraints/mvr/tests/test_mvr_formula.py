@@ -1,3 +1,4 @@
+import ast
 import warnings
 
 import pytest
@@ -238,8 +239,15 @@ def test_grammar_covers_the_algebra():
     from conin.constraints.mvr import operators as mvr_operators
     from conin.constraints.mvr import formula as formula_module
 
+    # The names the formula module uses (not just imports or mentions in a
+    # comment or docstring).
     with open(formula_module.__file__) as source_file:
-        source = source_file.read()
+        tree = ast.parse(source_file.read())
+    used = {
+        node.id
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)
+    }
     public = {
         name
         for module in (mvr_constraints, mvr_operators)
@@ -256,7 +264,7 @@ def test_grammar_covers_the_algebra():
         "mvr_forbid_sequencelist",
     }
 
-    missing = {name for name in public - compositional if name not in source}
+    missing = (public - compositional) - used
 
     assert not missing, f"no formula production lowers to {sorted(missing)}"
 

@@ -10,10 +10,6 @@ class TestSampler(unittest.TestCase):
     def setUp(self):
         self.G = tc.create_ddbn0()
 
-    def test_sampler(self):
-        sampler = DBNSampler(self.G)
-        assert sampler is not None
-
     def test_set_time(self):
         # @t==0
         sampler = DBNSampler(self.G)
@@ -122,8 +118,14 @@ class TestSampler(unittest.TestCase):
         sampler = DBNSampler(self.G)
         runs = sampler.sample(time_steps=6, num_samples=8)
         assert len(runs) == 8
+        states = dict(self.G.dynamic_states, **self.G.states)
         for trace in runs:
             assert len(trace) == 6
+            for step in trace:
+                assert step.keys() == states.keys()
+                assert all(step[node] in states[node] for node in step)
+            # A static node keeps its value over a trace.
+            assert len({step["X"] for step in trace}) == 1
 
     def test_same_seed_same_samples(self):
         runs = DBNSampler(self.G, rng=3).sample(time_steps=5, num_samples=4)

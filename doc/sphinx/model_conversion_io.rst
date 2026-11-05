@@ -73,7 +73,10 @@ and a format that needs pgmpy raises ``ImportError`` without it.
    assert loaded.nodes == ["var0", "var1"]
 
 UAI files encode variables by integer position. When a model is loaded back into
-CONIN, nodes are named ``var0``, ``var1``, and so on.
+CONIN, nodes are named ``var0``, ``var1``, and so on. ``save_model`` numbers the
+variables in ``pgm.nodes`` order, except for a model whose nodes are ``var0`` ...
+``var{n-1}`` (such as a loaded UAI file): there ``var{i}`` is variable ``i``,
+so a UAI file that is loaded and saved again keeps its variable numbers.
 
 Toulbar2 CFN Files
 ------------------

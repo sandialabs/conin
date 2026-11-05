@@ -72,77 +72,60 @@ def test_pgmpy_load_model_file_requires_readwrite(monkeypatch):
 
 
 #
-# asia.uai
+# Compressed files load the same model as their uncompressed versions
 #
 
 
-def test_load_model_asia_uai1_conin():
-    load_model(os.path.join(cwd, "asia.uai"))
+@pytest.mark.parametrize(
+    "plain,compressed",
+    [
+        ("asia.uai", "asia_compressed.uai.gz"),
+        pytest.param(
+            "asia.bif",
+            "asia_compressed.bif.gz",
+            marks=pytest.mark.skipif(
+                not pgmpy_readwrite_available, reason="pgmpy not installed"
+            ),
+        ),
+        ("barley.uai", "barley_compressed.uai.gz"),
+        ("deer.uai", "deer_compressed.uai.gz"),
+    ],
+)
+def test_load_model_compressed_matches_uncompressed(
+    plain, compressed, assert_same_model
+):
+    model = load_model(os.path.join(cwd, plain))
+    assert model.nodes
+    assert_same_model(load_model(os.path.join(cwd, compressed)), model)
+
+
+def test_load_model_uai_cardinalities():
+    # The cardinalities of the first variables of the barley.uai header.
+    pgm = load_model(os.path.join(cwd, "barley.uai"))
+    assert len(pgm.nodes) == 48
+    assert [len(pgm.states_of(f"var{i}")) for i in range(5)] == [5, 9, 5, 3, 9]
 
 
 @pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
-def test_load_model_asia_uai1_pgmpy():
-    load_model(os.path.join(cwd, "asia.uai"), model_type="pgmpy")
-
-
-def test_load_model_asia_uai2_conin():
-    load_model(os.path.join(cwd, "asia_compressed.uai.gz"))
-
-
-@pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
-def test_load_model_asia_uai2_pgmpy():
-    load_model(os.path.join(cwd, "asia_compressed.uai.gz"), model_type="pgmpy")
-
-
-#
-# asia.bif
-#
+@pytest.mark.parametrize(
+    "filename",
+    ["asia.uai", "asia_compressed.uai.gz", "asia.bif", "asia_compressed.bif.gz"],
+)
+def test_load_model_pgmpy(filename):
+    pgm = load_model(os.path.join(cwd, filename), model_type="pgmpy")
+    assert type(pgm).__module__.startswith("pgmpy.")
+    assert len(pgm.nodes()) == len(load_model(os.path.join(cwd, filename)).nodes)
 
 
 @pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
-def test_load_model_asia_bif1_conin():
-    load_model(os.path.join(cwd, "asia.bif"))
+def test_load_model_bif_conin_matches_pgmpy(assert_same_model):
+    from conin.io.pgmpy import convert_pgmpy_to_conin
 
-
-@pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
-def test_load_model_asia_bif1_pgmpy():
-    load_model(os.path.join(cwd, "asia.bif"), model_type="pgmpy")
-
-
-@pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
-def test_load_model_asia_bif2_conin():
-    load_model(os.path.join(cwd, "asia_compressed.bif.gz"))
-
-
-@pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
-def test_load_model_asia_bif2_pgmpy():
-    load_model(os.path.join(cwd, "asia_compressed.bif.gz"), model_type="pgmpy")
-
-
-#
-# barley.uai
-#
-
-
-def test_load_model_barley1_conin():
-    load_model(os.path.join(cwd, "barley.uai"))
-
-
-def test_load_model_barley2_conin():
-    load_model(os.path.join(cwd, "barley_compressed.uai.gz"))
-
-
-#
-# deer.uai
-#
-
-
-def test_load_model_deer1_conin():
-    load_model(os.path.join(cwd, "deer.uai"))
-
-
-def test_load_model_deer2_conin():
-    load_model(os.path.join(cwd, "deer_compressed.uai.gz"))
+    filename = os.path.join(cwd, "asia.bif")
+    assert_same_model(
+        load_model(filename),
+        convert_pgmpy_to_conin(load_model(filename, model_type="pgmpy")),
+    )
 
 
 #

@@ -31,6 +31,8 @@ from conin.representations import (
     supported_representations,
 )
 from conin.algorithms.sampling.oracle import rejection_sample_hidden
+import conin.examples.bayesian_network
+import conin.examples.dynamic_bayesian_network
 import conin.examples.hidden_markov_model as tc
 
 
@@ -115,6 +117,47 @@ def test_model_keyword():
 def test_wrong_model_type_rejected():
     with pytest.raises(TypeError, match="expects a HiddenMarkovModel"):
         ConstrainedHiddenMarkovModel(_mn())
+
+
+def _bn():
+    return conin.examples.bayesian_network.simple1_BN_conin().pgm
+
+
+def _dbn():
+    return conin.examples.dynamic_bayesian_network.simple1_DDBN_conin().pgm
+
+
+DELEGATING = [
+    pytest.param(ConstrainedDiscreteBayesianNetwork, _bn, _mn, id="bn"),
+    pytest.param(ConstrainedDiscreteMarkovNetwork, _mn, _bn, id="mn"),
+    pytest.param(ConstrainedDynamicDiscreteBayesianNetwork, _dbn, _bn, id="dbn"),
+]
+
+
+@pytest.mark.parametrize("cls,make,make_other", DELEGATING)
+def test_nodes_and_states_of_delegate_to_the_model(cls, make, make_other):
+    model = make()
+    cmodel = cls(model)
+    assert cmodel.model is model
+    # Regression test: ``nodes`` used to be a method on the DBN class.
+    assert isinstance(cls.__dict__["nodes"], property)
+    assert cmodel.nodes == model.nodes
+    for node in model.nodes:
+        assert cmodel.states_of(node) == model.states_of(node)
+    with pytest.raises(TypeError, match="expects a"):
+        cls(make_other())
+
+
+def test_dbn_states_of_accepts_timed_nodes():
+    dbn = _dbn()
+    cdbn = ConstrainedDynamicDiscreteBayesianNetwork(dbn)
+    for node in dbn.dynamic_nodes:
+        assert cdbn.states_of((node, 0)) == dbn.states_of((node, 0))
+
+
+def test_string_constraints_rejected():
+    with pytest.raises(InvalidInputError):
+        ConstrainedDiscreteMarkovNetwork(_mn(), constraints="not-a-list")
 
 
 def test_hmm_matvec_repn_rejected():

@@ -42,12 +42,6 @@ class Util:
         return [float(x) / total for x in vec]  # Convert to float explicitly
 
     @staticmethod
-    def normalize_matrix(mat):
-        return [
-            list(map(float, Util.normalize_vector(vec))) for vec in mat
-        ]  # Convert each normalized vector to a list of floats
-
-    @staticmethod
     def normalize_dictionary(dict):
         sum = 0
         for value in dict.values():

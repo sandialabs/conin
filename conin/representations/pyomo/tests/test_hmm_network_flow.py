@@ -5,10 +5,6 @@ import conin.examples.hidden_markov_model as tc
 
 class Test_IndexSets1:
 
-    def test_HMM(self):
-        hmm = tc.create_hmm1()
-        assert hmm is not None
-
     def test_data(self):
         hmm = tc.create_hmm1()
         assert hmm.num_hidden_states == 2
@@ -84,10 +80,6 @@ class Test_IndexSets1:
 
 
 class Test_IndexSets2:
-
-    def test_HMM(self):
-        hmm = tc.create_hmm2()
-        assert hmm is not None
 
     def test_data(self):
         hmm = tc.create_hmm2()

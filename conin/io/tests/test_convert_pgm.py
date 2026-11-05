@@ -1,17 +1,22 @@
+"""Tests of the convert_pgm command-line tool.
+
+The conversions themselves are load_model/save_model, which test_load_model.py
+and test_save_model.py test; these tests check the command line: arguments,
+output file names, messages and exit codes.
+"""
+
 import pytest
 import os
-import sys
-import tempfile
 import shutil
+import sys
 from io import StringIO
 
+from conin.algorithms.inference import map_query
 from conin.io import load_model
 from conin.io.convert_pgm import main
 from conin.tests.optional import pgmpy_installed
 
-pgmpy_available = pgmpy_installed
-pgmpy_readwrite_available = pgmpy_installed
-
+needs_pgmpy = pytest.mark.skipif(not pgmpy_installed, reason="pgmpy not installed")
 
 cwd = os.path.dirname(__file__)
 
@@ -47,592 +52,122 @@ def run_convert_pgm(args):
         sys.argv = old_argv
 
 
-def make_temp_copy(source_file):
-    """
-    Create a temporary copy of a file for testing.
-    Returns (temp_file_path, cleanup_function)
-    """
-    # Get the filename and determine extension
-    basename = os.path.basename(source_file)
-
-    # A new directory per copy, so that parallel tests (pytest -n) never share
-    # a file; convert_pgm writes its outputs next to the input.
-    temp_dir = tempfile.mkdtemp(prefix="conin_convert_pgm_")
-    temp_path = os.path.join(temp_dir, "test_" + basename)
-    shutil.copy(source_file, temp_path)
-
-    def cleanup():
-        """Remove the temp directory, with the generated outputs"""
-        shutil.rmtree(temp_dir, ignore_errors=True)
-
-    return temp_path, cleanup
-
-
-class TestConvertPGMBasic:
-    """Test basic functionality and error handling"""
-
-    def test_no_arguments(self):
-        """Test that running with no arguments shows an error"""
-        exit_code, stdout, stderr = run_convert_pgm([])
-        assert exit_code != 0
-
-    def test_help(self):
-        """Test help flag"""
-        exit_code, stdout, stderr = run_convert_pgm(["--help"])
-        assert exit_code == 0
-        assert "convert graphical model" in stdout.lower()
-
-    def test_missing_input_file(self):
-        """Test error when input file doesn't exist"""
-        exit_code, stdout, stderr = run_convert_pgm(
-            ["nonexistent.uai", "--uai", "output.uai"]
-        )
-        assert exit_code != 0
-        assert "not found" in stderr.lower()
-
-    def test_no_output_format(self):
-        """Test error when no output format is specified"""
-        source_file = os.path.join(cwd, "asia.uai")
-        temp_input, cleanup = make_temp_copy(source_file)
-
-        try:
-            exit_code, stdout, stderr = run_convert_pgm([temp_input])
-            assert exit_code != 0
-            assert "output format" in stderr.lower()
-        finally:
-            cleanup()
-
-
-class TestConvertPGMUAI:
-    """Test UAI format conversions"""
-
-    @pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
-    def test_uai_auto_filename(self):
-        """Test auto-generated filename for UAI output"""
-        source_file = os.path.join(cwd, "asia.bif")
-        temp_input, cleanup = make_temp_copy(source_file)
-
-        try:
-            exit_code, stdout, stderr = run_convert_pgm([temp_input, "--uai"])
-            assert exit_code == 0, f"Unexpected failure {stdout=} {stderr=}"
-
-            # Calculate expected output filename
-            base = os.path.splitext(temp_input)[0]
-            expected_output = base + ".uai"
-            assert os.path.exists(expected_output)
-
-            # Verify the file was created and can be loaded
-            pgm = load_model(expected_output)
-            assert pgm is not None
-            assert len(pgm.nodes) > 0
-
-        finally:
-            cleanup()
-
-    def test_compressed_uai_auto_filename(self):
-        """Test auto-generated filename from compressed input"""
-        source_file = os.path.join(cwd, "asia_compressed.uai.gz")
-        temp_input, cleanup = make_temp_copy(source_file)
-
-        try:
-            exit_code, stdout, stderr = run_convert_pgm(
-                [temp_input, "--uai", "--quiet"]
-            )
-            assert exit_code == 0
-
-            # Calculate expected output filename (strip .gz and replace with .uai)
-            base = temp_input.replace(".uai.gz", "")
-            expected_output = base + ".uai"
-            assert os.path.exists(expected_output)
-
-            # Verify the file was created
-            pgm = load_model(expected_output)
-            assert len(pgm.nodes) > 0
-
-        finally:
-            cleanup()
-
-    def test_uai_to_uai(self):
-        """Test converting UAI to UAI (identity conversion)"""
-        source_file = os.path.join(cwd, "asia.uai")
-        temp_input, cleanup_input = make_temp_copy(source_file)
-
-        with tempfile.NamedTemporaryFile(suffix=".uai", delete=False) as tmp_output:
-            output_file = tmp_output.name
-
-        try:
-            exit_code, stdout, stderr = run_convert_pgm(
-                [temp_input, "--uai", output_file]
-            )
-            assert exit_code == 0
-            assert os.path.exists(output_file)
-
-            # Verify the file was created and can be loaded
-            pgm = load_model(output_file)
-            assert pgm is not None
-            assert len(pgm.nodes) > 0
-
-        finally:
-            cleanup_input()
-            if os.path.exists(output_file):
-                os.remove(output_file)
-
-    def test_uai_to_uai_quiet_mode(self):
-        """Test quiet mode suppresses output"""
-        source_file = os.path.join(cwd, "asia.uai")
-        temp_input, cleanup_input = make_temp_copy(source_file)
-
-        with tempfile.NamedTemporaryFile(suffix=".uai", delete=False) as tmp_output:
-            output_file = tmp_output.name
-
-        try:
-            exit_code, stdout, stderr = run_convert_pgm(
-                [temp_input, "--uai", output_file, "--quiet"]
-            )
-            assert exit_code == 0
-            assert stdout == ""  # No output in quiet mode
-
-        finally:
-            cleanup_input()
-            if os.path.exists(output_file):
-                os.remove(output_file)
-
-    def test_uai_to_uai_without_extension(self):
-        """Test that .uai extension is added automatically"""
-        source_file = os.path.join(cwd, "asia.uai")
-        temp_input, cleanup_input = make_temp_copy(source_file)
-
-        with tempfile.NamedTemporaryFile(suffix="_test", delete=False) as tmp_output:
-            output_file = tmp_output.name
-
-        try:
-            exit_code, stdout, stderr = run_convert_pgm(
-                [temp_input, "--uai", output_file]
-            )
-            assert exit_code == 0
-            # The tool should add .uai extension
-            expected_file = output_file + ".uai"
-            assert os.path.exists(expected_file)
-
-        finally:
-            cleanup_input()
-            expected_file = output_file + ".uai"
-            if os.path.exists(expected_file):
-                os.remove(expected_file)
-            if os.path.exists(output_file):
-                os.remove(output_file)
-
-    def test_compressed_uai_to_uai(self):
-        """Test converting compressed UAI to UAI"""
-        source_file = os.path.join(cwd, "asia_compressed.uai.gz")
-        temp_input, cleanup_input = make_temp_copy(source_file)
-
-        with tempfile.NamedTemporaryFile(suffix=".uai", delete=False) as tmp_output:
-            output_file = tmp_output.name
-
-        try:
-            exit_code, stdout, stderr = run_convert_pgm(
-                [temp_input, "--uai", output_file, "--quiet"]
-            )
-            assert exit_code == 0
-            assert os.path.exists(output_file)
-
-            # Verify the output matches the uncompressed version
-            pgm_output = load_model(output_file)
-            pgm_orig = load_model(os.path.join(cwd, "asia.uai"))
-
-            assert len(pgm_output.nodes) == len(pgm_orig.nodes)
-
-        finally:
-            cleanup_input()
-            if os.path.exists(output_file):
-                os.remove(output_file)
-
-    def test_large_model_barley(self):
-        """Test converting a larger model (barley)"""
-        source_file = os.path.join(cwd, "barley.uai")
-        temp_input, cleanup_input = make_temp_copy(source_file)
-
-        with tempfile.NamedTemporaryFile(suffix=".uai", delete=False) as tmp_output:
-            output_file = tmp_output.name
-
-        try:
-            exit_code, stdout, stderr = run_convert_pgm(
-                [temp_input, "--uai", output_file, "--quiet"]
-            )
-            assert exit_code == 0
-            assert os.path.exists(output_file)
-
-            # Verify the model has the expected size
-            pgm = load_model(output_file)
-            assert len(pgm.nodes) > 10  # Barley is a large model
-
-        finally:
-            cleanup_input()
-            if os.path.exists(output_file):
-                os.remove(output_file)
-
-
-@pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
-class TestConvertPGMBIF:
-    """Test BIF format conversions"""
-
-    def test_bif_auto_filename(self):
-        """Test auto-generated filename for BIF output"""
-        source_file = os.path.join(cwd, "cancer_bn.uai")
-        temp_input, cleanup = make_temp_copy(source_file)
-
-        try:
-            exit_code, stdout, stderr = run_convert_pgm(
-                [temp_input, "--bif", "--quiet"]
-            )
-            assert exit_code == 0, f"Unexpected failure {stdout=} {stderr=}"
-
-            # Calculate expected output filename
-            base = os.path.splitext(temp_input)[0]
-            expected_output = base + ".bif"
-            assert os.path.exists(expected_output)
-
-            # Verify the file was created and can be loaded
-            pgm = load_model(expected_output)
-            assert pgm is not None
-            assert len(pgm.nodes) > 0
-
-        finally:
-            cleanup()
-
-    def test_both_formats_auto_filename(self):
-        """Test auto-generated filenames for both output formats"""
-        source_file = os.path.join(cwd, "asia.bif")
-        temp_input, cleanup = make_temp_copy(source_file)
-
-        try:
-            exit_code, stdout, stderr = run_convert_pgm(
-                [temp_input, "--uai", "--bif", "--quiet"]
-            )
-            assert exit_code == 0, f"Unexpected failure {stdout=} {stderr=}"
-
-            # Calculate expected output filenames
-            base = os.path.splitext(temp_input)[0]
-            expected_uai = base + ".uai"
-            expected_bif = base + ".bif"
-
-            assert os.path.exists(expected_uai)
-            # BIF output overwrites the temp input copy (same extension)
-            assert os.path.exists(expected_bif)
-
-            # Verify both files can be loaded
-            pgm_uai = load_model(expected_uai)
-            assert len(pgm_uai.nodes) > 0
-
-        finally:
-            cleanup()
-
-    def test_markov_network_to_bif_error(self):
-        """Test that converting Markov network to BIF raises an error"""
-        source_file = os.path.join(cwd, "cancer_mn.uai")
-        temp_input, cleanup_input = make_temp_copy(source_file)
-
-        with tempfile.NamedTemporaryFile(suffix=".bif", delete=False) as tmp_output:
-            output_file = tmp_output.name
-
-        try:
-            exit_code, stdout, stderr = run_convert_pgm(
-                [temp_input, "--bif", output_file, "--quiet"]
-            )
-            # Should fail because Markov networks cannot be written to BIF
-            assert exit_code != 0
-            # Check that the error message is informative
-            assert len(stderr) > 0
-
-        finally:
-            cleanup_input()
-            if os.path.exists(output_file):
-                os.remove(output_file)
-
-    def test_deer_markov_network_to_bif_error(self):
-        """Test that converting deer Markov network to BIF raises an error"""
-        source_file = os.path.join(cwd, "deer.uai")
-        temp_input, cleanup_input = make_temp_copy(source_file)
-
-        with tempfile.NamedTemporaryFile(suffix=".bif", delete=False) as tmp_output:
-            output_file = tmp_output.name
-
-        try:
-            exit_code, stdout, stderr = run_convert_pgm(
-                [temp_input, "--bif", output_file, "--quiet"]
-            )
-            # Should fail because Markov networks cannot be written to BIF
-            assert exit_code != 0
-            assert len(stderr) > 0
-
-        finally:
-            cleanup_input()
-            if os.path.exists(output_file):
-                os.remove(output_file)
-
-    def test_bif_to_uai(self):
-        """Test converting BIF to UAI"""
-        source_file = os.path.join(cwd, "asia.bif")
-        temp_input, cleanup_input = make_temp_copy(source_file)
-
-        with tempfile.NamedTemporaryFile(suffix=".uai", delete=False) as tmp_output:
-            output_file = tmp_output.name
-
-        try:
-            exit_code, stdout, stderr = run_convert_pgm(
-                [temp_input, "--uai", output_file, "--quiet"]
-            )
-            assert exit_code == 0, f"Unexpected failure {stdout=} {stderr=}"
-            assert os.path.exists(output_file)
-
-            # Verify the model was converted correctly
-            pgm = load_model(output_file)
-            assert len(pgm.nodes) > 0
-
-        finally:
-            cleanup_input()
-            if os.path.exists(output_file):
-                os.remove(output_file)
-
-    def test_uai_to_bif(self):
-        """Test converting UAI to BIF"""
-        source_file = os.path.join(cwd, "cancer_bn.uai")
-        temp_input, cleanup_input = make_temp_copy(source_file)
-
-        with tempfile.NamedTemporaryFile(suffix=".bif", delete=False) as tmp_output:
-            output_file = tmp_output.name
-
-        try:
-            exit_code, stdout, stderr = run_convert_pgm(
-                [temp_input, "--bif", output_file, "--quiet"]
-            )
-            assert exit_code == 0, f"Unexpected failure {stdout=} {stderr=}"
-            assert os.path.exists(output_file)
-
-            # Verify the model can be loaded back
-            pgm = load_model(output_file)
-            assert len(pgm.nodes) > 0
-
-        finally:
-            cleanup_input()
-            if os.path.exists(output_file):
-                os.remove(output_file)
-
-    def test_bif_to_bif(self):
-        """Test converting BIF to BIF (identity conversion)"""
-        source_file = os.path.join(cwd, "asia.bif")
-        temp_input, cleanup_input = make_temp_copy(source_file)
-
-        with tempfile.NamedTemporaryFile(suffix=".bif", delete=False) as tmp_output:
-            output_file = tmp_output.name
-
-        try:
-            exit_code, stdout, stderr = run_convert_pgm(
-                [temp_input, "--bif", output_file, "--quiet"]
-            )
-            assert exit_code == 0, f"Unexpected failure {stdout=} {stderr=}"
-            assert os.path.exists(output_file)
-
-            # Verify both models have the same structure
-            pgm_input = load_model(temp_input)
-            pgm_output = load_model(output_file)
-            assert len(pgm_input.nodes) == len(pgm_output.nodes)
-
-        finally:
-            cleanup_input()
-            if os.path.exists(output_file):
-                os.remove(output_file)
-
-    def test_compressed_bif_to_uai(self):
-        """Test converting compressed BIF to UAI"""
-        source_file = os.path.join(cwd, "asia_compressed.bif.gz")
-        temp_input, cleanup_input = make_temp_copy(source_file)
-
-        with tempfile.NamedTemporaryFile(suffix=".uai", delete=False) as tmp_output:
-            output_file = tmp_output.name
-
-        try:
-            exit_code, stdout, stderr = run_convert_pgm(
-                [temp_input, "--uai", output_file, "--quiet"]
-            )
-            assert exit_code == 0
-            assert os.path.exists(output_file)
-
-        finally:
-            cleanup_input()
-            if os.path.exists(output_file):
-                os.remove(output_file)
-
-
-@pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
-class TestConvertPGMMultipleFormats:
-    """Test converting to multiple formats simultaneously"""
-
-    def test_markov_network_to_both_formats_error(self):
-        """Test that converting Markov network to both formats fails for BIF"""
-        source_file = os.path.join(cwd, "cancer_mn.uai")
-        temp_input, cleanup_input = make_temp_copy(source_file)
-
-        with tempfile.NamedTemporaryFile(
-            suffix=".uai", delete=False
-        ) as tmp_uai, tempfile.NamedTemporaryFile(
-            suffix=".bif", delete=False
-        ) as tmp_bif:
-            uai_output = tmp_uai.name
-            bif_output = tmp_bif.name
-
-        try:
-            exit_code, stdout, stderr = run_convert_pgm(
-                [temp_input, "--uai", uai_output, "--bif", bif_output, "--quiet"]
-            )
-            # Should fail because Markov networks cannot be written to BIF
-            assert exit_code != 0
-            assert len(stderr) > 0
-
-        finally:
-            cleanup_input()
-            if os.path.exists(uai_output):
-                os.remove(uai_output)
-            if os.path.exists(bif_output):
-                os.remove(bif_output)
-
-    def test_uai_to_both_formats(self):
-        """Test converting UAI to both UAI and BIF"""
-        source_file = os.path.join(cwd, "cancer_bn.uai")
-        temp_input, cleanup_input = make_temp_copy(source_file)
-
-        with tempfile.NamedTemporaryFile(
-            suffix=".uai", delete=False
-        ) as tmp_uai, tempfile.NamedTemporaryFile(
-            suffix=".bif", delete=False
-        ) as tmp_bif:
-            uai_output = tmp_uai.name
-            bif_output = tmp_bif.name
-
-        try:
-            exit_code, stdout, stderr = run_convert_pgm(
-                [temp_input, "--uai", uai_output, "--bif", bif_output, "--quiet"]
-            )
-            assert exit_code == 0
-            assert os.path.exists(uai_output)
-            assert os.path.exists(bif_output)
-
-            # Verify both outputs are valid
-            pgm_uai = load_model(uai_output)
-            pgm_bif = load_model(bif_output)
-            assert len(pgm_uai.nodes) == len(pgm_bif.nodes)
-
-        finally:
-            cleanup_input()
-            if os.path.exists(uai_output):
-                os.remove(uai_output)
-            if os.path.exists(bif_output):
-                os.remove(bif_output)
-
-    def test_bif_to_both_formats(self):
-        """Test converting BIF to both UAI and BIF"""
-        source_file = os.path.join(cwd, "asia.bif")
-        temp_input, cleanup_input = make_temp_copy(source_file)
-
-        with tempfile.NamedTemporaryFile(
-            suffix=".uai", delete=False
-        ) as tmp_uai, tempfile.NamedTemporaryFile(
-            suffix=".bif", delete=False
-        ) as tmp_bif:
-            uai_output = tmp_uai.name
-            bif_output = tmp_bif.name
-
-        try:
-            exit_code, stdout, stderr = run_convert_pgm(
-                [temp_input, "--uai", uai_output, "--bif", bif_output, "--quiet"]
-            )
-            assert exit_code == 0
-            assert os.path.exists(uai_output)
-            assert os.path.exists(bif_output)
-
-            # Verify both outputs have the same structure
-            pgm_uai = load_model(uai_output)
-            pgm_bif = load_model(bif_output)
-            assert len(pgm_uai.nodes) == len(pgm_bif.nodes)
-
-        finally:
-            cleanup_input()
-            if os.path.exists(uai_output):
-                os.remove(uai_output)
-            if os.path.exists(bif_output):
-                os.remove(bif_output)
-
-
-class TestConvertPGMRoundTrip:
-    """Test round-trip conversions preserve model structure"""
-
-    def test_cancer_bn_roundtrip(self):
-        """Test UAI -> save -> load produces identical model"""
-        source_file = os.path.join(cwd, "cancer_bn.uai")
-        temp_input, cleanup_input = make_temp_copy(source_file)
-
-        with tempfile.NamedTemporaryFile(suffix=".uai", delete=False) as tmp_output:
-            output_file = tmp_output.name
-
-        try:
-            # Convert UAI to UAI
-            exit_code, stdout, stderr = run_convert_pgm(
-                [temp_input, "--uai", output_file, "--quiet"]
-            )
-            assert exit_code == 0
-
-            # Load both models and compare
-            pgm_orig = load_model(temp_input)
-            pgm_output = load_model(output_file)
-
-            # Check same number of nodes
-            assert len(pgm_orig.nodes) == len(pgm_output.nodes)
-
-            # Check same number of CPDs
-            assert len(pgm_orig.cpds) == len(pgm_output.cpds)
-
-        finally:
-            cleanup_input()
-            if os.path.exists(output_file):
-                os.remove(output_file)
-
-    @pytest.mark.skipif(not pgmpy_readwrite_available, reason="pgmpy not installed")
-    def test_bif_uai_bif_roundtrip(self):
-        """Test BIF -> UAI -> BIF preserves structure"""
-        source_file = os.path.join(cwd, "asia.bif")
-        temp_input, cleanup_input = make_temp_copy(source_file)
-
-        with tempfile.NamedTemporaryFile(
-            suffix=".uai", delete=False
-        ) as tmp_uai, tempfile.NamedTemporaryFile(
-            suffix=".bif", delete=False
-        ) as tmp_bif:
-            uai_file = tmp_uai.name
-            bif_file = tmp_bif.name
-
-        try:
-            # BIF -> UAI
-            exit_code, stdout, stderr = run_convert_pgm(
-                [temp_input, "--uai", uai_file, "--quiet"]
-            )
-            assert exit_code == 0
-
-            # UAI -> BIF
-            exit_code, stdout, stderr = run_convert_pgm(
-                [uai_file, "--bif", bif_file, "--quiet"]
-            )
-            assert exit_code == 0
-
-            # Compare original and final
-            pgm_orig = load_model(temp_input)
-            pgm_final = load_model(bif_file)
-
-            assert len(pgm_orig.nodes) == len(pgm_final.nodes)
-
-        finally:
-            cleanup_input()
-            if os.path.exists(uai_file):
-                os.remove(uai_file)
-            if os.path.exists(bif_file):
-                os.remove(bif_file)
+def copy_input(name, tmp_path):
+    """Copy a test file into tmp_path (convert_pgm writes next to its input)."""
+    path = str(tmp_path / ("test_" + name))
+    shutil.copy(os.path.join(cwd, name), path)
+    return path
+
+
+#
+# Arguments and errors
+#
+
+
+def test_no_arguments():
+    exit_code, stdout, stderr = run_convert_pgm([])
+    assert exit_code != 0
+
+
+def test_help():
+    exit_code, stdout, stderr = run_convert_pgm(["--help"])
+    assert exit_code == 0
+    assert "convert graphical model" in stdout.lower()
+
+
+def test_missing_input_file(tmp_path):
+    exit_code, stdout, stderr = run_convert_pgm(
+        [str(tmp_path / "nonexistent.uai"), "--uai", str(tmp_path / "output.uai")]
+    )
+    assert exit_code != 0
+    assert "not found" in stderr.lower()
+
+
+def test_no_output_format(tmp_path):
+    exit_code, stdout, stderr = run_convert_pgm([copy_input("asia.uai", tmp_path)])
+    assert exit_code != 0
+    assert "output format" in stderr.lower()
+
+
+@needs_pgmpy
+def test_markov_network_to_bif_error(tmp_path):
+    output_file = str(tmp_path / "out.bif")
+    exit_code, stdout, stderr = run_convert_pgm(
+        [copy_input("cancer_mn.uai", tmp_path), "--bif", output_file, "--quiet"]
+    )
+    assert exit_code != 0
+    assert "Cannot save Markov network to BIF format" in stderr
+    assert not os.path.exists(output_file)
+
+
+#
+# Output file names
+#
+
+
+def test_uai_to_uai(tmp_path, assert_same_model):
+    temp_input = copy_input("cancer_bn.uai", tmp_path)
+    output_file = str(tmp_path / "out.uai")
+    exit_code, stdout, stderr = run_convert_pgm([temp_input, "--uai", output_file])
+    assert exit_code == 0
+    assert f"Successfully saved to: {output_file}" in stdout
+    assert_same_model(load_model(output_file), load_model(temp_input))
+
+
+def test_quiet_mode(tmp_path):
+    output_file = str(tmp_path / "out.uai")
+    exit_code, stdout, stderr = run_convert_pgm(
+        [copy_input("asia.uai", tmp_path), "--uai", output_file, "--quiet"]
+    )
+    assert exit_code == 0
+    assert stdout == ""
+    assert os.path.exists(output_file)
+
+
+def test_output_without_extension_gets_one(tmp_path):
+    output_file = str(tmp_path / "out_test")
+    exit_code, stdout, stderr = run_convert_pgm(
+        [copy_input("asia.uai", tmp_path), "--uai", output_file, "--quiet"]
+    )
+    assert exit_code == 0
+    assert sorted(os.listdir(tmp_path)) == ["out_test.uai", "test_asia.uai"]
+
+
+def test_compressed_uai_auto_filename(tmp_path, assert_same_model):
+    # The .uai.gz suffix is replaced as a whole.
+    temp_input = copy_input("asia_compressed.uai.gz", tmp_path)
+    exit_code, stdout, stderr = run_convert_pgm([temp_input, "--uai", "--quiet"])
+    assert exit_code == 0
+    expected_output = str(tmp_path / "test_asia_compressed.uai")
+    assert_same_model(load_model(expected_output), load_model(temp_input))
+
+
+@needs_pgmpy
+def test_bif_auto_filename(tmp_path):
+    temp_input = copy_input("cancer_bn.uai", tmp_path)
+    exit_code, stdout, stderr = run_convert_pgm([temp_input, "--bif", "--quiet"])
+    assert exit_code == 0, f"Unexpected failure {stdout=} {stderr=}"
+    output = load_model(str(tmp_path / "test_cancer_bn.bif"))
+    original = load_model(temp_input)
+    # BIF state names are strings, so compare the MAP log-probability.
+    assert output.nodes == original.nodes
+    assert map_query(
+        output, method="variable_elimination"
+    ).solution.log_potential == pytest.approx(
+        map_query(original, method="variable_elimination").solution.log_potential
+    )
+
+
+@needs_pgmpy
+def test_both_formats_auto_filename(tmp_path):
+    temp_input = copy_input("asia.bif", tmp_path)
+    exit_code, stdout, stderr = run_convert_pgm(
+        [temp_input, "--uai", "--bif", "--quiet"]
+    )
+    assert exit_code == 0, f"Unexpected failure {stdout=} {stderr=}"
+    # The BIF output overwrites the input copy (same name).
+    assert sorted(os.listdir(tmp_path)) == ["test_asia.bif", "test_asia.uai"]
+    assert len(load_model(str(tmp_path / "test_asia.uai")).nodes) == 8
+    assert sorted(load_model(temp_input).nodes) == sorted(
+        load_model(os.path.join(cwd, "asia.bif")).nodes
+    )
