@@ -44,6 +44,8 @@ Selected Markov network examples live in ``conin.examples.markov_network``.
      - Adds an all-different oracle constraint to ``ABC_conin``.
    * - ``ABC2_constrained_oracle_conin``
      - Adds an all-different oracle constraint to ``ABC2_conin``.
+   * - ``random_markov_network``
+     - A random Markov network (with a seed and options for the numbers of nodes, factors and states, and the factor sizes and density).
 
 Example usage:
 

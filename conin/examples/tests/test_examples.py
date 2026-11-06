@@ -75,7 +75,7 @@ def _solvable():
     for module in MODULES:
         for param in _builders(module):
             name = param.id
-            if name == "example6_conin":
+            if name in ("example6_conin", "random_markov_network"):
                 continue  # no documented solution
             kwargs = {}
             if "weather" in name:

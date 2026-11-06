@@ -1,3 +1,7 @@
+import itertools
+import math
+import random
+
 from munch import Munch
 import numpy as np
 
@@ -10,6 +14,60 @@ from conin.constraints import (
 from conin.util import MPESolution
 from conin.graphical_models import DiscreteFactor, DiscreteMarkovNetwork
 from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
+
+#
+# random
+#
+
+
+def random_markov_network(seed=0, N=10, M=15, k=3, max_vars=3, density=1.0):
+    """
+    A random Markov network.
+
+    The network has nodes ``0, ..., N-1``, each with states ``0, ..., k-1``,
+    and ``M`` random factors.  Each factor is over 2 to ``max_vars`` distinct
+    random nodes, and has a weight for a random subset of
+    ``max(2, int(density * n))`` of the ``n`` combinations of their states
+    (the other combinations have weight 0).  The log of each weight is
+    uniform in ``[-5, 0]``.  A node that is in no random factor gets a unary
+    factor with weight 1 for each state.
+
+    Parameters
+    ----------
+    seed : int, optional
+        Seed of the random number generator. Defaults to 0.
+    N : int, optional
+        The number of nodes. Defaults to 10.
+    M : int, optional
+        The number of random factors. Defaults to 15.
+    k : int, optional
+        The number of states of each node. Defaults to 3.
+    max_vars : int, optional
+        The maximum number of nodes of a factor (at least 2). Defaults to 3.
+    density : float, optional
+        The fraction of the state combinations of a factor that have a
+        nonzero weight. Defaults to 1.0.
+
+    Returns
+    -------
+    DiscreteMarkovNetwork
+    """
+    rng = random.Random(seed)
+    states = {r: list(range(k)) for r in range(N)}
+    factors = []
+    for _ in range(M):
+        vars_ = rng.sample(range(N), rng.randint(2, max_vars))
+        rows = list(itertools.product(*[states[r] for r in vars_]))
+        rng.shuffle(rows)
+        rows = rows[: max(2, int(len(rows) * density))]
+        values = {row: math.exp(rng.uniform(-5, 0)) for row in rows}
+        factors.append(DiscreteFactor(nodes=vars_, values=values))
+    used = {r for factor in factors for r in factor.nodes}
+    for r in range(N):
+        if r not in used:
+            factors.append(DiscreteFactor(nodes=[r], values=[1] * k))
+    return DiscreteMarkovNetwork(states=states, factors=factors)
+
 
 #
 # example6
