@@ -15,7 +15,6 @@ description of the format.
 
 import itertools
 import math
-import os
 import re
 import warnings
 
@@ -23,6 +22,8 @@ from conin.constraints import Toulbar2Constraint
 from conin.graphical_models import DiscreteFactor, DiscreteMarkovNetwork
 from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
 from conin.exceptions import InvalidInputError, ModelFileError
+
+from .text import read_text
 
 _number_re = re.compile(r"^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$")
 
@@ -425,7 +426,7 @@ def load_cfn(filename=None, string=None, cost_scale=1.0):
     Parameters
     ----------
     filename : str, optional
-        Name of a CFN file.
+        Name of a CFN file (gzipped if it ends with ``.gz``).
     string : str, optional
         CFN content.  Used when ``filename`` is not specified.
     cost_scale : float, optional
@@ -449,7 +450,8 @@ def load_cfn(filename=None, string=None, cost_scale=1.0):
         If ``cost_scale`` is not positive, or neither ``filename`` nor
         ``string`` is given.
     ModelFileError
-        If the CFN data is malformed or does not describe a valid model.
+        If the file cannot be read (not UTF-8, or a bad ``.gz`` file), or the
+        CFN data is malformed or does not describe a valid model.
     NotImplementedError
         If the CFN contains global cost functions other than hard ``knapsack``
         and ``knapsackv`` functions, ``knapsack`` functions over non-Boolean
@@ -459,10 +461,7 @@ def load_cfn(filename=None, string=None, cost_scale=1.0):
         raise InvalidInputError(f"cost_scale must be positive: {cost_scale}")
 
     if filename:
-        if not os.path.exists(filename):
-            raise FileNotFoundError(f"Cannot read missing CFN file {filename}")
-        with open(filename, "r") as INPUT:
-            string = INPUT.read()
+        string = read_text(filename, missing="Cannot read missing CFN file")
     if string is None:
         raise InvalidInputError("Either a filename or a string must be specified")
 

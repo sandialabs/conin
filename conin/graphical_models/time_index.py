@@ -16,13 +16,13 @@ class TimeExpression:
                 return self
             return AddNode(self, TimeConstant(other))
 
+    # The reflected operators only run for an ``other`` that is not a time
+    # expression: for one, ``other.__add__``/``other.__sub__`` already ran.
+
     def __radd__(self, other):
-        if isinstance(other, TimeExpression):
-            return AddNode(other, self)
-        else:
-            if other == 0:
-                return self
-            return AddNode(TimeConstant(other), self)
+        if other == 0:
+            return self
+        return AddNode(TimeConstant(other), self)
 
     def __sub__(self, other):
         if isinstance(other, TimeExpression):
@@ -33,10 +33,7 @@ class TimeExpression:
             return MinusNode(self, TimeConstant(other))
 
     def __rsub__(self, other):
-        if isinstance(other, TimeExpression):
-            return MinusNode(other, self)
-        else:
-            return MinusNode(TimeConstant(other), self)
+        return MinusNode(TimeConstant(other), self)
 
 
 @dataclasses.dataclass(frozen=True, slots=True)

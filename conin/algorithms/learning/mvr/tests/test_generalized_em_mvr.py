@@ -1,5 +1,6 @@
 import copy
 import itertools
+import math
 import warnings
 
 import numpy as np
@@ -288,14 +289,44 @@ def test_gem_backtracking_failure_retains_parameters():
     [
         ([["x"]], {"update": ("start", "bogus")}),
         ([["x"]], {"pseudocount": -1.0}),
+        ([["x"]], {"pseudocount": math.nan}),
+        ([["x"]], {"max_iter": -1}),
+        ([["x"]], {"max_iter": 2.0}),
+        ([["x"]], {"inner_max_iter": 0}),
+        ([["x"]], {"max_backtracks": 0}),
+        ([["x"]], {"step_size": 0.0}),
+        ([["x"]], {"step_size": math.inf}),
+        ([["x"]], {"inner_tol": -1e-3}),
+        ([["x"]], {"inner_tol": math.nan}),
+        ([["x"]], {"tol": math.inf}),
         ([], {}),
     ],
-    ids=["update", "budget", "empty"],
+    ids=[
+        "update",
+        "pseudocount",
+        "pseudocount-nan",
+        "max_iter",
+        "max_iter-float",
+        "inner_max_iter",
+        "max_backtracks",
+        "step_size",
+        "step_size-inf",
+        "inner_tol",
+        "inner_tol-nan",
+        "tol",
+        "empty",
+    ],
 )
 def test_gem_rejects_invalid_arguments(observations, kwargs):
     hmm = make_random_hmm(
         hidden_states=["A", "B"], observable_states=["x", "y"], seed=8
     )
     model = ConstrainedHiddenMarkovModel(hmm)
-    with pytest.raises(InvalidInputError):
+    if not observations:
+        match = "at least one sequence"
+    elif "update" in kwargs:
+        match = "Unknown update targets"
+    else:
+        match = "must be valid"
+    with pytest.raises(InvalidInputError, match=match):
         generalized_em_mvr_chmm(model, observations, **kwargs)

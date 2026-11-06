@@ -614,12 +614,25 @@ def test_dbn_stop_defaults_to_one(method, solver):
     assert {t for _, t in results.solution.states} == {0, 1}
 
 
-@pytest.mark.parametrize("method,solver", _hmm_method_params())
+@pytest.mark.parametrize(
+    "method,solver",
+    _hmm_method_params()
+    + [
+        pytest.param(
+            "integer_program",
+            dict(solver=default_mip_solver, ip_formulation="network_flow"),
+            marks=skipif_no_mip_solver,
+            id="network_flow",
+        )
+    ],
+)
 @pytest.mark.parametrize("observation", ["o0", "o1"])
 @pytest.mark.parametrize("dict_evidence", [False, True])
 def test_hmm_with_one_observation(method, solver, observation, dict_evidence):
     # integer_program, toulbar2 and variable_elimination raised a bare
-    # AssertionError from create_bn_from_dbn (stop == start == 0).
+    # AssertionError from create_bn_from_dbn (stop == start == 0), and the
+    # network-flow IP was infeasible (its flow at t = 0 went to the time-1
+    # edges instead of the sink).
     hmm = hex_.create_hmm1()
     evidence = {0: observation} if dict_evidence else [observation]
     results = map_query(hmm, method=method, evidence=evidence, **solver)

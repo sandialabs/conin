@@ -143,7 +143,7 @@ or ``None``. ``load_model`` also reads the files written by the
    assert loaded == hmm
 
 ``conin.io.save_json`` and ``conin.io.load_json`` work on JSON text as well as
-files.
+files, and gzip a file whose name ends with ``.gz``.
 
 Constrained hidden Markov models
 --------------------------------

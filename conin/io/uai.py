@@ -9,19 +9,15 @@ from conin.graphical_models import DiscreteFactor, DiscreteMarkovNetwork
 from conin.graphical_models import DiscreteCPD, DiscreteBayesianNetwork
 from conin.graphical_models import DynamicDiscreteBayesianNetwork
 
+from .text import read_text
+
 lineno = 0
 
 
 def get_lines(filename, string):
     if filename:
-        if not os.path.exists(filename):
-            raise FileNotFoundError(f"Cannot read missing UAI file {filename}")
-        with open(filename, "r") as INPUT:
-            for line in INPUT:
-                yield line
-    else:
-        for line in string.split("\n"):
-            yield line
+        string = read_text(filename, missing="Cannot read missing UAI file")
+    yield from string.split("\n")
 
 
 def tokenize(filename, string):
@@ -61,7 +57,7 @@ def load_uai(filename=None, string=None, verbose=False):
     Parameters
     ----------
     filename : str, optional
-        Path of a ``.uai`` file.
+        Path of a ``.uai`` file (gzipped if it ends with ``.gz``).
     string : str, optional
         The UAI text (used when ``filename`` is not given).
     verbose : bool, optional
@@ -79,7 +75,8 @@ def load_uai(filename=None, string=None, verbose=False):
     FileNotFoundError
         If ``filename`` does not exist.
     ModelFileError
-        If the data is malformed (e.g. it ends early, a function table has
+        If the file cannot be read (not UTF-8, or a bad ``.gz`` file), or the
+        data is malformed (e.g. it ends early, a function table has
         the wrong length or a number cannot be read) or does not describe a
         valid model.
     """
