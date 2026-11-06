@@ -108,9 +108,7 @@ def test_random_gurobi_cut_generation(density, user_cuts):
     for seed in range(10):
         pgm = random_markov_network(seed, density=density)
         repn = ConstrainedDiscreteMarkovNetwork(pgm).representation("pyomo")
-        ref = solve_pyomo_map_query_model(
-            repn.create_model(), solver=other_mip_solver
-        )
+        ref = solve_pyomo_map_query_model(repn.create_model(), solver=other_mip_solver)
 
         model = repn.create_model(omit_c5=True)
         results = solve_pyomo_map_query_model(
