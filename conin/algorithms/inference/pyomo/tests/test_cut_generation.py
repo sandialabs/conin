@@ -3,21 +3,15 @@ Tests for MAP query models that omit the c5 constraints, which are then
 generated with cut generation when using the gurobi solver.
 """
 
-import itertools
-import random
-
 import pytest
 import pyomo.environ as pyo
 import pyomo.opt
 
-from conin.util import State
 from conin.examples import markov_network as examples
+from conin.examples.markov_network import random_markov_network
 from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
 from conin.algorithms.inference.pyomo import solve_pyomo_map_query_model
-from conin.representations.pyomo.common import (
-    _create_pyomo_map_query_model,
-    has_omitted_c5,
-)
+from conin.representations.pyomo.common import has_omitted_c5
 from conin.algorithms.inference import map_query
 
 mip_solver = pyomo.opt.check_available_solvers("gurobi", "highs", "glpk")
@@ -42,23 +36,6 @@ skipif_gurobi_not_available = pytest.mark.skipif(
 )
 
 GUROBI_QUIET = {"OutputFlag": 0}
-
-
-def random_factor_repn(seed, N=10, M=15, k=3, max_vars=3, density=1.0):
-    rng = random.Random(seed)
-    S = {r: [State(s) for s in range(k)] for r in range(N)}
-    J, v, w = {}, {}, {}
-    for i in range(M):
-        vars_ = rng.sample(range(N), rng.randint(2, max_vars))
-        rows = list(itertools.product(*[S[r] for r in vars_]))
-        rng.shuffle(rows)
-        rows = rows[: max(2, int(len(rows) * density))]
-        J[i] = list(range(len(rows)))
-        for j, row in enumerate(rows):
-            w[i, j] = rng.uniform(-5, 0)
-            for r, s in zip(vars_, row):
-                v[i, j, r] = s
-    return S, J, v, w
 
 
 def test_omit_c5_model():
@@ -129,11 +106,13 @@ def test_ABC_evidence_gurobi_cut_generation():
 @pytest.mark.parametrize("user_cuts", [False, True])
 def test_random_gurobi_cut_generation(density, user_cuts):
     for seed in range(10):
-        S, J, v, w = random_factor_repn(seed, density=density)
-        model = _create_pyomo_map_query_model(S=S, J=J, v=v, w=w)
-        ref = solve_pyomo_map_query_model(model, solver=other_mip_solver)
+        pgm = random_markov_network(seed, density=density)
+        repn = ConstrainedDiscreteMarkovNetwork(pgm).representation("pyomo")
+        ref = solve_pyomo_map_query_model(
+            repn.create_model(), solver=other_mip_solver
+        )
 
-        model = _create_pyomo_map_query_model(S=S, J=J, v=v, w=w, omit_c5=True)
+        model = repn.create_model(omit_c5=True)
         results = solve_pyomo_map_query_model(
             model,
             solver="gurobi",

@@ -10,6 +10,16 @@ from conin.examples.markov_network import random_markov_network
 from conin.graphical_models import DiscreteMarkovNetwork
 
 
+def _num(node):
+    """The number of node ``"x<number>"``."""
+    return int(node[1:])
+
+
+def _scopes(pgm):
+    """The sorted factor scopes, as tuples of node numbers."""
+    return sorted(tuple(_num(n) for n in f.nodes) for f in pgm.factors)
+
+
 def _factors_as_tuples(pgm):
     return [(tuple(f.nodes), dict(f.values)) for f in pgm.factors]
 
@@ -34,13 +44,17 @@ def _brute_force_map(pgm):
 def test_structure(seed, N, M, k, max_vars):
     pgm = random_markov_network(seed, N=N, M=M, k=k, max_vars=max_vars)
     assert isinstance(pgm, DiscreteMarkovNetwork)
-    assert list(pgm.nodes) == list(range(N))
-    assert all(list(pgm.states_of(r)) == list(range(k)) for r in range(N))
+    assert set(pgm.nodes) == {f"x{r}" for r in range(N)}
+    assert all(list(pgm.states_of(n)) == list(range(k)) for n in pgm.nodes)
 
     random_factors = pgm.factors[:M]
+    # The nodes of a factor are ordered by number, and no two factors have
+    # the same nodes
+    assert len({tuple(f.nodes) for f in random_factors}) == M
     for f in random_factors:
         assert 2 <= len(f.nodes) <= max_vars
-        assert len(set(f.nodes)) == len(f.nodes)
+        nums = [_num(n) for n in f.nodes]
+        assert nums == sorted(set(nums))
         # density=1.0: every state combination has a weight
         assert len(f.values) == k ** len(f.nodes)
         assert all(math.exp(-5) <= w <= 1 for w in f.values.values())
@@ -48,18 +62,48 @@ def test_structure(seed, N, M, k, max_vars):
     # The other factors are uniform unary factors for the unused nodes
     used = {r for f in random_factors for r in f.nodes}
     extra = pgm.factors[M:]
-    assert sorted(f.nodes[0] for f in extra) == sorted(set(range(N)) - used)
+    assert {f.nodes[0] for f in extra} == set(pgm.nodes) - used
     for f in extra:
         assert len(f.nodes) == 1
         assert list(f.values.values()) == [1] * k
 
 
+def test_every_scope_used():
+    # There are exactly 3 pairs of 3 nodes, so every pair gets a factor
+    pgm = random_markov_network(0, N=3, M=3, k=2, max_vars=2)
+    assert _scopes(pgm) == [(0, 1), (0, 2), (1, 2)]
+
+
+def test_too_many_factors():
+    with pytest.raises(ValueError, match="only 3 sets of 2 to 2 of the 3 nodes"):
+        random_markov_network(0, N=3, M=4, max_vars=2)
+
+
+def test_max_vars_larger_than_N():
+    pgm = random_markov_network(0, N=3, M=4, k=2, max_vars=5)
+    assert _scopes(pgm) == [
+        (0, 1),
+        (0, 1, 2),
+        (0, 2),
+        (1, 2),
+    ]
+
+
 def test_unused_nodes_get_unary_factors():
     # One pairwise factor cannot cover five nodes
     pgm = random_markov_network(0, N=5, M=1, k=2, max_vars=2)
-    assert list(pgm.nodes) == list(range(5))
+    assert set(pgm.nodes) == {"x0", "x1", "x2", "x3", "x4"}
     assert len(pgm.factors) == 4
     assert [len(f.nodes) for f in pgm.factors] == [2, 1, 1, 1]
+
+
+@pytest.mark.parametrize("seed", range(5))
+def test_unique_factor_names(seed):
+    """The factor names of the pyomo backend (nodes joined by "_") are unique."""
+    pgm = random_markov_network(seed, N=4, M=8, k=2, max_vars=3)
+    assert not any("_" in node for node in pgm.nodes)
+    names = ["_".join(f.nodes) for f in pgm.factors]
+    assert len(set(names)) == len(names)
 
 
 @pytest.mark.parametrize("density", [0.0, 0.3, 0.5])
