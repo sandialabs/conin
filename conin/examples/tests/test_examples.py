@@ -103,10 +103,12 @@ def test_model_example_solution(builder, kwargs):
 @pytest.mark.parametrize("builder", _builders(HMM_MODULE))
 def test_hmm_example_builds(builder):
     _skip_unless_available(builder.__name__)
-    from conin.constrained_models import ConstrainedHiddenMarkovModel
+    from conin.constrained_models import ConstrainedGraphicalModel
     from conin.graphical_models import HiddenMarkovModel
 
     model = builder()
-    assert isinstance(model, (HiddenMarkovModel, ConstrainedHiddenMarkovModel))
-    hmm = getattr(model, "model", model)
+    if isinstance(model, ConstrainedGraphicalModel):
+        model = model.model
+    assert isinstance(model, HiddenMarkovModel)
+    hmm = model
     assert hmm.hidden_states and hmm.observable_states

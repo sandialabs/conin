@@ -148,12 +148,12 @@ files, and gzip a file whose name ends with ``.gz``.
 Constrained hidden Markov models
 --------------------------------
 
-``ConstrainedHiddenMarkovModel`` wraps a base HMM and a list of
+``ConstrainedGraphicalModel`` wraps a base HMM and a list of
 constraints. The public examples include oracle, Pyomo, and Toulbar2 constraints.
 Oracle constraints with ``nodes`` (``FactorOracleConstraint``) generate
 auxiliary factors for variable-elimination inference.
 
-Constrained models are immutable: ``ConstrainedHiddenMarkovModel(hmm,
+Constrained models are immutable: ``ConstrainedGraphicalModel(hmm,
 constraints, data=None)`` stores the HMM as ``.model`` and the constraints as a
 tuple in ``.constraints``. All constraints must belong to one constraint family,
 which is available as ``.constraint_family`` (``None`` when there are no
@@ -169,7 +169,7 @@ formulation puts its index sets in ``data.hmm``.
 
 Backend representations are built by ``representation(kind)``, on a
 constrained HMM or on a bare one (``hmm.representation("matvec")`` is
-``ConstrainedHiddenMarkovModel(hmm).representation("matvec")``); each call
+``ConstrainedGraphicalModel(hmm).representation("matvec")``); each call
 builds a new one. HMMs register these kinds: ``"matvec"`` (the HMM
 parameters as read-only NumPy arrays on internal indices, with their logarithms;
 no constraints only; used by Viterbi, A*, sampling and the torch MVR kernels),
@@ -186,7 +186,7 @@ the unrolled model; no constraints, Toulbar2 or smoek constraints) and
 HMM, are ``chmm.representation("mvr").mvrs``). The torch MVR algorithms in
 ``conin.algorithms.inference.mvr``, ``conin.algorithms.other_queries.mvr``,
 ``conin.algorithms.learning.mvr`` and ``conin.algorithms.sampling.mvr``
-take a ``ConstrainedHiddenMarkovModel`` with MVR
+take a ``ConstrainedGraphicalModel`` with MVR
 constraints; see the notebooks in ``doc/notebooks/MVR``.
 ``map_query(chmm, method="mvr_viterbi", evidence=observed)`` runs the torch
 MVR Viterbi (``viterbi_torch_mvr_chmm``) through the common entry point.
@@ -199,7 +199,7 @@ Oracle constraints
 
 .. testcode::
 
-   from conin import HiddenMarkovModel, ConstrainedHiddenMarkovModel
+   from conin import HiddenMarkovModel, ConstrainedGraphicalModel
    from conin.constraints import OracleConstraint
    from conin.examples.hidden_markov_model import create_hmm1
 
@@ -214,7 +214,7 @@ Oracle constraints
        partial_func=lambda T, states: sum(1 for v in states.values() if v == "h0") < 13,
    )
 
-   chmm = ConstrainedHiddenMarkovModel(
+   chmm = ConstrainedGraphicalModel(
        hmm,
        constraints=[num_zeros_greater_than_nine, num_zeros_less_than_thirteen],
    )
@@ -228,7 +228,7 @@ Pyomo constraints
 
    import pyomo.environ as pe
    import conin
-   from conin import ConstrainedHiddenMarkovModel
+   from conin import ConstrainedGraphicalModel
    from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
@@ -245,7 +245,7 @@ Pyomo constraints
            expr=sum(model.V("H", t, "h0") for t in data.hmm.T) <= 12
        )
 
-   chmm = ConstrainedHiddenMarkovModel(
+   chmm = ConstrainedGraphicalModel(
        hmm,
        constraints=[num_zeros_greater_than_nine, num_zeros_less_than_thirteen],
    )
@@ -257,7 +257,7 @@ Toulbar2 constraints
 
 .. testcode::
 
-   from conin import toulbar2_constraint_fn, ConstrainedHiddenMarkovModel
+   from conin import toulbar2_constraint_fn, ConstrainedGraphicalModel
    from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
@@ -278,7 +278,7 @@ Toulbar2 constraints
            12,
        )
 
-   chmm = ConstrainedHiddenMarkovModel(
+   chmm = ConstrainedGraphicalModel(
        hmm,
        constraints=[num_zeros_greater_than_nine, num_zeros_less_than_thirteen],
    )
@@ -293,7 +293,7 @@ Oracle constraints with node scoping
 
 .. testcode::
 
-   from conin import oracle_constraint_fn, ConstrainedHiddenMarkovModel
+   from conin import oracle_constraint_fn, ConstrainedGraphicalModel
    from conin.examples.hidden_markov_model import create_hmm1
 
    hmm = create_hmm1()
@@ -312,7 +312,7 @@ Oracle constraints with node scoping
        num = sum(1 for _, value in states.items() if value == "h0")
        return num <= 12
 
-   chmm = ConstrainedHiddenMarkovModel(
+   chmm = ConstrainedGraphicalModel(
        hmm,
        constraints=[num_zeros_greater_than_nine, num_zeros_less_than_thirteen],
    )
@@ -331,7 +331,7 @@ oracle constraint. ``create_chmm1_recursive`` expresses the condition of
 
 .. testcode::
 
-   from conin import ConstrainedHiddenMarkovModel
+   from conin import ConstrainedGraphicalModel
    from conin.constraints import RecursiveConstraint
    from conin.examples.hidden_markov_model import create_hmm1
    from conin.algorithms.inference.recursive import recursive_a_star
@@ -343,7 +343,7 @@ oracle constraint. ``create_chmm1_recursive`` expresses the condition of
        feasible=lambda n: lb <= n <= ub,
        feasible_partial=lambda n, t, T: n + (T - t) >= lb and n <= ub,
    )
-   chmm = ConstrainedHiddenMarkovModel(create_hmm1(), num_zeros)
+   chmm = ConstrainedGraphicalModel(create_hmm1(), num_zeros)
 
    results = recursive_a_star(hmm=chmm, observed=["o0"] * 15)
    print(results.solution.states.count("h0"))
@@ -376,7 +376,7 @@ Notes
   networks.
 - See :doc:`hmm_learning` for estimating HMM parameters from labeled
   simulations.
-- ``ConstrainedHiddenMarkovModel`` requires all constraints in a model to use
+- ``ConstrainedGraphicalModel`` requires all constraints in a model to use
   the same constraint family.
 - ``create_hmm1`` and ``create_chmm1_*`` are the simplest tested examples for
   documentation and experimentation.

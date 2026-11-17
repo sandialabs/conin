@@ -134,10 +134,10 @@ def _one_node_constraints():
 
 @pytest.mark.parametrize("index", [0, 1], ids=["smoek", "factor_oracle"])
 def test_mn_constraint_over_one_node(index):
-    from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
+    from conin.constrained_models import ConstrainedGraphicalModel
 
     constraint = _one_node_constraints()[index]
-    cmodel = ConstrainedDiscreteMarkovNetwork(mex.ABC_conin().pgm, constraint)
+    cmodel = ConstrainedGraphicalModel(mex.ABC_conin().pgm, constraint)
     states = map_query(cmodel, method="variable_elimination").solution.states
     assert is_feasible(cmodel, {k: states[k] for k in ("A", "B", "C")})
     # The unconstrained MAP state of A is 2
@@ -145,7 +145,7 @@ def test_mn_constraint_over_one_node(index):
 
 
 def _hmm_never_x_at_time_1():
-    from conin.constrained_models import ConstrainedHiddenMarkovModel
+    from conin.constrained_models import ConstrainedGraphicalModel
     from conin.constraints import smoek_constraint_fn
     from conin.graphical_models import HiddenMarkovModel
 
@@ -169,7 +169,7 @@ def _hmm_never_x_at_time_1():
     def never_x_at_time_1(model, data):
         return [model.V("H", 1, "x") == 0]
 
-    return ConstrainedHiddenMarkovModel(hmm, never_x_at_time_1)
+    return ConstrainedGraphicalModel(hmm, never_x_at_time_1)
 
 
 def test_hmm_constraint_over_one_node():

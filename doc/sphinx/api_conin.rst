@@ -21,10 +21,7 @@ Models
    :class:`~conin.graphical_models.HiddenMarkovModel`
 
 Constrained models
-   :class:`~conin.constrained_models.ConstrainedDiscreteMarkovNetwork`,
-   :class:`~conin.constrained_models.ConstrainedDiscreteBayesianNetwork`,
-   :class:`~conin.constrained_models.ConstrainedDynamicDiscreteBayesianNetwork`,
-   :class:`~conin.constrained_models.ConstrainedHiddenMarkovModel`
+   :class:`~conin.constrained_models.ConstrainedGraphicalModel`
 
 Constraints
    :class:`~conin.constraints.Constraint`,

@@ -9,12 +9,7 @@ import conin.examples.dynamic_bayesian_network as dex
 import conin.examples.hidden_markov_model as hex_
 import conin.examples.markov_network as mex
 from conin.config import default_mip_solver
-from conin.constrained_models import (
-    ConstrainedDiscreteBayesianNetwork,
-    ConstrainedDiscreteMarkovNetwork,
-    ConstrainedDynamicDiscreteBayesianNetwork,
-    ConstrainedHiddenMarkovModel,
-)
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.constraints import pyomo_constraint_fn, toulbar2_constraint_fn
 from conin.exceptions import InvalidInputError
 from conin.graphical_models import (
@@ -71,7 +66,7 @@ def test_pyomo_rejects_toulbar2_constraints():
     def noop(M, D):
         pass
 
-    cmodel = ConstrainedDiscreteMarkovNetwork(mex.ABC_conin().pgm, noop)
+    cmodel = ConstrainedGraphicalModel(mex.ABC_conin().pgm, noop)
     with pytest.raises(InvalidInputError, match="No 'pyomo' representation"):
         cmodel.representation("pyomo")
 
@@ -80,22 +75,22 @@ def test_pyomo_rejects_toulbar2_constraints():
     "cmodel, params, cls",
     [
         (
-            ConstrainedDiscreteMarkovNetwork(mex.ABC_conin().pgm),
+            ConstrainedGraphicalModel(mex.ABC_conin().pgm),
             {},
             PyomoMNRepresentation,
         ),
         (
-            ConstrainedDiscreteBayesianNetwork(bex.cancer1_BN_conin().pgm),
+            ConstrainedGraphicalModel(bex.cancer1_BN_conin().pgm),
             {},
             PyomoBNRepresentation,
         ),
         (
-            ConstrainedDynamicDiscreteBayesianNetwork(dex.weather_conin().pgm),
+            ConstrainedGraphicalModel(dex.weather_conin().pgm),
             dict(stop=4),
             PyomoDBNRepresentation,
         ),
         (
-            ConstrainedHiddenMarkovModel(hex_.create_hmm1()),
+            ConstrainedGraphicalModel(hex_.create_hmm1()),
             dict(stop=4),
             PyomoHMMRepresentation,
         ),
@@ -128,7 +123,7 @@ def test_mutating_a_returned_model_does_not_affect_the_next_one():
 
 
 def test_evidence_does_not_change_the_representation():
-    cmodel = ConstrainedDiscreteMarkovNetwork(mex.ABC_conin().pgm)
+    cmodel = ConstrainedGraphicalModel(mex.ABC_conin().pgm)
     repn = cmodel.representation("pyomo")
     S_before = {k: list(v) for k, v in repn.S.items()}
     M1 = repn.create_model(evidence={"B": 0})
@@ -139,13 +134,13 @@ def test_evidence_does_not_change_the_representation():
 
 
 def test_omit_c5_is_a_create_model_option():
-    repn = ConstrainedDiscreteMarkovNetwork(mex.ABC_conin().pgm).representation("pyomo")
+    repn = ConstrainedGraphicalModel(mex.ABC_conin().pgm).representation("pyomo")
     assert hasattr(repn.create_model(), "c5")
     assert not hasattr(repn.create_model(omit_c5=True), "c5")
 
 
 def test_dbn_structure_params_start_and_stop():
-    cmodel = ConstrainedDynamicDiscreteBayesianNetwork(dex.weather_conin().pgm)
+    cmodel = ConstrainedGraphicalModel(dex.weather_conin().pgm)
     r4 = cmodel.representation("pyomo", stop=4)
     r5 = cmodel.representation("pyomo", stop=5)
     assert (r4.start, r4.stop, r5.stop) == (0, 4, 5)
@@ -153,7 +148,7 @@ def test_dbn_structure_params_start_and_stop():
 
 
 def test_hmm_structure_params_start_and_stop():
-    cmodel = ConstrainedHiddenMarkovModel(hex_.create_hmm1())
+    cmodel = ConstrainedGraphicalModel(hex_.create_hmm1())
     r4 = cmodel.representation("pyomo", stop=4)
     r5 = cmodel.representation("pyomo", stop=5)
     assert (r4.start, r4.stop, r5.stop) == (0, 4, 5)
@@ -161,7 +156,7 @@ def test_hmm_structure_params_start_and_stop():
 
 
 def test_network_flow_structure_params_variable_domains():
-    cmodel = ConstrainedHiddenMarkovModel(hex_.create_hmm1())
+    cmodel = ConstrainedGraphicalModel(hex_.create_hmm1())
     default = cmodel.representation("pyomo_network_flow")
     assert (default.x_binary, default.y_binary) == (True, False)
     relaxed = cmodel.representation("pyomo_network_flow", x_binary=False)
@@ -186,16 +181,14 @@ def _recording_constraint(seen):
 
 def test_constraint_data_mn():
     seen = []
-    cmodel = ConstrainedDiscreteMarkovNetwork(
-        mex.ABC_conin().pgm, _recording_constraint(seen)
-    )
+    cmodel = ConstrainedGraphicalModel(mex.ABC_conin().pgm, _recording_constraint(seen))
     cmodel.representation("pyomo").create_model(evidence={"B": 0})
     assert seen == [munch.Munch(variables=None, evidence={"B": 0})]
 
 
 def test_constraint_data_dbn():
     seen = []
-    cmodel = ConstrainedDynamicDiscreteBayesianNetwork(
+    cmodel = ConstrainedGraphicalModel(
         dex.weather_conin().pgm, _recording_constraint(seen)
     )
     cmodel.representation("pyomo", start=0, stop=2).create_model()
@@ -207,7 +200,7 @@ def test_constraint_data_dbn():
 def test_constraint_data_hmm():
     seen = []
     hmm = hex_.create_hmm1()
-    cmodel = ConstrainedHiddenMarkovModel(hmm, _recording_constraint(seen))
+    cmodel = ConstrainedGraphicalModel(hmm, _recording_constraint(seen))
     evidence = {("E", 0): "o0", ("E", 1): "o1"}
     cmodel.representation("pyomo", stop=1).create_model(evidence=evidence)
     assert seen == [
@@ -256,7 +249,7 @@ def test_network_flow_rejects_unsupported_model():
 
 
 def test_network_flow_V_lookups():
-    repn = ConstrainedHiddenMarkovModel(hex_.create_hmm1()).representation(
+    repn = ConstrainedGraphicalModel(hex_.create_hmm1()).representation(
         "pyomo_network_flow"
     )
     M, _ = repn.create_model(observed=["o0", "o1"])
@@ -276,7 +269,7 @@ def test_var_wrapper_is_one_class():
 
 
 def test_network_flow_V_bad_arity_raises():
-    repn = ConstrainedHiddenMarkovModel(hex_.create_hmm1()).representation(
+    repn = ConstrainedGraphicalModel(hex_.create_hmm1()).representation(
         "pyomo_network_flow"
     )
     M, _ = repn.create_model(observed=["o0", "o1"])
@@ -287,7 +280,7 @@ def test_network_flow_V_bad_arity_raises():
 
 
 def test_network_flow_V_missing_key_raises():
-    repn = ConstrainedHiddenMarkovModel(hex_.create_hmm1()).representation(
+    repn = ConstrainedGraphicalModel(hex_.create_hmm1()).representation(
         "pyomo_network_flow"
     )
     M, _ = repn.create_model(observed=["o0", "o1"])

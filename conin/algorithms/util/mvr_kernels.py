@@ -5,7 +5,8 @@ import math
 import numpy as np
 import torch
 
-from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedGraphicalModel
+from conin.graphical_models import HiddenMarkovModel
 from conin.constraints.mvr import InhomMVR
 from conin.exceptions import InvalidInputError
 from conin.representations.matvec import MatVecHMMRepresentation
@@ -20,7 +21,9 @@ def _matvec(hmm):
     """The ``"matvec"`` representation of an HMM (``hmm`` itself if it is one)."""
     if isinstance(hmm, MatVecHMMRepresentation):
         return hmm
-    return ConstrainedHiddenMarkovModel.ensure(hmm).representation("matvec")
+    return ConstrainedGraphicalModel.ensure(hmm, HiddenMarkovModel).representation(
+        "matvec"
+    )
 
 
 def _hmm_to_torch(hmm, *, log=False, dtype=torch.float32, device="cpu"):
@@ -220,12 +223,14 @@ def _build_static_context(constraints, K, T, *, log, dtype, device):
 def _model_parts(model):
     """Return the HMM and the aligned MVRs of a constrained HMM.
 
-    ``model`` is a ``ConstrainedHiddenMarkovModel`` (or a bare
+    ``model`` is a ``ConstrainedGraphicalModel`` of an HMM (or a bare
     ``HiddenMarkovModel``, read as one with no constraints).  The MVRs come
     from its ``"mvr"`` representation, so other constraint families raise
     ``InvalidInputError``.
     """
-    repn = ConstrainedHiddenMarkovModel.ensure(model).representation("mvr")
+    repn = ConstrainedGraphicalModel.ensure(model, HiddenMarkovModel).representation(
+        "mvr"
+    )
 
     return repn.model, list(repn.mvrs)
 

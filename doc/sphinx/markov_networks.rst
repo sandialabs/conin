@@ -81,7 +81,7 @@ pairwise interactions:
 Constrained Markov networks
 ---------------------------
 
-``ConstrainedDiscreteMarkovNetwork`` wraps a base Markov network together with a
+``ConstrainedGraphicalModel`` wraps a base Markov network together with a
 list of constraints. The examples in
 ``conin.examples.markov_network`` use the same three-variable ``ABC`` model and
 add an all-different constraint.
@@ -98,7 +98,7 @@ constraints to the optimization model:
 
 .. testcode::
 
-   from conin import pyomo_constraint_fn, ConstrainedDiscreteMarkovNetwork
+   from conin import pyomo_constraint_fn, ConstrainedGraphicalModel
    from conin.examples.markov_network import ABC_conin
 
    base = ABC_conin().pgm
@@ -109,7 +109,7 @@ constraints to the optimization model:
        def diff(m, s):
            return m.V("A", s) + m.V("B", s) + m.V("C", s) <= 1
 
-   constrained = ConstrainedDiscreteMarkovNetwork(
+   constrained = ConstrainedGraphicalModel(
        base,
        constraints=constraint_fn,
    )
@@ -122,7 +122,7 @@ with the Toulbar2 interface:
 
 .. testcode::
 
-   from conin import toulbar2_constraint_fn, ConstrainedDiscreteMarkovNetwork
+   from conin import toulbar2_constraint_fn, ConstrainedGraphicalModel
    from conin.examples.markov_network import ABC_conin
 
    base = ABC_conin().pgm
@@ -136,7 +136,7 @@ with the Toulbar2 interface:
                1,
            )
 
-   constrained = ConstrainedDiscreteMarkovNetwork(
+   constrained = ConstrainedGraphicalModel(
        base,
        constraints=constraint_fn,
    )
@@ -148,7 +148,7 @@ Oracle constraints with node scoping
 
 .. testcode::
 
-   from conin import oracle_constraint_fn, ConstrainedDiscreteMarkovNetwork
+   from conin import oracle_constraint_fn, ConstrainedGraphicalModel
    from conin.examples.markov_network import ABC_conin
 
    base = ABC_conin().pgm
@@ -158,7 +158,7 @@ Oracle constraints with node scoping
        values = set(states.values())
        return len(values) == 3
 
-   constrained = ConstrainedDiscreteMarkovNetwork(
+   constrained = ConstrainedGraphicalModel(
        base,
        constraints=constraint_fn,
    )

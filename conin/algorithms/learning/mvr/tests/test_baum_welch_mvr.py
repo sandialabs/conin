@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from conin.exceptions import InvalidInputError
-from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.graphical_models import HiddenMarkovModel
 
 # importorskip only catches ImportError; a broken torch install raises OSError.
@@ -99,7 +99,7 @@ def assert_matches_brute_force(hmm, mvrs, observed, T=None):
     if T is None:
         T = len(observed)
 
-    model = ConstrainedHiddenMarkovModel(hmm, mvrs)
+    model = ConstrainedGraphicalModel(hmm, mvrs)
 
     gamma, xi, loglik = forward_backward_mvr_chmm(model, observed, time_horizon=T)
     expected_gamma, expected_xi, expected_loglik = brute_force_posteriors(
@@ -195,7 +195,7 @@ def test_augmented_posterior_marginalizes_to_gamma(hmm, observed):
         ),
         make_parity_mvr(hidden_states=hmm.hidden_states, target_state="B"),
     ]
-    model = ConstrainedHiddenMarkovModel(hmm, mvrs)
+    model = ConstrainedGraphicalModel(hmm, mvrs)
 
     gamma, _, _, augmented = forward_backward_mvr_chmm(
         model, observed, return_augmented=True
@@ -217,7 +217,7 @@ def test_forward_backward_raises_on_infeasible_constraints(hmm, observed):
         make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state=h)
         for h in hmm.hidden_states
     ]
-    model = ConstrainedHiddenMarkovModel(hmm, mvrs)
+    model = ConstrainedGraphicalModel(hmm, mvrs)
 
     with pytest.raises(InvalidInputError, match="No feasible augmented path"):
         forward_backward_mvr_chmm(model, observed)
@@ -246,7 +246,7 @@ def test_one_em_step_matches_brute_force_counts(hmm):
     mvr = make_forbid_mvr(
         hidden_states=hmm.hidden_states, forbidden_state="A", time_range=[0, 2]
     )
-    model = ConstrainedHiddenMarkovModel(hmm, mvr)
+    model = ConstrainedGraphicalModel(hmm, mvr)
 
     observations = make_batch(["o0", "o1"], count=3, length=5, seed=1)
 
@@ -274,7 +274,7 @@ def test_one_em_step_matches_brute_force_counts(hmm):
 def test_em_keeps_rows_that_collect_no_mass(hmm, observed):
     # Rows with no expected mass have no maximizer and must remain unchanged.
     mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="A")
-    model = ConstrainedHiddenMarkovModel(hmm, mvr)
+    model = ConstrainedGraphicalModel(hmm, mvr)
 
     fitted, _ = baum_welch_mvr_chmm(model, [observed], max_iter=5, tol=0.0)
 
@@ -309,7 +309,7 @@ def test_em_log_likelihood_is_monotone(seed):
         ),
         make_parity_mvr(hidden_states=hidden_states, target_state="B"),
     ]
-    model = ConstrainedHiddenMarkovModel(start_hmm, mvrs)
+    model = ConstrainedGraphicalModel(start_hmm, mvrs)
 
     observations = make_batch(observable_states, count=4, length=6, seed=seed)
 
@@ -330,7 +330,7 @@ def test_em_handles_mixed_lengths_and_observation_forms():
     mvr = make_forbid_mvr(
         hidden_states=hidden_states, forbidden_state="A", time_range=[0, 2]
     )
-    model = ConstrainedHiddenMarkovModel(start_hmm, mvr)
+    model = ConstrainedGraphicalModel(start_hmm, mvr)
 
     observations = [["o0", "o1", "o0", "o1"], {0: "o1", 3: "o0"}, ["o1"] * 6]
 
@@ -343,7 +343,7 @@ def test_em_handles_mixed_lengths_and_observation_forms():
 
 def test_em_leaves_the_caller_model_untouched(hmm, observed):
     mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="A")
-    model = ConstrainedHiddenMarkovModel(hmm, mvr)
+    model = ConstrainedGraphicalModel(hmm, mvr)
 
     before = np.asarray(hmm.representation("matvec").transition_mat.tolist()).copy()
 
@@ -362,7 +362,7 @@ def test_em_write_back_preserves_indexing_and_rebuilds_repn(hmm, observed):
     # A write-back that permuted the internal order would misalign the
     # constraints, which were built against the original indices.
     mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="A")
-    model = ConstrainedHiddenMarkovModel(hmm, mvr)
+    model = ConstrainedGraphicalModel(hmm, mvr)
 
     fitted, _ = baum_welch_mvr_chmm(model, [observed], max_iter=3, tol=0.0)
 
@@ -379,7 +379,7 @@ def test_em_write_back_preserves_indexing_and_rebuilds_repn(hmm, observed):
 
     # Stale arrays would leave inference running on the pre-fit parameters.
     # Row sums are not checked: the HiddenMarkovModel constructor validates them.
-    repn = ConstrainedHiddenMarkovModel(fitted).representation("matvec")
+    repn = ConstrainedGraphicalModel(fitted).representation("matvec")
     assert (
         repn.transition_mat.tolist()
         == fitted.representation("matvec").transition_mat.tolist()
@@ -388,7 +388,7 @@ def test_em_write_back_preserves_indexing_and_rebuilds_repn(hmm, observed):
 
 def test_em_stops_at_the_convergence_tolerance(hmm, observed):
     mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="A")
-    model = ConstrainedHiddenMarkovModel(hmm, mvr)
+    model = ConstrainedGraphicalModel(hmm, mvr)
 
     fitted, history = baum_welch_mvr_chmm(model, [observed], max_iter=200, tol=1e-8)
 
@@ -397,7 +397,7 @@ def test_em_stops_at_the_convergence_tolerance(hmm, observed):
 
     # Converged, so no update followed the last entry: it scores exactly the
     # model that came back.
-    fitted_model = ConstrainedHiddenMarkovModel(fitted, mvr)
+    fitted_model = ConstrainedGraphicalModel(fitted, mvr)
     assert forward_backward_mvr_chmm(fitted_model, observed)[2] == pytest.approx(
         history[-1], abs=1e-9
     )
@@ -405,7 +405,7 @@ def test_em_stops_at_the_convergence_tolerance(hmm, observed):
 
 def test_em_history_starts_at_the_input_model(hmm, observed):
     mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="A")
-    model = ConstrainedHiddenMarkovModel(hmm, mvr)
+    model = ConstrainedGraphicalModel(hmm, mvr)
 
     # A tolerance this tight cannot be met in three iterations, so the run also
     # exercises the not-converged warning.
@@ -428,7 +428,7 @@ def test_em_history_starts_at_the_input_model(hmm, observed):
 )
 def test_em_updates_only_the_requested_blocks(hmm, observed, block, attribute):
     mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="A")
-    model = ConstrainedHiddenMarkovModel(hmm, mvr)
+    model = ConstrainedGraphicalModel(hmm, mvr)
 
     fitted, _ = baum_welch_mvr_chmm(
         model, [observed], max_iter=3, tol=0.0, update=(block,)
@@ -480,7 +480,7 @@ def test_em_preserves_structural_zeros_and_warns():
 
     sparse = make_sparse_hmm(hidden_states, observable_states)
     mvr = make_forbid_mvr(hidden_states=hidden_states, forbidden_state="A")
-    model = ConstrainedHiddenMarkovModel(sparse, mvr)
+    model = ConstrainedGraphicalModel(sparse, mvr)
 
     observations = make_batch(observable_states, count=3, length=5, seed=2)
 
@@ -497,7 +497,7 @@ def test_em_preserves_structural_zeros_and_warns():
 
 def test_dense_model_does_not_warn(hmm, observed):
     mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="A")
-    model = ConstrainedHiddenMarkovModel(hmm, mvr)
+    model = ConstrainedGraphicalModel(hmm, mvr)
 
     with warnings.catch_warnings():
         warnings.simplefilter("error")
@@ -513,7 +513,7 @@ def test_em_names_the_offending_sequence(hmm):
     mvr = make_forbid_mvr(
         hidden_states=hmm.hidden_states, forbidden_state="A", time_range=[0, 4]
     )
-    model = ConstrainedHiddenMarkovModel(hmm, mvr)
+    model = ConstrainedGraphicalModel(hmm, mvr)
 
     with pytest.raises(InvalidInputError, match="Sequence 1"):
         baum_welch_mvr_chmm(model, [["o0"] * 5, ["o1"] * 3], max_iter=1)
@@ -528,7 +528,7 @@ def test_em_names_the_offending_sequence(hmm):
     ],
 )
 def test_em_rejects_bad_arguments(hmm, kwargs, observations, message):
-    model = ConstrainedHiddenMarkovModel(hmm)
+    model = ConstrainedGraphicalModel(hmm)
 
     with pytest.raises(InvalidInputError, match=message):
         baum_welch_mvr_chmm(model, observations, max_iter=1, **kwargs)
@@ -551,7 +551,7 @@ def test_em_warns_when_the_log_likelihood_decreases(hmm, observed, monkeypatch):
 
     monkeypatch.setattr(module, "_e_step_counts", decreasing)
     mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="A")
-    model = ConstrainedHiddenMarkovModel(hmm, mvr)
+    model = ConstrainedGraphicalModel(hmm, mvr)
     with pytest.warns(UserWarning, match="Log-likelihood decreased at iteration 1"):
         _, history = baum_welch_mvr_chmm(model, [observed], max_iter=2, tol=0.0)
     assert history[1] < history[0]

@@ -102,7 +102,7 @@ node with two parents:
 Constrained Bayesian networks
 -----------------------------
 
-``ConstrainedDiscreteBayesianNetwork`` uses the same constraint decorators as
+``ConstrainedGraphicalModel`` uses the same constraint decorators as
 other model families. The examples in ``conin.examples.bayesian_network`` apply
 constraints to the cancer network.
 
@@ -120,7 +120,7 @@ choosing the same state:
 .. testcode::
 
    import pyomo.environ as pyo
-   from conin import pyomo_constraint_fn, ConstrainedDiscreteBayesianNetwork
+   from conin import pyomo_constraint_fn, ConstrainedGraphicalModel
    from conin.examples.bayesian_network import cancer1_BN_conin
 
    base = cancer1_BN_conin().pgm
@@ -131,7 +131,7 @@ choosing the same state:
        model.c.add(model.V("Dyspnoea", 1) + model.V("Xray", 1) <= 1)
        model.c.add(model.V("Dyspnoea", 0) + model.V("Xray", 0) <= 1)
 
-   constrained = ConstrainedDiscreteBayesianNetwork(base, constraints=constraints)
+   constrained = ConstrainedGraphicalModel(base, constraints=constraints)
 
 Toulbar2 constraints
 ^^^^^^^^^^^^^^^^^^^^
@@ -141,7 +141,7 @@ interface:
 
 .. testcode::
 
-   from conin import toulbar2_constraint_fn, ConstrainedDiscreteBayesianNetwork
+   from conin import toulbar2_constraint_fn, ConstrainedGraphicalModel
    from conin.examples.bayesian_network import cancer1_BN_conin
 
    base = cancer1_BN_conin().pgm
@@ -159,7 +159,7 @@ interface:
            1,
        )
 
-   constrained = ConstrainedDiscreteBayesianNetwork(base, constraints=constraints)
+   constrained = ConstrainedGraphicalModel(base, constraints=constraints)
 
 Oracle constraints with node scoping
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -169,7 +169,7 @@ auxiliary CPD:
 
 .. testcode::
 
-   from conin import oracle_constraint_fn, ConstrainedDiscreteBayesianNetwork
+   from conin import oracle_constraint_fn, ConstrainedGraphicalModel
    from conin.examples.bayesian_network import cancer1_BN_conin
 
    base = cancer1_BN_conin().pgm
@@ -178,7 +178,7 @@ auxiliary CPD:
    def constraints(states):
        return states["Dyspnoea"] != states["Xray"]
 
-   constrained = ConstrainedDiscreteBayesianNetwork(base, constraints=constraints)
+   constrained = ConstrainedGraphicalModel(base, constraints=constraints)
 
 Notes
 -----

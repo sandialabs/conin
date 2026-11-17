@@ -7,7 +7,7 @@ import pytest
 
 import conin.examples.hidden_markov_model as tc
 from conin.algorithms.feasibility import is_feasible
-from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.constraints import RecursiveConstraint
 from conin.exceptions import InvalidInputError
 from conin.graphical_models import random_hmm
@@ -61,7 +61,7 @@ def test_partial_feasibility_uses_the_new_state():
     # the parent's constraint state (and the parent's length t), so a prefix
     # that already broke the bound was kept.
     calls = []
-    cmodel = ConstrainedHiddenMarkovModel(tc.create_hmm1(), _num_h0(0, 2, calls))
+    cmodel = ConstrainedGraphicalModel(tc.create_hmm1(), _num_h0(0, 2, calls))
     observed = ["o0"] * 5
     results = recursive_a_star(hmm=cmodel, observed=observed)
     assert results.solutions[0].states.count("h0") <= 2
@@ -74,7 +74,7 @@ def test_partial_feasibility_uses_the_new_state():
 def test_tight_bound_prunes_at_once():
     # With ub=0 no h0 may appear: only the all-h1 path is ever extended.
     calls = []
-    cmodel = ConstrainedHiddenMarkovModel(tc.create_hmm1(), _num_h0(0, 0, calls))
+    cmodel = ConstrainedGraphicalModel(tc.create_hmm1(), _num_h0(0, 0, calls))
     results = recursive_a_star(hmm=cmodel, observed=["o0"] * 4)
     assert results.solutions[0].states == ["h1"] * 4
     # 2 initial checks + 2 extensions at each of the 3 later steps.
@@ -90,7 +90,7 @@ def test_infeasible_leaves_are_skipped():
         update=lambda n, h: n + int(h == "h0"),
         feasible=lambda n: n == 2,
     )
-    cmodel = ConstrainedHiddenMarkovModel(tc.create_hmm1(), no_partial)
+    cmodel = ConstrainedGraphicalModel(tc.create_hmm1(), no_partial)
     observed = ["o0"] * 4
     results = recursive_a_star(hmm=cmodel, observed=observed, num_solutions=3)
     assert results.termination_condition == "ok"
@@ -124,7 +124,7 @@ def test_merged_prefixes_still_give_the_k_best():
     # so with num_solutions > 1 a sequence through a merged node was lost:
     # here the 4th solution was h1 h0 h0 h0 h0 (-6.474) instead of
     # h1 h1 h1 h1 h0 (-6.001).
-    cmodel = ConstrainedHiddenMarkovModel(tc.create_hmm1(), _accept_all())
+    cmodel = ConstrainedGraphicalModel(tc.create_hmm1(), _accept_all())
     observed = ["o0", "o1", "o0", "o1", "o0"]
     results = recursive_a_star(hmm=cmodel, observed=observed, num_solutions=4)
     oracle = a_star(hmm=tc.create_hmm1(), observed=observed, num_solutions=4)
@@ -149,7 +149,7 @@ def test_random_hmms_match_brute_force(seed, num_solutions):
         feasible=lambda n: n <= 2,
         feasible_partial=lambda n, t, T: n <= 2,
     )
-    cmodel = ConstrainedHiddenMarkovModel(hmm, at_most_two_a)
+    cmodel = ConstrainedGraphicalModel(hmm, at_most_two_a)
     results = recursive_a_star(
         hmm=cmodel, observed=observed, num_solutions=num_solutions
     )
@@ -158,7 +158,7 @@ def test_random_hmms_match_brute_force(seed, num_solutions):
 
 
 def test_more_solutions_than_sequences():
-    cmodel = ConstrainedHiddenMarkovModel(tc.create_hmm1(), _accept_all())
+    cmodel = ConstrainedGraphicalModel(tc.create_hmm1(), _accept_all())
     results = recursive_a_star(hmm=cmodel, observed=["o0"] * 3, num_solutions=10)
     assert len(results.solutions) == 8
     assert results.termination_condition == "ok"
@@ -179,9 +179,7 @@ def test_multiple_recursive_constraints_combine():
         update=lambda last, h: h,
         feasible=lambda last: last != "h0",
     )
-    cmodel = ConstrainedHiddenMarkovModel(
-        tc.create_hmm1(), [_num_h0(2, 3), no_h0_at_end]
-    )
+    cmodel = ConstrainedGraphicalModel(tc.create_hmm1(), [_num_h0(2, 3), no_h0_at_end])
     observed = ["o0"] * 6
     results = recursive_a_star(hmm=cmodel, observed=observed, num_solutions=2)
     _check_solutions(cmodel, observed, results, 2)
@@ -214,21 +212,21 @@ def test_other_families_are_rejected():
 
 
 def test_max_iterations_stops_the_search():
-    cmodel = ConstrainedHiddenMarkovModel(tc.create_hmm1(), _num_h0(10, 12))
+    cmodel = ConstrainedGraphicalModel(tc.create_hmm1(), _num_h0(10, 12))
     results = recursive_a_star(hmm=cmodel, observed=["o1"] * 20, max_iterations=3)
     assert results.solutions == []
     assert results.termination_condition == "max_iterations: 3"
 
 
 def test_max_time_stops_the_search():
-    cmodel = ConstrainedHiddenMarkovModel(tc.create_hmm1(), _num_h0(10, 12))
+    cmodel = ConstrainedGraphicalModel(tc.create_hmm1(), _num_h0(10, 12))
     results = recursive_a_star(hmm=cmodel, observed=["o1"] * 20, max_time=0)
     assert results.solutions == []
     assert results.termination_condition.startswith("max_time: ")
 
 
 def test_limits_that_are_not_reached_do_not_change_the_result():
-    cmodel = ConstrainedHiddenMarkovModel(tc.create_hmm1(), _num_h0(2, 3))
+    cmodel = ConstrainedGraphicalModel(tc.create_hmm1(), _num_h0(2, 3))
     observed = ["o0", "o1", "o1", "o0", "o1"]
     expected = recursive_a_star(hmm=cmodel, observed=observed)
     results = recursive_a_star(
@@ -239,6 +237,6 @@ def test_limits_that_are_not_reached_do_not_change_the_result():
 
 
 def test_debug_prints_progress(capsys):
-    cmodel = ConstrainedHiddenMarkovModel(tc.create_hmm1(), _num_h0(10, 12))
+    cmodel = ConstrainedGraphicalModel(tc.create_hmm1(), _num_h0(10, 12))
     recursive_a_star(hmm=cmodel, observed=["o1"] * 20, max_iterations=150, debug=True)
     assert "Iteration: 100" in capsys.readouterr().out

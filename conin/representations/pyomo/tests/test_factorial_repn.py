@@ -3,11 +3,9 @@ from math import log
 import pyomo.environ as pyo
 import pyomo.opt
 
-from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.algorithms.inference.pyomo import solve_pyomo_map_query_model
-from conin.representations.pyomo.common import (
-    _create_pyomo_map_query_model,
-)
+from conin.representations.pyomo.common import _create_pyomo_map_query_model
 from conin.representations.pyomo.factor_repn import (
     extract_factor_representation,
     State,
@@ -67,7 +65,7 @@ def test_example6():
     assert J == J_
     assert v == v_
     assert w == w_
-    model = ConstrainedDiscreteMarkovNetwork(pgm).representation("pyomo").create_model()
+    model = ConstrainedGraphicalModel(pgm).representation("pyomo").create_model()
     results = solve_pyomo_map_query_model(model, solver=mip_solver)
     assert results.solution.states == {"A": 0, "B": 1}
 
@@ -392,7 +390,7 @@ def test_variable_name_clash_raises(a, b):
     from conin.exceptions import InvalidInputError
 
     with pytest.raises(InvalidInputError, match="internal variable name"):
-        ConstrainedDiscreteMarkovNetwork(_two_node_MN(a, b)).representation("pyomo")
+        ConstrainedGraphicalModel(_two_node_MN(a, b)).representation("pyomo")
 
 
 def test_factor_name_clash_raises():

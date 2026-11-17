@@ -112,7 +112,7 @@ Hard linear constraints are also loaded. Toulbar2 stores these as ``knapsack``
 and ``knapsackv`` global cost functions; they are written by pytoulbar2's
 ``AddLinearConstraint``, ``AddSumConstraint`` and
 ``AddGeneralizedLinearConstraint`` methods. When a file contains such
-constraints, ``load_model`` returns a ``ConstrainedDiscreteMarkovNetwork``
+constraints, ``load_model`` returns a ``ConstrainedGraphicalModel``
 whose constraints are Toulbar2 constraints, and the unconstrained model is
 available as its ``model`` attribute:
 

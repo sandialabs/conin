@@ -9,7 +9,7 @@ from conin.constraints import (
     toulbar2_constraint_fn,
     smoek_constraint_fn,
 )
-from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.graphical_models import HiddenMarkovModel
 
 """
@@ -172,7 +172,7 @@ def create_chmm1_oracle():
     )
     constraints = [num_zeros_greater_than_nine, num_zeros_less_than_thirteen]
 
-    chmm = ConstrainedHiddenMarkovModel(hmm, constraints=constraints)
+    chmm = ConstrainedGraphicalModel(hmm, constraints=constraints)
     return chmm
 
 
@@ -196,7 +196,7 @@ def create_chmm1_oracle_ve():
     )
     constraints = [num_zeros_greater_than_nine, num_zeros_less_than_thirteen]
 
-    chmm = ConstrainedHiddenMarkovModel(hmm, constraints=constraints)
+    chmm = ConstrainedGraphicalModel(hmm, constraints=constraints)
     return chmm
 
 
@@ -213,7 +213,7 @@ def create_chmm1_pyomo():
 
     constraints = [num_zeros_greater_than_nine, num_zeros_less_than_thirteen]
 
-    chmm = ConstrainedHiddenMarkovModel(hmm, constraints=constraints)
+    chmm = ConstrainedGraphicalModel(hmm, constraints=constraints)
     return chmm
 
 
@@ -230,7 +230,7 @@ def create_chmm1_smoek():
 
     constraints = [num_zeros_greater_than_nine, num_zeros_less_than_thirteen]
 
-    chmm = ConstrainedHiddenMarkovModel(hmm, constraints=constraints)
+    chmm = ConstrainedGraphicalModel(hmm, constraints=constraints)
     return chmm
 
 
@@ -252,7 +252,7 @@ def create_chmm1_pyomo_aos():
 
     constraints = [num_zeros_less_than_thirteen]
 
-    chmm = ConstrainedHiddenMarkovModel(hmm, constraints=constraints)
+    chmm = ConstrainedGraphicalModel(hmm, constraints=constraints)
     return chmm
 
 
@@ -274,7 +274,7 @@ def create_chmm1_smoek_aos():
 
     constraints = [num_zeros_less_than_thirteen]
 
-    chmm = ConstrainedHiddenMarkovModel(hmm, constraints=constraints)
+    chmm = ConstrainedGraphicalModel(hmm, constraints=constraints)
     return chmm
 
 
@@ -299,7 +299,7 @@ def create_chmm2_pyomo_aos():
 
     constraints = [num_ones_less_than_thirteen]
 
-    chmm = ConstrainedHiddenMarkovModel(hmm, constraints=constraints)
+    chmm = ConstrainedGraphicalModel(hmm, constraints=constraints)
     return chmm
 
 
@@ -324,7 +324,7 @@ def create_chmm2_smoek_aos():
 
     constraints = [num_ones_less_than_thirteen]
 
-    chmm = ConstrainedHiddenMarkovModel(hmm, constraints=constraints)
+    chmm = ConstrainedGraphicalModel(hmm, constraints=constraints)
     return chmm
 
 
@@ -341,7 +341,7 @@ def create_chmm1_toulbar2():
 
     constraints = [num_zeros_greater_than_nine, num_zeros_less_than_thirteen]
 
-    chmm = ConstrainedHiddenMarkovModel(hmm, constraints=constraints)
+    chmm = ConstrainedGraphicalModel(hmm, constraints=constraints)
     return chmm
 
 
@@ -363,5 +363,5 @@ def create_chmm1_recursive(lb=10, ub=12):
         name="num_zeros",
     )
 
-    chmm = ConstrainedHiddenMarkovModel(hmm, num_zeros)
+    chmm = ConstrainedGraphicalModel(hmm, num_zeros)
     return chmm

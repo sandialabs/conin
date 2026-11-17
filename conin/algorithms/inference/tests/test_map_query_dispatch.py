@@ -11,13 +11,8 @@ import conin.examples.dynamic_bayesian_network as dex
 import conin.examples.hidden_markov_model as hex_
 import conin.examples.markov_network as mex
 from conin.config import default_mip_solver
-from conin.constrained_models import (
-    ConstrainedDiscreteBayesianNetwork,
-    ConstrainedDiscreteMarkovNetwork,
-    ConstrainedDynamicDiscreteBayesianNetwork,
-    ConstrainedHiddenMarkovModel,
-)
-from conin.constrained_models.normalise import as_constrained_model
+from conin.constrained_models import ConstrainedGraphicalModel
+
 from conin.exceptions import InvalidInputError
 from conin.graphical_models.assignments import as_sequence
 from conin.algorithms.inference import map_query
@@ -69,12 +64,10 @@ OBSERVED = ["o0", "o0", "o1", "o0", "o0"]
 
 def _cmodel(kind):
     return {
-        "mn": lambda: ConstrainedDiscreteMarkovNetwork(mex.ABC_conin().pgm),
-        "bn": lambda: ConstrainedDiscreteBayesianNetwork(bex.cancer1_BN_conin().pgm),
-        "dbn": lambda: ConstrainedDynamicDiscreteBayesianNetwork(
-            dex.simple1_DDBN_conin().pgm
-        ),
-        "hmm": lambda: ConstrainedHiddenMarkovModel(hex_.create_hmm1()),
+        "mn": lambda: ConstrainedGraphicalModel(mex.ABC_conin().pgm),
+        "bn": lambda: ConstrainedGraphicalModel(bex.cancer1_BN_conin().pgm),
+        "dbn": lambda: ConstrainedGraphicalModel(dex.simple1_DDBN_conin().pgm),
+        "hmm": lambda: ConstrainedGraphicalModel(hex_.create_hmm1()),
     }[kind]()
 
 
@@ -84,33 +77,32 @@ def _cmodel(kind):
 
 
 @pytest.mark.parametrize(
-    "model,cls",
+    "model",
     [
-        (lambda: mex.ABC_conin().pgm, ConstrainedDiscreteMarkovNetwork),
-        (lambda: bex.cancer1_BN_conin().pgm, ConstrainedDiscreteBayesianNetwork),
-        (
-            lambda: dex.simple1_DDBN_conin().pgm,
-            ConstrainedDynamicDiscreteBayesianNetwork,
-        ),
-        (hex_.create_hmm1, ConstrainedHiddenMarkovModel),
+        lambda: mex.ABC_conin().pgm,
+        lambda: bex.cancer1_BN_conin().pgm,
+        lambda: dex.simple1_DDBN_conin().pgm,
+        hex_.create_hmm1,
     ],
     ids=["mn", "bn", "dbn", "hmm"],
 )
-def test_bare_models_are_wrapped_with_no_constraints(model, cls):
-    cmodel = as_constrained_model(model())
-    assert type(cmodel) is cls
+def test_bare_models_are_wrapped_with_no_constraints(model):
+    pgm = model()
+    cmodel = ConstrainedGraphicalModel.ensure(pgm)
+    assert type(cmodel) is ConstrainedGraphicalModel
+    assert cmodel.model is pgm and cmodel.model_type is type(pgm)
     assert cmodel.constraints == ()
 
 
 def test_constrained_models_are_used_as_they_are():
     cmodel = hex_.create_chmm1_oracle()
-    assert as_constrained_model(cmodel) is cmodel
+    assert ConstrainedGraphicalModel.ensure(cmodel) is cmodel
 
 
 @pytest.mark.parametrize("model", ["not_a_model", 3, object()])
 @pytest.mark.parametrize("method", list(mq.METHODS))
 def test_unsupported_model_type_raises_type_error(model, method):
-    with pytest.raises(TypeError, match="Unsupported model type"):
+    with pytest.raises(TypeError, match="expects a conin graphical model"):
         map_query(model, method=method, evidence=["o0"])
 
 
@@ -149,7 +141,7 @@ def test_method_to_representation_kind(method, options, kind):
     "cmodel,kind",
     [
         (hex_.create_chmm1_oracle, "oracle"),
-        (lambda: ConstrainedHiddenMarkovModel(hex_.create_hmm1()), "oracle"),
+        (lambda: ConstrainedGraphicalModel(hex_.create_hmm1()), "oracle"),
         (hex_.create_chmm1_recursive, "recursive"),
     ],
     ids=["oracle", "none", "recursive"],
@@ -338,7 +330,7 @@ def test_toulbar2_hmm_overload_solves():
 def test_matvec_overload_is_viterbi():
     hmm = hex_.create_hmm1()
     results = mq._solve_map_query(
-        ConstrainedHiddenMarkovModel(hmm).representation("matvec"),
+        ConstrainedGraphicalModel(hmm).representation("matvec"),
         _query(evidence=OBSERVED),
     )
     assert results.solutions == viterbi(observed=OBSERVED, hmm=hmm).solutions
@@ -522,7 +514,7 @@ def test_hmm_stop_past_the_last_observation(method, solver):
 def test_viterbi_on_an_unconstrained_constrained_hmm(evidence):
     # It raised TypeError (there was no overload for constrained HMMs).
     hmm = hex_.create_hmm1()
-    cmodel = ConstrainedHiddenMarkovModel(hmm)
+    cmodel = ConstrainedGraphicalModel(hmm)
     results = map_query(cmodel, method="viterbi", evidence=evidence)
     reference = map_query(hmm, method="viterbi", evidence=evidence)
     assert results.solutions == reference.solutions
@@ -563,7 +555,7 @@ def test_a_star_with_recursive_constraints_and_no_solution():
 @skipif_no_mip_solver
 @pytest.mark.parametrize(
     "model",
-    [hex_.create_hmm1, lambda: ConstrainedHiddenMarkovModel(hex_.create_hmm1())],
+    [hex_.create_hmm1, lambda: ConstrainedGraphicalModel(hex_.create_hmm1())],
     ids=["bare", "constrained-empty"],
 )
 def test_network_flow_without_constraints_uses_the_lp_path(model):

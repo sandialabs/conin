@@ -18,7 +18,7 @@ import pytest
 
 import conin.examples.hidden_markov_model as hex_
 import conin.examples.markov_network as mex
-from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.algorithms.inference.pyomo import (
     ip_inference,
     lp_inference,
@@ -51,7 +51,7 @@ def _stub_aos(calls):
 
 def _solve_mn(solver_options, tee=False):
     model = (
-        ConstrainedDiscreteMarkovNetwork(mex.ABC_conin().pgm)
+        ConstrainedGraphicalModel(mex.ABC_conin().pgm)
         .representation("pyomo")
         .create_model()
     )

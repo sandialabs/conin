@@ -288,7 +288,7 @@ def test_mcem_runs_and_returns_log_prob(constrained):
     #   2. prev_log_prob != nan  -> not math.isnan(prev_log_prob)  (NaN != NaN is always True)
     #   3. math.abs(...)         -> abs(...)  (math.abs does not exist)
     #   4. app.hmm               -> app.hidden_markov_model  (the numeric HMM lacked log_probability)
-    # mcem takes a ConstrainedHiddenMarkovModel or a bare HMM as app.
+    # mcem takes a ConstrainedGraphicalModel or a bare HMM as app.
     from conin.algorithms import learning
     import conin.examples.hidden_markov_model as tc
 

@@ -12,7 +12,7 @@ import pickle
 import numpy as np
 import pytest
 
-from conin import ConstrainedHiddenMarkovModel, HiddenMarkovModel
+from conin import ConstrainedGraphicalModel, HiddenMarkovModel
 from conin.constraints import (
     FactorOracleConstraint,
     MVRConstraint,
@@ -181,7 +181,7 @@ def test_a_constrained_model_cannot_be_changed_through_its_constraints():
         emission_probs={(h, o): 0.5 for h in "ab" for o in "xy"},
     )
     mvr = _hom_mvr()
-    cmodel = ConstrainedHiddenMarkovModel(hmm, mvr)
+    cmodel = ConstrainedGraphicalModel(hmm, mvr)
     with pytest.raises(AttributeError, match="immutable"):
         cmodel.constraints[0]._time_range = None
     with pytest.raises(TypeError, match="read-only"):

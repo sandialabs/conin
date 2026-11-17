@@ -1,44 +1,11 @@
 Constrained Graphical Models
 ============================
 
-The following constrained probabilistic graphical models are defined in conin.
-
-Base class
-----------
+A constrained graphical model pairs a Markov network, Bayesian network,
+dynamic Bayesian network or hidden Markov model with constraints. One class
+wraps every model type.
 
 .. autoclass:: conin.constrained_models.ConstrainedGraphicalModel
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Markov networks
----------------
-
-.. autoclass:: conin.constrained_models.ConstrainedDiscreteMarkovNetwork
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Discrete Bayesian networks
---------------------------
-
-.. autoclass:: conin.constrained_models.ConstrainedDiscreteBayesianNetwork
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Hidden Markov models
---------------------
-
-.. autoclass:: conin.constrained_models.ConstrainedHiddenMarkovModel
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Dynamic Discrete Bayesian networks
-----------------------------------
-
-.. autoclass:: conin.constrained_models.ConstrainedDynamicDiscreteBayesianNetwork
    :members:
    :undoc-members:
    :show-inheritance:

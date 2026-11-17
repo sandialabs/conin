@@ -305,14 +305,14 @@ def test_hmm_integer_program_with_impossible_observations_has_no_solution(
 
 
 def _hmm_never_x_at_time_1():
-    from conin.constrained_models import ConstrainedHiddenMarkovModel
+    from conin.constrained_models import ConstrainedGraphicalModel
     from conin.constraints import smoek_constraint_fn
 
     @smoek_constraint_fn()
     def never_x_at_time_1(model, data):
         return [model.V("H", 1, "x") == 0]
 
-    return ConstrainedHiddenMarkovModel(_impossible_hmm(), never_x_at_time_1)
+    return ConstrainedGraphicalModel(_impossible_hmm(), never_x_at_time_1)
 
 
 @pytest.mark.parametrize("ip_formulation", ["markov_network", "network_flow"])
@@ -371,9 +371,9 @@ def test_hmm_with_possible_observations_is_unchanged(method, options):
 
 
 def _abc_constrained(constraint):
-    from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
+    from conin.constrained_models import ConstrainedGraphicalModel
 
-    return ConstrainedDiscreteMarkovNetwork(mex.ABC_conin().pgm, constraint)
+    return ConstrainedGraphicalModel(mex.ABC_conin().pgm, constraint)
 
 
 def _static_no_solution_cases():

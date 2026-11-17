@@ -103,7 +103,7 @@ def generalized_em_mvr_chmm(
 ):
     """Fit ``sum_i log P(y_i | constraints)`` by generalized EM, starting from ``model``.
 
-    ``model`` is a ``ConstrainedHiddenMarkovModel`` with ``"mvr"`` constraints
+    ``model`` is a constrained HMM with ``"mvr"`` constraints
     (or a bare ``HiddenMarkovModel``); it is not modified.
 
     Arguments shared with ``baum_welch_mvr_chmm`` mean the same, as does ``history``.

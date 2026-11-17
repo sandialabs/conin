@@ -6,14 +6,15 @@ operating system), a seed, or a :class:`numpy.random.Generator` (see
 continue its stream.
 """
 
-from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedGraphicalModel
+from conin.graphical_models import HiddenMarkovModel
 from conin.exceptions import InvalidInputError
 from conin.util import Util, as_rng
 
 
 def _arrays(hmm):
     """Return ``(repn, start, transition, emission)``: the ``"matvec"`` and its arrays as lists."""
-    cmodel = ConstrainedHiddenMarkovModel.ensure(hmm)
+    cmodel = ConstrainedGraphicalModel.ensure(hmm, HiddenMarkovModel)
     # Raises InvalidInputError if the model has constraints (no "matvec"
     # representation), so constraints are never silently ignored.
     repn = cmodel.representation("matvec")
@@ -47,7 +48,7 @@ def generate_hidden(hmm, time_steps, *, rng=None):
 
     Parameters
     ----------
-    hmm : HiddenMarkovModel or ConstrainedHiddenMarkovModel
+    hmm : HiddenMarkovModel or ConstrainedGraphicalModel (of an HMM)
         The model; a constrained model must have no constraints (use
         :func:`conin.algorithms.sampling.oracle.rejection_sample_hidden` for oracle
         constraints).
@@ -78,7 +79,7 @@ def generate_hidden_until_state(hmm, h, *, max_steps=10_000, rng=None):
 
     Parameters
     ----------
-    hmm : HiddenMarkovModel or ConstrainedHiddenMarkovModel
+    hmm : HiddenMarkovModel or ConstrainedGraphicalModel (of an HMM)
         The model (without constraints).
     h : Any
         Target hidden-state label at which sampling stops.
@@ -125,7 +126,7 @@ def generate_observed_from_hidden(hmm, hidden, *, rng=None):
 
     Parameters
     ----------
-    hmm : HiddenMarkovModel or ConstrainedHiddenMarkovModel
+    hmm : HiddenMarkovModel or ConstrainedGraphicalModel (of an HMM)
         The model (without constraints).
     hidden : list
         Hidden-state labels from which to generate observations.
@@ -150,7 +151,7 @@ def generate_observed(hmm, time_steps, *, rng=None):
 
     Parameters
     ----------
-    hmm : HiddenMarkovModel or ConstrainedHiddenMarkovModel
+    hmm : HiddenMarkovModel or ConstrainedGraphicalModel (of an HMM)
         The model (without constraints).
     time_steps : int
         Number of time steps for which to generate observations.
