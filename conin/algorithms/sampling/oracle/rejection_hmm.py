@@ -13,7 +13,7 @@ def rejection_sample_hidden(hmm, time_steps, *, max_failures=1000, rng=None):
 
     Parameters
     ----------
-    hmm : ConstrainedHiddenMarkovModel or HiddenMarkovModel
+    hmm : HiddenMarkovModel or ConstrainedGraphicalModel (of an HMM)
         The model; a bare HMM is sampled without constraints.  Its constraints
         must have an ``"oracle"`` representation (no constraints or
         ``"oracle"`` constraints).
@@ -50,7 +50,7 @@ def rejection_sample_hidden(hmm, time_steps, *, max_failures=1000, rng=None):
     ):
         raise TypeError(
             "rejection_sample_hidden expects a HiddenMarkovModel or a "
-            f"ConstrainedHiddenMarkovModel, got {type(hmm).__name__}"
+            f"constrained HiddenMarkovModel, got {type(hmm).__name__}"
         )
     repn = hmm.representation("oracle")
     start = repn.hmm.start_vec.tolist()

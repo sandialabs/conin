@@ -12,7 +12,7 @@ from conin.algorithms.scoring import log_potential
 from conin.constraints import Toulbar2Constraint
 from conin.algorithms.inference import map_query
 from conin.graphical_models import DiscreteMarkovNetwork
-from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
+from conin.constrained_models import ConstrainedGraphicalModel
 
 with try_import() as pytoulbar2_available:
     import pytoulbar2
@@ -172,7 +172,8 @@ KNAPSACK_TEMPLATE = """{"problem":{"name":"p","mustbe":"<1000"},
 
 def test_abc_constrained_cfn():
     pgm = load_model(os.path.join(cwd, "abc_constrained.cfn"))
-    assert isinstance(pgm, ConstrainedDiscreteMarkovNetwork)
+    assert isinstance(pgm, ConstrainedGraphicalModel)
+    assert isinstance(pgm.model, DiscreteMarkovNetwork)
 
     # The unconstrained model
     assert isinstance(pgm.model, DiscreteMarkovNetwork)
@@ -397,7 +398,8 @@ def test_dumped_linear_constraints_match_toulbar2():
 
             tb2_solution = _toulbar2_solution(filename)
             pgm = load_model(filename)
-            assert isinstance(pgm, ConstrainedDiscreteMarkovNetwork)
+            assert isinstance(pgm, ConstrainedGraphicalModel)
+            assert isinstance(pgm.model, DiscreteMarkovNetwork)
             assert _conin_solution(pgm) == tb2_solution
             # Each constraint is binding
             assert _conin_solution(pgm.model) != tb2_solution

@@ -7,7 +7,7 @@ with try_import() as or_topas_available:
     import or_topas.aos as aos  # noqa: F401
 
 from conin.algorithms.inference.oracle import a_star
-from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.constraints.oracle.library import (
     has_maximum_number_of_occurrences_constraint,
     has_minimum_number_of_occurrences_constraint,
@@ -64,7 +64,7 @@ def constraints(lb, ub):
 @pytest.fixture
 def chmm(hmm, constraints):
 
-    return ConstrainedHiddenMarkovModel(hmm, constraints)
+    return ConstrainedGraphicalModel(hmm, constraints)
 
 
 class Test_Inference_ip:

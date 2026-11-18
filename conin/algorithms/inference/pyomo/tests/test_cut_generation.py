@@ -13,7 +13,7 @@ import pyomo.opt
 
 from conin.util import State
 from conin.examples import markov_network as examples
-from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.algorithms.inference.pyomo import solve_pyomo_map_query_model
 from conin.representations.pyomo import common
 from conin.representations.pyomo.common import (
@@ -66,7 +66,7 @@ def random_factor_repn(seed, N=10, M=15, k=3, max_vars=3, density=1.0):
 
 def test_omit_c5_model():
     pgm = examples.ABC_conin().pgm
-    repn = ConstrainedDiscreteMarkovNetwork(pgm).representation("pyomo")
+    repn = ConstrainedGraphicalModel(pgm).representation("pyomo")
     full = repn.create_model()
     small = repn.create_model(omit_c5=True)
 
@@ -214,7 +214,7 @@ def fake_gurobipy(monkeypatch):
 def _abc_model_without_c5():
     pgm = examples.ABC_conin().pgm
     return (
-        ConstrainedDiscreteMarkovNetwork(pgm)
+        ConstrainedGraphicalModel(pgm)
         .representation("pyomo")
         .create_model(omit_c5=True)
     )

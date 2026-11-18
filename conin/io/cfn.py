@@ -20,7 +20,7 @@ import warnings
 
 from conin.constraints import Toulbar2Constraint
 from conin.graphical_models import DiscreteFactor, DiscreteMarkovNetwork
-from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.exceptions import InvalidInputError, ModelFileError
 
 from .text import read_text
@@ -400,7 +400,7 @@ def load_cfn(filename=None, string=None, cost_scale=1.0):
     :class:`~conin.constraints.Toulbar2Constraint` objects.  These are
     written by pytoulbar2's ``AddLinearConstraint``, ``AddSumConstraint`` and
     ``AddGeneralizedLinearConstraint`` methods.  If the file contains such
-    constraints, a :class:`ConstrainedDiscreteMarkovNetwork` is returned and
+    constraints, a :class:`ConstrainedGraphicalModel` is returned and
     the unconstrained model is available as its ``model`` attribute.  Each
     constraint also records a solver-independent description of the linear
     constraint
@@ -438,8 +438,8 @@ def load_cfn(filename=None, string=None, cost_scale=1.0):
 
     Returns
     -------
-    DiscreteMarkovNetwork or ConstrainedDiscreteMarkovNetwork
-        A ``ConstrainedDiscreteMarkovNetwork`` is returned if the file
+    DiscreteMarkovNetwork or ConstrainedGraphicalModel
+        A ``ConstrainedGraphicalModel`` is returned if the file
         contains supported global cost functions.
 
     Raises
@@ -563,5 +563,5 @@ def _load_cfn(string, cost_scale):
 
     pgm = DiscreteMarkovNetwork(states=states, factors=factors)
     if constraints:
-        return ConstrainedDiscreteMarkovNetwork(pgm, constraints=constraints)
+        return ConstrainedGraphicalModel(pgm, constraints=constraints)
     return pgm

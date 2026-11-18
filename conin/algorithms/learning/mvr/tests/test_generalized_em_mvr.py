@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 
 from conin.exceptions import InvalidInputError
-from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.constraints.mvr import mvr_count, mvr_current_state, mvr_timerange
 
 # importorskip only catches ImportError; a broken torch install raises OSError.
@@ -115,7 +115,7 @@ def make_case(seed):
     if seed == 0:
         observations, horizons = [["x"], {0: "y"}, {}], [1, 2, 1]
     update = ("start", "transition", "emission") if seed % 2 == 0 else ("transition",)
-    model = ConstrainedHiddenMarkovModel(hmm, constraints)
+    model = ConstrainedGraphicalModel(hmm, constraints)
     return hmm, model, observations, horizons, update
 
 
@@ -135,7 +135,7 @@ def test_gem_matches_enumeration(seed):
                 "ignore", message="Initial model has zero-probability"
             )
             fitted, history = generalized_em_mvr_chmm(
-                ConstrainedHiddenMarkovModel(hmm, constraints),
+                ConstrainedGraphicalModel(hmm, constraints),
                 observations,
                 time_horizons=horizons,
                 max_iter=1,
@@ -232,7 +232,7 @@ def test_pseudocount_keeps_unobserved_emissions_positive():
         hmm.representation("matvec").transition_mat.tolist(),
         emission,
     )
-    model = ConstrainedHiddenMarkovModel(hmm)
+    model = ConstrainedGraphicalModel(hmm)
     with pytest.warns(UserWarning, match="emission"):
         fitted, _ = generalized_em_mvr_chmm(model, [["x", "y", "x"]], max_iter=1, tol=0)
     unobserved = np.asarray(fitted.representation("matvec").emission_mat.tolist())[
@@ -246,7 +246,7 @@ def test_gem_history():
     hmm = make_random_hmm(
         hidden_states=["A", "B"], observable_states=["x", "y"], seed=8
     )
-    model = ConstrainedHiddenMarkovModel(hmm)
+    model = ConstrainedGraphicalModel(hmm)
     observations = [["x", "x", "y"]]
     fitted, history = generalized_em_mvr_chmm(model, observations, max_iter=2, tol=0)
     assert len(history) == 2
@@ -265,7 +265,7 @@ def test_gem_backtracking_failure_retains_parameters():
     hmm = make_random_hmm(
         hidden_states=["A", "B"], observable_states=["x", "y"], seed=8
     )
-    model = ConstrainedHiddenMarkovModel(hmm)
+    model = ConstrainedGraphicalModel(hmm)
     with pytest.warns(RuntimeWarning, match="backtracking"):
         fitted, history = generalized_em_mvr_chmm(
             model,
@@ -321,7 +321,7 @@ def test_gem_rejects_invalid_arguments(observations, kwargs):
     hmm = make_random_hmm(
         hidden_states=["A", "B"], observable_states=["x", "y"], seed=8
     )
-    model = ConstrainedHiddenMarkovModel(hmm)
+    model = ConstrainedGraphicalModel(hmm)
     if not observations:
         match = "at least one sequence"
     elif "update" in kwargs:

@@ -3,7 +3,7 @@
 A query goes through four steps:
 
 1. normalise the model: a bare graphical model is wrapped as
-   ``Constrained*(model)`` (no constraints), so every query runs on a
+   ``ConstrainedGraphicalModel(model)`` (no constraints), so every query runs on a
    constrained model;
 2. pick the representation kind from ``method`` (and, for
    ``"integer_program"``, ``ip_formulation``; for ``"a_star"``, the
@@ -21,12 +21,9 @@ by the representation registry: unsupported pairs raise its
 from ovld import ovld
 from pyomo.common.timing import TicTocTimer
 
-from conin.constrained_models import (
-    ConstrainedDynamicDiscreteBayesianNetwork,
-    ConstrainedHiddenMarkovModel,
-)
-from conin.constrained_models.normalise import as_constrained_model
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.exceptions import InfeasibleQueryError, InvalidInputError
+from conin.graphical_models import DynamicDiscreteBayesianNetwork, HiddenMarkovModel
 from conin.graphical_models.assignments import as_sequence
 from conin.graphical_models.dynamic_bayesian_network import check_unroll_start
 from conin.representations.matvec import MatVecHMMRepresentation
@@ -106,10 +103,10 @@ def _structure_params(kind, cmodel, *, start, stop):
     """
     if kind not in ("pyomo", "toulbar2", "variable_elimination"):
         return {}
-    if isinstance(cmodel, ConstrainedDynamicDiscreteBayesianNetwork):
+    if isinstance(cmodel.model, DynamicDiscreteBayesianNetwork):
         start, stop = dbn_time_range(start, stop)
         return dict(start=start, stop=stop)
-    if isinstance(cmodel, ConstrainedHiddenMarkovModel):
+    if isinstance(cmodel.model, HiddenMarkovModel):
         return dict(start=start, stop=stop)
     return {}
 
@@ -300,14 +297,11 @@ def map_query(
     >>> results = map_query(pgm, method="integer_program", evidence=["o0", "o1"], solver="glpk")  # doctest: +SKIP
     """
     check_method(method, METHODS, "inference type")
-    cmodel = as_constrained_model(pgm)
+    cmodel = ConstrainedGraphicalModel.ensure(pgm)
     observed = None
-    if isinstance(
-        cmodel,
-        (ConstrainedDynamicDiscreteBayesianNetwork, ConstrainedHiddenMarkovModel),
-    ):
+    if isinstance(cmodel.model, (DynamicDiscreteBayesianNetwork, HiddenMarkovModel)):
         check_unroll_start(start)
-    if isinstance(cmodel, ConstrainedHiddenMarkovModel):
+    if isinstance(cmodel.model, HiddenMarkovModel):
         observed = _hmm_observations(method, evidence)
         start, stop, observed = _hmm_time_range(observed, start, stop)
     kind = _representation_kind(method, cmodel, options)

@@ -9,7 +9,8 @@ from __future__ import annotations
 
 import torch
 
-from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedGraphicalModel
+from conin.graphical_models import HiddenMarkovModel
 from conin.constraints.mvr import mvr_sattime
 from conin.exceptions import InvalidInputError
 
@@ -60,7 +61,7 @@ def stopped_sampling_torch_mvr_chmm(
 
     Parameters
     ----------
-    model : ConstrainedHiddenMarkovModel or HiddenMarkovModel
+    model : HiddenMarkovModel or ConstrainedGraphicalModel (of an HMM)
         Hidden Markov model with ``"mvr"`` constraints (a bare HMM has none). It
         is not modified, and neither are its MVRs.  The MVRs come from its
         ``"mvr"`` representation.
@@ -100,7 +101,7 @@ def stopped_sampling_torch_mvr_chmm(
     if min_length is not None:
         _positive_int("min_length", min_length)
 
-    model = ConstrainedHiddenMarkovModel.ensure(model)
+    model = ConstrainedGraphicalModel.ensure(model, HiddenMarkovModel)
     _, constraints = _model_parts(model)
     index = _resolve_target(constraints, target)
 

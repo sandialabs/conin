@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from conin.exceptions import InvalidInputError
-from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedGraphicalModel
 
 # importorskip only catches ImportError; a broken torch install raises OSError.
 try:
@@ -63,7 +63,7 @@ def assert_matches_brute_force(hmm, mvrs, observed, T=None, seed=0):
     if T is None:
         T = len(observed)
 
-    model = ConstrainedHiddenMarkovModel(hmm, mvrs)
+    model = ConstrainedGraphicalModel(hmm, mvrs)
     expected = brute_force_path_posterior(hmm, mvrs, observed, T)
 
     if not expected:
@@ -183,7 +183,7 @@ def test_ffbs_random_instances_match_brute_force(seed):
 
 def test_ffbs_is_reproducible_under_a_seeded_generator(hmm, observed):
     mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="B")
-    model = ConstrainedHiddenMarkovModel(hmm, mvr)
+    model = ConstrainedGraphicalModel(hmm, mvr)
 
     def draw(seed):
         return ffbs_torch_mvr_chmm(
@@ -202,7 +202,7 @@ def test_ffbs_return_shapes(hmm, observed):
     mvr = make_forbid_mvr(
         hidden_states=hmm.hidden_states, forbidden_state="B", time_range=[1, 3]
     )
-    model = ConstrainedHiddenMarkovModel(hmm, mvr)
+    model = ConstrainedGraphicalModel(hmm, mvr)
 
     paths, indices, augmented = ffbs_torch_mvr_chmm(
         model,
@@ -237,7 +237,7 @@ def test_ffbs_return_shapes(hmm, observed):
     ],
 )
 def test_ffbs_rejects_bad_arguments(hmm, observed, kwargs, match):
-    model = ConstrainedHiddenMarkovModel(hmm)
+    model = ConstrainedGraphicalModel(hmm)
 
     with pytest.raises(InvalidInputError, match=match):
         ffbs_torch_mvr_chmm(model, observed, **kwargs)

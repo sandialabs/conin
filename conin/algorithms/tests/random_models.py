@@ -20,10 +20,7 @@ import munch
 import pyomo.environ as pe
 
 from conin import (
-    ConstrainedDiscreteBayesianNetwork,
-    ConstrainedDiscreteMarkovNetwork,
-    ConstrainedDynamicDiscreteBayesianNetwork,
-    ConstrainedHiddenMarkovModel,
+    ConstrainedGraphicalModel,
     DiscreteBayesianNetwork,
     DiscreteCPD,
     DiscreteFactor,
@@ -41,9 +38,9 @@ from conin.constraints.mvr import HomMVR, mvr_constraint_fn
 from conin.graphical_models import TimeIndex, create_bn_from_dbn, random_hmm
 
 CONSTRAINED = {
-    DiscreteMarkovNetwork: ConstrainedDiscreteMarkovNetwork,
-    DiscreteBayesianNetwork: ConstrainedDiscreteBayesianNetwork,
-    DynamicDiscreteBayesianNetwork: ConstrainedDynamicDiscreteBayesianNetwork,
+    DiscreteMarkovNetwork: ConstrainedGraphicalModel,
+    DiscreteBayesianNetwork: ConstrainedGraphicalModel,
+    DynamicDiscreteBayesianNetwork: ConstrainedGraphicalModel,
 }
 
 
@@ -366,5 +363,5 @@ def constrain(pgm, constraint):
     if constraint is None:
         return pgm
     if hasattr(pgm, "hidden_states"):
-        return ConstrainedHiddenMarkovModel(pgm, constraints=[constraint])
+        return ConstrainedGraphicalModel(pgm, constraints=[constraint])
     return CONSTRAINED[type(pgm)](pgm, constraints=[constraint])

@@ -22,8 +22,10 @@ Package layout
    ``"toulbar2"``, ``"smoek"``, ``"oracle"``, ``"factor_oracle"``,
    ``"recursive"``, ``"mvr"``) and holds no backend logic.
 ``conin.constrained_models``
-   ``Constrained*(model, constraints=(), *, data=None)``: an immutable pair of
-   a model and a tuple of constraints of one family, plus application data.
+   ``ConstrainedGraphicalModel(model, constraints=(), *, data=None)``: an
+   immutable pair of a model and a tuple of constraints of one family, plus
+   application data. One class wraps every model type; its ``model_type`` is
+   the model class the representations are registered under.
 ``conin.representations``
    The registry and the representations built from a constrained model, one
    subpackage per backend (``pyomo``, ``toulbar2``, ``variable_elimination``,
@@ -37,7 +39,7 @@ Package layout
    probability and first satisfaction time queries;
    ``conin.algorithms.scoring`` scores assignments (``log_potential``,
    ``log_probability``), and ``conin.algorithms.feasibility`` checks them
-   against the constraints (``is_feasible``, dispatched on the constrained
+   against the constraints (``is_feasible``, dispatched on the wrapped
    model and then on each constraint's class, and ``partial_is_feasible``
    for constrained HMMs). ``conin.algorithms.util`` holds the code they
    share (the torch MVR kernels and variable elimination). ``map_query`` and ``log_probability_query``
@@ -93,13 +95,16 @@ Representations and dispatch
   constrained model accepts a constraint family only if some builder is
   registered for it. Supporting a new family or model means registering a
   builder.
-- A constrained model class registers itself as the constrained class of its
-  ``model_type`` when it is defined (``ConstrainedGraphicalModel.__init_subclass__``,
-  into ``conin.graphical_models.base``, the layer below). Queries wrap bare
-  models in it (``as_constrained_model``), and ``model.representation(kind)``
-  is ``ConstrainedX(model).representation(kind)``. A new model type needs a
-  ``GraphicalModel`` subclass and a ``ConstrainedGraphicalModel`` subclass
-  with ``model_type`` set, and no list to edit.
+- There is one constrained model class, ``ConstrainedGraphicalModel``. Its
+  ``model_type`` is the nearest class in ``type(model).__mro__`` with a
+  registered builder, so a subclass of a model class uses the builders of
+  that class. Queries wrap bare models in it
+  (``ConstrainedGraphicalModel.ensure``), and ``model.representation(kind)``
+  is ``ConstrainedGraphicalModel(model).representation(kind)`` (the class
+  registers itself in ``conin.graphical_models.base``, the layer below).
+  Code that depends on the model type dispatches on ``cmodel.model``. A new
+  model type needs a ``GraphicalModel`` subclass and registered builders,
+  and no list to edit.
 - Each backend has one function that applies the constraints of a family
   (``apply_pyomo_constraints``, ``apply_toulbar2_constraints``,
   ``apply_variable_elimination_constraints``). Each passes ``apply_constraints``
@@ -110,7 +115,7 @@ Representations and dispatch
   ``time_steps`` and their constraint-``data`` time fields from the mixins in
   ``conin.representations.unrolled``, so the backends cannot drift apart.
 - ``map_query`` (and ``log_probability_query``) normalise the model (bare
-  models are wrapped as ``Constrained*(model)``; pgmpy models are rejected),
+  models are wrapped as ``ConstrainedGraphicalModel(model)``; pgmpy models are rejected),
   map the method to a representation kind (one table for both queries,
   ``conin.representations.methods``), build the representation with its
   structure parameters, and dispatch with ``ovld`` on the representation

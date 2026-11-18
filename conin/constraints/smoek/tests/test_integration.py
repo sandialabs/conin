@@ -23,7 +23,7 @@ import pyomo.environ as pyo
 
 from conin.config import default_mip_solver
 from conin.examples.bayesian_network import cancer1_BN_conin
-from conin.constrained_models import ConstrainedDiscreteBayesianNetwork
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.algorithms.inference import map_query
 from conin.algorithms.scoring import log_potential
 from conin.exceptions import InvalidInputError
@@ -136,7 +136,7 @@ def test_smoek_constraints_match_brute_force(case, method):
     def constraint(model, data):
         return expression(model, data)
 
-    cpgm = ConstrainedDiscreteBayesianNetwork(pgm, constraints=constraint, data=data)
+    cpgm = ConstrainedGraphicalModel(pgm, constraints=constraint, data=data)
     result = map_query(cpgm, method=method, evidence=EVIDENCE)
 
     states = dict(result.solution.states, **EVIDENCE)
@@ -175,16 +175,14 @@ class TestBasicSmoekConstraints:
         # Test both
         evidence = {"Pollution": 0, "Smoker": 1}
 
-        cpgm_traditional = ConstrainedDiscreteBayesianNetwork(
+        cpgm_traditional = ConstrainedGraphicalModel(
             pgm, constraints=traditional_constraint
         )
         result_traditional = map_query(
             cpgm_traditional, method="integer_program", evidence=evidence
         )
 
-        cpgm_smoek = ConstrainedDiscreteBayesianNetwork(
-            pgm, constraints=smoek_constraint
-        )
+        cpgm_smoek = ConstrainedGraphicalModel(pgm, constraints=smoek_constraint)
         result_smoek = map_query(
             cpgm_smoek, method="integer_program", evidence=evidence
         )
@@ -211,6 +209,6 @@ class TestBasicSmoekConstraints:
 
         # Mix both styles
         with pytest.raises(InvalidInputError, match="one constraint family"):
-            ConstrainedDiscreteBayesianNetwork(
+            ConstrainedGraphicalModel(
                 pgm, constraints=[traditional_constraint, smoek_constraint]
             )

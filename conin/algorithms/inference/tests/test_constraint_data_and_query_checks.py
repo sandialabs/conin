@@ -11,12 +11,7 @@ import conin.examples.hidden_markov_model as hex_
 import conin.examples.markov_network as mex
 from conin.algorithms.feasibility import is_feasible
 from conin.config import default_mip_solver
-from conin.constrained_models import (
-    ConstrainedDiscreteBayesianNetwork,
-    ConstrainedDiscreteMarkovNetwork,
-    ConstrainedDynamicDiscreteBayesianNetwork,
-    ConstrainedHiddenMarkovModel,
-)
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.constraints import (
     FactorOracleConstraint,
     OracleConstraint,
@@ -38,14 +33,14 @@ skipif_toulbar2_not_available = pytest.mark.skipif(
 )
 
 _CLASSES = {
-    "mn": (ConstrainedDiscreteMarkovNetwork, lambda: mex.ABC_conin().pgm, {}),
-    "bn": (ConstrainedDiscreteBayesianNetwork, lambda: bex.cancer1_BN_conin().pgm, {}),
+    "mn": (ConstrainedGraphicalModel, lambda: mex.ABC_conin().pgm, {}),
+    "bn": (ConstrainedGraphicalModel, lambda: bex.cancer1_BN_conin().pgm, {}),
     "dbn": (
-        ConstrainedDynamicDiscreteBayesianNetwork,
+        ConstrainedGraphicalModel,
         lambda: dex.weather_conin().pgm,
         dict(start=0, stop=2),
     ),
-    "hmm": (ConstrainedHiddenMarkovModel, hex_.create_hmm1, dict(stop=1)),
+    "hmm": (ConstrainedGraphicalModel, hex_.create_hmm1, dict(stop=1)),
 }
 
 # The fields each representation adds (what the functions saw before, when
@@ -106,16 +101,14 @@ def test_without_application_data_the_fields_are_unchanged(kind):
     if kind == "toulbar2" and not pytoulbar2_available:
         pytest.skip("pytoulbar2 not installed")
     seen = []
-    cmodel = ConstrainedDiscreteMarkovNetwork(
-        mex.ABC_conin().pgm, _recorder(kind, seen)
-    )
+    cmodel = ConstrainedGraphicalModel(mex.ABC_conin().pgm, _recorder(kind, seen))
     cmodel.representation(kind).create_model(evidence={"B": 0})
     assert seen == [munch.Munch(variables=None, evidence={"B": 0})]
 
 
 def test_a_representation_field_replaces_an_application_field():
     seen = []
-    cmodel = ConstrainedDynamicDiscreteBayesianNetwork(
+    cmodel = ConstrainedGraphicalModel(
         dex.weather_conin().pgm,
         _recorder("pyomo", seen),
         data=munch.Munch(T="user", other=1),
@@ -129,7 +122,7 @@ def test_attribute_style_application_data():
         k = 3
 
     seen = []
-    cmodel = ConstrainedHiddenMarkovModel(
+    cmodel = ConstrainedGraphicalModel(
         hex_.create_hmm1(), _recorder("pyomo", seen), data=AppData()
     )
     cmodel.representation("pyomo", stop=1).create_model()
@@ -156,7 +149,7 @@ def test_factor_representation_passes_the_application_data():
         nodes=nodes,
         name="at_most_k",
     )
-    cmodel = ConstrainedHiddenMarkovModel(
+    cmodel = ConstrainedGraphicalModel(
         hex_.create_hmm1(), constraint, data=munch.Munch(k=1)
     )
     cmodel.representation("variable_elimination", start=0, stop=2)
@@ -170,7 +163,7 @@ def test_variable_elimination_uses_the_application_data():
         nodes=lambda data: [("H", t) for t in data.hmm.T],
         name="at_most_k",
     )
-    cmodel = ConstrainedHiddenMarkovModel(
+    cmodel = ConstrainedGraphicalModel(
         hex_.create_hmm1(), constraint, data=munch.Munch(k=1)
     )
     results = map_query(cmodel, method="variable_elimination", evidence=["o0"] * 4)
@@ -179,7 +172,7 @@ def test_variable_elimination_uses_the_application_data():
 
 def test_oracle_predicates_see_the_application_data():
     constraint = OracleConstraint(func=_count_h0_at_most("k"))
-    cmodel = ConstrainedHiddenMarkovModel(
+    cmodel = ConstrainedGraphicalModel(
         hex_.create_hmm1(), constraint, data=munch.Munch(k=2)
     )
     observed = ["o0"] * 6
@@ -199,7 +192,7 @@ def test_is_feasible_passes_the_application_data():
 
     mn = mex.ABC_conin().pgm
     constraint = FactorOracleConstraint(func=at_most_k, nodes=["A", "B"], name="c")
-    cmodel = ConstrainedDiscreteMarkovNetwork(mn, constraint, data=munch.Munch(k=1))
+    cmodel = ConstrainedGraphicalModel(mn, constraint, data=munch.Munch(k=1))
     assert is_feasible(cmodel, {"A": 1, "B": 0, "C": 2})
     assert not is_feasible(cmodel, {"A": 1, "B": 1, "C": 0})
 
@@ -213,9 +206,7 @@ def test_is_feasible_dbn_sets_T_on_a_copy_of_the_application_data():
 
     dbn = dex.simple1_DDBN_conin().pgm
     constraint = FactorOracleConstraint(func=func, nodes=[("A", 0)], name="c")
-    cmodel = ConstrainedDynamicDiscreteBayesianNetwork(
-        dbn, constraint, data=munch.Munch(k=1)
-    )
+    cmodel = ConstrainedGraphicalModel(dbn, constraint, data=munch.Munch(k=1))
     is_feasible(cmodel, {("A", 0): 0, ("A", 1): 0, ("B", 0): 0, ("B", 1): 0})
     assert seen == [munch.Munch(k=1, start=0, stop=1, T=[0, 1])]
     assert cmodel.data == munch.Munch(k=1)
@@ -227,7 +218,7 @@ def test_integer_program_solves_with_the_application_data():
     def at_most_k_zeros(M, D):
         M.c = pyo.Constraint(expr=sum(M.V(("H", t), "h0") for t in D.hmm.T) <= D.k)
 
-    cmodel = ConstrainedHiddenMarkovModel(
+    cmodel = ConstrainedGraphicalModel(
         hex_.create_hmm1(), at_most_k_zeros, data=munch.Munch(k=2)
     )
     results = map_query(

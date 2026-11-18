@@ -1,7 +1,8 @@
 import munch
 import math
 
-from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedGraphicalModel
+from conin.graphical_models import HiddenMarkovModel
 from conin.exceptions import InvalidInputError
 from conin.algorithms.learning.unconstrained.supervised import supervised_learning
 from conin.algorithms.sampling.oracle import rejection_sample_hidden
@@ -41,7 +42,7 @@ def mcem(
 
     Parameters
     ----------
-    app : ConstrainedHiddenMarkovModel or HiddenMarkovModel
+    app : HiddenMarkovModel or ConstrainedGraphicalModel (of an HMM)
         The starting model; a bare HMM is sampled without constraints.  It is
         not changed.
     observed : list
@@ -84,9 +85,9 @@ def mcem(
     if emission_tolerance is None:
         emission_tolerance = 1e-4
 
-    # The re-estimated model is kept locally (a ConstrainedHiddenMarkovModel is
+    # The re-estimated model is kept locally (a ConstrainedGraphicalModel is
     # immutable) and is not written back to ``app``.
-    cmodel = ConstrainedHiddenMarkovModel.ensure(app)
+    cmodel = ConstrainedGraphicalModel.ensure(app, HiddenMarkovModel)
     rng = as_rng(rng)
 
     prev_log_prob = nan

@@ -1,27 +1,44 @@
-"""Base class for constrained graphical models."""
+"""The constrained graphical model: a graphical model paired with constraints."""
 
 from conin.constraints.base import Constraint, constraint_families
 from conin.exceptions import InvalidInputError
-from conin.graphical_models.base import register_constrained_class
+from conin.graphical_models.base import GraphicalModel, set_constrained_class
 from conin.representations.base import (
     build_representation,
+    registered_model_type,
     supported_representations,
 )
+
+
+def pgmpy_hint(model):
+    """A hint for the ``TypeError`` of a pgmpy model (empty for other objects)."""
+    if type(model).__module__.split(".")[0] == "pgmpy":
+        return (
+            " pgmpy models are not accepted: convert them with "
+            "conin.io.pgmpy.convert_pgmpy_to_conin."
+        )
+    return ""
 
 
 class ConstrainedGraphicalModel:
     """An immutable graphical model paired with an immutable tuple of constraints.
 
+    The same class wraps every kind of model (Markov network, Bayesian
+    network, dynamic Bayesian network, hidden Markov model); what a
+    constrained model supports follows from :attr:`model_type`.
+
     Parameters
     ----------
     model : GraphicalModel
-        The unconstrained model. It must be an instance of ``model_type``.
+        The unconstrained model. Some representation builder must be
+        registered for its class or one of its base classes (see
+        :attr:`model_type`).
     constraints : Constraint or iterable of Constraint, optional
         The constraints: a single constraint, or a list, tuple or other
         iterable of constraints. They must all belong to one constraint family
         (``type(c).family``), and the family must be supported for
-        ``model_type``: some representation builder must be registered for it
-        (see :func:`conin.representations.supported_representations`).
+        :attr:`model_type`: some representation builder must be registered
+        for it (see :func:`conin.representations.supported_representations`).
         ``None`` is treated as no constraints.
     data : object, optional
         Application data passed to the representation builders (e.g. to MVR
@@ -36,37 +53,29 @@ class ConstrainedGraphicalModel:
     Representations are built by :meth:`representation` on every call (they
     are not cached).
 
-    A subclass that sets ``model_type`` becomes the constrained model class
-    of that model class: bare models are wrapped in it by the queries and by
-    ``model.representation(kind)``.  Only one class can be registered per
-    model class.
+    The queries and ``model.representation(kind)`` wrap bare models in this
+    class with no constraints.
     """
 
-    __slots__ = ("_model", "_constraints", "_family", "_data")
-
-    model_type = None
-    """type: The unconstrained model class this wrapper accepts (set by subclasses)."""
-
-    def __init_subclass__(cls, **kwargs):
-        super().__init_subclass__(**kwargs)
-        if cls.__dict__.get("model_type") is not None:
-            register_constrained_class(cls)
+    __slots__ = ("_model", "_model_type", "_constraints", "_family", "_data")
 
     def __init__(self, model, constraints=(), *, data=None):
-        if self.model_type is None:
+        if not isinstance(model, GraphicalModel):
             raise TypeError(
-                f"{type(self).__name__} does not define model_type; "
-                "instantiate one of the concrete constrained model classes"
+                f"{type(self).__name__} expects a conin graphical model, got "
+                f"{type(model).__name__}.{pgmpy_hint(model)}"
             )
-        if not isinstance(model, self.model_type):
+        model_type = registered_model_type(type(model))
+        if model_type is None:
             raise TypeError(
-                f"{type(self).__name__} expects a {self.model_type.__name__} "
-                f"as its model, got {type(model).__name__}"
+                f"{type(self).__name__}: no representations are registered for "
+                f"{type(model).__name__} or its base classes"
             )
+        object.__setattr__(self, "_model", model)
+        object.__setattr__(self, "_model_type", model_type)
+
         constraints = self._normalise_constraints(constraints)
         family = self._derive_family(constraints)
-
-        object.__setattr__(self, "_model", model)
         object.__setattr__(self, "_constraints", constraints)
         object.__setattr__(self, "_family", family)
         object.__setattr__(self, "_data", data)
@@ -120,11 +129,10 @@ class ConstrainedGraphicalModel:
                 )
         return family
 
-    @classmethod
-    def _supported_families(cls):
+    def _supported_families(self):
         """The sorted families of the builders registered for ``model_type``."""
         return sorted(
-            {f for _, f in supported_representations(cls.model_type) if f is not None}
+            {f for _, f in supported_representations(self._model_type) if f is not None}
         )
 
     # ------------------------------------------------------------------
@@ -135,6 +143,25 @@ class ConstrainedGraphicalModel:
     def model(self):
         """The wrapped unconstrained graphical model."""
         return self._model
+
+    @property
+    def model_type(self):
+        """type: The model class the representations are registered under.
+
+        The nearest class in ``type(model).__mro__`` that has a registered
+        representation builder, e.g. ``HiddenMarkovModel`` for a subclass of
+        it.
+        """
+        return self._model_type
+
+    @property
+    def nodes(self):
+        """The underlying model's nodes (models that have nodes only)."""
+        return self._model.nodes
+
+    def states_of(self, node):
+        """Return the allowed states for ``node`` in the underlying model."""
+        return self._model.states_of(node)
 
     @property
     def constraints(self):
@@ -170,16 +197,33 @@ class ConstrainedGraphicalModel:
         return build_representation(self, kind, **structure_params)
 
     @classmethod
-    def ensure(cls, model):
-        """Return ``model`` if it is already a ``cls``, else ``cls(model)``.
+    def ensure(cls, model, model_type=None):
+        """Return ``model`` as a constrained model.
 
-        Lets functions that accept either a bare or a constrained model work
-        on the constrained one. A bare model is wrapped with no constraints.
-        Anything else raises ``TypeError``, as the constructor does.
+        A constrained model is returned as it is, and a bare model is wrapped
+        with no constraints.  Lets functions that accept either a bare or a
+        constrained model work on the constrained one.
+
+        Parameters
+        ----------
+        model : GraphicalModel or ConstrainedGraphicalModel
+            The model.
+        model_type : type, optional
+            If given, the (wrapped) model must be an instance of it, e.g.
+            ``HiddenMarkovModel`` for the HMM-only algorithms.
+
+        Raises
+        ------
+        TypeError
+            If ``model`` is not a supported model, or not a ``model_type``.
         """
-        if isinstance(model, cls):
-            return model
-        return cls(model)
+        cmodel = model if isinstance(model, cls) else cls(model)
+        if model_type is not None and not isinstance(cmodel.model, model_type):
+            raise TypeError(
+                f"Expected a {model_type.__name__} or a constrained "
+                f"{model_type.__name__}, got {_describe(model)}"
+            )
+        return cmodel
 
     def with_constraints(self, constraints):
         """Return a new object with the same model and data and new constraints.
@@ -209,11 +253,18 @@ class ConstrainedGraphicalModel:
         )
 
     def __getstate__(self):
-        return (self._model, self._constraints, self._family, self._data)
+        return (
+            self._model,
+            self._model_type,
+            self._constraints,
+            self._family,
+            self._data,
+        )
 
     def __setstate__(self, state):
-        model, constraints, family, data = state
+        model, model_type, constraints, family, data = state
         object.__setattr__(self, "_model", model)
+        object.__setattr__(self, "_model_type", model_type)
         object.__setattr__(self, "_constraints", constraints)
         object.__setattr__(self, "_family", family)
         object.__setattr__(self, "_data", data)
@@ -224,3 +275,13 @@ class ConstrainedGraphicalModel:
             f"{type(self).__name__}(model={type(self._model).__name__}, "
             f"constraint_family={self._family!r}, constraints={names!r})"
         )
+
+
+def _describe(model):
+    """``HiddenMarkovModel`` or ``ConstrainedGraphicalModel(HiddenMarkovModel)``."""
+    if isinstance(model, ConstrainedGraphicalModel):
+        return f"{type(model).__name__}({type(model.model).__name__})"
+    return type(model).__name__
+
+
+set_constrained_class(ConstrainedGraphicalModel)

@@ -22,12 +22,7 @@ PUBLIC = {
         "DynamicDiscreteBayesianNetwork",
         "HiddenMarkovModel",
     ],
-    conin.constrained_models: [
-        "ConstrainedDiscreteMarkovNetwork",
-        "ConstrainedDiscreteBayesianNetwork",
-        "ConstrainedDynamicDiscreteBayesianNetwork",
-        "ConstrainedHiddenMarkovModel",
-    ],
+    conin.constrained_models: ["ConstrainedGraphicalModel"],
     conin.constraints: [
         "Constraint",
         "mvr_constraint_fn",
@@ -93,10 +88,7 @@ def test_subpackages_are_loaded():
         conin.DiscreteBayesianNetwork,
         conin.DynamicDiscreteBayesianNetwork,
         conin.HiddenMarkovModel,
-        conin.ConstrainedDiscreteMarkovNetwork,
-        conin.ConstrainedDiscreteBayesianNetwork,
-        conin.ConstrainedDynamicDiscreteBayesianNetwork,
-        conin.ConstrainedHiddenMarkovModel,
+        conin.ConstrainedGraphicalModel,
     ],
 )
 def test_models_have_no_check_model(cls):

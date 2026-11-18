@@ -7,12 +7,7 @@ import conin.examples.bayesian_network as bex
 import conin.examples.dynamic_bayesian_network as dex
 import conin.examples.hidden_markov_model as hex_
 import conin.examples.markov_network as mex
-from conin.constrained_models import (
-    ConstrainedDiscreteBayesianNetwork,
-    ConstrainedDiscreteMarkovNetwork,
-    ConstrainedDynamicDiscreteBayesianNetwork,
-    ConstrainedHiddenMarkovModel,
-)
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.constraints import (
     FactorOracleConstraint,
     oracle_constraint_fn,
@@ -75,7 +70,7 @@ def test_factor_rejects_pyomo_constraints():
     def noop(M, D):
         pass
 
-    cmodel = ConstrainedDiscreteMarkovNetwork(mex.ABC_conin().pgm, noop)
+    cmodel = ConstrainedGraphicalModel(mex.ABC_conin().pgm, noop)
     with pytest.raises(
         InvalidInputError, match="No 'variable_elimination' representation"
     ):
@@ -95,22 +90,22 @@ def test_variable_elimination_rejects_pyomo_constraints():
     "cmodel,params,cls",
     [
         (
-            ConstrainedDiscreteMarkovNetwork(mex.ABC_conin().pgm),
+            ConstrainedGraphicalModel(mex.ABC_conin().pgm),
             {},
             VariableEliminationMNRepresentation,
         ),
         (
-            ConstrainedDiscreteBayesianNetwork(bex.cancer1_BN_conin().pgm),
+            ConstrainedGraphicalModel(bex.cancer1_BN_conin().pgm),
             {},
             VariableEliminationBNRepresentation,
         ),
         (
-            ConstrainedDynamicDiscreteBayesianNetwork(dex.weather_conin().pgm),
+            ConstrainedGraphicalModel(dex.weather_conin().pgm),
             dict(stop=4),
             VariableEliminationDBNRepresentation,
         ),
         (
-            ConstrainedHiddenMarkovModel(hex_.create_hmm1()),
+            ConstrainedGraphicalModel(hex_.create_hmm1()),
             dict(stop=4),
             VariableEliminationHMMRepresentation,
         ),
@@ -136,7 +131,7 @@ def test_factor_representation_classes(cmodel, params, cls):
 
 def test_dbn_structure_params():
     dbn = dex.weather_conin().pgm
-    cmodel = ConstrainedDynamicDiscreteBayesianNetwork(dbn)
+    cmodel = ConstrainedGraphicalModel(dbn)
     default = cmodel.representation("variable_elimination")
     assert (default.start, default.stop) == (0, 1)
     # (start > 0 fails in create_bn_from_dbn for every backend.)
@@ -148,7 +143,7 @@ def test_dbn_structure_params():
 
 def test_hmm_structure_params():
     hmm = hex_.create_hmm1()
-    cmodel = ConstrainedHiddenMarkovModel(hmm)
+    cmodel = ConstrainedGraphicalModel(hmm)
     with pytest.raises(InvalidInputError, match="needs a stop time"):
         cmodel.representation("variable_elimination")
     repn = cmodel.representation("variable_elimination", stop=3)
@@ -180,10 +175,10 @@ def _recording_constraint(seen, nodes):
 
 def test_constraint_data_mn_bn_is_none():
     seen = []
-    ConstrainedDiscreteMarkovNetwork(
+    ConstrainedGraphicalModel(
         mex.ABC_conin().pgm, _recording_constraint(seen, ["A"])
     ).representation("variable_elimination")
-    ConstrainedDiscreteBayesianNetwork(
+    ConstrainedGraphicalModel(
         bex.cancer1_BN_conin().pgm, _recording_constraint(seen, ["Smoker"])
     ).representation("variable_elimination")
     assert seen == [None, None]
@@ -191,11 +186,11 @@ def test_constraint_data_mn_bn_is_none():
 
 def test_constraint_data_dbn_and_hmm():
     seen = []
-    ConstrainedDynamicDiscreteBayesianNetwork(
+    ConstrainedGraphicalModel(
         dex.simple1_DDBN_conin().pgm, _recording_constraint(seen, [("A", 0)])
     ).representation("variable_elimination", stop=2)
     hmm = hex_.create_hmm1()
-    ConstrainedHiddenMarkovModel(
+    ConstrainedGraphicalModel(
         hmm, _recording_constraint(seen, [("H", 0)])
     ).representation("variable_elimination", stop=2)
     assert seen == [
@@ -213,7 +208,7 @@ def test_constraint_data_dbn_and_hmm():
 
 def test_constraints_are_materialised_at_build_time():
     seen = []
-    cmodel = ConstrainedDiscreteBayesianNetwork(
+    cmodel = ConstrainedGraphicalModel(
         bex.cancer1_BN_conin().pgm, _recording_constraint(seen, ["Smoker"])
     )
     repn = cmodel.representation("variable_elimination")
@@ -285,7 +280,7 @@ def test_constrained_mn_keeps_user_evidence():
     """Regression: the ConstrainedMN overload replaced the user evidence with {}."""
     pgm = mex.ABC_conin().pgm
     con = _abc_all_different()
-    cmodel = ConstrainedDiscreteMarkovNetwork(pgm, con)
+    cmodel = ConstrainedGraphicalModel(pgm, con)
     # The constrained optimum without evidence is A=0, B=2, C=1, so B=0 is
     # a real restriction (the old code ignored it and returned B=2).
     expected = _brute_force(pgm, con, {"B": 0})
@@ -313,7 +308,7 @@ def test_constrained_mn_does_not_force_a_scope_node_to_one():
         return states["C"] == 0
 
     pgm = mex.ABC_conin().pgm
-    cmodel = ConstrainedDiscreteMarkovNetwork(pgm, c_is_zero)
+    cmodel = ConstrainedGraphicalModel(pgm, c_is_zero)
     results = map_query(cmodel, method="variable_elimination")
     assert results.solution.states == _brute_force(pgm, c_is_zero)
     assert results.solution.states["C"] == 0
@@ -331,6 +326,6 @@ def test_constrained_mn_matches_brute_force(example):
     pgm = example().pgm
     con = _abc_all_different()
     results = map_query(
-        ConstrainedDiscreteMarkovNetwork(pgm, con), method="variable_elimination"
+        ConstrainedGraphicalModel(pgm, con), method="variable_elimination"
     )
     assert results.solution.states == _brute_force(pgm, con)

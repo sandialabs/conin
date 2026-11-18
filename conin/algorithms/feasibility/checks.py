@@ -25,12 +25,7 @@ feasibility problem of that model; they raise ``NotImplementedError``.
 import munch
 from ovld import ovld
 
-from conin.constrained_models import (
-    ConstrainedDiscreteBayesianNetwork,
-    ConstrainedDiscreteMarkovNetwork,
-    ConstrainedDynamicDiscreteBayesianNetwork,
-    ConstrainedHiddenMarkovModel,
-)
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.constraints import (
     Constraint,
     FactorOracleConstraint,
@@ -45,6 +40,12 @@ from conin.constraints.smoek.add_constraints_oracle import StateSpace
 from conin.constraints.mvr import BaseMVR, InhomMVR
 from conin.constraints.oracle import oracle_accepts
 from conin.exceptions import InvalidInputError
+from conin.graphical_models import (
+    DiscreteBayesianNetwork,
+    DiscreteMarkovNetwork,
+    DynamicDiscreteBayesianNetwork,
+    HiddenMarkovModel,
+)
 from conin.graphical_models.assignments import (
     check_total_assignment,
     dbn_horizon,
@@ -111,12 +112,13 @@ def is_feasible(cmodel, assignment, observed=None):
         For ``"pyomo"`` and ``"toulbar2"`` constraints, whose functions can
         add variables to the backend model.
     TypeError
-        For a model that is not one of the constrained models above.
+        For a model that is not a ``ConstrainedGraphicalModel`` of one of
+        the models above.
 
     Examples
     --------
     >>> from conin.algorithms.feasibility import is_feasible
-    >>> from conin.constrained_models import ConstrainedHiddenMarkovModel
+    >>> from conin.constrained_models import ConstrainedGraphicalModel
     >>> from conin.constraints import oracle_constraint_fn
     >>> from conin.graphical_models import HiddenMarkovModel
     >>> hmm = HiddenMarkovModel(
@@ -130,27 +132,30 @@ def is_feasible(cmodel, assignment, observed=None):
     >>> @oracle_constraint_fn()
     ... def ends_in_h1(seq):
     ...     return seq[len(seq) - 1] == "h1"
-    >>> chmm = ConstrainedHiddenMarkovModel(hmm, ends_in_h1)
+    >>> chmm = ConstrainedGraphicalModel(hmm, ends_in_h1)
     >>> is_feasible(chmm, ["h0", "h1"]), is_feasible(chmm, ["h1", "h0"])
     (True, False)
     """
-    return _is_feasible(cmodel, assignment, observed)
+    if not isinstance(cmodel, ConstrainedGraphicalModel):
+        raise TypeError(
+            "is_feasible needs a ConstrainedGraphicalModel, "
+            f"got {type(cmodel).__name__}"
+        )
+    return _is_feasible(cmodel.model, cmodel, assignment, observed)
 
 
 @ovld
-def _is_feasible(cmodel: ConstrainedDiscreteMarkovNetwork, assignment, observed):
+def _is_feasible(model: DiscreteMarkovNetwork, cmodel, assignment, observed):
     return _check_factor_model(cmodel, assignment, observed)
 
 
 @ovld
-def _is_feasible(cmodel: ConstrainedDiscreteBayesianNetwork, assignment, observed):
+def _is_feasible(model: DiscreteBayesianNetwork, cmodel, assignment, observed):
     return _check_factor_model(cmodel, assignment, observed)
 
 
 @ovld
-def _is_feasible(
-    cmodel: ConstrainedDynamicDiscreteBayesianNetwork, assignment, observed
-):
+def _is_feasible(model: DynamicDiscreteBayesianNetwork, cmodel, assignment, observed):
     _no_observed(cmodel, observed)
     stop = dbn_horizon(cmodel.model, assignment)
     states = dbn_states(cmodel.model, stop)
@@ -165,7 +170,7 @@ def _is_feasible(
 
 
 @ovld
-def _is_feasible(cmodel: ConstrainedHiddenMarkovModel, assignment, observed):
+def _is_feasible(model: HiddenMarkovModel, cmodel, assignment, observed):
     hmm = cmodel.model
     hidden, observed = hmm_sequences(hmm, assignment, observed)
     T = len(hidden)
@@ -186,10 +191,9 @@ def _is_feasible(cmodel: ConstrainedHiddenMarkovModel, assignment, observed):
 
 
 @ovld
-def _is_feasible(cmodel: object, assignment, observed):
+def _is_feasible(model: object, cmodel, assignment, observed):
     raise TypeError(
-        "is_feasible needs a constrained model "
-        f"(conin.constrained_models), got {type(cmodel).__name__}"
+        f"is_feasible is not defined for a constrained {type(model).__name__}"
     )
 
 
@@ -202,7 +206,7 @@ def partial_is_feasible(cmodel, *, T, seq):
 
     Parameters
     ----------
-    cmodel : ConstrainedHiddenMarkovModel
+    cmodel : ConstrainedGraphicalModel
         The constrained HMM.
     T : int
         Target full sequence length.
@@ -218,24 +222,20 @@ def partial_is_feasible(cmodel, *, T, seq):
     Raises
     ------
     TypeError
-        For a model that is not a ``ConstrainedHiddenMarkovModel``.
+        For a model that is not a ``ConstrainedGraphicalModel`` of a
+        ``HiddenMarkovModel``.
     """
-    return _partial_is_feasible(cmodel, T, seq)
-
-
-@ovld
-def _partial_is_feasible(cmodel: ConstrainedHiddenMarkovModel, T, seq):
+    if not (
+        isinstance(cmodel, ConstrainedGraphicalModel)
+        and isinstance(cmodel.model, HiddenMarkovModel)
+    ):
+        raise TypeError(
+            "partial_is_feasible is only defined for a constrained "
+            f"HiddenMarkovModel, got {type(cmodel).__name__}"
+        )
     repn = cmodel.representation("oracle")
     return repn.partial_is_feasible(
         T=T, seq=[repn.hmm.hidden_to_internal[h] for h in seq]
-    )
-
-
-@ovld
-def _partial_is_feasible(cmodel: object, T, seq):
-    raise TypeError(
-        "partial_is_feasible is only defined for a ConstrainedHiddenMarkovModel, "
-        f"got {type(cmodel).__name__}"
     )
 
 

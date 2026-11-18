@@ -100,7 +100,7 @@ def test_ABC_conin(method, write_file, options):
 
 
 #
-# ConstrainedDiscreteMarkovNetwork tests
+# ConstrainedGraphicalModel tests
 #
 
 
@@ -651,7 +651,7 @@ def test3_hmm1(method, options):
 
 
 #
-# ConstrainedHiddenMarkovModel tests
+# ConstrainedGraphicalModel tests
 #
 
 

@@ -3,7 +3,7 @@ raise a bare ``ValueError`` or ``RuntimeError``."""
 
 import pytest
 
-from conin import ConstrainedDiscreteMarkovNetwork
+from conin import ConstrainedGraphicalModel
 from conin.algorithms.learning import supervised_learning
 from conin.constraints import MVRConstraint, PyomoConstraint, Toulbar2Constraint
 from conin.constraints.smoek.decorators import ConinV, SmoekConstraint
@@ -37,9 +37,9 @@ def test_V_takes_two_or_three_arguments(V):
         V()("A")
 
 
-def test_a_constrained_model_needs_a_model_of_its_type():
-    with pytest.raises(TypeError, match="expects a DiscreteMarkovNetwork"):
-        ConstrainedDiscreteMarkovNetwork("not a model")
+def test_a_constrained_model_needs_a_model():
+    with pytest.raises(TypeError, match="expects a conin graphical model"):
+        ConstrainedGraphicalModel("not a model")
 
 
 def test_supervised_learning_without_data_or_start_tolerance():

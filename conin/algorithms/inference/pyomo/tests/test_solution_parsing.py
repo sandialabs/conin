@@ -16,10 +16,7 @@ import pytest
 
 import conin.examples.hidden_markov_model as hex_
 import conin.examples.markov_network as mex
-from conin.constrained_models import (
-    ConstrainedDiscreteMarkovNetwork,
-    ConstrainedHiddenMarkovModel,
-)
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.exceptions import InsufficientSolutionsError, InvalidInputError
 from conin.algorithms.inference import map_query
 from conin.algorithms.inference.pyomo import ip_inference, solve_pyomo_map_query_model
@@ -69,12 +66,12 @@ def _set_mn_assignment(model, assignment):
 
 
 def _abc_model(evidence=None):
-    repn = ConstrainedDiscreteMarkovNetwork(mex.ABC_conin().pgm).representation("pyomo")
+    repn = ConstrainedGraphicalModel(mex.ABC_conin().pgm).representation("pyomo")
     return repn.create_model(evidence=evidence)
 
 
 def _network_flow_model(observed):
-    chmm = ConstrainedHiddenMarkovModel(hex_.create_hmm1())
+    chmm = ConstrainedGraphicalModel(hex_.create_hmm1())
     repn = chmm.representation("pyomo_network_flow")
     M, data = repn.create_model(observed=observed)
     return repn.hidden_markov_model, M, data

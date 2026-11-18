@@ -1,7 +1,8 @@
 import numpy as np
 from pyomo.common.timing import TicTocTimer
 
-from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedGraphicalModel
+from conin.graphical_models import HiddenMarkovModel
 from conin.graphical_models.assignments import as_sequence
 from conin.algorithms.inference.results import (
     map_results,
@@ -92,7 +93,7 @@ def viterbi(*, observed, hmm):
         observed (list): The sequence of observed labels to perform inference on
             (not empty; a tuple or a dict keyed by ``0..T-1`` is accepted too).
             Anything else raises ``InvalidInputError``.
-        hmm (HiddenMarkovModel or ConstrainedHiddenMarkovModel): The HMM to use
+        hmm (HiddenMarkovModel or ConstrainedGraphicalModel of one): The HMM to use
             for inference.  A constrained model must have no constraints
             (otherwise ``InvalidInputError`` is raised).
 
@@ -105,7 +106,7 @@ def viterbi(*, observed, hmm):
         ``solutions`` is empty and ``termination_condition`` is
         ``"error: no feasible solutions"``.
     """
-    cmodel = ConstrainedHiddenMarkovModel.ensure(hmm)
+    cmodel = ConstrainedGraphicalModel.ensure(hmm, HiddenMarkovModel)
     # Raises InvalidInputError if there are constraints.
     return _viterbi(
         cmodel.representation("matvec"),

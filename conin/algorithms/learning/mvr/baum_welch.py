@@ -271,7 +271,7 @@ def forward_backward_mvr_chmm(
 
     Parameters
     ----------
-    model : ConstrainedHiddenMarkovModel or HiddenMarkovModel
+    model : HiddenMarkovModel or ConstrainedGraphicalModel (of an HMM)
         Hidden Markov model with ``"mvr"`` constraints (a bare HMM has none).
         The MVRs come from its ``"mvr"`` representation.
     observed : list or dict
@@ -348,7 +348,7 @@ def baum_welch_mvr_chmm(
 
     Parameters
     ----------
-    model : ConstrainedHiddenMarkovModel or HiddenMarkovModel
+    model : HiddenMarkovModel or ConstrainedGraphicalModel (of an HMM)
         Hidden Markov model with ``"mvr"`` constraints (a bare HMM has none).
         It is not modified. The MVRs are built once, from its ``"mvr"``
         representation, and kept for every iteration: the re-estimated HMMs

@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 import conin.examples.hidden_markov_model as tc
-from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.constraints import OracleConstraint
 from conin.exceptions import InvalidInputError
 from conin.graphical_models import HiddenMarkovModel
@@ -43,7 +43,7 @@ def _sparse_hmm():
 def test_registered_for_the_bare_hmm_only():
     pairs = supported_representations(HiddenMarkovModel)
     assert [p for p in pairs if p[0] == "matvec"] == [("matvec", None)]
-    cmodel = ConstrainedHiddenMarkovModel(
+    cmodel = ConstrainedGraphicalModel(
         tc.create_hmm1(), OracleConstraint(func=lambda s: True)
     )
     with pytest.raises(InvalidInputError, match="matvec"):
@@ -52,12 +52,12 @@ def test_registered_for_the_bare_hmm_only():
 
 def test_no_structure_params():
     with pytest.raises(TypeError):
-        ConstrainedHiddenMarkovModel(tc.create_hmm1()).representation("matvec", stop=3)
+        ConstrainedGraphicalModel(tc.create_hmm1()).representation("matvec", stop=3)
 
 
 def test_class_and_attributes():
     hmm = _sparse_hmm()
-    repn = ConstrainedHiddenMarkovModel(hmm).representation("matvec")
+    repn = ConstrainedGraphicalModel(hmm).representation("matvec")
     assert isinstance(repn, MatVecHMMRepresentation)
     assert repn.kind == "matvec"
     assert repn.model is hmm
@@ -90,7 +90,7 @@ def test_class_and_attributes():
 
 
 def test_every_call_builds_a_new_representation():
-    cmodel = ConstrainedHiddenMarkovModel(tc.create_hmm1())
+    cmodel = ConstrainedGraphicalModel(tc.create_hmm1())
     assert cmodel.representation("matvec") is not cmodel.representation("matvec")
     assert not hasattr(cmodel.model, "repn")
 
@@ -105,7 +105,7 @@ def test_every_call_builds_a_new_representation():
     ids=["built", "deepcopy", "pickle"],
 )
 def test_arrays_are_read_only(make):
-    repn = make(ConstrainedHiddenMarkovModel(tc.create_hmm1()).representation("matvec"))
+    repn = make(ConstrainedGraphicalModel(tc.create_hmm1()).representation("matvec"))
     for name in ARRAYS:
         with pytest.raises(ValueError):
             getattr(repn, name)[0] = 0.5
@@ -113,7 +113,7 @@ def test_arrays_are_read_only(make):
 
 def test_the_model_is_not_shared_with_the_arrays():
     hmm = tc.create_hmm1()
-    repn = ConstrainedHiddenMarkovModel(hmm).representation("matvec")
+    repn = ConstrainedGraphicalModel(hmm).representation("matvec")
     copy_ = np.array(repn.transition_mat)
     copy_[0, 0] = 0.0
     assert hmm.transition_probs["h0", "h0"] == 0.9
@@ -137,7 +137,7 @@ def test_index_maps_are_read_only(name):
 
 def test_one_representation_serves_several_queries():
     hmm = tc.create_hmm2()
-    repn = ConstrainedHiddenMarkovModel(hmm).representation("matvec")
+    repn = ConstrainedGraphicalModel(hmm).representation("matvec")
     before = {name: getattr(repn, name).copy() for name in ARRAYS}
     # h2 only emits o2 and never leaves, so o2 can only come last.
     observed = [
@@ -156,10 +156,10 @@ def test_viterbi_and_a_star_accept_an_unconstrained_constrained_model():
     hmm = _sparse_hmm()
     observed = ["x", "y", "z", "z", "z"]
     expected = viterbi(observed=observed, hmm=hmm)
-    wrapped = viterbi(observed=observed, hmm=ConstrainedHiddenMarkovModel(hmm))
+    wrapped = viterbi(observed=observed, hmm=ConstrainedGraphicalModel(hmm))
     assert wrapped.solutions == expected.solutions
     assert expected.solution.states == ["b", "c", "a", "a", "a"]
-    best = a_star(observed=observed, hmm=ConstrainedHiddenMarkovModel(hmm))
+    best = a_star(observed=observed, hmm=ConstrainedGraphicalModel(hmm))
     assert best.solution.states == expected.solution.states
     assert best.solution.log_potential == expected.solution.log_potential
 

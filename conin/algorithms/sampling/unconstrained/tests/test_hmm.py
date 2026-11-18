@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from conin import InvalidInputError
-from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.graphical_models import HiddenMarkovModel
 from conin.algorithms.sampling.unconstrained import (
     generate_hidden,
@@ -104,7 +104,7 @@ def test_same_draws_as_the_reference_sampler(seed):
 def test_unconstrained_constrained_model_gives_the_same_draws():
     hmm = tc.create_hmm2()
     expected = generate_observed(hmm, 10, rng=4)
-    assert generate_observed(ConstrainedHiddenMarkovModel(hmm), 10, rng=4) == expected
+    assert generate_observed(ConstrainedGraphicalModel(hmm), 10, rng=4) == expected
 
 
 @pytest.mark.parametrize(

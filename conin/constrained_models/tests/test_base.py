@@ -7,23 +7,17 @@ import pytest
 
 from conin.algorithms.feasibility import is_feasible
 from conin import pyomo_constraint_fn, toulbar2_constraint_fn
-from conin.constrained_models import (
-    ConstrainedGraphicalModel,
-    ConstrainedDiscreteBayesianNetwork,
-    ConstrainedDiscreteMarkovNetwork,
-    ConstrainedDynamicDiscreteBayesianNetwork,
-    ConstrainedHiddenMarkovModel,
-)
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.constraints import OracleConstraint
 from conin.exceptions import InvalidInputError
-from conin.constrained_models.normalise import as_constrained_model
 from conin.graphical_models import (
     DiscreteFactor,
+    DiscreteBayesianNetwork,
     DiscreteMarkovNetwork,
+    DynamicDiscreteBayesianNetwork,
     GraphicalModel,
     HiddenMarkovModel,
 )
-from conin.graphical_models import base as gm_base
 from conin.representations import (
     Representation,
     register_representation,
@@ -83,7 +77,7 @@ def counting_kind():
 def test_properties():
     mn = _mn()
     data = {"x": 1}
-    c = ConstrainedDiscreteMarkovNetwork(mn, [pyomo_c], data=data)
+    c = ConstrainedGraphicalModel(mn, [pyomo_c], data=data)
     assert c.model is mn
     assert c.constraints == (pyomo_c,)
     assert c.constraint_family == "pyomo"
@@ -91,19 +85,19 @@ def test_properties():
 
 
 def test_empty_constraints_family_none():
-    c = ConstrainedDiscreteMarkovNetwork(_mn())
+    c = ConstrainedGraphicalModel(_mn())
     assert c.constraints == ()
     assert c.constraint_family is None
     assert c.data is None
 
 
 def test_generator_constraints_accepted():
-    c = ConstrainedDiscreteMarkovNetwork(_mn(), (x for x in [pyomo_c]))
+    c = ConstrainedGraphicalModel(_mn(), (x for x in [pyomo_c]))
     assert c.constraints == (pyomo_c,)
 
 
 def test_single_constraint_accepted():
-    c = ConstrainedDiscreteMarkovNetwork(_mn(), pyomo_c)
+    c = ConstrainedGraphicalModel(_mn(), pyomo_c)
     assert c.constraints == (pyomo_c,)
     assert c.constraint_family == "pyomo"
     assert c.with_constraints(pyomo_c).constraints == (pyomo_c,)
@@ -111,12 +105,12 @@ def test_single_constraint_accepted():
 
 def test_model_keyword():
     mn = _mn()
-    assert ConstrainedDiscreteMarkovNetwork(model=mn).model is mn
+    assert ConstrainedGraphicalModel(model=mn).model is mn
 
 
-def test_wrong_model_type_rejected():
-    with pytest.raises(TypeError, match="expects a HiddenMarkovModel"):
-        ConstrainedHiddenMarkovModel(_mn())
+def test_non_model_rejected():
+    with pytest.raises(TypeError, match="expects a conin graphical model"):
+        ConstrainedGraphicalModel({"A": [0, 1]})
 
 
 def _bn():
@@ -127,74 +121,64 @@ def _dbn():
     return conin.examples.dynamic_bayesian_network.simple1_DDBN_conin().pgm
 
 
-DELEGATING = [
-    pytest.param(ConstrainedDiscreteBayesianNetwork, _bn, _mn, id="bn"),
-    pytest.param(ConstrainedDiscreteMarkovNetwork, _mn, _bn, id="mn"),
-    pytest.param(ConstrainedDynamicDiscreteBayesianNetwork, _dbn, _bn, id="dbn"),
+MODELS = [
+    pytest.param(_bn, DiscreteBayesianNetwork, id="bn"),
+    pytest.param(_mn, DiscreteMarkovNetwork, id="mn"),
+    pytest.param(_dbn, DynamicDiscreteBayesianNetwork, id="dbn"),
 ]
 
 
-@pytest.mark.parametrize("cls,make,make_other", DELEGATING)
-def test_nodes_and_states_of_delegate_to_the_model(cls, make, make_other):
+@pytest.mark.parametrize("make,model_type", MODELS)
+def test_nodes_and_states_of_delegate_to_the_model(make, model_type):
     model = make()
-    cmodel = cls(model)
+    cmodel = ConstrainedGraphicalModel(model)
     assert cmodel.model is model
+    assert cmodel.model_type is model_type
     # Regression test: ``nodes`` used to be a method on the DBN class.
-    assert isinstance(cls.__dict__["nodes"], property)
+    assert isinstance(ConstrainedGraphicalModel.__dict__["nodes"], property)
     assert cmodel.nodes == model.nodes
     for node in model.nodes:
         assert cmodel.states_of(node) == model.states_of(node)
-    with pytest.raises(TypeError, match="expects a"):
-        cls(make_other())
 
 
 def test_dbn_states_of_accepts_timed_nodes():
     dbn = _dbn()
-    cdbn = ConstrainedDynamicDiscreteBayesianNetwork(dbn)
+    cdbn = ConstrainedGraphicalModel(dbn)
     for node in dbn.dynamic_nodes:
         assert cdbn.states_of((node, 0)) == dbn.states_of((node, 0))
 
 
 def test_string_constraints_rejected():
     with pytest.raises(InvalidInputError):
-        ConstrainedDiscreteMarkovNetwork(_mn(), constraints="not-a-list")
+        ConstrainedGraphicalModel(_mn(), constraints="not-a-list")
 
 
 def test_hmm_matvec_repn_rejected():
     hmm = tc.create_hmm1()
-    repn = ConstrainedHiddenMarkovModel(hmm).representation("matvec")
+    repn = ConstrainedGraphicalModel(hmm).representation("matvec")
     with pytest.raises(TypeError):
-        ConstrainedHiddenMarkovModel(repn)
+        ConstrainedGraphicalModel(repn)
 
 
 def test_non_constraint_rejected():
     with pytest.raises(InvalidInputError, match="constraint 1 is not"):
-        ConstrainedDiscreteMarkovNetwork(_mn(), [pyomo_c, object()])
+        ConstrainedGraphicalModel(_mn(), [pyomo_c, object()])
 
 
 def test_mixed_families_rejected_and_named():
     with pytest.raises(InvalidInputError, match="one constraint family") as exc:
-        ConstrainedDiscreteMarkovNetwork(_mn(), [pyomo_c, tb2_c])
+        ConstrainedGraphicalModel(_mn(), [pyomo_c, tb2_c])
     assert "pyomo" in str(exc.value) and "toulbar2" in str(exc.value)
 
 
 @pytest.mark.parametrize(
-    "cls, expected",
+    "make, expected",
     [
+        (_mn, ["factor_oracle", "pyomo", "smoek", "toulbar2"]),
+        (_bn, ["factor_oracle", "pyomo", "smoek", "toulbar2"]),
+        (_dbn, ["factor_oracle", "pyomo", "smoek", "toulbar2"]),
         (
-            ConstrainedDiscreteMarkovNetwork,
-            ["factor_oracle", "pyomo", "smoek", "toulbar2"],
-        ),
-        (
-            ConstrainedDiscreteBayesianNetwork,
-            ["factor_oracle", "pyomo", "smoek", "toulbar2"],
-        ),
-        (
-            ConstrainedDynamicDiscreteBayesianNetwork,
-            ["factor_oracle", "pyomo", "smoek", "toulbar2"],
-        ),
-        (
-            ConstrainedHiddenMarkovModel,
+            tc.create_hmm1,
             [
                 "factor_oracle",
                 "mvr",
@@ -207,16 +191,17 @@ def test_mixed_families_rejected_and_named():
         ),
     ],
 )
-def test_accepted_families_come_from_the_registry(cls, expected):
-    assert cls._supported_families() == expected
+def test_accepted_families_come_from_the_registry(make, expected):
+    cmodel = ConstrainedGraphicalModel(make())
+    assert cmodel._supported_families() == expected
     assert expected == sorted(
-        {f for _, f in supported_representations(cls.model_type) if f is not None}
+        {f for _, f in supported_representations(cmodel.model_type) if f is not None}
     )
 
 
 def test_family_without_a_builder_is_rejected_and_named():
     with pytest.raises(InvalidInputError) as exc:
-        ConstrainedDiscreteMarkovNetwork(_mn(), OracleConstraint(func=lambda s: True))
+        ConstrainedGraphicalModel(_mn(), OracleConstraint(func=lambda s: True))
     msg = str(exc.value)
     assert "does not support constraint family 'oracle'" in msg
     assert "'factor_oracle'" in msg and "'pyomo'" in msg
@@ -225,35 +210,29 @@ def test_family_without_a_builder_is_rejected_and_named():
 def test_registering_a_builder_makes_a_family_accepted():
     oracle_c = OracleConstraint(func=lambda s: True)
     with pytest.raises(InvalidInputError):
-        ConstrainedDiscreteMarkovNetwork(_mn(), oracle_c)
+        ConstrainedGraphicalModel(_mn(), oracle_c)
 
     @register_representation("_test_oracle_mn", DiscreteMarkovNetwork, ("oracle",))
     def _build(cmodel):
         return _Counting(cmodel)
 
     try:
-        c = ConstrainedDiscreteMarkovNetwork(_mn(), oracle_c)
+        c = ConstrainedGraphicalModel(_mn(), oracle_c)
         assert c.constraint_family == "oracle"
         assert isinstance(c.representation("_test_oracle_mn"), _Counting)
     finally:
         unregister_representation("_test_oracle_mn", DiscreteMarkovNetwork, ("oracle",))
     with pytest.raises(InvalidInputError):
-        ConstrainedDiscreteMarkovNetwork(_mn(), oracle_c)
+        ConstrainedGraphicalModel(_mn(), oracle_c)
 
 
 def test_no_supported_families_attribute():
     assert not hasattr(ConstrainedGraphicalModel, "supported_families")
-    assert not hasattr(ConstrainedHiddenMarkovModel, "supported_families")
-
-
-def test_base_class_cannot_be_instantiated():
-    with pytest.raises(TypeError):
-        ConstrainedGraphicalModel(_mn())
 
 
 def test_repr():
-    r = repr(ConstrainedDiscreteMarkovNetwork(_mn(), [pyomo_c]))
-    assert "ConstrainedDiscreteMarkovNetwork" in r and "'pyomo'" in r
+    r = repr(ConstrainedGraphicalModel(_mn(), [pyomo_c]))
+    assert "ConstrainedGraphicalModel" in r and "'pyomo'" in r
 
 
 # --- immutability -------------------------------------------------------------
@@ -261,14 +240,14 @@ def test_repr():
 
 @pytest.mark.parametrize("name", ["model", "constraints", "data", "_data", "new"])
 def test_setattr_raises(name):
-    c = ConstrainedDiscreteMarkovNetwork(_mn())
+    c = ConstrainedGraphicalModel(_mn())
     with pytest.raises(AttributeError):
         setattr(c, name, 1)
 
 
 @pytest.mark.parametrize("name", ["model", "_model", "_data"])
 def test_delattr_raises(name):
-    c = ConstrainedDiscreteMarkovNetwork(_mn())
+    c = ConstrainedGraphicalModel(_mn())
     with pytest.raises(AttributeError):
         delattr(c, name)
     assert c.model is not None
@@ -277,9 +256,9 @@ def test_delattr_raises(name):
 def test_with_constraints_and_with_model(counting_kind):
     mn, mn2 = _mn(), _mn()
     data = {"x": 1}
-    c = ConstrainedDiscreteMarkovNetwork(mn, [pyomo_c], data=data)
+    c = ConstrainedGraphicalModel(mn, [pyomo_c], data=data)
     c2 = c.with_constraints([])
-    assert type(c2) is ConstrainedDiscreteMarkovNetwork
+    assert type(c2) is ConstrainedGraphicalModel
     assert c2.constraints == () and c2.model is mn and c2.data is data
     c3 = c.with_model(mn2)
     assert c3.model is mn2 and c3.constraints == (pyomo_c,) and c3.data is data
@@ -290,32 +269,39 @@ def test_with_constraints_and_with_model(counting_kind):
 
 def test_ensure():
     mn = _mn()
-    c = ConstrainedDiscreteMarkovNetwork(mn, [pyomo_c])
+    c = ConstrainedGraphicalModel(mn, [pyomo_c])
     # an instance of the class is returned as is (constraints and data kept)
-    assert ConstrainedDiscreteMarkovNetwork.ensure(c) is c
+    assert ConstrainedGraphicalModel.ensure(c) is c
     # a bare model is wrapped with no constraints
-    w = ConstrainedDiscreteMarkovNetwork.ensure(mn)
-    assert type(w) is ConstrainedDiscreteMarkovNetwork
+    w = ConstrainedGraphicalModel.ensure(mn)
+    assert type(w) is ConstrainedGraphicalModel
     assert w.model is mn and w.constraints == () and w.data is None
     # anything else is rejected by the constructor
-    with pytest.raises(TypeError, match="expects a DiscreteMarkovNetwork"):
-        ConstrainedDiscreteMarkovNetwork.ensure(tc.create_hmm1())
-    with pytest.raises(TypeError, match="expects a HiddenMarkovModel"):
-        ConstrainedHiddenMarkovModel.ensure(c)
-    with pytest.raises(TypeError, match="does not define model_type"):
-        ConstrainedGraphicalModel.ensure(mn)
+    with pytest.raises(TypeError, match="expects a conin graphical model"):
+        ConstrainedGraphicalModel.ensure(object())
+    # model_type restricts the wrapped model
+    hmm = tc.create_hmm1()
+    assert ConstrainedGraphicalModel.ensure(hmm, HiddenMarkovModel).model is hmm
+    assert ConstrainedGraphicalModel.ensure(c, DiscreteMarkovNetwork) is c
+    with pytest.raises(TypeError, match="Expected a HiddenMarkovModel .* got Disc"):
+        ConstrainedGraphicalModel.ensure(mn, HiddenMarkovModel)
+    with pytest.raises(
+        TypeError,
+        match=r"got ConstrainedGraphicalModel\(DiscreteMarkovNetwork\)",
+    ):
+        ConstrainedGraphicalModel.ensure(c, HiddenMarkovModel)
 
 
 # --- registry and building -----------------------------------------------------
 
 
 def test_lazy_build(counting_kind):
-    ConstrainedDiscreteMarkovNetwork(_mn(), [pyomo_c])
+    ConstrainedGraphicalModel(_mn(), [pyomo_c])
     assert _Counting.builds == 0
 
 
 def test_every_call_builds_a_new_representation(counting_kind):
-    c = ConstrainedDiscreteMarkovNetwork(_mn())
+    c = ConstrainedGraphicalModel(_mn())
     r1 = c.representation(counting_kind, T=3)
     r2 = c.representation(counting_kind, T=3)
     assert _Counting.builds == 2
@@ -330,7 +316,7 @@ def test_every_call_builds_a_new_representation(counting_kind):
 
 
 def test_unsupported_kind_lists_options(counting_kind):
-    c = ConstrainedDiscreteMarkovNetwork(_mn(), [tb2_c])
+    c = ConstrainedGraphicalModel(_mn(), [tb2_c])
     with pytest.raises(InvalidInputError) as exc:
         c.representation(counting_kind)
     msg = str(exc.value)
@@ -345,7 +331,7 @@ def test_bare_model_representation_wraps_without_constraints(counting_kind):
     mn = _mn()
     repn = mn.representation(counting_kind, T=3)
     assert _Counting.builds == 1
-    assert type(repn.cmodel) is ConstrainedDiscreteMarkovNetwork
+    assert type(repn.cmodel) is ConstrainedGraphicalModel
     assert repn.cmodel.model is mn and repn.cmodel.constraints == ()
     assert repn.params == {"T": 3}
     assert mn.representation(counting_kind) is not repn
@@ -354,7 +340,7 @@ def test_bare_model_representation_wraps_without_constraints(counting_kind):
 def test_bare_hmm_matvec_matches_the_constrained_one():
     hmm = tc.create_hmm1()
     bare = hmm.representation("matvec")
-    wrapped = ConstrainedHiddenMarkovModel(hmm).representation("matvec")
+    wrapped = ConstrainedGraphicalModel(hmm).representation("matvec")
     assert bare.model is hmm
     for name in bare._ARRAYS:
         assert (getattr(bare, name) == getattr(wrapped, name)).all()
@@ -365,30 +351,19 @@ def test_bare_model_unsupported_kind_lists_options():
         _mn().representation("matvec")
 
 
-def test_constrained_classes_are_registered_by_model_type():
-    assert gm_base.constrained_classes() == [
-        ConstrainedDiscreteMarkovNetwork,
-        ConstrainedDiscreteBayesianNetwork,
-        ConstrainedDynamicDiscreteBayesianNetwork,
-        ConstrainedHiddenMarkovModel,
-    ]
-    for cls in gm_base.constrained_classes():
-        assert gm_base.constrained_class(cls.model_type) is cls
-
-
 class _SubHMM(HiddenMarkovModel):
     pass
 
 
-def test_model_subclass_uses_the_constrained_class_of_its_base():
+def test_model_subclass_uses_the_builders_of_its_base():
     hmm = tc.create_hmm1()
     sub = _SubHMM(
         start_probs=hmm.start_probs,
         transition_probs=hmm.transition_probs,
         emission_probs=hmm.emission_probs,
     )
-    assert gm_base.constrained_class(_SubHMM) is ConstrainedHiddenMarkovModel
-    assert type(as_constrained_model(sub)) is ConstrainedHiddenMarkovModel
+    cmodel = ConstrainedGraphicalModel.ensure(sub)
+    assert cmodel.model is sub and cmodel.model_type is HiddenMarkovModel
     assert sub.representation("matvec").model is sub
 
 
@@ -396,46 +371,31 @@ class _Unregistered(GraphicalModel):
     pass
 
 
-def test_unregistered_model_class_raises_type_error():
-    assert gm_base.constrained_class(_Unregistered) is None
-    with pytest.raises(TypeError, match="No constrained model class .* _Unregistered"):
+def test_model_class_without_builders_raises_type_error():
+    with pytest.raises(TypeError, match="no representations .* _Unregistered"):
         _Unregistered().representation("matvec")
-    with pytest.raises(TypeError, match="Unsupported model type"):
-        as_constrained_model(_Unregistered())
+    with pytest.raises(TypeError, match="no representations .* _Unregistered"):
+        ConstrainedGraphicalModel(_Unregistered())
 
 
-def test_constrained_subclass_without_model_type_is_not_registered():
-    class _Sub(ConstrainedHiddenMarkovModel):
-        pass
-
-    assert gm_base.constrained_class(HiddenMarkovModel) is ConstrainedHiddenMarkovModel
-    assert type(_Sub(tc.create_hmm1())) is _Sub
-
-
-def test_second_constrained_class_for_a_model_type_is_rejected():
-    with pytest.raises(TypeError, match="ConstrainedHiddenMarkovModel is already"):
-
-        class _Other(ConstrainedGraphicalModel):
-            model_type = HiddenMarkovModel
-
-    assert gm_base.constrained_class(HiddenMarkovModel) is ConstrainedHiddenMarkovModel
-
-
-def test_new_model_type_gets_representations():
+def test_registering_a_builder_supports_a_new_model_type():
     class _Model(GraphicalModel):
         pass
 
+    @register_representation("_test_new_model", _Model)
+    def _build(cmodel):
+        return _Counting(cmodel)
+
     try:
-
-        class _Constrained(ConstrainedGraphicalModel):
-            model_type = _Model
-
-        assert gm_base.constrained_class(_Model) is _Constrained
-        assert type(as_constrained_model(_Model())) is _Constrained
-        with pytest.raises(InvalidInputError, match="Supported .* none"):
+        cmodel = ConstrainedGraphicalModel(_Model())
+        assert cmodel.model_type is _Model
+        assert isinstance(_Model().representation("_test_new_model"), _Counting)
+        with pytest.raises(InvalidInputError, match="Supported .*'_test_new_model'"):
             _Model().representation("matvec")
     finally:
-        gm_base._CONSTRAINED_CLASSES.pop(_Model, None)
+        unregister_representation("_test_new_model", _Model)
+    with pytest.raises(TypeError, match="no representations"):
+        ConstrainedGraphicalModel(_Model())
 
 
 def test_supported_representations_hmm():
@@ -484,7 +444,7 @@ def test_duplicate_registration_rejected(counting_kind):
 
 @pytest.mark.parametrize("copier", [copy.copy, copy.deepcopy])
 def test_copy_and_deepcopy(copier, counting_kind):
-    c = ConstrainedDiscreteMarkovNetwork(_mn(), [pyomo_c], data={"x": 1})
+    c = ConstrainedGraphicalModel(_mn(), [pyomo_c], data={"x": 1})
     c.representation(counting_kind)
     c2 = copier(c)
     assert type(c2) is type(c)
@@ -506,9 +466,10 @@ def test_deepcopy_constrained_hmm_keeps_behaviour():
 
 
 def test_pickle_roundtrip():
-    c = ConstrainedDiscreteMarkovNetwork(_mn(), data={"x": 1})
+    c = ConstrainedGraphicalModel(_mn(), data={"x": 1})
     c2 = pickle.loads(pickle.dumps(c))
     assert c2.data == {"x": 1} and c2.constraints == ()
+    assert c2.model_type is DiscreteMarkovNetwork
 
 
 # --- HMM rejection sampling uses the "oracle" representation --------------------
@@ -517,13 +478,13 @@ def test_pickle_roundtrip():
 def test_hmm_rejection_sampling_requires_oracle_family():
     hmm = tc.create_hmm1()
     oc = OracleConstraint(func=lambda s: True)
-    assert rejection_sample_hidden(ConstrainedHiddenMarkovModel(hmm, oc), 3)
+    assert rejection_sample_hidden(ConstrainedGraphicalModel(hmm, oc), 3)
     with pytest.raises(InvalidInputError):
-        rejection_sample_hidden(ConstrainedHiddenMarkovModel(hmm, pyomo_c), 3)
+        rejection_sample_hidden(ConstrainedGraphicalModel(hmm, pyomo_c), 3)
     # The sampling methods moved to conin.algorithms.sampling.
     for name in (
         "generate_hidden",
         "generate_observed",
         "generate_observed_from_hidden",
     ):
-        assert not hasattr(ConstrainedHiddenMarkovModel, name)
+        assert not hasattr(ConstrainedGraphicalModel, name)

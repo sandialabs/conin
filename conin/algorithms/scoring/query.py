@@ -20,21 +20,16 @@ import numbers
 import munch
 from ovld import ovld
 
-from conin.constrained_models import (
-    ConstrainedDynamicDiscreteBayesianNetwork,
-    ConstrainedHiddenMarkovModel,
-)
-from conin.constrained_models.normalise import as_constrained_model
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.exceptions import InvalidInputError
+from conin.graphical_models import DynamicDiscreteBayesianNetwork, HiddenMarkovModel
 from conin.representations.methods import (
     LOG_PROBABILITY_METHODS,
     check_method,
     reject_unexpected_options,
     representation_kind,
 )
-from conin.representations.variable_elimination import (
-    VariableEliminationRepresentation,
-)
+from conin.representations.variable_elimination import VariableEliminationRepresentation
 
 from .variable_elimination import _log_probability_variable_elimination
 
@@ -64,8 +59,7 @@ def _structure_params(cmodel, *, variables, start, stop):
         If ``stop`` is before ``start``.
     """
     if not isinstance(
-        cmodel,
-        (ConstrainedDynamicDiscreteBayesianNetwork, ConstrainedHiddenMarkovModel),
+        cmodel.model, (DynamicDiscreteBayesianNetwork, HiddenMarkovModel)
     ):
         return {}
     if stop is None:
@@ -182,7 +176,7 @@ def log_probability_query(
     -4.290459
     """
     check_method(method, METHODS, "log-probability method")
-    cmodel = as_constrained_model(pgm)
+    cmodel = ConstrainedGraphicalModel.ensure(pgm)
     assignment = _as_dict(assignment, "assignment")
     evidence = {} if evidence is None else _as_dict(evidence, "evidence")
     if not assignment:

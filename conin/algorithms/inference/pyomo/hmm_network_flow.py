@@ -8,7 +8,7 @@ import logging
 import math
 
 from conin.config import mip_solver
-from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.exceptions import InfeasibleQueryError, InvalidInputError
 from conin.graphical_models.assignments import as_sequence
 from conin.algorithms.inference.hmm_results import key_solutions_by_time
@@ -22,9 +22,7 @@ from conin.algorithms.inference.results import (
 
 import pyomo.environ as pyo
 from pyomo.common.timing import tic, toc, TicTocTimer
-from pyomo.contrib.alternative_solutions.aos_utils import (
-    get_model_variables,
-)
+from pyomo.contrib.alternative_solutions.aos_utils import get_model_variables
 
 logger = logging.getLogger("conin")
 
@@ -92,7 +90,7 @@ def lp_inference(
         :mod:`conin.algorithms.inference.results`.  If the observations have
         probability zero, there is no solution (``solution`` is ``None``).
     """
-    repn = ConstrainedHiddenMarkovModel(hmm).representation("pyomo_network_flow")
+    repn = ConstrainedGraphicalModel(hmm).representation("pyomo_network_flow")
     return _lp_inference(
         repn,
         observed=as_sequence(observed, "observed sequence"),
@@ -188,7 +186,7 @@ def ip_inference(
 
     Parameters
     ----------
-    hmm : ConstrainedHiddenMarkovModel
+    hmm : ConstrainedGraphicalModel (of an HMM)
         Its constraints must be of family ``"pyomo"`` or ``"smoek"`` (or
         none).
     observed : list

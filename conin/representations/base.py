@@ -76,6 +76,8 @@ def register_representation(kind, model_type, families=(None,)):
         Representation kind, e.g. ``"oracle"`` or ``"pyomo_network_flow"``.
     model_type : type
         The unconstrained graphical model class (``cmodel.model_type``).
+        Registering a builder for a new model class makes the class (and its
+        subclasses) wrappable in a ``ConstrainedGraphicalModel``.
     families : iterable of (str or None), optional
         Constraint families the builder accepts.  ``None`` stands for a model
         without constraints.
@@ -117,6 +119,21 @@ def supported_representations(model_type):
     return sorted(pairs, key=lambda p: (p[0], "" if p[1] is None else p[1]))
 
 
+def registered_model_type(cls):
+    """Return the nearest class in ``cls.__mro__`` with a registered builder.
+
+    This is the ``model_type`` of a constrained model of a ``cls`` model (so a
+    subclass of a model class uses the builders of that class).  ``None`` if
+    no class in the MRO has one.
+    """
+    _load_builtins()
+    registered = {mt for (_, mt, _) in _REGISTRY}
+    for base in cls.__mro__:
+        if base in registered:
+            return base
+    return None
+
+
 def get_representation_builder(kind, model_type, family):
     """Return the builder for ``(kind, model_type, family)``, or ``None``."""
     _load_builtins()
@@ -144,7 +161,7 @@ def build_representation(cmodel, kind, **structure_params):
         )
         raise InvalidInputError(
             f"No {kind!r} representation is available for "
-            f"{type(cmodel).__name__} with constraint family {family!r}. "
+            f"{model_type.__name__} with constraint family {family!r}. "
             f"Supported (kind, family) pairs: {supported or 'none'}."
         )
     return builder(cmodel, **structure_params)
