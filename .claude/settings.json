@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/pr_check_gate.py",
+            "command": "[ ! -f \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/pr_check_gate.py ] || python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/pr_check_gate.py",
             "timeout": 10
           }
         ]
