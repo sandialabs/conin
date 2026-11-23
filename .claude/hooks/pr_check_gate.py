@@ -1,8 +1,9 @@
 """Claude Code PreToolUse hook: run /pr-check before a PR is created.
 
 Blocks ``gh pr create``, and warns on ``git push``, while the commit at HEAD
-has not been checked with the pr-check skill (which records the commit in
-``$(git rev-parse --git-path pr-check-head)``).  A command that contains
+has not been checked with the pr-check skill (which adds the commit to the
+list in ``$(git rev-parse --git-path pr-check-head)``, one per line, so that
+several branches can wait for a pull request at once).  A command that contains
 ``PR_CHECK_SKIP=1`` is let through, for when the user asks to skip the check.
 
 Any error lets the command through: the hook must never break the Bash tool.
@@ -71,10 +72,10 @@ def main():
         return
     try:
         with open(record) as f:
-            checked = f.read().strip()
+            checked = f.read().split()
     except OSError:
-        checked = ""
-    if checked == head:
+        checked = []
+    if head in checked:
         return
     what = f"HEAD ({head[:9]}) has not been checked with the pr-check skill"
     if creates_pr:

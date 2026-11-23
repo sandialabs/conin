@@ -155,10 +155,11 @@ the template.
 
 ## 6. Record the run
 
-After reporting, record the commit you checked:
+After reporting, add the commit you checked to the record (one commit per
+line, so that the checks of other branches are kept):
 
 ```
-git rev-parse HEAD > "$(git rev-parse --git-path pr-check-head)"
+git rev-parse HEAD >> "$(git rev-parse --git-path pr-check-head)"
 ```
 
 The project's Claude Code hook (`.claude/hooks/pr_check_gate.py`) uses it
