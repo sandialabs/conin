@@ -14,8 +14,12 @@ import re
 import subprocess
 import sys
 
-PR_CREATE = re.compile(r"\bgh\s+pr\s+create\b")
-PUSH = re.compile(r"\bgit\b[^;&|\n]*?\spush\b")
+# Only at the start of a command (after optional VAR=value assignments), so
+# that the words inside a commit message or a search pattern don't match.
+START = r"(?:^|[;&|(\n])\s*(?:\w+=\S*\s+)*"
+PR_CREATE = re.compile(START + r"gh\s+pr\s+create\b")
+# Global options may come before the subcommand: "git -C <dir> push".
+PUSH = re.compile(START + r"git(?:\s+-[Cc]\s+\S+|\s+--?[\w-]+(?:=\S+)?)*\s+push\b")
 # A directory the command moves to: "cd <dir>" or "git -C <dir>".
 CHDIR = re.compile(r"(?:^|[;&|(]\s*)cd\s+(\S+)|\bgit\s+-C\s+(\S+)")
 
