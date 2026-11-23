@@ -417,6 +417,9 @@ def test_knapsack_missing_params():
         (KNAPSACK, '{"capacity":1,"weightedvalues":[]}'),
         (KNAPSACKV, '{"capacity":1,"weights":[1,1]}'),
         (KNAPSACKV, '{"weightedvalues":[]}'),
+        (KNAPSACKV, '{"weightedvalues":[],"lb":0}'),
+        # Only knapsackv functions have these parameters
+        (KNAPSACK, '{"capacity":1,"weights":[1,1],"lb":0}'),
     ],
 )
 def test_knapsack_unexpected_parameters(template, params):
@@ -493,6 +496,41 @@ def test_knapsackv_value_name_and_non_numeric_weight():
 
     params = '{"capacity":1,"weightedvalues":[["x","b","w"]]}'
     with pytest.raises(ModelFileError, match="Expected a number for weight in"):
+        load_cfn(string=KNAPSACKV % params)
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [
+        # As toulbar2 1.4.0.3 writes a hard constraint
+        '"deltacosts":[],"lb":0,"assigneddeltas":0',
+        '"deltacosts":[[0,0],[0]],"lb":0.0,"assigneddeltas":0',
+        '"lb":0',
+    ],
+)
+def test_knapsackv_zero_deltas(extra):
+    params = '{"capacity":1,"weightedvalues":[["x",2,1],["y",1,1]],%s}' % extra
+    (con,) = load_cfn(string=KNAPSACKV % params).constraints
+    assert con.terms == [("x", "c", 1), ("y", 1, 1)]
+    assert con.rhs == 1
+
+
+@pytest.mark.parametrize(
+    "extra,key",
+    [
+        ('"deltacosts":[[0,1]],"lb":0,"assigneddeltas":0', "deltacosts"),
+        ('"deltacosts":[],"lb":2,"assigneddeltas":0', "lb"),
+        ('"deltacosts":[],"lb":0,"assigneddeltas":1', "assigneddeltas"),
+        ('"deltacosts":["a"]', "deltacosts"),
+        ('"lb":false', "lb"),
+    ],
+)
+def test_knapsackv_nonzero_deltas(extra, key):
+    params = '{"capacity":1,"weightedvalues":[["x",2,1]],%s}' % extra
+    with pytest.raises(
+        NotImplementedError,
+        match=f"has {key} .*only hard knapsack constraints \\(all-zero {key}\\)",
+    ):
         load_cfn(string=KNAPSACKV % params)
 
 

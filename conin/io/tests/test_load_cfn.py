@@ -1,6 +1,8 @@
+import importlib.metadata
 import itertools
 import math
 import os.path
+import re
 import tempfile
 
 import pytest
@@ -20,6 +22,12 @@ with try_import() as pytoulbar2_available:
 skipif_toulbar2_not_available = pytest.mark.skipif(
     not pytoulbar2_available, reason="pytoulbar2 not installed"
 )
+
+# Toulbar2 1.4.0.3 and later require (and earlier versions reject) the
+# deltacosts, lb and assigneddeltas parameters of knapsackv functions.
+TOULBAR2_KNAPSACKV_DELTAS = pytoulbar2_available and tuple(
+    int(part) for part in importlib.metadata.version("pytoulbar2").split(".")[:4]
+) >= (1, 4, 0, 3)
 
 cwd = os.path.dirname(__file__)
 
@@ -284,17 +292,29 @@ def test_missing_file():
 #
 
 
+def _toulbar2_format(text):
+    """The CFN text in the knapsackv format of the installed toulbar2."""
+    if not TOULBAR2_KNAPSACKV_DELTAS or '"deltacosts"' in text:
+        return text
+    return re.sub(
+        r'("weightedvalues"\s*:\s*\[\s*\[.*?\]\s*\])',
+        r'\1,"deltacosts":[],"lb":0,"assigneddeltas":0',
+        text,
+        flags=re.DOTALL,
+    )
+
+
 def _toulbar2_solution(filename=None, string=None):
     """Solve a CFN file directly with pytoulbar2."""
-    if string is not None:
-        with tempfile.TemporaryDirectory() as tempdir:
-            filename = os.path.join(tempdir, "model.cfn")
-            with open(filename, "w") as OUTPUT:
-                OUTPUT.write(string)
-            return _toulbar2_solution(filename=filename)
-
-    m = pytoulbar2.CFN(verbose=-1)
-    m.Read(filename)
+    if string is None:
+        with open(filename) as INPUT:
+            string = INPUT.read()
+    with tempfile.TemporaryDirectory() as tempdir:
+        filename = os.path.join(tempdir, "model.cfn")
+        with open(filename, "w") as OUTPUT:
+            OUTPUT.write(_toulbar2_format(string))
+        m = pytoulbar2.CFN(verbose=-1)
+        m.Read(filename)
     res = m.Solve()
     return None if res is None else list(res[0])
 
@@ -350,7 +370,7 @@ def test_abc_constrained_vs_unconstrained():
     ],
 )
 def test_knapsackv_matches_toulbar2(scope, ftype, params):
-    text = KNAPSACK_TEMPLATE % (scope, ftype, params)
+    text = _toulbar2_format(KNAPSACK_TEMPLATE % (scope, ftype, params))
     tb2_solution = _toulbar2_solution(string=text)
     pgm = load_cfn(string=text)
     assert _conin_solution(pgm) == tb2_solution
