@@ -18,13 +18,13 @@ To build the documentation locally, install the documentation extra:
 
 .. code-block:: shell
 
-   python -m pip install -e .[docs]
+   python -m pip install -e '.[docs]'
 
 To run the test suite, install the test extra:
 
 .. code-block:: shell
 
-   python -m pip install -e .[test]
+   python -m pip install -e '.[test]'
 
 Optional integrations and external solver requirements are summarized in
 :doc:`backends`.

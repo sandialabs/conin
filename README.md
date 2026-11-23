@@ -25,12 +25,12 @@ python -m pip install -e .
 Optional extras are available for documentation, tests, and the optional backends:
 
 ```
-python -m pip install -e .[docs]
-python -m pip install -e .[test]
-python -m pip install -e .[pgmpy]     # BIF files, pgmpy model conversion
-python -m pip install -e .[toulbar2]  # Toulbar2 inference
-python -m pip install -e .[torch]     # the MVR algorithms
-python -m pip install -e .[regex]     # mvr_regex
+python -m pip install -e '.[docs]'
+python -m pip install -e '.[test]'
+python -m pip install -e '.[pgmpy]'     # BIF files, pgmpy model conversion
+python -m pip install -e '.[toulbar2]'  # Toulbar2 inference
+python -m pip install -e '.[torch]'     # the MVR algorithms
+python -m pip install -e '.[regex]'     # mvr_regex
 ```
 
 Conin 2.0 reorganised the package (models in `conin.graphical_models`,
@@ -62,7 +62,7 @@ Useful starting points include:
 To build the documentation locally:
 
 ```
-python -m pip install -e .[docs]
+python -m pip install -e '.[docs]'
 python -m sphinx -b html doc/sphinx doc/sphinx/_build/html
 ```
 
@@ -113,3 +113,12 @@ pytest --cov=conin --cov-report term-missing .
 ```
 
 Note that pytest coverage includes coverage of test files themselves.  This gives a somewhat skewed sense of coverage for the code base, but it helps identify tests that are omitted or not executed completely.
+
+## Contributing
+
+Contributions are welcome, from inside and outside Sandia: bug reports,
+questions, documentation fixes and new features. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for how to get started, the development
+setup and the project's conventions, and use the
+[issue tracker](https://github.com/sandialabs/conin/issues) for bugs and
+questions.
