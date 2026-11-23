@@ -269,6 +269,15 @@ def _number(value, what, fname):
     return value
 
 
+def _all_zero(value):
+    """Whether value is zero, or a (nested) list of zeros."""
+    if isinstance(value, list):
+        return all(_all_zero(v) for v in value)
+    return (
+        not isinstance(value, bool) and isinstance(value, (int, float)) and value == 0
+    )
+
+
 def _parse_knapsack(fname, fdef, states, varnames):
     """Parse a hard ``knapsack`` or ``knapsackv`` global cost function.
 
@@ -292,12 +301,22 @@ def _parse_knapsack(fname, fdef, states, varnames):
             "weightedvalues",
         }
     )
+    # Toulbar2 1.4.0.3 and later require these knapsackv parameters, and
+    # write them as zeros for a hard constraint.
+    optional = set() if ftype == "knapsack" else {"deltacosts", "lb", "assigneddeltas"}
     keys = {k for k, _ in params}
-    if keys != expected:
+    if keys - optional != expected:
         raise NotImplementedError(
             f"CFN function {fname} of type {ftype!r} has parameters "
             f"{sorted(keys)}, but only {sorted(expected)} are supported"
         )
+    for key in sorted(keys & optional):
+        value = _get(params, key)
+        if not _all_zero(value):
+            raise NotImplementedError(
+                f"CFN function {fname} of type {ftype!r} has {key} {value}, but "
+                f"only hard knapsack constraints (all-zero {key}) are supported"
+            )
     capacity = _number(_get(params, "capacity"), "capacity", fname)
 
     terms = []
@@ -455,7 +474,9 @@ def load_cfn(filename=None, string=None, cost_scale=1.0):
     NotImplementedError
         If the CFN contains global cost functions other than hard ``knapsack``
         and ``knapsackv`` functions, ``knapsack`` functions over non-Boolean
-        variables, or cost functions that are not explicit tables.
+        variables, ``knapsackv`` functions with nonzero ``deltacosts``, ``lb``
+        or ``assigneddeltas`` (soft constraints), or cost functions that are
+        not explicit tables.
     """
     if cost_scale <= 0:
         raise InvalidInputError(f"cost_scale must be positive: {cost_scale}")

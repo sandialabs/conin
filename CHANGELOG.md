@@ -573,6 +573,10 @@ I/O and conversion
   "unknown format" error for .bif). NotImplementedError for unsupported CFN
   features is unchanged. load_model now passes its options to the UAI and
   JSON readers too, so an option they do not take raises TypeError.
+- load_cfn reads the knapsackv functions that toulbar2 1.4.0.3 and later
+  write, with deltacosts, lb and assigneddeltas parameters, when those are
+  zero (a hard constraint); nonzero values raise NotImplementedError. Before,
+  any of these parameters raised NotImplementedError.
 
 Errors
 
