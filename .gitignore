@@ -180,6 +180,9 @@ lcov.info
 
 
 # LLM stuff
-.claude/
+.claude/*
+!.claude/skills/
+!.claude/hooks/
+!.claude/settings.json
 .codex/
 .opencode-workspace/

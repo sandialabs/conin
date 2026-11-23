@@ -113,3 +113,12 @@ pytest --cov=conin --cov-report term-missing .
 ```
 
 Note that pytest coverage includes coverage of test files themselves.  This gives a somewhat skewed sense of coverage for the code base, but it helps identify tests that are omitted or not executed completely.
+
+## Contributing
+
+Contributions are welcome, from inside and outside Sandia: bug reports,
+questions, documentation fixes and new features. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for how to get started, the development
+setup and the project's conventions, and use the
+[issue tracker](https://github.com/sandialabs/conin/issues) for bugs and
+questions.
