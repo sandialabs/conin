@@ -31,7 +31,7 @@ git clone https://github.com/sandialabs/conin.git
 cd conin
 conda env create -f dev_environment.yml
 conda activate conin_dev
-python -m pip install -e .[docs,test]
+python -m pip install -e '.[docs,test]'
 nbstripout --install --attributes .gitattributes
 python -m pytest conin
 ```
@@ -112,7 +112,7 @@ at https://conin.readthedocs.io/en/latest/.
 To build it locally from the repository root:
 
 ```
-python -m pip install -e .[docs]
+python -m pip install -e '.[docs]'
 python -m sphinx -b html doc/sphinx doc/sphinx/_build/html
 ```
 
@@ -163,8 +163,9 @@ entry in its ``LAYERS`` table.
   ``conin/tests/test_public_api.py`` pins it. Adding or removing a name there
   also means updating ``doc/sphinx/api_conin.rst``.
 - Keep public APIs stable when practical. There are no compatibility
-  aliases for moved names: when a public name moves, update every importer (code, tests, docs, notebooks and
-  ``doc/notebooks/MVR/*.md``) in the same change.
+  aliases for moved names: when a public name moves, update every importer
+  (code, tests, docs, notebooks and ``doc/notebooks/MVR/*.md``) in the same
+  change.
 - No module shares its name with a function its package re-exports (the
   function would shadow the module).
 - Optional dependencies are imported with ``conin.util.try_import``, and

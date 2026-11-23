@@ -25,12 +25,12 @@ python -m pip install -e .
 Optional extras are available for documentation, tests, and the optional backends:
 
 ```
-python -m pip install -e .[docs]
-python -m pip install -e .[test]
-python -m pip install -e .[pgmpy]     # BIF files, pgmpy model conversion
-python -m pip install -e .[toulbar2]  # Toulbar2 inference
-python -m pip install -e .[torch]     # the MVR algorithms
-python -m pip install -e .[regex]     # mvr_regex
+python -m pip install -e '.[docs]'
+python -m pip install -e '.[test]'
+python -m pip install -e '.[pgmpy]'     # BIF files, pgmpy model conversion
+python -m pip install -e '.[toulbar2]'  # Toulbar2 inference
+python -m pip install -e '.[torch]'     # the MVR algorithms
+python -m pip install -e '.[regex]'     # mvr_regex
 ```
 
 Conin 2.0 reorganised the package (models in `conin.graphical_models`,
@@ -62,7 +62,7 @@ Useful starting points include:
 To build the documentation locally:
 
 ```
-python -m pip install -e .[docs]
+python -m pip install -e '.[docs]'
 python -m sphinx -b html doc/sphinx doc/sphinx/_build/html
 ```
 
