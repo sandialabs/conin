@@ -104,9 +104,14 @@ def score_solutions(results, model, *, evidence, nodes):
     The assignment is the solution's ``states`` plus ``evidence``, restricted
     to ``nodes`` (the nodes of the model, unrolled for a DBN).  A solution
     that does not cover ``nodes`` (a partial MAP query) gets ``None``; one
-    of probability zero is dropped.
+    of probability zero is dropped.  The ``states`` are put in the order of
+    ``nodes``, so that every method returns them in the same order.
     """
+    order = {node: i for i, node in enumerate(nodes)}
     for soln in results.solutions:
+        soln.states = dict(
+            sorted(soln.states.items(), key=lambda kv: order.get(kv[0], len(order)))
+        )
         assignment = dict(evidence or {})
         assignment.update(soln.states)
         if all(node in assignment for node in nodes):

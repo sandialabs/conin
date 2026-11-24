@@ -701,3 +701,27 @@ def test_score_hmm_solutions_sparse_observations():
     emission_at_1 = math.log(hmm.representation("matvec").emission_mat.tolist()[h1][o1])
     assert dense.solution.log_potential == pytest.approx(full)
     assert sparse.solution.log_potential == pytest.approx(full - emission_at_1)
+
+
+# ---------------------------------------------------------------------
+# The order of the states
+# ---------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("method, options", SOLVERS)
+def test_states_are_in_the_order_of_the_model_nodes(method, options):
+    # The CPDs are given in an order other than the (sorted) nodes.
+    bn = DiscreteBayesianNetwork(
+        states={"C": [0, 1], "A": [0, 1], "B": [0, 1]},
+        cpds=[
+            DiscreteCPD(node="C", values=[0.4, 0.6]),
+            DiscreteCPD(node="B", parents=["C"], values={0: [0.3, 0.7], 1: [0.8, 0.2]}),
+            DiscreteCPD(node="A", parents=["B"], values={0: [0.5, 0.5], 1: [0.1, 0.9]}),
+        ],
+    )
+    results = map_query(bn, method=method, evidence={"B": 1}, **options)
+    assert list(results.solution.states) == [n for n in bn.nodes if n != "B"]
+    results = map_query(
+        bn, method=method, evidence={"B": 1}, solution_with_evidence=True, **options
+    )
+    assert list(results.solution.states) == list(bn.nodes)
