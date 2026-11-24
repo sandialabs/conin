@@ -17,9 +17,9 @@ from conin.exceptions import InvalidInputError
 from conin.algorithms.util.mvr_kernels import NEG_INF, _model_parts
 from conin.algorithms.other_queries.mvr.sat_time import (
     _resolve_target,
-    sat_time_torch_mvr_chmm,
+    mvr_satisfaction_time,
 )
-from .ffbs import _draw, _positive_int, ffbs_torch_mvr_chmm
+from .ffbs import _draw, _positive_int, mvr_sample
 
 # ======================================================================
 # Stopped sampling
@@ -36,7 +36,7 @@ def _with_time_range(mvr, time_range):
     return mvr._replace(_time_range=None if time_range is None else list(time_range))
 
 
-def stopped_sampling_torch_mvr_chmm(
+def mvr_stopped_sample(
     model,
     observed,
     *,
@@ -52,7 +52,7 @@ def stopped_sampling_torch_mvr_chmm(
     """Sample hidden-state prefixes that stop when a target MVR is first satisfied.
 
     Draws the satisfaction time ``tau`` of the ``target`` from its posterior distribution
-    using ``sat_time_torch_mvr_chmm``, then samples a path from ``P(x[0..tau] | observed, all
+    using ``mvr_satisfaction_time``, then samples a path from ``P(x[0..tau] | observed, all
     constraints, target first accepts at tau)``. The conditioning uses the whole
     observation set and every constraint over the whole horizon, so an observation
     later than ``tau`` still informs the sampled path.
@@ -119,7 +119,7 @@ def stopped_sampling_torch_mvr_chmm(
     # The constraints are now built MVRs, so the derived models call no factories.
     model = model.with_constraints(constraints)
 
-    times, _, log_weights = sat_time_torch_mvr_chmm(
+    times, _, log_weights = mvr_satisfaction_time(
         model,
         observed,
         target=index,
@@ -160,7 +160,7 @@ def stopped_sampling_torch_mvr_chmm(
         )
         sub_model = model.with_constraints(sub_constraints)
 
-        sampled = ffbs_torch_mvr_chmm(
+        sampled = mvr_sample(
             sub_model,
             observed,
             num_samples=len(rows),

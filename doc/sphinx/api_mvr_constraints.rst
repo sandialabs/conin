@@ -38,7 +38,7 @@ Formulas
 
 .. autofunction:: conin.constraints.mvr.build_mvr
 
-.. autofunction:: conin.constraints.mvr.build_mvr_functor
+.. autofunction:: conin.constraints.mvr.mvr_constraints
 
 Primitives
 ----------

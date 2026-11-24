@@ -106,12 +106,18 @@ Migration table (old -> new)
                                     -> conin.algorithms.learning
   inference.viterbi_mvr, inference.marginal_map_mvr
                                     -> conin.algorithms.inference.mvr
+                                       (mvr_viterbi, mvr_marginal_map)
   other_queries.sat_prob_mvr, other_queries.sat_time_mvr
                                     -> conin.algorithms.other_queries.mvr
+                                       (mvr_satisfaction_probability,
+                                       mvr_satisfaction_time)
   learning.baum_welch_mvr, learning.generalized_em_mvr
                                     -> conin.algorithms.learning.mvr
+                                       (mvr_baum_welch, mvr_generalized_em,
+                                       mvr_forward_backward)
   sampling.ffbs_mvr, sampling.stopped_sampling_mvr
                                     -> conin.algorithms.sampling.mvr
+                                       (mvr_sample, mvr_stopped_sample)
   hidden_markov_model lp_inference/ip_inference
                                     -> conin.algorithms.inference.pyomo
   inference_pyomo_map_query_{MN,BN,DDBN,HMM}(pgm=m, ...)
@@ -341,7 +347,10 @@ Representations (new)
   "pyomo_network_flow", "toulbar2", "variable_elimination", "matvec", "oracle",
   "recursive", "mvr". Every representation() call builds a new object;
   structure parameters (start, stop, ...) are build arguments and per-query
-  inputs go to create_model().
+  inputs go to create_model(). The create_model(evidence=...) of the "pyomo"
+  and "toulbar2" representations of an HMM takes the evidence of the
+  unrolled DBN ({("E", t): label}) or the observations as a list, as
+  map_query does.
 - representation("oracle") is an OracleHMMRepresentation (model, hmm,
   constraints), representation("mvr") an MVRHMMRepresentation (model, mvrs:
   deep copies of prebuilt MVRs, aligned to the HMM) and
@@ -424,10 +433,15 @@ Inference
   InvalidInputError. Only a proof of infeasibility gives this result: other
   solver failures (e.g. a time limit) still raise RuntimeError, and
   integer_program with solver="or_topas" still raises for an infeasible
-  model. viterbi_torch_mvr_chmm and the network-flow representation's
-  create_model still raise, now InfeasibleQueryError
+  model. The function conin.algorithms.inference.mvr.mvr_viterbi and the
+  network-flow representation's create_model still raise, now InfeasibleQueryError
   (conin.exceptions), a subclass of InvalidInputError.
-- DBN queries with stop=None unroll over 0..1 for every method.
+- DBN queries with stop=None unroll over 0..t for every method, where t is
+  the latest time in the evidence and the variables of the query, and at
+  least 1, as log_probability_query does with its assignment and evidence
+  (map_query unrolled over 0..1, and evidence at a later time raised
+  KeyError, or InvalidInputError "Unknown evidence variable" for
+  variable_elimination).
 - variable_elimination: on a constrained Markov network it keeps the user
   evidence and no longer forces a scope node to 1; an unsupported constraint family raises
   InvalidInputError (was TypeError).
@@ -445,7 +459,10 @@ Inference
   evidence (it raised AttributeError).
 - Every method raises TypeError for an option it does not take, so a
   misspelt option is not silently ignored: variable_elimination and viterbi
-  ignored unknown options (e.g. solver=). variable_elimination also accepts
+  ignored unknown options (e.g. solver=). The message is the same for every
+  method ("Unexpected options for map_query(method=...): ..."); for
+  integer_program, toulbar2, a_star and mvr_viterbi it was Python's message,
+  which named an internal function. variable_elimination also accepts
   solution_with_fixed (a synonym of solution_with_evidence, as for
   integer_program and toulbar2; it was ignored).
 - lp_inference and ip_inference (the network-flow integer program) pass
@@ -519,9 +536,13 @@ Sampling and learning
 - mcem(app=...) takes a constrained (or bare) HMM, samples from the
   re-estimated HMM each iteration and trains on the samples it scores (its
   results change), and no longer writes the HMM back to app.
-- The torch MVR algorithms keep their names and signatures and take a
-  constrained HMM with MVR constraints (or a bare HMM); other
-  constraint families raise InvalidInputError.
+- The torch MVR algorithms take a constrained HMM with MVR constraints (or a
+  bare HMM); other constraint families raise InvalidInputError. They are
+  named mvr_*, without the backend and the model type: mvr_viterbi,
+  mvr_marginal_map, mvr_satisfaction_probability, mvr_satisfaction_time,
+  mvr_sample (FFBS), mvr_stopped_sample, mvr_forward_backward,
+  mvr_baum_welch and mvr_generalized_em; mvr_constraints(formula) builds the
+  MVR constraints of a formula for ConstrainedGraphicalModel.
 
 I/O and conversion
 
@@ -748,6 +769,12 @@ Known issues
 
 - DBNs and HMMs can only be unrolled from start=0 (start is kept so that a
   later start can be supported without another API change).
+- toulbar2 constraints are hard only if every forbidden assignment costs at
+  least toulbar2's upper bound: costs that are merely large are cheaper than
+  the model's costs, which CONIN scales up, and the solution may violate
+  them. Give forbidden assignments the cost float("inf") in AddFunction. The
+  violation cost of a global cost function (AddGlobalFunction) can't be made
+  hard this way.
 
 -------------------------------------------------------------------------------
 Conin 1.1.1

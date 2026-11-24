@@ -16,6 +16,7 @@ from conin.algorithms.inference.results import (
     map_solution,
     no_solution_results,
 )
+from conin.representations.methods import reject_options_not_taken
 from conin.representations.pyomo.common import C5LazyCutGenerator, has_omitted_c5
 from conin.util import try_import
 
@@ -125,6 +126,12 @@ def _solve_pyomo(repn, q):
     """
     options = dict(q.options)
     use_cut_generation = options.pop("use_cut_generation", False)
+    reject_options_not_taken(
+        solve_pyomo_map_query_model,
+        options,
+        "map_query(method='integer_program')",
+        passed=("timing", "evidence"),
+    )
     model = repn.create_model(
         evidence=q.evidence,
         variables=full_query_variables(q.variables, repn.nodes),

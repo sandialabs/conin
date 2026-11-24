@@ -5,7 +5,7 @@ import pytest
 
 from conin.exceptions import InvalidInputError
 from conin.constrained_models import ConstrainedGraphicalModel
-from conin.constraints.mvr.formula import build_mvr, build_mvr_functor
+from conin.constraints.mvr.formula import build_mvr, mvr_constraints
 
 from conin.constraints.mvr.primitives import (
     mvr_constant,
@@ -235,7 +235,7 @@ def test_within_bounds_matches_hand_composed_calls(bounds):
 
 def test_grammar_covers_the_algebra():
     """Deliberately redundant: require formula coverage for every algebra entry."""
-    from conin.constraints.mvr import primitives as mvr_constraints
+    from conin.constraints.mvr import primitives as mvr_primitives
     from conin.constraints.mvr import operators as mvr_operators
     from conin.constraints.mvr import formula as formula_module
 
@@ -250,7 +250,7 @@ def test_grammar_covers_the_algebra():
     }
     public = {
         name
-        for module in (mvr_constraints, mvr_operators)
+        for module in (mvr_primitives, mvr_operators)
         for name in vars(module)
         if name.startswith("mvr_") and not name.endswith("_fn")
     }
@@ -369,7 +369,7 @@ def test_label_that_cannot_be_escaped_is_a_syntax_error(label):
 
 
 def test_constraints_are_named_after_their_conjunct():
-    # The name is what sat_time_torch_mvr_chmm / sat_prob_torch_mvr_chmm take as target="...".
+    # The name is what mvr_satisfaction_time / mvr_satisfaction_probability take as target="...".
     hmm = make_hmm()
     split = "never a and reach b"
 
@@ -377,21 +377,21 @@ def test_constraints_are_named_after_their_conjunct():
     assert build_mvr(hmm, "never a")[0].name == "never a"
     assert build_mvr(hmm, "never a", name="no_a")[0].name == "no_a"
 
-    functor = build_mvr_functor("never a")[0]
+    functor = mvr_constraints("never a")[0]
 
     assert functor.name == "never a"
     assert functor(hmm).name == "never a"
 
 
-def test_build_mvr_functor_reports_a_syntax_error_before_the_model_is_known():
+def test_mvr_constraints_reports_a_syntax_error_before_the_model_is_known():
     with pytest.raises(InvalidInputError, match="expected an expression"):
-        build_mvr_functor("never")
+        mvr_constraints("never")
 
 
 def test_formula_drives_the_mvr_backend_end_to_end():
     hmm = make_hmm()
     chmm = ConstrainedGraphicalModel(
-        hmm, constraints=build_mvr_functor("never a and reach b")
+        hmm, constraints=mvr_constraints("never a and reach b")
     )
 
     assert chmm.constraint_family == "mvr"

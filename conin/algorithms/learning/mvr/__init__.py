@@ -7,9 +7,9 @@ importing this package does not import torch.
 import importlib
 
 _EXPORTS = {
-    "baum_welch_mvr_chmm": ".baum_welch",
-    "forward_backward_mvr_chmm": ".baum_welch",
-    "generalized_em_mvr_chmm": ".generalized_em",
+    "mvr_baum_welch": ".baum_welch",
+    "mvr_forward_backward": ".baum_welch",
+    "mvr_generalized_em": ".generalized_em",
 }
 
 __all__ = sorted(_EXPORTS)

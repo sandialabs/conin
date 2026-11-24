@@ -155,6 +155,22 @@ def test_hmm_structure_params_start_and_stop():
     assert len(r5.nodes) > len(r4.nodes)
 
 
+def _fixed_variables(model):
+    return {v.name for v in model.component_data_objects(pyo.Var) if v.fixed}
+
+
+def test_hmm_create_model_takes_the_observations():
+    observed = ["o0", "o0", "o1", "o0", "o0"]
+    repn = hex_.create_hmm1().representation("pyomo", stop=4)
+    dbn_evidence = {("E", t): o for t, o in enumerate(observed)}
+    expected = _fixed_variables(repn.create_model(evidence=dbn_evidence))
+    assert expected
+    assert _fixed_variables(repn.create_model(evidence=observed)) == expected
+    assert _fixed_variables(repn.create_model(evidence=tuple(observed))) == expected
+    with pytest.raises(InvalidInputError, match="unrolled until stop=4"):
+        repn.create_model(evidence=observed[:4])
+
+
 def test_network_flow_structure_params_variable_domains():
     cmodel = ConstrainedGraphicalModel(hex_.create_hmm1())
     default = cmodel.representation("pyomo_network_flow")

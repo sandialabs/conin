@@ -850,7 +850,7 @@ def build_mvr(hidden_markov_model, formula: str, *, name: str = None) -> list:
     ]
 
 
-def build_mvr_functor(formula: str, *, name: str = None) -> list:
+def mvr_constraints(formula: str, *, name: str = None) -> list:
     """Return MVRConstraint factories for a constrained HMM.
 
     Parse immediately; lower when an HMM is supplied. Naming follows build_mvr

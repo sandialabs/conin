@@ -4,11 +4,11 @@ import pytest
 from conin.algorithms.inference.hmm_results import (
     hidden_states_from_unrolled,
     key_solutions_by_time,
-    unrolled_evidence,
 )
 from conin.algorithms.inference.query import _observed_time_range
 from conin.algorithms.inference.query_checks import full_query_variables
 from conin.exceptions import InvalidInputError
+from conin.representations.unrolled import unrolled_evidence
 
 
 def test_key_solutions_by_time():

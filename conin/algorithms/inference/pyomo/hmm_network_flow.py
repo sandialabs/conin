@@ -13,6 +13,7 @@ from conin.exceptions import InfeasibleQueryError, InvalidInputError
 from conin.graphical_models.assignments import as_sequence
 from conin.algorithms.inference.hmm_results import key_solutions_by_time
 from conin.algorithms.inference.pyomo.solve import solve_model, solve_with_or_topas
+from conin.representations.methods import reject_options_not_taken
 from conin.algorithms.inference.results import (
     map_results,
     map_solution,
@@ -49,6 +50,12 @@ def _solve_network_flow(repn, q):
             "Cut generation is not supported for the HMM 'network_flow' integer programming formulation"
         )
     infer = _ip_inference if repn.constraints else _lp_inference
+    reject_options_not_taken(
+        infer,
+        options,
+        "map_query(method='integer_program', ip_formulation='network_flow')",
+        passed=("observed",),
+    )
     results = infer(repn, observed=q.observed, **options)
     if isinstance(q.evidence, dict):
         key_solutions_by_time(results)

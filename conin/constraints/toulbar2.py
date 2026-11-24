@@ -32,8 +32,33 @@ class Toulbar2Constraint(Constraint):
 
 
 def toulbar2_constraint_fn(*, name=None):
-    """
-    Decorator factory that takes the 'name' and returns a decorator function that creates an instance of Toulbar2Constraint.
+    """Decorator factory that turns a function into a :class:`Toulbar2Constraint`.
+
+    The function is called as ``func(model)`` or ``func(model, data)`` while
+    the ``"toulbar2"`` representation builds the cost function network of a
+    query. ``model`` is the ``pytoulbar2.CFN``: ``model.V(node, state)`` (or
+    ``model.V(name, t, state)``) is the ``(variable, value, coefficient)``
+    triple of pytoulbar2's linear constraints, ``model.V[node]`` the index
+    of a variable and ``model.states[i]`` the states of variable ``i``. The
+    function adds the constraint with the CFN's methods and returns ``None``
+    (or the model).
+
+    Parameters
+    ----------
+    name : str, optional
+        The constraint's name; defaults to the function's name.
+
+    Notes
+    -----
+    toulbar2's cost functions are soft: a cost function forbids an assignment
+    only if the assignment costs at least toulbar2's upper bound. CONIN scales
+    the model's costs up, so a cost that is merely large (``1e6``) can be
+    cheaper than the model's costs, and the solution may violate the
+    constraint. Give the forbidden assignments of a cost function
+    (``AddFunction``) the cost ``float("inf")``. The linear constraints
+    (``AddLinearConstraint``, ``AddGeneralizedLinearConstraint``) are hard. The
+    violation cost of a global cost function (``AddGlobalFunction``) can't be
+    made hard this way.
     """
 
     def decorator(func):

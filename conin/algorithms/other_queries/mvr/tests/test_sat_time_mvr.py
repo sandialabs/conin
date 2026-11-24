@@ -15,7 +15,7 @@ except (ImportError, OSError) as exc:
     pytest.skip(f"torch not available: {exc}", allow_module_level=True)
 
 from conin.algorithms.other_queries.mvr.sat_time import (  # noqa: E402
-    sat_time_torch_mvr_chmm,
+    mvr_satisfaction_time,
 )
 
 from conin.algorithms.inference.mvr.tests.test_viterbi_mvr import (  # noqa: E402
@@ -110,10 +110,10 @@ def assert_matches_brute_force(hmm, mvrs, target, observed, T=None):
 
     if expected.sum() <= 0.0:
         with pytest.raises(InvalidInputError):
-            sat_time_torch_mvr_chmm(model, observed, target=target, time_horizon=T)
+            mvr_satisfaction_time(model, observed, target=target, time_horizon=T)
         return None
 
-    times, probs, log_weights = sat_time_torch_mvr_chmm(
+    times, probs, log_weights = mvr_satisfaction_time(
         model, observed, target=target, time_horizon=T, return_log_weights=True
     )
 
@@ -241,9 +241,9 @@ def test_sat_time_target_by_index_name_and_negative_index_agree(hmm, observed):
 
     model = ConstrainedGraphicalModel(hmm, [forbid, reach])
 
-    by_index = sat_time_torch_mvr_chmm(model, observed, target=1)
-    by_negative = sat_time_torch_mvr_chmm(model, observed, target=-1)
-    by_name = sat_time_torch_mvr_chmm(model, observed, target="reach_A")
+    by_index = mvr_satisfaction_time(model, observed, target=1)
+    by_negative = mvr_satisfaction_time(model, observed, target=-1)
+    by_name = mvr_satisfaction_time(model, observed, target="reach_A")
 
     assert by_index[0] == by_negative[0] == by_name[0]
     assert by_negative[1].numpy() == pytest.approx(by_index[1].numpy())
@@ -261,7 +261,7 @@ def test_sat_time_raises_when_target_is_never_satisfied(hmm, observed):
     model = ConstrainedGraphicalModel(hmm, unreachable)
 
     with pytest.raises(InvalidInputError, match="No feasible path"):
-        sat_time_torch_mvr_chmm(model, observed, target=0)
+        mvr_satisfaction_time(model, observed, target=0)
 
 
 @pytest.mark.parametrize(
@@ -286,4 +286,4 @@ def test_sat_time_rejects_bad_target(hmm, observed, constraints, target, match):
     model = ConstrainedGraphicalModel(hmm, mvrs)
 
     with pytest.raises(InvalidInputError, match=match):
-        sat_time_torch_mvr_chmm(model, observed, target=target)
+        mvr_satisfaction_time(model, observed, target=target)

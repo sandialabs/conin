@@ -7,6 +7,8 @@ both.  Which (model type, constraint family) pairs a method supports is
 decided by the representation registry, not here.
 """
 
+import inspect
+
 from conin.exceptions import InvalidInputError
 
 
@@ -68,6 +70,25 @@ def reject_unexpected_options(options, what):
         raise TypeError(
             f"Unexpected options for {what}: {', '.join(map(str, options))}"
         )
+
+
+def reject_options_not_taken(func, options, what, *, passed=()):
+    """Raise ``TypeError`` for the ``options`` that ``func`` does not take.
+
+    For a method that hands its options to ``func`` as keyword arguments:
+    the options are the keyword-only parameters of ``func`` (its positional
+    parameters are the arguments that the method itself passes), less
+    ``passed``, the keywords that the method sets itself.  The other options
+    are rejected with the message of :func:`reject_unexpected_options` rather
+    than with Python's message, which names ``func``.
+    """
+    parameters = inspect.signature(func).parameters
+    keywords = {name for name, p in parameters.items() if p.kind is p.KEYWORD_ONLY}
+    if any(p.kind is p.VAR_KEYWORD for p in parameters.values()):
+        return
+    reject_unexpected_options(
+        [name for name in options if name not in keywords or name in passed], what
+    )
 
 
 def representation_kind(method, cmodel, options):

@@ -107,7 +107,7 @@ def _decode_samples(ctx, hidden, mediation):
 # ======================================================================
 
 
-def ffbs_torch_mvr_chmm(
+def mvr_sample(
     model,
     observed,
     *,
@@ -124,7 +124,7 @@ def ffbs_torch_mvr_chmm(
     Draws ``num_samples`` independent paths from ``P(x | observed, constraints
     satisfied)`` via FFBS.
 
-    ``generator`` must live on ``device``. Unlike ``viterbi_torch_mvr_chmm``,
+    ``generator`` must live on ``device``. Unlike ``mvr_viterbi``,
     ``return_augmented`` defaults to ``False``: decoding mediation labels is a
     per-sample Python loop and is rarely wanted for a whole batch.
 
@@ -145,7 +145,7 @@ def ffbs_torch_mvr_chmm(
         required for a map.
     dtype : torch.dtype, optional
         Floating dtype for torch tensors. Defaults to ``float64``, as in
-        ``baum_welch_mvr_chmm``.
+        ``mvr_baum_welch``.
     device : str or torch.device, optional
         Torch device.
     generator : torch.Generator, optional

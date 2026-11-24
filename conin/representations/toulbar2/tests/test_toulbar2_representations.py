@@ -298,6 +298,48 @@ def test_verbose_option_is_accepted(example, kwds):
 
 
 @skipif_toulbar2_not_available
+def test_hmm_create_model_takes_the_observations():
+    observed = ["o0", "o0", "o1", "o0", "o0"]
+    repn = hex_.create_hmm1().representation("toulbar2", stop=4)
+    dbn_evidence = {("E", t): o for t, o in enumerate(observed)}
+    expected = solve_toulbar2_map_query_model(repn.create_model(evidence=dbn_evidence))
+    M = repn.create_model(evidence=observed)
+    assert M.V_evidence == set(dbn_evidence)
+    assert solve_toulbar2_map_query_model(M).solutions == expected.solutions
+    with pytest.raises(InvalidInputError, match="unrolled until stop=4"):
+        repn.create_model(evidence=observed[:4])
+
+
+@skipif_toulbar2_not_available
+def test_add_function_with_infinite_cost_is_a_hard_constraint():
+    # As toulbar2_constraint_fn documents: a large finite cost can be cheaper
+    # than the model's (scaled) costs, so only float("inf") is sure to forbid.
+    mn = mex.ABC_conin().pgm
+    assert map_query(mn, method="toulbar2").solution.states["A"] == 2
+
+    @toulbar2_constraint_fn()
+    def a_is_not_2(model, data):
+        a = model.V["A"]
+        forbidden = model.V("A", 2)[1]
+        costs = [
+            float("inf") if i == forbidden else 0 for i in range(len(model.states[a]))
+        ]
+        model.AddFunction([a], costs)
+
+    constrained = ConstrainedGraphicalModel(mn, constraints=[a_is_not_2])
+    states = map_query(constrained, method="toulbar2").solution.states
+    # The best assignment with A = 0 or A = 1.
+    a, best = max(
+        (
+            (a, map_query(mn, method="toulbar2", evidence={"A": a}).solution)
+            for a in (0, 1)
+        ),
+        key=lambda pair: pair[1].log_potential,
+    )
+    assert states == {"A": a, **best.states}
+
+
+@skipif_toulbar2_not_available
 def test_unknown_options_still_raise():
     with pytest.raises(TypeError):
         map_query(mex.ABC_conin().pgm, method="toulbar2", no_such_option=1)

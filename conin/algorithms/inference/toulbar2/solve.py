@@ -14,6 +14,7 @@ from conin.algorithms.inference.results import (
 )
 from conin.util import try_import
 
+from conin.representations.methods import reject_options_not_taken
 from conin.representations.toulbar2.common import Contradiction
 
 with try_import() as pytoulbar2_available:
@@ -40,6 +41,12 @@ def _solve_toulbar2(repn, q):
     options = dict(q.options)
     verbose = options.pop("verbose", -1)
     write_uai_file = options.pop("write_uai_file", None)
+    reject_options_not_taken(
+        solve_toulbar2_map_query_model,
+        options,
+        "map_query(method='toulbar2')",
+        passed=("timing",),
+    )
     solver_timer = TicTocTimer()
     solver_timer.tic(None)
     try:

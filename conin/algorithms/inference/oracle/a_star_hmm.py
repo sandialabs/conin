@@ -103,7 +103,15 @@ def a_star(
     )
 
 
-def _a_star(oracle, *, observed, **kwargs):
+def _a_star(
+    oracle,
+    *,
+    observed,
+    num_solutions=1,
+    max_iterations=None,
+    max_time=None,
+    debug=False,
+):
     """:func:`a_star` on an ``"oracle"`` representation (external labels)."""
     matvec = oracle.hmm
     hmm = oracle.model
@@ -111,7 +119,15 @@ def _a_star(oracle, *, observed, **kwargs):
         oracle = None
 
     observed_ = [matvec.observable_to_internal[o] for o in observed]
-    ans_ = a_star_(observed=observed_, oracle=oracle, hmm=matvec, **kwargs)
+    ans_ = a_star_(
+        observed=observed_,
+        oracle=oracle,
+        hmm=matvec,
+        num_solutions=num_solutions,
+        max_iterations=max_iterations,
+        max_time=max_time,
+        debug=debug,
+    )
 
     # Convert internal indices back to external labels
     solutions = [

@@ -8,8 +8,8 @@ importing this package does not import torch.
 import importlib
 
 _EXPORTS = {
-    "sat_prob_torch_mvr_chmm": ".sat_prob",
-    "sat_time_torch_mvr_chmm": ".sat_time",
+    "mvr_satisfaction_probability": ".sat_prob",
+    "mvr_satisfaction_time": ".sat_time",
 }
 
 __all__ = sorted(_EXPORTS)
