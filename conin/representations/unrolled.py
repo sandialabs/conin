@@ -8,8 +8,15 @@ of a DBN or an HMM are built on the model unrolled over ``start..stop``
   ``stop`` (and ``hidden_to_internal``) attributes, :attr:`time_steps` and the
   fields these add to the constraint ``data`` (:meth:`structure_fields`);
 * :func:`dbn_time_range` and :func:`hmm_time_range`: the default ``stop`` of
-  a DBN and the check that an HMM has one.
+  a DBN and the check that an HMM has one;
+* :func:`last_time`: the latest time of the nodes a query names, which the
+  queries use as the default ``stop``;
+* :func:`unrolled_evidence` and :class:`ObservationsEvidenceMixin`: the
+  observations of an HMM as the evidence ``{("E", t): label}`` of its
+  unrolled DBN.
 """
+
+import numbers
 
 from conin.exceptions import InvalidInputError
 from conin.util.constraint_data import dbn_time_fields, hmm_time_fields
@@ -21,6 +28,21 @@ DEFAULT_DBN_STOP = 1
 def dbn_time_range(start, stop):
     """Return ``(start, stop)`` of a DBN representation (``stop=None`` means 1)."""
     return start, DEFAULT_DBN_STOP if stop is None else stop
+
+
+def last_time(nodes):
+    """The largest time ``t`` of the time-indexed nodes ``(name, t)`` in ``nodes``.
+
+    ``None`` if no node is time-indexed.
+    """
+    times = [
+        node[1]
+        for node in nodes
+        if isinstance(node, tuple)
+        and len(node) == 2
+        and isinstance(node[1], numbers.Integral)
+    ]
+    return max(times, default=None)
 
 
 def hmm_time_range(start, stop):
@@ -87,3 +109,42 @@ class UnrolledHMMMixin(UnrolledDBNMixin):
     def structure_fields(self):
         """``Munch(start, stop, hmm=Munch(T, hidden_to_internal))``."""
         return hmm_time_fields(self.start, self.stop, self.hidden_to_internal)
+
+
+def unrolled_evidence(observed, start, stop):
+    """The observations (a list) at the times ``start..stop`` as ``{("E", t): label}``.
+
+    These are the evidence of the HMM unrolled as a DBN, whose observed nodes
+    are ``("E", t)``.
+    """
+    return {("E", t): observed[t] for t in range(start, stop + 1)}
+
+
+class ObservationsEvidenceMixin:
+    """``create_model(evidence=...)`` of an unrolled HMM also takes the observations.
+
+    Put it before :class:`UnrolledHMMMixin` in the bases of an HMM
+    representation whose backend base class has ``create_model(*,
+    evidence=None, ...)``.  The evidence may be a dict ``{("E", t): label}``
+    on the unrolled DBN, as for the backend, or the observations as a list or
+    tuple indexed by time, as for :func:`~conin.algorithms.inference.map_query`;
+    the observations at the times ``start..stop`` are then the evidence.
+    """
+
+    def create_model(self, *, evidence=None, **kwds):
+        """The backend model for one query (see the backend's ``create_model``).
+
+        Raises
+        ------
+        InvalidInputError
+            If ``evidence`` is a list or tuple without an observation at
+            every time ``start..stop``.
+        """
+        if isinstance(evidence, (list, tuple)):
+            if len(evidence) <= self.stop:
+                raise InvalidInputError(
+                    f"The observations end at time {len(evidence) - 1}, but this "
+                    f"representation is unrolled until stop={self.stop}"
+                )
+            evidence = unrolled_evidence(evidence, self.start, self.stop)
+        return super().create_model(evidence=evidence, **kwds)

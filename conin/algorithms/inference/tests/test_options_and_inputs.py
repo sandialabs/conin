@@ -105,9 +105,47 @@ def _dbn():
     ],
 )
 def test_unknown_option_raises_type_error(method, make, kwds):
-    # variable_elimination and viterbi used to ignore unknown options.
-    with pytest.raises(TypeError, match="typo_option"):
+    # variable_elimination and viterbi used to ignore unknown options, and the
+    # other methods raised Python's TypeError, which names an internal function.
+    with pytest.raises(
+        TypeError,
+        match=rf"^Unexpected options for map_query\(method='{method}'.*: typo_option$",
+    ):
         map_query(make(), method=method, typo_option=1, **kwds)
+
+
+@pytest.mark.parametrize(
+    "method,make,kwds,option",
+    [
+        pytest.param("integer_program", _mn, MIP, "model", marks=needs_mip_solver),
+        pytest.param(
+            "integer_program",
+            hex_.create_hmm1,
+            dict(ip_formulation="network_flow", evidence=OBSERVED, **MIP),
+            "repn",
+            marks=needs_mip_solver,
+        ),
+        pytest.param("toulbar2", _mn, {}, "model", marks=needs_toulbar2),
+        pytest.param(
+            "a_star", hex_.create_chmm1_oracle, dict(evidence=["o0"] * 12), "oracle"
+        ),
+        pytest.param("a_star", hex_.create_hmm1, dict(evidence=OBSERVED), "observed"),
+        pytest.param(
+            "mvr_viterbi",
+            hex_.create_hmm1,
+            dict(evidence=OBSERVED),
+            "observed",
+            marks=needs_torch,
+        ),
+    ],
+)
+def test_option_named_like_an_internal_argument_is_unexpected(
+    method, make, kwds, option
+):
+    # The names of the arguments that a method passes to its solver are not
+    # options either; they raised "got multiple values for argument".
+    with pytest.raises(TypeError, match=rf"^Unexpected options for .*: {option}$"):
+        map_query(make(), method=method, **{option: 1}, **kwds)
 
 
 @pytest.mark.parametrize(
@@ -246,6 +284,35 @@ def test_hmm_start_must_be_zero(method, kwds):
 def test_dbn_start_must_be_zero(method, kwds):
     with pytest.raises(InvalidInputError, match="only be unrolled from start=0"):
         map_query(_dbn(), method=method, start=1, stop=3, **kwds)
+
+
+DBN_METHODS = [
+    pytest.param("integer_program", MIP, marks=needs_mip_solver),
+    pytest.param("toulbar2", {}, marks=needs_toulbar2),
+    pytest.param("variable_elimination", {}),
+]
+
+
+@pytest.mark.parametrize("method,kwds", DBN_METHODS)
+def test_dbn_stop_defaults_to_the_last_evidence_time(method, kwds):
+    # Without stop, a DBN query was unrolled over 0..1, and evidence at a
+    # later time raised InvalidInputError ("Unknown evidence variable").
+    evidence = {("B", t): 0 for t in range(4)}
+    results = map_query(_dbn(), method=method, evidence=evidence, **kwds)
+    expected = map_query(_dbn(), method=method, evidence=evidence, stop=3, **kwds)
+    assert results.solution.states == expected.solution.states
+    assert sorted(results.solution.states) == [("A", t) for t in range(4)]
+
+
+def test_dbn_stop_defaults_to_the_last_query_variable_time():
+    results = map_query(_dbn(), method="variable_elimination", variables=[("A", 2)])
+    assert list(results.solution.states) == [("A", 2)]
+
+
+@pytest.mark.parametrize("method,kwds", DBN_METHODS)
+def test_dbn_stop_defaults_to_1(method, kwds):
+    results = map_query(_dbn(), method=method, evidence={("B", 0): 0}, **kwds)
+    assert sorted(results.solution.states) == [("A", 0), ("A", 1), ("B", 1)]
 
 
 # ---------------------------------------------------------------------

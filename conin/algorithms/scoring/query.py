@@ -15,8 +15,6 @@ Unsupported (model type, constraint family) pairs raise the representation
 registry's ``InvalidInputError``.
 """
 
-import numbers
-
 import munch
 from ovld import ovld
 
@@ -29,6 +27,7 @@ from conin.representations.methods import (
     reject_unexpected_options,
     representation_kind,
 )
+from conin.representations.unrolled import last_time
 from conin.representations.variable_elimination import VariableEliminationRepresentation
 
 from .variable_elimination import _log_probability_variable_elimination
@@ -63,14 +62,8 @@ def _structure_params(cmodel, *, variables, start, stop):
     ):
         return {}
     if stop is None:
-        times = [
-            var[1]
-            for var in variables
-            if isinstance(var, tuple)
-            and len(var) == 2
-            and isinstance(var[1], numbers.Integral)
-        ]
-        stop = max(times + [start + 1])
+        last = last_time(variables)
+        stop = start + 1 if last is None else max(last, start + 1)
     elif stop < start:
         raise InvalidInputError(
             f"A DBN or HMM is unrolled over start..stop with stop >= start; got "

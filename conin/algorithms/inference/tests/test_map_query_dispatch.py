@@ -191,7 +191,7 @@ def test_structure_params(model, kind, kwds, params):
     if model == "hmm":
         # As in map_query: the HMM's stop is set from the observations first.
         kwds["start"], kwds["stop"], _ = mq._hmm_time_range(observed, **kwds)
-    assert mq._structure_params(kind, _cmodel(model), **kwds) == params
+    assert mq._structure_params(kind, _cmodel(model), nodes=(), **kwds) == params
 
 
 @pytest.mark.parametrize(

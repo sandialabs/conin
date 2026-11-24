@@ -69,6 +69,28 @@ The ``simple1_DDBN_conin`` example introduces two dynamic nodes:
        t=t,
    )
 
+Queries
+-------
+
+A query on a dynamic Bayesian network is answered on the network unrolled over
+the time steps ``0..stop``. Without ``stop``, the last time step is the latest
+one in the evidence (and in the ``variables`` of a partial MAP query), and at
+least ``1``:
+
+.. testcode::
+
+   from conin import map_query
+   from conin.examples.dynamic_bayesian_network import simple1_DDBN_conin
+
+   dbn = simple1_DDBN_conin().pgm
+   evidence = {("B", t): 0 for t in range(4)}
+   results = map_query(dbn, method="variable_elimination", evidence=evidence)
+   print([results.solution.states["A", t] for t in range(4)])
+
+.. testoutput::
+
+   [0, 1, 0, 1]
+
 Constrained dynamic Bayesian networks
 -------------------------------------
 
