@@ -83,6 +83,21 @@ def test_oracle_constraint_fn_with_node_callable():
 def test_oracle_constraint_fn_nodes_and_partial_raises():
     with pytest.raises(InvalidInputError):
         oracle_constraint_fn(nodes=["A"], same_partial_as_func=True)
+    with pytest.raises(InvalidInputError):
+        oracle_constraint_fn(nodes=["A"], partial=lambda T, states: True)
+
+
+def test_oracle_constraint_fn_partial():
+    def partial(T, states):
+        return len(states) <= T
+
+    @oracle_constraint_fn(partial=partial)
+    def c(states):
+        return True
+
+    assert c.partial_func is partial
+    with pytest.raises(InvalidInputError, match="not both"):
+        oracle_constraint_fn(partial=partial, same_partial_as_func=True)
 
 
 def test_factor_oracle_call_one_arg():

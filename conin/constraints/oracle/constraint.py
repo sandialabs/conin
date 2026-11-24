@@ -102,7 +102,9 @@ def oracle_accepts(constraint, assignment, data):
     return bool(constraint(assignment))
 
 
-def oracle_constraint_fn(*, nodes=None, name=None, same_partial_as_func=None):
+def oracle_constraint_fn(
+    *, nodes=None, name=None, partial=None, same_partial_as_func=None
+):
     """
     Decorator factory that creates an oracle constraint.
 
@@ -117,6 +119,13 @@ def oracle_constraint_fn(*, nodes=None, name=None, same_partial_as_func=None):
         :class:`~conin.constraints.FactorOracleConstraint`.
     name : str, optional
         Human-readable constraint name.
+    partial : callable, optional
+        The partial-feasibility check ``partial(T, states) -> bool`` of an
+        HMM oracle: ``states`` maps the time steps of a prefix to hidden
+        states and ``T`` is the length of the full sequence.  It may accept a
+        prefix that cannot be completed, but must not reject one that can;
+        A* search skips the prefixes it rejects.  Not supported together with
+        ``nodes`` or ``same_partial_as_func``.
     same_partial_as_func : bool, optional
         If ``True``, the partial-feasibility check reuses the main predicate.
         Not supported together with ``nodes``.
@@ -124,12 +133,17 @@ def oracle_constraint_fn(*, nodes=None, name=None, same_partial_as_func=None):
     Raises
     ------
     InvalidInputError
-        If ``same_partial_as_func`` is set together with ``nodes``.
+        If ``partial`` or ``same_partial_as_func`` is set together with
+        ``nodes``, or both are set.
     """
-    if nodes is not None and same_partial_as_func:
+    if nodes is not None and (same_partial_as_func or partial is not None):
         raise InvalidInputError(
-            "same_partial_as_func cannot be used with nodes: factor oracle "
-            "constraints have no partial function."
+            "partial and same_partial_as_func cannot be used with nodes: factor "
+            "oracle constraints have no partial function."
+        )
+    if partial is not None and same_partial_as_func:
+        raise InvalidInputError(
+            "Give either partial or same_partial_as_func, not both."
         )
 
     def decorator(func):
@@ -138,6 +152,7 @@ def oracle_constraint_fn(*, nodes=None, name=None, same_partial_as_func=None):
         return OracleConstraint(
             func=func,
             name=name,
+            partial_func=partial,
             same_partial_as_func=same_partial_as_func,
         )
 
