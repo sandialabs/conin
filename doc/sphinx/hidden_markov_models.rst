@@ -189,7 +189,7 @@ HMM, are ``chmm.representation("mvr").mvrs``). The torch MVR algorithms in
 take a ``ConstrainedGraphicalModel`` with MVR
 constraints; see the notebooks in ``doc/notebooks/MVR``.
 ``map_query(chmm, method="mvr_viterbi", evidence=observed)`` runs the torch
-MVR Viterbi (``viterbi_torch_mvr_chmm``) through the common entry point.
+MVR Viterbi (``mvr_viterbi``) through the common entry point.
 
 Oracle constraints
 ^^^^^^^^^^^^^^^^^^

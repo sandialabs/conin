@@ -10,8 +10,8 @@ importing this package does not import torch.
 import importlib
 
 _EXPORTS = {
-    "marginal_map_torch_mvr_chmm": ".marginal_map",
-    "viterbi_torch_mvr_chmm": ".viterbi",
+    "mvr_marginal_map": ".marginal_map",
+    "mvr_viterbi": ".viterbi",
 }
 
 __all__ = sorted(_EXPORTS)

@@ -15,7 +15,7 @@ except (ImportError, OSError) as exc:
     pytest.skip(f"torch not available: {exc}", allow_module_level=True)
 
 from conin.algorithms.sampling.mvr.ffbs import (  # noqa: E402
-    ffbs_torch_mvr_chmm,
+    mvr_sample,
 )
 
 from conin.algorithms.inference.mvr.tests.test_viterbi_mvr import (  # noqa: E402
@@ -68,10 +68,10 @@ def assert_matches_brute_force(hmm, mvrs, observed, T=None, seed=0):
 
     if not expected:
         with pytest.raises(InvalidInputError):
-            ffbs_torch_mvr_chmm(model, observed, time_horizon=T)
+            mvr_sample(model, observed, time_horizon=T)
         return None
 
-    paths = ffbs_torch_mvr_chmm(
+    paths = mvr_sample(
         model,
         observed,
         num_samples=NUM_SAMPLES,
@@ -186,7 +186,7 @@ def test_ffbs_is_reproducible_under_a_seeded_generator(hmm, observed):
     model = ConstrainedGraphicalModel(hmm, mvr)
 
     def draw(seed):
-        return ffbs_torch_mvr_chmm(
+        return mvr_sample(
             model,
             observed,
             num_samples=32,
@@ -204,7 +204,7 @@ def test_ffbs_return_shapes(hmm, observed):
     )
     model = ConstrainedGraphicalModel(hmm, mvr)
 
-    paths, indices, augmented = ffbs_torch_mvr_chmm(
+    paths, indices, augmented = mvr_sample(
         model,
         observed,
         num_samples=6,
@@ -240,4 +240,4 @@ def test_ffbs_rejects_bad_arguments(hmm, observed, kwargs, match):
     model = ConstrainedGraphicalModel(hmm)
 
     with pytest.raises(InvalidInputError, match=match):
-        ffbs_torch_mvr_chmm(model, observed, **kwargs)
+        mvr_sample(model, observed, **kwargs)

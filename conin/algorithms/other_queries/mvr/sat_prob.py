@@ -55,7 +55,7 @@ def _branch_weights(ctx, target, b):
 # ======================================================================
 
 
-def sat_prob_torch_mvr_chmm(
+def mvr_satisfaction_probability(
     model,
     observed,
     *,
@@ -97,7 +97,7 @@ def sat_prob_torch_mvr_chmm(
         required for a map.
     dtype : torch.dtype, optional
         Floating dtype for torch tensors. Defaults to ``float64``, as in
-        ``sat_time_torch_mvr_chmm``.
+        ``mvr_satisfaction_time``.
     device : str or torch.device, optional
         Torch device.
     return_log_weights : bool, optional

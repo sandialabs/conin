@@ -84,7 +84,7 @@ def _chain_gradient(log_params, data_counts, prior_counts, update):
     return gradients
 
 
-def generalized_em_mvr_chmm(
+def mvr_generalized_em(
     model,
     observations,
     *,
@@ -106,7 +106,7 @@ def generalized_em_mvr_chmm(
     ``model`` is a constrained HMM with ``"mvr"`` constraints
     (or a bare ``HiddenMarkovModel``); it is not modified.
 
-    Arguments shared with ``baum_welch_mvr_chmm`` mean the same, as does ``history``.
+    Arguments shared with ``mvr_baum_welch`` mean the same, as does ``history``.
     Emissions take the closed-form update; initial vector, transition matrix take gradient steps.
     Start and transition take up to ``inner_max_iter``; a failed line search warns (``RuntimeWarning``)
     and returns the last accepted parameters, which ``history[-1]`` then scores.

@@ -106,12 +106,18 @@ Migration table (old -> new)
                                     -> conin.algorithms.learning
   inference.viterbi_mvr, inference.marginal_map_mvr
                                     -> conin.algorithms.inference.mvr
+                                       (mvr_viterbi, mvr_marginal_map)
   other_queries.sat_prob_mvr, other_queries.sat_time_mvr
                                     -> conin.algorithms.other_queries.mvr
+                                       (mvr_satisfaction_probability,
+                                       mvr_satisfaction_time)
   learning.baum_welch_mvr, learning.generalized_em_mvr
                                     -> conin.algorithms.learning.mvr
+                                       (mvr_baum_welch, mvr_generalized_em,
+                                       mvr_forward_backward)
   sampling.ffbs_mvr, sampling.stopped_sampling_mvr
                                     -> conin.algorithms.sampling.mvr
+                                       (mvr_sample, mvr_stopped_sample)
   hidden_markov_model lp_inference/ip_inference
                                     -> conin.algorithms.inference.pyomo
   inference_pyomo_map_query_{MN,BN,DDBN,HMM}(pgm=m, ...)
@@ -424,8 +430,8 @@ Inference
   InvalidInputError. Only a proof of infeasibility gives this result: other
   solver failures (e.g. a time limit) still raise RuntimeError, and
   integer_program with solver="or_topas" still raises for an infeasible
-  model. viterbi_torch_mvr_chmm and the network-flow representation's
-  create_model still raise, now InfeasibleQueryError
+  model. The function conin.algorithms.inference.mvr.mvr_viterbi and the
+  network-flow representation's create_model still raise, now InfeasibleQueryError
   (conin.exceptions), a subclass of InvalidInputError.
 - DBN queries with stop=None unroll over 0..1 for every method.
 - variable_elimination: on a constrained Markov network it keeps the user
@@ -519,9 +525,13 @@ Sampling and learning
 - mcem(app=...) takes a constrained (or bare) HMM, samples from the
   re-estimated HMM each iteration and trains on the samples it scores (its
   results change), and no longer writes the HMM back to app.
-- The torch MVR algorithms keep their names and signatures and take a
-  constrained HMM with MVR constraints (or a bare HMM); other
-  constraint families raise InvalidInputError.
+- The torch MVR algorithms take a constrained HMM with MVR constraints (or a
+  bare HMM); other constraint families raise InvalidInputError. They are
+  named mvr_*, without the backend and the model type: mvr_viterbi,
+  mvr_marginal_map, mvr_satisfaction_probability, mvr_satisfaction_time,
+  mvr_sample (FFBS), mvr_stopped_sample, mvr_forward_backward,
+  mvr_baum_welch and mvr_generalized_em; mvr_constraints(formula) builds the
+  MVR constraints of a formula for ConstrainedGraphicalModel.
 
 I/O and conversion
 

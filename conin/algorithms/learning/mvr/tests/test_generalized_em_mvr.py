@@ -22,7 +22,7 @@ from conin.algorithms.learning.mvr.baum_welch import (  # noqa: E402
 from conin.algorithms.learning.mvr.generalized_em import (  # noqa: E402
     _chain_gradient,
     _constraint_statistics,
-    generalized_em_mvr_chmm,
+    mvr_generalized_em,
 )
 from conin.algorithms.util.mvr_kernels import (  # noqa: E402
     _build_sumprod_ctx,
@@ -134,7 +134,7 @@ def test_gem_matches_enumeration(seed):
             warnings.filterwarnings(
                 "ignore", message="Initial model has zero-probability"
             )
-            fitted, history = generalized_em_mvr_chmm(
+            fitted, history = mvr_generalized_em(
                 ConstrainedGraphicalModel(hmm, constraints),
                 observations,
                 time_horizons=horizons,
@@ -234,7 +234,7 @@ def test_pseudocount_keeps_unobserved_emissions_positive():
     )
     model = ConstrainedGraphicalModel(hmm)
     with pytest.warns(UserWarning, match="emission"):
-        fitted, _ = generalized_em_mvr_chmm(model, [["x", "y", "x"]], max_iter=1, tol=0)
+        fitted, _ = mvr_generalized_em(model, [["x", "y", "x"]], max_iter=1, tol=0)
     unobserved = np.asarray(fitted.representation("matvec").emission_mat.tolist())[
         :, hmm.representation("matvec").observable_to_internal["z"]
     ]
@@ -248,12 +248,12 @@ def test_gem_history():
     )
     model = ConstrainedGraphicalModel(hmm)
     observations = [["x", "x", "y"]]
-    fitted, history = generalized_em_mvr_chmm(model, observations, max_iter=2, tol=0)
+    fitted, history = mvr_generalized_em(model, observations, max_iter=2, tol=0)
     assert len(history) == 2
     assert enumerate_objectives(fitted, [], observations, [3])[0] >= history[-1]
-    fitted, history = generalized_em_mvr_chmm(model, [{}], time_horizons=3)
+    fitted, history = mvr_generalized_em(model, [{}], time_horizons=3)
     assert history == pytest.approx([0, 0], abs=1e-12)
-    fitted, history = generalized_em_mvr_chmm(model, observations, max_iter=0)
+    fitted, history = mvr_generalized_em(model, observations, max_iter=0)
     assert history == []
     assert (
         fitted.representation("matvec").emission_mat.tolist()
@@ -267,7 +267,7 @@ def test_gem_backtracking_failure_retains_parameters():
     )
     model = ConstrainedGraphicalModel(hmm)
     with pytest.warns(RuntimeWarning, match="backtracking"):
-        fitted, history = generalized_em_mvr_chmm(
+        fitted, history = mvr_generalized_em(
             model,
             [["x", "x", "y"]],
             max_iter=1,
@@ -329,4 +329,4 @@ def test_gem_rejects_invalid_arguments(observations, kwargs):
     else:
         match = "must be valid"
     with pytest.raises(InvalidInputError, match=match):
-        generalized_em_mvr_chmm(model, observations, **kwargs)
+        mvr_generalized_em(model, observations, **kwargs)

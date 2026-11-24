@@ -152,7 +152,7 @@ def _resolve_query_times(query_times, T):
 # ======================================================================
 
 
-def marginal_map_torch_mvr_chmm(
+def mvr_marginal_map(
     model,
     observed,
     *,
@@ -233,7 +233,7 @@ def marginal_map_torch_mvr_chmm(
     if len(times) == T:
         warnings.warn(
             "query_times covers the whole horizon, so this reduces to Viterbi. "
-            "viterbi_torch_mvr_chmm computes the same result more cheaply.",
+            "mvr_viterbi computes the same result more cheaply.",
             UserWarning,
             stacklevel=2,
         )

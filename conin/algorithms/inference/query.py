@@ -420,12 +420,12 @@ def _solve_map_query(repn: MVRHMMRepresentation, q):
     else:
         time_horizon = None
     # Imported here so that importing conin does not import torch.
-    from conin.algorithms.inference.mvr.viterbi import _viterbi_torch_mvr
+    from conin.algorithms.inference.mvr.viterbi import _mvr_viterbi
 
     timer = TicTocTimer()
     timer.tic(None)
     try:
-        hidden, augmented = _viterbi_torch_mvr(
+        hidden, augmented = _mvr_viterbi(
             repn,
             evidence,
             time_horizon=time_horizon,

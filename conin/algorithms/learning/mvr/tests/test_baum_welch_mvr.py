@@ -16,8 +16,8 @@ except (ImportError, OSError) as exc:
     pytest.skip(f"torch not available: {exc}", allow_module_level=True)
 
 from conin.algorithms.learning.mvr.baum_welch import (  # noqa: E402
-    baum_welch_mvr_chmm,
-    forward_backward_mvr_chmm,
+    mvr_baum_welch,
+    mvr_forward_backward,
 )
 
 from conin.algorithms.inference.mvr.tests.test_viterbi_mvr import (  # noqa: E402
@@ -101,7 +101,7 @@ def assert_matches_brute_force(hmm, mvrs, observed, T=None):
 
     model = ConstrainedGraphicalModel(hmm, mvrs)
 
-    gamma, xi, loglik = forward_backward_mvr_chmm(model, observed, time_horizon=T)
+    gamma, xi, loglik = mvr_forward_backward(model, observed, time_horizon=T)
     expected_gamma, expected_xi, expected_loglik = brute_force_posteriors(
         hmm, mvrs, observed, T
     )
@@ -197,7 +197,7 @@ def test_augmented_posterior_marginalizes_to_gamma(hmm, observed):
     ]
     model = ConstrainedGraphicalModel(hmm, mvrs)
 
-    gamma, _, _, augmented = forward_backward_mvr_chmm(
+    gamma, _, _, augmented = mvr_forward_backward(
         model, observed, return_augmented=True
     )
 
@@ -220,7 +220,7 @@ def test_forward_backward_raises_on_infeasible_constraints(hmm, observed):
     model = ConstrainedGraphicalModel(hmm, mvrs)
 
     with pytest.raises(InvalidInputError, match="No feasible augmented path"):
-        forward_backward_mvr_chmm(model, observed)
+        mvr_forward_backward(model, observed)
 
 
 # ===========================
@@ -251,7 +251,7 @@ def test_one_em_step_matches_brute_force_counts(hmm):
     observations = make_batch(["o0", "o1"], count=3, length=5, seed=1)
 
     # One iteration is one E step followed by one M step.
-    fitted, history = baum_welch_mvr_chmm(
+    fitted, history = mvr_baum_welch(
         model, observations, max_iter=1, tol=0.0, pseudocount=0.0
     )
 
@@ -276,7 +276,7 @@ def test_em_keeps_rows_that_collect_no_mass(hmm, observed):
     mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="A")
     model = ConstrainedGraphicalModel(hmm, mvr)
 
-    fitted, _ = baum_welch_mvr_chmm(model, [observed], max_iter=5, tol=0.0)
+    fitted, _ = mvr_baum_welch(model, [observed], max_iter=5, tol=0.0)
 
     a = hmm.representation("matvec").hidden_to_internal["A"]
 
@@ -313,7 +313,7 @@ def test_em_log_likelihood_is_monotone(seed):
 
     observations = make_batch(observable_states, count=4, length=6, seed=seed)
 
-    _, history = baum_welch_mvr_chmm(model, observations, max_iter=25, tol=0.0)
+    _, history = mvr_baum_welch(model, observations, max_iter=25, tol=0.0)
 
     assert len(history) == 25
     # Exact EM on this objective, so any decrease is a bug rather than noise.
@@ -334,7 +334,7 @@ def test_em_handles_mixed_lengths_and_observation_forms():
 
     observations = [["o0", "o1", "o0", "o1"], {0: "o1", 3: "o0"}, ["o1"] * 6]
 
-    _, history = baum_welch_mvr_chmm(
+    _, history = mvr_baum_welch(
         model, observations, time_horizons=[None, 5, None], max_iter=12, tol=0.0
     )
 
@@ -347,7 +347,7 @@ def test_em_leaves_the_caller_model_untouched(hmm, observed):
 
     before = np.asarray(hmm.representation("matvec").transition_mat.tolist()).copy()
 
-    fitted, _ = baum_welch_mvr_chmm(model, [observed], max_iter=5, tol=0.0)
+    fitted, _ = mvr_baum_welch(model, [observed], max_iter=5, tol=0.0)
 
     assert np.asarray(
         hmm.representation("matvec").transition_mat.tolist()
@@ -364,7 +364,7 @@ def test_em_write_back_preserves_indexing_and_rebuilds_repn(hmm, observed):
     mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="A")
     model = ConstrainedGraphicalModel(hmm, mvr)
 
-    fitted, _ = baum_welch_mvr_chmm(model, [observed], max_iter=3, tol=0.0)
+    fitted, _ = mvr_baum_welch(model, [observed], max_iter=3, tol=0.0)
 
     assert (
         fitted.representation("matvec").hidden_to_internal
@@ -390,7 +390,7 @@ def test_em_stops_at_the_convergence_tolerance(hmm, observed):
     mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="A")
     model = ConstrainedGraphicalModel(hmm, mvr)
 
-    fitted, history = baum_welch_mvr_chmm(model, [observed], max_iter=200, tol=1e-8)
+    fitted, history = mvr_baum_welch(model, [observed], max_iter=200, tol=1e-8)
 
     assert len(history) < 200
     assert abs(history[-1] - history[-2]) < 1e-8
@@ -398,7 +398,7 @@ def test_em_stops_at_the_convergence_tolerance(hmm, observed):
     # Converged, so no update followed the last entry: it scores exactly the
     # model that came back.
     fitted_model = ConstrainedGraphicalModel(fitted, mvr)
-    assert forward_backward_mvr_chmm(fitted_model, observed)[2] == pytest.approx(
+    assert mvr_forward_backward(fitted_model, observed)[2] == pytest.approx(
         history[-1], abs=1e-9
     )
 
@@ -410,10 +410,10 @@ def test_em_history_starts_at_the_input_model(hmm, observed):
     # A tolerance this tight cannot be met in three iterations, so the run also
     # exercises the not-converged warning.
     with pytest.warns(UserWarning, match="without reaching tol"):
-        _, history = baum_welch_mvr_chmm(model, [observed], max_iter=3, tol=1e-14)
+        _, history = mvr_baum_welch(model, [observed], max_iter=3, tol=1e-14)
 
     assert history[0] == pytest.approx(
-        forward_backward_mvr_chmm(model, observed)[2], abs=1e-9
+        mvr_forward_backward(model, observed)[2], abs=1e-9
     )
     assert len(history) == 3
 
@@ -430,9 +430,7 @@ def test_em_updates_only_the_requested_blocks(hmm, observed, block, attribute):
     mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="A")
     model = ConstrainedGraphicalModel(hmm, mvr)
 
-    fitted, _ = baum_welch_mvr_chmm(
-        model, [observed], max_iter=3, tol=0.0, update=(block,)
-    )
+    fitted, _ = mvr_baum_welch(model, [observed], max_iter=3, tol=0.0, update=(block,))
 
     for name in ("start_vec", "transition_mat", "emission_mat"):
         unchanged = np.allclose(
@@ -485,7 +483,7 @@ def test_em_preserves_structural_zeros_and_warns():
     observations = make_batch(observable_states, count=3, length=5, seed=2)
 
     with pytest.warns(UserWarning, match="zero-probability entries"):
-        fitted, _ = baum_welch_mvr_chmm(model, observations, max_iter=15, tol=0.0)
+        fitted, _ = mvr_baum_welch(model, observations, max_iter=15, tol=0.0)
 
     assert (
         np.asarray(fitted.representation("matvec").transition_mat.tolist())[0, 2] == 0.0
@@ -501,7 +499,7 @@ def test_dense_model_does_not_warn(hmm, observed):
 
     with warnings.catch_warnings():
         warnings.simplefilter("error")
-        baum_welch_mvr_chmm(model, [observed], max_iter=2, tol=0.0)
+        mvr_baum_welch(model, [observed], max_iter=2, tol=0.0)
 
 
 # ===========================
@@ -516,7 +514,7 @@ def test_em_names_the_offending_sequence(hmm):
     model = ConstrainedGraphicalModel(hmm, mvr)
 
     with pytest.raises(InvalidInputError, match="Sequence 1"):
-        baum_welch_mvr_chmm(model, [["o0"] * 5, ["o1"] * 3], max_iter=1)
+        mvr_baum_welch(model, [["o0"] * 5, ["o1"] * 3], max_iter=1)
 
 
 @pytest.mark.parametrize(
@@ -531,7 +529,7 @@ def test_em_rejects_bad_arguments(hmm, kwargs, observations, message):
     model = ConstrainedGraphicalModel(hmm)
 
     with pytest.raises(InvalidInputError, match=message):
-        baum_welch_mvr_chmm(model, observations, max_iter=1, **kwargs)
+        mvr_baum_welch(model, observations, max_iter=1, **kwargs)
 
 
 @pytest.mark.filterwarnings("ignore:.*without reaching tol")
@@ -553,5 +551,5 @@ def test_em_warns_when_the_log_likelihood_decreases(hmm, observed, monkeypatch):
     mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="A")
     model = ConstrainedGraphicalModel(hmm, mvr)
     with pytest.warns(UserWarning, match="Log-likelihood decreased at iteration 1"):
-        _, history = baum_welch_mvr_chmm(model, [observed], max_iter=2, tol=0.0)
+        _, history = mvr_baum_welch(model, [observed], max_iter=2, tol=0.0)
     assert history[1] < history[0]

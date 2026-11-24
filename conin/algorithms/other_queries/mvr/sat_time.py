@@ -195,7 +195,7 @@ def _satisfaction_weights(ctx, bctx, target, a, b, hits):
 # ======================================================================
 
 
-def sat_time_torch_mvr_chmm(
+def mvr_satisfaction_time(
     model,
     observed,
     *,
@@ -236,7 +236,7 @@ def sat_time_torch_mvr_chmm(
         required for a map.
     dtype : torch.dtype, optional
         Floating dtype for torch tensors. Defaults to ``float64``, as in
-        ``baum_welch_mvr_chmm``.
+        ``mvr_baum_welch``.
     device : str or torch.device, optional
         Torch device.
     return_log_weights : bool, optional

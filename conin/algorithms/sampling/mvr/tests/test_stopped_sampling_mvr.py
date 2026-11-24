@@ -16,7 +16,7 @@ except (ImportError, OSError) as exc:
 
 from conin.constraints.mvr import mvr_sattime  # noqa: E402
 from conin.algorithms.sampling.mvr.stopped_sampling import (  # noqa: E402
-    stopped_sampling_torch_mvr_chmm,
+    mvr_stopped_sample,
 )
 
 from conin.algorithms.sampling.mvr.tests.test_ffbs_mvr import (
@@ -79,12 +79,10 @@ def assert_matches_brute_force(hmm, mvrs, target, observed, T=None, seed=0):
 
     if not expected:
         with pytest.raises(InvalidInputError):
-            stopped_sampling_torch_mvr_chmm(
-                model, observed, target=target, time_horizon=T
-            )
+            mvr_stopped_sample(model, observed, target=target, time_horizon=T)
         return None
 
-    paths, times = stopped_sampling_torch_mvr_chmm(
+    paths, times = mvr_stopped_sample(
         model,
         observed,
         target=target,
@@ -219,7 +217,7 @@ def test_prefix_free_substitution_is_transparent(hmm, observed, target, capsys):
     def draw(mvr):
         model = ConstrainedGraphicalModel(hmm, mvr)
 
-        return stopped_sampling_torch_mvr_chmm(
+        return mvr_stopped_sample(
             model,
             observed,
             target=0,
@@ -239,7 +237,7 @@ def test_stopped_sampling_leaves_the_caller_model_untouched(hmm, observed, targe
     stored = model.constraints[0]
     constraints = model.constraints
 
-    stopped_sampling_torch_mvr_chmm(
+    mvr_stopped_sample(
         model,
         observed,
         target="hit",
@@ -267,7 +265,7 @@ def test_min_length_restricts_the_stopping_time(hmm, observed, target, min_lengt
     T = len(observed)
     a, _ = mvr_window(target, T)
 
-    paths, times = stopped_sampling_torch_mvr_chmm(
+    paths, times = mvr_stopped_sample(
         model,
         observed,
         target=0,
@@ -295,7 +293,7 @@ def test_min_length_below_the_window_is_vacuous(hmm, observed, target):
     model = ConstrainedGraphicalModel(hmm, target)
 
     def draw(min_length):
-        return stopped_sampling_torch_mvr_chmm(
+        return mvr_stopped_sample(
             model,
             observed,
             target=0,
@@ -324,4 +322,4 @@ def test_stopped_sampling_rejects_bad_arguments(hmm, observed, target, kwargs, m
     kwargs = {"target": 0, **kwargs}
 
     with pytest.raises(InvalidInputError, match=match):
-        stopped_sampling_torch_mvr_chmm(model, observed, **kwargs)
+        mvr_stopped_sample(model, observed, **kwargs)

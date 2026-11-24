@@ -255,7 +255,7 @@ def _rebuild_hmm(hmm, start, transition, emission):
 # ======================================================================
 
 
-def forward_backward_mvr_chmm(
+def mvr_forward_backward(
     model,
     observed,
     *,
@@ -323,7 +323,7 @@ def forward_backward_mvr_chmm(
     return gamma, xi, loglik
 
 
-def baum_welch_mvr_chmm(
+def mvr_baum_welch(
     model,
     observations,
     *,
