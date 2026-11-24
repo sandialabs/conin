@@ -79,9 +79,7 @@ def map_results(solutions, *, solvetime, termination_condition="ok", **extra):
 
 def no_solution_results(solvetime):
     """The result of a query without a solution (:data:`INFEASIBLE`)."""
-    return map_results(
-        [], solvetime=solvetime, termination_condition=INFEASIBLE
-    )
+    return map_results([], solvetime=solvetime, termination_condition=INFEASIBLE)
 
 
 def _drop_impossible(results):

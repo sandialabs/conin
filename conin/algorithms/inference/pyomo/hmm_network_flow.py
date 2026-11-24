@@ -194,8 +194,8 @@ def ip_inference(
     Parameters
     ----------
     hmm : ConstrainedGraphicalModel (of an HMM)
-        Its constraints must be of family ``"pyomo"`` or ``"smoek"`` (or
-        none).
+        Its constraints must be of the families ``"pyomo"`` and
+        ``"smoek"`` (or none).
     observed : list
         Observed labels: a non-empty list or tuple (or a dict keyed by
         ``0..T-1``); anything else raises ``InvalidInputError``.

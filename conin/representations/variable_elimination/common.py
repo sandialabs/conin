@@ -28,8 +28,9 @@ def apply_variable_elimination_constraints(*, pgm, constraints, data=None):
     pgm : DiscreteMarkovNetwork or DiscreteBayesianNetwork
         The (possibly unrolled) model the constraints refer to.
     constraints : sequence of FactorOracleConstraint or SmoekConstraint
-        Constraints of one family.  Smoek constraints are first combined
-        into one :class:`FactorOracleConstraint`.
+        Constraints of the ``"factor_oracle"`` and ``"smoek"`` families.
+        The smoek constraints are first combined into one
+        :class:`FactorOracleConstraint`.
     data : object, optional
         Passed to the constraint functions (and to callable node scopes).
 
@@ -43,25 +44,31 @@ def apply_variable_elimination_constraints(*, pgm, constraints, data=None):
     Raises
     ------
     TypeError
-        For constraints of several families or of another family.
+        For constraints of another family.
     ImportError
         For smoek constraints without smoek.
     """
-    result = apply_constraints(
+    return apply_constraints(
         constraints,
         {
-            "factor_oracle": lambda cons: _materialise_all(pgm, cons, data),
-            "smoek": lambda cons: _materialise_all(
-                pgm,
-                create_oracle_constraints_from_smoek(
-                    pgm=pgm, constraints=cons, data=data
+            "factor_oracle": lambda cons, factors: [
+                *factors,
+                *_materialise_all(pgm, cons, data),
+            ],
+            "smoek": lambda cons, factors: [
+                *factors,
+                *_materialise_all(
+                    pgm,
+                    create_oracle_constraints_from_smoek(
+                        pgm=pgm, constraints=cons, data=data
+                    ),
+                    data,
                 ),
-                data,
-            ),
+            ],
         },
+        [],
         backend="variable_elimination",
     )
-    return [] if result is None else result
 
 
 def _materialise_all(pgm, constraints, data):
@@ -108,7 +115,7 @@ class VariableEliminationRepresentation(Representation):
         The model the constraint applier sees: the MN, the BN, or the
         unrolled BN of a DBN/HMM.
     constraints : tuple
-        The user constraints (family ``"factor_oracle"`` or ``"smoek"``).
+        The user constraints (families ``"factor_oracle"`` and ``"smoek"``).
     ve_model : DiscreteMarkovNetwork
         What variable elimination runs on and what ``write_uai_file`` writes;
         :attr:`pgm` itself for a Markov network without constraints.

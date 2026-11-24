@@ -5,7 +5,9 @@ from conin.exceptions import InvalidInputError
 from conin.graphical_models.base import GraphicalModel, set_constrained_class
 from conin.representations.base import (
     build_representation,
+    combinable_families,
     registered_model_type,
+    representation_kinds,
     supported_representations,
 )
 
@@ -35,11 +37,13 @@ class ConstrainedGraphicalModel:
         :attr:`model_type`).
     constraints : Constraint or iterable of Constraint, optional
         The constraints: a single constraint, or a list, tuple or other
-        iterable of constraints. They must all belong to one constraint family
-        (``type(c).family``), and the family must be supported for
-        :attr:`model_type`: some representation builder must be registered
-        for it (see :func:`conin.representations.supported_representations`).
-        ``None`` is treated as no constraints.
+        iterable of constraints. Each family (``type(c).family``) must be
+        supported for :attr:`model_type`: some representation builder must
+        be registered for it (see
+        :func:`conin.representations.supported_representations`). Constraints
+        of several families can be combined if one representation accepts
+        all of them, e.g. ``"smoek"`` with ``"pyomo"`` for the integer
+        program. ``None`` is treated as no constraints.
     data : object, optional
         Application data passed to the representation builders (e.g. to MVR
         factories or Pyomo constraint functions).
@@ -57,7 +61,7 @@ class ConstrainedGraphicalModel:
     class with no constraints.
     """
 
-    __slots__ = ("_model", "_model_type", "_constraints", "_family", "_data")
+    __slots__ = ("_model", "_model_type", "_constraints", "_families", "_data")
 
     def __init__(self, model, constraints=(), *, data=None):
         if not isinstance(model, GraphicalModel):
@@ -75,9 +79,9 @@ class ConstrainedGraphicalModel:
         object.__setattr__(self, "_model_type", model_type)
 
         constraints = self._normalise_constraints(constraints)
-        family = self._derive_family(constraints)
+        families = self._derive_families(constraints)
         object.__setattr__(self, "_constraints", constraints)
-        object.__setattr__(self, "_family", family)
+        object.__setattr__(self, "_families", families)
         object.__setattr__(self, "_data", data)
 
     # ------------------------------------------------------------------
@@ -109,25 +113,31 @@ class ConstrainedGraphicalModel:
                 )
         return constraints
 
-    def _derive_family(self, constraints):
-        families = constraint_families(constraints)
-        if len(families) > 1:
-            raise InvalidInputError(
-                f"{type(self).__name__}: all constraints must belong to one "
-                f"constraint family, found {sorted(map(str, families))}"
-            )
-        family = next(iter(families)) if families else None
-        if family is not None:
-            # A family is accepted iff some representation builder is registered
-            # for (model_type, family): the registry is the single record of
-            # what is supported.
-            supported = self._supported_families()
+    def _derive_families(self, constraints):
+        families = tuple(sorted(constraint_families(constraints), key=str))
+        # A family is accepted iff some representation builder is registered
+        # for (model_type, family), and several families iff one builder is
+        # registered for all of them: the registry is the single record of
+        # what is supported.
+        supported = self._supported_families()
+        for family in families:
             if family not in supported:
                 raise InvalidInputError(
                     f"{type(self).__name__} does not support constraint family "
                     f"{family!r}; supported families: {supported}"
                 )
-        return family
+        if len(families) > 1 and not representation_kinds(self._model_type, families):
+            combinable = "; ".join(
+                f"{kind!r}: {list(fams)}"
+                for kind, fams in combinable_families(self._model_type).items()
+            )
+            raise InvalidInputError(
+                f"{type(self).__name__}: no representation of "
+                f"{self._model_type.__name__} accepts the constraint families "
+                f"{list(families)} together. Families that can be combined: "
+                f"{combinable or 'none'}."
+            )
+        return families
 
     def _supported_families(self):
         """The sorted families of the builders registered for ``model_type``."""
@@ -170,8 +180,17 @@ class ConstrainedGraphicalModel:
 
     @property
     def constraint_family(self):
-        """str or None: The family shared by all constraints (``None`` if there are none)."""
-        return self._family
+        """str or None: The family shared by all constraints.
+
+        ``None`` if there are no constraints or they belong to several
+        families (see :attr:`constraint_families`).
+        """
+        return self._families[0] if len(self._families) == 1 else None
+
+    @property
+    def constraint_families(self):
+        """tuple of str: The sorted families of the constraints (empty if there are none)."""
+        return self._families
 
     @property
     def data(self):
@@ -191,8 +210,9 @@ class ConstrainedGraphicalModel:
         Raises
         ------
         InvalidInputError
-            If no builder is registered for ``(kind, model_type,
-            constraint_family)``. The message lists the supported pairs.
+            If no builder is registered for ``kind``, :attr:`model_type` and
+            all of :attr:`constraint_families`. The message lists the
+            supported pairs.
         """
         return build_representation(self, kind, **structure_params)
 
@@ -257,23 +277,23 @@ class ConstrainedGraphicalModel:
             self._model,
             self._model_type,
             self._constraints,
-            self._family,
+            self._families,
             self._data,
         )
 
     def __setstate__(self, state):
-        model, model_type, constraints, family, data = state
+        model, model_type, constraints, families, data = state
         object.__setattr__(self, "_model", model)
         object.__setattr__(self, "_model_type", model_type)
         object.__setattr__(self, "_constraints", constraints)
-        object.__setattr__(self, "_family", family)
+        object.__setattr__(self, "_families", families)
         object.__setattr__(self, "_data", data)
 
     def __repr__(self):
         names = [getattr(c, "name", type(c).__name__) for c in self._constraints]
         return (
             f"{type(self).__name__}(model={type(self._model).__name__}, "
-            f"constraint_family={self._family!r}, constraints={names!r})"
+            f"constraint_families={list(self._families)!r}, constraints={names!r})"
         )
 
 

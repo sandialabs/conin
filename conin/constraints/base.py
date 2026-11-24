@@ -24,8 +24,10 @@ class Constraint(ABC):
     family = None
     """str or None: The constraint family.
 
-    A constrained model requires all of its constraints to belong to a single
-    family.  Most constraint classes form their own family (e.g. ``"pyomo"``,
+    The family decides which representations can apply the constraint, so
+    the methods that a constrained model supports are those whose
+    representation accepts all of its families.  Most constraint classes
+    form their own family (e.g. ``"pyomo"``,
     ``"toulbar2"``, ``"oracle"``).  Concrete subclasses must override this;
     the base class value is ``None``.
     """
@@ -53,3 +55,11 @@ class Constraint(ABC):
 def constraint_families(constraints):
     """The set of distinct families of ``constraints``."""
     return {type(c).family for c in constraints}
+
+
+def group_by_family(constraints):
+    """``{family: tuple of constraints}``, in the order the families first appear."""
+    groups = {}
+    for c in constraints:
+        groups.setdefault(type(c).family, []).append(c)
+    return {family: tuple(cons) for family, cons in groups.items()}

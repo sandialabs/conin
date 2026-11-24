@@ -14,7 +14,12 @@ algorithm, so one representation can serve several queries.
 
 Builders are registered per ``(kind, model_type, constraint_family)``. The
 registry also decides which constraint families a constrained model accepts:
-a family is accepted for a model type if some builder is registered for it.
+a family is accepted for a model type if some builder is registered for it,
+and constraints of several families can be combined if one builder is
+registered for all of them (``smoek`` with ``pyomo`` for ``"pyomo"`` and
+``"pyomo_network_flow"``, with ``toulbar2`` for ``"toulbar2"``, and with
+``factor_oracle`` for ``"variable_elimination"``). The builder then applies
+the constraints family by family.
 
 .. list-table:: Registered kinds and constraint families
    :header-rows: 1

@@ -165,10 +165,37 @@ def test_non_constraint_rejected():
         ConstrainedGraphicalModel(_mn(), [pyomo_c, object()])
 
 
-def test_mixed_families_rejected_and_named():
-    with pytest.raises(InvalidInputError, match="one constraint family") as exc:
+def test_families_without_a_common_representation_are_rejected_and_named():
+    with pytest.raises(
+        InvalidInputError,
+        match=r"no representation of DiscreteMarkovNetwork accepts the "
+        r"constraint families \['pyomo', 'toulbar2'\] together",
+    ) as exc:
         ConstrainedGraphicalModel(_mn(), [pyomo_c, tb2_c])
-    assert "pyomo" in str(exc.value) and "toulbar2" in str(exc.value)
+    # The message lists the combinations that work.
+    assert "'pyomo': ['pyomo', 'smoek']" in str(exc.value)
+    assert "'toulbar2': ['smoek', 'toulbar2']" in str(exc.value)
+
+
+def test_families_with_a_common_representation_can_be_combined():
+    smoek = pytest.importorskip("smoek")  # noqa: F841
+    from conin import smoek_constraint_fn
+
+    @smoek_constraint_fn()
+    def smoek_c(model, data):
+        return model.V("A", 1) >= 0
+
+    c = ConstrainedGraphicalModel(_mn(), [pyomo_c, smoek_c, pyomo_c])
+    assert c.constraint_families == ("pyomo", "smoek")
+    assert c.constraint_family is None
+    assert "constraint_families=['pyomo', 'smoek']" in repr(c)
+    c.representation("pyomo")
+    with pytest.raises(
+        InvalidInputError,
+        match=r"No 'toulbar2' representation is available for "
+        r"DiscreteMarkovNetwork with constraint families \['pyomo', 'smoek'\]",
+    ):
+        c.representation("toulbar2")
 
 
 @pytest.mark.parametrize(

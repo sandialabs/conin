@@ -196,7 +196,7 @@ def test_apply_rejects_mixed_constraint_lists():
     def pyomo(M, D):
         return M
 
-    with pytest.raises(TypeError, match="one family, found .'pyomo', 'toulbar2'."):
+    with pytest.raises(TypeError, match="does not apply constraints of family 'pyomo'"):
         apply_toulbar2_constraints(
             pgm=None, constraints=(tb2, pyomo), model=_RecordingCFN(), data=None
         )

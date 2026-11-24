@@ -190,11 +190,12 @@ class TestBasicSmoekConstraints:
         # Results should be identical
         assert result_traditional.solution.states == result_smoek.solution.states
 
+    @needs_mip
     def test_mixing_constraint_styles(self):
-        """Test that smoek and traditional constraints cannot be mixed.
+        """Smoek constraints can be combined with Pyomo constraints.
 
-        A constrained model accepts constraints from one family only, so the
-        constructor rejects the mix with an InvalidInputError.
+        The integer program accepts both families; toulbar2 accepts neither
+        Pyomo constraints nor the mix.
         """
         pgm = cancer1_BN_conin().pgm
 
@@ -207,8 +208,13 @@ class TestBasicSmoekConstraints:
         def smoek_constraint(model, data):
             return model.V("Dyspnoea", 0) + model.V("Xray", 0) <= 1
 
-        # Mix both styles
-        with pytest.raises(InvalidInputError, match="one constraint family"):
-            ConstrainedGraphicalModel(
-                pgm, constraints=[traditional_constraint, smoek_constraint]
-            )
+        evidence = {"Pollution": 0, "Smoker": 1}
+        both = ConstrainedGraphicalModel(
+            pgm, constraints=[traditional_constraint, smoek_constraint]
+        )
+        results = map_query(both, method="integer_program", evidence=evidence)
+        states = results.solution.states
+        assert states["Dyspnoea"] + states["Xray"] <= 1
+        assert (1 - states["Dyspnoea"]) + (1 - states["Xray"]) <= 1
+        with pytest.raises(InvalidInputError, match="constraint families"):
+            map_query(both, method="toulbar2", evidence=evidence)

@@ -9,7 +9,7 @@ the method needs and dispatches on its type, so the same call shape works
 across supported Markov networks, Bayesian networks, dynamic Bayesian
 networks, hidden Markov models, and constrained variants when the selected
 backend supports them. A method that does not support the model type or its
-constraint family raises ``InvalidInputError``.
+constraint families raises ``InvalidInputError``.
 
 .. autofunction:: conin.algorithms.inference.map_query
 
