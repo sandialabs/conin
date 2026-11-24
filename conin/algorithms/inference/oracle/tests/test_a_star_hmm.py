@@ -126,12 +126,54 @@ def test_max_time_stops_the_search():
     assert results.termination_condition.startswith("max_time: ")
 
 
+def test_max_prefixes_stops_the_search():
+    cmodel = tc.create_chmm1_oracle()
+    results = a_star(observed=["o0"] * 20, hmm=cmodel, max_prefixes=50)
+    assert results.solution is None
+    assert results.termination_condition == "max_prefixes: 51"
+
+
+def test_max_prefixes_through_map_query():
+    from conin.algorithms.inference import map_query
+
+    cmodel = tc.create_chmm1_oracle()
+    results = map_query(cmodel, method="a_star", evidence=["o0"] * 20, max_prefixes=50)
+    assert results.termination_condition == "max_prefixes: 51"
+
+
+def test_a_partial_check_prunes_without_changing_the_result():
+    from conin import oracle_constraint_fn
+
+    hmm = tc.create_chmm1_oracle().model
+    calls = []
+
+    def at_most_two_h1(states):
+        return list(states.values()).count("h1") <= 2
+
+    @oracle_constraint_fn(
+        partial=lambda T, states: calls.append(T) is None and at_most_two_h1(states)
+    )
+    def pruned(states):
+        return at_most_two_h1(states)
+
+    plain = oracle_constraint_fn()(at_most_two_h1)
+    observed = ["o1"] * 8
+    expected = a_star(observed=observed, hmm=ConstrainedGraphicalModel(hmm, plain))
+    results = a_star(observed=observed, hmm=ConstrainedGraphicalModel(hmm, pruned))
+    assert results.solutions == expected.solutions
+    assert calls and set(calls) == {8}
+
+
 def test_limits_that_are_not_reached_do_not_change_the_result():
     cmodel = tc.create_chmm1_oracle()
     observed = ["o0"] * 12
     expected = a_star(observed=observed, hmm=cmodel)
     results = a_star(
-        observed=observed, hmm=cmodel, max_iterations=10**6, max_time=10**6
+        observed=observed,
+        hmm=cmodel,
+        max_iterations=10**6,
+        max_time=10**6,
+        max_prefixes=10**6,
     )
     assert results.solutions == expected.solutions
     assert results.termination_condition == "ok"

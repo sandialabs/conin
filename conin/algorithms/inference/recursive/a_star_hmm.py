@@ -18,6 +18,7 @@ def recursive_a_star(
     debug=False,
     max_iterations=None,
     max_time=None,
+    max_prefixes=None,
 ):
     """A* search for the most likely hidden states under recursive constraints.
 
@@ -42,6 +43,9 @@ def recursive_a_star(
         Maximum number of iterations.
     max_time : float, optional
         Maximum time in seconds.
+    max_prefixes : int, optional
+        Maximum number of prefixes in the open set, which bounds the memory
+        the search uses.
 
     Returns
     -------
@@ -60,6 +64,7 @@ def recursive_a_star(
         debug=debug,
         max_iterations=max_iterations,
         max_time=max_time,
+        max_prefixes=max_prefixes,
     )
 
 
@@ -71,6 +76,7 @@ def _recursive_a_star(
     debug=False,
     max_iterations=None,
     max_time=None,
+    max_prefixes=None,
 ):
     """:func:`recursive_a_star` on a ``"recursive"`` representation."""
     hmm = constraint.model
@@ -90,6 +96,7 @@ def _recursive_a_star(
         num_solutions=num_solutions,
         max_iterations=max_iterations,
         max_time=max_time,
+        max_prefixes=max_prefixes,
         debug=debug,
     )
 
