@@ -179,7 +179,7 @@ def _check_map(c, results, best, constrained):
     if not best:
         if results.solution is not None or results.solutions:
             return [f"expected no solution, got {results.solution.states}"]
-        if results.termination_condition != "error: no feasible solutions":
+        if results.termination_condition != "infeasible":
             return [f"termination_condition {results.termination_condition!r}"]
         return []
     if results.solution is None:

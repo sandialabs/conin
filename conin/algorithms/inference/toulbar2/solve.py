@@ -94,8 +94,7 @@ def solve_toulbar2_map_query_model(
         (``"ok"``) and ``solvetime``; see :mod:`conin.algorithms.inference.results`.
         If the CFN has no solution (the constraints or the evidence exclude
         every assignment), ``solution`` is ``None``, ``solutions`` is empty
-        and ``termination_condition`` is ``"error: no feasible solutions"``,
-        as for A*.
+        and ``termination_condition`` is ``"infeasible"``, as for A*.
     """
     solution_with_evidence = solution_with_fixed or solution_with_evidence
     if timing:  # pragma:nocover

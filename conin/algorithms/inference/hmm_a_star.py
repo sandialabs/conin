@@ -28,7 +28,7 @@ import time
 import numpy as np
 
 from conin.algorithms.inference.results import (
-    NO_FEASIBLE_SOLUTIONS,
+    INFEASIBLE,
     map_results,
     map_solution,
 )
@@ -250,7 +250,7 @@ def hmm_a_star(
     if termination_condition == "unknown":
         # The search space is exhausted.  (If max_iterations or max_time
         # stopped the search, termination_condition says so.)
-        termination_condition = "ok" if output else NO_FEASIBLE_SOLUTIONS
+        termination_condition = "ok" if output else INFEASIBLE
 
     return map_results(
         output,

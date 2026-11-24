@@ -275,7 +275,7 @@ HMM_NO_SOLUTION_METHODS = [
 def _check_no_solution(results):
     assert set(results) == RESULT_KEYS
     assert results.solution is None and results.solutions == []
-    assert results.termination_condition == "error: no feasible solutions"
+    assert results.termination_condition == "infeasible"
     assert isinstance(results.solvetime, float) and results.solvetime >= 0
 
 

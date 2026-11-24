@@ -104,7 +104,7 @@ def viterbi(*, observed, hmm):
         ``solver_objective`` (``None``).  See :mod:`conin.algorithms.inference.results`.
         If the observations have probability zero, ``solution`` is ``None``,
         ``solutions`` is empty and ``termination_condition`` is
-        ``"error: no feasible solutions"``.
+        ``"infeasible"``.
     """
     cmodel = ConstrainedGraphicalModel.ensure(hmm, HiddenMarkovModel)
     # Raises InvalidInputError if there are constraints.

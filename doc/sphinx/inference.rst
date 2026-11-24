@@ -112,8 +112,8 @@ search stopped) and ``solvetime``. Each solution has
 
 If the evidence or the constraints exclude every assignment, there is no
 solution: every method then returns ``solution=None``, ``solutions=[]`` and
-``termination_condition="error: no feasible solutions"``. (The integer program
-with ``solver="or_topas"`` raises instead.) Here the hidden state ``"y"``
+``termination_condition="infeasible"``. (The integer program with
+``solver="or_topas"`` raises instead.) Here the hidden state ``"y"``
 cannot be left and only ``"y"`` emits ``"b"``, so ``"b"`` cannot come before
 ``"a"``:
 
@@ -131,7 +131,7 @@ cannot be left and only ``"y"`` emits ``"b"``, so ``"b"`` cannot come before
 
 .. testoutput::
 
-   None error: no feasible solutions
+   None infeasible
 
 Optimization and Toulbar2 inference on HMMs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

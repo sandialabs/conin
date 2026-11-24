@@ -110,7 +110,7 @@ def test_pruning_reduces_the_search_without_changing_the_optimum():
 
 def test_no_solution_within_max_iterations_is_reported():
     # termination_condition says why the search stopped (it was overwritten
-    # with "error: no feasible solutions").
+    # with "infeasible").
     cmodel = tc.create_chmm1_oracle()
     results = a_star(observed=["o0"] * 20, hmm=cmodel, max_iterations=505)
     assert results.solution is None
@@ -150,7 +150,7 @@ def test_infeasible_model_is_reported():
     results = a_star(observed=["o0"] * 5, hmm=cmodel)
     assert results.solution is None
     assert results.solutions == []
-    assert results.termination_condition == "error: no feasible solutions"
+    assert results.termination_condition == "infeasible"
 
 
 @pytest.mark.parametrize("num_solutions", [1, 3])
@@ -160,7 +160,7 @@ def test_no_solution_is_an_error_for_any_num_solutions(num_solutions):
     cmodel = tc.create_chmm1_oracle()
     results = a_star(observed=["o0"] * 5, hmm=cmodel, num_solutions=num_solutions)
     assert results.solutions == []
-    assert results.termination_condition == "error: no feasible solutions"
+    assert results.termination_condition == "infeasible"
 
 
 def test_fewer_solutions_than_asked_for_are_returned():
@@ -178,7 +178,7 @@ def test_map_query_a_star_without_a_solution():
 
     results = map_query(tc.create_chmm1_oracle(), method="a_star", evidence=["o0"] * 5)
     assert results.solution is None and results.solutions == []
-    assert results.termination_condition == "error: no feasible solutions"
+    assert results.termination_condition == "infeasible"
 
 
 @pytest.mark.parametrize("T", [11, 12, 13, 14])
