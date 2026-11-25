@@ -16,6 +16,7 @@ def map_query_args(
     timing=False,
     start=0,
     stop=None,
+    representation_options=None,
     options=None,
 ):
     """The query that :func:`~conin.algorithms.inference.map_query` passes to the solvers.
@@ -33,6 +34,7 @@ def map_query_args(
         timing=timing,
         start=start,
         stop=stop,
+        representation_options=dict(representation_options or {}),
         options=dict(options or {}),
     )
 

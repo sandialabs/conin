@@ -30,6 +30,7 @@ def _solve_sparow(repn, q):
         evidence=q.evidence,
         variables=q.variables,
         timing=q.timing,
+        **q.representation_options,
     )
     return conin.algorithms.inference.pyomo.solve_pyomo_map_query_model(
         model, timing=q.timing, evidence=q.evidence, **options

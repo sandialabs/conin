@@ -173,6 +173,7 @@ def map_query(
     timing=False,
     start=0,
     stop=None,
+    representation_options=None,
     **options,
 ):
     """Compute a MAP assignment
@@ -230,6 +231,9 @@ def map_query(
         ``InvalidInputError``).  With sparse ``{time: label}`` observations,
         ``mvr_viterbi`` infers over ``0..stop``, where ``stop`` defaults to
         the last observed time and may be after it.
+    representation_options: dict, optional
+        Additional keyword arguments that are used to construct the query
+        representation.
     options : dict, optional
         Additional keyword arguments forwarded to the selected
         inference helper, such as solver options or output-file settings.
@@ -294,17 +298,10 @@ def map_query(
     """
     check_method(method, METHODS, "inference type")
     cmodel = ConstrainedGraphicalModel.ensure(pgm)
-    observed = None
-    if isinstance(cmodel.model, (DynamicDiscreteBayesianNetwork, HiddenMarkovModel)):
-        check_unroll_start(start)
-    if isinstance(cmodel.model, HiddenMarkovModel):
-        observed = _hmm_observations(method, evidence)
-        start, stop, observed = _hmm_time_range(observed, start, stop)
+
     inference_type = "mpe_inference" if variables is None else "map_inference"
     kind = representation_kind(method, cmodel, inference_type, options)
-    repn = cmodel.representation(
-        kind,
-        **_structure_params(
+    struct_params = _structure_params(
             kind,
             cmodel,
             start=start,
@@ -313,8 +310,16 @@ def map_query(
                 *(evidence if isinstance(evidence, dict) else ()),
                 *(variables or ()),
             ],
-        ),
-    )
+        )
+    repn = cmodel.representation(kind, **struct_params)
+
+    observed = None
+    if isinstance(cmodel.model, (DynamicDiscreteBayesianNetwork, HiddenMarkovModel)):
+        check_unroll_start(start)
+    if isinstance(cmodel.model, HiddenMarkovModel):
+        observed = _hmm_observations(method, evidence)
+        start, stop, observed = _hmm_time_range(observed, start, stop)
+
     query = map_query_args(
         model=cmodel.model,
         variables=variables,
@@ -323,6 +328,7 @@ def map_query(
         timing=timing,
         start=start,
         stop=stop,
+        representation_options=representation_options,
         options=options,
     )
     return _solve_map_query(repn, query)
