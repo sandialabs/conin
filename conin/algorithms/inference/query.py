@@ -309,15 +309,15 @@ def map_query(
     inference_type = "mpe_inference" if variables is None else "map_inference"
     kind = representation_kind(method, cmodel, inference_type, options)
     struct_params = _structure_params(
-            kind,
-            cmodel,
-            start=start,
-            stop=stop,
-            nodes=[
-                *(evidence if isinstance(evidence, dict) else ()),
-                *(variables or ()),
-            ],
-        )
+        kind,
+        cmodel,
+        start=start,
+        stop=stop,
+        nodes=[
+            *(evidence if isinstance(evidence, dict) else ()),
+            *(variables or ()),
+        ],
+    )
     repn = cmodel.representation(kind, **struct_params)
 
     query = map_query_args(
