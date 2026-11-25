@@ -16,18 +16,13 @@ def dbn_time_fields(start, stop):
 def hmm_time_fields(start, stop, hidden_to_internal):
     """The fields of an HMM unrolled over ``start..stop``.
 
-    ``Munch(start, stop, hmm=Munch(T, hidden_to_internal))``, with ``T`` as
+    ``Munch(start, stop, T, hmm=Munch(hidden_to_internal))``, with ``T`` as
     for :func:`dbn_time_fields` and a copy of ``hidden_to_internal`` (the
     map of the HMM's ``"matvec"`` representation).
     """
-    return munch.Munch(
-        start=start,
-        stop=stop,
-        hmm=munch.Munch(
-            T=list(range(start, stop + 1)),
-            hidden_to_internal=dict(hidden_to_internal),
-        ),
-    )
+    fields = dbn_time_fields(start, stop)
+    fields.hmm = munch.Munch(hidden_to_internal=dict(hidden_to_internal))
+    return fields
 
 
 def merge_constraint_data(app_data, fields):

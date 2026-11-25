@@ -205,7 +205,7 @@ def test_hmm_mixin_copies_hidden_to_internal():
     assert repn.time_steps == [0, 1]
     fields = repn.structure_fields()
     assert fields == munch.Munch(
-        start=0, stop=1, hmm=munch.Munch(T=[0, 1], hidden_to_internal=h2i)
+        start=0, stop=1, T=[0, 1], hmm=munch.Munch(hidden_to_internal=h2i)
     )
     fields.hmm.hidden_to_internal["c"] = 2
     assert h2i == {"a": 0, "b": 1}
@@ -230,8 +230,8 @@ def _hmm_fields(hmm, stop):
     return munch.Munch(
         start=0,
         stop=stop,
+        T=list(range(stop + 1)),
         hmm=munch.Munch(
-            T=list(range(stop + 1)),
             hidden_to_internal=hmm.representation("matvec").hidden_to_internal,
         ),
     )
@@ -311,7 +311,7 @@ def test_network_flow_data_has_the_hmm_time_fields_and_keeps_app_data():
         observed=["o0", "o1", "o0"]
     )
     assert (data.start, data.stop, data.limit) == (0, 2, 3)
-    assert data.hmm.T == [0, 1, 2]
+    assert data.T == [0, 1, 2]
     assert (
         data.hmm.hidden_to_internal == hmm.representation("matvec").hidden_to_internal
     )
@@ -327,4 +327,4 @@ def test_network_flow_data_accepts_non_dict_app_data():
     _, data = cmodel.representation("pyomo_network_flow").create_model(
         observed=["o0", "o1"]
     )
-    assert data.limit == 3 and data.hmm.T == [0, 1] and data.stop == 1
+    assert data.limit == 3 and data.T == [0, 1] and data.stop == 1

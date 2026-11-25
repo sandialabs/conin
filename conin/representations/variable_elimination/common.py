@@ -116,9 +116,12 @@ class VariableEliminationRepresentation(Representation):
         unrolled BN of a DBN/HMM.
     constraints : tuple
         The user constraints (families ``"factor_oracle"`` and ``"smoek"``).
+    indicator_factors : tuple of DiscreteFactor
+        The indicator factors of the constraints (empty without constraints).
     ve_model : DiscreteMarkovNetwork
-        What variable elimination runs on and what ``write_uai_file`` writes;
-        :attr:`pgm` itself for a Markov network without constraints.
+        What variable elimination runs on and what ``write_uai_file`` writes:
+        :attr:`pgm`'s factors and :attr:`indicator_factors`; :attr:`pgm`
+        itself for a Markov network without constraints.
     nodes : tuple
         The nodes of ``pgm``.
     data : object or None
@@ -133,14 +136,14 @@ class VariableEliminationRepresentation(Representation):
         self.constraints = tuple(constraints)
         self.nodes = tuple(pgm.nodes)
         self.data = data
-        self.ve_model = factor_model(
-            pgm,
+        self.indicator_factors = tuple(
             apply_variable_elimination_constraints(
                 pgm=pgm,
                 constraints=self.constraints,
                 data=merge_constraint_data(data, self.constraint_data()),
-            ),
+            )
         )
+        self.ve_model = factor_model(pgm, self.indicator_factors)
 
     def structure_fields(self):
         """The constraint ``data`` fields of the structure params (none here).

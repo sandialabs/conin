@@ -1,7 +1,7 @@
 import functools
 import inspect
 
-from conin.constraints.base import Constraint
+from conin.constraints.base import Constraint, decorate
 from conin.exceptions import InvalidInputError
 
 from .factor import FactorOracleConstraint
@@ -103,16 +103,20 @@ def oracle_accepts(constraint, assignment, data):
 
 
 def oracle_constraint_fn(
-    *, nodes=None, name=None, partial=None, same_partial_as_func=None
+    func=None, /, *, nodes=None, name=None, partial=None, same_partial_as_func=None
 ):
     """
     Decorator factory that creates an oracle constraint.
 
     Returns an :class:`OracleConstraint` when ``nodes`` is ``None``, and a
-    :class:`~conin.constraints.FactorOracleConstraint` otherwise.
+    :class:`~conin.constraints.FactorOracleConstraint` otherwise.  Use it as
+    ``@oracle_constraint_fn`` or, with arguments,
+    ``@oracle_constraint_fn(nodes=..., partial=...)``.
 
     Parameters
     ----------
+    func : callable, optional
+        The predicate, when the decorator is used without arguments.
     nodes : list or callable, optional
         Node scope for factor materialisation: a list of node names or a
         callable ``nodes(data)`` that yields node names.  See
@@ -156,4 +160,4 @@ def oracle_constraint_fn(
             same_partial_as_func=same_partial_as_func,
         )
 
-    return decorator
+    return decorate(func, decorator, "oracle_constraint_fn")

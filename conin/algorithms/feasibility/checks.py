@@ -98,8 +98,8 @@ def is_feasible(cmodel, assignment, observed=None):
         Constraint functions that take a second argument see the model's
         ``data``; for a DBN with ``T = list(range(stop + 1))`` set on a copy
         (``Munch(T=...)`` if it has none), and for an HMM with
-        ``hmm = Munch(T=list(range(T)))`` set on a copy
-        (``Munch(hmm=Munch(T=...))`` if it has none).
+        ``T = list(range(T))`` set on a copy
+        (``Munch(T=...)`` if it has none).
 
     Raises
     ------

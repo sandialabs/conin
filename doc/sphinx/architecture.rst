@@ -38,6 +38,8 @@ Package layout
    ``variable_elimination``, ``oracle``, ``recursive``, ``mvr``);
    ``conin.algorithms.other_queries.mvr`` has the MVR satisfaction
    probability and first satisfaction time queries;
+   ``conin.algorithms.mvr`` gathers the MVR algorithms of all of these
+   subpackages in one namespace;
    ``conin.algorithms.scoring`` scores assignments (``log_potential``,
    ``log_probability``), and ``conin.algorithms.feasibility`` checks them
    against the constraints (``is_feasible``, dispatched on the wrapped
@@ -157,7 +159,7 @@ Representations and dispatch
 - Constraint functions see the constrained model's ``data``: a shallow copy
   with the backend's fields set (``conin.util.constraint_data``). The time
   fields are the same everywhere: ``start``, ``stop`` and ``T`` for a DBN;
-  ``start``, ``stop`` and ``hmm = Munch(T, hidden_to_internal)`` for an HMM.
+  ``start``, ``stop``, ``T`` and ``hmm = Munch(hidden_to_internal)`` for an HMM.
   Backends add their own fields on top (``variables`` and ``evidence`` for
   Pyomo and toulbar2, the index sets in ``hmm`` for network flow).
 

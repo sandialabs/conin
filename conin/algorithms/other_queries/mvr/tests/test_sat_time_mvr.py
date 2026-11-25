@@ -264,6 +264,16 @@ def test_sat_time_raises_when_target_is_never_satisfied(hmm, observed):
         mvr_satisfaction_time(model, observed, target=0)
 
 
+def test_sat_time_target_defaults_to_the_only_constraint(hmm, observed):
+    mvr = make_reach_mvr(hidden_states=hmm.hidden_states, target_state="A")
+    model = ConstrainedGraphicalModel(hmm, [mvr])
+
+    times, probs = mvr_satisfaction_time(model, observed)
+    expected_times, expected_probs = mvr_satisfaction_time(model, observed, target=0)
+    assert times == expected_times
+    assert probs.tolist() == expected_probs.tolist()
+
+
 @pytest.mark.parametrize(
     "constraints, target, match",
     [
@@ -273,7 +283,7 @@ def test_sat_time_raises_when_target_is_never_satisfied(hmm, observed):
         (["reach"], "nope", "matches 0 constraints"),
         (["reach", "reach"], "reach_A", "matches 2 constraints"),
         (["reach"], 1.5, "integer index or a constraint name"),
-        (["reach"], None, "integer index or a constraint name"),
+        (["reach", "reach"], None, "give target="),
     ],
 )
 def test_sat_time_rejects_bad_target(hmm, observed, constraints, target, match):

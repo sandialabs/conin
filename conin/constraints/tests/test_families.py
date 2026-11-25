@@ -10,7 +10,11 @@ from conin.constraints import (
     MVRConstraint,
     RecursiveConstraint,
     SmoekConstraint,
+    mvr_constraint_fn,
     oracle_constraint_fn,
+    pyomo_constraint_fn,
+    smoek_constraint_fn,
+    toulbar2_constraint_fn,
 )
 
 
@@ -177,3 +181,32 @@ def test_recursive_constraint_feasible_partial_must_be_callable():
         ).family
         == "recursive"
     )
+
+
+DECORATORS = [
+    (smoek_constraint_fn, SmoekConstraint),
+    (pyomo_constraint_fn, PyomoConstraint),
+    (toulbar2_constraint_fn, Toulbar2Constraint),
+    (oracle_constraint_fn, OracleConstraint),
+    (mvr_constraint_fn, MVRConstraint),
+]
+
+
+@pytest.mark.parametrize("decorator, cls", DECORATORS)
+def test_decorator_works_with_and_without_parentheses(decorator, cls):
+    def con(model, data):
+        return None
+
+    bare = decorator(con)
+    called = decorator()(con)
+    named = decorator(name="other")(con)
+
+    assert type(bare) is cls and type(called) is cls
+    assert bare.name == called.name == "con"
+    assert named.name == "other"
+
+
+@pytest.mark.parametrize("decorator, cls", DECORATORS)
+def test_decorator_rejects_options_by_position(decorator, cls):
+    with pytest.raises(TypeError, match="keyword arguments"):
+        decorator("name")

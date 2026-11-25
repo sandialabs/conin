@@ -63,7 +63,7 @@ if smoek_available:
 
     @smoek_constraint_fn()
     def ran(model, data):
-        return sum(model.V("H", t, "run") for t in data.hmm.T) >= 1
+        return sum(model.V("H", t, "run") for t in data.T) >= 1
 
     @smoek_constraint_fn()
     def no_run_at_2_smoek(model, data):

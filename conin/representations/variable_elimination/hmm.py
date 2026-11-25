@@ -17,7 +17,7 @@ class VariableEliminationHMMRepresentation(
     Structure params: ``start`` and ``stop``.  The hidden nodes are
     ``("H", t)`` and the observed nodes ``("E", t)``; evidence must be keyed by
     ``("E", t)``.  ``pgm`` is the unrolled BN.  Constraint functions see
-    ``data = Munch(start, stop, hmm=Munch(T, hidden_to_internal))`` with
+    ``data = Munch(start, stop, T, hmm=Munch(hidden_to_internal))`` with
     ``T = list(range(start, stop + 1))``.
     """
 

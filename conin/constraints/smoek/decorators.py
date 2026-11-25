@@ -7,7 +7,7 @@ which are then translated to Pyomo or Toulbar2 constraint declarations.
 """
 
 import inspect
-from conin.constraints.base import Constraint
+from conin.constraints.base import Constraint, decorate
 from conin.exceptions import InvalidInputError
 from conin.constraints.smoek.bridge import ConinVarNode
 from conin.util import try_import
@@ -126,7 +126,7 @@ class SmoekConstraint(Constraint):
         model._conin_con_count = count
 
 
-def smoek_constraint_fn(*, name=None):
+def smoek_constraint_fn(func=None, /, *, name=None):
     """
     Decorator for defining smoek constraints.
 
@@ -135,7 +135,11 @@ def smoek_constraint_fn(*, name=None):
     or list of expressions. The inference backend automatically determines
     whether to translate to Pyomo or Toulbar2 format.
 
+    Use it as ``@smoek_constraint_fn`` or, to set the name,
+    ``@smoek_constraint_fn(name=...)``.
+
     Args:
+        func: The constraint function, when used without arguments
         name: Optional name for the constraint (defaults to function name)
 
     Returns:
@@ -145,11 +149,11 @@ def smoek_constraint_fn(*, name=None):
 
         from conin import smoek_constraint_fn
 
-        @smoek_constraint_fn()
+        @smoek_constraint_fn
         def my_constraint(model, data):
             return model.V("A", 0) + model.V("B", 0) <= 1
 
-        @smoek_constraint_fn()
+        @smoek_constraint_fn(name="at_most_one")
         def multi_constraint(model, data):
             return [
                 model.V("A", s) + model.V("B", s) <= 1
@@ -164,7 +168,7 @@ def smoek_constraint_fn(*, name=None):
     def decorator(func):
         return SmoekConstraint(func=func, name=name)
 
-    return decorator
+    return decorate(func, decorator, "smoek_constraint_fn")
 
 
 def build_smoek_model(constraints, data):

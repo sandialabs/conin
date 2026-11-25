@@ -59,7 +59,7 @@ def mvr_satisfaction_probability(
     model,
     observed,
     *,
-    target,
+    target=None,
     time_horizon=None,
     dtype=torch.float64,
     device="cpu",
@@ -89,9 +89,10 @@ def mvr_satisfaction_probability(
     observed : list or dict
         Observed sequence in external observed-state labels, either a dense list
         timed by position or a sparse ``{time: label}`` map.
-    target : int or str
+    target : int or str, optional
         Index into the model's constraints (negative allowed) or an MVR ``name``. A
-        name matching no constraint, or more than one, raises.
+        name matching no constraint, or more than one, raises.  May be omitted
+        if the model has a single constraint.
     time_horizon : int, optional
         Number of time steps. Defaults to ``len(observed)`` for a dense list and is
         required for a map.

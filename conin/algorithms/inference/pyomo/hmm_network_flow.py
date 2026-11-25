@@ -175,7 +175,7 @@ def _lp_inference(
         print(f"G: {len(data.hmm.G)}")
         print(f"GG: {len(data.hmm.GG)}")
         print(f"FF: {len(data.hmm.FF)}")
-        print(f"T: {len(data.hmm.T)}")
+        print(f"T: {len(data.T)}")
         print(f"A: {len(data.hmm.A)}")
     return ans
 
@@ -297,7 +297,7 @@ def _ip_inference(
         print(f"Ge: {len(data.hmm.Ge)}")
         print(f"GG: {len(data.hmm.GG)}")
         print(f"FF: {len(data.hmm.FF)}")
-        print(f"T: {len(data.hmm.T)}")
+        print(f"T: {len(data.T)}")
         print(f"A: {len(data.hmm.A)}")
 
     results = map_results(solutions, solvetime=solvetime)

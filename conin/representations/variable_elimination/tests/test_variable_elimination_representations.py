@@ -122,6 +122,15 @@ def test_factor_representation_classes(cmodel, params, cls):
     assert len(repn.ve_model.factors) == len(expected)
     if isinstance(repn.pgm, DiscreteMarkovNetwork):
         assert repn.ve_model is repn.pgm
+    assert repn.indicator_factors == ()
+
+
+def test_indicator_factors_are_the_constraint_factors():
+    cmodel = ConstrainedGraphicalModel(mex.ABC_conin().pgm, _abc_all_different())
+    repn = cmodel.representation("variable_elimination")
+    (indicator,) = repn.indicator_factors
+    assert set(indicator.nodes) == {"A", "B", "C"}
+    assert repn.ve_model.factors[-1] is indicator
 
 
 # ---------------------------------------------------------------------
@@ -151,8 +160,8 @@ def test_hmm_structure_params():
     assert repn.constraint_data() == munch.Munch(
         start=0,
         stop=3,
+        T=[0, 1, 2, 3],
         hmm=munch.Munch(
-            T=[0, 1, 2, 3],
             hidden_to_internal=hmm.representation("matvec").hidden_to_internal,
         ),
     )
@@ -198,8 +207,8 @@ def test_constraint_data_dbn_and_hmm():
         munch.Munch(
             start=0,
             stop=2,
+            T=[0, 1, 2],
             hmm=munch.Munch(
-                T=[0, 1, 2],
                 hidden_to_internal=hmm.representation("matvec").hidden_to_internal,
             ),
         ),

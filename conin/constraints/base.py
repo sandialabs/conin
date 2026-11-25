@@ -63,3 +63,25 @@ def group_by_family(constraints):
     for c in constraints:
         groups.setdefault(type(c).family, []).append(c)
     return {family: tuple(cons) for family, cons in groups.items()}
+
+
+def decorate(func, decorator, decorator_name):
+    """``decorator(func)``, or ``decorator`` itself if ``func`` is ``None``.
+
+    The ``*_constraint_fn`` decorators use it so that they work both as
+    ``@name`` and ``@name(...)``.
+
+    Raises
+    ------
+    TypeError
+        If ``func`` is given but is not callable (e.g. an option passed by
+        position instead of by keyword).
+    """
+    if func is None:
+        return decorator
+    if not callable(func):
+        raise TypeError(
+            f"{decorator_name}() takes its options as keyword arguments, "
+            f"got {func!r} by position."
+        )
+    return decorator(func)

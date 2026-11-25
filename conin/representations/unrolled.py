@@ -107,7 +107,7 @@ class UnrolledHMMMixin(UnrolledDBNMixin):
         super().__init__(**kwds)
 
     def structure_fields(self):
-        """``Munch(start, stop, hmm=Munch(T, hidden_to_internal))``."""
+        """``Munch(start, stop, T, hmm=Munch(hidden_to_internal))``."""
         return hmm_time_fields(self.start, self.stop, self.hidden_to_internal)
 
 

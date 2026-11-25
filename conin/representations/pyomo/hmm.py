@@ -24,7 +24,7 @@ class PyomoHMMRepresentation(
     (:class:`~conin.representations.unrolled.ObservationsEvidenceMixin`).
     Constraint functions see
     ``data = Munch(start, stop, variables, evidence,
-    hmm=Munch(T, hidden_to_internal))``.  ``pgm`` is the HMM's DBN.
+    T, hmm=Munch(hidden_to_internal))``.  ``pgm`` is the HMM's DBN.
     """
 
 
