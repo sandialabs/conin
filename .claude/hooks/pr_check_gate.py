@@ -1,10 +1,12 @@
 """Claude Code PreToolUse hook: run /pr-check before a PR is created.
 
-Blocks ``gh pr create``, and warns on ``git push``, while the commit at HEAD
-has not been checked with the pr-check skill (which adds the commit to the
-list in ``$(git rev-parse --git-path pr-check-head)``, one per line, so that
-several branches can wait for a pull request at once).  A command that contains
-``PR_CHECK_SKIP=1`` is let through, for when the user asks to skip the check.
+Blocks ``gh pr create`` unless the PR description's "Pre-PR check" section
+names the commit at HEAD (the pr-check skill writes the line
+``Checked `<short SHA>` against `<base>` on <date>: <verdict>.``).  The
+description is read from the command itself (``--body``, or a heredoc
+piped to ``--body-file -``) and from the file given to ``--body-file``/``-F``.
+A command that contains ``PR_CHECK_SKIP=1`` is let through, for when the user
+asks to skip the check.
 
 Any error lets the command through: the hook must never break the Bash tool.
 """
@@ -19,10 +21,10 @@ import sys
 # that the words inside a commit message or a search pattern don't match.
 START = r"(?:^|[;&|(\n])\s*(?:\w+=\S*\s+)*"
 PR_CREATE = re.compile(START + r"gh\s+pr\s+create\b")
-# Global options may come before the subcommand: "git -C <dir> push".
-PUSH = re.compile(START + r"git(?:\s+-[Cc]\s+\S+|\s+--?[\w-]+(?:=\S+)?)*\s+push\b")
 # A directory the command moves to: "cd <dir>" or "git -C <dir>".
 CHDIR = re.compile(r"(?:^|[;&|(]\s*)cd\s+(\S+)|\bgit\s+-C\s+(\S+)")
+BODY_FILE = re.compile(r"(?:--body-file[=\s]|-F\s*)(\S+)")
+SHA = re.compile(r"\b[0-9a-f]{7,40}\b")
 
 
 def git(cwd, *args):
@@ -39,58 +41,62 @@ def command_dir(cwd, command, end):
     return cwd
 
 
-def respond(decision, message):
-    output = {"hookEventName": "PreToolUse"}
-    if decision == "deny":
-        output["permissionDecision"] = "deny"
-        output["permissionDecisionReason"] = message
-    else:
-        output["additionalContext"] = message
+def description(command, cwd):
+    """The command text plus the contents of the files it passes as the body."""
+    parts = [command]
+    for match in BODY_FILE.finditer(command):
+        path = match.group(1).strip("'\"")
+        if path == "-":
+            continue
+        try:
+            with open(os.path.join(cwd, os.path.expanduser(path))) as f:
+                parts.append(f.read())
+        except OSError:
+            pass
+    return "\n".join(parts)
+
+
+def names_commit(text, head):
+    """Whether a "Pre-PR check" section of ``text`` names a prefix of ``head``."""
+    for section in text.split("Pre-PR check")[1:]:
+        if any(head.startswith(sha) for sha in SHA.findall(section)):
+            return True
+    return False
+
+
+def deny(message):
+    output = {
+        "hookEventName": "PreToolUse",
+        "permissionDecision": "deny",
+        "permissionDecisionReason": message,
+    }
     print(json.dumps({"hookSpecificOutput": output}))
 
 
 def main():
     event = json.load(sys.stdin)
     command = event.get("tool_input", {}).get("command", "")
-    match = PR_CREATE.search(command) or PUSH.search(command)
+    match = PR_CREATE.search(command)
     if not match or "PR_CHECK_SKIP=1" in command:
         return
-    creates_pr = bool(PR_CREATE.search(command))
     cwd = command_dir(event.get("cwd"), command, match.end())
     try:
         top = git(cwd, "rev-parse", "--show-toplevel")
         head = git(cwd, "rev-parse", "HEAD")
-        record = git(
-            cwd, "rev-parse", "--path-format=absolute", "--git-path", "pr-check-head"
-        )
     except (OSError, subprocess.CalledProcessError):
         return
-    try:
-        # Only repos that have the skill (conin) are gated.
-        open(f"{top}/.claude/skills/pr-check/SKILL.md").close()
-    except OSError:
+    # Only repos that have the skill (conin) are gated.
+    if not os.path.isfile(f"{top}/.claude/skills/pr-check/SKILL.md"):
         return
-    try:
-        with open(record) as f:
-            checked = f.read().split()
-    except OSError:
-        checked = []
-    if head in checked:
+    if names_commit(description(command, cwd), head):
         return
-    what = f"HEAD ({head[:9]}) has not been checked with the pr-check skill"
-    if creates_pr:
-        respond(
-            "deny",
-            f"{what}. Run /pr-check (it records the commit when it finishes) and "
-            "put its summary in the PR description. If the user explicitly asks to "
-            "skip the check, rerun the command with PR_CHECK_SKIP=1 in it.",
-        )
-    else:
-        respond(
-            "allow",
-            f"{what}. Before this branch becomes a pull request, run /pr-check "
-            "(or tell the user that it hasn't been run).",
-        )
+    deny(
+        f"The PR description's Pre-PR check section doesn't name HEAD "
+        f"({head[:9]}). Run /pr-check and put its summary, starting with "
+        '"Checked `<short SHA>` against `<base>` on <date>: <verdict>.", in '
+        "the description. If the user explicitly asks to skip the check, rerun "
+        "the command with PR_CHECK_SKIP=1 in it."
+    )
 
 
 if __name__ == "__main__":

@@ -24,9 +24,10 @@ What was wrong or missing, and why this approach.
 **Pre-PR check**
 
 <!--
-Paste the summary that the /pr-check skill prints at the end (verdict,
-checks run, and how each finding was resolved). Without Claude Code, go
-through CONTRIBUTING.md by hand and list what you ran instead.
+Paste the summary that the /pr-check skill prints at the end, starting with
+"Checked `<short SHA>` against `<base>` on <date>: <verdict>." for the
+commit at the branch tip, and how each finding was resolved. Without Claude
+Code, go through CONTRIBUTING.md by hand and list what you ran instead.
 -->
 
 - [ ] `CHANGELOG.md` has an entry for every user-visible change.

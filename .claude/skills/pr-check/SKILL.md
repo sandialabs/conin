@@ -39,9 +39,10 @@ version, and check that the change to the convention is intended.
 - Read `git log --format='%h %s%n%b' <base>..HEAD`, `git diff --stat <base>...HEAD`
   and the full diff. Note any uncommitted or untracked changes: they won't
   be in the PR.
-- If an earlier run recorded a commit (step 6) that HEAD contains, and
-  the user asks for a re-check, review only `<recorded>..HEAD`, plus the
-  findings of the earlier run, and rerun the checks those commits affect.
+- If the PR description already has a Pre-PR check line (step 5) for a
+  commit that HEAD contains, and the user asks for a re-check, review only
+  `<checked>..HEAD`, plus the findings of the earlier run, and rerun the
+  checks those commits affect.
   Say that it was a re-check, and of what.
 - Work out what kind of change it is (bug fix, new feature, API change or
   move, refactor, tests only, docs only). The checks below depend on it.
@@ -145,25 +146,20 @@ End the report with two blocks the author can paste into the PR template
 
 - **Testing**: the template's Testing bullets, filled in from the checks
   you ran (counts, clean or not, what wasn't run and why).
-- **Pre-PR check**: one line with the date, the commit checked (short SHA),
-  the base and the verdict, then one bullet per blocking or should-fix
-  finding, with `Open` after it. The author replaces `Open` with how they
-  resolved it. If there were no findings, say so.
+- **Pre-PR check**: first the line
+
+  ```
+  Checked `<short SHA of HEAD>` against `<base>` on <YYYY-MM-DD>: <verdict>.
+  ```
+
+  then one bullet per blocking or should-fix finding, with `Open` after
+  it. The author replaces `Open` with how they resolved it. If there were
+  no findings, say so. The SHA is the evidence that the check ran: the
+  project hook (`.claude/hooks/pr_check_gate.py`) blocks `gh pr create`
+  unless the description's Pre-PR check section names the commit at HEAD.
+  If commits are added after the check, rerun it (a re-check, see step 1)
+  and update the line. If there are uncommitted changes, say that the check
+  covers only HEAD.
 
 If the user has no PR description yet, also offer a full draft that follows
 the template.
-
-## 6. Record the run
-
-After reporting, add the commit you checked to the record (one commit per
-line, so that the checks of other branches are kept):
-
-```
-git rev-parse HEAD >> "$(git rev-parse --git-path pr-check-head)"
-```
-
-The project's Claude Code hook (`.claude/hooks/pr_check_gate.py`) uses it
-to block `gh pr create`, and to warn on `git push`, while HEAD hasn't been
-checked. Record it whatever the verdict was. The hook only requires that the
-check ran, and the author decides what to fix. If there are uncommitted
-changes, say that the record covers only HEAD.
