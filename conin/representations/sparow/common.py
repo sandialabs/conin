@@ -16,11 +16,12 @@
 import itertools
 from functools import partial
 
+import munch
 import pyomo.environ as pyo
 import sparow
 
 import conin.representations.pyomo.common
-from conin.representations.base import Representation, apply_constraints
+from conin.representations.base import Representation
 from conin.util import State
 from conin.util.var_wrapper import PyomoVarWrapper
 from conin.util.constraint_data import merge_constraint_data
@@ -183,7 +184,7 @@ class SparowFactorRepresentation(Representation):
         # Apply pyomo and smoek constraints
         #
         if self.constraints:
-            apply_pyomo_constraints(
+            conin.representations.pyomo.common.apply_pyomo_constraints(
                 pgm=self.pgm,
                 constraints=self.constraints,
                 model=model,
