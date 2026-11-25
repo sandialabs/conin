@@ -102,7 +102,9 @@ class SparowFactorRepresentation(Representation):
         fields.update(self.structure_fields())
         return fields
 
-    def create_model(self, *, evidence=None, variables=None, timing=False, max_num_samples=1000):
+    def create_model(
+        self, *, evidence=None, variables=None, timing=False, max_num_samples=1000
+    ):
         """Build a fresh Pyomo model for one query.
 
         Parameters
