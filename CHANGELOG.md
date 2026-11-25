@@ -74,6 +74,8 @@ Migration table (old -> new)
   conin.constraints.oracle (library: all_diff, citation, ...)
                                     -> conin.constraints.oracle.library
   OracleConstraint(nodes=...)       -> conin.constraints.FactorOracleConstraint
+  data.hmm.T (time steps in the data of HMM constraint functions)
+                                    -> data.T (as for DBNs)
   conin.constraints.factor_oracle   -> conin.constraints.oracle
   hidden_markov_model.mvr, mvr_constraints, mvr_operators, conin.operators,
   mvr_formula                       -> conin.constraints.mvr (base, primitives,
