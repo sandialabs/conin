@@ -93,9 +93,7 @@ class SparowFactorRepresentation(Representation):
         fields.update(self.structure_fields())
         return fields
 
-    def create_model(
-        self, *, evidence=None, variables=None, timing=False
-    ):
+    def create_model(self, *, evidence=None, variables=None, timing=False):
         """Build a fresh Pyomo model for one query.
 
         Parameters
@@ -116,13 +114,21 @@ class SparowFactorRepresentation(Representation):
         #
         # Configure the scenario builder
         #
-        _scenario_builder = partial(conin.representations.pyomo.common._create_pyomo_map_query_model,
-                                S=self.S, J=self.J, v=self.v, w=self.w, var_index_map=self.var_index_map, timing=timing)
+        _scenario_builder = partial(
+            conin.representations.pyomo.common._create_pyomo_map_query_model,
+            S=self.S,
+            J=self.J,
+            v=self.v,
+            w=self.w,
+            var_index_map=self.var_index_map,
+            timing=timing,
+        )
+
         def scenario_builder(data, args):
             model = _scenario_builder()
 
             for k, val in data.items():
-                if k == 'ID':
+                if k == "ID":
                     continue
                 model.V(k, State(val)).fix(1)
             return model
@@ -136,15 +142,19 @@ class SparowFactorRepresentation(Representation):
         marginalized = set(self.pgm.nodes) - set(variables)
         if evidence:
             marginalized = marginalized - set(evidence)
-        possible_values = {n:self.pgm.states_of(n) for n in marginalized}
+        possible_values = {n: self.pgm.states_of(n) for n in marginalized}
         keys, values = zip(*possible_values.items())
         permutations = [dict(zip(keys, v)) for v in itertools.product(*values)]
-        scenarios = dict(scenarios=[dict(ID=i, data=d) for i,d in enumerate(permutations)])
+        scenarios = dict(
+            scenarios=[dict(ID=i, data=d) for i, d in enumerate(permutations)]
+        )
 
         #
         # Setup the Sparow model, and create the Pyomo extensive form.
         #
-        sp = sparow.sp.stochastic_program(first_stage_variables=[f"x[{v},*]" for v in variables])
+        sp = sparow.sp.stochastic_program(
+            first_stage_variables=[f"x[{v},*]" for v in variables]
+        )
         sp.add_scenarios(data=scenarios, scenario_builder=scenario_builder)
         model = sp.create_EF()
         #
@@ -153,11 +163,11 @@ class SparowFactorRepresentation(Representation):
         #
         if self.var_index_map is None:
             RS = [(r, s) for r, values in self.S.items() for s in values]
-            model.V = PyomoVarWrapper({rs: model.s[None,0].x[rs] for rs in RS})
+            model.V = PyomoVarWrapper({rs: model.s[None, 0].x[rs] for rs in RS})
         else:
             model.V = PyomoVarWrapper(
                 {
-                    (r, s):  model.s[None,0].x[index,s]
+                    (r, s): model.s[None, 0].x[index, s]
                     for r, index in self.var_index_map.items()
                     for s in self.S.get(index, [])
                 }

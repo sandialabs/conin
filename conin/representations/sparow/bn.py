@@ -25,7 +25,9 @@ def build_sparow_bn_representation(
     ``kwds`` are passed to ``cls`` (``data``, and the structure fields of the
     DBN/HMM subclasses); ``pgm`` defaults to ``bn``.
     """
-    base = build_sparow_mn_representation(conin.representation.pyomo.factor_repn.skeleton_mn_of_bn(bn))
+    base = build_sparow_mn_representation(
+        conin.representation.pyomo.factor_repn.skeleton_mn_of_bn(bn)
+    )
     return cls(
         S=base.S,
         J=base.J,

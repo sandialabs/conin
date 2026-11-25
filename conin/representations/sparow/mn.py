@@ -16,7 +16,9 @@ class SparowMNRepresentation(SparowFactorRepresentation):
 
 def build_sparow_mn_representation(mn, constraints=(), *, data=None):
     """Build the ``"sparow"`` representation of a :class:`DiscreteMarkovNetwork`."""
-    S, J, v, w, var_index_map = conin.representations.pyomo.factor_representation_of_mn(mn)
+    S, J, v, w, var_index_map = conin.representations.pyomo.factor_representation_of_mn(
+        mn
+    )
     return SparowMNRepresentation(
         S=S,
         J=J,

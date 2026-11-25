@@ -36,8 +36,8 @@ from conin.representations.pyomo import (
 )
 from conin.representations.sparow import (
     SparowFactorRepresentation,
-    #PyomoHMMRepresentation,
-    #PyomoNetworkFlowHMMRepresentation,
+    # PyomoHMMRepresentation,
+    # PyomoNetworkFlowHMMRepresentation,
 )
 from conin.representations.recursive import RecursiveHMMRepresentation
 from conin.representations.toulbar2 import (
@@ -373,13 +373,13 @@ def _solve_map_query(repn: SparowFactorRepresentation, q):
     return _factor_solve(_solve_sparow, repn, q)
 
 
-#@ovld
-#def _solve_map_query(repn: PyomoHMMRepresentation, q):
+# @ovld
+# def _solve_map_query(repn: PyomoHMMRepresentation, q):
 #    return _unrolled_hmm_solve(_solve_pyomo, repn, q)
 
 
-#@ovld
-#def _solve_map_query(repn: PyomoNetworkFlowHMMRepresentation, q):
+# @ovld
+# def _solve_map_query(repn: PyomoNetworkFlowHMMRepresentation, q):
 #    return _solve_network_flow(repn, q)
 
 

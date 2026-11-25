@@ -123,7 +123,9 @@ def _solve_pyomo(repn, q):
     The solutions are not scored here (``log_potential`` is ``None``): ``map_query``
     scores them.
     """
-    assert not q.variables or (set(q.variables) == set(repn.nodes)), "A MAP problem is being passed to pyomo!"
+    assert not q.variables or (
+        set(q.variables) == set(repn.nodes)
+    ), "A MAP problem is being passed to pyomo!"
     options = dict(q.options)
     use_cut_generation = options.pop("use_cut_generation", False)
     reject_options_not_taken(
