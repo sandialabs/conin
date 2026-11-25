@@ -91,9 +91,12 @@ request is merged once a maintainer has reviewed it and the CI checks
   Claude Code skill (``.claude/skills/pr-check/``) and paste its summary in
   the template's "Pre-PR check" section, with how you resolved each
   finding. Without Claude Code, go through this file by hand and list what
-  you ran. In Claude Code, a project hook
-  (``.claude/hooks/pr_check_gate.py``) blocks ``gh pr create`` until the
-  skill has checked the commit at HEAD.
+  you ran. The section starts with the line
+  ``Checked `<short SHA>` against `<base>` on <date>: <verdict>.``, naming
+  the commit at the branch tip; rerun the check if you add commits after
+  it. In Claude Code, a project hook (``.claude/hooks/pr_check_gate.py``)
+  blocks ``gh pr create`` while the description doesn't name the commit at
+  HEAD.
 
 Project Conventions
 -------------------
