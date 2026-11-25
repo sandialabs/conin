@@ -289,12 +289,21 @@ Constrained models
   OracleConstraint's default partial function is a module-level function,
   so oracle constraints can be pickled. Constraint subclasses must set their
   attributes in __init__ with self._set(name=value, ...).
-- A single Constraint is accepted. Mixed constraint families, non-Constraint
-  objects, a string and a wrong model type raise InvalidInputError at
-  construction.
+- A single Constraint is accepted. Non-Constraint objects, a string and a
+  wrong model type raise InvalidInputError at construction.
+- Constraints of several families can be combined when one representation
+  accepts all of them: "smoek" with "pyomo" for integer_program (both
+  formulations), with "toulbar2" for toulbar2, and with "factor_oracle" for
+  variable_elimination. The representation applies them family by family.
+  Other combinations raise InvalidInputError at construction, with the
+  combinations that work in the message, and map_query raises
+  InvalidInputError for a method whose representation does not accept the
+  combination. constraint_families is the sorted tuple of the families;
+  is_feasible checks every family of a combination.
 - initialize_chmm(), chmm.chmm, constraint_type and supported_families are
   removed. constraint_family is the constraints' family ("oracle_with_nodes"
-  is now "factor_oracle"). The accepted families come from the representation
+  is now "factor_oracle"), or None without constraints or for a combination
+  of families. The accepted families come from the representation
   registry: MN, BN and DBN accept "pyomo", "toulbar2", "smoek" and
   "factor_oracle" (they now refuse "oracle", "mvr" and "recursive"); HMMs
   also accept "oracle", "recursive" and "mvr".
@@ -323,8 +332,8 @@ Constraints
 - OracleConstraint is a predicate on {key: state} (optional partial_func for
   A* pruning); OracleConstraint(nodes=...) becomes FactorOracleConstraint,
   whose call evaluates the predicate (it no longer materialises a factor).
-  oracle_constraint_fn still returns the right class. The "all-nodes"
-  materialisation mode is removed.
+  oracle_constraint_fn still returns the right class, and takes the partial
+  check as partial=. The "all-nodes" materialisation mode is removed.
 - New RecursiveConstraint(initial=, update=, feasible=, feasible_partial=)
   for recursive A*.
 - The oracle library moves to conin.constraints.oracle.library and is no
@@ -388,7 +397,7 @@ Inference
   a bare HMM); a_star_(..., chmm=) is a_star_(..., oracle=).
 - A* prunes with the oracle constraints' partial_func (it never did), so it
   needs fewer iterations; with no solution it returns solution=None and
-  termination_condition="error: no feasible solutions" (it raised IndexError).
+  termination_condition="infeasible" (it raised IndexError).
   Oracle predicates that take (states, data) work with A* and rejection
   sampling (they raised TypeError).
 - HMM observations are read one way everywhere: a non-empty list or tuple, or
@@ -419,8 +428,8 @@ Inference
   write_uai_file writes exactly that file.
 - A query without a solution (the evidence or the constraints exclude every
   assignment) has the same result for every method: solution=None,
-  solutions=[] and termination_condition "error: no feasible solutions"
-  (conin.algorithms.inference.results.NO_FEASIBLE_SOLUTIONS,
+  solutions=[] and termination_condition "infeasible"
+  (conin.algorithms.inference.results.INFEASIBLE,
   no_solution_results), as A* already returned. Before, viterbi and
   variable_elimination returned an arbitrary assignment with log_potential
   -inf (or a finite one, for constraints) and termination_condition "ok";
@@ -436,6 +445,10 @@ Inference
   model. The function conin.algorithms.inference.mvr.mvr_viterbi and the
   network-flow representation's create_model still raise, now InfeasibleQueryError
   (conin.exceptions), a subclass of InvalidInputError.
+- The states of a solution are in the order of the model's nodes (the
+  unrolled ones for a DBN) for every MN, BN and DBN method; integer_program
+  and variable_elimination returned them in the order of the CPDs, so the
+  same query printed differently depending on the method.
 - DBN queries with stop=None unroll over 0..t for every method, where t is
   the latest time in the evidence and the variables of the query, and at
   least 1, as log_probability_query does with its assignment and evidence
@@ -705,12 +718,15 @@ Bug fixes
   num_solutions best prefixes. A* and recursive A* share one search
   (conin.algorithms.inference.hmm_a_star); recursive A* also runs on the
   matvec arrays instead of dicts. When the search finds no solution, both report
-  termination_condition="error: no feasible solutions" for every
+  termination_condition="infeasible" for every
   num_solutions (it was "ok" for num_solutions > 1, except when recursive
   A*'s first step was already infeasible).
 - A* and recursive A* report "max_iterations: N" or "max_time: ..." in
   termination_condition when a limit stops the search (it was overwritten
-  with "error: no feasible solutions").
+  with "infeasible"). The new limit max_prefixes (also an option of
+  map_query(method="a_star")) bounds the number of prefixes in the open set,
+  and so the memory of the search, which max_time does not: it reports
+  "max_prefixes: N".
 - generate_hidden, generate_observed and rejection_sample_hidden with
   time_steps=0 return an empty list (they returned one state).
 - Invalid user input raises an exception instead of failing an assert (the
