@@ -87,7 +87,7 @@ def test_oracle_two_argument_predicates_get_the_constraint_data():
 
     def at_most_half_h0(states, data):
         seen.append(data)
-        return sum(1 for v in states.values() if v == "h0") <= len(data.hmm.T) // 2
+        return sum(1 for v in states.values() if v == "h0") <= len(data.T) // 2
 
     hmm = tc.create_hmm1()
     cmodel = ConstrainedGraphicalModel(hmm, OracleConstraint(func=at_most_half_h0))
@@ -97,8 +97,8 @@ def test_oracle_two_argument_predicates_get_the_constraint_data():
     assert seen[0] == munch.Munch(
         start=0,
         stop=3,
+        T=[0, 1, 2, 3],
         hmm=munch.Munch(
-            T=[0, 1, 2, 3],
             hidden_to_internal=hmm.representation("matvec").hidden_to_internal,
         ),
     )
@@ -277,7 +277,7 @@ def test_pyomo_network_flow_generates_the_constrained_model():
 def test_pyomo_network_flow_does_not_write_into_user_data():
     @pyomo_constraint_fn()
     def at_most_k_zeros(M, D):
-        M.k_zeros = pyo.Constraint(expr=sum(M.V("H", t, "h0") for t in D.hmm.T) <= D.k)
+        M.k_zeros = pyo.Constraint(expr=sum(M.V("H", t, "h0") for t in D.T) <= D.k)
 
     user_data = munch.Munch(k=1)
     cmodel = ConstrainedGraphicalModel(

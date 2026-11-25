@@ -112,7 +112,7 @@ Smoek Constraints
 The ``smoek_constraint_fn`` decorator uses ``smoek`` (a base dependency)
 to let users write linear constraints with normal algebraic syntax. For
 example, an HMM constraint can return expressions such as
-``sum(model.V("H", t, "h0") for t in data.hmm.T) <= 12`` instead of mutating a
+``sum(model.V("H", t, "h0") for t in data.T) <= 12`` instead of mutating a
 Pyomo model or Toulbar2 model directly.
 
 Smoek constraints can be used with:

@@ -2,7 +2,7 @@ import inspect
 
 from conin.exceptions import InvalidInputError
 
-from .base import Constraint
+from .base import Constraint, decorate
 
 
 class PyomoConstraint(Constraint):
@@ -31,9 +31,12 @@ class PyomoConstraint(Constraint):
         return model if model_ is None else model_
 
 
-def pyomo_constraint_fn(*, name=None):
+def pyomo_constraint_fn(func=None, /, *, name=None):
     """
-    Decorator factory that takes the 'name' and returns a decorator function that creates an instance of PyomoConstraint.
+    Decorator that wraps a function in a PyomoConstraint.
+
+    Use it as ``@pyomo_constraint_fn`` or, to set the name,
+    ``@pyomo_constraint_fn(name=...)``.
     """
 
     def decorator(func):
@@ -42,4 +45,4 @@ def pyomo_constraint_fn(*, name=None):
         """
         return PyomoConstraint(func=func, name=name)
 
-    return decorator
+    return decorate(func, decorator, "pyomo_constraint_fn")

@@ -36,8 +36,8 @@ class OracleHMMRepresentation(Representation):
     -----
     Nothing here changes after the build, so one representation can serve
     several searches or samples.  A predicate ``func(states, data)`` gets
-    a copy of the application data with ``hmm = Munch(T=list(range(T)))`` set
-    (``Munch(hmm=Munch(T=...))`` if there is none) for a sequence of length
+    a copy of the application data with ``T = list(range(T))`` set
+    (``Munch(T=...)`` if there is none) for a sequence of length
     ``T``, as in :func:`conin.algorithms.feasibility.is_feasible`.
     """
 

@@ -74,6 +74,8 @@ Migration table (old -> new)
   conin.constraints.oracle (library: all_diff, citation, ...)
                                     -> conin.constraints.oracle.library
   OracleConstraint(nodes=...)       -> conin.constraints.FactorOracleConstraint
+  data.hmm.T (time steps in the data of HMM constraint functions)
+                                    -> data.T (as for DBNs)
   conin.constraints.factor_oracle   -> conin.constraints.oracle
   hidden_markov_model.mvr, mvr_constraints, mvr_operators, conin.operators,
   mvr_formula                       -> conin.constraints.mvr (base, primitives,
@@ -310,9 +312,12 @@ Constrained models
 - The constrained model's data reaches the constraint functions on every
   backend, as a shallow copy with the backend's fields (T, hmm, start, stop,
   variables, evidence, ...) set. The time fields are the same for every
-  backend and for is_feasible: start, stop and T for a DBN; start, stop and
-  hmm = Munch(T, hidden_to_internal) for an HMM (the pgmpy, oracle and
-  is_feasible data had only T or hmm.T, and network flow no start/stop).
+  backend and for is_feasible: start, stop and T for both DBNs and HMMs,
+  plus hmm = Munch(hidden_to_internal) for an HMM (the pgmpy, oracle and
+  is_feasible data had only T or hmm.T, and network flow no start/stop). An
+  HMM constraint loops over data.T, as a DBN constraint does; data.hmm.T is
+  gone (no alias), and the network-flow index sets other than T stay in
+  data.hmm.
 - The feasibility checks are functions, not methods:
   conin.algorithms.feasibility.is_feasible(cmodel, assignment) for every
   constrained model (and observed= for an HMM), and
@@ -334,6 +339,11 @@ Constraints
   whose call evaluates the predicate (it no longer materialises a factor).
   oracle_constraint_fn still returns the right class, and takes the partial
   check as partial=. The "all-nodes" materialisation mode is removed.
+- The decorators smoek_constraint_fn, pyomo_constraint_fn,
+  toulbar2_constraint_fn, oracle_constraint_fn and mvr_constraint_fn can be
+  used without parentheses (@smoek_constraint_fn) as well as with options
+  (@smoek_constraint_fn(name=...)); an option passed by position raises
+  TypeError.
 - New RecursiveConstraint(initial=, update=, feasible=, feasible_partial=)
   for recursive A*.
 - The oracle library moves to conin.constraints.oracle.library and is no
@@ -376,6 +386,8 @@ Representations (new)
   dispatch (conin.representations.base.apply_constraints): constraints of
   several families, or of a family the backend does not apply, raise TypeError
   with the same message for every backend.
+- The variable_elimination representations have indicator_factors, the
+  indicator factors of the constraints (the last factors of ve_model).
 - Smoek constraints without the smoek package raise ImportError for every
   backend (the pyomo and toulbar2 translators raised TypeError).
 - Unconstrained models have representation(kind, **structure_params) too:
@@ -555,7 +567,11 @@ Sampling and learning
   mvr_marginal_map, mvr_satisfaction_probability, mvr_satisfaction_time,
   mvr_sample (FFBS), mvr_stopped_sample, mvr_forward_backward,
   mvr_baum_welch and mvr_generalized_em; mvr_constraints(formula) builds the
-  MVR constraints of a formula for ConstrainedGraphicalModel.
+  MVR constraints of a formula for ConstrainedGraphicalModel. They can all
+  be imported from conin.algorithms.mvr (which, like their packages, does
+  not import torch until a function is used).
+- mvr_satisfaction_probability and mvr_satisfaction_time may omit target=
+  when the model has a single constraint.
 
 I/O and conversion
 

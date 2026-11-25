@@ -126,7 +126,7 @@ def test_attribute_style_application_data():
         hex_.create_hmm1(), _recorder("pyomo", seen), data=AppData()
     )
     cmodel.representation("pyomo", stop=1).create_model()
-    assert seen[0].k == 3 and seen[0].hmm.T == [0, 1]
+    assert seen[0].k == 3 and seen[0].T == [0, 1]
     assert not hasattr(cmodel.data, "hmm")
 
 
@@ -142,7 +142,7 @@ def test_factor_representation_passes_the_application_data():
 
     def nodes(data):
         seen.append(data)
-        return [("H", t) for t in data.hmm.T]
+        return [("H", t) for t in data.T]
 
     constraint = FactorOracleConstraint(
         func=lambda states, data: sum(v == "h0" for v in states.values()) <= data.k,
@@ -153,14 +153,14 @@ def test_factor_representation_passes_the_application_data():
         hex_.create_hmm1(), constraint, data=munch.Munch(k=1)
     )
     cmodel.representation("variable_elimination", start=0, stop=2)
-    assert seen and all(d.k == 1 and d.hmm.T == [0, 1, 2] for d in seen)
+    assert seen and all(d.k == 1 and d.T == [0, 1, 2] for d in seen)
     assert cmodel.data == munch.Munch(k=1)
 
 
 def test_variable_elimination_uses_the_application_data():
     constraint = FactorOracleConstraint(
         func=lambda states, data: sum(v == "h0" for v in states.values()) <= data.k,
-        nodes=lambda data: [("H", t) for t in data.hmm.T],
+        nodes=lambda data: [("H", t) for t in data.T],
         name="at_most_k",
     )
     cmodel = ConstrainedGraphicalModel(
@@ -216,7 +216,7 @@ def test_is_feasible_dbn_sets_T_on_a_copy_of_the_application_data():
 def test_integer_program_solves_with_the_application_data():
     @pyomo_constraint_fn()
     def at_most_k_zeros(M, D):
-        M.c = pyo.Constraint(expr=sum(M.V(("H", t), "h0") for t in D.hmm.T) <= D.k)
+        M.c = pyo.Constraint(expr=sum(M.V(("H", t), "h0") for t in D.T) <= D.k)
 
     cmodel = ConstrainedGraphicalModel(
         hex_.create_hmm1(), at_most_k_zeros, data=munch.Munch(k=2)

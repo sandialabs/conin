@@ -1,7 +1,7 @@
 import inspect
 
 from conin.exceptions import InvalidInputError
-from conin.constraints.base import Constraint
+from conin.constraints.base import Constraint, decorate
 from .base import BaseMVR
 
 
@@ -48,9 +48,12 @@ class MVRConstraint(Constraint):
         return mvr
 
 
-def mvr_constraint_fn(*, name=None):
+def mvr_constraint_fn(func=None, /, *, name=None):
     """
-    Decorator factory that takes the 'name' and returns a decorator function that creates an instance of MVRConstraint.
+    Decorator that wraps a function in an MVRConstraint.
+
+    Use it as ``@mvr_constraint_fn`` or, to set the name,
+    ``@mvr_constraint_fn(name=...)``.
     """
 
     def decorator(func):
@@ -59,4 +62,4 @@ def mvr_constraint_fn(*, name=None):
         """
         return MVRConstraint(func=func, name=name)
 
-    return decorator
+    return decorate(func, decorator, "mvr_constraint_fn")

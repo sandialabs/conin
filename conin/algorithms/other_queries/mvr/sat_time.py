@@ -34,11 +34,22 @@ _STATIC_KEYS = ("mvr_infos", "active_by_time", "dims_by_time", "shapes", "dest_c
 
 
 def _resolve_target(constraints, target):
-    """Resolve an index or an MVR name into an index into ``constraints``."""
+    """Resolve an index, an MVR name or ``None`` into an index into ``constraints``.
+
+    ``None`` means the only constraint.
+    """
     if not constraints:
         raise InvalidInputError(
-            "Satisfaction time needs at least one constraint to use as the target."
+            "The query needs at least one constraint to use as the target."
         )
+
+    if target is None:
+        if len(constraints) != 1:
+            raise InvalidInputError(
+                f"The model has {len(constraints)} constraints; give target= "
+                "(an index or a constraint name)."
+            )
+        return 0
 
     if isinstance(target, str):
         matches = [i for i, mvr in enumerate(constraints) if mvr.name == target]
@@ -199,7 +210,7 @@ def mvr_satisfaction_time(
     model,
     observed,
     *,
-    target,
+    target=None,
     time_horizon=None,
     dtype=torch.float64,
     device="cpu",
@@ -228,9 +239,10 @@ def mvr_satisfaction_time(
         timed by position or a sparse ``{time: label}`` map. A time with no
         observation still consumes a transition and still drives every MVR active
         there.
-    target : int or str
+    target : int or str, optional
         Index into the model's constraints (negative allowed) or an MVR ``name``. A
-        name matching no constraint, or more than one, raises.
+        name matching no constraint, or more than one, raises.  May be omitted
+        if the model has a single constraint.
     time_horizon : int, optional
         Number of time steps. Defaults to ``len(observed)`` for a dense list and is
         required for a map.

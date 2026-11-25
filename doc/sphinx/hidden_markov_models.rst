@@ -165,7 +165,7 @@ used by constraint functions and MVR factories is passed to the constructor
 with ``data=``. Every backend passes it on: constraint functions that take a
 ``data`` argument see a copy of it with the backend's own fields set. For an
 HMM unrolled over ``start..stop``, every backend (and ``is_feasible``) sets
-``data.start``, ``data.stop``, ``data.hmm.T`` (``list(range(start, stop +
+``data.start``, ``data.stop``, ``data.T`` (``list(range(start, stop +
 1))``) and ``data.hmm.hidden_to_internal``; the Pyomo and toulbar2 backends
 also set ``data.variables`` and ``data.evidence``, and the network-flow
 formulation puts its index sets in ``data.hmm``.
@@ -189,6 +189,7 @@ the unrolled model; no constraints, Toulbar2 or smoek constraints) and
 HMM, are ``chmm.representation("mvr").mvrs``). The torch MVR algorithms in
 ``conin.algorithms.inference.mvr``, ``conin.algorithms.other_queries.mvr``,
 ``conin.algorithms.learning.mvr`` and ``conin.algorithms.sampling.mvr``
+(all of them can also be imported from ``conin.algorithms.mvr``)
 take a ``ConstrainedGraphicalModel`` with MVR
 constraints; see the notebooks in ``doc/notebooks/MVR``.
 ``map_query(chmm, method="mvr_viterbi", evidence=observed)`` runs the torch
@@ -239,13 +240,13 @@ Pyomo constraints
    @conin.pyomo_constraint_fn()
    def num_zeros_greater_than_nine(model, data):
        model.h0_lower = pe.Constraint(
-           expr=sum(model.V("H", t, "h0") for t in data.hmm.T) >= 10
+           expr=sum(model.V("H", t, "h0") for t in data.T) >= 10
        )
 
    @conin.pyomo_constraint_fn()
    def num_zeros_less_than_thirteen(model, data):
        model.h0_upper = pe.Constraint(
-           expr=sum(model.V("H", t, "h0") for t in data.hmm.T) <= 12
+           expr=sum(model.V("H", t, "h0") for t in data.T) <= 12
        )
 
    chmm = ConstrainedGraphicalModel(
@@ -268,7 +269,7 @@ Toulbar2 constraints
    @toulbar2_constraint_fn()
    def num_zeros_greater_than_nine(model, data):
        model.AddGeneralizedLinearConstraint(
-           [model.V("H", t, "h0") for t in data.hmm.T],
+           [model.V("H", t, "h0") for t in data.T],
            ">=",
            10,
        )
@@ -276,7 +277,7 @@ Toulbar2 constraints
    @toulbar2_constraint_fn()
    def num_zeros_less_than_thirteen(model, data):
        model.AddGeneralizedLinearConstraint(
-           [model.V("H", t, "h0") for t in data.hmm.T],
+           [model.V("H", t, "h0") for t in data.T],
            "<=",
            12,
        )
@@ -302,7 +303,7 @@ Oracle constraints with node scoping
    hmm = create_hmm1()
 
    def nodes(data):
-       for t in data.hmm.T:
+       for t in data.T:
            yield ("H", t)
 
    @oracle_constraint_fn(nodes=nodes)

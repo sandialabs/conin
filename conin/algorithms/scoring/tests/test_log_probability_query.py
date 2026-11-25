@@ -134,7 +134,7 @@ def _hmm_constraint():
     """At most one ``h1`` over the HMM's time steps."""
 
     def nodes(data):
-        return [("H", t) for t in data.hmm.T]
+        return [("H", t) for t in data.T]
 
     return FactorOracleConstraint(
         func=lambda states: sum(v == "h1" for v in states.values()) <= 1,
@@ -271,7 +271,7 @@ def test_smoek_constraints_match_brute_force(example, assignment, evidence, stop
 def test_smoek_hmm_constraints_match_brute_force():
     @smoek_constraint_fn()
     def at_least_two_h0(M, D):
-        return sum(M.V("H", t, "h0") for t in D.hmm.T) >= 2
+        return sum(M.V("H", t, "h0") for t in D.T) >= 2
 
     cmodel = ConstrainedGraphicalModel(_hmm(), at_least_two_h0)
     assignment, evidence = {("H", 0): "h1"}, {("E", 2): "o1"}

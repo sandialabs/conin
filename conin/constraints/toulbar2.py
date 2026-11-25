@@ -2,7 +2,7 @@ import inspect
 
 from conin.exceptions import InvalidInputError
 
-from .base import Constraint
+from .base import Constraint, decorate
 
 
 class Toulbar2Constraint(Constraint):
@@ -31,7 +31,7 @@ class Toulbar2Constraint(Constraint):
         return model if model_ is None else model_
 
 
-def toulbar2_constraint_fn(*, name=None):
+def toulbar2_constraint_fn(func=None, /, *, name=None):
     """Decorator factory that turns a function into a :class:`Toulbar2Constraint`.
 
     The function is called as ``func(model)`` or ``func(model, data)`` while
@@ -43,8 +43,14 @@ def toulbar2_constraint_fn(*, name=None):
     function adds the constraint with the CFN's methods and returns ``None``
     (or the model).
 
+    Use it as ``@toulbar2_constraint_fn`` or, with arguments,
+    ``@toulbar2_constraint_fn(name=...)``.
+
     Parameters
     ----------
+    func : callable, optional
+        The constraint function, when the decorator is used without
+        arguments.
     name : str, optional
         The constraint's name; defaults to the function's name.
 
@@ -67,4 +73,4 @@ def toulbar2_constraint_fn(*, name=None):
         """
         return Toulbar2Constraint(func=func, name=name)
 
-    return decorator
+    return decorate(func, decorator, "toulbar2_constraint_fn")

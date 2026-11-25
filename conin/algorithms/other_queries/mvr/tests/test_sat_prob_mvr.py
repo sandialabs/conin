@@ -185,3 +185,16 @@ def test_sat_prob_answers_for_an_unsatisfiable_target_but_raises_for_the_rest(
 
     with pytest.raises(InvalidInputError, match="No feasible augmented path"):
         mvr_satisfaction_probability(model, observed, target=1)
+
+
+def test_sat_prob_target_defaults_to_the_only_constraint(hmm, observed):
+    mvr = make_reach_mvr(hidden_states=hmm.hidden_states, target_state="A")
+    model = ConstrainedGraphicalModel(hmm, [mvr])
+
+    assert mvr_satisfaction_probability(model, observed) == (
+        mvr_satisfaction_probability(model, observed, target=0)
+    )
+
+    two = ConstrainedGraphicalModel(hmm, [mvr, mvr])
+    with pytest.raises(InvalidInputError, match="give target="):
+        mvr_satisfaction_probability(two, observed)

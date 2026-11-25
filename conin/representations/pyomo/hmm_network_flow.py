@@ -236,8 +236,8 @@ class PyomoNetworkFlowHMMRepresentation(Representation):
     hidden_markov_model : HiddenMarkovModel
     constraints : sequence of PyomoConstraint or SmoekConstraint
     data : object, optional
-        Application data.  Each query gets a shallow copy with ``.hmm`` set to
-        the index sets (``data.hmm.T``, ``data.hmm.A``,
+        Application data.  Each query gets a shallow copy with ``.T`` set to
+        the time steps and ``.hmm`` to the other index sets (``data.hmm.A``,
         ``data.hmm.hidden_to_internal``, ...); the user's object is never
         modified.
     x_binary : bool, optional
@@ -286,13 +286,15 @@ class PyomoNetworkFlowHMMRepresentation(Representation):
             The model and the per-query ``data`` passed to the constraints:
             a shallow copy of the application data (see
             :func:`~conin.util.constraint_data.merge_constraint_data`) with
-            ``start=0``, ``stop=Tmax-1`` and ``hmm`` (the index sets,
-            including ``T`` and ``hidden_to_internal``) set.
+            ``start=0``, ``stop=Tmax-1``, ``T`` and ``hmm`` (the other
+            index sets, including ``hidden_to_internal``) set.
         """
         hmm = self.hidden_markov_model
         D = _create_index_sets(hmm=hmm, observed=observed, Tmax=Tmax)
+        index_sets = munch.Munch({k: v for k, v in D.items() if k != "T"})
         data = merge_constraint_data(
-            self._data, munch.Munch(start=0, stop=D.Tmax - 1, hmm=D)
+            self._data,
+            munch.Munch(start=0, stop=D.Tmax - 1, T=D.T, hmm=index_sets),
         )
 
         M = _create_network_flow_model(

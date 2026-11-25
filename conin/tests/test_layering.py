@@ -30,7 +30,7 @@ LAYERS = [
     {"algorithms.other_queries"},
     {"algorithms.sampling"},
     {"algorithms.learning"},
-    {"examples", "algorithms"},
+    {"examples", "algorithms", "algorithms.mvr"},
     # The top-level package re-exports the public API (conin.__all__).
     {"conin"},
 ]

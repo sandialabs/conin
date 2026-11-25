@@ -24,7 +24,7 @@ class Toulbar2HMMRepresentation(
     (:class:`~conin.representations.unrolled.ObservationsEvidenceMixin`).
     Constraint functions see
     ``data = Munch(start, stop, variables, evidence,
-    hmm=Munch(T, hidden_to_internal))``.  ``pgm`` is the HMM's DBN and
+    T, hmm=Munch(hidden_to_internal))``.  ``pgm`` is the HMM's DBN and
     ``uai_model`` its unrolled BN.
     """
 

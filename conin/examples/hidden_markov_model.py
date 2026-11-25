@@ -181,7 +181,7 @@ def create_chmm1_oracle_ve():
     hmm = create_hmm1()
 
     def nodes(data):
-        for t in data.hmm.T:
+        for t in data.T:
             yield ("H", t)
 
     num_zeros_greater_than_nine = FactorOracleConstraint(
@@ -205,11 +205,11 @@ def create_chmm1_pyomo():
 
     @pyomo_constraint_fn()
     def num_zeros_greater_than_nine(M, D):
-        M.h0_lower = pe.Constraint(expr=sum(M.V("H", t, "h0") for t in D.hmm.T) >= 10)
+        M.h0_lower = pe.Constraint(expr=sum(M.V("H", t, "h0") for t in D.T) >= 10)
 
     @pyomo_constraint_fn()
     def num_zeros_less_than_thirteen(M, D):
-        M.h0_upper = pe.Constraint(expr=sum(M.V("H", t, "h0") for t in D.hmm.T) <= 12)
+        M.h0_upper = pe.Constraint(expr=sum(M.V("H", t, "h0") for t in D.T) <= 12)
 
     constraints = [num_zeros_greater_than_nine, num_zeros_less_than_thirteen]
 
@@ -222,11 +222,11 @@ def create_chmm1_smoek():
 
     @smoek_constraint_fn()
     def num_zeros_greater_than_nine(M, D):
-        return sum(M.V("H", t, "h0") for t in D.hmm.T) >= 10
+        return sum(M.V("H", t, "h0") for t in D.T) >= 10
 
     @smoek_constraint_fn()
     def num_zeros_less_than_thirteen(M, D):
-        return sum(M.V("H", t, "h0") for t in D.hmm.T) <= 12
+        return sum(M.V("H", t, "h0") for t in D.T) <= 12
 
     constraints = [num_zeros_greater_than_nine, num_zeros_less_than_thirteen]
 
@@ -248,7 +248,7 @@ def create_chmm1_pyomo_aos():
 
     @pyomo_constraint_fn()
     def num_zeros_less_than_thirteen(M, D):
-        M.h0_upper = pe.Constraint(expr=sum(M.V("H", t, "h0") for t in D.hmm.T) <= 12)
+        M.h0_upper = pe.Constraint(expr=sum(M.V("H", t, "h0") for t in D.T) <= 12)
 
     constraints = [num_zeros_less_than_thirteen]
 
@@ -270,7 +270,7 @@ def create_chmm1_smoek_aos():
 
     @smoek_constraint_fn()
     def num_zeros_less_than_thirteen(M, D):
-        return sum(M.V("H", t, "h0") for t in D.hmm.T) <= 12
+        return sum(M.V("H", t, "h0") for t in D.T) <= 12
 
     constraints = [num_zeros_less_than_thirteen]
 
@@ -295,7 +295,7 @@ def create_chmm2_pyomo_aos():
 
     @pyomo_constraint_fn()
     def num_ones_less_than_thirteen(M, D):
-        M.h0_upper = pe.Constraint(expr=sum(M.V("H", t, "h1") for t in D.hmm.T) <= 12)
+        M.h0_upper = pe.Constraint(expr=sum(M.V("H", t, "h1") for t in D.T) <= 12)
 
     constraints = [num_ones_less_than_thirteen]
 
@@ -320,7 +320,7 @@ def create_chmm2_smoek_aos():
 
     @smoek_constraint_fn()
     def num_ones_less_than_thirteen(M, D):
-        return sum(M.V("H", t, "h1") for t in D.hmm.T) <= 12
+        return sum(M.V("H", t, "h1") for t in D.T) <= 12
 
     constraints = [num_ones_less_than_thirteen]
 
@@ -333,11 +333,11 @@ def create_chmm1_toulbar2():
 
     @toulbar2_constraint_fn()
     def num_zeros_greater_than_nine(M, D):
-        M.AddGeneralizedLinearConstraint([M.V("H", t, "h0") for t in D.hmm.T], ">=", 10)
+        M.AddGeneralizedLinearConstraint([M.V("H", t, "h0") for t in D.T], ">=", 10)
 
     @toulbar2_constraint_fn()
     def num_zeros_less_than_thirteen(M, D):
-        M.AddGeneralizedLinearConstraint([M.V("H", t, "h0") for t in D.hmm.T], "<=", 12)
+        M.AddGeneralizedLinearConstraint([M.V("H", t, "h0") for t in D.T], "<=", 12)
 
     constraints = [num_zeros_greater_than_nine, num_zeros_less_than_thirteen]
 

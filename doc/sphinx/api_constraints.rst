@@ -76,7 +76,7 @@ and hidden Markov models:
 
    @smoek_constraint_fn()
    def between_ten_and_twelve_h0(model, data):
-       num_h0 = sum(model.V("H", t, "h0") for t in data.hmm.T)
+       num_h0 = sum(model.V("H", t, "h0") for t in data.T)
        return [
            num_h0 >= 10,
            num_h0 <= 12,

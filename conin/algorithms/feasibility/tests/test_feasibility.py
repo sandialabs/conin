@@ -191,7 +191,7 @@ def test_hmm_dict_sequence():
 
 def test_hmm_factor_oracle_on_observed_nodes():
     def nodes(data):
-        for t in data.hmm.T:
+        for t in data.T:
             yield ("H", t)
             yield ("E", t)
 
