@@ -299,6 +299,13 @@ def map_query(
     check_method(method, METHODS, "inference type")
     cmodel = ConstrainedGraphicalModel.ensure(pgm)
 
+    observed = None
+    if isinstance(cmodel.model, (DynamicDiscreteBayesianNetwork, HiddenMarkovModel)):
+        check_unroll_start(start)
+    if isinstance(cmodel.model, HiddenMarkovModel):
+        observed = _hmm_observations(method, evidence)
+        start, stop, observed = _hmm_time_range(observed, start, stop)
+
     inference_type = "mpe_inference" if variables is None else "map_inference"
     kind = representation_kind(method, cmodel, inference_type, options)
     struct_params = _structure_params(
@@ -312,13 +319,6 @@ def map_query(
             ],
         )
     repn = cmodel.representation(kind, **struct_params)
-
-    observed = None
-    if isinstance(cmodel.model, (DynamicDiscreteBayesianNetwork, HiddenMarkovModel)):
-        check_unroll_start(start)
-    if isinstance(cmodel.model, HiddenMarkovModel):
-        observed = _hmm_observations(method, evidence)
-        start, stop, observed = _hmm_time_range(observed, start, stop)
 
     query = map_query_args(
         model=cmodel.model,
