@@ -5,7 +5,7 @@ An MVR is an auxiliary automaton that tracks a constraint on hidden-state
 sequences.  This package contains the MVR containers (``HomMVR``,
 ``InhomMVR``), the ``MVRConstraint`` factory, the MVR primitives and
 operators, and the MVR formula language (``build_mvr``,
-``build_mvr_functor``).  Everything here depends only on NumPy; the optional
+``mvr_constraints``).  Everything here depends only on NumPy; the optional
 ``greenery`` dependency is needed only by ``mvr_regex``.
 """
 
@@ -49,4 +49,4 @@ from .primitives import (
     mvr_withinbounds,
     mvr_regex,
 )
-from .formula import build_mvr, build_mvr_functor
+from .formula import build_mvr, mvr_constraints

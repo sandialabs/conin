@@ -3,7 +3,7 @@ import pytest
 
 from conin.algorithms.feasibility import is_feasible
 from conin import InvalidInputError, pyomo_constraint_fn
-from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.graphical_models import HiddenMarkovModel
 
 from conin.config import default_mip_solver
@@ -21,7 +21,7 @@ def _generate_observed(chmm, T):
     return generate_observed_from_hidden(chmm.model, rejection_sample_hidden(chmm, T))
 
 
-class Test_Oracle_ConstrainedHiddenMarkovModel:
+class Test_Oracle_ConstrainedGraphicalModel:
     T = 25
 
     def test_construct_model(self):
@@ -39,7 +39,7 @@ class Test_Oracle_ConstrainedHiddenMarkovModel:
             emission_probs=cpgm.model.emission_probs,
             transition_probs=cpgm.model.transition_probs,
         )
-        _repn = ConstrainedHiddenMarkovModel(_hmm).representation("oracle")
+        _repn = ConstrainedGraphicalModel(_hmm).representation("oracle")
 
         assert _repn.hmm.start_vec.tolist() == [
             cpgm.model.start_probs[h] for h in cpgm.model.hidden_states
@@ -48,7 +48,7 @@ class Test_Oracle_ConstrainedHiddenMarkovModel:
     def test_construct_model3(self):
         pgm = tc.create_hmm0()
         constraints = [oc.all_diff_constraint]
-        repn = ConstrainedHiddenMarkovModel(pgm, constraints).representation("oracle")
+        repn = ConstrainedGraphicalModel(pgm, constraints).representation("oracle")
         assert isinstance(repn.hmm, MatVecHMMRepresentation)
         assert (
             repn.hmm.transition_mat.tolist()
@@ -150,7 +150,7 @@ class Test_Oracle_ConstrainedHiddenMarkovModel:
 
 # ---------------------------------------------------------------------
 # Ported from the deleted hidden_markov_model/tests/test_application_chmm.py
-# (the Num_Zeros HMMApplication), on ConstrainedHiddenMarkovModel.
+# (the Num_Zeros HMMApplication), on ConstrainedGraphicalModel.
 # ---------------------------------------------------------------------
 
 
@@ -175,7 +175,7 @@ def _num_zeros_hmm():
 
 def test_integer_states_oracle_sampling_and_feasibility():
     hmm = _num_zeros_hmm()
-    chmm = ConstrainedHiddenMarkovModel(
+    chmm = ConstrainedGraphicalModel(
         hmm, oc.has_exact_number_of_occurrences_constraint(val=0, count=10)
     )
     assert not is_feasible(chmm, [0] * 9)
@@ -194,7 +194,7 @@ def test_integer_states_oracle_sampling_and_feasibility():
 @pytest.mark.skipif(not default_mip_solver, reason="No mip solver installed")
 def test_network_flow_constraint_reads_the_application_data():
     # A Pyomo constraint that reads data.num_zeros gets the data passed to
-    # ConstrainedHiddenMarkovModel(..., data=...).
+    # ConstrainedGraphicalModel(..., data=...).
     import munch
     import pyomo.environ as pyo
 
@@ -207,7 +207,7 @@ def test_network_flow_constraint_reads_the_application_data():
             expr=sum(M.hmm.x[t, 0] for t in T) == data.num_zeros
         )
 
-    chmm = ConstrainedHiddenMarkovModel(
+    chmm = ConstrainedGraphicalModel(
         _num_zeros_hmm(), num_zeros, data=munch.Munch(num_zeros=3)
     )
     results = ip_inference(hmm=chmm, observed=[0] * 8, solver=default_mip_solver)

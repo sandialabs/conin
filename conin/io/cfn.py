@@ -15,14 +15,15 @@ description of the format.
 
 import itertools
 import math
-import os
 import re
 import warnings
 
 from conin.constraints import Toulbar2Constraint
 from conin.graphical_models import DiscreteFactor, DiscreteMarkovNetwork
-from conin.constrained_models import ConstrainedDiscreteMarkovNetwork
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.exceptions import InvalidInputError, ModelFileError
+
+from .text import read_text
 
 _number_re = re.compile(r"^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$")
 
@@ -268,6 +269,15 @@ def _number(value, what, fname):
     return value
 
 
+def _all_zero(value):
+    """Whether value is zero, or a (nested) list of zeros."""
+    if isinstance(value, list):
+        return all(_all_zero(v) for v in value)
+    return (
+        not isinstance(value, bool) and isinstance(value, (int, float)) and value == 0
+    )
+
+
 def _parse_knapsack(fname, fdef, states, varnames):
     """Parse a hard ``knapsack`` or ``knapsackv`` global cost function.
 
@@ -291,12 +301,22 @@ def _parse_knapsack(fname, fdef, states, varnames):
             "weightedvalues",
         }
     )
+    # Toulbar2 1.4.0.3 and later require these knapsackv parameters, and
+    # write them as zeros for a hard constraint.
+    optional = set() if ftype == "knapsack" else {"deltacosts", "lb", "assigneddeltas"}
     keys = {k for k, _ in params}
-    if keys != expected:
+    if keys - optional != expected:
         raise NotImplementedError(
             f"CFN function {fname} of type {ftype!r} has parameters "
             f"{sorted(keys)}, but only {sorted(expected)} are supported"
         )
+    for key in sorted(keys & optional):
+        value = _get(params, key)
+        if not _all_zero(value):
+            raise NotImplementedError(
+                f"CFN function {fname} of type {ftype!r} has {key} {value}, but "
+                f"only hard knapsack constraints (all-zero {key}) are supported"
+            )
     capacity = _number(_get(params, "capacity"), "capacity", fname)
 
     terms = []
@@ -399,7 +419,7 @@ def load_cfn(filename=None, string=None, cost_scale=1.0):
     :class:`~conin.constraints.Toulbar2Constraint` objects.  These are
     written by pytoulbar2's ``AddLinearConstraint``, ``AddSumConstraint`` and
     ``AddGeneralizedLinearConstraint`` methods.  If the file contains such
-    constraints, a :class:`ConstrainedDiscreteMarkovNetwork` is returned and
+    constraints, a :class:`ConstrainedGraphicalModel` is returned and
     the unconstrained model is available as its ``model`` attribute.  Each
     constraint also records a solver-independent description of the linear
     constraint
@@ -425,7 +445,7 @@ def load_cfn(filename=None, string=None, cost_scale=1.0):
     Parameters
     ----------
     filename : str, optional
-        Name of a CFN file.
+        Name of a CFN file (gzipped if it ends with ``.gz``).
     string : str, optional
         CFN content.  Used when ``filename`` is not specified.
     cost_scale : float, optional
@@ -437,8 +457,8 @@ def load_cfn(filename=None, string=None, cost_scale=1.0):
 
     Returns
     -------
-    DiscreteMarkovNetwork or ConstrainedDiscreteMarkovNetwork
-        A ``ConstrainedDiscreteMarkovNetwork`` is returned if the file
+    DiscreteMarkovNetwork or ConstrainedGraphicalModel
+        A ``ConstrainedGraphicalModel`` is returned if the file
         contains supported global cost functions.
 
     Raises
@@ -449,20 +469,20 @@ def load_cfn(filename=None, string=None, cost_scale=1.0):
         If ``cost_scale`` is not positive, or neither ``filename`` nor
         ``string`` is given.
     ModelFileError
-        If the CFN data is malformed or does not describe a valid model.
+        If the file cannot be read (not UTF-8, or a bad ``.gz`` file), or the
+        CFN data is malformed or does not describe a valid model.
     NotImplementedError
         If the CFN contains global cost functions other than hard ``knapsack``
         and ``knapsackv`` functions, ``knapsack`` functions over non-Boolean
-        variables, or cost functions that are not explicit tables.
+        variables, ``knapsackv`` functions with nonzero ``deltacosts``, ``lb``
+        or ``assigneddeltas`` (soft constraints), or cost functions that are
+        not explicit tables.
     """
     if cost_scale <= 0:
         raise InvalidInputError(f"cost_scale must be positive: {cost_scale}")
 
     if filename:
-        if not os.path.exists(filename):
-            raise FileNotFoundError(f"Cannot read missing CFN file {filename}")
-        with open(filename, "r") as INPUT:
-            string = INPUT.read()
+        string = read_text(filename, missing="Cannot read missing CFN file")
     if string is None:
         raise InvalidInputError("Either a filename or a string must be specified")
 
@@ -564,5 +584,5 @@ def _load_cfn(string, cost_scale):
 
     pgm = DiscreteMarkovNetwork(states=states, factors=factors)
     if constraints:
-        return ConstrainedDiscreteMarkovNetwork(pgm, constraints=constraints)
+        return ConstrainedGraphicalModel(pgm, constraints=constraints)
     return pgm

@@ -7,7 +7,7 @@ from conin.constraints import (
     oracle_constraint_fn,
     smoek_constraint_fn,
 )
-from conin.constrained_models import ConstrainedDynamicDiscreteBayesianNetwork
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.graphical_models import (
     DiscreteCPD,
     DynamicDiscreteBayesianNetwork,
@@ -92,7 +92,7 @@ def simple1_DDBN_constrained_pyomo_conin(debug=False):
         model.c.add(model.V("B", 0, 0) == model.V("B", 1, 0))
 
     return Munch(
-        pgm=ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=constraints),
+        pgm=ConstrainedGraphicalModel(pgm, constraints=constraints),
         solutions=[
             MPESolution(
                 states={
@@ -117,7 +117,7 @@ def simple1_DDBN_constrained_smoek_conin(debug=False):
         ]
 
     return Munch(
-        pgm=ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=constraints),
+        pgm=ConstrainedGraphicalModel(pgm, constraints=constraints),
         solutions=[
             MPESolution(
                 states={
@@ -144,7 +144,7 @@ def simple1_DDBN_constrained_oracle_conin(debug=False):
         return states["A", 0] == states["A", 1] and states["B", 0] == states["B", 1]
 
     return Munch(
-        pgm=ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=constraints),
+        pgm=ConstrainedGraphicalModel(pgm, constraints=constraints),
         solutions=[
             MPESolution(
                 states={
@@ -171,7 +171,7 @@ def simple1_DDBN_constrained_toulbar2_conin(debug=False):
         )
 
     return Munch(
-        pgm=ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=constraints),
+        pgm=ConstrainedGraphicalModel(pgm, constraints=constraints),
         solutions=[
             MPESolution(
                 states={
@@ -370,7 +370,7 @@ def weather_constrained_pyomo_conin(debug=False):
         )
 
     return Munch(
-        pgm=ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=constraints),
+        pgm=ConstrainedGraphicalModel(pgm, constraints=constraints),
         solutions=[MPESolution(states=q_weather_A_constrained)],
     )
 
@@ -384,7 +384,7 @@ def weather_constrained_smoek_conin(debug=False):
         return sum(model.V("W", t, "Rainy") for t in data.T) == 2
 
     return Munch(
-        pgm=ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=constraints),
+        pgm=ConstrainedGraphicalModel(pgm, constraints=constraints),
         solutions=[MPESolution(states=q_weather_A_constrained)],
     )
 
@@ -405,7 +405,7 @@ def weather_constrained_oracle_conin(debug=False):
         return False
 
     return Munch(
-        pgm=ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=constraints),
+        pgm=ConstrainedGraphicalModel(pgm, constraints=constraints),
         solutions=[MPESolution(states=q_weather_A_constrained)],
     )
 
@@ -421,6 +421,6 @@ def weather_constrained_toulbar2_conin(debug=False):
         )
 
     return Munch(
-        pgm=ConstrainedDynamicDiscreteBayesianNetwork(pgm, constraints=constraints),
+        pgm=ConstrainedGraphicalModel(pgm, constraints=constraints),
         solutions=[MPESolution(states=q_weather_A_constrained)],
     )

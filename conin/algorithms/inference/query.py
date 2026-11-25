@@ -3,7 +3,7 @@
 A query goes through four steps:
 
 1. normalise the model: a bare graphical model is wrapped as
-   ``Constrained*(model)`` (no constraints), so every query runs on a
+   ``ConstrainedGraphicalModel(model)`` (no constraints), so every query runs on a
    constrained model;
 2. pick the representation kind from ``method`` (and, for
    ``"integer_program"``, ``ip_formulation``; for ``"a_star"``, the
@@ -21,12 +21,9 @@ by the representation registry: unsupported pairs raise its
 from ovld import ovld
 from pyomo.common.timing import TicTocTimer
 
-from conin.constrained_models import (
-    ConstrainedDynamicDiscreteBayesianNetwork,
-    ConstrainedHiddenMarkovModel,
-)
-from conin.constrained_models.normalise import as_constrained_model
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.exceptions import InfeasibleQueryError, InvalidInputError
+from conin.graphical_models import DynamicDiscreteBayesianNetwork, HiddenMarkovModel
 from conin.graphical_models.assignments import as_sequence
 from conin.graphical_models.dynamic_bayesian_network import check_unroll_start
 from conin.representations.matvec import MatVecHMMRepresentation
@@ -42,7 +39,7 @@ from conin.representations.toulbar2 import (
     Toulbar2FactorRepresentation,
     Toulbar2HMMRepresentation,
 )
-from conin.representations.unrolled import dbn_time_range
+from conin.representations.unrolled import DEFAULT_DBN_STOP, dbn_time_range, last_time
 from conin.representations.variable_elimination import (
     VariableEliminationHMMRepresentation,
     VariableEliminationRepresentation,
@@ -59,6 +56,7 @@ from .results import (
 from conin.representations.methods import (
     MAP_METHODS,
     check_method,
+    reject_options_not_taken,
     reject_unexpected_options,
     representation_kind,
 )
@@ -96,20 +94,25 @@ def _representation_kind(method, cmodel, options):
     return representation_kind(method, cmodel, options)
 
 
-def _structure_params(kind, cmodel, *, start, stop):
+def _structure_params(kind, cmodel, *, start, stop, nodes):
     """The structure parameters of the ``kind`` representation for this query.
 
-    DBNs are unrolled over ``start..stop`` (``stop=None`` means ``1``, the
-    default of the DBN representations).  HMMs are unrolled over
-    ``start..stop`` (``stop`` is already set: see :func:`_hmm_time_range`).
-    The other kinds have no structure parameters here.
+    DBNs are unrolled over ``start..stop``.  ``stop=None`` means the latest
+    time of the ``nodes`` the query names (its evidence and variables), and
+    at least ``1``, the default of the DBN representations.  HMMs are
+    unrolled over ``start..stop`` (``stop`` is already set: see
+    :func:`_hmm_time_range`).  The other kinds have no structure parameters
+    here.
     """
     if kind not in ("pyomo", "toulbar2", "variable_elimination"):
         return {}
-    if isinstance(cmodel, ConstrainedDynamicDiscreteBayesianNetwork):
+    if isinstance(cmodel.model, DynamicDiscreteBayesianNetwork):
+        if stop is None:
+            last = last_time(nodes)
+            stop = None if last is None else max(last, DEFAULT_DBN_STOP)
         start, stop = dbn_time_range(start, stop)
         return dict(start=start, stop=stop)
-    if isinstance(cmodel, ConstrainedHiddenMarkovModel):
+    if isinstance(cmodel.model, HiddenMarkovModel):
         return dict(start=start, stop=stop)
     return {}
 
@@ -231,7 +234,8 @@ def map_query(
         ``InvalidInputError``.
     stop : int, optional
         Final time index for dynamic models (ignored by static models).
-        For DBNs it defaults to ``1``.  For HMMs, every method infers over
+        For DBNs it defaults to the latest time in ``evidence`` and
+        ``variables``, and at least ``1``.  For HMMs, every method infers over
         ``start..stop`` and ignores the observations after ``stop``, which
         defaults to the last observation (a later ``stop`` raises
         ``InvalidInputError``).  With sparse ``{time: label}`` observations,
@@ -300,19 +304,26 @@ def map_query(
     >>> results = map_query(pgm, method="integer_program", evidence=["o0", "o1"], solver="glpk")  # doctest: +SKIP
     """
     check_method(method, METHODS, "inference type")
-    cmodel = as_constrained_model(pgm)
+    cmodel = ConstrainedGraphicalModel.ensure(pgm)
     observed = None
-    if isinstance(
-        cmodel,
-        (ConstrainedDynamicDiscreteBayesianNetwork, ConstrainedHiddenMarkovModel),
-    ):
+    if isinstance(cmodel.model, (DynamicDiscreteBayesianNetwork, HiddenMarkovModel)):
         check_unroll_start(start)
-    if isinstance(cmodel, ConstrainedHiddenMarkovModel):
+    if isinstance(cmodel.model, HiddenMarkovModel):
         observed = _hmm_observations(method, evidence)
         start, stop, observed = _hmm_time_range(observed, start, stop)
     kind = _representation_kind(method, cmodel, options)
     repn = cmodel.representation(
-        kind, **_structure_params(kind, cmodel, start=start, stop=stop)
+        kind,
+        **_structure_params(
+            kind,
+            cmodel,
+            start=start,
+            stop=stop,
+            nodes=[
+                *(evidence if isinstance(evidence, dict) else ()),
+                *(variables or ()),
+            ],
+        ),
     )
     query = map_query_args(
         model=cmodel.model,
@@ -389,6 +400,9 @@ def _solve_map_query(repn: VariableEliminationHMMRepresentation, q):
 
 def _hmm_search(search, repn, q, **options):
     """Run an HMM search on the observations; key the solutions by time for dict evidence."""
+    reject_options_not_taken(
+        search, options, "map_query(method='a_star')", passed=("observed",)
+    )
     results = search(repn, observed=q.observed, **options)
     if isinstance(q.evidence, dict):
         key_solutions_by_time(results)
@@ -426,12 +440,18 @@ def _solve_map_query(repn: MVRHMMRepresentation, q):
     else:
         time_horizon = None
     # Imported here so that importing conin does not import torch.
-    from conin.algorithms.inference.mvr.viterbi import _viterbi_torch_mvr
+    from conin.algorithms.inference.mvr.viterbi import _mvr_viterbi
 
+    reject_options_not_taken(
+        _mvr_viterbi,
+        q.options,
+        "map_query(method='mvr_viterbi')",
+        passed=("time_horizon", "return_augmented"),
+    )
     timer = TicTocTimer()
     timer.tic(None)
     try:
-        hidden, augmented = _viterbi_torch_mvr(
+        hidden, augmented = _mvr_viterbi(
             repn,
             evidence,
             time_horizon=time_horizon,

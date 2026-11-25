@@ -5,7 +5,8 @@ import math
 import numpy as np
 import torch
 
-from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedGraphicalModel
+from conin.graphical_models import HiddenMarkovModel
 from conin.exceptions import InfeasibleQueryError
 
 from conin.algorithms.util.mvr_kernels import (
@@ -26,7 +27,7 @@ from conin.algorithms.util.mvr_kernels import (
 # ======================================================================
 
 
-def viterbi_torch_mvr_chmm(
+def mvr_viterbi(
     model,
     observed,
     *,
@@ -49,7 +50,7 @@ def viterbi_torch_mvr_chmm(
 
     Parameters
     ----------
-    model : ConstrainedHiddenMarkovModel or HiddenMarkovModel
+    model : HiddenMarkovModel or ConstrainedGraphicalModel (of an HMM)
         Hidden Markov model with ``"mvr"`` constraints (a bare HMM has none).
         The MVRs come from its ``"mvr"`` representation.
     observed : list or dict
@@ -80,8 +81,10 @@ def viterbi_torch_mvr_chmm(
     best_logprob : float, optional
         Returned when ``return_score`` is ``True``.
     """
-    return _viterbi_torch_mvr(
-        ConstrainedHiddenMarkovModel.ensure(model).representation("mvr"),
+    return _mvr_viterbi(
+        ConstrainedGraphicalModel.ensure(model, HiddenMarkovModel).representation(
+            "mvr"
+        ),
         observed,
         time_horizon=time_horizon,
         dtype=dtype,
@@ -91,7 +94,7 @@ def viterbi_torch_mvr_chmm(
     )
 
 
-def _viterbi_torch_mvr(
+def _mvr_viterbi(
     repn,
     observed,
     *,
@@ -101,7 +104,7 @@ def _viterbi_torch_mvr(
     return_augmented=True,
     return_score=False,
 ):
-    """:func:`viterbi_torch_mvr_chmm` on an ``"mvr"`` representation."""
+    """:func:`mvr_viterbi` on an ``"mvr"`` representation."""
     matvec, constraints = repn.matvec, list(repn.mvrs)
 
     log_start_vec, log_transition_mat, log_emission_mat = _hmm_to_torch(

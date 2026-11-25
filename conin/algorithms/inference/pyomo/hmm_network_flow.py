@@ -8,11 +8,12 @@ import logging
 import math
 
 from conin.config import mip_solver
-from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.exceptions import InfeasibleQueryError, InvalidInputError
 from conin.graphical_models.assignments import as_sequence
 from conin.algorithms.inference.hmm_results import key_solutions_by_time
 from conin.algorithms.inference.pyomo.solve import solve_model, solve_with_or_topas
+from conin.representations.methods import reject_options_not_taken
 from conin.algorithms.inference.results import (
     map_results,
     map_solution,
@@ -22,9 +23,7 @@ from conin.algorithms.inference.results import (
 
 import pyomo.environ as pyo
 from pyomo.common.timing import tic, toc, TicTocTimer
-from pyomo.contrib.alternative_solutions.aos_utils import (
-    get_model_variables,
-)
+from pyomo.contrib.alternative_solutions.aos_utils import get_model_variables
 
 logger = logging.getLogger("conin")
 
@@ -51,6 +50,12 @@ def _solve_network_flow(repn, q):
             "Cut generation is not supported for the HMM 'network_flow' integer programming formulation"
         )
     infer = _ip_inference if repn.constraints else _lp_inference
+    reject_options_not_taken(
+        infer,
+        options,
+        "map_query(method='integer_program', ip_formulation='network_flow')",
+        passed=("observed",),
+    )
     results = infer(repn, observed=q.observed, **options)
     if isinstance(q.evidence, dict):
         key_solutions_by_time(results)
@@ -92,7 +97,7 @@ def lp_inference(
         :mod:`conin.algorithms.inference.results`.  If the observations have
         probability zero, there is no solution (``solution`` is ``None``).
     """
-    repn = ConstrainedHiddenMarkovModel(hmm).representation("pyomo_network_flow")
+    repn = ConstrainedGraphicalModel(hmm).representation("pyomo_network_flow")
     return _lp_inference(
         repn,
         observed=as_sequence(observed, "observed sequence"),
@@ -188,7 +193,7 @@ def ip_inference(
 
     Parameters
     ----------
-    hmm : ConstrainedHiddenMarkovModel
+    hmm : ConstrainedGraphicalModel (of an HMM)
         Its constraints must be of family ``"pyomo"`` or ``"smoek"`` (or
         none).
     observed : list

@@ -27,9 +27,9 @@ MVR samplers take a ``torch.Generator`` (``generator``).
 
 MVR sampling (torch):
 
-.. autofunction:: conin.algorithms.sampling.mvr.ffbs.ffbs_torch_mvr_chmm
+.. autofunction:: conin.algorithms.sampling.mvr.ffbs.mvr_sample
 
-.. autofunction:: conin.algorithms.sampling.mvr.stopped_sampling.stopped_sampling_torch_mvr_chmm
+.. autofunction:: conin.algorithms.sampling.mvr.stopped_sampling.mvr_stopped_sample
 
 Learning
 --------
@@ -38,11 +38,11 @@ Learning
 ``add_unknowns`` (``conin.algorithms.learning``) are documented in :doc:`hmm_learning`.
 The MVR learning algorithms (torch):
 
-.. autofunction:: conin.algorithms.learning.mvr.baum_welch.forward_backward_mvr_chmm
+.. autofunction:: conin.algorithms.learning.mvr.baum_welch.mvr_forward_backward
 
-.. autofunction:: conin.algorithms.learning.mvr.baum_welch.baum_welch_mvr_chmm
+.. autofunction:: conin.algorithms.learning.mvr.baum_welch.mvr_baum_welch
 
-.. autofunction:: conin.algorithms.learning.mvr.generalized_em.generalized_em_mvr_chmm
+.. autofunction:: conin.algorithms.learning.mvr.generalized_em.mvr_generalized_em
 
 Other queries
 -------------
@@ -50,6 +50,6 @@ Other queries
 The satisfaction probability and first satisfaction time of MVR constraints
 (torch):
 
-.. autofunction:: conin.algorithms.other_queries.mvr.sat_prob.sat_prob_torch_mvr_chmm
+.. autofunction:: conin.algorithms.other_queries.mvr.sat_prob.mvr_satisfaction_probability
 
-.. autofunction:: conin.algorithms.other_queries.mvr.sat_time.sat_time_torch_mvr_chmm
+.. autofunction:: conin.algorithms.other_queries.mvr.sat_time.mvr_satisfaction_time

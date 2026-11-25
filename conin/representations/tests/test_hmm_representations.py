@@ -11,7 +11,7 @@ import pytest
 import conin.examples.hidden_markov_model as tc
 from conin.algorithms.feasibility import is_feasible
 from conin.config import default_mip_solver
-from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.constraints import (
     OracleConstraint,
     RecursiveConstraint,
@@ -90,7 +90,7 @@ def test_oracle_two_argument_predicates_get_the_constraint_data():
         return sum(1 for v in states.values() if v == "h0") <= len(data.hmm.T) // 2
 
     hmm = tc.create_hmm1()
-    cmodel = ConstrainedHiddenMarkovModel(hmm, OracleConstraint(func=at_most_half_h0))
+    cmodel = ConstrainedGraphicalModel(hmm, OracleConstraint(func=at_most_half_h0))
     repn = cmodel.representation("oracle")
     assert repn.is_feasible([0, 0, 1, 1])
     assert not repn.is_feasible([0, 0, 0, 1])
@@ -108,7 +108,7 @@ def test_oracle_two_argument_predicates_get_the_constraint_data():
 
 
 def test_oracle_without_constraints_accepts_everything():
-    repn = ConstrainedHiddenMarkovModel(tc.create_hmm1()).representation("oracle")
+    repn = ConstrainedGraphicalModel(tc.create_hmm1()).representation("oracle")
     assert repn.constraints == ()
     assert repn.is_feasible([0, 1, 0])
     assert repn.partial_is_feasible(T=10, seq=[0, 1])
@@ -163,14 +163,13 @@ def test_rejection_sampling_bare_hmm_is_unconstrained_sampling():
     expected = generate_hidden(hmm, 12, rng=5)
     assert rejection_sample_hidden(hmm, 12, rng=5) == expected
     assert (
-        rejection_sample_hidden(ConstrainedHiddenMarkovModel(hmm), 12, rng=5)
-        == expected
+        rejection_sample_hidden(ConstrainedGraphicalModel(hmm), 12, rng=5) == expected
     )
 
 
 def test_rejection_sampling_gives_up_after_max_failures():
     never = OracleConstraint(func=lambda states: False)
-    cmodel = ConstrainedHiddenMarkovModel(tc.create_hmm1(), never)
+    cmodel = ConstrainedGraphicalModel(tc.create_hmm1(), never)
     with pytest.raises(RuntimeError, match="4 samples were rejected"):
         rejection_sample_hidden(cmodel, 5, max_failures=3)
 
@@ -202,7 +201,7 @@ def _count(name, h0="h0"):
 def test_recursive_representation_combines_states_into_tuples():
     c1 = _count("has_h0", "h0")
     c2 = _count("has_h1", "h1")
-    cmodel = ConstrainedHiddenMarkovModel(tc.create_hmm1(), [c1, c2])
+    cmodel = ConstrainedGraphicalModel(tc.create_hmm1(), [c1, c2])
     repn = cmodel.representation("recursive")
     assert isinstance(repn, RecursiveHMMRepresentation)
     assert repn.kind == "recursive"
@@ -222,7 +221,7 @@ def test_recursive_representation_combines_states_into_tuples():
 
 
 def test_recursive_without_constraints():
-    repn = ConstrainedHiddenMarkovModel(tc.create_hmm1()).representation("recursive")
+    repn = ConstrainedGraphicalModel(tc.create_hmm1()).representation("recursive")
     assert repn.initial("h0") == ()
     assert repn.update((), "h1") == ()
     assert repn.feasible(())
@@ -281,7 +280,7 @@ def test_pyomo_network_flow_does_not_write_into_user_data():
         M.k_zeros = pyo.Constraint(expr=sum(M.V("H", t, "h0") for t in D.hmm.T) <= D.k)
 
     user_data = munch.Munch(k=1)
-    cmodel = ConstrainedHiddenMarkovModel(
+    cmodel = ConstrainedGraphicalModel(
         tc.create_hmm1(), at_most_k_zeros, data=user_data
     )
     repn = cmodel.representation("pyomo_network_flow")
@@ -342,7 +341,7 @@ def test_mvr_factories_and_prebuilt_mvrs():
         return mvr_visit_state(hidden_markov_model, [d["state"]])
 
     prebuilt = mvr_forbid_state(hmm, ["a"])
-    cmodel = ConstrainedHiddenMarkovModel(hmm, [visit, prebuilt], data=data)
+    cmodel = ConstrainedGraphicalModel(hmm, [visit, prebuilt], data=data)
     repn = cmodel.representation("mvr")
 
     assert len(calls) == 1
@@ -357,7 +356,7 @@ def test_mvr_factories_and_prebuilt_mvrs():
 def test_mvr_mismatched_hidden_states_raise():
     hmm = _hmm()
     mvr = mvr_forbid_state(_hmm(("a", "b", "x")), ["a"])
-    cmodel = ConstrainedHiddenMarkovModel(hmm, mvr)
+    cmodel = ConstrainedGraphicalModel(hmm, mvr)
     with pytest.raises(
         InvalidInputError, match="Hidden states of constraint 0 do not match"
     ):
@@ -368,7 +367,7 @@ def test_mvr_prebuilt_mvrs_are_used_as_they_are():
     # MVRs are immutable, so the representation does not copy them.
     hmm = _hmm()
     prebuilt = mvr_forbid_state(hmm, ["a"])
-    cmodel = ConstrainedHiddenMarkovModel(hmm, prebuilt)
+    cmodel = ConstrainedGraphicalModel(hmm, prebuilt)
     first = cmodel.representation("mvr")
     assert first.mvrs[0] is prebuilt
     with pytest.raises(AttributeError, match="immutable"):
@@ -383,9 +382,9 @@ def test_mvr_prebuilt_mvrs_are_used_as_they_are():
 
 def test_mvr_representation_attributes():
     hmm = _hmm()
-    repn = ConstrainedHiddenMarkovModel(
-        hmm, mvr_forbid_state(hmm, ["a"])
-    ).representation("mvr")
+    repn = ConstrainedGraphicalModel(hmm, mvr_forbid_state(hmm, ["a"])).representation(
+        "mvr"
+    )
     assert isinstance(repn, MVRHMMRepresentation)
     assert repn.kind == "mvr"
     assert repn.model is hmm
@@ -396,8 +395,10 @@ def test_mvr_representation_attributes():
 @pytest.mark.parametrize("model", ["bare", "empty"])
 def test_mvr_representation_without_constraints(model):
     hmm = _hmm()
-    cmodel = ConstrainedHiddenMarkovModel(hmm) if model == "empty" else hmm
-    repn = ConstrainedHiddenMarkovModel.ensure(cmodel).representation("mvr")
+    cmodel = ConstrainedGraphicalModel(hmm) if model == "empty" else hmm
+    repn = ConstrainedGraphicalModel.ensure(cmodel, HiddenMarkovModel).representation(
+        "mvr"
+    )
     assert repn.mvrs == ()
     assert repn.model is hmm
 
@@ -416,7 +417,7 @@ def test_mvr_representation_aligns_hidden_states_to_the_hmm():
         ),
     )
 
-    repn = ConstrainedHiddenMarkovModel(hmm, reordered).representation("mvr")
+    repn = ConstrainedGraphicalModel(hmm, reordered).representation("mvr")
     (aligned,) = repn.mvrs
     assert aligned.hidden_states == ["a", "b", "c"]
     assert np.array_equal(aligned.repn.ini_array, mvr.repn.ini_array)
@@ -434,7 +435,7 @@ def test_mvr_representation_calls_factories_on_each_build():
         calls.append(hidden_markov_model)
         return mvr_visit_state(hidden_markov_model, ["b"])
 
-    cmodel = ConstrainedHiddenMarkovModel(hmm, visit)
+    cmodel = ConstrainedGraphicalModel(hmm, visit)
     first = cmodel.representation("mvr")
     second = cmodel.representation("mvr")
     assert len(calls) == 2
@@ -447,9 +448,9 @@ def test_mvr_representation_calls_factories_on_each_build():
 
 def test_mvr_arrays_are_read_only():
     hmm = _hmm()
-    repn = ConstrainedHiddenMarkovModel(
-        hmm, mvr_forbid_state(hmm, ["a"])
-    ).representation("mvr")
+    repn = ConstrainedGraphicalModel(hmm, mvr_forbid_state(hmm, ["a"])).representation(
+        "mvr"
+    )
     arrays = repn.mvrs[0].repn
     for name in ("ini_array", "upd_array", "evl_array", "ini_idx", "next_idx"):
         array = getattr(arrays, name)
@@ -470,7 +471,7 @@ def test_mvr_inhom_arrays_are_read_only():
         upd=[{(0, "a"): 0, (0, "b"): 0}],
         evl=[{0: True}, {0: True}],
     )
-    arrays = ConstrainedHiddenMarkovModel(hmm, mvr).representation("mvr").mvrs[0].repn
+    arrays = ConstrainedGraphicalModel(hmm, mvr).representation("mvr").mvrs[0].repn
     assert all(not a.flags.writeable for a in arrays.upd_array)
     assert all(not a.flags.writeable for a in arrays.evl_array)
     assert all(not a.flags.writeable for a in arrays.next_idx)
@@ -488,9 +489,9 @@ def test_mvr_matvec_repn_copies_its_inputs():
 
 def test_mvr_representation_is_not_changed_by_mvr_timerange():
     hmm = _hmm()
-    repn = ConstrainedHiddenMarkovModel(
-        hmm, mvr_forbid_state(hmm, ["a"])
-    ).representation("mvr")
+    repn = ConstrainedGraphicalModel(hmm, mvr_forbid_state(hmm, ["a"])).representation(
+        "mvr"
+    )
     windowed = mvr_timerange(repn.mvrs[0], [1, 2])
     assert windowed.time_range == [1, 2]
     assert repn.mvrs[0].time_range is None
@@ -498,7 +499,7 @@ def test_mvr_representation_is_not_changed_by_mvr_timerange():
 
 def test_mvr_other_families_raise():
     hmm = _hmm()
-    cmodel = ConstrainedHiddenMarkovModel(hmm, OracleConstraint(func=lambda seq: True))
+    cmodel = ConstrainedGraphicalModel(hmm, OracleConstraint(func=lambda seq: True))
     with pytest.raises(InvalidInputError) as excinfo:
         cmodel.representation("mvr")
     assert "('mvr', 'mvr')" in str(excinfo.value)
@@ -514,7 +515,7 @@ def test_unsupported_family_raises():
     def noop(M, D):
         pass
 
-    cmodel = ConstrainedHiddenMarkovModel(tc.create_hmm1(), noop)
+    cmodel = ConstrainedGraphicalModel(tc.create_hmm1(), noop)
     with pytest.raises(InvalidInputError) as excinfo:
         cmodel.representation("oracle")
     assert "('oracle', 'oracle')" in str(excinfo.value)
@@ -527,7 +528,7 @@ def test_unsupported_family_raises():
 
 @pytest.mark.parametrize("kind", ["pyomo", "toulbar2", "variable_elimination"])
 def test_unrolled_hmm_representations_need_a_stop_time(kind):
-    cmodel = ConstrainedHiddenMarkovModel(tc.create_hmm1())
+    cmodel = ConstrainedGraphicalModel(tc.create_hmm1())
     with pytest.raises(InvalidInputError, match="needs a stop time"):
         cmodel.representation(kind)
 
@@ -539,6 +540,6 @@ def test_network_flow_with_impossible_observations_raises():
         transition_probs={("h0", "h0"): 1.0},
         emission_probs={("h0", "o0"): 1.0, ("h0", "o1"): 0.0},
     )
-    repn = ConstrainedHiddenMarkovModel(hmm).representation("pyomo_network_flow")
+    repn = ConstrainedGraphicalModel(hmm).representation("pyomo_network_flow")
     with pytest.raises(InvalidInputError, match="No feasible transitions"):
         repn.create_model(observed=["o0", "o1"])

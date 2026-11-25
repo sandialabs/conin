@@ -839,7 +839,7 @@ def _builder(part, formula, name):
 
 
 def build_mvr(hidden_markov_model, formula: str, *, name: str = None) -> list:
-    """Build a list of MVRs, one per top-level conjunct, for a ConstrainedHiddenMarkovModel.
+    """Build a list of MVRs, one per top-level conjunct, for a constrained HMM.
 
     Names use the formula (or ``name``), indexed when there are multiple results.
     Invalid syntax, unknown states, and invalid arguments raise InvalidInputError.
@@ -850,8 +850,8 @@ def build_mvr(hidden_markov_model, formula: str, *, name: str = None) -> list:
     ]
 
 
-def build_mvr_functor(formula: str, *, name: str = None) -> list:
-    """Return MVRConstraint factories for ConstrainedHiddenMarkovModel.
+def mvr_constraints(formula: str, *, name: str = None) -> list:
+    """Return MVRConstraint factories for a constrained HMM.
 
     Parse immediately; lower when an HMM is supplied. Naming follows build_mvr
     and applies to both factories and their results.

@@ -17,12 +17,7 @@ import conin.examples.bayesian_network as bex
 import conin.examples.dynamic_bayesian_network as dex
 import conin.examples.hidden_markov_model as hex_
 import conin.examples.markov_network as mex
-from conin.constrained_models import (
-    ConstrainedDiscreteBayesianNetwork,
-    ConstrainedDiscreteMarkovNetwork,
-    ConstrainedDynamicDiscreteBayesianNetwork,
-    ConstrainedHiddenMarkovModel,
-)
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.constraints import FactorOracleConstraint, smoek_constraint_fn
 from conin.exceptions import InvalidInputError
 from conin.graphical_models import (
@@ -149,7 +144,7 @@ def _hmm_constraint():
 
 
 def _cmn():
-    return ConstrainedDiscreteMarkovNetwork(
+    return ConstrainedGraphicalModel(
         _mn_sparse(),
         FactorOracleConstraint(
             func=lambda s: s["A"] != s["C"], nodes=["A", "C"], name="a_ne_c"
@@ -166,7 +161,7 @@ def _cdbn():
 
 
 def _chmm():
-    return ConstrainedHiddenMarkovModel(_hmm(), _hmm_constraint())
+    return ConstrainedGraphicalModel(_hmm(), _hmm_constraint())
 
 
 MN_CASES = [
@@ -278,7 +273,7 @@ def test_smoek_hmm_constraints_match_brute_force():
     def at_least_two_h0(M, D):
         return sum(M.V("H", t, "h0") for t in D.hmm.T) >= 2
 
-    cmodel = ConstrainedHiddenMarkovModel(_hmm(), at_least_two_h0)
+    cmodel = ConstrainedGraphicalModel(_hmm(), at_least_two_h0)
     assignment, evidence = {("H", 0): "h1"}, {("E", 2): "o1"}
     value = log_probability_query(cmodel, assignment, evidence=evidence, stop=2)
     assert value == pytest.approx(
@@ -383,7 +378,7 @@ def test_long_hmm_sequences_do_not_underflow():
 def test_bare_and_unconstrained_models_agree():
     a, e = {"Cancer": 1}, {"Xray": 1}
     assert log_probability_query(_bn(), a, evidence=e) == pytest.approx(
-        log_probability_query(ConstrainedDiscreteBayesianNetwork(_bn()), a, evidence=e),
+        log_probability_query(ConstrainedGraphicalModel(_bn()), a, evidence=e),
         abs=0,
     )
 
@@ -459,7 +454,7 @@ def test_unknown_method_raises():
 
 @pytest.mark.parametrize("model", ["not_a_model", 3, object()])
 def test_unsupported_model_type_raises_type_error(model):
-    with pytest.raises(TypeError, match="Unsupported model type"):
+    with pytest.raises(TypeError, match="expects a conin graphical model"):
         log_probability_query(model, {"A": 0})
 
 
@@ -484,8 +479,8 @@ def test_unsupported_model_type_raises_type_error(model):
 )
 def test_unsupported_families_raise_the_registry_error(example):
     cmodel = example()
-    var = ("H", 0) if isinstance(cmodel, ConstrainedHiddenMarkovModel) else "Xray"
-    if isinstance(cmodel, ConstrainedDynamicDiscreteBayesianNetwork):
+    var = ("H", 0) if isinstance(cmodel.model, HiddenMarkovModel) else "Xray"
+    if isinstance(cmodel.model, DynamicDiscreteBayesianNetwork):
         var = ("A", 0)
     with pytest.raises(
         InvalidInputError, match="No .variable_elimination. representation is available"
@@ -567,7 +562,7 @@ def test_methods():
     ],
 )
 def test_structure_params(model, variables, start, stop, expected):
-    cmodel = lpq.as_constrained_model(model())
+    cmodel = ConstrainedGraphicalModel(model())
     params = lpq._structure_params(cmodel, variables=variables, start=start, stop=stop)
     assert params == expected
 

@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from conin.exceptions import InvalidInputError
-from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedGraphicalModel
 
 # importorskip only catches ImportError; a broken torch install raises OSError.
 try:
@@ -14,7 +14,7 @@ except (ImportError, OSError) as exc:
     pytest.skip(f"torch not available: {exc}", allow_module_level=True)
 
 from conin.algorithms.other_queries.mvr.sat_prob import (  # noqa: E402
-    sat_prob_torch_mvr_chmm,
+    mvr_satisfaction_probability,
 )
 
 from conin.algorithms.other_queries.mvr.tests.test_sat_time_mvr import (
@@ -56,15 +56,15 @@ def assert_matches_brute_force(hmm, mvrs, target, observed, T=None):
     if T is None:
         T = len(observed)
 
-    model = ConstrainedHiddenMarkovModel(hmm, mvrs)
+    model = ConstrainedGraphicalModel(hmm, mvrs)
     expected = brute_force_sat_prob(hmm, mvrs, target, observed, T)
 
     if expected.sum() <= 0.0:
         with pytest.raises(InvalidInputError):
-            sat_prob_torch_mvr_chmm(model, observed, target=target, time_horizon=T)
+            mvr_satisfaction_probability(model, observed, target=target, time_horizon=T)
         return None
 
-    prob, log_weights = sat_prob_torch_mvr_chmm(
+    prob, log_weights = mvr_satisfaction_probability(
         model, observed, target=target, time_horizon=T, return_log_weights=True
     )
 
@@ -174,9 +174,9 @@ def test_sat_prob_answers_for_an_unsatisfiable_target_but_raises_for_the_rest(
     unreachable = make_reach_mvr(hidden_states=hmm.hidden_states, target_state="Z")
     other = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="B")
 
-    model = ConstrainedHiddenMarkovModel(hmm, [unreachable, other])
+    model = ConstrainedGraphicalModel(hmm, [unreachable, other])
 
-    prob, log_weights = sat_prob_torch_mvr_chmm(
+    prob, log_weights = mvr_satisfaction_probability(
         model, observed, target=0, return_log_weights=True
     )
 
@@ -184,4 +184,4 @@ def test_sat_prob_answers_for_an_unsatisfiable_target_but_raises_for_the_rest(
     assert log_weights[0] == -math.inf
 
     with pytest.raises(InvalidInputError, match="No feasible augmented path"):
-        sat_prob_torch_mvr_chmm(model, observed, target=1)
+        mvr_satisfaction_probability(model, observed, target=1)

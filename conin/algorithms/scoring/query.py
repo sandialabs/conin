@@ -15,26 +15,20 @@ Unsupported (model type, constraint family) pairs raise the representation
 registry's ``InvalidInputError``.
 """
 
-import numbers
-
 import munch
 from ovld import ovld
 
-from conin.constrained_models import (
-    ConstrainedDynamicDiscreteBayesianNetwork,
-    ConstrainedHiddenMarkovModel,
-)
-from conin.constrained_models.normalise import as_constrained_model
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.exceptions import InvalidInputError
+from conin.graphical_models import DynamicDiscreteBayesianNetwork, HiddenMarkovModel
 from conin.representations.methods import (
     LOG_PROBABILITY_METHODS,
     check_method,
     reject_unexpected_options,
     representation_kind,
 )
-from conin.representations.variable_elimination import (
-    VariableEliminationRepresentation,
-)
+from conin.representations.unrolled import last_time
+from conin.representations.variable_elimination import VariableEliminationRepresentation
 
 from .variable_elimination import _log_probability_variable_elimination
 
@@ -64,19 +58,12 @@ def _structure_params(cmodel, *, variables, start, stop):
         If ``stop`` is before ``start``.
     """
     if not isinstance(
-        cmodel,
-        (ConstrainedDynamicDiscreteBayesianNetwork, ConstrainedHiddenMarkovModel),
+        cmodel.model, (DynamicDiscreteBayesianNetwork, HiddenMarkovModel)
     ):
         return {}
     if stop is None:
-        times = [
-            var[1]
-            for var in variables
-            if isinstance(var, tuple)
-            and len(var) == 2
-            and isinstance(var[1], numbers.Integral)
-        ]
-        stop = max(times + [start + 1])
+        last = last_time(variables)
+        stop = start + 1 if last is None else max(last, start + 1)
     elif stop < start:
         raise InvalidInputError(
             f"A DBN or HMM is unrolled over start..stop with stop >= start; got "
@@ -182,7 +169,7 @@ def log_probability_query(
     -4.290459
     """
     check_method(method, METHODS, "log-probability method")
-    cmodel = as_constrained_model(pgm)
+    cmodel = ConstrainedGraphicalModel.ensure(pgm)
     assignment = _as_dict(assignment, "assignment")
     evidence = {} if evidence is None else _as_dict(evidence, "evidence")
     if not assignment:

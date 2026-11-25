@@ -195,7 +195,7 @@ def _satisfaction_weights(ctx, bctx, target, a, b, hits):
 # ======================================================================
 
 
-def sat_time_torch_mvr_chmm(
+def mvr_satisfaction_time(
     model,
     observed,
     *,
@@ -220,7 +220,7 @@ def sat_time_torch_mvr_chmm(
 
     Parameters
     ----------
-    model : ConstrainedHiddenMarkovModel or HiddenMarkovModel
+    model : HiddenMarkovModel or ConstrainedGraphicalModel (of an HMM)
         Hidden Markov model with ``"mvr"`` constraints (a bare HMM has none).
         The MVRs come from its ``"mvr"`` representation.
     observed : list or dict
@@ -236,7 +236,7 @@ def sat_time_torch_mvr_chmm(
         required for a map.
     dtype : torch.dtype, optional
         Floating dtype for torch tensors. Defaults to ``float64``, as in
-        ``baum_welch_mvr_chmm``.
+        ``mvr_baum_welch``.
     device : str or torch.device, optional
         Torch device.
     return_log_weights : bool, optional

@@ -11,11 +11,18 @@ on:
 jobs:
   format-check:
     runs-on: ubuntu-latest
+    env:
+      # A PR from a branch of this repository gets black's changes committed
+      # to it. A PR from a fork can't be pushed to (its token is read-only),
+      # so there, and on pushes to main, black only checks.
+      AUTO_FORMAT: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.head_ref }}  # Checkout the branch of the PR
+          # The PR branch, so that the formatting commit can be pushed to it.
+          # Otherwise the default: the PR's merge commit, or the pushed commit.
+          ref: ${{ env.AUTO_FORMAT == 'true' && github.head_ref || '' }}
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -28,10 +35,12 @@ jobs:
           pip install black
 
       - name: Run Black
+        if: env.AUTO_FORMAT == 'true'
         run: |
           black .
 
       - name: Commit and push formatting changes
+        if: env.AUTO_FORMAT == 'true'
         env:
           HEAD_REF: ${{ github.head_ref }}
         run: |
@@ -45,6 +54,11 @@ jobs:
           else
             echo "No formatting changes detected."
           fi
+
+      - name: Check formatting with Black
+        if: env.AUTO_FORMAT != 'true'
+        run: |
+          black --check --diff .
 
       - name: Lint with flake8
         run: |

@@ -9,12 +9,7 @@ import conin.examples.bayesian_network as bex
 import conin.examples.dynamic_bayesian_network as dex
 import conin.examples.hidden_markov_model as hex_
 import conin.examples.markov_network as mex
-from conin.constrained_models import (
-    ConstrainedDiscreteBayesianNetwork,
-    ConstrainedDiscreteMarkovNetwork,
-    ConstrainedDynamicDiscreteBayesianNetwork,
-    ConstrainedHiddenMarkovModel,
-)
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.constraints import pyomo_constraint_fn, toulbar2_constraint_fn
 from conin.exceptions import InvalidInputError
 from conin.graphical_models import (
@@ -69,7 +64,7 @@ def test_toulbar2_rejects_pyomo_constraints():
     def noop(M, D):
         pass
 
-    cmodel = ConstrainedDiscreteMarkovNetwork(mex.ABC_conin().pgm, noop)
+    cmodel = ConstrainedGraphicalModel(mex.ABC_conin().pgm, noop)
     with pytest.raises(InvalidInputError, match="No 'toulbar2' representation"):
         cmodel.representation("toulbar2")
 
@@ -78,22 +73,22 @@ def test_toulbar2_rejects_pyomo_constraints():
     "cmodel,params,cls",
     [
         (
-            ConstrainedDiscreteMarkovNetwork(mex.ABC_conin().pgm),
+            ConstrainedGraphicalModel(mex.ABC_conin().pgm),
             {},
             Toulbar2MNRepresentation,
         ),
         (
-            ConstrainedDiscreteBayesianNetwork(bex.cancer1_BN_conin().pgm),
+            ConstrainedGraphicalModel(bex.cancer1_BN_conin().pgm),
             {},
             Toulbar2BNRepresentation,
         ),
         (
-            ConstrainedDynamicDiscreteBayesianNetwork(dex.weather_conin().pgm),
+            ConstrainedGraphicalModel(dex.weather_conin().pgm),
             dict(stop=4),
             Toulbar2DBNRepresentation,
         ),
         (
-            ConstrainedHiddenMarkovModel(hex_.create_hmm1()),
+            ConstrainedGraphicalModel(hex_.create_hmm1()),
             dict(stop=4),
             Toulbar2HMMRepresentation,
         ),
@@ -113,10 +108,10 @@ def test_toulbar2_representation_classes(cmodel, params, cls):
 def test_uai_text_matches_save_model(tmp_path):
     dbn = dex.weather_conin().pgm
     cases = [
-        (ConstrainedDiscreteMarkovNetwork(mex.ABC_conin().pgm), {}, None),
-        (ConstrainedDiscreteBayesianNetwork(bex.cancer1_BN_conin().pgm), {}, None),
+        (ConstrainedGraphicalModel(mex.ABC_conin().pgm), {}, None),
+        (ConstrainedGraphicalModel(bex.cancer1_BN_conin().pgm), {}, None),
         (
-            ConstrainedDynamicDiscreteBayesianNetwork(dbn),
+            ConstrainedGraphicalModel(dbn),
             dict(start=0, stop=3),
             create_bn_from_dbn(dbn=dbn, start=0, stop=3),
         ),
@@ -131,7 +126,7 @@ def test_uai_text_matches_save_model(tmp_path):
 
 def test_var_wrapper_follows_the_state_order():
     pgm = bex.cancer1_BN_conin().pgm
-    repn = ConstrainedDiscreteBayesianNetwork(pgm).representation("toulbar2")
+    repn = ConstrainedGraphicalModel(pgm).representation("toulbar2")
     from conin.representations.toulbar2 import Toulbar2VarWrapper
 
     V = Toulbar2VarWrapper(repn.uai_model)
@@ -148,9 +143,7 @@ def test_var_wrapper_follows_the_state_order():
 
 @skipif_toulbar2_not_available
 def test_two_create_models_give_independent_cfns():
-    repn = ConstrainedDiscreteMarkovNetwork(mex.ABC_conin().pgm).representation(
-        "toulbar2"
-    )
+    repn = ConstrainedGraphicalModel(mex.ABC_conin().pgm).representation("toulbar2")
     expected = mex.ABC_conin().solutions[0].states
 
     M1 = repn.create_model()
@@ -166,9 +159,7 @@ def test_two_create_models_give_independent_cfns():
 
 @skipif_toulbar2_not_available
 def test_evidence_does_not_change_the_representation():
-    repn = ConstrainedDiscreteMarkovNetwork(mex.ABC_conin().pgm).representation(
-        "toulbar2"
-    )
+    repn = ConstrainedGraphicalModel(mex.ABC_conin().pgm).representation("toulbar2")
     text = repn.uai_text
     M1 = repn.create_model(evidence={"B": 0})
     assert M1.V_evidence == {"B"}
@@ -178,7 +169,7 @@ def test_evidence_does_not_change_the_representation():
 
 
 def test_dbn_structure_params_start_and_stop():
-    cmodel = ConstrainedDynamicDiscreteBayesianNetwork(dex.weather_conin().pgm)
+    cmodel = ConstrainedGraphicalModel(dex.weather_conin().pgm)
     r4 = cmodel.representation("toulbar2", stop=4)
     r5 = cmodel.representation("toulbar2", stop=5)
     assert (r4.start, r4.stop, r5.stop) == (0, 4, 5)
@@ -186,7 +177,7 @@ def test_dbn_structure_params_start_and_stop():
 
 
 def test_hmm_structure_params_start_and_stop():
-    cmodel = ConstrainedHiddenMarkovModel(hex_.create_hmm1())
+    cmodel = ConstrainedGraphicalModel(hex_.create_hmm1())
     r4 = cmodel.representation("toulbar2", stop=4)
     r5 = cmodel.representation("toulbar2", stop=5)
     assert (r4.start, r4.stop, r5.stop) == (0, 4, 5)
@@ -195,9 +186,7 @@ def test_hmm_structure_params_start_and_stop():
 
 @skipif_toulbar2_not_available
 def test_write_uai_file_writes_the_uai_text(tmp_path):
-    repn = ConstrainedDiscreteMarkovNetwork(mex.ABC_conin().pgm).representation(
-        "toulbar2"
-    )
+    repn = ConstrainedGraphicalModel(mex.ABC_conin().pgm).representation("toulbar2")
     filename = str(tmp_path / "out.uai")
     repn.create_model(verbose=-1, write_uai_file=filename)
     with open(filename) as f:
@@ -247,9 +236,7 @@ def _recording_constraint(seen):
 @skipif_toulbar2_not_available
 def test_constraint_data_mn():
     seen = []
-    cmodel = ConstrainedDiscreteMarkovNetwork(
-        mex.ABC_conin().pgm, _recording_constraint(seen)
-    )
+    cmodel = ConstrainedGraphicalModel(mex.ABC_conin().pgm, _recording_constraint(seen))
     cmodel.representation("toulbar2").create_model(evidence={"B": 0})
     assert seen == [munch.Munch(variables=None, evidence={"B": 0})]
 
@@ -257,7 +244,7 @@ def test_constraint_data_mn():
 @skipif_toulbar2_not_available
 def test_constraint_data_dbn():
     seen = []
-    cmodel = ConstrainedDynamicDiscreteBayesianNetwork(
+    cmodel = ConstrainedGraphicalModel(
         dex.weather_conin().pgm, _recording_constraint(seen)
     )
     cmodel.representation("toulbar2", start=0, stop=2).create_model()
@@ -270,7 +257,7 @@ def test_constraint_data_dbn():
 def test_constraint_data_hmm():
     seen = []
     hmm = hex_.create_hmm1()
-    cmodel = ConstrainedHiddenMarkovModel(hmm, _recording_constraint(seen))
+    cmodel = ConstrainedGraphicalModel(hmm, _recording_constraint(seen))
     evidence = {("E", 0): "o0", ("E", 1): "o1"}
     cmodel.representation("toulbar2", stop=1).create_model(evidence=evidence)
     assert seen == [
@@ -308,6 +295,48 @@ def test_verbose_option_is_accepted(example, kwds):
     expected = map_query(pgm, method="toulbar2", **kwds).solution.states
     results = map_query(pgm, method="toulbar2", verbose=-1, **kwds)
     assert results.solution.states == expected
+
+
+@skipif_toulbar2_not_available
+def test_hmm_create_model_takes_the_observations():
+    observed = ["o0", "o0", "o1", "o0", "o0"]
+    repn = hex_.create_hmm1().representation("toulbar2", stop=4)
+    dbn_evidence = {("E", t): o for t, o in enumerate(observed)}
+    expected = solve_toulbar2_map_query_model(repn.create_model(evidence=dbn_evidence))
+    M = repn.create_model(evidence=observed)
+    assert M.V_evidence == set(dbn_evidence)
+    assert solve_toulbar2_map_query_model(M).solutions == expected.solutions
+    with pytest.raises(InvalidInputError, match="unrolled until stop=4"):
+        repn.create_model(evidence=observed[:4])
+
+
+@skipif_toulbar2_not_available
+def test_add_function_with_infinite_cost_is_a_hard_constraint():
+    # As toulbar2_constraint_fn documents: a large finite cost can be cheaper
+    # than the model's (scaled) costs, so only float("inf") is sure to forbid.
+    mn = mex.ABC_conin().pgm
+    assert map_query(mn, method="toulbar2").solution.states["A"] == 2
+
+    @toulbar2_constraint_fn()
+    def a_is_not_2(model, data):
+        a = model.V["A"]
+        forbidden = model.V("A", 2)[1]
+        costs = [
+            float("inf") if i == forbidden else 0 for i in range(len(model.states[a]))
+        ]
+        model.AddFunction([a], costs)
+
+    constrained = ConstrainedGraphicalModel(mn, constraints=[a_is_not_2])
+    states = map_query(constrained, method="toulbar2").solution.states
+    # The best assignment with A = 0 or A = 1.
+    a, best = max(
+        (
+            (a, map_query(mn, method="toulbar2", evidence={"A": a}).solution)
+            for a in (0, 1)
+        ),
+        key=lambda pair: pair[1].log_potential,
+    )
+    assert states == {"A": a, **best.states}
 
 
 @skipif_toulbar2_not_available

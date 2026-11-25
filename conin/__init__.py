@@ -28,12 +28,7 @@ from .constraints import (
     smoek_constraint_fn,
     toulbar2_constraint_fn,
 )
-from .constrained_models import (
-    ConstrainedDiscreteBayesianNetwork,
-    ConstrainedDiscreteMarkovNetwork,
-    ConstrainedDynamicDiscreteBayesianNetwork,
-    ConstrainedHiddenMarkovModel,
-)
+from .constrained_models import ConstrainedGraphicalModel
 from .io import load_model, save_model
 from .algorithms.feasibility import is_feasible
 from .algorithms.scoring import log_potential, log_probability, log_probability_query
@@ -49,10 +44,7 @@ __all__ = [
     "DynamicDiscreteBayesianNetwork",
     "HiddenMarkovModel",
     # Constrained models
-    "ConstrainedDiscreteMarkovNetwork",
-    "ConstrainedDiscreteBayesianNetwork",
-    "ConstrainedDynamicDiscreteBayesianNetwork",
-    "ConstrainedHiddenMarkovModel",
+    "ConstrainedGraphicalModel",
     # Constraints
     "Constraint",
     "mvr_constraint_fn",

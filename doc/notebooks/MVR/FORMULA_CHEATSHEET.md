@@ -5,10 +5,10 @@ A formula string is parsed into calls to `conin.constraints.mvr.primitives` and
 shorthand for calls you could write by hand. Worked demo: [`formula.ipynb`](formula.ipynb).
 
 ```python
-from conin.constraints.mvr import build_mvr, build_mvr_functor
+from conin.constraints.mvr import build_mvr, mvr_constraints
 
-build_mvr(hmm, "reach B before A[2]")     # -> list[BaseMVR],       for ConstrainedHiddenMarkovModel(hmm, constraints)
-build_mvr_functor("reach B before A[2]")  # -> list[MVRConstraint], for ConstrainedHiddenMarkovModel(hmm, constraints)
+build_mvr(hmm, "reach B before A[2]")     # -> list[BaseMVR],       for ConstrainedGraphicalModel(hmm, constraints)
+mvr_constraints("reach B before A[2]")    # -> list[MVRConstraint], for ConstrainedGraphicalModel(hmm, constraints)
 ```
 
 Both return a **list**, one entry per top-level `and`. Downstream algorithms take
@@ -16,12 +16,12 @@ a list of active constraints, and that is cheaper than building one big combined
 constraint. The two differ only in when the MVR is built:
 
  - `build_mvr` takes an `hmm` and builds the MVRs for that HMM right away.
- - `build_mvr_functor` takes no `hmm`. It builds `MVRConstraint` factories, each of
-   which constructs its MVR later, when a `ConstrainedHiddenMarkovModel` builds its
+ - `mvr_constraints` takes no `hmm`. It builds `MVRConstraint` factories, each of
+   which constructs its MVR later, when a `ConstrainedGraphicalModel` builds its
    `"mvr"` representation (`chmm.representation("mvr")`).
 
 Each result is named after its own formula — `"never A and reach B[0]"` — unless
-you pass `name=`. That name is what `sat_time_torch_mvr_chmm` and `sat_prob_torch_mvr_chmm` accept as
+you pass `name=`. That name is what `mvr_satisfaction_time` and `mvr_satisfaction_probability` accept as
 `target="..."`.
 
 ## 1. Atoms

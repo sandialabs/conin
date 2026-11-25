@@ -6,10 +6,7 @@ import pytest
 
 import conin.examples.hidden_markov_model as hex_
 from conin.algorithms.feasibility import is_feasible
-from conin.constrained_models import (
-    ConstrainedDiscreteMarkovNetwork,
-    ConstrainedHiddenMarkovModel,
-)
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.constraints import OracleConstraint, pyomo_constraint_fn
 from conin.examples.markov_network import ABC_conin
 from conin.exceptions import InvalidInputError
@@ -36,14 +33,12 @@ def test_bare_hmm_draws_like_generate_hidden():
 def test_unconstrained_cmodel_draws_like_generate_hidden():
     hmm = hex_.create_hmm1()
     expected = generate_hidden(hmm, 6, rng=5)
-    assert (
-        rejection_sample_hidden(ConstrainedHiddenMarkovModel(hmm), 6, rng=5) == expected
-    )
+    assert rejection_sample_hidden(ConstrainedGraphicalModel(hmm), 6, rng=5) == expected
 
 
 @pytest.mark.parametrize("seed", [0, 1, 2])
 def test_samples_are_feasible(seed):
-    chmm = ConstrainedHiddenMarkovModel(hex_.create_hmm1(), _at_least_one("h0"))
+    chmm = ConstrainedGraphicalModel(hex_.create_hmm1(), _at_least_one("h0"))
     hidden = rejection_sample_hidden(chmm, 4, rng=seed)
     assert len(hidden) == 4
     assert set(hidden) <= {"h0", "h1"}
@@ -64,7 +59,7 @@ def test_zero_time_steps_gives_an_empty_sequence():
 
 def test_infeasible_constraints_raise_after_max_failures():
     impossible = OracleConstraint(func=lambda states: False, name="never")
-    chmm = ConstrainedHiddenMarkovModel(hex_.create_hmm1(), impossible)
+    chmm = ConstrainedGraphicalModel(hex_.create_hmm1(), impossible)
     with pytest.raises(RuntimeError, match="6 samples were rejected"):
         rejection_sample_hidden(chmm, 3, max_failures=5)
 
@@ -87,7 +82,7 @@ def test_every_drawn_sample_is_checked(monkeypatch, max_failures):
         checked.append(list(states))
         return False
 
-    chmm = ConstrainedHiddenMarkovModel(
+    chmm = ConstrainedGraphicalModel(
         hex_.create_hmm1(), OracleConstraint(func=never, name="never")
     )
     with pytest.raises(RuntimeError):
@@ -104,7 +99,7 @@ def test_rejects_models_that_are_not_hmms(hmm):
 
 def test_rejects_a_constrained_model_of_another_type():
     with pytest.raises(TypeError, match="expects a HiddenMarkovModel"):
-        rejection_sample_hidden(ConstrainedDiscreteMarkovNetwork(ABC_conin().pgm), 3)
+        rejection_sample_hidden(ConstrainedGraphicalModel(ABC_conin().pgm), 3)
 
 
 def test_rejects_constraints_without_an_oracle_representation():
@@ -112,12 +107,12 @@ def test_rejects_constraints_without_an_oracle_representation():
     def noop(M, D):
         return M
 
-    chmm = ConstrainedHiddenMarkovModel(hex_.create_hmm1(), noop)
+    chmm = ConstrainedGraphicalModel(hex_.create_hmm1(), noop)
     with pytest.raises(InvalidInputError, match="'oracle'"):
         rejection_sample_hidden(chmm, 3)
 
 
 def test_rejects_negative_time_steps():
-    chmm = ConstrainedHiddenMarkovModel(hex_.create_hmm1(), _at_least_one("h0"))
+    chmm = ConstrainedGraphicalModel(hex_.create_hmm1(), _at_least_one("h0"))
     with pytest.raises(InvalidInputError, match="non-negative"):
         rejection_sample_hidden(chmm, -1)

@@ -27,7 +27,7 @@ from conin.graphical_models import (
 )
 from conin.algorithms.feasibility import is_feasible
 from conin.constrained_models import ConstrainedGraphicalModel
-from conin.constrained_models.normalise import pgmpy_hint
+from conin.constrained_models.base import pgmpy_hint
 from conin.graphical_models.assignments import (
     check_total_assignment,
     dbn_horizon,

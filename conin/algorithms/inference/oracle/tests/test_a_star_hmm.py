@@ -6,7 +6,7 @@ import pytest
 
 import conin.examples.hidden_markov_model as tc
 from conin.algorithms.feasibility import is_feasible
-from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.constraints import OracleConstraint
 from conin.constraints.oracle.library import (
     occurs_at_least_once_in_time_frame_constraint,
@@ -75,7 +75,7 @@ def test_pruning_rejects_the_extended_prefix_not_its_parent():
         func=lambda states: "h0" not in states.values(),
         partial_func=lambda T, states: "h0" not in states.values(),
     )
-    cmodel = ConstrainedHiddenMarkovModel(tc.create_hmm1(), counter.constraint)
+    cmodel = ConstrainedGraphicalModel(tc.create_hmm1(), counter.constraint)
     observed = ["o0"] * 6
     results = a_star(observed=observed, hmm=cmodel)
     assert results.termination_condition == "ok"
@@ -166,7 +166,7 @@ def test_no_solution_is_an_error_for_any_num_solutions(num_solutions):
 def test_fewer_solutions_than_asked_for_are_returned():
     hmm = tc.create_hmm1()
     never_h1 = OracleConstraint(func=lambda states: "h1" not in states.values())
-    cmodel = ConstrainedHiddenMarkovModel(hmm, never_h1)
+    cmodel = ConstrainedGraphicalModel(hmm, never_h1)
     results = a_star(observed=["o0"] * 3, hmm=cmodel, num_solutions=3)
     assert [s.states for s in results.solutions] == [["h0"] * 3]
     assert results.solution == results.solutions[0]
@@ -213,7 +213,7 @@ def test_time_frame_constraints_match_brute_force(constraint):
     # these two library constraints rejected completable prefixes (a prefix
     # ending in val, resp. a prefix without val yet), so the fixed pruning
     # would cut the optimum.
-    cmodel = ConstrainedHiddenMarkovModel(tc.create_hmm1(), constraint)
+    cmodel = ConstrainedGraphicalModel(tc.create_hmm1(), constraint)
     observed = ["o0", "o1", "o0", "o0", "o1", "o0"]
     results = a_star(observed=observed, hmm=cmodel, num_solutions=2)
     expected = _brute_force(cmodel, observed, 2)
@@ -239,7 +239,7 @@ def test_a_star_bare_and_empty_constrained_models_agree():
     bare = a_star(observed=observed, hmm=tc.create_hmm1(), num_solutions=3)
     empty = a_star(
         observed=observed,
-        hmm=ConstrainedHiddenMarkovModel(tc.create_hmm1()),
+        hmm=ConstrainedGraphicalModel(tc.create_hmm1()),
         num_solutions=3,
     )
     assert [s.states for s in bare.solutions] == [s.states for s in empty.solutions]

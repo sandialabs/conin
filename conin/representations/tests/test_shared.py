@@ -16,10 +16,7 @@ import pytest
 import conin.examples.dynamic_bayesian_network as dex
 import conin.examples.hidden_markov_model as hex_
 from conin.algorithms.feasibility import is_feasible
-from conin.constrained_models import (
-    ConstrainedDynamicDiscreteBayesianNetwork,
-    ConstrainedHiddenMarkovModel,
-)
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.constraints import (
     FactorOracleConstraint,
     OracleConstraint,
@@ -242,7 +239,7 @@ def _structure_fields_of(repn):
 @pytest.mark.parametrize("kind", DBN_KINDS)
 @pytest.mark.parametrize("stop", [None, 0, 3])
 def test_dbn_representations_share_the_time_fields(kind, stop):
-    cmodel = ConstrainedDynamicDiscreteBayesianNetwork(dex.weather_conin().pgm)
+    cmodel = ConstrainedGraphicalModel(dex.weather_conin().pgm)
     params = {} if stop is None else dict(stop=stop)
     repn = cmodel.representation(kind, **params)
     expected_stop = DEFAULT_DBN_STOP if stop is None else stop
@@ -254,7 +251,7 @@ def test_dbn_representations_share_the_time_fields(kind, stop):
 @pytest.mark.parametrize("kind", DBN_KINDS)
 def test_hmm_representations_share_the_time_fields(kind):
     hmm = hex_.create_hmm1()
-    cmodel = ConstrainedHiddenMarkovModel(hmm)
+    cmodel = ConstrainedGraphicalModel(hmm)
     with pytest.raises(InvalidInputError, match="needs a stop time"):
         cmodel.representation(kind)
     repn = cmodel.representation(kind, stop=2)
@@ -270,7 +267,7 @@ def test_hmm_is_feasible_and_oracle_see_the_same_time_fields():
         return True
 
     hmm = hex_.create_hmm1()
-    cmodel = ConstrainedHiddenMarkovModel(hmm, OracleConstraint(func=record))
+    cmodel = ConstrainedGraphicalModel(hmm, OracleConstraint(func=record))
     is_feasible(cmodel, ["h0", "h1", "h0"])
     cmodel.representation("oracle").is_feasible([0, 1, 0])
     assert seen == [_hmm_fields(hmm, 2)] * 2
@@ -284,7 +281,7 @@ def test_dbn_is_feasible_sees_the_dbn_time_fields():
         return [("A", 0)]
 
     dbn = dex.simple1_DDBN_conin().pgm
-    cmodel = ConstrainedDynamicDiscreteBayesianNetwork(
+    cmodel = ConstrainedGraphicalModel(
         dbn, FactorOracleConstraint(func=lambda s: True, nodes=scope)
     )
     assignment = {(n, t): 0 for n in ("A", "B") for t in range(3)}
@@ -295,7 +292,7 @@ def test_dbn_is_feasible_sees_the_dbn_time_fields():
 def test_network_flow_data_has_the_hmm_time_fields_and_keeps_app_data():
     hmm = hex_.create_hmm1()
     app = munch.Munch(limit=3, hmm="replaced")
-    cmodel = ConstrainedHiddenMarkovModel(hmm, data=app)
+    cmodel = ConstrainedGraphicalModel(hmm, data=app)
     _, data = cmodel.representation("pyomo_network_flow").create_model(
         observed=["o0", "o1", "o0"]
     )
@@ -312,7 +309,7 @@ def test_network_flow_data_accepts_non_dict_app_data():
     class AppData:
         limit = 3
 
-    cmodel = ConstrainedHiddenMarkovModel(hex_.create_hmm1(), data=AppData())
+    cmodel = ConstrainedGraphicalModel(hex_.create_hmm1(), data=AppData())
     _, data = cmodel.representation("pyomo_network_flow").create_model(
         observed=["o0", "o1"]
     )

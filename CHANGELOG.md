@@ -57,6 +57,8 @@ Migration table (old -> new)
   conin.dynamic_bayesian_network, conin.hidden_markov_model (models)
                                     -> conin.graphical_models
   Constrained* classes              -> conin.constrained_models
+                                       .ConstrainedGraphicalModel (one class
+                                       for every model type)
   */examples.py                     -> conin.examples.{markov_network,
                                        bayesian_network,
                                        dynamic_bayesian_network,
@@ -77,13 +79,12 @@ Migration table (old -> new)
   mvr_formula                       -> conin.constraints.mvr (base, primitives,
                                        operators, formula)
   CHMM, Oracle_CHMM, MVR_CHMM, PyomoAlgebraic_CHMM, Algebraic_CHMM,
-  initialize_chmm(), chmm.chmm      -> ConstrainedHiddenMarkovModel(hmm,
+  initialize_chmm(), chmm.chmm      -> ConstrainedGraphicalModel(hmm,
                                        constraints, data=...) and
                                        cmodel.representation(kind)
   chmm.chmm.constraints (MVRs)      -> cmodel.representation("mvr").mvrs
   HMM_MatVecRepn, hmm.repn, hmm.initialize(), initialize=True
-                                    -> ConstrainedHiddenMarkovModel(hmm)
-                                       .representation("matvec")
+                                    -> hmm.representation("matvec")
   hmm.generate_hidden(T) etc.       -> conin.algorithms.sampling.unconstrained
                                        .generate_hidden(hmm, T) etc.
   chmm.generate_hidden(T)           -> conin.algorithms.sampling.oracle
@@ -99,18 +100,24 @@ Migration table (old -> new)
   a_star                            -> conin.algorithms.inference.oracle.a_star
   recursive_a_star(hmm_app=...)     -> conin.algorithms.inference.recursive
                                        .recursive_a_star(hmm=...)
-  HMMApplication                    -> ConstrainedHiddenMarkovModel with
+  HMMApplication                    -> ConstrainedGraphicalModel with
                                        RecursiveConstraint or data=...
   supervised_learning, mcem, add_unknowns, convert_to_simulations
                                     -> conin.algorithms.learning
   inference.viterbi_mvr, inference.marginal_map_mvr
                                     -> conin.algorithms.inference.mvr
+                                       (mvr_viterbi, mvr_marginal_map)
   other_queries.sat_prob_mvr, other_queries.sat_time_mvr
                                     -> conin.algorithms.other_queries.mvr
+                                       (mvr_satisfaction_probability,
+                                       mvr_satisfaction_time)
   learning.baum_welch_mvr, learning.generalized_em_mvr
                                     -> conin.algorithms.learning.mvr
+                                       (mvr_baum_welch, mvr_generalized_em,
+                                       mvr_forward_backward)
   sampling.ffbs_mvr, sampling.stopped_sampling_mvr
                                     -> conin.algorithms.sampling.mvr
+                                       (mvr_sample, mvr_stopped_sample)
   hidden_markov_model lp_inference/ip_inference
                                     -> conin.algorithms.inference.pyomo
   inference_pyomo_map_query_{MN,BN,DDBN,HMM}(pgm=m, ...)
@@ -255,11 +262,19 @@ Models
 
 Constrained models
 
-- Constrained models are immutable and share one constructor,
-  Constrained*(model, constraints=(), *, data=None): no hmm=/pgm= keywords, no
-  constraints setters, no add_constraint, and .constraints is a tuple. Use
-  with_constraints/with_model to derive new ones, and ensure(model) to wrap a
-  bare model.
+- One class, ConstrainedGraphicalModel(model, constraints=(), *, data=None),
+  wraps every model type; ConstrainedDiscreteMarkovNetwork,
+  ConstrainedDiscreteBayesianNetwork,
+  ConstrainedDynamicDiscreteBayesianNetwork and ConstrainedHiddenMarkovModel
+  are removed (no aliases). Its model_type is the model class the
+  representation builders are registered under (the nearest one in
+  type(model).__mro__), and code that depends on the model type checks
+  cmodel.model. A model class without registered builders raises TypeError.
+- Constrained models are immutable: no hmm=/pgm= keywords, no constraints
+  setters, no add_constraint, and .constraints is a tuple. Use
+  with_constraints/with_model to derive new ones, and
+  ConstrainedGraphicalModel.ensure(model) (ensure(model, HiddenMarkovModel)
+  to require an HMM) to wrap a bare model.
 - .model replaces .pgm and .hidden_markov_model (no aliases).
 - Constraints are immutable too, so a constrained model cannot be changed
   through its constraints: assigning or deleting an attribute of any
@@ -296,8 +311,9 @@ Constrained models
   models raise TypeError). is_feasible checks oracle, factor-oracle,
   smoek, recursive and MVR constraints (pyomo/toulbar2 raise
   NotImplementedError); for an HMM it accepts a dict keyed by time.
-- ConstrainedDynamicDiscreteBayesianNetwork.nodes is a property.
-- ConstrainedHiddenMarkovModel.generate_hidden/generate_observed/
+- cmodel.nodes is a property, and cmodel.states_of(node) delegates to the
+  model.
+- The constrained HMM's generate_hidden/generate_observed/
   generate_observed_from_hidden are removed (see Sampling).
 
 Constraints
@@ -331,7 +347,10 @@ Representations (new)
   "pyomo_network_flow", "toulbar2", "variable_elimination", "matvec", "oracle",
   "recursive", "mvr". Every representation() call builds a new object;
   structure parameters (start, stop, ...) are build arguments and per-query
-  inputs go to create_model().
+  inputs go to create_model(). The create_model(evidence=...) of the "pyomo"
+  and "toulbar2" representations of an HMM takes the evidence of the
+  unrolled DBN ({("E", t): label}) or the observations as a list, as
+  map_query does.
 - representation("oracle") is an OracleHMMRepresentation (model, hmm,
   constraints), representation("mvr") an MVRHMMRepresentation (model, mvrs:
   deep copies of prebuilt MVRs, aligned to the HMM) and
@@ -353,12 +372,7 @@ Representations (new)
 - Unconstrained models have representation(kind, **structure_params) too:
   model.representation(kind) is the representation of the model without
   constraints, e.g. hmm.representation("matvec") instead of
-  ConstrainedHiddenMarkovModel(hmm).representation("matvec").
-- Each Constrained* class registers itself, when it is defined, as the
-  constrained class of its model_type (a subclass of a model class uses its
-  base class's). map_query and the other queries wrap bare models with this
-  registry; a second constrained class for the same model_type raises
-  TypeError.
+  ConstrainedGraphicalModel(hmm).representation("matvec").
 
 Inference
 
@@ -391,13 +405,13 @@ Inference
   mvr_viterbi with sparse dict observations infers past the last
   observation. log_probability_query accepts stop == start (one time step),
   as map_query does (it raised InvalidInputError).
-- viterbi accepts an unconstrained ConstrainedHiddenMarkovModel; viterbi and
+- viterbi accepts a constrained HMM without constraints; viterbi and
   a_star no longer accept an HMM_MatVecRepn. viterbi/a_star on an MN, BN or
   DBN raise InvalidInputError (was TypeError).
 - integer_program: ip_formulation is understood for every model type;
   network flow refuses
   unsupported evidence with InvalidInputError (it returned None) and uses
-  lp_inference for an unconstrained ConstrainedHiddenMarkovModel.
+  lp_inference for a constrained HMM without constraints.
 - toulbar2: works for every model type with verbose=; without pytoulbar2 it
   raises ImportError for every model type, as the other backends do (it
   returned a result with termination_condition "pytoulbar2 not available"); a
@@ -419,10 +433,15 @@ Inference
   InvalidInputError. Only a proof of infeasibility gives this result: other
   solver failures (e.g. a time limit) still raise RuntimeError, and
   integer_program with solver="or_topas" still raises for an infeasible
-  model. viterbi_torch_mvr_chmm and the network-flow representation's
-  create_model still raise, now InfeasibleQueryError
+  model. The function conin.algorithms.inference.mvr.mvr_viterbi and the
+  network-flow representation's create_model still raise, now InfeasibleQueryError
   (conin.exceptions), a subclass of InvalidInputError.
-- DBN queries with stop=None unroll over 0..1 for every method.
+- DBN queries with stop=None unroll over 0..t for every method, where t is
+  the latest time in the evidence and the variables of the query, and at
+  least 1, as log_probability_query does with its assignment and evidence
+  (map_query unrolled over 0..1, and evidence at a later time raised
+  KeyError, or InvalidInputError "Unknown evidence variable" for
+  variable_elimination).
 - variable_elimination: on a constrained Markov network it keeps the user
   evidence and no longer forces a scope node to 1; an unsupported constraint family raises
   InvalidInputError (was TypeError).
@@ -440,7 +459,10 @@ Inference
   evidence (it raised AttributeError).
 - Every method raises TypeError for an option it does not take, so a
   misspelt option is not silently ignored: variable_elimination and viterbi
-  ignored unknown options (e.g. solver=). variable_elimination also accepts
+  ignored unknown options (e.g. solver=). The message is the same for every
+  method ("Unexpected options for map_query(method=...): ..."); for
+  integer_program, toulbar2, a_star and mvr_viterbi it was Python's message,
+  which named an internal function. variable_elimination also accepts
   solution_with_fixed (a synonym of solution_with_evidence, as for
   integer_program and toulbar2; it was ignored).
 - lp_inference and ip_inference (the network-flow integer program) pass
@@ -514,9 +536,13 @@ Sampling and learning
 - mcem(app=...) takes a constrained (or bare) HMM, samples from the
   re-estimated HMM each iteration and trains on the samples it scores (its
   results change), and no longer writes the HMM back to app.
-- The torch MVR algorithms keep their names and signatures and take a
-  ConstrainedHiddenMarkovModel with MVR constraints (or a bare HMM); other
-  constraint families raise InvalidInputError.
+- The torch MVR algorithms take a constrained HMM with MVR constraints (or a
+  bare HMM); other constraint families raise InvalidInputError. They are
+  named mvr_*, without the backend and the model type: mvr_viterbi,
+  mvr_marginal_map, mvr_satisfaction_probability, mvr_satisfaction_time,
+  mvr_sample (FFBS), mvr_stopped_sample, mvr_forward_backward,
+  mvr_baum_welch and mvr_generalized_em; mvr_constraints(formula) builds the
+  MVR constraints of a formula for ConstrainedGraphicalModel.
 
 I/O and conversion
 
@@ -568,6 +594,10 @@ I/O and conversion
   "unknown format" error for .bif). NotImplementedError for unsupported CFN
   features is unchanged. load_model now passes its options to the UAI and
   JSON readers too, so an option they do not take raises TypeError.
+- load_cfn reads the knapsackv functions that toulbar2 1.4.0.3 and later
+  write, with deltacosts, lb and assigneddeltas parameters, when those are
+  zero (a hard constraint); nonzero values raise NotImplementedError. Before,
+  any of these parameters raised NotImplementedError.
 
 Errors
 
@@ -739,6 +769,12 @@ Known issues
 
 - DBNs and HMMs can only be unrolled from start=0 (start is kept so that a
   later start can be supported without another API change).
+- toulbar2 constraints are hard only if every forbidden assignment costs at
+  least toulbar2's upper bound: costs that are merely large are cheaper than
+  the model's costs, which CONIN scales up, and the solution may violate
+  them. Give forbidden assignments the cost float("inf") in AddFunction. The
+  violation cost of a global cost function (AddGlobalFunction) can't be made
+  hard this way.
 
 -------------------------------------------------------------------------------
 Conin 1.1.1

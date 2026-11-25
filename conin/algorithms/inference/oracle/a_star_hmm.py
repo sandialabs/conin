@@ -1,4 +1,5 @@
-from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedGraphicalModel
+from conin.graphical_models import HiddenMarkovModel
 from conin.graphical_models.assignments import as_sequence
 from conin.algorithms.inference.hmm_a_star import hmm_a_star
 from conin.algorithms.inference.results import (
@@ -74,7 +75,7 @@ def a_star(
     observed : list
         Observed labels: a non-empty list or tuple (or a dict keyed by
         ``0..T-1``); anything else raises ``InvalidInputError``.
-    hmm : HiddenMarkovModel or ConstrainedHiddenMarkovModel
+    hmm : HiddenMarkovModel or ConstrainedGraphicalModel (of an HMM)
         The model. Constraints must have an ``"oracle"`` representation (no
         constraints or ``"oracle"`` constraints); others raise
         ``InvalidInputError``.
@@ -92,7 +93,7 @@ def a_star(
         sequence, or ``max_iterations``/``max_time`` stops the search first),
         ``solution`` is ``None`` and ``solutions`` holds what was found.
     """
-    cmodel = ConstrainedHiddenMarkovModel.ensure(hmm)
+    cmodel = ConstrainedGraphicalModel.ensure(hmm, HiddenMarkovModel)
     # Raises InvalidInputError for constraint families without an "oracle"
     # representation (anything other than no constraints/"oracle").
     return _a_star(
@@ -102,7 +103,15 @@ def a_star(
     )
 
 
-def _a_star(oracle, *, observed, **kwargs):
+def _a_star(
+    oracle,
+    *,
+    observed,
+    num_solutions=1,
+    max_iterations=None,
+    max_time=None,
+    debug=False,
+):
     """:func:`a_star` on an ``"oracle"`` representation (external labels)."""
     matvec = oracle.hmm
     hmm = oracle.model
@@ -110,7 +119,15 @@ def _a_star(oracle, *, observed, **kwargs):
         oracle = None
 
     observed_ = [matvec.observable_to_internal[o] for o in observed]
-    ans_ = a_star_(observed=observed_, oracle=oracle, hmm=matvec, **kwargs)
+    ans_ = a_star_(
+        observed=observed_,
+        oracle=oracle,
+        hmm=matvec,
+        num_solutions=num_solutions,
+        max_iterations=max_iterations,
+        max_time=max_time,
+        debug=debug,
+    )
 
     # Convert internal indices back to external labels
     solutions = [

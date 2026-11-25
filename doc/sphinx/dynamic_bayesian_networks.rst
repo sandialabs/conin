@@ -69,10 +69,32 @@ The ``simple1_DDBN_conin`` example introduces two dynamic nodes:
        t=t,
    )
 
+Queries
+-------
+
+A query on a dynamic Bayesian network is answered on the network unrolled over
+the time steps ``0..stop``. Without ``stop``, the last time step is the latest
+one in the evidence (and in the ``variables`` of a partial MAP query), and at
+least ``1``:
+
+.. testcode::
+
+   from conin import map_query
+   from conin.examples.dynamic_bayesian_network import simple1_DDBN_conin
+
+   dbn = simple1_DDBN_conin().pgm
+   evidence = {("B", t): 0 for t in range(4)}
+   results = map_query(dbn, method="variable_elimination", evidence=evidence)
+   print([results.solution.states["A", t] for t in range(4)])
+
+.. testoutput::
+
+   [0, 1, 0, 1]
+
 Constrained dynamic Bayesian networks
 -------------------------------------
 
-``ConstrainedDynamicDiscreteBayesianNetwork`` wraps a base dynamic Bayesian
+``ConstrainedGraphicalModel`` wraps a base dynamic Bayesian
 network together with a list of constraints. The examples in
 ``conin.examples.dynamic_bayesian_network`` use the same decorators as the
 other model families.
@@ -92,7 +114,7 @@ to stay fixed across the first two time steps:
    import pyomo.environ as pyo
    from conin import (
        pyomo_constraint_fn,
-       ConstrainedDynamicDiscreteBayesianNetwork,
+       ConstrainedGraphicalModel,
    )
    from conin.examples.dynamic_bayesian_network import simple1_DDBN_conin
 
@@ -104,7 +126,7 @@ to stay fixed across the first two time steps:
        model.c.add(model.V("A", 0, 0) == model.V("A", 1, 0))
        model.c.add(model.V("B", 0, 0) == model.V("B", 1, 0))
 
-   constrained = ConstrainedDynamicDiscreteBayesianNetwork(
+   constrained = ConstrainedGraphicalModel(
        base,
        constraints=constraints,
    )
@@ -119,7 +141,7 @@ Toulbar2:
 
    from conin import (
        toulbar2_constraint_fn,
-       ConstrainedDynamicDiscreteBayesianNetwork,
+       ConstrainedGraphicalModel,
    )
    from conin.examples.dynamic_bayesian_network import simple1_DDBN_conin
 
@@ -138,7 +160,7 @@ Toulbar2:
            0,
        )
 
-   constrained = ConstrainedDynamicDiscreteBayesianNetwork(
+   constrained = ConstrainedGraphicalModel(
        base,
        constraints=constraints,
    )
@@ -155,7 +177,7 @@ for every backend (and for ``is_feasible``):
 
    from conin import (
        oracle_constraint_fn,
-       ConstrainedDynamicDiscreteBayesianNetwork,
+       ConstrainedGraphicalModel,
    )
    from conin.examples.dynamic_bayesian_network import simple1_DDBN_conin
 
@@ -170,7 +192,7 @@ for every backend (and for ``is_feasible``):
    def constraints(states):
        return states["A", 0] == states["A", 1] and states["B", 0] == states["B", 1]
 
-   constrained = ConstrainedDynamicDiscreteBayesianNetwork(
+   constrained = ConstrainedGraphicalModel(
        base,
        constraints=constraints,
    )

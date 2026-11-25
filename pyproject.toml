@@ -47,7 +47,7 @@ test = [
     ]
 regex = ["greenery"]
 pgmpy = ["pgmpy"]
-toulbar2 = ["pytoulbar2"]
+toulbar2 = ["pytoulbar2!=1.4.0.2"]  # 1.4.0.2 x86_64 wheels need AVX-512
 torch = ["torch"]
 
 [tool.setuptools.packages.find]

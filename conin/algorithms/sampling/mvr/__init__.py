@@ -8,8 +8,8 @@ importing this package does not import torch.
 import importlib
 
 _EXPORTS = {
-    "ffbs_torch_mvr_chmm": ".ffbs",
-    "stopped_sampling_torch_mvr_chmm": ".stopped_sampling",
+    "mvr_sample": ".ffbs",
+    "mvr_stopped_sample": ".stopped_sampling",
 }
 
 __all__ = sorted(_EXPORTS)

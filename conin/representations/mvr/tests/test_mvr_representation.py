@@ -5,7 +5,7 @@ import pytest
 
 from conin import mvr_constraint_fn
 from conin.exceptions import InvalidInputError
-from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.graphical_models import HiddenMarkovModel
 from conin.constraints.mvr import HomMVR, InhomMVR, MVRConstraint, MVR_MatVecRepn
 from conin.representations.mvr import MVRHMMRepresentation
@@ -374,7 +374,7 @@ def test_mvr_representation_rejects_mismatched_hidden_states():
         InvalidInputError,
         match="Hidden states of constraint 0 do not match",
     ):
-        ConstrainedHiddenMarkovModel(hmm, mvr).representation("mvr")
+        ConstrainedGraphicalModel(hmm, mvr).representation("mvr")
 
 
 def test_mvr_representation_rejects_a_factory_that_returns_no_mvr():
@@ -385,7 +385,7 @@ def test_mvr_representation_rejects_a_factory_that_returns_no_mvr():
     bad = MVRConstraint(func=lambda hidden_markov_model: "not an MVR", name="bad")
 
     with pytest.raises(InvalidInputError, match="not an MVR object"):
-        ConstrainedHiddenMarkovModel(hmm, bad).representation("mvr")
+        ConstrainedGraphicalModel(hmm, bad).representation("mvr")
 
 
 def test_constrained_hmm_initializes_mvr_backend_from_functor():
@@ -407,7 +407,7 @@ def test_constrained_hmm_initializes_mvr_backend_from_functor():
             forbidden_state=data["forbidden_state"],
         )
 
-    chmm = ConstrainedHiddenMarkovModel(
+    chmm = ConstrainedGraphicalModel(
         hmm,
         constraints=forbid_state_constraint,
         data={"forbidden_state": forbidden_state},

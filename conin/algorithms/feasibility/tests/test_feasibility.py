@@ -4,12 +4,7 @@ import pytest
 
 from conin.algorithms.feasibility import is_feasible, partial_is_feasible
 from conin.algorithms.feasibility.checks import mvr_accepts
-from conin.constrained_models import (
-    ConstrainedDiscreteBayesianNetwork,
-    ConstrainedDiscreteMarkovNetwork,
-    ConstrainedDynamicDiscreteBayesianNetwork,
-    ConstrainedHiddenMarkovModel,
-)
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.constraints import (
     FactorOracleConstraint,
     OracleConstraint,
@@ -47,7 +42,7 @@ def test_mn_factor_oracle():
     mn = mn_examples.ABC_conin().pgm
     for nodes in [["A", "B"], ["A", "B", "C"]]:
         c = FactorOracleConstraint(func=lambda s: s["A"] != s["B"], nodes=nodes)
-        cmodel = ConstrainedDiscreteMarkovNetwork(mn, c)
+        cmodel = ConstrainedGraphicalModel(mn, c)
         assert is_feasible(cmodel, {"A": 0, "B": 1, "C": 0})
         assert not is_feasible(cmodel, {"A": 1, "B": 1, "C": 0})
 
@@ -55,9 +50,9 @@ def test_mn_factor_oracle():
 @pytest.mark.parametrize(
     "cls, pgm",
     [
-        (ConstrainedDiscreteMarkovNetwork, lambda: mn_examples.ABC_conin().pgm),
+        (ConstrainedGraphicalModel, lambda: mn_examples.ABC_conin().pgm),
         (
-            ConstrainedDiscreteBayesianNetwork,
+            ConstrainedGraphicalModel,
             lambda: bn_examples.cancer1_BN_conin().pgm,
         ),
     ],
@@ -79,7 +74,7 @@ def test_factor_oracle_sees_only_its_scope():
         return True
 
     mn = mn_examples.ABC_conin().pgm
-    cmodel = ConstrainedDiscreteMarkovNetwork(
+    cmodel = ConstrainedGraphicalModel(
         mn, FactorOracleConstraint(func=func, nodes=["C", "A"])
     )
     assert is_feasible(cmodel, {"A": 0, "B": 1, "C": 2})
@@ -88,7 +83,7 @@ def test_factor_oracle_sees_only_its_scope():
 
 def test_all_constraints_must_hold():
     mn = mn_examples.ABC_conin().pgm
-    cmodel = ConstrainedDiscreteMarkovNetwork(
+    cmodel = ConstrainedGraphicalModel(
         mn,
         [
             FactorOracleConstraint(func=lambda s: s["A"] == 0, nodes=["A"]),
@@ -127,7 +122,7 @@ def test_dbn_callable_scope_sees_data_T():
 
 def test_factor_oracle_scope_outside_assignment():
     mn = mn_examples.ABC_conin().pgm
-    cmodel = ConstrainedDiscreteMarkovNetwork(
+    cmodel = ConstrainedGraphicalModel(
         mn, FactorOracleConstraint(func=lambda s: True, nodes=["A", "D"])
     )
     with pytest.raises(InvalidInputError, match="not in the assignment"):
@@ -141,14 +136,14 @@ def test_pyomo_toulbar2_not_supported(decorator):
         pass
 
     pgm = bn_examples.cancer1_BN_conin().pgm
-    cmodel = ConstrainedDiscreteBayesianNetwork(pgm, c)
+    cmodel = ConstrainedGraphicalModel(pgm, c)
     a = {"Cancer": 1, "Dyspnoea": 0, "Pollution": 0, "Smoker": 1, "Xray": 1}
     with pytest.raises(NotImplementedError, match="optimization feasibility"):
         is_feasible(cmodel, a)
 
 
 def test_bad_assignment():
-    cmodel = ConstrainedDiscreteBayesianNetwork(bn_examples.cancer1_BN_conin().pgm)
+    cmodel = ConstrainedGraphicalModel(bn_examples.cancer1_BN_conin().pgm)
     with pytest.raises(InvalidInputError, match="missing"):
         is_feasible(cmodel, {"Cancer": 1})
 
@@ -206,7 +201,7 @@ def test_hmm_factor_oracle_on_observed_nodes():
         ),
         nodes=nodes,
     )
-    cmodel = ConstrainedHiddenMarkovModel(hmm_examples.create_hmm1(), c)
+    cmodel = ConstrainedGraphicalModel(hmm_examples.create_hmm1(), c)
     assert is_feasible(cmodel, ["h0", "h1"], ["o0", "o1"])
     assert not is_feasible(cmodel, ["h0", "h1"], ["o0", "o0"])
     with pytest.raises(InvalidInputError, match="not in the assignment"):
@@ -216,7 +211,7 @@ def test_hmm_factor_oracle_on_observed_nodes():
 def test_hmm_mvr():
     """is_feasible on a constrained HMM used to call MVRs with {t: h}."""
     hmm = hmm_examples.create_hmm1()
-    cmodel = ConstrainedHiddenMarkovModel(hmm, [mvr_forbid_state(hmm, ["h1"])])
+    cmodel = ConstrainedGraphicalModel(hmm, [mvr_forbid_state(hmm, ["h1"])])
     assert is_feasible(cmodel, ["h0"] * 5)
     assert not is_feasible(cmodel, ["h0", "h1", "h0"])
 
@@ -229,9 +224,7 @@ def test_hmm_mvr_constraint_factory_sees_data():
         seen.append(data)
         return mvr_visit_state(hmm, ["h1"])
 
-    cmodel = ConstrainedHiddenMarkovModel(
-        hmm_examples.create_hmm1(), visit, data={"x": 1}
-    )
+    cmodel = ConstrainedGraphicalModel(hmm_examples.create_hmm1(), visit, data={"x": 1})
     assert is_feasible(cmodel, ["h0", "h1"])
     assert not is_feasible(cmodel, ["h0", "h0"])
     assert seen == [{"x": 1}, {"x": 1}]
@@ -240,7 +233,7 @@ def test_hmm_mvr_constraint_factory_sees_data():
 def test_hmm_mvr_time_range():
     hmm = hmm_examples.create_hmm1()
     mvr = mvr_timerange(mvr_forbid_state(hmm, ["h1"]), [1, 2])
-    cmodel = ConstrainedHiddenMarkovModel(hmm, [mvr])
+    cmodel = ConstrainedGraphicalModel(hmm, [mvr])
     assert is_feasible(cmodel, ["h1", "h0", "h0", "h1"])
     assert not is_feasible(cmodel, ["h0", "h0", "h1", "h0"])
     with pytest.raises(InvalidInputError, match="exceeds"):
@@ -360,35 +353,26 @@ def test_hmm_partial_is_feasible():
 # ---------------------------------------------------------------------
 
 
-@pytest.mark.parametrize(
-    "cls",
-    [
-        ConstrainedDiscreteMarkovNetwork,
-        ConstrainedDiscreteBayesianNetwork,
-        ConstrainedDynamicDiscreteBayesianNetwork,
-        ConstrainedHiddenMarkovModel,
-    ],
-)
-def test_constrained_models_have_no_feasibility_methods(cls):
+def test_constrained_models_have_no_feasibility_methods():
     # The checks moved to conin.algorithms.feasibility.
-    assert not hasattr(cls, "is_feasible")
-    assert not hasattr(cls, "partial_is_feasible")
+    assert not hasattr(ConstrainedGraphicalModel, "is_feasible")
+    assert not hasattr(ConstrainedGraphicalModel, "partial_is_feasible")
 
 
 def test_is_feasible_needs_a_constrained_model():
-    with pytest.raises(TypeError, match="needs a constrained model"):
+    with pytest.raises(TypeError, match="needs a ConstrainedGraphicalModel"):
         is_feasible(mn_examples.ABC_conin().pgm, {"A": 0, "B": 0, "C": 0})
 
 
 def test_observed_is_only_for_hmms():
-    cmodel = ConstrainedDiscreteMarkovNetwork(mn_examples.ABC_conin().pgm)
+    cmodel = ConstrainedGraphicalModel(mn_examples.ABC_conin().pgm)
     with pytest.raises(InvalidInputError, match="only used for HMMs"):
         is_feasible(cmodel, {"A": 0, "B": 0, "C": 0}, ["o0"])
 
 
 def test_partial_is_feasible_is_for_constrained_hmms_only():
-    cmodel = ConstrainedDiscreteMarkovNetwork(mn_examples.ABC_conin().pgm)
+    cmodel = ConstrainedGraphicalModel(mn_examples.ABC_conin().pgm)
     with pytest.raises(
-        TypeError, match="only defined for a ConstrainedHiddenMarkovModel"
+        TypeError, match="only defined for a constrained HiddenMarkovModel"
     ):
         partial_is_feasible(cmodel, T=3, seq=[0])

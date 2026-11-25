@@ -255,7 +255,7 @@ def _rebuild_hmm(hmm, start, transition, emission):
 # ======================================================================
 
 
-def forward_backward_mvr_chmm(
+def mvr_forward_backward(
     model,
     observed,
     *,
@@ -271,7 +271,7 @@ def forward_backward_mvr_chmm(
 
     Parameters
     ----------
-    model : ConstrainedHiddenMarkovModel or HiddenMarkovModel
+    model : HiddenMarkovModel or ConstrainedGraphicalModel (of an HMM)
         Hidden Markov model with ``"mvr"`` constraints (a bare HMM has none).
         The MVRs come from its ``"mvr"`` representation.
     observed : list or dict
@@ -323,7 +323,7 @@ def forward_backward_mvr_chmm(
     return gamma, xi, loglik
 
 
-def baum_welch_mvr_chmm(
+def mvr_baum_welch(
     model,
     observations,
     *,
@@ -348,7 +348,7 @@ def baum_welch_mvr_chmm(
 
     Parameters
     ----------
-    model : ConstrainedHiddenMarkovModel or HiddenMarkovModel
+    model : HiddenMarkovModel or ConstrainedGraphicalModel (of an HMM)
         Hidden Markov model with ``"mvr"`` constraints (a bare HMM has none).
         It is not modified. The MVRs are built once, from its ``"mvr"``
         representation, and kept for every iteration: the re-estimated HMMs

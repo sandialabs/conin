@@ -6,11 +6,7 @@ import pytest
 
 from conin.algorithms.feasibility import is_feasible
 from conin.algorithms.scoring import log_potential, log_probability
-from conin.constrained_models import (
-    ConstrainedDiscreteBayesianNetwork,
-    ConstrainedDiscreteMarkovNetwork,
-    ConstrainedDynamicDiscreteBayesianNetwork,
-)
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.constraints import (
     FactorOracleConstraint,
     pyomo_constraint_fn,
@@ -347,20 +343,20 @@ def _never(states):
 
 
 def test_constrained_log_probability_is_refused():
-    cmodel = ConstrainedDiscreteBayesianNetwork(_bn())
+    cmodel = ConstrainedGraphicalModel(_bn())
     with pytest.raises(InvalidInputError, match="constrained models"):
         log_probability(cmodel, {"A": 0, "B": 1})
 
 
 def test_constrained_without_constraints():
-    cmodel = ConstrainedDiscreteBayesianNetwork(_bn())
+    cmodel = ConstrainedGraphicalModel(_bn())
     assert is_feasible(cmodel, {"A": 0, "B": 1})
     assert log_potential(cmodel, {"A": 0, "B": 1}) == pytest.approx(math.log(0.9 * 0.8))
 
 
 def test_constrained_mn_factor_oracle():
     mn = mn_examples.ABC_conin().pgm
-    cmodel = ConstrainedDiscreteMarkovNetwork(
+    cmodel = ConstrainedGraphicalModel(
         mn, FactorOracleConstraint(func=lambda s: s["A"] != s["B"], nodes=["A", "B"])
     )
     assert log_potential(cmodel, {"A": 2, "B": 1, "C": 1}) == pytest.approx(
@@ -395,7 +391,7 @@ def test_constrained_dbn_factor_oracle_sees_data_T():
         seen.append(data.T)
         return True
 
-    cmodel = ConstrainedDynamicDiscreteBayesianNetwork(
+    cmodel = ConstrainedGraphicalModel(
         _dbn(), FactorOracleConstraint(func=func, nodes=[("A", 0)])
     )
     a = {(n, t): 0 for n in "AB" for t in range(3)}
@@ -427,7 +423,7 @@ def test_constrained_checks_assignment_before_constraints():
         called.append(states)
         return True
 
-    cmodel = ConstrainedDiscreteBayesianNetwork(
+    cmodel = ConstrainedGraphicalModel(
         _bn(), FactorOracleConstraint(func=func, nodes=["A", "B"])
     )
     with pytest.raises(InvalidInputError, match="missing"):
@@ -441,7 +437,7 @@ def test_constrained_pyomo_toulbar2_not_supported(decorator):
     def c(model):
         pass
 
-    cmodel = ConstrainedDiscreteBayesianNetwork(_bn(), c)
+    cmodel = ConstrainedGraphicalModel(_bn(), c)
     with pytest.raises(NotImplementedError, match="not supported"):
         log_potential(cmodel, {"A": 0, "B": 1})
 

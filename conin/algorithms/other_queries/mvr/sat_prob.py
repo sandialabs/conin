@@ -55,7 +55,7 @@ def _branch_weights(ctx, target, b):
 # ======================================================================
 
 
-def sat_prob_torch_mvr_chmm(
+def mvr_satisfaction_probability(
     model,
     observed,
     *,
@@ -83,7 +83,7 @@ def sat_prob_torch_mvr_chmm(
 
     Parameters
     ----------
-    model : ConstrainedHiddenMarkovModel or HiddenMarkovModel
+    model : HiddenMarkovModel or ConstrainedGraphicalModel (of an HMM)
         Hidden Markov model with ``"mvr"`` constraints (a bare HMM has none).
         The MVRs come from its ``"mvr"`` representation.
     observed : list or dict
@@ -97,7 +97,7 @@ def sat_prob_torch_mvr_chmm(
         required for a map.
     dtype : torch.dtype, optional
         Floating dtype for torch tensors. Defaults to ``float64``, as in
-        ``sat_time_torch_mvr_chmm``.
+        ``mvr_satisfaction_time``.
     device : str or torch.device, optional
         Torch device.
     return_log_weights : bool, optional

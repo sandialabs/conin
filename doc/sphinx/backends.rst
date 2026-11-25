@@ -43,12 +43,12 @@ Optional extras are declared in ``pyproject.toml``:
 
 .. code-block:: shell
 
-   python -m pip install -e .[pgmpy]     # pgmpy conversion, BIF files
-   python -m pip install -e .[toulbar2]  # pytoulbar2
-   python -m pip install -e .[torch]     # the MVR algorithms
-   python -m pip install -e .[regex]     # greenery, for mvr_regex
-   python -m pip install -e .[docs]      # Sphinx
-   python -m pip install -e .[test]      # pytest
+   python -m pip install -e '.[pgmpy]'     # pgmpy conversion, BIF files
+   python -m pip install -e '.[toulbar2]'  # pytoulbar2
+   python -m pip install -e '.[torch]'     # the MVR algorithms
+   python -m pip install -e '.[regex]'     # greenery, for mvr_regex
+   python -m pip install -e '.[docs]'      # Sphinx
+   python -m pip install -e '.[test]'      # pytest
 
 Pyomo Solvers
 -------------
@@ -134,7 +134,7 @@ pgmpy
 
 .. code-block:: shell
 
-   python -m pip install -e .[pgmpy]
+   python -m pip install -e '.[pgmpy]'
 
 Features requiring ``pgmpy`` include:
 

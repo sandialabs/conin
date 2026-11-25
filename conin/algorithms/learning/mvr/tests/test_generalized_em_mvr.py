@@ -1,12 +1,13 @@
 import copy
 import itertools
+import math
 import warnings
 
 import numpy as np
 import pytest
 
 from conin.exceptions import InvalidInputError
-from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.constraints.mvr import mvr_count, mvr_current_state, mvr_timerange
 
 # importorskip only catches ImportError; a broken torch install raises OSError.
@@ -21,7 +22,7 @@ from conin.algorithms.learning.mvr.baum_welch import (  # noqa: E402
 from conin.algorithms.learning.mvr.generalized_em import (  # noqa: E402
     _chain_gradient,
     _constraint_statistics,
-    generalized_em_mvr_chmm,
+    mvr_generalized_em,
 )
 from conin.algorithms.util.mvr_kernels import (  # noqa: E402
     _build_sumprod_ctx,
@@ -114,7 +115,7 @@ def make_case(seed):
     if seed == 0:
         observations, horizons = [["x"], {0: "y"}, {}], [1, 2, 1]
     update = ("start", "transition", "emission") if seed % 2 == 0 else ("transition",)
-    model = ConstrainedHiddenMarkovModel(hmm, constraints)
+    model = ConstrainedGraphicalModel(hmm, constraints)
     return hmm, model, observations, horizons, update
 
 
@@ -133,8 +134,8 @@ def test_gem_matches_enumeration(seed):
             warnings.filterwarnings(
                 "ignore", message="Initial model has zero-probability"
             )
-            fitted, history = generalized_em_mvr_chmm(
-                ConstrainedHiddenMarkovModel(hmm, constraints),
+            fitted, history = mvr_generalized_em(
+                ConstrainedGraphicalModel(hmm, constraints),
                 observations,
                 time_horizons=horizons,
                 max_iter=1,
@@ -231,9 +232,9 @@ def test_pseudocount_keeps_unobserved_emissions_positive():
         hmm.representation("matvec").transition_mat.tolist(),
         emission,
     )
-    model = ConstrainedHiddenMarkovModel(hmm)
+    model = ConstrainedGraphicalModel(hmm)
     with pytest.warns(UserWarning, match="emission"):
-        fitted, _ = generalized_em_mvr_chmm(model, [["x", "y", "x"]], max_iter=1, tol=0)
+        fitted, _ = mvr_generalized_em(model, [["x", "y", "x"]], max_iter=1, tol=0)
     unobserved = np.asarray(fitted.representation("matvec").emission_mat.tolist())[
         :, hmm.representation("matvec").observable_to_internal["z"]
     ]
@@ -245,14 +246,14 @@ def test_gem_history():
     hmm = make_random_hmm(
         hidden_states=["A", "B"], observable_states=["x", "y"], seed=8
     )
-    model = ConstrainedHiddenMarkovModel(hmm)
+    model = ConstrainedGraphicalModel(hmm)
     observations = [["x", "x", "y"]]
-    fitted, history = generalized_em_mvr_chmm(model, observations, max_iter=2, tol=0)
+    fitted, history = mvr_generalized_em(model, observations, max_iter=2, tol=0)
     assert len(history) == 2
     assert enumerate_objectives(fitted, [], observations, [3])[0] >= history[-1]
-    fitted, history = generalized_em_mvr_chmm(model, [{}], time_horizons=3)
+    fitted, history = mvr_generalized_em(model, [{}], time_horizons=3)
     assert history == pytest.approx([0, 0], abs=1e-12)
-    fitted, history = generalized_em_mvr_chmm(model, observations, max_iter=0)
+    fitted, history = mvr_generalized_em(model, observations, max_iter=0)
     assert history == []
     assert (
         fitted.representation("matvec").emission_mat.tolist()
@@ -264,9 +265,9 @@ def test_gem_backtracking_failure_retains_parameters():
     hmm = make_random_hmm(
         hidden_states=["A", "B"], observable_states=["x", "y"], seed=8
     )
-    model = ConstrainedHiddenMarkovModel(hmm)
+    model = ConstrainedGraphicalModel(hmm)
     with pytest.warns(RuntimeWarning, match="backtracking"):
-        fitted, history = generalized_em_mvr_chmm(
+        fitted, history = mvr_generalized_em(
             model,
             [["x", "x", "y"]],
             max_iter=1,
@@ -288,14 +289,44 @@ def test_gem_backtracking_failure_retains_parameters():
     [
         ([["x"]], {"update": ("start", "bogus")}),
         ([["x"]], {"pseudocount": -1.0}),
+        ([["x"]], {"pseudocount": math.nan}),
+        ([["x"]], {"max_iter": -1}),
+        ([["x"]], {"max_iter": 2.0}),
+        ([["x"]], {"inner_max_iter": 0}),
+        ([["x"]], {"max_backtracks": 0}),
+        ([["x"]], {"step_size": 0.0}),
+        ([["x"]], {"step_size": math.inf}),
+        ([["x"]], {"inner_tol": -1e-3}),
+        ([["x"]], {"inner_tol": math.nan}),
+        ([["x"]], {"tol": math.inf}),
         ([], {}),
     ],
-    ids=["update", "budget", "empty"],
+    ids=[
+        "update",
+        "pseudocount",
+        "pseudocount-nan",
+        "max_iter",
+        "max_iter-float",
+        "inner_max_iter",
+        "max_backtracks",
+        "step_size",
+        "step_size-inf",
+        "inner_tol",
+        "inner_tol-nan",
+        "tol",
+        "empty",
+    ],
 )
 def test_gem_rejects_invalid_arguments(observations, kwargs):
     hmm = make_random_hmm(
         hidden_states=["A", "B"], observable_states=["x", "y"], seed=8
     )
-    model = ConstrainedHiddenMarkovModel(hmm)
-    with pytest.raises(InvalidInputError):
-        generalized_em_mvr_chmm(model, observations, **kwargs)
+    model = ConstrainedGraphicalModel(hmm)
+    if not observations:
+        match = "at least one sequence"
+    elif "update" in kwargs:
+        match = "Unknown update targets"
+    else:
+        match = "must be valid"
+    with pytest.raises(InvalidInputError, match=match):
+        mvr_generalized_em(model, observations, **kwargs)

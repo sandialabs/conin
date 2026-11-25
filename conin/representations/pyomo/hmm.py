@@ -3,18 +3,26 @@
 from conin.graphical_models import HiddenMarkovModel, create_dbn_from_hmm
 from conin.representations.base import register_representation
 from conin.representations.matvec import MatVecHMMRepresentation
-from conin.representations.unrolled import UnrolledHMMMixin, hmm_time_range
+from conin.representations.unrolled import (
+    ObservationsEvidenceMixin,
+    UnrolledHMMMixin,
+    hmm_time_range,
+)
 
 from .common import PyomoFactorRepresentation
 from .dbn import build_pyomo_dbn_representation
 
 
-class PyomoHMMRepresentation(UnrolledHMMMixin, PyomoFactorRepresentation):
+class PyomoHMMRepresentation(
+    ObservationsEvidenceMixin, UnrolledHMMMixin, PyomoFactorRepresentation
+):
     """Factor-repn IP of a constrained HMM unrolled (as a DBN) over ``start..stop``.
 
-    Structure params: ``start`` and ``stop``.  The hidden
-    nodes are ``("H", t)`` and the observed nodes ``("E", t)``; evidence must
-    be keyed by ``("E", t)``.  Constraint functions see
+    Structure params: ``start`` and ``stop``.  The hidden nodes are
+    ``("H", t)`` and the observed nodes ``("E", t)``; the evidence of
+    ``create_model`` is keyed by ``("E", t)``, or is the list of observations
+    (:class:`~conin.representations.unrolled.ObservationsEvidenceMixin`).
+    Constraint functions see
     ``data = Munch(start, stop, variables, evidence,
     hmm=Munch(T, hidden_to_internal))``.  ``pgm`` is the HMM's DBN.
     """

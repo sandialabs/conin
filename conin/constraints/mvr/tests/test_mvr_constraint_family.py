@@ -34,7 +34,7 @@ def test_public_mvr_names_import_from_package():
         mvr_forbid_state,
         mvr_not_yet,
         build_mvr,
-        build_mvr_functor,
+        mvr_constraints,
     )
 
 

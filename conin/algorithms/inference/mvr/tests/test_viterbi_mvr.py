@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from conin.exceptions import InvalidInputError
-from conin.constrained_models import ConstrainedHiddenMarkovModel
+from conin.constrained_models import ConstrainedGraphicalModel
 from conin.graphical_models import HiddenMarkovModel
 from conin.constraints.mvr import HomMVR, InhomMVR
 from conin.algorithms.scoring import log_probability
@@ -17,7 +17,7 @@ except (ImportError, OSError) as exc:
     pytest.skip(f"torch not available: {exc}", allow_module_level=True)
 
 from conin.algorithms.inference.mvr.viterbi import (  # noqa: E402
-    viterbi_torch_mvr_chmm,
+    mvr_viterbi,
 )
 
 # ===========================
@@ -167,10 +167,10 @@ def observed():
 
 
 def assert_matches_brute_force(hmm, mvrs, observed):
-    model = ConstrainedHiddenMarkovModel(hmm, mvrs)
+    model = ConstrainedGraphicalModel(hmm, mvrs)
     expected_path, expected_score = brute_force(hmm, mvrs, observed)
 
-    path, augmented, score = viterbi_torch_mvr_chmm(
+    path, augmented, score = mvr_viterbi(
         model, observed, return_augmented=True, return_score=True
     )
 
@@ -255,14 +255,14 @@ def test_viterbi_random_instances_match_brute_force(seed):
             )
 
     expected_path, expected_score = brute_force(hmm, mvrs, observed)
-    model = ConstrainedHiddenMarkovModel(hmm, mvrs)
+    model = ConstrainedGraphicalModel(hmm, mvrs)
 
     if expected_path is None:
         with pytest.raises(InvalidInputError):
-            viterbi_torch_mvr_chmm(model, observed, return_augmented=False)
+            mvr_viterbi(model, observed, return_augmented=False)
         return
 
-    path, score = viterbi_torch_mvr_chmm(
+    path, score = mvr_viterbi(
         model, observed, return_augmented=False, return_score=True
     )
 
@@ -280,28 +280,28 @@ def test_viterbi_random_instances_match_brute_force(seed):
 
 def test_viterbi_return_shapes(hmm, observed):
     mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="B")
-    model = ConstrainedHiddenMarkovModel(hmm, mvr)
+    model = ConstrainedGraphicalModel(hmm, mvr)
 
-    path = viterbi_torch_mvr_chmm(model, observed, return_augmented=False)
+    path = mvr_viterbi(model, observed, return_augmented=False)
     assert isinstance(path, list)
 
-    path, score = viterbi_torch_mvr_chmm(
+    path, score = mvr_viterbi(
         model, observed, return_augmented=False, return_score=True
     )
     assert isinstance(score, float)
 
-    path, augmented = viterbi_torch_mvr_chmm(model, observed)
+    path, augmented = mvr_viterbi(model, observed)
     assert len(augmented) == len(observed)
 
-    path, augmented, score = viterbi_torch_mvr_chmm(model, observed, return_score=True)
+    path, augmented, score = mvr_viterbi(model, observed, return_score=True)
     assert isinstance(score, float)
 
 
 def test_viterbi_augmented_path_reports_mediation_states(hmm, observed):
     mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="B")
-    model = ConstrainedHiddenMarkovModel(hmm, mvr)
+    model = ConstrainedGraphicalModel(hmm, mvr)
 
-    path, augmented = viterbi_torch_mvr_chmm(model, observed)
+    path, augmented = mvr_viterbi(model, observed)
 
     for t, entry in enumerate(augmented):
         assert hmm.hidden_states[entry["hidden_index"]] == path[t]
@@ -315,9 +315,9 @@ def test_viterbi_augmented_path_omits_inactive_mvrs(hmm, observed):
         forbidden_state="B",
         time_range=[1, 3],
     )
-    model = ConstrainedHiddenMarkovModel(hmm, mvr)
+    model = ConstrainedGraphicalModel(hmm, mvr)
 
-    _, augmented = viterbi_torch_mvr_chmm(model, observed)
+    _, augmented = mvr_viterbi(model, observed)
 
     for t, entry in enumerate(augmented):
         if 1 <= t <= 3:
@@ -331,10 +331,10 @@ def test_viterbi_raises_on_infeasible_constraints(hmm, observed):
         make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state=h)
         for h in hmm.hidden_states
     ]
-    model = ConstrainedHiddenMarkovModel(hmm, mvrs)
+    model = ConstrainedGraphicalModel(hmm, mvrs)
 
     with pytest.raises(InvalidInputError, match="No feasible augmented path"):
-        viterbi_torch_mvr_chmm(model, observed, return_augmented=False)
+        mvr_viterbi(model, observed, return_augmented=False)
 
 
 def test_viterbi_rejects_time_range_beyond_horizon(hmm, observed):
@@ -343,10 +343,10 @@ def test_viterbi_rejects_time_range_beyond_horizon(hmm, observed):
         forbidden_state="B",
         time_range=[2, len(observed) + 3],
     )
-    model = ConstrainedHiddenMarkovModel(hmm, mvr)
+    model = ConstrainedGraphicalModel(hmm, mvr)
 
     with pytest.raises(InvalidInputError, match="exceeds"):
-        viterbi_torch_mvr_chmm(model, observed, return_augmented=False)
+        mvr_viterbi(model, observed, return_augmented=False)
 
 
 def test_viterbi_rejects_inhom_mvr_with_too_short_horizon(hmm, observed):
@@ -358,10 +358,10 @@ def test_viterbi_rejects_inhom_mvr_with_too_short_horizon(hmm, observed):
     )
     # Widen the window past what the MVR's own horizon can support.
     mvr = mvr._replace(_time_range=[0, 4])
-    model = ConstrainedHiddenMarkovModel(hmm, mvr)
+    model = ConstrainedGraphicalModel(hmm, mvr)
 
     with pytest.raises(InvalidInputError, match="time_horizon is too short"):
-        viterbi_torch_mvr_chmm(model, observed, return_augmented=False)
+        mvr_viterbi(model, observed, return_augmented=False)
 
 
 # ===========================
@@ -445,17 +445,15 @@ def test_viterbi_random_sparse_instances_match_brute_force(seed):
             )
         )
 
-    model = ConstrainedHiddenMarkovModel(hmm, mvrs)
+    model = ConstrainedGraphicalModel(hmm, mvrs)
     expected_path, expected_score = brute_force_general(hmm, mvrs, sparse, T)
 
     if expected_path is None:
         with pytest.raises(InvalidInputError):
-            viterbi_torch_mvr_chmm(
-                model, sparse, time_horizon=T, return_augmented=False
-            )
+            mvr_viterbi(model, sparse, time_horizon=T, return_augmented=False)
         return
 
-    path, score = viterbi_torch_mvr_chmm(
+    path, score = mvr_viterbi(
         model, sparse, time_horizon=T, return_augmented=False, return_score=True
     )
 
@@ -480,10 +478,10 @@ def test_viterbi_random_sparse_instances_match_brute_force(seed):
 def test_viterbi_rejects_bad_horizon_or_observations(
     hmm, observed_arg, horizon, message
 ):
-    model = ConstrainedHiddenMarkovModel(hmm)
+    model = ConstrainedGraphicalModel(hmm)
 
     with pytest.raises(InvalidInputError, match=message):
-        viterbi_torch_mvr_chmm(model, observed_arg, time_horizon=horizon)
+        mvr_viterbi(model, observed_arg, time_horizon=horizon)
 
 
 def test_viterbi_rejects_inhom_mvr_too_short_for_extended_horizon(hmm, observed):
@@ -493,12 +491,12 @@ def test_viterbi_rejects_inhom_mvr_too_short_for_extended_horizon(hmm, observed)
         target_state="A",
         time_horizon=len(observed) - 1,
     )
-    model = ConstrainedHiddenMarkovModel(hmm, mvr)
+    model = ConstrainedGraphicalModel(hmm, mvr)
 
-    viterbi_torch_mvr_chmm(model, observed, return_augmented=False)
+    mvr_viterbi(model, observed, return_augmented=False)
 
     with pytest.raises(InvalidInputError, match="time_horizon is too short"):
-        viterbi_torch_mvr_chmm(
+        mvr_viterbi(
             model, observed, time_horizon=len(observed) + 1, return_augmented=False
         )
 
@@ -508,12 +506,12 @@ def test_viterbi_rejects_inhom_mvr_too_short_for_extended_horizon(hmm, observed)
 # ===========================
 
 
-def test_map_query_mvr_viterbi_matches_viterbi_torch_mvr_chmm(hmm, observed):
+def test_map_query_method_mvr_viterbi_matches_the_function(hmm, observed):
     from conin.algorithms.inference import map_query
 
     mvr = make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="B")
-    model = ConstrainedHiddenMarkovModel(hmm, mvr)
-    path, augmented, score = viterbi_torch_mvr_chmm(
+    model = ConstrainedGraphicalModel(hmm, mvr)
+    path, augmented, score = mvr_viterbi(
         model, observed, return_augmented=True, return_score=True
     )
 
@@ -560,12 +558,12 @@ def test_map_query_mvr_viterbi_dict_evidence(hmm, observed):
     from conin.algorithms.inference import map_query
 
     mvr = make_parity_mvr(hidden_states=hmm.hidden_states, target_state="A")
-    model = ConstrainedHiddenMarkovModel(hmm, mvr)
+    model = ConstrainedGraphicalModel(hmm, mvr)
     sparse = {0: observed[0], 3: observed[3]}
 
     # A dict is sparse observations; the horizon is stop + 1, or the last
     # observed time + 1.
-    path, score = viterbi_torch_mvr_chmm(
+    path, score = mvr_viterbi(
         model, sparse, time_horizon=4, return_augmented=False, return_score=True
     )
     results = map_query(model, method="mvr_viterbi", evidence=sparse)
@@ -573,7 +571,7 @@ def test_map_query_mvr_viterbi_dict_evidence(hmm, observed):
     # An unobserved time contributes its transition only, as in the MVR score.
     assert results.solution.log_potential == pytest.approx(score, abs=1e-4)
 
-    path6, _ = viterbi_torch_mvr_chmm(
+    path6, _ = mvr_viterbi(
         model, sparse, time_horizon=6, return_augmented=False, return_score=True
     )
     results6 = map_query(model, method="mvr_viterbi", evidence=sparse, stop=5)
@@ -583,10 +581,10 @@ def test_map_query_mvr_viterbi_dict_evidence(hmm, observed):
 def test_map_query_mvr_viterbi_options(hmm, observed):
     from conin.algorithms.inference import map_query
 
-    model = ConstrainedHiddenMarkovModel(
+    model = ConstrainedGraphicalModel(
         hmm, make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="C")
     )
-    path, score = viterbi_torch_mvr_chmm(
+    path, score = mvr_viterbi(
         model,
         observed,
         dtype=torch.float64,
@@ -603,7 +601,7 @@ def test_map_query_mvr_viterbi_options(hmm, observed):
 def test_map_query_mvr_viterbi_errors(hmm, observed):
     from conin.algorithms.inference import map_query
 
-    model = ConstrainedHiddenMarkovModel(
+    model = ConstrainedGraphicalModel(
         hmm, make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state="B")
     )
     with pytest.raises(InvalidInputError, match="only be unrolled from start=0"):
@@ -611,13 +609,13 @@ def test_map_query_mvr_viterbi_errors(hmm, observed):
     with pytest.raises(InvalidInputError, match="stop time or at least one"):
         map_query(model, method="mvr_viterbi", evidence={})
     # An infeasible lattice has no solution, as for the other methods (it
-    # raised InvalidInputError, as viterbi_torch_mvr_chmm still does).
+    # raised InvalidInputError, as mvr_viterbi still does).
     forbid_all = [
         make_forbid_mvr(hidden_states=hmm.hidden_states, forbidden_state=h)
         for h in hmm.hidden_states
     ]
     results = map_query(
-        ConstrainedHiddenMarkovModel(hmm, forbid_all),
+        ConstrainedGraphicalModel(hmm, forbid_all),
         method="mvr_viterbi",
         evidence=observed,
     )
