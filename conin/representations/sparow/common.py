@@ -101,7 +101,9 @@ class SparowFactorRepresentation(Representation):
         fields.update(self.structure_fields())
         return fields
 
-    def create_model(self, *, evidence=None, variables=None, timing=False, max_num_samples=1000):
+    def create_model(
+        self, *, evidence=None, variables=None, timing=False, max_num_samples=1000
+    ):
         """Build a fresh Pyomo model for one query.
 
         Parameters
@@ -152,7 +154,7 @@ class SparowFactorRepresentation(Representation):
             marginalized = marginalized - set(evidence)
         possible_values = {n: self.pgm.states_of(n) for n in marginalized}
         keys, values = zip(*possible_values.items())
-        #num_permutations = prod(
+        # num_permutations = prod(
         permutations = [dict(zip(keys, v)) for v in itertools.product(*values)]
         scenarios = dict(
             scenarios=[dict(ID=i, data=d) for i, d in enumerate(permutations)]
