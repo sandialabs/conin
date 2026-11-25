@@ -155,9 +155,12 @@ auxiliary factors for variable-elimination inference.
 
 Constrained models are immutable: ``ConstrainedGraphicalModel(hmm,
 constraints, data=None)`` stores the HMM as ``.model`` and the constraints as a
-tuple in ``.constraints``. All constraints must belong to one constraint family,
-which is available as ``.constraint_family`` (``None`` when there are no
-constraints); mixing families raises ``InvalidInputError``. Application data
+tuple in ``.constraints``. Their families are available as
+``.constraint_families`` (and ``.constraint_family`` is the family when there
+is only one). Constraints of several families can be combined when one
+representation accepts all of them, for example ``"smoek"`` with ``"pyomo"``
+for the integer program; otherwise the constructor raises
+``InvalidInputError``. Application data
 used by constraint functions and MVR factories is passed to the constructor
 with ``data=``. Every backend passes it on: constraint functions that take a
 ``data`` argument see a copy of it with the backend's own fields set. For an

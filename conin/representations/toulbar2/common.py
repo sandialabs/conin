@@ -108,7 +108,7 @@ def apply_toulbar2_constraints(*, pgm, constraints, model, data):
         unrolled BN of a DBN, or the DBN of an HMM).  The smoek translator
         reads its ``states_of``.
     constraints : sequence of Toulbar2Constraint or SmoekConstraint
-        Constraints of one family (``"toulbar2"`` or ``"smoek"``).
+        Constraints of the ``"toulbar2"`` and ``"smoek"`` families.
     model : pytoulbar2.CFN
         The model; constraint functions see ``model.V(...)``.
     data : munch.Munch
@@ -122,19 +122,19 @@ def apply_toulbar2_constraints(*, pgm, constraints, model, data):
     Raises
     ------
     TypeError
-        For constraints of several families or of another family.
+        For constraints of another family.
     """
-    result = apply_constraints(
+    return apply_constraints(
         constraints,
         {
-            "toulbar2": lambda cons: _apply_toulbar2_family(cons, model, data),
-            "smoek": lambda cons: add_smoek_constraints_to_toulbar2_model(
-                pgm=pgm, constraints=cons, model=model, data=data
+            "toulbar2": lambda cons, m: _apply_toulbar2_family(cons, m, data),
+            "smoek": lambda cons, m: add_smoek_constraints_to_toulbar2_model(
+                pgm=pgm, constraints=cons, model=m, data=data
             ),
         },
+        model,
         backend="toulbar2",
     )
-    return model if result is None else result
 
 
 class Toulbar2FactorRepresentation(Representation):
@@ -157,7 +157,7 @@ class Toulbar2FactorRepresentation(Representation):
         The model passed to the constraint applier (the MN, the BN, the
         unrolled BN of a DBN, or the DBN of an HMM).
     constraints : tuple
-        The user constraints (family ``"toulbar2"`` or ``"smoek"``).
+        The user constraints (families ``"toulbar2"`` and ``"smoek"``).
     nodes : tuple
         The nodes of ``uai_model``.
     data : object or None

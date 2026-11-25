@@ -549,7 +549,7 @@ def test_a_star_with_recursive_constraints_and_no_solution():
     results = map_query(cmodel, method="a_star", evidence=["o0"] * 5)
     assert results.solution is None
     assert results.solutions == []
-    assert results.termination_condition == "error: no feasible solutions"
+    assert results.termination_condition == "infeasible"
 
 
 @skipif_no_mip_solver

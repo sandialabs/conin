@@ -61,11 +61,11 @@ def test_constraint_families_is_the_set_of_distinct_families():
     }
 
 
-def test_apply_constraints_without_constraints_calls_nothing():
-    def fail(constraints):
+def test_apply_constraints_without_constraints_returns_the_initial_result():
+    def fail(constraints, result):
         raise AssertionError("called")
 
-    assert apply_constraints((), {"pyomo": fail}, backend="x") is None
+    assert apply_constraints((), {"pyomo": fail}, "start", backend="x") == "start"
 
 
 def test_apply_constraints_calls_the_applier_of_the_family():
@@ -73,26 +73,27 @@ def test_apply_constraints_calls_the_applier_of_the_family():
     result = apply_constraints(
         (_pyomo_con, _pyomo_con),
         {
-            "pyomo": lambda cons: seen.append(cons) or "applied",
-            "toulbar2": lambda cons: pytest.fail("wrong family"),
+            "pyomo": lambda cons, r: seen.append((cons, r)) or "applied",
+            "toulbar2": lambda cons, r: pytest.fail("wrong family"),
         },
+        "start",
         backend="x",
     )
     assert result == "applied"
-    assert seen == [(_pyomo_con, _pyomo_con)]
+    assert seen == [((_pyomo_con, _pyomo_con), "start")]
 
 
-def test_apply_constraints_rejects_mixed_families():
-    with pytest.raises(
-        TypeError,
-        match=r"The demo backend applies constraints of one family, "
-        r"found \['pyomo', 'toulbar2'\]",
-    ):
-        apply_constraints(
-            (_pyomo_con, _tb2_con),
-            {"pyomo": lambda c: c, "toulbar2": lambda c: c},
-            backend="demo",
-        )
+def test_apply_constraints_chains_the_families_in_order_of_appearance():
+    result = apply_constraints(
+        (_tb2_con, _pyomo_con, _tb2_con),
+        {
+            "pyomo": lambda cons, r: r + [("pyomo", len(cons))],
+            "toulbar2": lambda cons, r: r + [("toulbar2", len(cons))],
+        },
+        [],
+        backend="demo",
+    )
+    assert result == [("toulbar2", 2), ("pyomo", 1)]
 
 
 def test_apply_constraints_rejects_an_unhandled_family():
@@ -103,7 +104,20 @@ def test_apply_constraints_rejects_an_unhandled_family():
     ):
         apply_constraints(
             (_tb2_con,),
-            {"pyomo": lambda c: c, "smoek": lambda c: c},
+            {"pyomo": lambda c, r: r, "smoek": lambda c, r: r},
+            None,
+            backend="demo",
+        )
+
+
+def test_apply_constraints_checks_every_family_before_applying_any():
+    with pytest.raises(
+        TypeError, match="does not apply constraints of family 'toulbar2'"
+    ):
+        apply_constraints(
+            (_pyomo_con, _tb2_con),
+            {"pyomo": lambda c, r: pytest.fail("applied before the check")},
+            None,
             backend="demo",
         )
 
@@ -114,7 +128,7 @@ def test_pyomo_applier_rejects_other_families():
         common.apply_pyomo_constraints(
             pgm=None, constraints=(_tb2_con,), model=object(), data=None
         )
-    with pytest.raises(TypeError, match="pyomo backend applies .* one family"):
+    with pytest.raises(TypeError, match="pyomo backend does not apply .* 'toulbar2'"):
         common.apply_pyomo_constraints(
             pgm=None, constraints=(_pyomo_con, _tb2_con), model=object(), data=None
         )
@@ -138,7 +152,7 @@ def test_variable_elimination_applier_rejects_mixed_families():
 
     factor = FactorOracleConstraint(func=lambda s: True, nodes=["A"])
     with pytest.raises(
-        TypeError, match="variable_elimination backend applies .* one family"
+        TypeError, match="variable_elimination backend does not apply .* 'pyomo'"
     ):
         apply_variable_elimination_constraints(
             pgm=mex.ABC_conin().pgm, constraints=[factor, _pyomo_con]

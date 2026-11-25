@@ -28,7 +28,7 @@ import time
 import numpy as np
 
 from conin.algorithms.inference.results import (
-    NO_FEASIBLE_SOLUTIONS,
+    INFEASIBLE,
     map_results,
     map_solution,
 )
@@ -91,6 +91,7 @@ def hmm_a_star(
     num_solutions=1,
     max_iterations=None,
     max_time=None,
+    max_prefixes=None,
     debug=False,
 ):
     """A* search for the ``num_solutions`` most likely feasible hidden sequences.
@@ -115,7 +116,7 @@ def hmm_a_star(
     merge : bool, optional
         Merge prefixes with equal ``(last state, length, state)`` (the state
         must then be hashable).  See the module docstring.
-    num_solutions, max_iterations, max_time, debug
+    num_solutions, max_iterations, max_time, max_prefixes, debug
         As for :func:`conin.algorithms.inference.oracle.a_star`.
 
     Returns
@@ -238,6 +239,13 @@ def hmm_a_star(
             termination_condition = f"max_time: {curr_time - start_time}"
             break
 
+        if (max_prefixes is not None) and (len(open_set) > max_prefixes):
+            # The open set is what grows without bound when the constraint
+            # keeps rejecting complete sequences; stop before it exhausts
+            # the memory.
+            termination_condition = f"max_prefixes: {len(open_set)}"
+            break
+
         if debug:
             if iteration % 100 == 0:
                 print(f"  Iteration: {iteration}")
@@ -248,9 +256,9 @@ def hmm_a_star(
                 print(f"  time:      {curr_time - start_time}")
 
     if termination_condition == "unknown":
-        # The search space is exhausted.  (If max_iterations or max_time
-        # stopped the search, termination_condition says so.)
-        termination_condition = "ok" if output else NO_FEASIBLE_SOLUTIONS
+        # The search space is exhausted.  (If max_iterations, max_time or
+        # max_prefixes stopped the search, termination_condition says so.)
+        termination_condition = "ok" if output else INFEASIBLE
 
     return map_results(
         output,

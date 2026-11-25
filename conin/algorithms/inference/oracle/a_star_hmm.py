@@ -17,6 +17,7 @@ def a_star_(
     num_solutions=1,
     max_iterations=None,
     max_time=None,
+    max_prefixes=None,
     debug=False,
 ):
     """A* search on internal indices, with optional oracle feasibility checks.
@@ -57,6 +58,7 @@ def a_star_(
         num_solutions=num_solutions,
         max_iterations=max_iterations,
         max_time=max_time,
+        max_prefixes=max_prefixes,
         debug=debug,
         **checks,
     )
@@ -80,7 +82,12 @@ def a_star(
         constraints or ``"oracle"`` constraints); others raise
         ``InvalidInputError``.
     **kwargs
-        ``num_solutions``, ``max_iterations``, ``max_time``, ``debug``.
+        ``num_solutions``, ``max_iterations``, ``max_time``, ``max_prefixes``
+        and ``debug``.  ``max_iterations`` limits the number of prefixes
+        expanded, ``max_time`` the time in seconds, and ``max_prefixes`` the
+        number of prefixes kept in the open set, which bounds the memory the
+        search uses; ``termination_condition`` names the limit that stopped
+        the search (e.g. ``"max_prefixes: 1000001"``).
 
     Returns
     -------
@@ -90,7 +97,8 @@ def a_star(
         ``log_potential`` (``log P(hidden, observed)``) and
         ``solver_objective`` (``None``).  See :mod:`conin.algorithms.inference.results`.
         If no feasible sequence is found (the constraints exclude every
-        sequence, or ``max_iterations``/``max_time`` stops the search first),
+        sequence, or ``max_iterations``, ``max_time`` or ``max_prefixes``
+        stops the search first),
         ``solution`` is ``None`` and ``solutions`` holds what was found.
     """
     cmodel = ConstrainedGraphicalModel.ensure(hmm, HiddenMarkovModel)
@@ -110,6 +118,7 @@ def _a_star(
     num_solutions=1,
     max_iterations=None,
     max_time=None,
+    max_prefixes=None,
     debug=False,
 ):
     """:func:`a_star` on an ``"oracle"`` representation (external labels)."""
@@ -126,6 +135,7 @@ def _a_star(
         num_solutions=num_solutions,
         max_iterations=max_iterations,
         max_time=max_time,
+        max_prefixes=max_prefixes,
         debug=debug,
     )
 

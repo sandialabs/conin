@@ -290,12 +290,13 @@ def _check_constraints(
         The hidden-state sequence (HMMs; used by ``"mvr"`` and
         ``"recursive"`` constraints).
     """
-    constraints = cmodel.constraints
-    if cmodel.constraint_family == "smoek":
+    constraints = [c for c in cmodel.constraints if type(c).family != "smoek"]
+    smoek_constraints = [c for c in cmodel.constraints if type(c).family == "smoek"]
+    if smoek_constraints:
         # The smoek constraints are compiled together, into one factor
         # oracle over the whole state space.
-        constraints = create_oracle_constraints_from_smoek(
-            pgm=state_space, constraints=list(constraints), data=data
+        constraints += create_oracle_constraints_from_smoek(
+            pgm=state_space, constraints=smoek_constraints, data=data
         )
     ctx = munch.Munch(
         cmodel=cmodel,

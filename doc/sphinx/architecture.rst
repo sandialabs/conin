@@ -23,8 +23,9 @@ Package layout
    ``"recursive"``, ``"mvr"``) and holds no backend logic.
 ``conin.constrained_models``
    ``ConstrainedGraphicalModel(model, constraints=(), *, data=None)``: an
-   immutable pair of a model and a tuple of constraints of one family, plus
-   application data. One class wraps every model type; its ``model_type`` is
+   immutable pair of a model and a tuple of constraints, plus application
+   data. The constraints can belong to several families if one
+   representation accepts all of them (``constraint_families``). One class wraps every model type; its ``model_type`` is
    the model class the representations are registered under.
 ``conin.representations``
    The registry and the representations built from a constrained model, one
@@ -109,8 +110,8 @@ Representations and dispatch
   (``apply_pyomo_constraints``, ``apply_toulbar2_constraints``,
   ``apply_variable_elimination_constraints``). Each passes ``apply_constraints``
   (``conin.representations.base``) a table from family to applier;
-  ``apply_constraints`` rejects mixed or unsupported families with one
-  message. The smoek translators all start from ``build_smoek_model``.
+  ``apply_constraints`` applies the constraints family by family and
+  rejects unsupported families with one message. The smoek translators all start from ``build_smoek_model``.
 - The DBN and HMM representations of every backend get ``start``, ``stop``,
   ``time_steps`` and their constraint-``data`` time fields from the mixins in
   ``conin.representations.unrolled``, so the backends cannot drift apart.

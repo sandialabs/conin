@@ -24,7 +24,7 @@ def _integer_program_kind(cmodel, options):
 
 def _a_star_kind(cmodel, options):
     """Recursive constraints use recursive A*, the others A* with oracles."""
-    return "recursive" if cmodel.constraint_family == "recursive" else "oracle"
+    return "recursive" if "recursive" in cmodel.constraint_families else "oracle"
 
 
 REPRESENTATION_KINDS = {

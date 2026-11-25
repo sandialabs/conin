@@ -620,4 +620,4 @@ def test_map_query_mvr_viterbi_errors(hmm, observed):
         evidence=observed,
     )
     assert results.solution is None and results.solutions == []
-    assert results.termination_condition == "error: no feasible solutions"
+    assert results.termination_condition == "infeasible"

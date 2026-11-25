@@ -99,7 +99,7 @@ def apply_pyomo_constraints(*, pgm, constraints, model, data):
     pgm : GraphicalModel
         The (possibly unrolled) model the formulation was built from.
     constraints : sequence of PyomoConstraint or SmoekConstraint
-        Constraints of one family (``"pyomo"`` or ``"smoek"``).
+        Constraints of the ``"pyomo"`` and ``"smoek"`` families.
     model : pyomo.environ.ConcreteModel
         The model; constraint functions see ``model.V(...)``.
     data : object
@@ -112,19 +112,19 @@ def apply_pyomo_constraints(*, pgm, constraints, model, data):
     Raises
     ------
     TypeError
-        For constraints of several families or of another family.
+        For constraints of another family.
     """
-    result = apply_constraints(
+    return apply_constraints(
         constraints,
         {
-            "pyomo": lambda cons: _apply_pyomo_family(cons, model, data),
-            "smoek": lambda cons: add_smoek_constraints_to_pyomo_model(
-                pgm=pgm, constraints=cons, model=model, data=data
+            "pyomo": lambda cons, m: _apply_pyomo_family(cons, m, data),
+            "smoek": lambda cons, m: add_smoek_constraints_to_pyomo_model(
+                pgm=pgm, constraints=cons, model=m, data=data
             ),
         },
+        model,
         backend="pyomo",
     )
-    return model if result is None else result
 
 
 def has_omitted_c5(model):
@@ -377,7 +377,7 @@ class PyomoFactorRepresentation(Representation):
     pgm : GraphicalModel
         The model passed to the constraint applier (the MN, BN or unrolled BN/DBN).
     constraints : tuple
-        The user constraints (family ``"pyomo"`` or ``"smoek"``).
+        The user constraints (families ``"pyomo"`` and ``"smoek"``).
     nodes : tuple
         The nodes of the (unrolled) model the IP ranges over.
     data : object or None

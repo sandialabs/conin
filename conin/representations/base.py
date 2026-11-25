@@ -6,13 +6,14 @@ from a :class:`~conin.constrained_models.ConstrainedGraphicalModel` by a
 *builder* that is registered under ``(kind, model_type, constraint_family)``.
 
 The registry is the single source of truth for which (kind, family) pairs a
-model type supports.
+model type supports.  A constrained model with constraints of several
+families can use a kind if one builder is registered for all of them.
 """
 
 import importlib
 from abc import ABC
 
-from conin.constraints.base import constraint_families
+from conin.constraints.base import group_by_family
 from conin.exceptions import InvalidInputError
 
 
@@ -140,6 +141,46 @@ def get_representation_builder(kind, model_type, family):
     return _REGISTRY.get((kind, model_type, family))
 
 
+def _builder_for_families(kind, model_type, families):
+    """The builder registered for ``kind`` and all of ``families``, or ``None``.
+
+    ``families`` empty means no constraints (family ``None``).
+    """
+    if not families:
+        return get_representation_builder(kind, model_type, None)
+    builders = {get_representation_builder(kind, model_type, f) for f in families}
+    if len(builders) == 1 and None not in builders:
+        return builders.pop()
+    return None
+
+
+def representation_kinds(model_type, families):
+    """The sorted kinds with a builder for ``model_type`` and all of ``families``."""
+    _load_builtins()
+    kinds = {k for (k, mt, _) in _REGISTRY if mt is model_type}
+    return sorted(
+        k for k in kinds if _builder_for_families(k, model_type, families) is not None
+    )
+
+
+def combinable_families(model_type):
+    """``{kind: families}`` for the kinds of ``model_type`` that accept several families.
+
+    ``families`` is the sorted tuple of the families that the kind's builder
+    accepts together.
+    """
+    _load_builtins()
+    by_builder = {}
+    for (k, mt, f), builder in _REGISTRY.items():
+        if mt is model_type and f is not None:
+            by_builder.setdefault((k, builder), set()).add(f)
+    return {
+        k: tuple(sorted(fams))
+        for (k, _), fams in sorted(by_builder.items(), key=lambda kv: kv[0][0])
+        if len(fams) > 1
+    }
+
+
 def build_representation(cmodel, kind, **structure_params):
     """Build the ``kind`` representation of ``cmodel``.
 
@@ -149,66 +190,69 @@ def build_representation(cmodel, kind, **structure_params):
     Raises
     ------
     InvalidInputError
-        If no builder is registered for ``(kind, cmodel.model_type,
-        cmodel.constraint_family)``.  The message lists the supported pairs.
+        If no builder is registered for ``kind``, ``cmodel.model_type`` and
+        all of ``cmodel.constraint_families``.  The message lists the
+        supported pairs.
     """
     model_type = cmodel.model_type
-    family = cmodel.constraint_family
-    builder = get_representation_builder(kind, model_type, family)
+    families = cmodel.constraint_families
+    builder = _builder_for_families(kind, model_type, families)
     if builder is None:
         supported = ", ".join(
             f"({k!r}, {f!r})" for k, f in supported_representations(model_type)
         )
+        if len(families) > 1:
+            what = f"constraint families {list(families)}"
+        else:
+            what = f"constraint family {families[0] if families else None!r}"
         raise InvalidInputError(
             f"No {kind!r} representation is available for "
-            f"{model_type.__name__} with constraint family {family!r}. "
+            f"{model_type.__name__} with {what}. "
             f"Supported (kind, family) pairs: {supported or 'none'}."
         )
     return builder(cmodel, **structure_params)
 
 
-def apply_constraints(constraints, appliers, *, backend):
-    """Apply ``constraints`` with the applier of their family.
+def apply_constraints(constraints, appliers, result, *, backend):
+    """Apply ``constraints`` family by family with the appliers of their families.
 
     This is the dispatch shared by the backend appliers
     (``apply_pyomo_constraints``, ``apply_toulbar2_constraints``,
     ``apply_variable_elimination_constraints``): each one passes a table from
-    family to the function that applies a list of that family.
+    family to the function that applies the constraints of that family.  The
+    families are applied in the order in which they first appear, each to
+    the result of the previous one.
 
     Parameters
     ----------
     constraints : sequence of Constraint
-        Constraints of one family (``ConstrainedGraphicalModel`` checks this;
-        here it is checked again for direct callers).
+        The constraints, of one or several families.
     appliers : dict
-        ``{family: apply(constraints)}``.
+        ``{family: apply(constraints, result) -> result}``.
+    result : object
+        What the first applier gets, e.g. the model to add constraints to.
     backend : str
         Named in the error messages.
 
     Returns
     -------
     object
-        What the applier returns, or ``None`` for no constraints.
+        What the last applier returns; ``result`` for no constraints.
 
     Raises
     ------
     TypeError
-        For constraints of several families, or of a family that ``appliers``
-        does not handle.
+        For constraints of a family that ``appliers`` does not handle (then
+        no applier is called).
     """
-    if len(constraints) == 0:
-        return None
-    families = constraint_families(constraints)
-    if len(families) > 1:
-        raise TypeError(
-            f"The {backend} backend applies constraints of one family, found "
-            f"{sorted(map(str, families))}"
-        )
-    (family,) = families
-    if family not in appliers:
-        raise TypeError(
-            f"The {backend} backend does not apply constraints of family "
-            f"{family!r} ({type(constraints[0]).__name__}); supported families: "
-            f"{sorted(appliers)}"
-        )
-    return appliers[family](constraints)
+    groups = group_by_family(constraints)
+    for family, cons in groups.items():
+        if family not in appliers:
+            raise TypeError(
+                f"The {backend} backend does not apply constraints of family "
+                f"{family!r} ({type(cons[0]).__name__}); supported families: "
+                f"{sorted(appliers)}"
+            )
+    for family, cons in groups.items():
+        result = appliers[family](cons, result)
+    return result

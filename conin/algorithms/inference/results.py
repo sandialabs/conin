@@ -10,7 +10,7 @@ functions it dispatches to) returns a ``Munch`` with
     The solutions found, best first.
 ``termination_condition``
     ``"ok"``, or why the search stopped (for example
-    ``"max_iterations: 10"``).  :data:`NO_FEASIBLE_SOLUTIONS` if the query has
+    ``"max_iterations: 10"``).  :data:`INFEASIBLE` if the query has
     no solution: the evidence or the constraints exclude every assignment,
     or leave only assignments of probability zero.  Every method returns
     :func:`no_solution_results` then (``solution`` is ``None`` and
@@ -54,7 +54,7 @@ import munch
 from conin.graphical_models.assignments import as_sequence
 from conin.algorithms.scoring.assignment import hmm_path_log_potential, log_potential
 
-NO_FEASIBLE_SOLUTIONS = "error: no feasible solutions"
+INFEASIBLE = "infeasible"
 """The ``termination_condition`` of a query without a solution."""
 
 
@@ -78,10 +78,8 @@ def map_results(solutions, *, solvetime, termination_condition="ok", **extra):
 
 
 def no_solution_results(solvetime):
-    """The result of a query without a solution (:data:`NO_FEASIBLE_SOLUTIONS`)."""
-    return map_results(
-        [], solvetime=solvetime, termination_condition=NO_FEASIBLE_SOLUTIONS
-    )
+    """The result of a query without a solution (:data:`INFEASIBLE`)."""
+    return map_results([], solvetime=solvetime, termination_condition=INFEASIBLE)
 
 
 def _drop_impossible(results):
@@ -96,7 +94,7 @@ def _drop_impossible(results):
     results.solutions = solutions
     results.solution = solutions[0] if solutions else None
     if not solutions:
-        results.termination_condition = NO_FEASIBLE_SOLUTIONS
+        results.termination_condition = INFEASIBLE
     return results
 
 
@@ -106,9 +104,14 @@ def score_solutions(results, model, *, evidence, nodes):
     The assignment is the solution's ``states`` plus ``evidence``, restricted
     to ``nodes`` (the nodes of the model, unrolled for a DBN).  A solution
     that does not cover ``nodes`` (a partial MAP query) gets ``None``; one
-    of probability zero is dropped.
+    of probability zero is dropped.  The ``states`` are put in the order of
+    ``nodes``, so that every method returns them in the same order.
     """
+    order = {node: i for i, node in enumerate(nodes)}
     for soln in results.solutions:
+        soln.states = dict(
+            sorted(soln.states.items(), key=lambda kv: order.get(kv[0], len(order)))
+        )
         assignment = dict(evidence or {})
         assignment.update(soln.states)
         if all(node in assignment for node in nodes):

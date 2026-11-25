@@ -257,10 +257,9 @@ def map_query(
         ``termination_condition`` (``"ok"`` or why the search stopped) and
         ``solvetime``.  If the evidence or the constraints exclude every
         assignment, ``solution`` is ``None``, ``solutions`` is empty and
-        ``termination_condition`` is ``"error: no feasible solutions"``, for
-        every method (``integer_program`` with ``solver="or_topas"``
-        raises instead).  Each solution has
-        ``states`` (``{node: state}``; for an HMM, the hidden states as a
+        ``termination_condition`` is ``"infeasible"``, for every method
+        (``integer_program`` with ``solver="or_topas"`` raises instead).
+        Each solution has ``states`` (``{node: state}``; for an HMM, the hidden states as a
         list, or a dict keyed by time step if the evidence was a dict),
         ``log_potential`` (:func:`conin.algorithms.scoring.log_potential` of the
         assignment and the evidence on the model without its constraints;
