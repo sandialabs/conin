@@ -13,6 +13,7 @@
   ``"pyomo"`` representations.
 """
 
+import math
 import itertools
 from functools import partial
 
@@ -152,11 +153,14 @@ class SparowFactorRepresentation(Representation):
             marginalized = marginalized - set(evidence)
         possible_values = {n: self.pgm.states_of(n) for n in marginalized}
         keys, values = zip(*possible_values.items())
-        #num_permutations = prod(
-        permutations = [dict(zip(keys, v)) for v in itertools.product(*values)]
-        scenarios = dict(
-            scenarios=[dict(ID=i, data=d) for i, d in enumerate(permutations)]
-        )
+        num_permutations = math.prod(len(val) for val in values)
+        if num_permutations < max_num_samples:
+            permutations = [dict(zip(keys, v)) for v in itertools.product(*values)]
+            scenarios = dict(
+                scenarios=[dict(ID=i, data=d) for i, d in enumerate(permutations)]
+            )
+        else:
+            raise RuntimeError("Sampling not supported yet")
 
         #
         # Setup the Sparow model, and create the Pyomo extensive form.
