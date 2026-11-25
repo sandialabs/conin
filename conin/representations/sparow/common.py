@@ -66,11 +66,11 @@ class SparowFactorRepresentation(Representation):
     kind = "sparow"
 
     def __init__(
+        self, *, S, J, v, w, var_index_map, pgm, constraints, nodes, data=None
+    ):
         if not sparow_available:
             raise RuntimeError("The sparow package must be installed to solve MAP inference with integer_program.")
 
-        self, *, S, J, v, w, var_index_map, pgm, constraints, nodes, data=None
-    ):
         self.S = S
         self.J = J
         self.v = v
