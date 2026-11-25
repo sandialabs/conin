@@ -117,22 +117,26 @@ def test_unknown_method_raises_value_error():
 
 
 @pytest.mark.parametrize(
-    "method,options,kind",
+    "method,itype,options,kind",
     [
-        ("integer_program", {}, "pyomo"),
-        ("integer_program", {"ip_formulation": None}, "pyomo"),
-        ("integer_program", {"ip_formulation": "markov_network"}, "pyomo"),
-        ("integer_program", {"ip_formulation": "network_flow"}, "pyomo_network_flow"),
-        ("toulbar2", {}, "toulbar2"),
-        ("variable_elimination", {}, "variable_elimination"),
-        ("a_star", {}, "oracle"),
-        ("viterbi", {}, "matvec"),
-        ("mvr_viterbi", {}, "mvr"),
+        ("integer_program", "mpe_inference", {}, "pyomo"),
+        ("integer_program", "mpe_inference", {"ip_formulation": None}, "pyomo"),
+        ("integer_program", "mpe_inference", {"ip_formulation": "markov_network"}, "pyomo"),
+        ("integer_program", "mpe_inference", {"ip_formulation": "network_flow"}, "pyomo_network_flow"),
+        ("integer_program", "map_inference", {}, "sparow"),
+        ("integer_program", "map_inference", {"ip_formulation": None}, "sparow"),
+        ("integer_program", "map_inference", {"ip_formulation": "markov_network"}, "sparow"),
+        ("integer_program", "map_inference", {"ip_formulation": "network_flow"}, "sparow_network_flow"),
+        ("toulbar2", "mpe_inference", {}, "toulbar2"),
+        ("variable_elimination", "mpe_inference", {}, "variable_elimination"),
+        ("a_star", "mpe_inference", {}, "oracle"),
+        ("viterbi", "mpe_inference", {}, "matvec"),
+        ("mvr_viterbi", "mpe_inference", {}, "mvr"),
     ],
 )
-def test_method_to_representation_kind(method, options, kind):
+def test_method_to_representation_kind(method, itype, options, kind):
     options = dict(options)
-    assert mq._representation_kind(method, _cmodel("hmm"), options) == kind
+    assert mq.representation_kind(method, _cmodel("hmm"), itype, options) == kind
     # ip_formulation is consumed: it never reaches the solver.
     assert "ip_formulation" not in options
 
@@ -147,7 +151,7 @@ def test_method_to_representation_kind(method, options, kind):
     ids=["oracle", "none", "recursive"],
 )
 def test_a_star_kind_depends_on_the_constraint_family(cmodel, kind):
-    assert mq._representation_kind("a_star", cmodel(), {}) == kind
+    assert mq.representation_kind("a_star", cmodel(), "mpe_inference", {}) == kind
 
 
 def test_unknown_ip_formulation_raises_value_error():

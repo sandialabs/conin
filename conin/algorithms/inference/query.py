@@ -34,6 +34,11 @@ from conin.representations.pyomo import (
     PyomoHMMRepresentation,
     PyomoNetworkFlowHMMRepresentation,
 )
+from conin.representations.sparow import (
+    SparowFactorRepresentation,
+    #PyomoHMMRepresentation,
+    #PyomoNetworkFlowHMMRepresentation,
+)
 from conin.representations.recursive import RecursiveHMMRepresentation
 from conin.representations.toulbar2 import (
     Toulbar2FactorRepresentation,
@@ -63,6 +68,7 @@ from conin.representations.methods import (
 from .oracle.a_star_hmm import _a_star
 from .pyomo.hmm_network_flow import _solve_network_flow
 from .pyomo.solve import _solve_pyomo
+from .sparow.solve import _solve_sparow
 from .query_checks import map_query_args
 from .recursive.a_star_hmm import _recursive_a_star
 from .toulbar2.solve import _solve_toulbar2
@@ -75,23 +81,6 @@ METHODS = MAP_METHODS
 # ---------------------------------------------------------------------
 # Steps 1-3: normalise, pick the representation kind, build it
 # ---------------------------------------------------------------------
-
-
-def _representation_kind(method, cmodel, options):
-    """Return the representation kind that ``method`` solves on ``cmodel``.
-
-    See :mod:`conin.representations.methods`: ``"integer_program"`` pops
-    ``ip_formulation`` from ``options`` (``None``/``"markov_network"`` ->
-    ``"pyomo"``, ``"network_flow"`` -> ``"pyomo_network_flow"``), and
-    ``"a_star"`` uses ``"recursive"`` for recursive constraints and
-    ``"oracle"`` otherwise.
-
-    Raises
-    ------
-    InvalidInputError
-        For an unknown ``ip_formulation``.
-    """
-    return representation_kind(method, cmodel, options)
 
 
 def _structure_params(kind, cmodel, *, start, stop, nodes):
@@ -311,7 +300,8 @@ def map_query(
     if isinstance(cmodel.model, HiddenMarkovModel):
         observed = _hmm_observations(method, evidence)
         start, stop, observed = _hmm_time_range(observed, start, stop)
-    kind = _representation_kind(method, cmodel, options)
+    inference_type = "mpe_inference" if variables is None else "map_inference"
+    kind = representation_kind(method, cmodel, inference_type, options)
     repn = cmodel.representation(
         kind,
         **_structure_params(
@@ -376,6 +366,21 @@ def _solve_map_query(repn: PyomoHMMRepresentation, q):
 @ovld
 def _solve_map_query(repn: PyomoNetworkFlowHMMRepresentation, q):
     return _solve_network_flow(repn, q)
+
+
+@ovld
+def _solve_map_query(repn: SparowFactorRepresentation, q):
+    return _factor_solve(_solve_sparow, repn, q)
+
+
+#@ovld
+#def _solve_map_query(repn: PyomoHMMRepresentation, q):
+#    return _unrolled_hmm_solve(_solve_pyomo, repn, q)
+
+
+#@ovld
+#def _solve_map_query(repn: PyomoNetworkFlowHMMRepresentation, q):
+#    return _solve_network_flow(repn, q)
 
 
 @ovld

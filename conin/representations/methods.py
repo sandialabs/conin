@@ -12,17 +12,25 @@ import inspect
 from conin.exceptions import InvalidInputError
 
 
-def _integer_program_kind(cmodel, options):
+def _integer_program_kind(cmodel, inference_type, options):
     """``ip_formulation`` (popped from ``options``) selects the formulation."""
     ip_formulation = options.pop("ip_formulation", None)
-    if ip_formulation is None or ip_formulation == "markov_network":
-        return "pyomo"
-    if ip_formulation == "network_flow":
-        return "pyomo_network_flow"
-    raise InvalidInputError(f"Unexpected ip_formulation value: '{ip_formulation}'")
+    if inference_type == "mpe_inference":
+        if ip_formulation is None or ip_formulation == "markov_network":
+            return "pyomo"
+        if ip_formulation == "network_flow":
+            return "pyomo_network_flow"
+        raise InvalidInputError(f"Unexpected ip_formulation value: '{ip_formulation}'")
+    elif inference_type == "map_inference":
+        if ip_formulation is None or ip_formulation == "markov_network":
+            return "sparow"
+        if ip_formulation == "network_flow":
+            return "sparow_network_flow"
+        raise InvalidInputError(f"Unexpected ip_formulation value: '{ip_formulation}'")
+    raise InvalidInputError(f"Unexpected inference_type value: '{inference_type}'")
 
 
-def _a_star_kind(cmodel, options):
+def _a_star_kind(cmodel, inference_type, options):
     """Recursive constraints use recursive A*, the others A* with oracles."""
     return "recursive" if cmodel.constraint_family == "recursive" else "oracle"
 
@@ -35,7 +43,7 @@ REPRESENTATION_KINDS = {
     "viterbi": "matvec",
     "mvr_viterbi": "mvr",
 }
-"""Method -> representation kind, or a function ``(cmodel, options) -> kind``."""
+"""Method -> representation kind, or a function ``(cmodel, inference_type, options) -> kind``."""
 
 MAP_METHODS = (
     "integer_program",
@@ -91,7 +99,7 @@ def reject_options_not_taken(func, options, what, *, passed=()):
     )
 
 
-def representation_kind(method, cmodel, options):
+def representation_kind(method, cmodel, inference_type, options):
     """Return the representation kind that ``method`` runs on for ``cmodel``.
 
     ``options`` are the query's method options; a method may pop the ones
@@ -103,4 +111,4 @@ def representation_kind(method, cmodel, options):
         For an unknown ``ip_formulation``.
     """
     kind = REPRESENTATION_KINDS[method]
-    return kind(cmodel, options) if callable(kind) else kind
+    return kind(cmodel, inference_type, options) if callable(kind) else kind

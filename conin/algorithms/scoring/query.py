@@ -42,7 +42,7 @@ def _representation_kind(method):
     The same as for :func:`~conin.algorithms.inference.map_query`
     (:mod:`conin.representations.methods`).
     """
-    return representation_kind(method, None, {})
+    return representation_kind(method, None, None, {})
 
 
 def _structure_params(cmodel, *, variables, start, stop):
