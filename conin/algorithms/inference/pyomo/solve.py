@@ -10,7 +10,8 @@ from pyomo.common.timing import TicTocTimer
 
 from conin.config import mip_solver
 from conin.exceptions import InsufficientSolutionsError, InvalidInputError
-#from conin.algorithms.inference.query_checks import full_query_variables
+
+# from conin.algorithms.inference.query_checks import full_query_variables
 from conin.algorithms.inference.results import (
     map_results,
     map_solution,
