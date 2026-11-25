@@ -21,7 +21,6 @@ import pyomo.environ as pyo
 
 import conin.representations.pyomo.common
 from conin.representations.base import Representation
-from conin.util import State
 from conin.util import try_import, State
 from conin.util.var_wrapper import PyomoVarWrapper
 from conin.util.constraint_data import merge_constraint_data
@@ -100,7 +99,7 @@ class SparowFactorRepresentation(Representation):
         fields.update(self.structure_fields())
         return fields
 
-    def create_model(self, *, evidence=None, variables=None, timing=False):
+    def create_model(self, *, evidence=None, variables=None, timing=False, max_num_samples=1000):
         """Build a fresh Pyomo model for one query.
 
         Parameters
@@ -151,6 +150,7 @@ class SparowFactorRepresentation(Representation):
             marginalized = marginalized - set(evidence)
         possible_values = {n: self.pgm.states_of(n) for n in marginalized}
         keys, values = zip(*possible_values.items())
+        #num_permutations = prod(
         permutations = [dict(zip(keys, v)) for v in itertools.product(*values)]
         scenarios = dict(
             scenarios=[dict(ID=i, data=d) for i, d in enumerate(permutations)]
