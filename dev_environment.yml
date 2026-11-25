@@ -16,7 +16,8 @@ dependencies:
     - nbstripout
     - pytoulbar2!=1.4.0.2  # its x86_64 wheels need AVX-512; GitHub runners lack it
     - smoek
-    - -e git+https://github.com/sandialabs/or_topas.git#egg=or_topas
+    - -e git+https://github.com/or-fusion/or_topas.git#egg=or_topas
+    - -e git+https://github.com/or-fusion/sparow.git#egg=sparow
   - pyomo
   - pytest
   - pytest-cov

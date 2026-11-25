@@ -253,30 +253,6 @@ def test_toulbar2_partial_variables_raise_not_implemented_error(make, kwds, vari
 
 
 @skipif_toulbar2_not_available
-@pytest.mark.skipif(default_mip_solver is None, reason="No MIP solver installed")
-@pytest.mark.parametrize(
-    "make,kwds,variables",
-    [
-        (lambda: mex.ABC_conin().pgm, {}, ["A"]),
-        (lambda: bex.cancer1_BN_conin().pgm, {}, ["Cancer"]),
-        (lambda: dex.simple1_DDBN_conin().pgm, dict(stop=1), [("A", 0)]),
-        (hex_.create_hmm1, dict(evidence=["o0", "o1"]), [("H", 0)]),
-    ],
-    ids=["mn", "bn", "dbn", "hmm"],
-)
-def test_partial_variables_raise_the_same_error_on_both_backends(make, kwds, variables):
-    messages = []
-    for method, solver in [
-        ("toulbar2", {}),
-        ("integer_program", dict(solver=default_mip_solver)),
-    ]:
-        with pytest.raises(NotImplementedError) as exc:
-            map_query(make(), method=method, variables=variables, **solver, **kwds)
-        messages.append(str(exc.value))
-    assert messages[0] == messages[1]
-
-
-@skipif_toulbar2_not_available
 def test_toulbar2_all_variables_is_a_full_query():
     bn = bex.cancer1_BN_conin().pgm
     full = map_query(bn, method="toulbar2")

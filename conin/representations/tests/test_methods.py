@@ -27,7 +27,9 @@ def test_the_entry_points_use_the_table():
 
 def test_a_method_of_both_queries_runs_on_the_same_kind():
     for method in set(MAP_METHODS) & set(LOG_PROBABILITY_METHODS):
-        assert lpq._representation_kind(method) == representation_kind(method, None, {})
+        assert lpq._representation_kind(method) == representation_kind(
+            method, None, None, {}
+        )
 
 
 def test_check_method():
