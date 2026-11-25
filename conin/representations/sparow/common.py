@@ -18,13 +18,16 @@ from functools import partial
 
 import munch
 import pyomo.environ as pyo
-import sparow
 
 import conin.representations.pyomo.common
 from conin.representations.base import Representation
 from conin.util import State
+from conin.util import try_import, State
 from conin.util.var_wrapper import PyomoVarWrapper
 from conin.util.constraint_data import merge_constraint_data
+
+with try_import() as sparow_available:
+    import sparow
 
 
 class SparowFactorRepresentation(Representation):
@@ -63,6 +66,9 @@ class SparowFactorRepresentation(Representation):
     kind = "sparow"
 
     def __init__(
+        if not sparow_available:
+            raise RuntimeError("The sparow package must be installed to solve MAP inference with integer_program.")
+
         self, *, S, J, v, w, var_index_map, pgm, constraints, nodes, data=None
     ):
         self.S = S
