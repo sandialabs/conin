@@ -155,12 +155,18 @@ the template.
 
 ## 6. Record the run
 
-After reporting, add the commit you checked to the record (one commit per
-line, so that the checks of other branches are kept):
+After reporting, add the commit you checked to the record by running the
+record script of the checkout you checked, with its absolute path and no
+arguments (users can allow exactly this command in their permissions):
 
 ```
-git rev-parse HEAD >> "$(git rev-parse --git-path pr-check-head)"
+python3 <checkout>/.claude/hooks/record_pr_check.py
 ```
+
+It appends HEAD to `$(git rev-parse --git-common-dir)/pr-check-head`, one
+commit per line, so the checks of other branches are kept, and a check made
+in a worktree counts for the main checkout too. If the branch predates the
+script, ask the user to record the commit instead.
 
 The project's Claude Code hook (`.claude/hooks/pr_check_gate.py`) uses it
 to block `gh pr create`, and to warn on `git push`, while HEAD hasn't been

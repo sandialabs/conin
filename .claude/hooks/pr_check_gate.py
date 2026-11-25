@@ -2,8 +2,9 @@
 
 Blocks ``gh pr create``, and warns on ``git push``, while the commit at HEAD
 has not been checked with the pr-check skill (which adds the commit to the
-list in ``$(git rev-parse --git-path pr-check-head)``, one per line, so that
-several branches can wait for a pull request at once).  A command that contains
+list in ``$(git rev-parse --git-common-dir)/pr-check-head``, one per line, so
+that several branches can wait for a pull request at once; the record is shared
+by the main checkout and its worktrees).  A command that contains
 ``PR_CHECK_SKIP=1`` is let through, for when the user asks to skip the check.
 
 Any error lets the command through: the hook must never break the Bash tool.
@@ -60,9 +61,8 @@ def main():
     try:
         top = git(cwd, "rev-parse", "--show-toplevel")
         head = git(cwd, "rev-parse", "HEAD")
-        record = git(
-            cwd, "rev-parse", "--path-format=absolute", "--git-path", "pr-check-head"
-        )
+        common = git(cwd, "rev-parse", "--path-format=absolute", "--git-common-dir")
+        record = os.path.join(common, "pr-check-head")
     except (OSError, subprocess.CalledProcessError):
         return
     try:
